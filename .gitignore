@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output (testers run `npm run build` locally)
+client/dist/
+
+# Local SQLite + WAL files (created on first run)
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
+
+# Env / secrets (if you add them later)
+.env
+.env.*
+!.env.example
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Logs & caches
+*.log
+npm-debug.log*
+client/.vite/
