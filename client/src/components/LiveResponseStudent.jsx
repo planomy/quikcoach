@@ -67,6 +67,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const [arrival, setArrival] = useState(null);
   const [pulse, setPulse] = useState(false);
   const [themeIndex, setThemeIndex] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(null);
   const [soundOn, setSoundOn] = useState(() => {
     try {
       return localStorage.getItem('iboard-question-sound') !== 'off';
@@ -154,6 +155,20 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     };
   }, [drawAttention, socket]);
 
+  useEffect(() => {
+    if (!activity?.timerSeconds || activity.locked) {
+      setSecondsLeft(null);
+      return undefined;
+    }
+    const tick = () => {
+      const end = Date.parse(`${activity.launchedAt}Z`) + activity.timerSeconds * 1000;
+      setSecondsLeft(Math.max(0, Math.ceil((end - Date.now()) / 1000)));
+    };
+    tick();
+    const timer = setInterval(tick, 250);
+    return () => clearInterval(timer);
+  }, [activity?.id, activity?.launchedAt, activity?.locked, activity?.timerSeconds]);
+
   function toggleSound() {
     const next = !soundOn;
     setSoundOn(next);
@@ -197,6 +212,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   }
 
   const theme = QUESTION_THEMES[themeIndex];
+  const answersClosed = activity?.locked || secondsLeft === 0;
 
   return (
     <>
@@ -238,16 +254,18 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             <button type="button" onClick={toggleSound} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300" title="Turn new-question sound on or off">
               {soundOn ? '🔔 Sound on' : '🔕 Sound off'}
             </button>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activity.locked ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-              {activity.locked ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${answersClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+              {answersClosed ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
             </span>
           </div>
           <h2 className={`mt-3 font-display font-black leading-snug text-slate-950 dark:text-white ${compact ? 'text-lg' : 'text-xl sm:text-2xl'}`}>{activity.prompt}</h2>
+          {secondsLeft !== null && <div className={`mt-3 rounded-xl px-3 py-2 text-center font-mono text-lg font-black ${secondsLeft <= 5 ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-900'}`}>{secondsLeft > 0 ? `${secondsLeft}s remaining` : 'Time is up'}</div>}
+          {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-4 max-h-72 w-full rounded-2xl bg-white object-contain" />}
 
           {activity.type === 'short' ? (
             <div className="mt-5">
-              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={activity.locked} placeholder="Type a short answer…" className="min-h-28 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 p-4 text-base text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
-              <button type="button" disabled={activity.locked || !draft.trim()} onClick={() => submit(draft)} className="mt-3 w-full rounded-2xl bg-indigo-600 px-5 py-3 text-base font-black text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">Send answer</button>
+              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed} placeholder="Type a short answer…" className="min-h-28 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 p-4 text-base text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+              <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className="mt-3 w-full rounded-2xl bg-indigo-600 px-5 py-3 text-base font-black text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">Send answer</button>
             </div>
           ) : (
             <div className={`mt-5 grid gap-3 ${!compact && activity.options.length > 3 ? 'sm:grid-cols-2' : ''}`}>
@@ -255,7 +273,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                 const selected = response?.value === option;
                 const correct = activity.correctAnswer && option === activity.correctAnswer;
                 return (
-                  <button key={option} type="button" disabled={activity.locked} onClick={() => submit(option)} className={`min-h-14 rounded-2xl border-2 px-4 py-3 text-left text-base font-black transition ${selected ? 'border-indigo-600 bg-indigo-600 text-white' : correct ? 'border-emerald-500 bg-emerald-100 text-emerald-950' : 'border-slate-200 bg-slate-50 text-slate-900 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white'}`}>
+                  <button key={option} type="button" disabled={answersClosed} onClick={() => submit(option)} className={`min-h-14 rounded-2xl border-2 px-4 py-3 text-left text-base font-black transition ${selected ? 'border-indigo-600 bg-indigo-600 text-white' : correct ? 'border-emerald-500 bg-emerald-100 text-emerald-950' : 'border-slate-200 bg-slate-50 text-slate-900 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white'}`}>
                     <span className="mr-2 opacity-60">{activity.type === 'choice' ? String.fromCharCode(65 + index) : ''}</span>{option}
                   </button>
                 );

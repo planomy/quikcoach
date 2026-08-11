@@ -438,6 +438,14 @@ io.on('connection', (socket) => {
       const correctAnswer = type !== 'short' && options.includes(requestedCorrectAnswer)
         ? requestedCorrectAnswer
         : '';
+      const imageUrl = String(raw?.imageUrl || '');
+      if (imageUrl && (!imageUrl.startsWith('data:image/jpeg;base64,') || imageUrl.length > 1.5e6)) {
+        cb?.({ ok: false, error: 'That image is too large' });
+        return;
+      }
+      const timerSeconds = [15, 30, 60, 120].includes(Number(raw?.timerSeconds))
+        ? Number(raw.timerSeconds)
+        : 0;
       const activity = queries.launchLiveActivity(db, code, {
         id: randomUUID(),
         type,
@@ -446,9 +454,19 @@ io.on('connection', (socket) => {
         correctAnswer,
         anonymous: !!raw?.anonymous,
         optional: !!raw?.optional,
+        imageUrl,
+        timerSeconds,
       });
       if (!activity.optional) queries.addLiveOpportunity(db, connectedStudentsInRoom(code));
       emitLiveState(code);
+      if (activity.timerSeconds > 0) {
+        setTimeout(() => {
+          const current = queries.getLiveActivity(db, code);
+          if (!current || current.id !== activity.id || current.locked) return;
+          queries.updateLiveActivity(db, code, { locked: true });
+          emitLiveState(code);
+        }, activity.timerSeconds * 1000);
+      }
       cb?.({ ok: true, activity });
     } catch (e) {
       console.error(e);
@@ -471,6 +489,12 @@ io.on('connection', (socket) => {
       }
       if (activity.locked) {
         cb?.({ ok: false, error: 'Answers are locked' });
+        return;
+      }
+      if (activity.timerSeconds > 0 && Date.now() >= Date.parse(`${activity.launchedAt}Z`) + activity.timerSeconds * 1000) {
+        queries.updateLiveActivity(db, code, { locked: true });
+        emitLiveState(code);
+        cb?.({ ok: false, error: 'Time is up' });
         return;
       }
       const answer = String(value ?? '').trim().slice(0, activity.type === 'short' ? 500 : 120);

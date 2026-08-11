@@ -136,6 +136,8 @@ export function migrate(db) {
       correct_answer TEXT NOT NULL DEFAULT '',
       anonymous INTEGER NOT NULL DEFAULT 0,
       optional INTEGER NOT NULL DEFAULT 0,
+      image_url TEXT NOT NULL DEFAULT '',
+      timer_seconds INTEGER NOT NULL DEFAULT 0,
       locked INTEGER NOT NULL DEFAULT 0,
       revealed INTEGER NOT NULL DEFAULT 0,
       launched_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -146,6 +148,12 @@ export function migrate(db) {
     db.exec(`ALTER TABLE live_activities ADD COLUMN question_number INTEGER NOT NULL DEFAULT 1`);
   } catch {
     /* column already exists */
+  }
+  for (const sql of [
+    `ALTER TABLE live_activities ADD COLUMN image_url TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE live_activities ADD COLUMN timer_seconds INTEGER NOT NULL DEFAULT 0`,
+  ]) {
+    try { db.exec(sql); } catch { /* column already exists */ }
   }
   db.exec(`
     CREATE TABLE IF NOT EXISTS live_responses (
@@ -467,8 +475,8 @@ export const queries = {
     run(
       db,
       `INSERT INTO live_activities
-       (room_code, activity_id, question_number, type, prompt, options_json, correct_answer, anonymous, optional, locked, revealed, launched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
+       (room_code, activity_id, question_number, type, prompt, options_json, correct_answer, anonymous, optional, image_url, timer_seconds, locked, revealed, launched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
        ON CONFLICT(room_code) DO UPDATE SET
          activity_id = excluded.activity_id,
          question_number = excluded.question_number,
@@ -478,6 +486,8 @@ export const queries = {
          correct_answer = excluded.correct_answer,
          anonymous = excluded.anonymous,
          optional = excluded.optional,
+         image_url = excluded.image_url,
+         timer_seconds = excluded.timer_seconds,
          locked = 0,
          revealed = 0,
          launched_at = datetime('now')`,
@@ -491,6 +501,8 @@ export const queries = {
         activity.correctAnswer || '',
         activity.anonymous ? 1 : 0,
         activity.optional ? 1 : 0,
+        activity.imageUrl || '',
+        Math.max(0, Number(activity.timerSeconds) || 0),
       ]
     );
     return queries.getLiveActivity(db, roomCode);
@@ -776,6 +788,8 @@ function rowToLiveActivity(row) {
     correctAnswer: row.correct_answer || '',
     anonymous: !!row.anonymous,
     optional: !!row.optional,
+    imageUrl: row.image_url || '',
+    timerSeconds: Math.max(0, Number(row.timer_seconds) || 0),
     locked: !!row.locked,
     revealed: !!row.revealed,
     launchedAt: row.launched_at,

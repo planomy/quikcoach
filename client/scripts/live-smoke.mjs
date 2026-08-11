@@ -39,13 +39,18 @@ try {
     prompt: 'Which planet is known as the Red Planet?',
     options: ['Earth', 'Mars', 'Venus'],
     correctAnswer: 'Mars',
+    imageUrl: 'data:image/jpeg;base64,ZmFrZQ==',
+    timerSeconds: 15,
   });
   assert.equal(launch.ok, true);
   assert.equal(launch.activity.questionNumber, 1);
+  assert.equal(launch.activity.timerSeconds, 15);
+  assert.equal(launch.activity.imageUrl, 'data:image/jpeg;base64,ZmFrZQ==');
   const publicStatePromise = nextEvent(alex, 'live:student');
   await emitAck(alex, 'student:live-sync', {});
   const publicState = await publicStatePromise;
   assert.equal(publicState.activity.correctAnswer, '');
+  assert.equal(publicState.activity.timerSeconds, 15);
 
   assert.equal((await emitAck(alex, 'student:live-response', {
     activityId: launch.activity.id,

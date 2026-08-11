@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import EngagementRing from './EngagementRing.jsx';
+import { fileToCompressedJpegDataUrl } from '../lib/image.js';
+
+const QUEUE_KEY = 'iboard-pulse-question-queue';
 
 const TYPES = [
   ['choice', 'Multiple choice'],
@@ -76,6 +79,12 @@ export default function LiveResponseTeacher({ socket }) {
   const [displayMode, setDisplayMode] = useState(false);
   const [composerOpen, setComposerOpen] = useState(true);
   const [message, setMessage] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [queue, setQueue] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
+  });
 
   useEffect(() => {
     const onLive = (payload) => setLive(payload || { activity: null, responses: [], students: [] });
@@ -83,6 +92,10 @@ export default function LiveResponseTeacher({ socket }) {
     socket.emit('teacher:live-sync', {});
     return () => socket.off('live:teacher', onLive);
   }, [socket]);
+
+  useEffect(() => {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(queue.slice(0, 30))); } catch { /* storage may be unavailable */ }
+  }, [queue]);
 
   const activity = live.activity;
   const responses = live.responses || [];
@@ -94,12 +107,45 @@ export default function LiveResponseTeacher({ socket }) {
     (student) => student.connected && !student.hasResponded
   ).length;
 
-  function launch() {
-    const cleanOptions = options.map((value) => value.trim()).filter(Boolean);
-    socket.emit('teacher:live-launch', { type, prompt, options: cleanOptions, correctAnswer, anonymous, optional }, (ack) => {
+  function currentDraft() {
+    return { type, prompt: prompt.trim(), options: options.map((value) => value.trim()).filter(Boolean), correctAnswer, anonymous, optional, imageUrl, timerSeconds };
+  }
+
+  function launch(question = currentDraft(), queueId = '') {
+    socket.emit('teacher:live-launch', question, (ack) => {
       setMessage(ack?.ok ? 'Question is live.' : ack?.error || 'Could not launch');
-      if (ack?.ok) setComposerOpen(false);
+      if (ack?.ok) {
+        setComposerOpen(false);
+        if (queueId) setQueue((items) => items.filter((item) => item.id !== queueId));
+      }
     });
+  }
+
+  function addToQueue() {
+    const question = currentDraft();
+    if (!question.prompt) { setMessage('Add a question first.'); return; }
+    if (question.type === 'choice' && question.options.length < 2) { setMessage('Add at least two choices.'); return; }
+    setQueue((items) => [...items, { ...question, id: crypto.randomUUID?.() || `q-${Date.now()}` }]);
+    setMessage('Question added to your queue.');
+    setPrompt(''); setOptions(['', '', '', '']); setCorrectAnswer(''); setImageUrl('');
+  }
+
+  function moveQueued(index, direction) {
+    setQueue((items) => {
+      const target = index + direction;
+      if (target < 0 || target >= items.length) return items;
+      const next = [...items];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  async function loadImage(file) {
+    if (!file) return;
+    setImageBusy(true);
+    try { setImageUrl(await fileToCompressedJpegDataUrl(file, 1000, 0.76)); }
+    catch { setMessage('Could not read that image.'); }
+    finally { setImageBusy(false); }
   }
 
   function control(action) {
@@ -139,18 +185,24 @@ export default function LiveResponseTeacher({ socket }) {
           <h2 className="font-display text-xl font-black">Live class response</h2>
         </div>
         <div className="flex flex-wrap gap-2">
+          {queue.length > 0 && <button type="button" onClick={() => launch(queue[0], queue[0].id)} className="rounded-xl bg-emerald-400 px-3 py-2 text-sm font-black text-emerald-950 shadow-sm">Launch next ({queue.length})</button>}
           {activity && <button type="button" onClick={() => setDisplayMode(true)} className="rounded-xl bg-white px-3 py-2 text-sm font-black text-indigo-800 shadow-sm">Display results</button>}
           <button type="button" onClick={() => setComposerOpen((open) => !open)} className="rounded-xl bg-indigo-950/40 px-3 py-2 text-sm font-black ring-1 ring-white/30">{composerOpen ? 'Hide setup' : 'New question'}</button>
         </div>
       </div>
 
       {composerOpen && (
-        <div className="border-b border-slate-200 p-5 dark:border-slate-700">
+        <div className="border-b border-slate-200 p-5 dark:border-slate-700" onPaste={(event) => { const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/')); if (file) { event.preventDefault(); loadImage(file); } }}>
           <div className="flex flex-wrap gap-2">
             {TYPES.map(([value, label]) => <button key={value} type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-xl px-3 py-2 text-sm font-bold ${type === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}>{label}</button>)}
           </div>
           <label className="mt-4 block text-xs font-black uppercase tracking-wide text-slate-500">Question or prompt</label>
           <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label className="cursor-pointer rounded-xl bg-sky-100 px-3 py-2 text-sm font-black text-sky-900 hover:bg-sky-200">{imageBusy ? 'Preparing image…' : imageUrl ? 'Replace image' : 'Add image / screenshot'}<input type="file" accept="image/*" className="hidden" onChange={(event) => loadImage(event.target.files?.[0])} /></label>
+            {imageUrl && <><img src={imageUrl} alt="Question preview" className="h-16 w-24 rounded-lg bg-white object-contain" /><button type="button" onClick={() => setImageUrl('')} className="text-xs font-black text-red-600">Remove</button></>}
+            <span className="text-xs text-slate-500">You can also paste a screenshot here.</span>
+          </div>
           {type === 'choice' && (
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {options.map((option, index) => <input key={index} value={option} onChange={(event) => setOptions((current) => current.map((value, i) => i === index ? event.target.value.slice(0, 120) : value))} placeholder={`Choice ${String.fromCharCode(65 + index)}`} className="rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />)}
@@ -167,10 +219,13 @@ export default function LiveResponseTeacher({ socket }) {
           <div className="mt-4 flex flex-wrap items-center gap-4">
             {type === 'short' && <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-4 w-4 accent-indigo-600" /> Anonymous when featured</label>}
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-4 w-4 accent-indigo-600" /> Optional — don’t count for engagement</label>
-            <button type="button" onClick={launch} className="ml-auto rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-md hover:bg-indigo-700">Launch to class</button>
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Timer <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="ml-2 rounded-lg border border-slate-200 px-2 py-2 dark:border-slate-700 dark:bg-slate-950"><option value="0">None</option><option value="15">15 sec</option><option value="30">30 sec</option><option value="60">1 min</option><option value="120">2 min</option></select></label>
+            <div className="ml-auto flex gap-2"><button type="button" onClick={addToQueue} className="rounded-xl bg-violet-100 px-4 py-2.5 text-sm font-black text-violet-900 hover:bg-violet-200">Add to queue</button><button type="button" onClick={() => launch()} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-md hover:bg-indigo-700">Launch now</button></div>
           </div>
         </div>
       )}
+
+      {queue.length > 0 && <div className="border-b border-slate-200 bg-violet-50 p-5 dark:border-slate-700 dark:bg-violet-950/30"><div className="flex items-center justify-between"><h3 className="font-display font-black text-violet-950 dark:text-violet-100">Prepared questions · {queue.length}</h3><button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear queue</button></div><div className="mt-3 space-y-2">{queue.map((item, index) => <div key={item.id} className="flex items-center gap-2 rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-violet-600 text-xs font-black text-white">{index + 1}</span><div className="flex flex-col"><button type="button" disabled={index === 0} onClick={() => moveQueued(index, -1)} className="text-xs font-black disabled:opacity-20">▲</button><button type="button" disabled={index === queue.length - 1} onClick={() => moveQueued(index, 1)} className="text-xs font-black disabled:opacity-20">▼</button></div>{item.imageUrl && <span title="Includes image">🖼️</span>}<p className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900 dark:text-white">{item.prompt}</p><span className="text-xs font-bold text-slate-500">{item.timerSeconds ? `${item.timerSeconds}s` : 'No timer'}</span><button type="button" onClick={() => launch(item, item.id)} className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-900">Launch</button><button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="px-2 text-sm font-black text-red-500">×</button></div>)}</div></div>}
 
       {activity && (
         <div className="p-5">
@@ -178,6 +233,7 @@ export default function LiveResponseTeacher({ socket }) {
             <div>
               <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Question {activity.questionNumber || 1} · Live now · {responses.length} answered</p>
               <h3 className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">{activity.prompt}</h3>
+              {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-3 max-h-64 rounded-xl bg-white object-contain" />}
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={!unansweredCount || activity.locked} onClick={realertUnanswered} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-900 disabled:cursor-not-allowed disabled:opacity-40">
