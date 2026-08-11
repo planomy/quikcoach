@@ -258,7 +258,7 @@ function buildTeacherLivePayload(code) {
       response: responseByStudent.get(student.id) || null,
     };
   });
-  return { activity, responses, students };
+  return { activity, responses, students, featuredWall: queries.listFeaturedWall(db, c) };
 }
 
 function emitStudentLiveState(code, studentId) {
@@ -597,12 +597,32 @@ io.on('connection', (socket) => {
         return;
       }
       queries.setLiveResponsePublished(db, code, activity.id, Number(studentId), !!published);
+      const response = queries.listLiveResponses(db, code).find((item) => item.studentId === Number(studentId));
+      if (published && response) {
+        queries.addFeaturedWallItem(db, code, activity, response);
+        io.to(studentSocketName(Number(studentId))).emit('live:featured', { questionNumber: activity.questionNumber });
+      } else if (!published) queries.removeFeaturedWallItem(db, activity.id, Number(studentId));
       emitLiveState(code);
       cb?.({ ok: true });
     } catch (e) {
       console.error(e);
       cb?.({ ok: false });
     }
+  });
+
+  socket.on('teacher:featured-label', ({ id, label }, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) { cb?.({ ok: false }); return; }
+    queries.setFeaturedWallLabel(db, code, Number(id), label);
+    emitLiveState(code); cb?.({ ok: true });
+  });
+
+  socket.on('teacher:featured-remove', ({ id }, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) { cb?.({ ok: false }); return; }
+    const item = queries.listFeaturedWall(db, code).find((entry) => entry.id === Number(id));
+    if (item) queries.removeFeaturedWallItem(db, item.activityId, item.studentId);
+    emitLiveState(code); cb?.({ ok: true });
   });
 
   socket.on('teacher:live-nudge', ({ studentId }, cb) => {
@@ -1148,6 +1168,7 @@ io.on('connection', (socket) => {
       }
       lastBroadcastByRoom.delete(code);
       queries.clearLiveActivity(db, code);
+      queries.clearFeaturedWall(db, code);
       queries.resetLiveQuestionNumber(db, code);
       broadcastRoom(code);
       emitLiveState(code);

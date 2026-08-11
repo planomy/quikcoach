@@ -23,6 +23,8 @@ const QUICK_CHECKS = [
   ['How well do you understand?', ['I understand', 'Almost', 'Not yet']],
   ['What do you think?', ['Agree', 'Unsure', 'Disagree']],
 ];
+const FEATURE_LABELS = ['', 'Strong evidence', 'Clear explanation', 'Excellent vocabulary', 'Interesting idea', 'Common misconception', 'Nearly there'];
+const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
 function Results({ activity, responses, display = false, onPublish }) {
   const counts = useMemo(() => {
@@ -92,6 +94,9 @@ export default function LiveResponseTeacher({ socket }) {
   const [queue, setQueue] = useState(() => {
     try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
   });
+  const [wallSelected, setWallSelected] = useState([]);
+  const [wallMode, setWallMode] = useState('');
+  const [slideIndex, setSlideIndex] = useState(0);
 
   useEffect(() => {
     const onLive = (payload) => setLive(payload || { activity: null, responses: [], students: [] });
@@ -106,6 +111,7 @@ export default function LiveResponseTeacher({ socket }) {
 
   const activity = live.activity;
   const responses = live.responses || [];
+  const featuredWall = live.featuredWall || [];
   const students = [...(live.students || [])].sort((a, b) => {
     if (a.connected !== b.connected) return a.connected ? -1 : 1;
     return (a.engagement?.score ?? 100) - (b.engagement?.score ?? 100);
@@ -180,6 +186,26 @@ export default function LiveResponseTeacher({ socket }) {
 
   function acknowledge(studentId) {
     socket.emit('teacher:live-acknowledge', { studentId }, (ack) => setMessage(ack?.ok ? 'Student knows you have seen their request.' : 'Could not acknowledge.'));
+  }
+
+  function labelFeatured(id, label) { socket.emit('teacher:featured-label', { id, label }); }
+  function removeFeatured(id) { socket.emit('teacher:featured-remove', { id }); setWallSelected((ids) => ids.filter((value) => value !== id)); }
+  function improveFeatured(item) { launch({ type: 'short', prompt: `Improve this answer: “${item.value}”`, options: [], correctAnswer: '', anonymous: false, optional: false, imageUrl: '', timerSeconds: 0 }); }
+  function compareFeatured() {
+    const chosen = featuredWall.filter((item) => wallSelected.includes(item.id)).slice(0, 2);
+    if (chosen.length !== 2) { setMessage('Select exactly two featured answers to compare.'); return; }
+    setWallMode('compare');
+  }
+  function askComparison() {
+    const chosen = featuredWall.filter((item) => wallSelected.includes(item.id)).slice(0, 2);
+    if (chosen.length !== 2) return;
+    launch({ type: 'choice', prompt: `Which response is stronger? A: “${chosen[0].value}” B: “${chosen[1].value}”`, options: ['Answer A', 'Answer B', 'Both are effective'], correctAnswer: '', anonymous: false, optional: false, imageUrl: '', timerSeconds: 0 });
+    setWallMode('');
+  }
+  function downloadWall() {
+    const body = featuredWall.map((item) => `<article><h2>Question ${item.questionNumber}: ${escapeHtml(item.prompt)}</h2><p>“${escapeHtml(item.value)}”</p><strong>${escapeHtml(item.label)}${item.name !== 'Anonymous' ? ` — ${escapeHtml(item.name)}` : ''}</strong></article>`).join('');
+    const blob = new Blob([`<!doctype html><meta charset="utf-8"><title>iBOARD Featured Wall</title><style>body{font-family:Arial;max-width:900px;margin:40px auto}article{padding:20px;margin:16px 0;border:2px solid #ddd;border-radius:18px}p{font-size:20px}</style><h1>iBOARD Featured Wall</h1>${body}`], { type: 'text/html' });
+    const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'iboard-featured-wall.html'; link.click(); URL.revokeObjectURL(url);
   }
 
   function realertUnanswered() {
@@ -267,6 +293,8 @@ export default function LiveResponseTeacher({ socket }) {
         </div>
       )}
 
+      {featuredWall.length > 0 && <section className="border-t border-amber-200 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-950/20"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">Featured Wall</p><h3 className="font-display text-xl font-black text-amber-950 dark:text-amber-100">Lesson highlights · {featuredWall.length}</h3></div><div className="flex gap-2"><button type="button" onClick={compareFeatured} className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-black text-white">Compare selected</button><button type="button" onClick={() => { setSlideIndex(0); setWallMode('slides'); }} className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-black text-white">Present wall</button><button type="button" onClick={downloadWall} className="rounded-xl bg-white px-3 py-2 text-xs font-black text-amber-900 shadow-sm">Save wall</button></div></div><div className="mt-4 grid gap-3 md:grid-cols-2">{featuredWall.map((item) => <article key={item.id} className={`rounded-2xl border-2 bg-white p-4 dark:bg-slate-900 ${wallSelected.includes(item.id) ? 'border-violet-500' : 'border-amber-200 dark:border-amber-800'}`}><div className="flex items-start gap-3"><input type="checkbox" checked={wallSelected.includes(item.id)} onChange={(event) => setWallSelected((ids) => event.target.checked ? [...ids.filter((id) => id !== item.id), item.id].slice(-2) : ids.filter((id) => id !== item.id))} className="mt-1 h-5 w-5 accent-violet-600" /><div className="min-w-0 flex-1"><p className="text-xs font-black uppercase text-amber-700">Question {item.questionNumber} · {item.name}</p><p className="mt-2 text-base font-semibold text-slate-900 dark:text-white">“{item.value}”</p><select value={item.label} onChange={(event) => labelFeatured(item.id, event.target.value)} className="mt-3 w-full rounded-lg border border-amber-200 px-2 py-2 text-xs font-bold dark:border-amber-800 dark:bg-slate-950">{FEATURE_LABELS.map((label) => <option key={label} value={label}>{label || 'Add teacher label…'}</option>)}</select><div className="mt-3 flex gap-2"><button type="button" onClick={() => improveFeatured(item)} className="rounded-lg bg-indigo-100 px-2 py-1.5 text-xs font-black text-indigo-800">Improve it</button><button type="button" onClick={() => removeFeatured(item.id)} className="rounded-lg bg-red-50 px-2 py-1.5 text-xs font-black text-red-600">Remove</button></div></div></div></article>)}</div></section>}
+
       <div className="border-t border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-950/50">
         {attention.length > 0 && <div className="mb-5 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30"><h3 className="font-display font-black text-amber-950 dark:text-amber-100">Check now · {attention.length}</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{attention.map((student) => { const reason = student.engagement_status ? STATUS_LABELS[student.engagement_status] : student.response?.confidence === 'guessed' ? 'Answered but guessed' : activity?.correctAnswer && student.response?.confidence === 'confident' && student.response.value !== activity.correctAnswer ? 'Incorrect and confident' : 'Low recent participation'; return <div key={student.id} className="flex items-center gap-2 rounded-xl bg-white p-3 dark:bg-slate-900"><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900 dark:text-white">{student.name}</p><p className="text-xs font-bold text-amber-800 dark:text-amber-300">{reason}</p></div>{student.engagement_status && <button type="button" onClick={() => acknowledge(student.id)} className="rounded-lg bg-amber-600 px-2 py-1.5 text-xs font-black text-white">Seen ✓</button>}</div>; })}</div></div>}
         <div className="flex items-center justify-between gap-3">
@@ -296,6 +324,8 @@ export default function LiveResponseTeacher({ socket }) {
           </div>
         </div>
       )}
+      {wallMode === 'compare' && (() => { const chosen = featuredWall.filter((item) => wallSelected.includes(item.id)).slice(0, 2); return <div className="fixed inset-0 z-[85] overflow-auto bg-gradient-to-br from-violet-950 to-slate-950 p-6 text-white"><button type="button" onClick={() => setWallMode('')} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 font-black text-violet-950">Close</button><div className="mx-auto flex min-h-full max-w-6xl flex-col justify-center"><h2 className="mb-8 text-center font-display text-4xl font-black">Which response is stronger—and why?</h2><div className="grid gap-6 md:grid-cols-2">{chosen.map((item, index) => <article key={item.id} className="rounded-3xl bg-white/10 p-8 ring-2 ring-white/20"><p className="text-sm font-black uppercase tracking-widest text-violet-300">Answer {index ? 'B' : 'A'} · {item.label}</p><p className="mt-5 text-3xl font-bold leading-relaxed">“{item.value}”</p></article>)}</div><button type="button" onClick={askComparison} className="mx-auto mt-8 rounded-2xl bg-violet-400 px-6 py-3 font-black text-violet-950">Ask the class</button></div></div>; })()}
+      {wallMode === 'slides' && featuredWall[slideIndex] && <div className="fixed inset-0 z-[85] grid place-items-center bg-gradient-to-br from-amber-950 via-violet-950 to-slate-950 p-8 text-white"><button type="button" onClick={() => setWallMode('')} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 font-black text-slate-950">Close</button><article className="max-w-5xl text-center"><p className="text-lg font-black uppercase tracking-widest text-amber-300">{featuredWall[slideIndex].label || `Question ${featuredWall[slideIndex].questionNumber}`}</p><p className="mt-6 font-display text-4xl font-black leading-relaxed sm:text-6xl">“{featuredWall[slideIndex].value}”</p><p className="mt-5 text-xl text-white/70">{featuredWall[slideIndex].name}</p><div className="mt-10 flex justify-center gap-3"><button type="button" disabled={slideIndex === 0} onClick={() => setSlideIndex((value) => value - 1)} className="rounded-xl bg-white/20 px-5 py-3 font-black disabled:opacity-30">Previous</button><span className="px-3 py-3 font-black">{slideIndex + 1} / {featuredWall.length}</span><button type="button" disabled={slideIndex === featuredWall.length - 1} onClick={() => setSlideIndex((value) => value + 1)} className="rounded-xl bg-white/20 px-5 py-3 font-black disabled:opacity-30">Next</button></div></article></div>}
     </section>
   );
 }

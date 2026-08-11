@@ -72,6 +72,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const [secondsLeft, setSecondsLeft] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpMessage, setHelpMessage] = useState('');
+  const [featuredNotice, setFeaturedNotice] = useState(false);
   const [soundOn, setSoundOn] = useState(() => {
     try {
       return localStorage.getItem('iboard-question-sound') !== 'off';
@@ -143,11 +144,13 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       }
     };
     const onHelpSeen = () => { setHelpOpen(false); setHelpMessage('Your teacher has seen this ✓'); };
+    const onFeatured = () => { setFeaturedNotice(true); setTimeout(() => setFeaturedNotice(false), 5000); };
     socket.on('live:activity', onActivity);
     socket.on('live:student', onMine);
     socket.on('live:nudge', onNudge);
     socket.on('live:realert', onRealert);
     socket.on('live:help-seen', onHelpSeen);
+    socket.on('live:featured', onFeatured);
     socket.emit('student:live-sync', {});
     return () => {
       socket.off('live:activity', onActivity);
@@ -155,6 +158,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       socket.off('live:nudge', onNudge);
       socket.off('live:realert', onRealert);
       socket.off('live:help-seen', onHelpSeen);
+      socket.off('live:featured', onFeatured);
       if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
       if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
       if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
@@ -237,6 +241,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
   return (
     <>
+      {featuredNotice && <div className="fixed inset-x-3 top-3 z-[75] mx-auto max-w-md rounded-3xl bg-gradient-to-r from-amber-400 to-yellow-300 p-5 text-center text-amber-950 shadow-2xl"><p className="text-3xl">⭐</p><p className="font-display text-xl font-black">Your answer was featured!</p></div>}
       <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} />
       {arrival && (
         <button

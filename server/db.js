@@ -171,6 +171,13 @@ export function migrate(db) {
   `);
   try { db.exec(`ALTER TABLE live_responses ADD COLUMN confidence TEXT NOT NULL DEFAULT ''`); } catch { /* column already exists */ }
   db.exec(`CREATE INDEX IF NOT EXISTS idx_live_responses_room ON live_responses(room_code)`);
+  db.exec(`CREATE TABLE IF NOT EXISTS featured_wall (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, room_code TEXT NOT NULL, activity_id TEXT NOT NULL,
+    question_number INTEGER NOT NULL, prompt TEXT NOT NULL, student_id INTEGER NOT NULL,
+    student_name TEXT NOT NULL, value TEXT NOT NULL, anonymous INTEGER NOT NULL DEFAULT 0,
+    label TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(activity_id, student_id)
+  )`);
 }
 
 /** @param {DatabaseSync} db */
@@ -590,6 +597,31 @@ export const queries = {
       [published ? 1 : 0, roomCode, activityId, studentId]
     );
   },
+
+  addFeaturedWallItem(db, roomCode, activity, response) {
+    run(db, `INSERT OR REPLACE INTO featured_wall
+      (room_code, activity_id, question_number, prompt, student_id, student_name, value, anonymous, label)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT label FROM featured_wall WHERE activity_id = ? AND student_id = ?), ''))`,
+      [roomCode, activity.id, activity.questionNumber, activity.prompt, response.studentId, response.name, response.value, activity.anonymous ? 1 : 0, activity.id, response.studentId]);
+  },
+
+  removeFeaturedWallItem(db, activityId, studentId) {
+    run(db, `DELETE FROM featured_wall WHERE activity_id = ? AND student_id = ?`, [activityId, studentId]);
+  },
+
+  listFeaturedWall(db, roomCode) {
+    return all(db, `SELECT * FROM featured_wall WHERE room_code = ? ORDER BY id ASC`, [roomCode]).map((row) => ({
+      id: Number(row.id), activityId: row.activity_id, questionNumber: Number(row.question_number),
+      prompt: row.prompt, studentId: Number(row.student_id), name: row.anonymous ? 'Anonymous' : row.student_name,
+      value: row.value, anonymous: !!row.anonymous, label: row.label || '', createdAt: row.created_at,
+    }));
+  },
+
+  setFeaturedWallLabel(db, roomCode, id, label) {
+    run(db, `UPDATE featured_wall SET label = ? WHERE room_code = ? AND id = ?`, [String(label || '').slice(0, 60), roomCode, id]);
+  },
+
+  clearFeaturedWall(db, roomCode) { run(db, `DELETE FROM featured_wall WHERE room_code = ?`, [roomCode]); },
 
   listStudents(db, roomCode) {
     return all(

@@ -108,13 +108,31 @@ try {
   assert.equal(samResponse.published, false);
 
   const featuredPromise = nextEvent(alex, 'live:activity');
+  const featuredNotice = nextEvent(sam, 'live:featured');
   assert.equal((await emitAck(teacher, 'teacher:live-publish', {
     activityId: shortLaunch.activity.id,
     studentId: samJoin.student.id,
     published: true,
   })).ok, true);
   const featuredState = await featuredPromise;
+  await featuredNotice;
   assert.deepEqual(featuredState.featured, [{ value: 'I compared the two examples.', name: 'Anonymous' }]);
+
+  const wallStatePromise = nextEvent(teacher, 'live:teacher');
+  await emitAck(teacher, 'teacher:live-sync', {});
+  const wallState = await wallStatePromise;
+  assert.equal(wallState.featuredWall.length, 1);
+  assert.equal(wallState.featuredWall[0].value, 'I compared the two examples.');
+  assert.equal((await emitAck(teacher, 'teacher:featured-label', { id: wallState.featuredWall[0].id, label: 'Clear explanation' })).ok, true);
+
+  const laterLaunch = await emitAck(teacher, 'teacher:live-launch', {
+    type: 'truefalse', prompt: 'A featured answer should persist.', options: [],
+  });
+  assert.equal(laterLaunch.ok, true);
+  const persistedPromise = nextEvent(teacher, 'live:teacher');
+  await emitAck(teacher, 'teacher:live-sync', {});
+  const persisted = await persistedPromise;
+  assert.equal(persisted.featuredWall[0].label, 'Clear explanation');
 
   console.log('Live classroom smoke test passed.');
 } finally {
