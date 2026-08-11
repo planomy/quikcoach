@@ -4,12 +4,14 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, 'data', 'classroom.db');
+const dataDir = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(__dirname, 'data');
+const dbPath = path.join(dataDir, 'classroom.db');
 
 export function openDatabase() {
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
   }
   const db = new DatabaseSync(dbPath);
   configureWal(db);
@@ -64,6 +66,16 @@ export function migrate(db) {
   } catch {
     /* column already exists */
   }
+  try {
+    db.exec(`ALTER TABLE students ADD COLUMN image_filename TEXT NOT NULL DEFAULT ''`);
+  } catch {
+    /* column already exists */
+  }
+  try {
+    db.exec(`ALTER TABLE students ADD COLUMN year_level TEXT NOT NULL DEFAULT ''`);
+  } catch {
+    /* column already exists */
+  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS room_snapshots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +87,24 @@ export function migrate(db) {
     )
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_snapshots_room ON room_snapshots(room_code)`);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS board_posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      room_code TEXT NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'text',
+      title TEXT NOT NULL DEFAULT 'Teacher',
+      text TEXT NOT NULL DEFAULT '',
+      image_filename TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (room_code) REFERENCES rooms(code)
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_board_posts_room ON board_posts(room_code)`);
+  try {
+    db.exec(`ALTER TABLE board_posts ADD COLUMN size INTEGER NOT NULL DEFAULT 1`);
+  } catch {
+    /* column already exists */
+  }
 }
 
 /** @param {DatabaseSync} db */
@@ -260,6 +290,49 @@ export const queries = {
     return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
   },
 
+  updateStudentImage(db, studentId, imageFilename) {
+    run(db, `UPDATE students SET image_filename = ?, updated_at = datetime('now') WHERE id = ?`, [
+      String(imageFilename || '').slice(0, 120),
+      studentId,
+    ]);
+    return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
+  },
+
+  clearStudentContents(db, roomCode) {
+    const rows = all(
+      db,
+      `SELECT id, image_filename FROM students WHERE room_code = ?`,
+      [roomCode]
+    );
+    run(
+      db,
+      `UPDATE students SET text = '', image_filename = '', updated_at = datetime('now') WHERE room_code = ?`,
+      [roomCode]
+    );
+    return rows;
+  },
+
+  /** Wipe every student row in the room (used for a fresh class on a reused code). */
+  deleteAllStudents(db, roomCode) {
+    const rows = all(
+      db,
+      `SELECT id, image_filename FROM students WHERE room_code = ?`,
+      [roomCode]
+    );
+    run(db, `DELETE FROM students WHERE room_code = ?`, [roomCode]);
+    return rows;
+  },
+
+  deleteAllBoardPosts(db, roomCode) {
+    const rows = all(
+      db,
+      `SELECT id, image_filename FROM board_posts WHERE room_code = ?`,
+      [roomCode]
+    );
+    run(db, `DELETE FROM board_posts WHERE room_code = ?`, [roomCode]);
+    return rows;
+  },
+
   updateStudentGroup(db, studentId, classGroup) {
     const raw = String(classGroup ?? '').trim().toUpperCase();
     const allowed = ['A', 'B', 'C', 'D', 'E'];
@@ -268,16 +341,46 @@ export const queries = {
     return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
   },
 
+  updateStudentYearLevel(db, studentId, yearLevel) {
+    const allowed = new Set([
+      '',
+      'yr2',
+      'yr3',
+      'yr4',
+      'yr5',
+      'yr6',
+      'yr7',
+      'yr8',
+      'yr9',
+      'yr10',
+      'yr11',
+      'yr12',
+    ]);
+    const y = String(yearLevel ?? '')
+      .trim()
+      .toLowerCase();
+    const value = allowed.has(y) ? y : '';
+    run(db, `UPDATE students SET year_level = ? WHERE id = ?`, [value, studentId]);
+    return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
+  },
+
   listStudents(db, roomCode) {
     return all(
       db,
-      `SELECT id, room_code, name, text, updated_at, class_group FROM students WHERE room_code = ? ORDER BY id ASC`,
+      `SELECT id, room_code, name, text, updated_at, class_group, image_filename, year_level FROM students WHERE room_code = ? ORDER BY id ASC`,
       [roomCode]
     );
   },
 
   getStudent(db, studentId) {
     return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
+  },
+
+  deleteStudent(db, studentId) {
+    const row = get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
+    if (!row) return null;
+    run(db, 'DELETE FROM students WHERE id = ?', [studentId]);
+    return row;
   },
 
   addSnapshot(db, roomCode, label, payloadObj) {
@@ -316,6 +419,70 @@ export const queries = {
     };
   },
 
+  addBoardPost(db, roomCode, { kind, title, text, image_filename, size }) {
+    const k = kind === 'image' ? 'image' : 'text';
+    const sz = Math.max(1, Math.min(4, Number(size) || 1));
+    const r = run(
+      db,
+      `INSERT INTO board_posts (room_code, kind, title, text, image_filename, size) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        roomCode,
+        k,
+        String(title || 'Teacher').trim().slice(0, 80) || 'Teacher',
+        String(text || '').slice(0, 20_000),
+        String(image_filename || '').slice(0, 120),
+        sz,
+      ]
+    );
+    return get(db, 'SELECT * FROM board_posts WHERE id = ?', [r.lastInsertRowid]);
+  },
+
+  listBoardPosts(db, roomCode) {
+    return all(
+      db,
+      `SELECT id, room_code, kind, title, text, image_filename, size, created_at
+       FROM board_posts WHERE room_code = ? ORDER BY id ASC`,
+      [roomCode]
+    );
+  },
+
+  getBoardPost(db, postId) {
+    return get(db, 'SELECT * FROM board_posts WHERE id = ?', [postId]);
+  },
+
+  updateBoardPostSize(db, postId, size) {
+    const sz = Math.max(1, Math.min(4, Number(size) || 1));
+    run(db, `UPDATE board_posts SET size = ? WHERE id = ?`, [sz, postId]);
+    return get(db, 'SELECT * FROM board_posts WHERE id = ?', [postId]);
+  },
+
+  deleteBoardPost(db, postId) {
+    const row = get(db, 'SELECT * FROM board_posts WHERE id = ?', [postId]);
+    if (!row) return null;
+    run(db, 'DELETE FROM board_posts WHERE id = ?', [postId]);
+    return row;
+  },
+
+  rowToBoardPost(row) {
+    if (!row) return null;
+    const kind = row.kind === 'image' ? 'image' : 'text';
+    const filename = String(row.image_filename || '');
+    const size = Math.max(1, Math.min(4, Number(row.size) || 1));
+    return {
+      id: Number(row.id),
+      room_code: row.room_code,
+      kind,
+      title: row.title || 'Teacher',
+      text: row.text || '',
+      size,
+      image_url:
+        kind === 'image' && filename
+          ? `/api/board-media/${encodeURIComponent(row.room_code)}/${encodeURIComponent(filename)}`
+          : null,
+      created_at: row.created_at,
+    };
+  },
+
   rowToRoom(row) {
     if (!row) return null;
     let parsed = {};
@@ -349,6 +516,7 @@ export const queries = {
 
   rowToStudent(row) {
     if (!row) return null;
+    const filename = String(row.image_filename || '');
     return {
       id: row.id,
       room_code: row.room_code,
@@ -356,6 +524,11 @@ export const queries = {
       text: row.text || '',
       updated_at: row.updated_at,
       class_group: row.class_group != null ? String(row.class_group) : '',
+      year_level: row.year_level != null ? String(row.year_level) : '',
+      image_url:
+        filename
+          ? `/api/board-media/${encodeURIComponent(row.room_code)}/${encodeURIComponent(filename)}`
+          : null,
     };
   },
 };

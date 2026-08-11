@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import { activityStatus, wordCount } from '../lib/text.js';
 import {
@@ -12,8 +12,17 @@ import {
   MODE_TOGGLE_LABELS,
 } from '../lib/feedbackPrompt.js';
 import AppFooter from '../components/AppFooter.jsx';
-import QuikCoachWordmark from '../components/QuikCoachWordmark.jsx';
-import { buildRoomCsv, downloadTextFile } from '../lib/exportRoom.js';
+import IBoardWordmark from '../components/IBoardWordmark.jsx';
+import { gradeShortLabel } from '../components/StudentGradeSelect.jsx';
+import SupaCoachLink from '../components/SupaCoachLink.jsx';
+import TeacherPinGate from '../components/TeacherPinGate.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
+import {
+  downloadTextFile,
+  buildEvidenceHtml,
+  evidenceFilenames,
+  buildStudentEvidenceText,
+} from '../lib/exportRoom.js';
 
 const MODE_LABELS = {
   writing: 'Writing',
@@ -76,12 +85,14 @@ function normalizeStudentFromServer(s) {
     room_code: s.room_code != null ? String(s.room_code) : '',
     updated_at: s.updated_at,
     class_group: s.class_group != null ? String(s.class_group) : '',
+    year_level: s.year_level != null ? String(s.year_level) : '',
+    image_url: s.image_url || null,
   };
 }
 
 function ToggleRow({ label, checked, onChange }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition hover:border-indigo-200">
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 shadow-sm transition hover:border-indigo-200">
       <span className="min-w-0 flex-1 pr-2">{label}</span>
       <button
         type="button"
@@ -93,7 +104,7 @@ function ToggleRow({ label, checked, onChange }) {
         }`}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white dark:bg-slate-900 shadow transition ${
             checked ? 'left-5' : 'left-0.5'
           }`}
         />
@@ -102,12 +113,17 @@ function ToggleRow({ label, checked, onChange }) {
   );
 }
 
-export default function TeacherDashboard() {
-  const [codeInput, setCodeInput] = useState('');
+function TeacherDashboardInner() {
+  const [searchParams] = useSearchParams();
+  const codeFromLink = String(searchParams.get('code') || '')
+    .replace(/\D/g, '')
+    .slice(0, 4);
+  const [codeInput, setCodeInput] = useState(codeFromLink);
   const [joined, setJoined] = useState(false);
   const [room, setRoom] = useState(null);
   const [students, setStudents] = useState([]);
   const [error, setError] = useState('');
+  const [socketConnected, setSocketConnected] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [feedbackMode, setFeedbackMode] = useState('writing');
@@ -124,10 +140,14 @@ export default function TeacherDashboard() {
   const [broadcastPick, setBroadcastPick] = useState({});
   const [snapshots, setSnapshots] = useState([]);
   const [snapshotViewer, setSnapshotViewer] = useState(null);
+  const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
+  const [evidenceLabel, setEvidenceLabel] = useState('');
+  const [evidenceBusy, setEvidenceBusy] = useState(false);
 
   const socket = useMemo(() => createSocket(), []);
   const teacherRoomRef = useRef('');
   const joinedRef = useRef(false);
+  const autoJoinTriedRef = useRef(false);
 
   const pushSettings = useCallback(
     (partial) => {
@@ -139,8 +159,21 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     socket.connect();
+    setSocketConnected(socket.connected);
     return () => {
       socket.disconnect();
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    const onConnect = () => setSocketConnected(true);
+    const onDisconnect = () => setSocketConnected(false);
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    setSocketConnected(socket.connected);
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
     };
   }, [socket]);
 
@@ -213,8 +246,18 @@ export default function TeacherDashboard() {
         if (i === -1) {
           return [...prev, row].sort((a, b) => a.id - b.id);
         }
+        const cur = prev[i];
+        if (
+          cur.text === row.text &&
+          cur.updated_at === row.updated_at &&
+          cur.name === row.name &&
+          cur.class_group === row.class_group &&
+          cur.year_level === row.year_level
+        ) {
+          return prev;
+        }
         const next = [...prev];
-        next[i] = { ...next[i], ...row };
+        next[i] = { ...cur, ...row };
         return next;
       });
     };
@@ -234,9 +277,11 @@ export default function TeacherDashboard() {
     prevModalOpenRef.current = modalOpen;
   }, [modalOpen, room, hydrateFeedbackStateFromRoom]);
 
-  async function createOrJoin() {
+  async function createOrJoin(overrideCode) {
     setError('');
-    const digits = codeInput.replace(/\D/g, '').slice(0, 4);
+    const digits = String(overrideCode ?? codeInput)
+      .replace(/\D/g, '')
+      .slice(0, 4);
     if (digits.length !== 4) {
       setError('Enter a 4-digit room code.');
       return;
@@ -301,6 +346,14 @@ export default function TeacherDashboard() {
       setError('Network error — is the server running?');
     }
   }
+
+  useEffect(() => {
+    if (autoJoinTriedRef.current || joined) return;
+    if (codeFromLink.length !== 4) return;
+    autoJoinTriedRef.current = true;
+    void createOrJoin(codeFromLink);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot return from FULL SCREEN
+  }, [codeFromLink]);
 
   function setModeToggle(mode, key, value) {
     setModeToggles((prev) => ({
@@ -487,6 +540,23 @@ export default function TeacherDashboard() {
     commitStudentGroup(studentId, g);
   }
 
+  function sendNoteToStudent(s) {
+    const note = window.prompt(`Private note for ${s.name} (appears in their feedback inbox):`);
+    if (note == null) return;
+    const text = String(note).trim();
+    if (!text) {
+      setError('Note was empty');
+      return;
+    }
+    socket.emit('teacher:distribute', { items: [{ studentId: s.id, text }] }, (ack) => {
+      if (!ack?.ok) setError('Could not send note');
+      else {
+        setCopyToast(`Note sent to ${s.name}`);
+        setTimeout(() => setCopyToast(''), 2500);
+      }
+    });
+  }
+
   function sendBroadcastToClass() {
     /** Use everyone in the room, not only the group filter — otherwise a filter can hide checked cards and send zero IDs. */
     const ids = orderedStudents.filter((s) => broadcastPick[s.id]).map((s) => s.id).slice(0, 6);
@@ -501,9 +571,9 @@ export default function TeacherDashboard() {
       if (!ack?.ok) setError(ack?.error || 'Broadcast failed — check you opened the room and students are connected');
       else {
         if (ack.count > 0 && ack.reached === 0) {
-          setCopyToast('Exemplars built, but no student browsers are in the room socket — open/refresh student tabs.');
+          setCopyToast('Sent, but 0 student tabs connected — ask students to refresh');
         } else {
-          setCopyToast(`Broadcast: ${ack.count} exemplar(s) to ${ack.reached ?? '?'} connected device(s)`);
+          setCopyToast(`Broadcast: ${ack.count} exemplar(s) → ${ack.reached ?? 0} student(s)`);
         }
         setTimeout(() => setCopyToast(''), 4000);
         setBroadcastPick({});
@@ -511,44 +581,70 @@ export default function TeacherDashboard() {
     });
   }
 
-  function saveSnapshot() {
-    const label = window.prompt('Snapshot label (optional):', '');
-    if (label === null) return;
-    socket.emit('teacher:snapshot-save', { label: label || '' }, (ack) => {
-      if (!ack?.ok) {
-        setError('Could not save snapshot');
-        return;
-      }
-      setSnapshots(ack.snapshots || []);
-      setCopyToast('Snapshot saved');
-      setTimeout(() => setCopyToast(''), 2500);
+  function openEvidenceModal() {
+    const now = new Date();
+    const defaultLabel = `Room ${codeInput} · ${now.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })}`;
+    setEvidenceLabel(defaultLabel);
+    setEvidenceModalOpen(true);
+  }
+
+  function downloadEvidenceHtml({ label, students: packStudents }) {
+    const names = evidenceFilenames(codeInput, label);
+    const savedAt = new Date().toISOString();
+    const modeLabel = MODE_LABELS[normalizeFeedbackMode(room?.genre)] || '';
+    const subjectLabel =
+      SUBJECT_ASSIST_OPTIONS.find((o) => o.id === room?.feedback_toggles?.subjectAssist)?.label || '';
+    const yearLabel =
+      YEAR_LEVEL_OPTIONS.find((o) => o.id === room?.feedback_toggles?.yearLevel)?.label || '';
+    const html = buildEvidenceHtml({
+      roomCode: codeInput,
+      label,
+      savedAt,
+      students: packStudents,
+      modeLabel,
+      subjectLabel: subjectLabel !== 'General' ? subjectLabel : '',
+      yearLabel: yearLabel && !String(yearLabel).startsWith('General') ? yearLabel : '',
+      origin: window.location.origin,
+    });
+    downloadTextFile(names.html, html, 'text/html;charset=utf-8');
+  }
+
+  function saveEvidenceOfLearning() {
+    const label = String(evidenceLabel || '').trim();
+    if (!label) {
+      setError('Add a short label (e.g. lesson focus).');
+      return;
+    }
+    const packStudents = visibleStudents.length ? visibleStudents : orderedStudents;
+    if (!packStudents.length) {
+      setError('No student work to save yet.');
+      return;
+    }
+    setEvidenceBusy(true);
+    setError('');
+    socket.emit('teacher:snapshot-save', { label }, (ack) => {
+      setEvidenceBusy(false);
+      if (ack?.ok) setSnapshots(ack.snapshots || []);
+      downloadEvidenceHtml({ label, students: packStudents });
+      setEvidenceModalOpen(false);
+      setCopyToast('Saved — open the HTML file to view or print');
+      setTimeout(() => setCopyToast(''), 4000);
     });
   }
 
-  function exportCurrentCsv() {
-    if (!codeInput || codeInput.length !== 4) return;
-    const suffix = groupFilter.trim() ? `-group-${groupFilter.trim().replace(/\W+/g, '_')}` : '';
-    const csv = buildRoomCsv(visibleStudents);
-    downloadTextFile(`quik-coach-${codeInput}${suffix}-${Date.now()}.csv`, csv, 'text/csv;charset=utf-8');
-    setCopyToast('Exported CSV');
-    setTimeout(() => setCopyToast(''), 2000);
-  }
-
-  function exportCurrentJson() {
-    if (!codeInput || codeInput.length !== 4) return;
-    const body = {
-      exported_at: new Date().toISOString(),
-      room_code: codeInput,
-      group_filter: groupFilter.trim() || null,
-      room,
-      students: visibleStudents,
-    };
-    downloadTextFile(
-      `quik-coach-${codeInput}-${Date.now()}.json`,
-      JSON.stringify(body, null, 2),
-      'application/json'
-    );
-    setCopyToast('Exported JSON');
+  function downloadOneStudent(s) {
+    const names = evidenceFilenames(codeInput, s.name);
+    const text = buildStudentEvidenceText({
+      roomCode: codeInput,
+      student: s,
+      label: `Individual evidence · Room ${codeInput}`,
+      savedAt: new Date().toISOString(),
+    });
+    downloadTextFile(names.studentTxt(s.name, s.id), text, 'text/plain;charset=utf-8');
+    setCopyToast(`Saved ${s.name}`);
     setTimeout(() => setCopyToast(''), 2000);
   }
 
@@ -563,18 +659,20 @@ export default function TeacherDashboard() {
     }
   }
 
-  async function exportSnapshotJsonFile(id) {
+  async function redownloadEvidence(id) {
     try {
       const r = await fetch(`/api/rooms/${codeInput}/snapshots/${id}`);
-      if (!r.ok) return;
+      if (!r.ok) throw new Error('fail');
       const data = await r.json();
-      downloadTextFile(
-        `quik-coach-snapshot-${codeInput}-${id}.json`,
-        JSON.stringify(data, null, 2),
-        'application/json'
-      );
+      const students = data.payload?.students || [];
+      downloadEvidenceHtml({
+        label: data.label || `Evidence #${id}`,
+        students,
+      });
+      setCopyToast('Saved — open the HTML file to view or print');
+      setTimeout(() => setCopyToast(''), 4000);
     } catch {
-      setError('Could not export snapshot');
+      setError('Could not open evidence pack');
     }
   }
 
@@ -597,23 +695,32 @@ export default function TeacherDashboard() {
   }
 
   if (!joined) {
+    // Returning from FULL SCREEN with ?code= — skip startup form
+    if (codeFromLink.length === 4 && !error) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+          <IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" />
+          <p className="mt-6 text-sm font-semibold text-slate-600 dark:text-slate-400">
+            Opening room {codeFromLink}…
+          </p>
+        </div>
+      );
+    }
     return (
-      <div className="flex min-h-screen flex-col bg-slate-50">
+      <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-1 flex-col px-4 py-10">
-          <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-card">
-            <QuikCoachWordmark className="text-2xl" quikClassName="italic text-indigo-600" />
-            <Link
-              to="/"
-              className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-800"
-            >
-              ← Home
-            </Link>
-            <h1 className="font-display mt-3 text-xl font-bold text-ink-900">Teacher dashboard</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Create a room with a 4-digit code, or enter an existing code. Students use the same code to join.
+          <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-card">
+            <div className="flex items-start justify-between gap-3">
+              <IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" />
+              <ThemeToggle />
+            </div>
+            <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">Teacher dashboard</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Create a room with a 4-digit code, or enter an existing code. Students join at the main site with that code
+              (they do not see this teacher page).
             </p>
             <div className="mt-6 space-y-3">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 Room code
               </label>
               <div className="flex gap-2">
@@ -621,13 +728,13 @@ export default function TeacherDashboard() {
                   value={codeInput}
                   onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   placeholder="e.g. 4821"
-                  className="flex-1 rounded-xl border border-slate-200 px-4 py-3 font-mono text-lg tracking-widest outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 font-mono text-lg tracking-widest outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                   maxLength={4}
                 />
                 <button
                   type="button"
                   onClick={() => setCodeInput(randomRoomCode())}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
                 >
                   Random
                 </button>
@@ -635,11 +742,41 @@ export default function TeacherDashboard() {
               {error && <p className="text-sm text-red-600">{error}</p>}
               <button
                 type="button"
-                onClick={createOrJoin}
+                onClick={() => createOrJoin()}
                 className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-lift hover:bg-indigo-700"
               >
                 Open room
               </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const base = `${window.location.origin}/student`;
+                  const url =
+                    codeInput.length === 4 ? `${base}?code=${encodeURIComponent(codeInput)}` : base;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setCopyToast(
+                      codeInput.length === 4
+                        ? 'Student join link copied (includes room code)'
+                        : 'Student join link copied'
+                    );
+                  } catch {
+                    setError('Could not copy — select and copy the link manually');
+                    return;
+                  }
+                  setTimeout(() => setCopyToast(''), 3000);
+                }}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                Copy student join link
+              </button>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Paste into Teams so students can click to join
+                {codeInput.length === 4 ? ' with this room code.' : '. Add a room code first to include it in the link.'}
+              </p>
+              {copyToast && (
+                <p className="text-center text-sm font-medium text-emerald-700 dark:text-emerald-400">{copyToast}</p>
+              )}
             </div>
           </div>
         </div>
@@ -653,25 +790,45 @@ export default function TeacherDashboard() {
   const frozen = !!room?.freeze_class;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-indigo-50/40">
-      <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-indigo-50/40 dark:from-slate-950 dark:to-indigo-950/40">
+      {!socketConnected && (
+        <div
+          role="status"
+          className="sticky top-0 z-40 border-b border-amber-300 bg-amber-500 px-4 py-2.5 text-center text-sm font-semibold text-amber-950 shadow-sm"
+        >
+          Connection lost — reconnecting…
+        </div>
+      )}
+      <header className="border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Teacher</p>
-            <h1 className="font-display text-xl font-bold text-ink-900">
+            <h1 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">
               Room <span className="font-mono text-indigo-600">{codeInput}</span>
             </h1>
           </div>
-          <Link to="/" className="text-sm font-medium text-slate-500 hover:text-indigo-600">
-            Home
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => {
+                const url = `${window.location.origin}/iboard?code=${encodeURIComponent(codeInput)}`;
+                // Keep opener link so FULL SCREEN can return without reloading the room
+                window.open(url, 'iboard-fullscreen');
+              }}
+              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white shadow-sm hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+              title="Opens full-screen student cards (up to 7 across) with broadcast"
+            >
+              FULL SCREEN
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur">
+      <div className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="flex flex-1 flex-col gap-2 sm:max-w-md">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span>Word target</span>
               <span className="font-mono text-indigo-600">{wt} words</span>
             </div>
@@ -693,7 +850,7 @@ export default function TeacherDashboard() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <label
-              className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800"
+              className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-200"
               title="When on, only the first N words (word target) of each student draft are saved. Set word target above to N."
             >
               <input
@@ -704,7 +861,7 @@ export default function TeacherDashboard() {
                   setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
                   pushSettings({ enforce_word_count: v });
                 }}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500"
               />
               Enforce word count
             </label>
@@ -718,7 +875,7 @@ export default function TeacherDashboard() {
               className={`rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition ${
                 frozen
                   ? 'bg-amber-500 text-white ring-2 ring-amber-300'
-                  : 'border border-slate-200 bg-white text-slate-800 hover:border-amber-200'
+                  : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:border-amber-200 dark:border-amber-800'
               }`}
             >
               {frozen ? 'Class frozen' : 'Freeze class'}
@@ -736,9 +893,9 @@ export default function TeacherDashboard() {
           >
             Prepare feedback
           </button>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             Mode:{' '}
-            <strong className="text-slate-700">
+            <strong className="text-slate-700 dark:text-slate-300">
               {MODE_LABELS[normalizeFeedbackMode(room?.genre)] || 'Writing'}
             </strong>
             {room?.feedback_toggles?.subjectAssist &&
@@ -746,7 +903,7 @@ export default function TeacherDashboard() {
                 <>
                   {' '}
                   · Subject:{' '}
-                  <strong className="text-slate-700">
+                  <strong className="text-slate-700 dark:text-slate-300">
                     {SUBJECT_ASSIST_OPTIONS.find((o) => o.id === room.feedback_toggles.subjectAssist)
                       ?.label || room.feedback_toggles.subjectAssist}
                   </strong>
@@ -757,7 +914,7 @@ export default function TeacherDashboard() {
                 <>
                   {' '}
                   · Year:{' '}
-                  <strong className="text-slate-700">
+                  <strong className="text-slate-700 dark:text-slate-300">
                     {YEAR_LEVEL_OPTIONS.find((o) => o.id === room.feedback_toggles.yearLevel)?.label ||
                       room.feedback_toggles.yearLevel}
                   </strong>
@@ -765,7 +922,7 @@ export default function TeacherDashboard() {
               )}
           </span>
           {copyToast && (
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">
+            <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-3 py-1 text-xs font-medium text-emerald-800 dark:text-emerald-300">
               {copyToast}
             </span>
           )}
@@ -773,13 +930,13 @@ export default function TeacherDashboard() {
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end">
           <div className="min-w-[10rem] flex-1">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Show group</label>
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Show group</label>
             <select
               value={groupFilter}
               onChange={(e) => setGroupFilter(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+              className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
             >
               <option value="">All students ({orderedStudents.length})</option>
               <option value={GROUP_FILTER_UNASSIGNED}>
@@ -804,41 +961,54 @@ export default function TeacherDashboard() {
             </button>
             <button
               type="button"
-              title="Stored on the server in the class database (room_snapshots), not as a file on your computer"
-              onClick={saveSnapshot}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+              title="Download student writing as an HTML file"
+              onClick={openEvidenceModal}
+              className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
             >
-              Save snapshot
+              Save evidence
             </button>
             <button
               type="button"
-              onClick={exportCurrentCsv}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:border-indigo-200"
+              title="Clear writing and images from every student card"
+              onClick={() => {
+                const ok = window.confirm(
+                  'Start a new class?\n\nThis removes every student card and teacher card from this room. Students will need to join again.'
+                );
+                if (!ok) return;
+                socket.emit('teacher:clear-cards', {}, (ack) => {
+                  if (!ack?.ok) {
+                    setError(ack?.error || 'Could not clear cards');
+                    return;
+                  }
+                  setStudents([]);
+                  setBroadcastPick({});
+                  setCopyToast('Board cleared — ready for a new class');
+                  setTimeout(() => setCopyToast(''), 3000);
+                });
+              }}
+              className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-300 dark:hover:bg-red-950/40"
             >
-              Export CSV
-            </button>
-            <button
-              type="button"
-              onClick={exportCurrentJson}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:border-indigo-200"
-            >
-              Export JSON
+              New class
             </button>
           </div>
-          <p className="w-full text-xs text-slate-500">
-            <strong className="text-slate-700">Broadcast</strong>: tick students, then send — anonymised exemplars on
-            student screens (max 6). <strong>Show group</strong> filters the grid and Copy for AI / paste-back order.
+          <p className="w-full text-xs text-slate-500 dark:text-slate-400">
+            <strong className="text-slate-700 dark:text-slate-300">Save evidence</strong> downloads one HTML file you can
+            open or print. <strong className="text-slate-700 dark:text-slate-300">New class</strong> wipes the room for a
+            new class (use this when reusing a code like 1111).{' '}
+            <strong className="text-slate-700 dark:text-slate-300">Broadcast</strong>: tick students, then send (max 6).{' '}
+            <strong className="text-slate-700 dark:text-slate-300">Show group</strong> filters the grid and what gets
+            saved.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {orderedStudents.length === 0 && (
-            <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white/60 p-10 text-center text-slate-500">
+            <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
               Waiting for students to join…
             </div>
           )}
           {orderedStudents.length > 0 && visibleStudents.length === 0 && (
-            <div className="col-span-full rounded-2xl border border-amber-200 bg-amber-50/80 p-6 text-center text-sm text-amber-950">
+            <div className="col-span-full rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 p-6 text-center text-sm text-amber-950 dark:text-amber-100">
               No students in this group. Choose &quot;All students&quot; or assign A–E on each card.
             </div>
           )}
@@ -855,74 +1025,121 @@ export default function TeacherDashboard() {
             return (
               <article
                 key={s.id}
-                className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card"
+                className="flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900 p-3 shadow-card"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="font-display text-lg font-semibold text-ink-900">{s.name}</h2>
-                    <p className="text-xs text-slate-500">ID #{s.id}</p>
-                    <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs font-medium text-violet-800">
-                      <input
-                        type="checkbox"
-                        checked={!!broadcastPick[s.id]}
-                        onChange={() =>
-                          setBroadcastPick((p) => ({ ...p, [s.id]: !p[s.id] }))
+                <div className="flex items-center gap-1.5">
+                  <label
+                    className="flex shrink-0 cursor-pointer items-center"
+                    title="Include in broadcast"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!!broadcastPick[s.id]}
+                      onChange={() =>
+                        setBroadcastPick((p) => ({ ...p, [s.id]: !p[s.id] }))
+                      }
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-violet-600 dark:border-slate-600"
+                    />
+                    <span className="sr-only">Include in broadcast</span>
+                  </label>
+                  <h2
+                    className="min-w-0 flex-1 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100"
+                    title={`ID #${s.id}`}
+                  >
+                    {s.name}
+                  </h2>
+                  <span title="Activity" className={`h-2 w-2 shrink-0 rounded-full ${light}`} />
+                  <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+                    {wc}w
+                  </span>
+                  <SupaCoachLink />
+                  <button
+                    type="button"
+                    onClick={() => downloadOneStudent(s)}
+                    className="shrink-0 rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 hover:border-emerald-300 hover:text-emerald-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-emerald-300"
+                    title="Download this student's draft"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendNoteToStudent(s)}
+                    className="shrink-0 rounded-md border border-violet-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 hover:bg-violet-50 dark:border-violet-900 dark:text-violet-300"
+                    title="Send a private note to this student only"
+                  >
+                    Note
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ok = window.confirm(
+                        `Remove "${s.name}" from the room?\n\nTheir card will disappear. They can join again with a new card.`
+                      );
+                      if (!ok) return;
+                      socket.emit('teacher:student-remove', { studentId: s.id }, (ack) => {
+                        if (!ack?.ok) {
+                          setError(ack?.error || 'Could not remove student');
+                          return;
                         }
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-violet-600"
-                      />
-                      Include in broadcast
-                    </label>
-                    <div className="mt-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Group</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1">
-                        {TABLE_GROUP_LETTERS.map((letter) => {
-                          const current = normalizedTableGroup(s.class_group);
-                          const active = current === letter;
-                          return (
-                            <button
-                              key={letter}
-                              type="button"
-                              aria-pressed={active}
-                              title={`Table ${letter}`}
-                              onClick={() =>
-                                setStudentTableGroup(s.id, active ? '' : letter)
-                              }
-                              className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition ${
-                                active
-                                  ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300'
-                                  : 'border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-800'
-                              }`}
-                            >
-                              {letter}
-                            </button>
-                          );
-                        })}
-                        <button
-                          type="button"
-                          onClick={() => setStudentTableGroup(s.id, '')}
-                          className="ml-0.5 rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 hover:border-slate-300 hover:bg-slate-50"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                      {normalizedTableGroup(s.class_group) === null &&
-                        String(s.class_group || '').trim() !== '' && (
-                          <p className="mt-1 text-[10px] text-amber-700">
-                            Legacy label &quot;{String(s.class_group).slice(0, 24)}
-                            …&quot; — pick A–E or Clear to replace.
-                          </p>
-                        )}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-2">
-                    <span title="Activity" className={`h-2.5 w-2.5 rounded-full ${light}`} />
-                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
-                      {wc} words
-                    </span>
-                  </div>
+                        setStudents((prev) => prev.filter((x) => x.id !== s.id));
+                        setBroadcastPick((p) => {
+                          const next = { ...p };
+                          delete next[s.id];
+                          return next;
+                        });
+                      });
+                    }}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-300"
+                    title="Remove this student card from the room"
+                  >
+                    ×
+                  </button>
                 </div>
-                <div className="mt-3 max-h-40 overflow-auto rounded-xl bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 scrollbar-thin">
-                  {displayText || <span className="text-slate-400 italic">No text yet</span>}
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  {gradeShortLabel(s.year_level) && (
+                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      {gradeShortLabel(s.year_level)}
+                    </span>
+                  )}
+                  {TABLE_GROUP_LETTERS.map((letter) => {
+                    const current = normalizedTableGroup(s.class_group);
+                    const active = current === letter;
+                    return (
+                      <button
+                        key={letter}
+                        type="button"
+                        aria-pressed={active}
+                        title={`Table ${letter}`}
+                        onClick={() => setStudentTableGroup(s.id, active ? '' : letter)}
+                        className={`flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold transition ${
+                          active
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-indigo-300'
+                        }`}
+                      >
+                        {letter}
+                      </button>
+                    );
+                  })}
+                  {normalizedTableGroup(s.class_group) === null &&
+                    String(s.class_group || '').trim() !== '' && (
+                      <span className="text-[10px] text-amber-700" title="Legacy group label">
+                        !
+                      </span>
+                    )}
+                </div>
+                <div className="mt-2 max-h-52 overflow-auto rounded-xl bg-slate-50 p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300">
+                  {s.image_url && (
+                    <img
+                      src={s.image_url}
+                      alt=""
+                      className="mb-2 max-h-36 w-full object-contain"
+                    />
+                  )}
+                  {displayText ||
+                    (!s.image_url && (
+                      <span className="italic text-slate-400 dark:text-slate-500">No text yet</span>
+                    ))}
                 </div>
               </article>
             );
@@ -930,35 +1147,32 @@ export default function TeacherDashboard() {
         </div>
 
         {snapshots.length > 0 && (
-          <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-            <h3 className="font-display text-lg font-semibold text-ink-900">Snapshots</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Point-in-time copies of every draft in the room (saved on the server in SQLite, table{' '}
-              <code className="rounded bg-slate-100 px-1 text-xs">room_snapshots</code> in{' '}
-              <code className="rounded bg-slate-100 px-1 text-xs">server/data/classroom.db</code>). View here or export
-              JSON for your own archive.
+          <section className="mt-8 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/30 p-5 shadow-card">
+            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Saved evidence</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Earlier saves from this room. Download any one again as HTML.
             </p>
-            <ul className="mt-3 divide-y divide-slate-100">
+            <ul className="mt-3 divide-y divide-emerald-100/80 dark:divide-emerald-900/50">
               {snapshots.map((sn) => (
                 <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                  <span className="text-slate-800">
-                    <span className="font-medium">{sn.label || `Snapshot #${sn.id}`}</span>
-                    <span className="ml-2 text-xs text-slate-500">{sn.created_at}</span>
+                  <span className="text-slate-800 dark:text-slate-200">
+                    <span className="font-medium">{sn.label || `Evidence #${sn.id}`}</span>
+                    <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{sn.created_at}</span>
                   </span>
                   <span className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => loadSnapshotForView(sn.id)}
-                      className="rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                      className="rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:hover:text-indigo-300"
                     >
                       View
                     </button>
                     <button
                       type="button"
-                      onClick={() => exportSnapshotJsonFile(sn.id)}
-                      className="rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900"
+                      onClick={() => redownloadEvidence(sn.id)}
+                      className="rounded-lg text-xs font-semibold text-emerald-700 hover:text-emerald-900"
                     >
-                      Export JSON
+                      Download HTML
                     </button>
                   </span>
                 </li>
@@ -968,24 +1182,24 @@ export default function TeacherDashboard() {
         )}
 
         <section className="mt-10 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-            <h3 className="font-display text-lg font-semibold text-ink-900">Copy for AI</h3>
-            <p className="mt-1 text-sm text-slate-600">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
+            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Copy for AI</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Builds a structured prompt from feedback mode, subject, year level, toggles, custom focuses, and each
               visible student&apos;s draft (respects <strong>Show group</strong> above).
             </p>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Payload: ~{aiPayloadStats.promptKb} KB · {aiPayloadStats.totalDraftWords} words of student drafts
               {visibleStudents.length > 0 ? ` · ${visibleStudents.length} students` : ''}
             </p>
             {aiPayloadStats.level === 'warn' && (
-              <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              <p className="mt-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
                 Large prompt — some AI tools may slow down or truncate. Consider copying in two batches (e.g. half the
                 class) or nudging students with the word target.
               </p>
             )}
             {aiPayloadStats.level === 'heavy' && (
-              <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
                 Very large prompt — high risk of truncation or errors. Batch students (smaller groups per copy) or lower
                 the word target before feedback rounds.
               </p>
@@ -993,21 +1207,21 @@ export default function TeacherDashboard() {
             <button
               type="button"
               onClick={copyForAi}
-              className="mt-4 w-full rounded-xl border border-indigo-200 bg-indigo-50 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
+              className="mt-4 w-full rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/50 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
             >
               Copy for AI
             </button>
             <details className="mt-4">
-              <summary className="cursor-pointer text-xs font-medium text-slate-500">Preview prompt</summary>
+              <summary className="cursor-pointer text-xs font-medium text-slate-500 dark:text-slate-400">Preview prompt</summary>
               <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100 scrollbar-thin">
                 {aiPrompt}
               </pre>
             </details>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-            <h3 className="font-display text-lg font-semibold text-ink-900">Paste back</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Paste numbered ChatGPT output (e.g. <code className="rounded bg-slate-100 px-1">1. [Feedback]</code>
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
+            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Paste back</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Paste numbered ChatGPT output (e.g. <code className="rounded bg-slate-100 dark:bg-slate-800 px-1">1. [Feedback]</code>
               ). Items are matched to <strong>visible</strong> students in list order (same order as Copy for AI).
             </p>
             <textarea
@@ -1015,7 +1229,7 @@ export default function TeacherDashboard() {
               onChange={(e) => setPasteBox(e.target.value)}
               rows={8}
               placeholder={`1. [Feedback for first student]\n2. [Feedback for second student]`}
-              className="mt-3 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+              className="mt-3 w-full rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
             />
             <button
               type="button"
@@ -1030,37 +1244,92 @@ export default function TeacherDashboard() {
 
       <AppFooter />
 
+      {evidenceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
+          <div
+            className="w-full max-w-md overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="evidence-title"
+          >
+            <div className="border-b border-slate-200 dark:border-slate-700 px-5 py-4">
+              <h2 id="evidence-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+                Save evidence
+              </h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                Downloads one HTML file with{' '}
+                {(visibleStudents.length ? visibleStudents : orderedStudents).length} student
+                {(visibleStudents.length ? visibleStudents : orderedStudents).length === 1 ? '' : 's'}
+                {groupFilter ? ` · group ${groupFilter}` : ''}.
+              </p>
+            </div>
+            <div className="space-y-3 px-5 py-4">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Label
+              </label>
+              <input
+                value={evidenceLabel}
+                onChange={(e) => setEvidenceLabel(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm outline-none ring-emerald-500 focus:border-emerald-500 focus:ring-2"
+                placeholder="e.g. Persuasive intro — Week 3"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveEvidenceOfLearning();
+                }}
+              />
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-5 py-3">
+              <button
+                type="button"
+                onClick={() => setEvidenceModalOpen(false)}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={evidenceBusy}
+                onClick={saveEvidenceOfLearning}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {evidenceBusy ? 'Saving…' : 'Download HTML'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {snapshotViewer && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
-            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl"
             role="dialog"
             aria-modal="true"
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <h2 className="font-display text-lg font-bold text-ink-900">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4">
+              <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
                 {snapshotViewer.label || `Snapshot #${snapshotViewer.id}`}
               </h2>
               <button
                 type="button"
                 onClick={() => setSnapshotViewer(null)}
-                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
                 aria-label="Close"
               >
                 ✕
               </button>
             </div>
             <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5 text-sm scrollbar-thin">
-              <p className="text-xs text-slate-500">{snapshotViewer.created_at}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{snapshotViewer.created_at}</p>
               {(snapshotViewer.payload?.students || []).map((st) => (
-                <div key={st.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="font-semibold text-ink-900">
+                <div key={st.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3">
+                  <p className="font-semibold text-ink-900 dark:text-slate-100">
                     {st.name}
                     {st.class_group ? (
-                      <span className="ml-2 text-xs font-normal text-slate-500">({st.class_group})</span>
+                      <span className="ml-2 text-xs font-normal text-slate-500 dark:text-slate-400">({st.class_group})</span>
                     ) : null}
                   </p>
-                  <p className="mt-2 whitespace-pre-wrap text-slate-700">{st.text || '—'}</p>
+                  <p className="mt-2 whitespace-pre-wrap text-slate-700 dark:text-slate-300">{st.text || '—'}</p>
                 </div>
               ))}
             </div>
@@ -1071,16 +1340,16 @@ export default function TeacherDashboard() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl"
             role="dialog"
             aria-modal="true"
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <h2 className="font-display text-lg font-bold text-ink-900">Prepare feedback</h2>
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4">
+              <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Prepare feedback</h2>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
                 aria-label="Close"
               >
                 ✕
@@ -1088,7 +1357,7 @@ export default function TeacherDashboard() {
             </div>
             <div className="max-h-[60vh] space-y-5 overflow-y-auto p-5 scrollbar-thin">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Feedback mode
                 </label>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -1100,7 +1369,7 @@ export default function TeacherDashboard() {
                       className={`rounded-xl px-3 py-2 text-xs font-semibold transition sm:text-sm ${
                         feedbackMode === id
                           ? 'bg-indigo-600 text-white shadow-md'
-                          : 'border border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
+                          : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-indigo-200'
                       }`}
                     >
                       {MODE_LABELS[id]}
@@ -1113,7 +1382,7 @@ export default function TeacherDashboard() {
                 <div className="min-w-0">
                   <label
                     htmlFor="subject"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
                   >
                     Subject
                   </label>
@@ -1121,7 +1390,7 @@ export default function TeacherDashboard() {
                     id="subject"
                     value={subjectAssist}
                     onChange={(e) => setSubjectAssist(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                   >
                     {SUBJECT_ASSIST_OPTIONS.map((o) => (
                       <option key={o.id} value={o.id}>
@@ -1129,14 +1398,14 @@ export default function TeacherDashboard() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Guides the AI with subject expectations (does not change student view).
                   </p>
                 </div>
                 <div className="min-w-0">
                   <label
                     htmlFor="year-level"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
                   >
                     Year level
                   </label>
@@ -1144,7 +1413,7 @@ export default function TeacherDashboard() {
                     id="year-level"
                     value={yearLevel}
                     onChange={(e) => setYearLevel(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                   >
                     {YEAR_LEVEL_OPTIONS.map((o) => (
                       <option key={o.id} value={o.id}>
@@ -1152,7 +1421,7 @@ export default function TeacherDashboard() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Age-appropriate vocabulary and complexity for the AI (does not change student view).
                   </p>
                 </div>
@@ -1162,7 +1431,7 @@ export default function TeacherDashboard() {
                 <div>
                   <label
                     htmlFor="custom-focus"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
                   >
                     Custom focus
                   </label>
@@ -1172,13 +1441,13 @@ export default function TeacherDashboard() {
                     onChange={(e) => setCustomFocusText(e.target.value)}
                     rows={3}
                     placeholder="e.g. Focus on use of evidence and paragraph control"
-                    className="mt-2 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                   />
                 </div>
               ) : (
                 <>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Focus toggles</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Focus toggles</p>
                     <div className="mt-2 grid grid-cols-2 gap-4">
                       {Object.entries(MODE_TOGGLE_LABELS[feedbackMode] || {}).map(([key, label]) => (
                         <ToggleRow
@@ -1200,7 +1469,7 @@ export default function TeacherDashboard() {
                           <button
                             type="button"
                             onClick={() => removeExtraFocus(feedbackMode, item.id)}
-                            className="shrink-0 rounded-lg border border-slate-200 px-2.5 text-sm font-semibold text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                            className="shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
                             aria-label={`Remove ${item.text}`}
                           >
                             ×
@@ -1221,7 +1490,7 @@ export default function TeacherDashboard() {
                         }
                       }}
                       placeholder="Add custom focus"
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                     />
                     <button
                       type="button"
@@ -1237,7 +1506,7 @@ export default function TeacherDashboard() {
 
               {feedbackMode === 'custom' && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     Extra focus lines (optional)
                   </p>
                   <div className="grid grid-cols-2 gap-2">
@@ -1253,7 +1522,7 @@ export default function TeacherDashboard() {
                         <button
                           type="button"
                           onClick={() => removeExtraFocus('custom', item.id)}
-                          className="shrink-0 rounded-lg border border-slate-200 px-2.5 text-sm font-semibold text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                          className="shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
                           aria-label={`Remove ${item.text}`}
                         >
                           ×
@@ -1273,7 +1542,7 @@ export default function TeacherDashboard() {
                         }
                       }}
                       placeholder="Add custom focus"
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                     />
                     <button
                       type="button"
@@ -1287,11 +1556,11 @@ export default function TeacherDashboard() {
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="flex justify-end gap-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-5 py-4">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200"
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200"
               >
                 Cancel
               </button>
@@ -1307,5 +1576,13 @@ export default function TeacherDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TeacherDashboard() {
+  return (
+    <TeacherPinGate>
+      <TeacherDashboardInner />
+    </TeacherPinGate>
   );
 }

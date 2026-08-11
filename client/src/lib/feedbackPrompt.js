@@ -137,6 +137,19 @@ function yearLevelLine(id) {
   return `Year level: ${yearLevelLabel(key)}. ${guide}`;
 }
 
+function studentYearLabel(yearLevel) {
+  const id = String(yearLevel || '')
+    .trim()
+    .toLowerCase();
+  if (!id) return '';
+  if (YEAR_LEVEL_OPTIONS.some((o) => o.id === id)) return yearLevelLabel(id);
+  // Accept compact forms like "y5" / "5"
+  const compact = id.replace(/^y(?:ear)?/, 'yr').replace(/^yr(?=\d)/, 'yr');
+  const asYr = compact.startsWith('yr') ? compact : `yr${compact.replace(/\D/g, '')}`;
+  if (YEAR_LEVEL_OPTIONS.some((o) => o.id === asYr)) return yearLevelLabel(asYr);
+  return '';
+}
+
 /**
  * @param {object} params
  * @param {FeedbackMode} params.feedbackMode
@@ -144,7 +157,7 @@ function yearLevelLine(id) {
  * @param {string} [params.customFocusText]
  * @param {Record<string, boolean>} [params.toggles]
  * @param {string[]} [params.extraFocusLabels] — enabled teacher-added focus lines (current mode)
- * @param {Array<{name: string, text?: string}>} [params.students]
+ * @param {Array<{name: string, text?: string, year_level?: string}>} [params.students]
  * @param {number} [params.wordTarget]
  * @param {string} [params.yearLevel] — id from YEAR_LEVEL_OPTIONS
  */
@@ -179,7 +192,12 @@ export function buildAiPrompt({
       ? `Subject context: ${subjectLabel(subjectAssist)}. Tailor feedback to the expectations of this subject while keeping comments simple and useful for students.`
       : '';
 
-  const yearLine = yearLevelLine(yearLevel);
+  const list = students || [];
+  const withPersonalYear = list.filter((s) => studentYearLabel(s.year_level)).length;
+  const yearLine =
+    withPersonalYear > 0
+      ? `Year level: each student excerpt includes their own year level when known (${withPersonalYear} of ${list.length} marked). Pitch feedback to THAT student's year. If a student has no year marked, use the class default — ${yearLevelLabel(yearLevel)}.`
+      : yearLevelLine(yearLevel);
 
   const customLine =
     mode === 'custom' && String(customFocusText || '').trim()
@@ -208,12 +226,15 @@ Respond with numbered feedback ONLY, one item per student, in this exact format 
 2. [Your feedback for student 2]
 ...and so on.
 
-Students are listed below in the same order as the numbers you must use.`;
+Students are listed below in the same order as the numbers you must use. Match the tone and expectations to each student's year level.`;
 
-  const body = (students || [])
+  const fallbackYear = yearLevelLabel(yearLevel);
+  const body = list
     .map((s, i) => {
       const excerpt = (s.text || '').trim() || '(empty draft)';
-      return `--- Student ${i + 1}: ${s.name} ---\n${excerpt}`;
+      const personal = studentYearLabel(s.year_level);
+      const yearShown = personal || fallbackYear;
+      return `--- Student ${i + 1}: ${s.name} ---\nYear level: ${yearShown}${personal ? '' : ' (class default)'}\n${excerpt}`;
     })
     .join('\n\n');
 
