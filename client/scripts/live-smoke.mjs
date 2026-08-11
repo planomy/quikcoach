@@ -41,6 +41,7 @@ try {
     correctAnswer: 'Mars',
   });
   assert.equal(launch.ok, true);
+  assert.equal(launch.activity.questionNumber, 1);
   const publicStatePromise = nextEvent(alex, 'live:student');
   await emitAck(alex, 'student:live-sync', {});
   const publicState = await publicStatePromise;
@@ -60,6 +61,12 @@ try {
   assert.equal(alexState.engagement.score, 100);
   assert.equal(samState.engagement.score, 0);
 
+  const realert = nextEvent(sam, 'live:realert');
+  const realertAck = await emitAck(teacher, 'teacher:live-realert', {});
+  assert.equal(realertAck.ok, true);
+  assert.equal(realertAck.count, 1);
+  assert.equal((await realert).activity.id, launch.activity.id);
+
   const nudge = nextEvent(sam, 'live:nudge');
   assert.equal((await emitAck(teacher, 'teacher:live-nudge', { studentId: samJoin.student.id })).ok, true);
   assert.equal((await nudge).message, 'Are you still with us?');
@@ -76,6 +83,7 @@ try {
     optional: true,
   });
   assert.equal(shortLaunch.ok, true);
+  assert.equal(shortLaunch.activity.questionNumber, 2);
   assert.equal((await emitAck(sam, 'student:live-response', {
     activityId: shortLaunch.activity.id,
     value: 'I compared the two examples.',

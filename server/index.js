@@ -572,6 +572,34 @@ io.on('connection', (socket) => {
     cb?.({ ok: true });
   });
 
+  socket.on('teacher:live-realert', (_payload, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !code) {
+        cb?.({ ok: false });
+        return;
+      }
+      const activity = queries.getLiveActivity(db, code);
+      if (!activity) {
+        cb?.({ ok: false, error: 'There is no live question' });
+        return;
+      }
+      const answered = new Set(
+        queries.listLiveResponses(db, code).map((response) => Number(response.studentId))
+      );
+      const targets = connectedStudentsInRoom(code).filter((studentId) => !answered.has(studentId));
+      for (const studentId of targets) {
+        io.to(studentSocketName(studentId)).emit('live:realert', {
+          activity: publicLiveActivity(activity),
+        });
+      }
+      cb?.({ ok: true, count: targets.length });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not re-alert students' });
+    }
+  });
+
   socket.on('student:text', ({ text }, cb) => {
     try {
       const sid = socket.data.studentId;
@@ -1068,6 +1096,7 @@ io.on('connection', (socket) => {
       }
       lastBroadcastByRoom.delete(code);
       queries.clearLiveActivity(db, code);
+      queries.resetLiveQuestionNumber(db, code);
       broadcastRoom(code);
       emitLiveState(code);
       cb?.({

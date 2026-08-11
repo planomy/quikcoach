@@ -62,6 +62,11 @@ export function migrate(db) {
     /* column already exists */
   }
   try {
+    db.exec(`ALTER TABLE rooms ADD COLUMN live_question_number INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    /* column already exists */
+  }
+  try {
     db.exec(`ALTER TABLE students ADD COLUMN class_group TEXT NOT NULL DEFAULT ''`);
   } catch {
     /* column already exists */
@@ -124,6 +129,7 @@ export function migrate(db) {
     CREATE TABLE IF NOT EXISTS live_activities (
       room_code TEXT PRIMARY KEY,
       activity_id TEXT NOT NULL,
+      question_number INTEGER NOT NULL DEFAULT 1,
       type TEXT NOT NULL,
       prompt TEXT NOT NULL DEFAULT '',
       options_json TEXT NOT NULL DEFAULT '[]',
@@ -136,6 +142,11 @@ export function migrate(db) {
       FOREIGN KEY (room_code) REFERENCES rooms(code)
     )
   `);
+  try {
+    db.exec(`ALTER TABLE live_activities ADD COLUMN question_number INTEGER NOT NULL DEFAULT 1`);
+  } catch {
+    /* column already exists */
+  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS live_responses (
       activity_id TEXT NOT NULL,
@@ -448,11 +459,19 @@ export const queries = {
     run(db, `DELETE FROM live_responses WHERE room_code = ?`, [roomCode]);
     run(
       db,
+      `UPDATE rooms SET live_question_number = live_question_number + 1 WHERE code = ?`,
+      [roomCode]
+    );
+    const room = get(db, `SELECT live_question_number FROM rooms WHERE code = ?`, [roomCode]);
+    const questionNumber = Math.max(1, Number(room?.live_question_number) || 1);
+    run(
+      db,
       `INSERT INTO live_activities
-       (room_code, activity_id, type, prompt, options_json, correct_answer, anonymous, optional, locked, revealed, launched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
+       (room_code, activity_id, question_number, type, prompt, options_json, correct_answer, anonymous, optional, locked, revealed, launched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
        ON CONFLICT(room_code) DO UPDATE SET
          activity_id = excluded.activity_id,
+         question_number = excluded.question_number,
          type = excluded.type,
          prompt = excluded.prompt,
          options_json = excluded.options_json,
@@ -465,6 +484,7 @@ export const queries = {
       [
         roomCode,
         activity.id,
+        questionNumber,
         activity.type,
         activity.prompt,
         JSON.stringify(activity.options || []),
@@ -501,6 +521,10 @@ export const queries = {
   clearLiveActivity(db, roomCode) {
     run(db, `DELETE FROM live_responses WHERE room_code = ?`, [roomCode]);
     run(db, `DELETE FROM live_activities WHERE room_code = ?`, [roomCode]);
+  },
+
+  resetLiveQuestionNumber(db, roomCode) {
+    run(db, `UPDATE rooms SET live_question_number = 0 WHERE code = ?`, [roomCode]);
   },
 
   upsertLiveResponse(db, { activityId, roomCode, studentId, value }) {
@@ -745,6 +769,7 @@ function rowToLiveActivity(row) {
   }
   return {
     id: row.activity_id,
+    questionNumber: Math.max(1, Number(row.question_number) || 1),
     type: row.type,
     prompt: row.prompt,
     options,

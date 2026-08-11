@@ -90,6 +90,9 @@ export default function LiveResponseTeacher({ socket }) {
     if (a.connected !== b.connected) return a.connected ? -1 : 1;
     return (a.engagement?.score ?? 100) - (b.engagement?.score ?? 100);
   });
+  const unansweredCount = students.filter(
+    (student) => student.connected && !student.hasResponded
+  ).length;
 
   function launch() {
     const cleanOptions = options.map((value) => value.trim()).filter(Boolean);
@@ -113,6 +116,18 @@ export default function LiveResponseTeacher({ socket }) {
   function nudge(studentId) {
     socket.emit('teacher:live-nudge', { studentId }, (ack) => {
       setMessage(ack?.ok ? 'Private check-in sent.' : 'Student is not available.');
+    });
+  }
+
+  function realertUnanswered() {
+    socket.emit('teacher:live-realert', {}, (ack) => {
+      setMessage(
+        ack?.ok
+          ? ack.count
+            ? `Re-alert sent to ${ack.count} unanswered student${ack.count === 1 ? '' : 's'}.`
+            : 'Everyone online has answered.'
+          : ack?.error || 'Could not send the re-alert.'
+      );
     });
   }
 
@@ -161,10 +176,13 @@ export default function LiveResponseTeacher({ socket }) {
         <div className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Live now · {responses.length} answered</p>
+              <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Question {activity.questionNumber || 1} · Live now · {responses.length} answered</p>
               <h3 className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">{activity.prompt}</h3>
             </div>
             <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={!unansweredCount || activity.locked} onClick={realertUnanswered} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-900 disabled:cursor-not-allowed disabled:opacity-40">
+                🔔 Re-alert {unansweredCount} unanswered
+              </button>
               <button type="button" onClick={() => control(activity.locked ? 'unlock' : 'lock')} className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-black text-amber-900">{activity.locked ? 'Unlock' : 'Lock answers'}</button>
               {activity.correctAnswer && !activity.revealed && <button type="button" onClick={() => control('reveal')} className="rounded-lg bg-emerald-100 px-3 py-2 text-xs font-black text-emerald-900">Reveal answer</button>}
               <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">End</button>
@@ -196,7 +214,7 @@ export default function LiveResponseTeacher({ socket }) {
         <div className="fixed inset-0 z-[80] overflow-auto bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 p-6 text-white sm:p-10">
           <button type="button" onClick={() => setDisplayMode(false)} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl">Back to teacher</button>
           <div className="mx-auto flex min-h-full max-w-6xl flex-col justify-center py-12">
-            <p className="text-lg font-black uppercase tracking-[0.25em] text-indigo-300">Live response · {responses.length} answers</p>
+            <p className="text-lg font-black uppercase tracking-[0.25em] text-indigo-300">Question {activity.questionNumber || 1} · Live response · {responses.length} answers</p>
             <h2 className="mt-4 max-w-5xl font-display text-4xl font-black leading-tight sm:text-6xl">{activity.prompt}</h2>
             <div className="mt-10"><Results activity={activity} responses={responses} display /></div>
           </div>

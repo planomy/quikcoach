@@ -748,6 +748,12 @@ function TeacherDashboardInner() {
               >
                 Open room
               </button>
+              <a
+                href={codeInput.length === 4 ? `/pulse/teacher?code=${encodeURIComponent(codeInput)}` : '/pulse/teacher'}
+                className="block w-full rounded-xl bg-violet-100 py-3 text-center text-sm font-black text-violet-800 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200"
+              >
+                Open Pulse only
+              </a>
               <button
                 type="button"
                 onClick={async () => {
@@ -810,6 +816,13 @@ function TeacherDashboardInner() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <ThemeToggle />
+            <a
+              href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white shadow-sm hover:bg-indigo-700"
+              title="Open the standalone live polling console"
+            >
+              Pulse only
+            </a>
             <button
               type="button"
               onClick={() => {

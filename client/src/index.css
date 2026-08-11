@@ -2,6 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes iboardQuestionArrival {
+  0% {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.96);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(4px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes iboardQuestionPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.012);
+    filter: brightness(1.08);
+  }
+}
+
+.iboard-question-arrival {
+  animation: iboardQuestionArrival 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-question-pulse {
+  animation: iboardQuestionPulse 0.65s ease-in-out 4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iboard-question-arrival,
+  .iboard-question-pulse {
+    animation: none;
+  }
+}
+
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
