@@ -5,6 +5,8 @@ const STATUS_OPTIONS = [
   ['unsure', 'I’m unsure'],
   ['tech', 'Tech problem'],
 ];
+const HELP_OPTIONS = [['stuck', 'I’m stuck'], ['slow', 'Please slow down'], ['explain', 'Explain again'], ['tech', 'Tech problem'], ['private', 'I need help privately']];
+const CONFIDENCE_OPTIONS = [['confident', '🟢 Confident'], ['unsure', '🟡 Not sure'], ['guessed', '🔴 I guessed']];
 
 const QUESTION_THEMES = [
   {
@@ -68,6 +70,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const [pulse, setPulse] = useState(false);
   const [themeIndex, setThemeIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpMessage, setHelpMessage] = useState('');
   const [soundOn, setSoundOn] = useState(() => {
     try {
       return localStorage.getItem('iboard-question-sound') !== 'off';
@@ -138,16 +142,19 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         drawAttention(payload.activity, true);
       }
     };
+    const onHelpSeen = () => { setHelpOpen(false); setHelpMessage('Your teacher has seen this ✓'); };
     socket.on('live:activity', onActivity);
     socket.on('live:student', onMine);
     socket.on('live:nudge', onNudge);
     socket.on('live:realert', onRealert);
+    socket.on('live:help-seen', onHelpSeen);
     socket.emit('student:live-sync', {});
     return () => {
       socket.off('live:activity', onActivity);
       socket.off('live:student', onMine);
       socket.off('live:nudge', onNudge);
       socket.off('live:realert', onRealert);
+      socket.off('live:help-seen', onHelpSeen);
       if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
       if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
       if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
@@ -197,17 +204,31 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     setNudge(false);
   }
 
+  function requestHelp(status) {
+    socket.emit('student:live-status', { status }, (ack) => {
+      setHelpMessage(ack?.ok ? 'Sent privately to your teacher ✓' : 'Could not send');
+      if (ack?.ok) setHelpOpen(false);
+    });
+  }
+
+  function setConfidence(confidence) {
+    if (!activity || !response) return;
+    socket.emit('student:live-confidence', { activityId: activity.id, confidence }, (ack) => {
+      if (ack?.ok) setResponse((current) => ({ ...current, confidence }));
+    });
+  }
+
   if (!activity && !nudge) {
-    if (!standalone) return null;
+    if (!standalone) return <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} />;
     return (
-      <section className="grid min-h-[240px] place-items-center rounded-3xl border-2 border-dashed border-indigo-300 bg-white p-6 text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900">
+      <div><HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} /><section className="mt-3 grid min-h-[240px] place-items-center rounded-3xl border-2 border-dashed border-indigo-300 bg-white p-6 text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900">
         <div>
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-indigo-100 text-3xl dark:bg-indigo-950">⚡</div>
           <p className="mt-4 text-xs font-black uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">Pulse is ready</p>
           <h2 className="mt-2 font-display text-2xl font-black text-slate-950 dark:text-white">Waiting for your teacher</h2>
           <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">Your next question will appear here automatically.</p>
         </div>
-      </section>
+      </section></div>
     );
   }
 
@@ -216,6 +237,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
   return (
     <>
+      <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} />
       {arrival && (
         <button
           type="button"
@@ -281,6 +303,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             </div>
           )}
           {message && <p className="mt-3 text-center text-sm font-bold text-indigo-700 dark:text-indigo-300">{message}</p>}
+          {response && <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700"><p className="text-center text-xs font-black uppercase tracking-wide text-slate-500">How sure are you?</p><div className="mt-2 grid grid-cols-3 gap-2">{CONFIDENCE_OPTIONS.map(([value, label]) => <button key={value} type="button" onClick={() => setConfidence(value)} className={`rounded-xl px-2 py-2 text-xs font-black ${response.confidence === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}>{label}</button>)}</div></div>}
           {activity.type === 'short' && featured.length > 0 && (
             <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
               <p className="text-xs font-black uppercase tracking-wide text-slate-500">Shared by your teacher</p>
@@ -291,4 +314,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       )}
     </>
   );
+}
+
+function HelpControl({ open, setOpen, message, onSelect }) {
+  return <section className="rounded-2xl border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950/30"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-rose-700 dark:text-rose-300">Need help?</p>{message && <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{message}</p>}</div><button type="button" onClick={() => setOpen(!open)} className="rounded-xl bg-rose-600 px-3 py-2 text-xs font-black text-white">{open ? 'Close' : 'Tell my teacher'}</button></div>{open && <div className="mt-3 grid gap-2 sm:grid-cols-2">{HELP_OPTIONS.map(([value, label]) => <button key={value} type="button" onClick={() => onSelect(value)} className="rounded-xl bg-white px-3 py-2 text-left text-sm font-bold text-rose-900 shadow-sm dark:bg-slate-900 dark:text-rose-100">{label}</button>)}</div>}</section>;
 }

@@ -56,15 +56,22 @@ try {
     activityId: launch.activity.id,
     value: 'Mars',
   })).ok, true);
+  assert.equal((await emitAck(alex, 'student:live-confidence', { activityId: launch.activity.id, confidence: 'confident' })).ok, true);
 
   const teacherStatePromise = nextEvent(teacher, 'live:teacher');
   await emitAck(teacher, 'teacher:live-sync', {});
   const teacherState = await teacherStatePromise;
   assert.equal(teacherState.responses.length, 1);
+  assert.equal(teacherState.responses[0].confidence, 'confident');
   const alexState = teacherState.students.find((student) => student.id === alexJoin.student.id);
   const samState = teacherState.students.find((student) => student.id === samJoin.student.id);
   assert.equal(alexState.engagement.score, 100);
   assert.equal(samState.engagement.score, 0);
+
+  assert.equal((await emitAck(sam, 'student:live-status', { status: 'stuck' })).ok, true);
+  const helpSeen = nextEvent(sam, 'live:help-seen');
+  assert.equal((await emitAck(teacher, 'teacher:live-acknowledge', { studentId: samJoin.student.id })).ok, true);
+  await helpSeen;
 
   const realert = nextEvent(sam, 'live:realert');
   const realertAck = await emitAck(teacher, 'teacher:live-realert', {});

@@ -255,6 +255,7 @@ function buildTeacherLivePayload(code) {
       engagement_status: student.engagement_status,
       engagement: student.engagement,
       hasResponded: responseByStudent.has(student.id),
+      response: responseByStudent.get(student.id) || null,
     };
   });
   return { activity, responses, students };
@@ -267,7 +268,7 @@ function emitStudentLiveState(code, studentId) {
   const own = responses.find((response) => response.studentId === Number(studentId)) || null;
   io.to(studentSocketName(studentId)).emit('live:student', {
     activity: publicLiveActivity(activity),
-    response: own ? { value: own.value, submittedAt: own.submittedAt } : null,
+    response: own ? { value: own.value, confidence: own.confidence, submittedAt: own.submittedAt } : null,
   });
 }
 
@@ -531,6 +532,33 @@ io.on('connection', (socket) => {
       console.error(e);
       cb?.({ ok: false });
     }
+  });
+
+  socket.on('student:live-confidence', ({ activityId, confidence }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const sid = Number(socket.data.studentId);
+      const activity = queries.getLiveActivity(db, code);
+      if (socket.data.role !== 'student' || !sid || !activity || activity.id !== String(activityId || '')) {
+        cb?.({ ok: false }); return;
+      }
+      queries.setLiveResponseConfidence(db, activity.id, sid, confidence);
+      emitLiveState(code);
+      cb?.({ ok: true });
+    } catch { cb?.({ ok: false }); }
+  });
+
+  socket.on('teacher:live-acknowledge', ({ studentId }, cb) => {
+    const code = socket.data.roomCode;
+    const sid = Number(studentId);
+    const row = sid ? queries.getStudent(db, sid) : null;
+    if (socket.data.role !== 'teacher' || !code || !row || normalizeRoomCode(row.room_code) !== normalizeRoomCode(code)) {
+      cb?.({ ok: false }); return;
+    }
+    queries.setStudentEngagementStatus(db, sid, '');
+    io.to(studentSocketName(sid)).emit('live:help-seen', {});
+    io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
+    cb?.({ ok: true });
   });
 
   socket.on('teacher:live-control', ({ action }, cb) => {

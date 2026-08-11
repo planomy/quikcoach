@@ -15,7 +15,14 @@ const STATUS_LABELS = {
   ready: 'Ready',
   unsure: 'Unsure',
   tech: 'Tech issue',
+  stuck: 'I’m stuck', slow: 'Please slow down', explain: 'Explain again', private: 'Needs private help',
 };
+const QUICK_CHECKS = [
+  ['Ready to continue?', ['Ready', 'Not yet']],
+  ['How is the pace?', ['Too fast', 'Just right', 'Too slow']],
+  ['How well do you understand?', ['I understand', 'Almost', 'Not yet']],
+  ['What do you think?', ['Agree', 'Unsure', 'Disagree']],
+];
 
 function Results({ activity, responses, display = false, onPublish }) {
   const counts = useMemo(() => {
@@ -106,6 +113,12 @@ export default function LiveResponseTeacher({ socket }) {
   const unansweredCount = students.filter(
     (student) => student.connected && !student.hasResponded
   ).length;
+  const attention = students.filter((student) => {
+    if (student.engagement_status && student.engagement_status !== 'ready') return true;
+    if (student.response?.confidence === 'guessed') return true;
+    if (activity?.correctAnswer && student.response?.confidence === 'confident' && student.response.value !== activity.correctAnswer) return true;
+    return student.connected && student.engagement?.opportunities >= 2 && student.engagement.score < 50;
+  });
 
   function currentDraft() {
     return { type, prompt: prompt.trim(), options: options.map((value) => value.trim()).filter(Boolean), correctAnswer, anonymous, optional, imageUrl, timerSeconds };
@@ -165,6 +178,10 @@ export default function LiveResponseTeacher({ socket }) {
     });
   }
 
+  function acknowledge(studentId) {
+    socket.emit('teacher:live-acknowledge', { studentId }, (ack) => setMessage(ack?.ok ? 'Student knows you have seen their request.' : 'Could not acknowledge.'));
+  }
+
   function realertUnanswered() {
     socket.emit('teacher:live-realert', {}, (ack) => {
       setMessage(
@@ -190,6 +207,8 @@ export default function LiveResponseTeacher({ socket }) {
           <button type="button" onClick={() => setComposerOpen((open) => !open)} className="rounded-xl bg-indigo-950/40 px-3 py-2 text-sm font-black ring-1 ring-white/30">{composerOpen ? 'Hide setup' : 'New question'}</button>
         </div>
       </div>
+
+      <div className="border-b border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-900 dark:bg-indigo-950/30"><p className="text-xs font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300">Instant checks</p><div className="mt-2 flex flex-wrap gap-2">{QUICK_CHECKS.map(([question, choices]) => <button key={question} type="button" onClick={() => launch({ type: 'choice', prompt: question, options: choices, correctAnswer: '', anonymous: false, optional: false, imageUrl: '', timerSeconds: 0 })} className="rounded-xl bg-white px-3 py-2 text-sm font-black text-indigo-800 shadow-sm hover:bg-indigo-100 dark:bg-slate-900 dark:text-indigo-200">{question}</button>)}</div></div>
 
       {composerOpen && (
         <div className="border-b border-slate-200 p-5 dark:border-slate-700" onPaste={(event) => { const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/')); if (file) { event.preventDefault(); loadImage(file); } }}>
@@ -249,6 +268,7 @@ export default function LiveResponseTeacher({ socket }) {
       )}
 
       <div className="border-t border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-950/50">
+        {attention.length > 0 && <div className="mb-5 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30"><h3 className="font-display font-black text-amber-950 dark:text-amber-100">Check now · {attention.length}</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{attention.map((student) => { const reason = student.engagement_status ? STATUS_LABELS[student.engagement_status] : student.response?.confidence === 'guessed' ? 'Answered but guessed' : activity?.correctAnswer && student.response?.confidence === 'confident' && student.response.value !== activity.correctAnswer ? 'Incorrect and confident' : 'Low recent participation'; return <div key={student.id} className="flex items-center gap-2 rounded-xl bg-white p-3 dark:bg-slate-900"><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900 dark:text-white">{student.name}</p><p className="text-xs font-bold text-amber-800 dark:text-amber-300">{reason}</p></div>{student.engagement_status && <button type="button" onClick={() => acknowledge(student.id)} className="rounded-lg bg-amber-600 px-2 py-1.5 text-xs font-black text-white">Seen ✓</button>}</div>; })}</div></div>}
         <div className="flex items-center justify-between gap-3">
           <div><h3 className="font-display text-base font-black text-slate-900 dark:text-white">Engagement pulse</h3><p className="text-xs text-slate-500">Recent participation only — never correctness. Visible to teachers only.</p></div>
           <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{students.filter((student) => student.connected).length} online</span>
@@ -257,7 +277,7 @@ export default function LiveResponseTeacher({ socket }) {
           {students.map((student) => (
             <div key={student.id} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
               <EngagementRing engagement={student.engagement} connected={student.connected} />
-              <div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900 dark:text-white">{student.name}</p><p className="text-xs font-semibold text-slate-500">{student.engagement_status ? STATUS_LABELS[student.engagement_status] : student.hasResponded ? 'Answered' : student.connected ? 'Waiting' : 'Offline'}</p></div>
+              <div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900 dark:text-white">{student.name}</p><p className="text-xs font-semibold text-slate-500">{student.engagement_status ? STATUS_LABELS[student.engagement_status] : student.hasResponded ? `Answered${student.response?.confidence ? ` · ${student.response.confidence}` : ''}` : student.connected ? 'Waiting' : 'Offline'}</p></div>
               <button type="button" disabled={!student.connected} onClick={() => nudge(student.id)} title="Send a private check-in" className="rounded-lg bg-indigo-50 px-2 py-1.5 text-xs font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-30 dark:bg-indigo-950 dark:text-indigo-200">Nudge</button>
             </div>
           ))}

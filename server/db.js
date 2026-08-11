@@ -161,6 +161,7 @@ export function migrate(db) {
       room_code TEXT NOT NULL,
       student_id INTEGER NOT NULL,
       value TEXT NOT NULL DEFAULT '',
+      confidence TEXT NOT NULL DEFAULT '',
       published INTEGER NOT NULL DEFAULT 0,
       submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (activity_id, student_id),
@@ -168,6 +169,7 @@ export function migrate(db) {
       FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
     )
   `);
+  try { db.exec(`ALTER TABLE live_responses ADD COLUMN confidence TEXT NOT NULL DEFAULT ''`); } catch { /* column already exists */ }
   db.exec(`CREATE INDEX IF NOT EXISTS idx_live_responses_room ON live_responses(room_code)`);
 }
 
@@ -457,7 +459,7 @@ export const queries = {
   },
 
   setStudentEngagementStatus(db, studentId, status) {
-    const allowed = new Set(['', 'ready', 'unsure', 'tech']);
+    const allowed = new Set(['', 'ready', 'unsure', 'tech', 'stuck', 'slow', 'explain', 'private']);
     const value = allowed.has(String(status || '')) ? String(status || '') : '';
     run(db, `UPDATE students SET engagement_status = ? WHERE id = ?`, [value, studentId]);
     return get(db, `SELECT * FROM students WHERE id = ?`, [studentId]);
@@ -556,6 +558,12 @@ export const queries = {
     );
   },
 
+  setLiveResponseConfidence(db, activityId, studentId, confidence) {
+    const allowed = new Set(['confident', 'unsure', 'guessed']);
+    const value = allowed.has(String(confidence || '')) ? String(confidence) : '';
+    run(db, `UPDATE live_responses SET confidence = ? WHERE activity_id = ? AND student_id = ?`, [value, activityId, studentId]);
+  },
+
   listLiveResponses(db, roomCode) {
     return all(
       db,
@@ -568,6 +576,7 @@ export const queries = {
       studentId: Number(row.student_id),
       name: row.name,
       value: row.value,
+      confidence: row.confidence || '',
       published: !!row.published,
       submittedAt: row.submitted_at,
     }));
