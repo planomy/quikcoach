@@ -17,6 +17,7 @@ import { gradeShortLabel } from '../components/StudentGradeSelect.jsx';
 import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
 import {
   downloadTextFile,
   buildEvidenceHtml,
@@ -885,6 +886,7 @@ function TeacherDashboardInner() {
       </div>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
+        <LiveResponseTeacher socket={socket} />
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <button
             type="button"

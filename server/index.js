@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
 
@@ -200,6 +201,104 @@ function broadcastRoom(code) {
 /** Last broadcast per room — resent when a student joins/rejoins so late/reconnect tabs still see it. */
 const lastBroadcastByRoom = new Map();
 
+/** Active student sockets are kept in memory; learning history stays in SQLite. */
+const connectedStudentSockets = new Map();
+
+function studentSocketName(studentId) {
+  return `student:${Number(studentId)}`;
+}
+
+function teacherSocketName(code) {
+  return `teacher:${normalizeRoomCode(code)}`;
+}
+
+function addStudentPresence(studentId, socketId) {
+  const sid = Number(studentId);
+  const ids = connectedStudentSockets.get(sid) || new Set();
+  ids.add(socketId);
+  connectedStudentSockets.set(sid, ids);
+}
+
+function removeStudentPresence(studentId, socketId) {
+  const sid = Number(studentId);
+  const ids = connectedStudentSockets.get(sid);
+  if (!ids) return;
+  ids.delete(socketId);
+  if (!ids.size) connectedStudentSockets.delete(sid);
+}
+
+function isStudentConnected(studentId) {
+  return (connectedStudentSockets.get(Number(studentId))?.size || 0) > 0;
+}
+
+function publicLiveActivity(activity) {
+  if (!activity) return null;
+  const { correctAnswer, ...safe } = activity;
+  return {
+    ...safe,
+    correctAnswer: activity.revealed ? correctAnswer : '',
+  };
+}
+
+function buildTeacherLivePayload(code) {
+  const c = normalizeRoomCode(code);
+  const activity = queries.getLiveActivity(db, c);
+  const responses = activity ? queries.listLiveResponses(db, c) : [];
+  const responseByStudent = new Map(responses.map((response) => [response.studentId, response]));
+  const students = queries.listStudents(db, c).map((row) => {
+    const student = queries.rowToStudent(row);
+    return {
+      id: student.id,
+      name: student.name,
+      year_level: student.year_level,
+      connected: isStudentConnected(student.id),
+      engagement_status: student.engagement_status,
+      engagement: student.engagement,
+      hasResponded: responseByStudent.has(student.id),
+    };
+  });
+  return { activity, responses, students };
+}
+
+function emitStudentLiveState(code, studentId) {
+  const c = normalizeRoomCode(code);
+  const activity = queries.getLiveActivity(db, c);
+  const responses = activity ? queries.listLiveResponses(db, c) : [];
+  const own = responses.find((response) => response.studentId === Number(studentId)) || null;
+  io.to(studentSocketName(studentId)).emit('live:student', {
+    activity: publicLiveActivity(activity),
+    response: own ? { value: own.value, submittedAt: own.submittedAt } : null,
+  });
+}
+
+function emitLiveState(code) {
+  const c = normalizeRoomCode(code);
+  const teacherPayload = buildTeacherLivePayload(c);
+  io.to(teacherSocketName(c)).emit('live:teacher', teacherPayload);
+  const activity = teacherPayload.activity;
+  const responses = teacherPayload.responses || [];
+  const featured = activity?.type === 'short'
+    ? responses.filter((response) => response.published).map((response) => ({
+        value: response.value,
+        name: activity.anonymous ? 'Anonymous' : response.name,
+      }))
+    : [];
+  io.to(roomSocketName(c)).emit('live:activity', {
+    activity: publicLiveActivity(activity),
+    responseCount: responses.length,
+    featured,
+  });
+  for (const student of teacherPayload.students) emitStudentLiveState(c, student.id);
+}
+
+function connectedStudentsInRoom(code) {
+  const c = normalizeRoomCode(code);
+  return queries
+    .listStudents(db, c)
+    .map((row) => Number(row.id))
+    .filter(isStudentConnected);
+}
+
 function emitBroadcastToRoom(code, payload) {
   const c = normalizeRoomCode(code);
   const room = roomSocketName(c);
@@ -217,9 +316,11 @@ io.on('connection', (socket) => {
       }
       queries.ensureRoom(db, c);
       socket.join(roomSocketName(c));
+      socket.join(teacherSocketName(c));
       socket.data.role = 'teacher';
       socket.data.roomCode = c;
       broadcastRoom(c);
+      socket.emit('live:teacher', buildTeacherLivePayload(c));
       cb?.({ ok: true });
     } catch (e) {
       console.error(e);
@@ -239,14 +340,17 @@ io.on('connection', (socket) => {
       const studentRow = queries.addStudent(db, c, n);
       const student = queries.rowToStudent(studentRow);
       socket.join(roomSocketName(c));
+      socket.join(studentSocketName(student.id));
       socket.data.role = 'student';
       socket.data.roomCode = c;
       socket.data.studentId = student.id;
+      addStudentPresence(student.id, socket.id);
       const payload = buildRoomPayload(c);
       cb?.({ ok: true, student, room: payload.room, students: payload.students });
       emitRoomState(c, payload);
       const last = lastBroadcastByRoom.get(c);
       if (last) socket.emit('broadcast:exemplars', last);
+      emitLiveState(c);
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Server error' });
@@ -268,18 +372,204 @@ io.on('connection', (socket) => {
       }
       const student = queries.rowToStudent(row);
       socket.join(roomSocketName(c));
+      socket.join(studentSocketName(student.id));
       socket.data.role = 'student';
       socket.data.roomCode = c;
       socket.data.studentId = student.id;
+      addStudentPresence(student.id, socket.id);
       const payload = buildRoomPayload(c);
       cb?.({ ok: true, student, room: payload.room, students: payload.students });
       emitRoomState(c, payload);
       const last = lastBroadcastByRoom.get(c);
       if (last) socket.emit('broadcast:exemplars', last);
+      emitLiveState(c);
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Server error' });
     }
+  });
+
+  socket.on('teacher:live-sync', (_payload, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) {
+      cb?.({ ok: false });
+      return;
+    }
+    const payload = buildTeacherLivePayload(code);
+    socket.emit('live:teacher', payload);
+    cb?.({ ok: true });
+  });
+
+  socket.on('student:live-sync', (_payload, cb) => {
+    const code = socket.data.roomCode;
+    const sid = socket.data.studentId;
+    if (socket.data.role !== 'student' || !code || !sid) {
+      cb?.({ ok: false });
+      return;
+    }
+    emitStudentLiveState(code, sid);
+    cb?.({ ok: true });
+  });
+
+  socket.on('teacher:live-launch', (raw, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !code) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const allowedTypes = new Set(['choice', 'truefalse', 'rating', 'short']);
+      const type = allowedTypes.has(raw?.type) ? raw.type : 'choice';
+      const prompt = String(raw?.prompt || '').trim().slice(0, 500);
+      if (!prompt) {
+        cb?.({ ok: false, error: 'Add a question first' });
+        return;
+      }
+      let options = Array.isArray(raw?.options)
+        ? raw.options.map((value) => String(value || '').trim().slice(0, 120)).filter(Boolean).slice(0, 6)
+        : [];
+      if (type === 'truefalse') options = ['True', 'False'];
+      if (type === 'rating') options = ['1', '2', '3', '4', '5'];
+      if (type === 'choice' && options.length < 2) {
+        cb?.({ ok: false, error: 'Add at least two answer choices' });
+        return;
+      }
+      const requestedCorrectAnswer = String(raw?.correctAnswer || '').trim().slice(0, 120);
+      const correctAnswer = type !== 'short' && options.includes(requestedCorrectAnswer)
+        ? requestedCorrectAnswer
+        : '';
+      const activity = queries.launchLiveActivity(db, code, {
+        id: randomUUID(),
+        type,
+        prompt,
+        options,
+        correctAnswer,
+        anonymous: !!raw?.anonymous,
+        optional: !!raw?.optional,
+      });
+      if (!activity.optional) queries.addLiveOpportunity(db, connectedStudentsInRoom(code));
+      emitLiveState(code);
+      cb?.({ ok: true, activity });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not launch the question' });
+    }
+  });
+
+  socket.on('student:live-response', ({ activityId, value }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const sid = Number(socket.data.studentId);
+      if (socket.data.role !== 'student' || !code || !sid) {
+        cb?.({ ok: false, error: 'Join the room first' });
+        return;
+      }
+      const activity = queries.getLiveActivity(db, code);
+      if (!activity || activity.id !== String(activityId || '')) {
+        cb?.({ ok: false, error: 'That question has finished' });
+        return;
+      }
+      if (activity.locked) {
+        cb?.({ ok: false, error: 'Answers are locked' });
+        return;
+      }
+      const answer = String(value ?? '').trim().slice(0, activity.type === 'short' ? 500 : 120);
+      if (!answer) {
+        cb?.({ ok: false, error: 'Choose or enter an answer' });
+        return;
+      }
+      if (activity.type !== 'short' && !activity.options.includes(answer)) {
+        cb?.({ ok: false, error: 'Choose one of the available answers' });
+        return;
+      }
+      queries.upsertLiveResponse(db, { activityId: activity.id, roomCode: code, studentId: sid, value: answer });
+      if (!activity.optional) queries.markLiveResponse(db, sid);
+      emitLiveState(code);
+      cb?.({ ok: true });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not send the answer' });
+    }
+  });
+
+  socket.on('student:live-status', ({ status }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const sid = Number(socket.data.studentId);
+      if (socket.data.role !== 'student' || !code || !sid) {
+        cb?.({ ok: false });
+        return;
+      }
+      queries.setStudentEngagementStatus(db, sid, status);
+      io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
+      cb?.({ ok: true });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false });
+    }
+  });
+
+  socket.on('teacher:live-control', ({ action }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !code) {
+        cb?.({ ok: false });
+        return;
+      }
+      if (action === 'clear') queries.clearLiveActivity(db, code);
+      else if (action === 'lock') queries.updateLiveActivity(db, code, { locked: true });
+      else if (action === 'unlock') queries.updateLiveActivity(db, code, { locked: false });
+      else if (action === 'reveal') queries.updateLiveActivity(db, code, { revealed: true });
+      else {
+        cb?.({ ok: false, error: 'Unknown action' });
+        return;
+      }
+      emitLiveState(code);
+      cb?.({ ok: true });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false });
+    }
+  });
+
+  socket.on('teacher:live-publish', ({ activityId, studentId, published }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !code) {
+        cb?.({ ok: false });
+        return;
+      }
+      const activity = queries.getLiveActivity(db, code);
+      if (!activity || activity.id !== String(activityId || '') || activity.type !== 'short') {
+        cb?.({ ok: false });
+        return;
+      }
+      queries.setLiveResponsePublished(db, code, activity.id, Number(studentId), !!published);
+      emitLiveState(code);
+      cb?.({ ok: true });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false });
+    }
+  });
+
+  socket.on('teacher:live-nudge', ({ studentId }, cb) => {
+    const code = socket.data.roomCode;
+    const sid = Number(studentId);
+    const row = sid ? queries.getStudent(db, sid) : null;
+    if (
+      socket.data.role !== 'teacher' ||
+      !code ||
+      !row ||
+      normalizeRoomCode(row.room_code) !== normalizeRoomCode(code)
+    ) {
+      cb?.({ ok: false });
+      return;
+    }
+    queries.setStudentEngagementStatus(db, sid, '');
+    io.to(studentSocketName(sid)).emit('live:nudge', { message: 'Are you still with us?' });
+    io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
+    cb?.({ ok: true });
   });
 
   socket.on('student:text', ({ text }, cb) => {
@@ -777,7 +1067,9 @@ io.on('connection', (socket) => {
         if (p.image_filename) unlinkRoomMedia(code, p.image_filename);
       }
       lastBroadcastByRoom.delete(code);
+      queries.clearLiveActivity(db, code);
       broadcastRoom(code);
+      emitLiveState(code);
       cb?.({
         ok: true,
         clearedStudents: studentRows.length,
@@ -787,6 +1079,13 @@ io.on('connection', (socket) => {
       console.error(e);
       cb?.({ ok: false, error: 'Could not clear cards' });
     }
+  });
+
+  socket.on('disconnect', () => {
+    const sid = Number(socket.data.studentId);
+    const code = socket.data.roomCode;
+    if (sid) removeStudentPresence(sid, socket.id);
+    if (code) io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
   });
 });
 

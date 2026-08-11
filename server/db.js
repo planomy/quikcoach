@@ -76,6 +76,21 @@ export function migrate(db) {
   } catch {
     /* column already exists */
   }
+  try {
+    db.exec(`ALTER TABLE students ADD COLUMN engagement_recent TEXT NOT NULL DEFAULT '[]'`);
+  } catch {
+    /* column already exists */
+  }
+  try {
+    db.exec(`ALTER TABLE students ADD COLUMN engagement_status TEXT NOT NULL DEFAULT ''`);
+  } catch {
+    /* column already exists */
+  }
+  try {
+    db.exec(`ALTER TABLE students ADD COLUMN last_engaged_at TEXT`);
+  } catch {
+    /* column already exists */
+  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS room_snapshots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,6 +120,36 @@ export function migrate(db) {
   } catch {
     /* column already exists */
   }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS live_activities (
+      room_code TEXT PRIMARY KEY,
+      activity_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      prompt TEXT NOT NULL DEFAULT '',
+      options_json TEXT NOT NULL DEFAULT '[]',
+      correct_answer TEXT NOT NULL DEFAULT '',
+      anonymous INTEGER NOT NULL DEFAULT 0,
+      optional INTEGER NOT NULL DEFAULT 0,
+      locked INTEGER NOT NULL DEFAULT 0,
+      revealed INTEGER NOT NULL DEFAULT 0,
+      launched_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (room_code) REFERENCES rooms(code)
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS live_responses (
+      activity_id TEXT NOT NULL,
+      room_code TEXT NOT NULL,
+      student_id INTEGER NOT NULL,
+      value TEXT NOT NULL DEFAULT '',
+      published INTEGER NOT NULL DEFAULT 0,
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (activity_id, student_id),
+      FOREIGN KEY (room_code) REFERENCES rooms(code),
+      FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_live_responses_room ON live_responses(room_code)`);
 }
 
 /** @param {DatabaseSync} db */
@@ -364,10 +409,147 @@ export const queries = {
     return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
   },
 
+  addLiveOpportunity(db, studentIds) {
+    const ids = Array.from(new Set((studentIds || []).map(Number).filter(Boolean)));
+    const update = db.prepare(`UPDATE students SET engagement_recent = ? WHERE id = ?`);
+    const select = db.prepare(`SELECT engagement_recent FROM students WHERE id = ?`);
+    for (const id of ids) {
+      const row = select.get(id);
+      if (!row) continue;
+      const recent = parseRecent(row.engagement_recent);
+      update.run(JSON.stringify([...recent, 0].slice(-5)), id);
+    }
+  },
+
+  markLiveResponse(db, studentId) {
+    const row = get(db, `SELECT engagement_recent FROM students WHERE id = ?`, [studentId]);
+    if (!row) return null;
+    const recent = parseRecent(row.engagement_recent);
+    if (recent.length) recent[recent.length - 1] = 1;
+    else recent.push(1);
+    run(
+      db,
+      `UPDATE students
+       SET engagement_recent = ?, engagement_status = '', last_engaged_at = datetime('now')
+       WHERE id = ?`,
+      [JSON.stringify(recent.slice(-5)), studentId]
+    );
+    return get(db, `SELECT * FROM students WHERE id = ?`, [studentId]);
+  },
+
+  setStudentEngagementStatus(db, studentId, status) {
+    const allowed = new Set(['', 'ready', 'unsure', 'tech']);
+    const value = allowed.has(String(status || '')) ? String(status || '') : '';
+    run(db, `UPDATE students SET engagement_status = ? WHERE id = ?`, [value, studentId]);
+    return get(db, `SELECT * FROM students WHERE id = ?`, [studentId]);
+  },
+
+  launchLiveActivity(db, roomCode, activity) {
+    run(db, `DELETE FROM live_responses WHERE room_code = ?`, [roomCode]);
+    run(
+      db,
+      `INSERT INTO live_activities
+       (room_code, activity_id, type, prompt, options_json, correct_answer, anonymous, optional, locked, revealed, launched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
+       ON CONFLICT(room_code) DO UPDATE SET
+         activity_id = excluded.activity_id,
+         type = excluded.type,
+         prompt = excluded.prompt,
+         options_json = excluded.options_json,
+         correct_answer = excluded.correct_answer,
+         anonymous = excluded.anonymous,
+         optional = excluded.optional,
+         locked = 0,
+         revealed = 0,
+         launched_at = datetime('now')`,
+      [
+        roomCode,
+        activity.id,
+        activity.type,
+        activity.prompt,
+        JSON.stringify(activity.options || []),
+        activity.correctAnswer || '',
+        activity.anonymous ? 1 : 0,
+        activity.optional ? 1 : 0,
+      ]
+    );
+    return queries.getLiveActivity(db, roomCode);
+  },
+
+  getLiveActivity(db, roomCode) {
+    return rowToLiveActivity(get(db, `SELECT * FROM live_activities WHERE room_code = ?`, [roomCode]));
+  },
+
+  updateLiveActivity(db, roomCode, patch) {
+    const fields = [];
+    const values = [];
+    if (patch.locked !== undefined) {
+      fields.push('locked = ?');
+      values.push(patch.locked ? 1 : 0);
+    }
+    if (patch.revealed !== undefined) {
+      fields.push('revealed = ?');
+      values.push(patch.revealed ? 1 : 0);
+    }
+    if (fields.length) {
+      values.push(roomCode);
+      run(db, `UPDATE live_activities SET ${fields.join(', ')} WHERE room_code = ?`, values);
+    }
+    return queries.getLiveActivity(db, roomCode);
+  },
+
+  clearLiveActivity(db, roomCode) {
+    run(db, `DELETE FROM live_responses WHERE room_code = ?`, [roomCode]);
+    run(db, `DELETE FROM live_activities WHERE room_code = ?`, [roomCode]);
+  },
+
+  upsertLiveResponse(db, { activityId, roomCode, studentId, value }) {
+    run(
+      db,
+      `INSERT INTO live_responses (activity_id, room_code, student_id, value, published, submitted_at)
+       VALUES (?, ?, ?, ?, 0, datetime('now'))
+       ON CONFLICT(activity_id, student_id) DO UPDATE SET
+         value = excluded.value,
+         submitted_at = datetime('now')`,
+      [activityId, roomCode, studentId, value]
+    );
+    return get(
+      db,
+      `SELECT * FROM live_responses WHERE activity_id = ? AND student_id = ?`,
+      [activityId, studentId]
+    );
+  },
+
+  listLiveResponses(db, roomCode) {
+    return all(
+      db,
+      `SELECT r.*, s.name
+       FROM live_responses r JOIN students s ON s.id = r.student_id
+       WHERE r.room_code = ? ORDER BY r.submitted_at ASC`,
+      [roomCode]
+    ).map((row) => ({
+      activityId: row.activity_id,
+      studentId: Number(row.student_id),
+      name: row.name,
+      value: row.value,
+      published: !!row.published,
+      submittedAt: row.submitted_at,
+    }));
+  },
+
+  setLiveResponsePublished(db, roomCode, activityId, studentId, published) {
+    run(
+      db,
+      `UPDATE live_responses SET published = ?
+       WHERE room_code = ? AND activity_id = ? AND student_id = ?`,
+      [published ? 1 : 0, roomCode, activityId, studentId]
+    );
+  },
+
   listStudents(db, roomCode) {
     return all(
       db,
-      `SELECT id, room_code, name, text, updated_at, class_group, image_filename, year_level FROM students WHERE room_code = ? ORDER BY id ASC`,
+      `SELECT * FROM students WHERE room_code = ? ORDER BY id ASC`,
       [roomCode]
     );
   },
@@ -517,6 +699,8 @@ export const queries = {
   rowToStudent(row) {
     if (!row) return null;
     const filename = String(row.image_filename || '');
+    const recent = parseRecent(row.engagement_recent);
+    const responded = recent.filter(Boolean).length;
     return {
       id: row.id,
       room_code: row.room_code,
@@ -525,6 +709,14 @@ export const queries = {
       updated_at: row.updated_at,
       class_group: row.class_group != null ? String(row.class_group) : '',
       year_level: row.year_level != null ? String(row.year_level) : '',
+      engagement_status: row.engagement_status != null ? String(row.engagement_status) : '',
+      last_engaged_at: row.last_engaged_at || null,
+      engagement: {
+        recent,
+        responded,
+        opportunities: recent.length,
+        score: recent.length ? Math.round((responded / recent.length) * 100) : 100,
+      },
       image_url:
         filename
           ? `/api/board-media/${encodeURIComponent(row.room_code)}/${encodeURIComponent(filename)}`
@@ -532,3 +724,35 @@ export const queries = {
     };
   },
 };
+
+function parseRecent(raw) {
+  try {
+    const parsed = JSON.parse(String(raw || '[]'));
+    return Array.isArray(parsed) ? parsed.slice(-5).map((x) => (x ? 1 : 0)) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rowToLiveActivity(row) {
+  if (!row) return null;
+  let options = [];
+  try {
+    const parsed = JSON.parse(row.options_json || '[]');
+    if (Array.isArray(parsed)) options = parsed.map(String);
+  } catch {
+    options = [];
+  }
+  return {
+    id: row.activity_id,
+    type: row.type,
+    prompt: row.prompt,
+    options,
+    correctAnswer: row.correct_answer || '',
+    anonymous: !!row.anonymous,
+    optional: !!row.optional,
+    locked: !!row.locked,
+    revealed: !!row.revealed,
+    launchedAt: row.launched_at,
+  };
+}

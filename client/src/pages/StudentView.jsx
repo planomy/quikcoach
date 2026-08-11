@@ -8,6 +8,7 @@ import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import StudentGradeSelect from '../components/StudentGradeSelect.jsx';
 import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 
 const SESSION_KEY = 'quik-coach-student';
 
@@ -432,6 +433,7 @@ export default function StudentView() {
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
+        <LiveResponseStudent socket={socket} />
         {wt > 0 && (
           <div>
             <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
