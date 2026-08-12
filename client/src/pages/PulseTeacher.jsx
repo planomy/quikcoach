@@ -97,13 +97,13 @@ function PulseTeacherInner() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white dark:from-slate-950 dark:to-indigo-950">
       <header className="border-b border-indigo-100 bg-white/90 px-4 py-4 backdrop-blur dark:border-indigo-900 dark:bg-slate-900/90">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
-          <div><p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">iBOARD Pulse · Teacher</p><h1 className="font-display text-2xl font-black text-slate-950 dark:text-white">Room <span className="font-mono text-indigo-600">{codeInput}</span></h1></div>
-          <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-2 text-xs font-black ${connected ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>{connected ? 'Connected' : 'Reconnecting…'}</span><button type="button" onClick={copyStudentLink} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700">Copy student Pulse link</button><ThemeToggle /><Link to={`/teacher?code=${encodeURIComponent(codeInput)}`} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white dark:bg-white dark:text-slate-900">Full iBOARD</Link></div>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+          <div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">iBOARD Pulse · Teacher</p><h1 className="font-display text-xl font-black text-slate-950 dark:text-white">Room <span className="font-mono text-indigo-600">{codeInput}</span></h1></div>
+          <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1.5 text-[11px] font-black ${connected ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>{connected ? 'Connected' : 'Reconnecting…'}</span><button type="button" onClick={copyStudentLink} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700">Copy student Pulse link</button><ThemeToggle /><Link to={`/teacher?code=${encodeURIComponent(codeInput)}`} className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-black text-white dark:bg-white dark:text-slate-900">Full iBOARD</Link></div>
         </div>
-        {copyMessage && <p className="mx-auto mt-2 max-w-6xl text-right text-sm font-bold text-emerald-700 dark:text-emerald-300">{copyMessage}</p>}
+        {copyMessage && <p className="mx-auto mt-2 max-w-5xl text-right text-xs font-bold text-emerald-700 dark:text-emerald-300">{copyMessage}</p>}
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6"><LiveResponseTeacher socket={socket} /></main>
+      <main className="mx-auto max-w-5xl px-4 py-4"><LiveResponseTeacher socket={socket} /></main>
     </div>
   );
 }
