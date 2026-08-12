@@ -666,6 +666,14 @@ io.on('connection', (socket) => {
     emitLiveState(code); cb?.({ ok: true });
   });
 
+  socket.on('teacher:featured-clear', (_payload, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) { cb?.({ ok: false }); return; }
+    queries.clearFeaturedWall(db, code);
+    emitLiveState(code);
+    cb?.({ ok: true });
+  });
+
   socket.on('teacher:live-nudge', ({ studentId }, cb) => {
     const code = socket.data.roomCode;
     const sid = Number(studentId);
