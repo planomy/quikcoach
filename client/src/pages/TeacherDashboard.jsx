@@ -140,6 +140,7 @@ function TeacherDashboardInner() {
   const [groupFilter, setGroupFilter] = useState('');
   const [broadcastPick, setBroadcastPick] = useState({});
   const [snapshots, setSnapshots] = useState([]);
+  const [snapshotsOpen, setSnapshotsOpen] = useState(false);
   const [snapshotViewer, setSnapshotViewer] = useState(null);
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
@@ -1162,37 +1163,63 @@ function TeacherDashboardInner() {
         </div>
 
         {snapshots.length > 0 && (
-          <section className="mt-8 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/30 p-5 shadow-card">
-            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Saved evidence</h3>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Earlier saves from this room. Download any one again as HTML.
-            </p>
-            <ul className="mt-3 divide-y divide-emerald-100/80 dark:divide-emerald-900/50">
-              {snapshots.map((sn) => (
-                <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                  <span className="text-slate-800 dark:text-slate-200">
-                    <span className="font-medium">{sn.label || `Evidence #${sn.id}`}</span>
-                    <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{sn.created_at}</span>
+          <section className="mt-8 overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/40 shadow-card dark:border-emerald-800 dark:bg-emerald-950/30">
+            <button
+              type="button"
+              onClick={() => setSnapshotsOpen((open) => !open)}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
+              aria-expanded={snapshotsOpen}
+              aria-controls="saved-evidence-list"
+            >
+              <span className="min-w-0">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Saved evidence</span>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                    {snapshots.length} {snapshots.length === 1 ? 'save' : 'saves'}
                   </span>
-                  <span className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => loadSnapshotForView(sn.id)}
-                      className="rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:hover:text-indigo-300"
-                    >
-                      View
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => redownloadEvidence(sn.id)}
-                      className="rounded-lg text-xs font-semibold text-emerald-700 hover:text-emerald-900"
-                    >
-                      Download HTML
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
+                </span>
+                <span className="mt-1 block truncate text-sm text-slate-600 dark:text-slate-400">
+                  {snapshotsOpen ? 'Earlier saves from this room.' : `Latest: ${snapshots[0]?.label || `Evidence #${snapshots[0]?.id}`}`}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200">
+                {snapshotsOpen ? 'Hide' : 'Show'}
+                <span aria-hidden="true" className={`text-base transition-transform ${snapshotsOpen ? 'rotate-180' : ''}`}>⌄</span>
+              </span>
+            </button>
+            {snapshotsOpen && (
+              <div id="saved-evidence-list" className="border-t border-emerald-200 px-5 pb-4 dark:border-emerald-800">
+                <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                  Download any earlier save again as HTML.
+                </p>
+                <ul className="mt-2 divide-y divide-emerald-100/80 dark:divide-emerald-900/50">
+                  {snapshots.map((sn) => (
+                    <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                      <span className="text-slate-800 dark:text-slate-200">
+                        <span className="font-medium">{sn.label || `Evidence #${sn.id}`}</span>
+                        <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{sn.created_at}</span>
+                      </span>
+                      <span className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => loadSnapshotForView(sn.id)}
+                          className="rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:hover:text-indigo-300"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => redownloadEvidence(sn.id)}
+                          className="rounded-lg text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                        >
+                          Download HTML
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
         )}
 
