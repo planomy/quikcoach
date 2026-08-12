@@ -43,7 +43,7 @@ function studentTileMeta(student) {
       return { title: student.connected ? 'Answered · confident' : 'Offline · answered · confident', className: 'border-2 border-emerald-500' };
     }
     if (confidence === 'unsure') {
-      return { title: student.connected ? 'Answered · not sure' : 'Offline · answered · not sure', className: 'border-2 border-yellow-400' };
+      return { title: student.connected ? 'Answered · not sure' : 'Offline · answered · not sure', className: 'border-2 border-[#f5e000]' };
     }
     if (confidence === 'guessed') {
       return { title: student.connected ? 'Answered · guessed' : 'Offline · answered · guessed', className: 'border-2 border-red-500' };
