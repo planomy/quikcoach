@@ -27,9 +27,11 @@ function prepareFloatingDocument(targetWindow) {
   targetDocument.title = 'iBOARD Pulse';
   targetDocument.documentElement.className = document.documentElement.className;
   targetDocument.documentElement.style.colorScheme = document.documentElement.style.colorScheme;
+  targetDocument.documentElement.style.height = '100%';
   targetDocument.body.className = document.body.className;
+  targetDocument.body.style.cssText = 'margin:0;min-height:100%;overflow:auto;';
   const root = targetDocument.createElement('div');
-  root.className = 'min-h-screen bg-gradient-to-b from-indigo-50 to-white p-3 dark:from-slate-950 dark:to-indigo-950';
+  root.className = 'min-h-full bg-gradient-to-b from-indigo-50 to-white p-2 dark:from-slate-950 dark:to-indigo-950';
   targetDocument.body.appendChild(root);
   return root;
 }
@@ -121,10 +123,10 @@ export default function PulseStudent() {
     let kind = '';
     try {
       if ('documentPictureInPicture' in window) {
-        targetWindow = await window.documentPictureInPicture.requestWindow({ width: 390, height: 620 });
+        targetWindow = await window.documentPictureInPicture.requestWindow({ width: 300, height: 420 });
         kind = 'always-on-top';
       } else {
-        targetWindow = window.open('', 'iboard-pulse-student', 'popup=yes,width=390,height=620,resizable=yes');
+        targetWindow = window.open('', 'iboard-pulse-student', 'popup=yes,width=300,height=420,resizable=yes,scrollbars=yes');
         kind = 'mini-window';
       }
       if (!targetWindow) {
@@ -185,10 +187,10 @@ export default function PulseStudent() {
         <section className="rounded-3xl bg-gradient-to-br from-indigo-700 to-violet-700 p-5 text-white shadow-xl">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-200">Use Pulse over your work</p>
           <h1 className="mt-2 font-display text-2xl font-black">Keep the answer panel on top</h1>
-          <p className="mt-2 text-sm font-medium text-indigo-100">Open it once, then return to OneNote. Questions will update automatically.</p>
+          <p className="mt-2 text-sm font-medium text-indigo-100">Open it once, then return to OneNote. Drag a corner to resize — useful on iPads.</p>
           <button type="button" onClick={openFloatingPanel} disabled={!!floatTarget} className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-black text-indigo-800 shadow-md hover:bg-indigo-50 disabled:opacity-60">{floatTarget ? 'Floating panel is open ✓' : 'Float my answer panel'}</button>
-          {floatKind === 'mini-window' && <p className="mt-2 text-xs font-bold text-amber-200">Your browser opened a normal mini-window. Place it beside OneNote.</p>}
-          {floatKind === 'always-on-top' && <p className="mt-2 text-xs font-bold text-emerald-200">Always-on-top panel active. You can resize or move it.</p>}
+          {floatKind === 'mini-window' && <p className="mt-2 text-xs font-bold text-amber-200">Mini-window open — resize from any corner, then place it beside OneNote.</p>}
+          {floatKind === 'always-on-top' && <p className="mt-2 text-xs font-bold text-emerald-200">Always-on-top panel active. Resize or move it to fit your screen.</p>}
           {error && <p className="mt-2 text-sm font-bold text-amber-200">{error}</p>}
         </section>
         {!floatTarget && pulsePanel}

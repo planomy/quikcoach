@@ -7,7 +7,11 @@ const STATUS_OPTIONS = [
   ['tech', 'Tech problem'],
 ];
 const HELP_OPTIONS = [['stuck', 'I’m stuck'], ['slow', 'Please slow down'], ['explain', 'Explain again'], ['tech', 'Tech problem'], ['private', 'I need help privately']];
-const CONFIDENCE_OPTIONS = [['confident', '🟢 Confident'], ['unsure', '🟡 Not sure'], ['guessed', '🔴 I guessed']];
+const CONFIDENCE_OPTIONS = [
+  ['confident', 'Confident', '🟢'],
+  ['unsure', 'Not sure', '🟡'],
+  ['guessed', 'Guessed', '🔴'],
+];
 
 const QUESTION_THEMES = [
   {
@@ -223,16 +227,19 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   }
 
   if (!activity && !nudge) {
-    if (!standalone) return <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} />;
+    if (!standalone) return <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />;
     return (
-      <div><HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} /><section className="mt-3 grid min-h-[240px] place-items-center rounded-3xl border-2 border-dashed border-indigo-300 bg-white p-6 text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900">
-        <div>
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-indigo-100 text-3xl dark:bg-indigo-950">⚡</div>
-          <p className="mt-4 text-xs font-black uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">Pulse is ready</p>
-          <h2 className="mt-2 font-display text-2xl font-black text-slate-950 dark:text-white">Waiting for your teacher</h2>
-          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">Your next question will appear here automatically.</p>
-        </div>
-      </section></div>
+      <div>
+        <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />
+        <section className={`mt-2 grid place-items-center rounded-2xl border-2 border-dashed border-indigo-300 bg-white text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'min-h-[140px] p-3' : 'min-h-[240px] p-6'}`}>
+          <div>
+            <div className={`mx-auto grid place-items-center rounded-full bg-indigo-100 dark:bg-indigo-950 ${compact ? 'h-10 w-10 text-xl' : 'h-16 w-16 text-3xl'}`}>⚡</div>
+            <p className={`font-black uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300 ${compact ? 'mt-2 text-[10px]' : 'mt-4 text-xs'}`}>Pulse is ready</p>
+            <h2 className={`font-display font-black text-slate-950 dark:text-white ${compact ? 'mt-1 text-base' : 'mt-2 text-2xl'}`}>Waiting for your teacher</h2>
+            {!compact && <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">Your next question will appear here automatically.</p>}
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -242,7 +249,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   return (
     <>
       {featuredNotice && <div className="fixed inset-x-3 top-3 z-[75] mx-auto max-w-md rounded-3xl bg-gradient-to-r from-amber-400 to-yellow-300 p-5 text-center text-amber-950 shadow-2xl"><p className="text-3xl">⭐</p><p className="font-display text-xl font-black">Your answer was featured!</p></div>}
-      <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} />
+      <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />
       {arrival && (
         <button
           type="button"
@@ -275,13 +282,13 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         </div>
       )}
       {activity && (
-        <section ref={panelRef} className={`scroll-mt-4 rounded-3xl border-2 bg-white p-4 shadow-xl ring-4 dark:bg-slate-900 ${compact ? '' : 'sm:p-6'} ${theme.panel} ${pulse ? 'iboard-question-pulse' : ''}`} aria-live="polite">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className={`text-xs font-black uppercase tracking-[0.22em] ${theme.label}`}>Question {activity.questionNumber || 1} · Live now</p>
-            <div className="flex flex-wrap items-center gap-2">
+        <section ref={panelRef} className={`scroll-mt-4 border-2 bg-white shadow-xl ring-4 dark:bg-slate-900 ${compact ? 'mt-2 rounded-2xl p-2.5 ring-2' : 'rounded-3xl p-4 sm:p-6'} ${theme.panel} ${pulse ? 'iboard-question-pulse' : ''}`} aria-live="polite">
+          <div className={`flex flex-wrap items-center justify-between ${compact ? 'gap-1' : 'gap-2'}`}>
+            <p className={`font-black uppercase tracking-[0.18em] ${theme.label} ${compact ? 'text-[10px]' : 'text-xs tracking-[0.22em]'}`}>Q{activity.questionNumber || 1} · Live</p>
+            <div className={`flex flex-wrap items-center ${compact ? 'gap-1' : 'gap-2'}`}>
               {secondsLeft !== null && (
                 <span
-                  className={`rounded-full px-2.5 py-1 font-mono text-xs font-black tabular-nums ${
+                  className={`rounded-full font-mono font-black tabular-nums ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'} ${
                     secondsLeft === 0
                       ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
                       : secondsLeft <= 5
@@ -293,39 +300,57 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                   {secondsLeft > 0 ? `${secondsLeft}s` : '0s'}
                 </span>
               )}
-              <button type="button" onClick={toggleSound} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300" title="Turn new-question sound on or off">
-                {soundOn ? '🔔 Sound on' : '🔕 Sound off'}
+              <button type="button" onClick={toggleSound} className={`rounded-full bg-slate-100 font-bold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'}`} title="Turn new-question sound on or off">
+                {soundOn ? '🔔' : '🔕'}
               </button>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${answersClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                {answersClosed ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
-              </span>
+              {!compact && (
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${answersClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                  {answersClosed ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
+                </span>
+              )}
             </div>
           </div>
-          <h2 className={`mt-3 font-display font-black leading-snug text-slate-950 dark:text-white ${compact ? 'text-lg' : 'text-xl sm:text-2xl'}`}>{activity.prompt}</h2>
-          {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-4 max-h-72 w-full rounded-2xl bg-white object-contain" />}
+          <h2 className={`font-display font-black leading-snug text-slate-950 dark:text-white ${compact ? 'mt-1.5 text-base' : 'mt-3 text-xl sm:text-2xl'}`}>{activity.prompt}</h2>
+          {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className={`w-full rounded-2xl bg-white object-contain ${compact ? 'mt-2 max-h-28' : 'mt-4 max-h-72'}`} />}
 
           {activity.type === 'short' ? (
-            <div className="mt-5">
-              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed} placeholder="Type a short answer…" className="min-h-28 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 p-4 text-base text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
-              <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className="mt-3 w-full rounded-2xl bg-indigo-600 px-5 py-3 text-base font-black text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40">Send answer</button>
+            <div className={compact ? 'mt-2' : 'mt-5'}>
+              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed} placeholder="Type a short answer…" className={`w-full rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
+              <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className={`w-full rounded-2xl bg-indigo-600 font-black text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'mt-2 px-3 py-2 text-sm' : 'mt-3 px-5 py-3 text-base'}`}>Send answer</button>
             </div>
           ) : (
-            <div className={`mt-5 grid gap-3 ${!compact && activity.options.length > 3 ? 'sm:grid-cols-2' : ''}`}>
+            <div className={`grid ${compact ? 'mt-2 gap-1.5' : `mt-5 gap-3 ${activity.options.length > 3 ? 'sm:grid-cols-2' : ''}`}`}>
               {activity.options.map((option, index) => {
                 const selected = response?.value === option;
                 const correct = activity.correctAnswer && option === activity.correctAnswer;
                 return (
-                  <button key={option} type="button" disabled={answersClosed} onClick={() => submit(option)} className={`min-h-14 rounded-2xl border-2 px-4 py-3 text-left text-base font-black transition ${selected ? 'border-indigo-600 bg-indigo-600 text-white' : correct ? 'border-emerald-500 bg-emerald-100 text-emerald-950' : 'border-slate-200 bg-slate-50 text-slate-900 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white'}`}>
+                  <button key={option} type="button" disabled={answersClosed} onClick={() => submit(option)} className={`rounded-2xl border-2 text-left font-black transition ${compact ? 'min-h-10 px-3 py-2 text-sm' : 'min-h-14 px-4 py-3 text-base'} ${selected ? 'border-indigo-600 bg-indigo-600 text-white' : correct ? 'border-emerald-500 bg-emerald-100 text-emerald-950' : 'border-slate-200 bg-slate-50 text-slate-900 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white'}`}>
                     <span className="mr-2 opacity-60">{activity.type === 'choice' ? String.fromCharCode(65 + index) : ''}</span>{option}
                   </button>
                 );
               })}
             </div>
           )}
-          {message && <p className="mt-3 text-center text-sm font-bold text-indigo-700 dark:text-indigo-300">{message}</p>}
-          {response && <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700"><p className="text-center text-xs font-black uppercase tracking-wide text-slate-500">How sure are you?</p><div className="mt-2 grid grid-cols-3 gap-2">{CONFIDENCE_OPTIONS.map(([value, label]) => <button key={value} type="button" onClick={() => setConfidence(value)} className={`rounded-xl px-2 py-2 text-xs font-black ${response.confidence === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}>{label}</button>)}</div></div>}
+          {message && <p className={`text-center font-bold text-indigo-700 dark:text-indigo-300 ${compact ? 'mt-1.5 text-xs' : 'mt-3 text-sm'}`}>{message}</p>}
+          {response && (
+            <div className={`border-t border-slate-200 dark:border-slate-700 ${compact ? 'mt-2 pt-2' : 'mt-4 pt-4'}`}>
+              <p className={`text-center font-black uppercase tracking-wide text-slate-500 ${compact ? 'text-[10px]' : 'text-xs'}`}>How sure?</p>
+              <div className={`grid grid-cols-3 ${compact ? 'mt-1 gap-1' : 'mt-2 gap-2'}`}>
+                {CONFIDENCE_OPTIONS.map(([value, label, icon]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setConfidence(value)}
+                    className={`font-black ${compact ? 'rounded-lg px-1 py-1.5 text-[10px] leading-tight' : 'rounded-xl px-2 py-2 text-xs'} ${response.confidence === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}
+                  >
+                    {compact ? `${icon} ${label}` : `${icon} ${label === 'Guessed' ? 'I guessed' : label}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {activity.type === 'short' && featured.length > 0 && (
-            <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-700">
+            <div className={`border-t border-slate-200 dark:border-slate-700 ${compact ? 'mt-2 pt-2' : 'mt-5 pt-4'}`}>
               <p className="text-xs font-black uppercase tracking-wide text-slate-500">Shared by your teacher</p>
               {featured.map((item, index) => <blockquote key={index} className="mt-2 rounded-xl bg-violet-50 p-3 text-sm text-violet-950 dark:bg-violet-950 dark:text-violet-100">“{item.value}” <span className="font-bold">— {item.name}</span></blockquote>)}
             </div>
@@ -336,6 +361,23 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   );
 }
 
-function HelpControl({ open, setOpen, message, onSelect }) {
-  return <section className="rounded-2xl border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950/30"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-rose-700 dark:text-rose-300">Need help?</p>{message && <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{message}</p>}</div><button type="button" onClick={() => setOpen(!open)} className="rounded-xl bg-rose-600 px-3 py-2 text-xs font-black text-white">{open ? 'Close' : 'Tell my teacher'}</button></div>{open && <div className="mt-3 grid gap-2 sm:grid-cols-2">{HELP_OPTIONS.map(([value, label]) => <button key={value} type="button" onClick={() => onSelect(value)} className="rounded-xl bg-white px-3 py-2 text-left text-sm font-bold text-rose-900 shadow-sm dark:bg-slate-900 dark:text-rose-100">{label}</button>)}</div>}</section>;
+function HelpControl({ open, setOpen, message, onSelect, compact = false }) {
+  return (
+    <section className={`border border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/30 ${compact ? 'rounded-xl p-2' : 'rounded-2xl p-3'}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className={`font-black uppercase tracking-wide text-rose-700 dark:text-rose-300 ${compact ? 'text-[10px]' : 'text-xs'}`}>Need help?</p>
+          {message && <p className={`font-bold text-emerald-700 dark:text-emerald-300 ${compact ? 'text-[10px]' : 'text-xs'}`}>{message}</p>}
+        </div>
+        <button type="button" onClick={() => setOpen(!open)} className={`rounded-xl bg-rose-600 font-black text-white ${compact ? 'px-2.5 py-1 text-[10px]' : 'px-3 py-2 text-xs'}`}>{open ? 'Close' : 'Tell teacher'}</button>
+      </div>
+      {open && (
+        <div className={`grid gap-1.5 ${compact ? 'mt-2' : 'mt-3 sm:grid-cols-2'}`}>
+          {HELP_OPTIONS.map(([value, label]) => (
+            <button key={value} type="button" onClick={() => onSelect(value)} className={`rounded-xl bg-white text-left font-bold text-rose-900 shadow-sm dark:bg-slate-900 dark:text-rose-100 ${compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}>{label}</button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
