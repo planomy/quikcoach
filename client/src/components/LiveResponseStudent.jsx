@@ -64,7 +64,7 @@ function playQuestionChime() {
   }
 }
 
-export default function LiveResponseStudent({ socket, standalone = false, compact = false }) {
+export default function LiveResponseStudent({ socket, standalone = false, compact = false, collapsed = false, onCollapse, onExpand }) {
   const [activity, setActivity] = useState(null);
   const [response, setResponse] = useState(null);
   const [featured, setFeatured] = useState([]);
@@ -226,10 +226,75 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     });
   }
 
+  if (collapsed) {
+    const needsAnswer = !!activity && !response && !activity.locked && secondsLeft !== 0;
+    let icon = '⚡';
+    let label = 'Pulse ready';
+    let detail = 'Waiting for a question';
+    let colour = 'from-indigo-600 to-violet-700 text-white ring-indigo-300';
+
+    if (nudge) {
+      icon = '👋';
+      label = 'Teacher check-in';
+      detail = 'Tap to reply';
+      colour = 'from-rose-600 to-red-600 text-white ring-rose-300';
+    } else if (featuredNotice) {
+      icon = '⭐';
+      label = 'Answer featured!';
+      detail = 'Tap to see it';
+      colour = 'from-amber-400 to-yellow-300 text-amber-950 ring-amber-200';
+    } else if (needsAnswer) {
+      icon = '🔔';
+      label = `New question · Q${activity.questionNumber || 1}`;
+      detail = 'Tap to answer now';
+      colour = 'from-fuchsia-600 to-violet-700 text-white ring-fuchsia-300';
+    } else if (activity && response) {
+      icon = '✓';
+      label = `Answer sent · Q${activity.questionNumber || 1}`;
+      detail = 'Tap to review';
+      colour = 'from-emerald-500 to-teal-600 text-white ring-emerald-300';
+    } else if (activity) {
+      icon = '⏱';
+      label = `Question closed · Q${activity.questionNumber || 1}`;
+      detail = 'Tap to review';
+      colour = 'from-slate-600 to-slate-700 text-white ring-slate-300';
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={onExpand}
+        className={`flex min-h-16 w-full items-center gap-2.5 rounded-2xl bg-gradient-to-r px-3 py-2 text-left shadow-xl ring-2 transition hover:brightness-110 ${colour} ${(pulse || nudge) ? 'iboard-question-pulse' : ''}`}
+        aria-label={`${label}. ${detail}. Open Pulse panel.`}
+        aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/20 text-xl font-black">{icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[9px] font-black uppercase tracking-[0.18em] opacity-80">iBOARD Pulse</span>
+          <span className="block truncate text-sm font-black leading-tight">{label}</span>
+          <span className="block truncate text-[10px] font-bold opacity-85">{detail}</span>
+        </span>
+        <span className="shrink-0 rounded-full bg-white/90 px-2 py-1 text-[10px] font-black text-indigo-800 shadow-sm">Open</span>
+      </button>
+    );
+  }
+
+  const collapseButton = compact && onCollapse ? (
+    <button
+      type="button"
+      onClick={onCollapse}
+      className="mb-2 flex w-full items-center justify-center gap-1 rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-[11px] font-black text-indigo-700 shadow-sm hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-slate-800"
+      aria-label="Collapse Pulse to a small pill"
+    >
+      <span aria-hidden="true">—</span> Collapse Pulse
+    </button>
+  ) : null;
+
   if (!activity && !nudge) {
     if (!standalone) return <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />;
     return (
       <div>
+        {collapseButton}
         <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />
         <section className={`mt-2 grid place-items-center rounded-2xl border-2 border-dashed border-indigo-300 bg-white text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'min-h-[140px] p-3' : 'min-h-[240px] p-6'}`}>
           <div>
@@ -249,6 +314,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   return (
     <>
       {featuredNotice && <div className="fixed inset-x-3 top-3 z-[75] mx-auto max-w-md rounded-3xl bg-gradient-to-r from-amber-400 to-yellow-300 p-5 text-center text-amber-950 shadow-2xl"><p className="text-3xl">⭐</p><p className="font-display text-xl font-black">Your answer was featured!</p></div>}
+      {collapseButton}
       <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />
       {arrival && (
         <button

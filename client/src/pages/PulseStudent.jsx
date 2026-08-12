@@ -10,6 +10,9 @@ import { createSocket } from '../lib/socket.js';
 const SESSION_KEY = 'quik-coach-student';
 const HANDOFF_PREFIX = 'iboard-pulse-handoff:';
 const HANDOFF_MAX_AGE_MS = 2 * 60 * 1000;
+const FLOAT_COLLAPSED_KEY = 'iboard-pulse-collapsed';
+const FLOAT_EXPANDED_SIZE = { width: 300, height: 420 };
+const FLOAT_COLLAPSED_SIZE = { width: 300, height: 116 };
 
 function cleanCode(value) {
   return String(value || '').replace(/\D/g, '').slice(0, 4);
@@ -50,6 +53,13 @@ export default function PulseStudent() {
   const [connected, setConnected] = useState(false);
   const [floatTarget, setFloatTarget] = useState(null);
   const [floatKind, setFloatKind] = useState('');
+  const [floatCollapsed, setFloatCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(FLOAT_COLLAPSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
   const socket = useMemo(() => createSocket(), []);
   const sessionRef = useRef(null);
   const floatingWindowRef = useRef(null);
@@ -138,12 +148,13 @@ export default function PulseStudent() {
     setError('');
     let targetWindow = null;
     let kind = '';
+    const initialSize = floatCollapsed ? FLOAT_COLLAPSED_SIZE : FLOAT_EXPANDED_SIZE;
     try {
       if ('documentPictureInPicture' in window) {
-        targetWindow = await window.documentPictureInPicture.requestWindow({ width: 300, height: 420 });
+        targetWindow = await window.documentPictureInPicture.requestWindow(initialSize);
         kind = 'always-on-top';
       } else {
-        targetWindow = window.open('', 'iboard-pulse-student', 'popup=yes,width=300,height=420,resizable=yes,scrollbars=yes');
+        targetWindow = window.open('', 'iboard-pulse-student', `popup=yes,width=${initialSize.width},height=${initialSize.height},resizable=yes,scrollbars=yes`);
         kind = 'mini-window';
       }
       if (!targetWindow) {
@@ -164,7 +175,33 @@ export default function PulseStudent() {
     }
   }
 
-  const pulsePanel = <LiveResponseStudent socket={socket} standalone compact={!!floatTarget} />;
+  function resizeFloatingPanel(collapsed) {
+    const targetWindow = floatingWindowRef.current;
+    if (!targetWindow) return;
+    const size = collapsed ? FLOAT_COLLAPSED_SIZE : FLOAT_EXPANDED_SIZE;
+    try {
+      targetWindow.resizeTo(size.width, size.height);
+    } catch {
+      /* Some popup managers keep their own minimum size. The compact view still applies. */
+    }
+    setFloatCollapsed(collapsed);
+    try {
+      localStorage.setItem(FLOAT_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const pulsePanel = (
+    <LiveResponseStudent
+      socket={socket}
+      standalone
+      compact={!!floatTarget}
+      collapsed={!!floatTarget && floatCollapsed}
+      onCollapse={() => resizeFloatingPanel(true)}
+      onExpand={() => resizeFloatingPanel(false)}
+    />
+  );
 
   if (!joined) {
     return (
@@ -204,10 +241,10 @@ export default function PulseStudent() {
         <section className="rounded-3xl bg-gradient-to-br from-indigo-700 to-violet-700 p-5 text-white shadow-xl">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-200">Use Pulse over your work</p>
           <h1 className="mt-2 font-display text-2xl font-black">Keep the answer panel on top</h1>
-          <p className="mt-2 text-sm font-medium text-indigo-100">Open it once, then return to OneNote. Drag a corner to resize — useful on iPads.</p>
+          <p className="mt-2 text-sm font-medium text-indigo-100">Open it once, then return to OneNote. Collapse it to a small pill so it stays out of the way.</p>
           <button type="button" onClick={openFloatingPanel} disabled={!!floatTarget} className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-black text-indigo-800 shadow-md hover:bg-indigo-50 disabled:opacity-60">{floatTarget ? 'Floating panel is open ✓' : 'Float my answer panel'}</button>
-          {floatKind === 'mini-window' && <p className="mt-2 text-xs font-bold text-amber-200">Mini-window open — resize from any corner, then place it beside OneNote.</p>}
-          {floatKind === 'always-on-top' && <p className="mt-2 text-xs font-bold text-emerald-200">Always-on-top panel active. Resize or move it to fit your screen.</p>}
+          {floatKind === 'mini-window' && <p className="mt-2 text-xs font-bold text-amber-200">Mini-window open — use Collapse when you need more room for your work.</p>}
+          {floatKind === 'always-on-top' && <p className="mt-2 text-xs font-bold text-emerald-200">Always-on-top panel active. Use Collapse to turn it into a small alert pill.</p>}
           {error && <p className="mt-2 text-sm font-bold text-amber-200">{error}</p>}
         </section>
         {!floatTarget && pulsePanel}
