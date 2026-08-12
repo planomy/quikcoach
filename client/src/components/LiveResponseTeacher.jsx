@@ -27,6 +27,27 @@ const QUICK_CHECKS = [
 const FEATURE_LABELS = ['', 'Strong evidence', 'Clear explanation', 'Excellent vocabulary', 'Interesting idea', 'Common misconception', 'Nearly there'];
 const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
+const CONFIDENCE_ANSWERED_CLASS = {
+  confident: 'text-emerald-600 dark:text-emerald-400',
+  unsure: 'text-orange-500 dark:text-orange-400',
+  guessed: 'text-red-600 dark:text-red-400',
+};
+
+function studentStatusLine(student) {
+  if (student.engagement_status) {
+    return { label: STATUS_LABELS[student.engagement_status] || student.engagement_status, className: 'text-slate-500' };
+  }
+  if (student.hasResponded) {
+    const confidence = student.response?.confidence;
+    return {
+      label: 'Answered',
+      className: CONFIDENCE_ANSWERED_CLASS[confidence] || 'text-slate-500',
+    };
+  }
+  if (student.connected) return { label: 'Waiting', className: 'text-slate-500' };
+  return { label: 'Offline', className: 'text-slate-500' };
+}
+
 function Results({ activity, responses, display = false, onPublish }) {
   const counts = useMemo(() => {
     const result = Object.fromEntries((activity?.options || []).map((option) => [option, 0]));
@@ -262,7 +283,7 @@ export default function LiveResponseTeacher({ socket }) {
             <span className="text-[11px] text-slate-500">Paste screenshot OK</span>
           </div>
           {type === 'choice' && (
-            <div className="mt-2 grid max-w-2xl gap-1.5 sm:grid-cols-2">
+            <div className="mt-2 grid max-w-2xl grid-cols-2 gap-1.5">
               {options.map((option, index) => <input key={index} value={option} onChange={(event) => setOptions((current) => current.map((value, i) => i === index ? event.target.value.slice(0, 120) : value))} placeholder={`Choice ${String.fromCharCode(65 + index)}`} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />)}
             </div>
           )}
@@ -352,16 +373,19 @@ export default function LiveResponseTeacher({ socket }) {
           <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{students.filter((student) => student.connected).length} online</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          {students.map((student) => (
+          {students.map((student) => {
+            const status = studentStatusLine(student);
+            return (
             <div key={student.id} className="flex w-[min(100%,220px)] items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 dark:border-slate-700 dark:bg-slate-900">
               <EngagementRing engagement={student.engagement} connected={student.connected} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-black text-slate-900 dark:text-white">{student.name}</p>
-                <p className="truncate text-[10px] font-semibold text-slate-500">{student.engagement_status ? STATUS_LABELS[student.engagement_status] : student.hasResponded ? `Answered${student.response?.confidence ? ` · ${student.response.confidence}` : ''}` : student.connected ? 'Waiting' : 'Offline'}</p>
+                <p className={`truncate text-[10px] font-semibold ${status.className}`}>{status.label}</p>
               </div>
               <button type="button" disabled={!student.connected} onClick={() => nudge(student.id)} title="Send a private check-in" className="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-30 dark:bg-indigo-950 dark:text-indigo-200">Nudge</button>
             </div>
-          ))}
+            );
+          })}
           {!students.length && <p className="text-xs text-slate-500">Students will appear here when they join.</p>}
         </div>
       </div>
