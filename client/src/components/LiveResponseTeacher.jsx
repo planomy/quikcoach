@@ -29,33 +29,29 @@ const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').repla
 
 /** Border colour encodes answer state; tooltip keeps the full label for hover. */
 function studentTileMeta(student) {
-  if (!student.connected) {
-    return {
-      title: 'Offline',
-      className: 'border-2 border-dashed border-slate-300 dark:border-slate-600',
-    };
-  }
   if (student.engagement_status) {
     return {
-      title: STATUS_LABELS[student.engagement_status] || student.engagement_status,
+      title: student.connected
+        ? (STATUS_LABELS[student.engagement_status] || student.engagement_status)
+        : `Offline · ${STATUS_LABELS[student.engagement_status] || student.engagement_status}`,
       className: 'border-2 border-amber-400',
     };
   }
   if (student.hasResponded) {
     const confidence = student.response?.confidence || '';
     if (confidence === 'confident') {
-      return { title: 'Answered · confident', className: 'border-2 border-emerald-500' };
+      return { title: student.connected ? 'Answered · confident' : 'Offline · answered · confident', className: 'border-2 border-emerald-500' };
     }
     if (confidence === 'unsure') {
-      return { title: 'Answered · not sure', className: 'border-2 border-orange-400' };
+      return { title: student.connected ? 'Answered · not sure' : 'Offline · answered · not sure', className: 'border-2 border-orange-400' };
     }
     if (confidence === 'guessed') {
-      return { title: 'Answered · guessed', className: 'border-2 border-red-500' };
+      return { title: student.connected ? 'Answered · guessed' : 'Offline · answered · guessed', className: 'border-2 border-red-500' };
     }
-    return { title: 'Answered', className: 'border-2 border-indigo-400' };
+    return { title: student.connected ? 'Answered' : 'Offline · answered', className: 'border-2 border-indigo-400' };
   }
   return {
-    title: 'Waiting',
+    title: student.connected ? 'Waiting' : 'Offline',
     className: 'border-2 border-slate-200 dark:border-slate-700',
   };
 }
