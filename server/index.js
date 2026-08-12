@@ -170,6 +170,22 @@ app.get('/api/board-media/:code/:filename', (req, res) => {
   }
 });
 
+/** Pulse question images — keep Socket.IO payloads small; browsers load via HTTP. */
+app.get('/api/live-activities/:id/image', (req, res) => {
+  try {
+    const activity = queries.getLiveActivityById(db, req.params.id);
+    const dataUrl = String(activity?.imageUrl || '');
+    const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/);
+    if (!match) return res.status(404).end();
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.type(match[1]);
+    res.send(Buffer.from(match[2].replace(/\s/g, ''), 'base64'));
+  } catch (e) {
+    console.error(e);
+    res.status(500).end();
+  }
+});
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: true, credentials: true },
@@ -231,9 +247,22 @@ function isStudentConnected(studentId) {
   return (connectedStudentSockets.get(Number(studentId))?.size || 0) > 0;
 }
 
+/** Keep base64 in SQLite; send students/teachers a small HTTP URL over Socket.IO. */
+function liveActivityForClients(activity) {
+  if (!activity) return null;
+  const hasImage = !!(activity.imageUrl && String(activity.imageUrl).startsWith('data:image/'));
+  return {
+    ...activity,
+    imageUrl: hasImage
+      ? `/api/live-activities/${encodeURIComponent(activity.id)}/image`
+      : '',
+  };
+}
+
 function publicLiveActivity(activity) {
   if (!activity) return null;
-  const { correctAnswer, ...safe } = activity;
+  const wired = liveActivityForClients(activity);
+  const { correctAnswer, ...safe } = wired;
   return {
     ...safe,
     correctAnswer: activity.revealed ? correctAnswer : '',
@@ -242,7 +271,7 @@ function publicLiveActivity(activity) {
 
 function buildTeacherLivePayload(code) {
   const c = normalizeRoomCode(code);
-  const activity = queries.getLiveActivity(db, c);
+  const activity = liveActivityForClients(queries.getLiveActivity(db, c));
   const responses = activity ? queries.listLiveResponses(db, c) : [];
   const responseByStudent = new Map(responses.map((response) => [response.studentId, response]));
   const students = queries.listStudents(db, c).map((row) => {
@@ -468,7 +497,7 @@ io.on('connection', (socket) => {
           emitLiveState(code);
         }, activity.timerSeconds * 1000);
       }
-      cb?.({ ok: true, activity });
+      cb?.({ ok: true, activity: liveActivityForClients(activity) });
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Could not launch the question' });

@@ -162,7 +162,7 @@ export default function LiveResponseTeacher({ socket }) {
   async function loadImage(file) {
     if (!file) return;
     setImageBusy(true);
-    try { setImageUrl(await fileToCompressedJpegDataUrl(file, 1000, 0.76)); }
+    try { setImageUrl(await fileToCompressedJpegDataUrl(file, 900, 0.7)); }
     catch { setMessage('Could not read that image.'); }
     finally { setImageBusy(false); }
   }

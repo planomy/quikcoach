@@ -45,12 +45,16 @@ try {
   assert.equal(launch.ok, true);
   assert.equal(launch.activity.questionNumber, 1);
   assert.equal(launch.activity.timerSeconds, 15);
-  assert.equal(launch.activity.imageUrl, 'data:image/jpeg;base64,ZmFrZQ==');
+  assert.match(launch.activity.imageUrl, /^\/api\/live-activities\/.+\/image$/);
   const publicStatePromise = nextEvent(alex, 'live:student');
   await emitAck(alex, 'student:live-sync', {});
   const publicState = await publicStatePromise;
   assert.equal(publicState.activity.correctAnswer, '');
   assert.equal(publicState.activity.timerSeconds, 15);
+  assert.equal(publicState.activity.imageUrl, launch.activity.imageUrl);
+  const imageRes = await fetch(`${url}${launch.activity.imageUrl}`);
+  assert.equal(imageRes.status, 200);
+  assert.match(imageRes.headers.get('content-type') || '', /^image\//);
 
   assert.equal((await emitAck(alex, 'student:live-response', {
     activityId: launch.activity.id,

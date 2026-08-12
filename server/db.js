@@ -521,6 +521,12 @@ export const queries = {
     return rowToLiveActivity(get(db, `SELECT * FROM live_activities WHERE room_code = ?`, [roomCode]));
   },
 
+  getLiveActivityById(db, activityId) {
+    const id = String(activityId || '').trim();
+    if (!id) return null;
+    return rowToLiveActivity(get(db, `SELECT * FROM live_activities WHERE activity_id = ?`, [id]));
+  },
+
   updateLiveActivity(db, roomCode, patch) {
     const fields = [];
     const values = [];

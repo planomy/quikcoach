@@ -6,5 +6,7 @@ export function createSocket() {
   return io(url, {
     autoConnect: false,
     transports: ['websocket', 'polling'],
+    // Match server — Pulse question images must not silently drop on receive
+    maxHttpBufferSize: 3e6,
   });
 }
