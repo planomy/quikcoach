@@ -287,7 +287,7 @@ function buildTeacherLivePayload(code) {
       response: responseByStudent.get(student.id) || null,
     };
   });
-  return { activity, responses, students, featuredWall: queries.listFeaturedWall(db, c) };
+  return { activity, responses, students, featuredWall: queries.listFeaturedWall(db, c), serverNow: Date.now() };
 }
 
 function emitStudentLiveState(code, studentId) {
@@ -298,6 +298,7 @@ function emitStudentLiveState(code, studentId) {
   io.to(studentSocketName(studentId)).emit('live:student', {
     activity: publicLiveActivity(activity),
     response: own ? { value: own.value, confidence: own.confidence, submittedAt: own.submittedAt } : null,
+    serverNow: Date.now(),
   });
 }
 
@@ -317,6 +318,7 @@ function emitLiveState(code) {
     activity: publicLiveActivity(activity),
     responseCount: responses.length,
     featured,
+    serverNow: Date.now(),
   });
   for (const student of teacherPayload.students) emitStudentLiveState(c, student.id);
 }
@@ -490,12 +492,16 @@ io.on('connection', (socket) => {
       if (!activity.optional) queries.addLiveOpportunity(db, connectedStudentsInRoom(code));
       emitLiveState(code);
       if (activity.timerSeconds > 0) {
+        const endMs = activity.endsAt
+          ? Date.parse(activity.endsAt)
+          : Date.parse(activity.launchedAt) + activity.timerSeconds * 1000;
+        const delayMs = Number.isFinite(endMs) ? Math.max(0, endMs - Date.now()) : activity.timerSeconds * 1000;
         setTimeout(() => {
           const current = queries.getLiveActivity(db, code);
           if (!current || current.id !== activity.id || current.locked) return;
           queries.updateLiveActivity(db, code, { locked: true });
           emitLiveState(code);
-        }, activity.timerSeconds * 1000);
+        }, delayMs);
       }
       cb?.({ ok: true, activity: liveActivityForClients(activity) });
     } catch (e) {

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import EngagementRing from './EngagementRing.jsx';
+import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 
 const QUEUE_KEY = 'iboard-pulse-question-queue';
@@ -97,9 +98,16 @@ export default function LiveResponseTeacher({ socket }) {
   const [wallSelected, setWallSelected] = useState([]);
   const [wallMode, setWallMode] = useState('');
   const [slideIndex, setSlideIndex] = useState(0);
+  const clockOffsetRef = useRef(0);
 
   useEffect(() => {
-    const onLive = (payload) => setLive(payload || { activity: null, responses: [], students: [] });
+    const onLive = (payload) => {
+      const serverNow = Number(payload?.serverNow);
+      if (Number.isFinite(serverNow) && serverNow > 0) {
+        clockOffsetRef.current = serverNow - Date.now();
+      }
+      setLive(payload || { activity: null, responses: [], students: [] });
+    };
     socket.on('live:teacher', onLive);
     socket.emit('teacher:live-sync', {});
     return () => socket.off('live:teacher', onLive);
@@ -110,6 +118,10 @@ export default function LiveResponseTeacher({ socket }) {
   }, [queue]);
 
   const activity = live.activity;
+  const secondsLeft = useEndsAtCountdown(activity?.endsAt, {
+    enabled: !!activity?.timerSeconds && !activity?.locked,
+    clockOffsetRef,
+  });
   const responses = live.responses || [];
   const featuredWall = live.featuredWall || [];
   const students = [...(live.students || [])].sort((a, b) => {
@@ -277,11 +289,27 @@ export default function LiveResponseTeacher({ socket }) {
         <div className="p-4">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0 max-w-2xl">
-              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600">Q{activity.questionNumber || 1} · Live · {responses.length} answered</p>
+              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600">
+                Q{activity.questionNumber || 1} · Live · {responses.length} answered
+                {secondsLeft !== null ? ` · ${secondsLeft}s` : ''}
+              </p>
               <h3 className="mt-0.5 font-display text-lg font-black text-slate-950 dark:text-white">{activity.prompt}</h3>
               {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-2 max-h-48 rounded-lg bg-white object-contain" />}
             </div>
             <div className="flex flex-wrap gap-1.5">
+              {secondsLeft !== null && (
+                <span
+                  className={`rounded-lg px-2.5 py-1.5 font-mono text-[11px] font-black tabular-nums ${
+                    secondsLeft === 0
+                      ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                      : secondsLeft <= 5
+                        ? 'iboard-timer-urgent bg-red-600 text-white'
+                        : 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
+                  }`}
+                >
+                  {secondsLeft > 0 ? `${secondsLeft}s` : '0s'}
+                </span>
+              )}
               <button type="button" disabled={!unansweredCount || activity.locked} onClick={realertUnanswered} className="rounded-lg bg-violet-100 px-2.5 py-1.5 text-[11px] font-black text-violet-900 disabled:cursor-not-allowed disabled:opacity-40">
                 Re-alert {unansweredCount}
               </button>

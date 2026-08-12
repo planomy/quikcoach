@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 
 const STATUS_OPTIONS = [
   ['ready', 'Yep, ready'],
@@ -69,7 +70,6 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const [arrival, setArrival] = useState(null);
   const [pulse, setPulse] = useState(false);
   const [themeIndex, setThemeIndex] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpMessage, setHelpMessage] = useState('');
   const [featuredNotice, setFeaturedNotice] = useState(false);
@@ -86,6 +86,12 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const pulseTimerRef = useRef(null);
   const titleTimerRef = useRef(null);
   const originalTitleRef = useRef('iBOARD');
+  const clockOffsetRef = useRef(0);
+
+  const secondsLeft = useEndsAtCountdown(activity?.endsAt, {
+    enabled: !!activity?.timerSeconds && !activity?.locked,
+    clockOffsetRef,
+  });
 
   const drawAttention = useCallback((nextActivity, force = false) => {
     if (!nextActivity?.id) return false;
@@ -113,7 +119,14 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   }, [soundOn]);
 
   useEffect(() => {
+    const syncClock = (payload) => {
+      const serverNow = Number(payload?.serverNow);
+      if (Number.isFinite(serverNow) && serverNow > 0) {
+        clockOffsetRef.current = serverNow - Date.now();
+      }
+    };
     const onActivity = (payload) => {
+      syncClock(payload);
       const nextActivity = payload?.activity || null;
       const isNew = nextActivity?.id && nextActivity.id !== activityIdRef.current;
       setActivity(nextActivity);
@@ -130,6 +143,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       }
     };
     const onMine = (payload) => {
+      syncClock(payload);
       const nextActivity = payload?.activity || null;
       setActivity(nextActivity);
       if (nextActivity?.id && nextActivity.id !== activityIdRef.current) drawAttention(nextActivity);
@@ -165,26 +179,6 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       document.title = originalTitleRef.current;
     };
   }, [drawAttention, socket]);
-
-  useEffect(() => {
-    if (!activity?.timerSeconds || activity.locked) {
-      setSecondsLeft(null);
-      return undefined;
-    }
-    const endMs = activity.endsAt
-      ? Date.parse(activity.endsAt)
-      : Date.parse(activity.launchedAt) + Number(activity.timerSeconds) * 1000;
-    if (!Number.isFinite(endMs)) {
-      setSecondsLeft(null);
-      return undefined;
-    }
-    const tick = () => {
-      setSecondsLeft(Math.max(0, Math.ceil((endMs - Date.now()) / 1000)));
-    };
-    tick();
-    const timer = setInterval(tick, 200);
-    return () => clearInterval(timer);
-  }, [activity?.id, activity?.endsAt, activity?.launchedAt, activity?.locked, activity?.timerSeconds]);
 
   function toggleSound() {
     const next = !soundOn;
