@@ -166,12 +166,9 @@ export default function LiveResponseTeacher({ socket }) {
   const unansweredCount = students.filter(
     (student) => student.connected && !student.hasResponded
   ).length;
-  const attention = students.filter((student) => {
-    if (student.engagement_status && student.engagement_status !== 'ready') return true;
-    if (student.response?.confidence === 'guessed') return true;
-    if (activity?.correctAnswer && student.response?.confidence === 'confident' && student.response.value !== activity.correctAnswer) return true;
-    return student.connected && student.engagement?.opportunities >= 2 && student.engagement.score < 50;
-  });
+  const attention = students.filter(
+    (student) => student.engagement_status && student.engagement_status !== 'ready'
+  );
 
   function currentDraft() {
     return { type, prompt: prompt.trim(), options: options.map((value) => value.trim()).filter(Boolean), correctAnswer, anonymous, optional, imageUrl, timerSeconds };
@@ -365,14 +362,14 @@ export default function LiveResponseTeacher({ socket }) {
             <h3 className="text-sm font-black text-amber-950 dark:text-amber-100">Check now · {attention.length}</h3>
             <div className="mt-2 flex flex-wrap gap-2">
               {attention.map((student) => {
-                const reason = student.engagement_status ? STATUS_LABELS[student.engagement_status] : student.response?.confidence === 'guessed' ? 'Answered but guessed' : activity?.correctAnswer && student.response?.confidence === 'confident' && student.response.value !== activity.correctAnswer ? 'Incorrect and confident' : 'Low recent participation';
+                const reason = STATUS_LABELS[student.engagement_status] || student.engagement_status;
                 return (
                   <div key={student.id} className="flex w-[min(100%,220px)] items-center gap-2 rounded-lg bg-white px-2.5 py-2 dark:bg-slate-900">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-black text-slate-900 dark:text-white">{student.name}</p>
                       <p className="truncate text-[10px] font-bold text-amber-800 dark:text-amber-300">{reason}</p>
                     </div>
-                    {student.engagement_status && <button type="button" onClick={() => acknowledge(student.id)} className="shrink-0 rounded-md bg-amber-600 px-2 py-1 text-[10px] font-black text-white">Seen</button>}
+                    <button type="button" onClick={() => acknowledge(student.id)} className="shrink-0 rounded-md bg-amber-600 px-2 py-1 text-[10px] font-black text-white">Seen</button>
                   </div>
                 );
               })}
