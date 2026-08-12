@@ -41,19 +41,18 @@ const CONFIDENCE_TILE_RING = {
 
 function studentStatusLine(student) {
   if (student.engagement_status) {
-    return { label: STATUS_LABELS[student.engagement_status] || student.engagement_status, className: 'text-slate-500', short: 'Help', confidence: '' };
+    return { label: STATUS_LABELS[student.engagement_status] || student.engagement_status, className: 'text-slate-500', confidence: '' };
   }
   if (student.hasResponded) {
     const confidence = student.response?.confidence || '';
     return {
       label: 'Answered',
-      short: 'Ans',
       confidence,
       className: CONFIDENCE_ANSWERED_CLASS[confidence] || 'text-slate-500',
     };
   }
-  if (student.connected) return { label: 'Waiting', short: 'Wait', className: 'text-slate-500', confidence: '' };
-  return { label: 'Offline', short: 'Off', className: 'text-slate-400', confidence: '' };
+  if (student.connected) return { label: 'Waiting', className: 'text-slate-500', confidence: '' };
+  return { label: 'Offline', className: 'text-slate-400', confidence: '' };
 }
 
 function firstName(name) {
@@ -386,7 +385,7 @@ export default function LiveResponseTeacher({ socket }) {
           </div>
           <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{students.filter((student) => student.connected).length} online</span>
         </div>
-        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
+        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">
           {students.map((student) => {
             const status = studentStatusLine(student);
             const confidenceRing = CONFIDENCE_TILE_RING[status.confidence] || '';
@@ -408,7 +407,7 @@ export default function LiveResponseTeacher({ socket }) {
                 <EngagementRing engagement={student.engagement} connected={student.connected} size={40} />
                 <div className="w-full min-w-0 text-center">
                   <p className="truncate text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</p>
-                  <p className={`truncate text-[9px] font-bold leading-tight ${status.className}`}>{status.short}</p>
+                  <p className={`truncate text-[9px] font-bold leading-tight ${status.className}`}>{status.label}</p>
                 </div>
               </div>
             );
