@@ -27,32 +27,37 @@ const QUICK_CHECKS = [
 const FEATURE_LABELS = ['', 'Strong evidence', 'Clear explanation', 'Excellent vocabulary', 'Interesting idea', 'Common misconception', 'Nearly there'];
 const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
-const CONFIDENCE_ANSWERED_CLASS = {
-  confident: 'text-emerald-600 dark:text-emerald-400',
-  unsure: 'text-orange-500 dark:text-orange-400',
-  guessed: 'text-red-600 dark:text-red-400',
-};
-
-const CONFIDENCE_TILE_RING = {
-  confident: 'ring-emerald-400',
-  unsure: 'ring-orange-400',
-  guessed: 'ring-red-400',
-};
-
-function studentStatusLine(student) {
+/** Border colour encodes answer state; tooltip keeps the full label for hover. */
+function studentTileMeta(student) {
+  if (!student.connected) {
+    return {
+      title: 'Offline',
+      className: 'border-2 border-dashed border-slate-300 dark:border-slate-600',
+    };
+  }
   if (student.engagement_status) {
-    return { label: STATUS_LABELS[student.engagement_status] || student.engagement_status, className: 'text-slate-500', confidence: '' };
+    return {
+      title: STATUS_LABELS[student.engagement_status] || student.engagement_status,
+      className: 'border-2 border-amber-400',
+    };
   }
   if (student.hasResponded) {
     const confidence = student.response?.confidence || '';
-    return {
-      label: 'Answered',
-      confidence,
-      className: CONFIDENCE_ANSWERED_CLASS[confidence] || 'text-slate-500',
-    };
+    if (confidence === 'confident') {
+      return { title: 'Answered · confident', className: 'border-2 border-emerald-500' };
+    }
+    if (confidence === 'unsure') {
+      return { title: 'Answered · not sure', className: 'border-2 border-orange-400' };
+    }
+    if (confidence === 'guessed') {
+      return { title: 'Answered · guessed', className: 'border-2 border-red-500' };
+    }
+    return { title: 'Answered', className: 'border-2 border-indigo-400' };
   }
-  if (student.connected) return { label: 'Waiting', className: 'text-slate-500', confidence: '' };
-  return { label: 'Offline', className: 'text-slate-400', confidence: '' };
+  return {
+    title: 'Waiting',
+    className: 'border-2 border-slate-200 dark:border-slate-700',
+  };
 }
 
 function firstName(name) {
@@ -385,30 +390,26 @@ export default function LiveResponseTeacher({ socket }) {
           </div>
           <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{students.filter((student) => student.connected).length} online</span>
         </div>
-        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">
+        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-2">
           {students.map((student) => {
-            const status = studentStatusLine(student);
-            const confidenceRing = CONFIDENCE_TILE_RING[status.confidence] || '';
+            const tile = studentTileMeta(student);
             return (
               <div
                 key={student.id}
-                title={`${student.name} · ${status.label}${status.confidence ? ` (${status.confidence})` : ''}`}
-                className={`relative flex aspect-square flex-col items-center justify-between rounded-[1.15rem] border border-slate-200 bg-white p-1.5 dark:border-slate-700 dark:bg-slate-900 ${confidenceRing ? `ring-2 ${confidenceRing}` : ''}`}
+                title={`${student.name} · ${tile.title}`}
+                className={`relative flex flex-col items-center gap-1 rounded-[1.1rem] bg-white px-1 pb-1.5 pt-2 dark:bg-slate-900 ${tile.className}`}
               >
                 <button
                   type="button"
                   disabled={!student.connected}
                   onClick={() => nudge(student.id)}
                   title="Send a private check-in"
-                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-md bg-indigo-50 text-[9px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-30 dark:bg-indigo-950 dark:text-indigo-200"
+                  className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-md bg-indigo-50 text-[9px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-30 dark:bg-indigo-950 dark:text-indigo-200"
                 >
                   N
                 </button>
-                <EngagementRing engagement={student.engagement} connected={student.connected} size={40} />
-                <div className="w-full min-w-0 text-center">
-                  <p className="truncate text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</p>
-                  <p className={`truncate text-[9px] font-bold leading-tight ${status.className}`}>{status.label}</p>
-                </div>
+                <EngagementRing engagement={student.engagement} connected={student.connected} size={36} />
+                <p className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</p>
               </div>
             );
           })}
