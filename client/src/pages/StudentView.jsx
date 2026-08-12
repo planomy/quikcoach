@@ -7,6 +7,7 @@ import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import StudentGradeSelect from '../components/StudentGradeSelect.jsx';
 import SupaCoachLink from '../components/SupaCoachLink.jsx';
+import PulseLink from '../components/PulseLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 
@@ -427,6 +428,7 @@ export default function StudentView() {
               value={student?.year_level || yearInput}
               onChange={setMyYearLevel}
             />
+            <PulseLink size="md" code={codeInput} />
             <SupaCoachLink size="md" />
             <ThemeToggle />
           </div>
