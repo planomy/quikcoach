@@ -34,6 +34,22 @@ try {
   assert.equal(alexJoin.ok, true);
   assert.equal(samJoin.ok, true);
 
+  assert.equal((await emitAck(alex, 'student:text', { text: 'My first saved classroom response.' })).ok, true);
+  assert.equal((await emitAck(teacher, 'teacher:snapshot-save', { label: 'Evidence lesson one' })).ok, true);
+  assert.equal((await emitAck(alex, 'student:text', { text: 'My improved classroom response with evidence.' })).ok, true);
+  assert.equal((await emitAck(teacher, 'teacher:snapshot-save', { label: 'Evidence lesson two' })).ok, true);
+  // Saving again without a student edit should not inflate their portfolio.
+  assert.equal((await emitAck(teacher, 'teacher:snapshot-save', { label: 'Repeated room save' })).ok, true);
+  const evidenceRes = await fetch(`${url}/api/rooms/${room}/evidence-students`);
+  assert.equal(evidenceRes.status, 200);
+  const evidence = await evidenceRes.json();
+  const alexEvidence = evidence.students.find((student) => student.name === 'Alex');
+  assert.equal(alexEvidence.entries.length, 2);
+  assert.equal(alexEvidence.entries[0].label, 'Repeated room save');
+  assert.equal(alexEvidence.entries[0].text, 'My improved classroom response with evidence.');
+  assert.equal(alexEvidence.entries[1].label, 'Evidence lesson one');
+  assert.equal(evidence.students.some((student) => student.name === 'Sam'), false);
+
   const launch = await emitAck(teacher, 'teacher:live-launch', {
     type: 'choice',
     prompt: 'Which planet is known as the Red Planet?',

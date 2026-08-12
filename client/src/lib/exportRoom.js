@@ -174,6 +174,67 @@ export function buildStudentEvidenceText({ roomCode, student, label, savedAt }) 
     .join('\n');
 }
 
+export function buildStudentPortfolioText({ roomCode, studentName, entries }) {
+  const list = Array.isArray(entries) ? entries : [];
+  return [
+    'iBOARD — Student evidence portfolio',
+    `Student: ${studentName || 'Student'}`,
+    `Room: ${roomCode}`,
+    `Saved submissions: ${list.length}`,
+    '',
+    ...list.flatMap((entry, index) => [
+      `${index + 1}. ${entry.label || 'Saved evidence'}`,
+      `Saved: ${entry.createdAt || ''}`,
+      `Words: ${wordCount(entry.text)}`,
+      '',
+      String(entry.text || '').trim() || '(No writing submitted.)',
+      '',
+      '----------------------------------------',
+      '',
+    ]),
+  ].join('\n');
+}
+
+export function buildStudentPortfolioHtml({ roomCode, studentName, entries }) {
+  const list = Array.isArray(entries) ? entries : [];
+  const cards = list.map((entry, index) => `
+    <section class="card">
+      <p class="number">Submission ${index + 1}</p>
+      <h2>${escapeHtml(entry.label || 'Saved evidence')}</h2>
+      <p class="meta">Saved ${escapeHtml(entry.createdAt || '')} · ${wordCount(entry.text)} words</p>
+      <div class="body">${escapeHtml(String(entry.text || '').trim() || '(No writing submitted.)').replace(/\n/g, '<br>')}</div>
+    </section>`).join('\n');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>iBOARD portfolio — ${escapeHtml(studentName || 'Student')}</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: #f6f8f7; color: #17202a; font-family: Georgia, "Times New Roman", serif; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 36px 20px 64px; }
+  .brand { color: #047857; font-family: system-ui, sans-serif; font-size: .75rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+  h1 { margin: 8px 0 4px; font-size: 1.8rem; }
+  .summary { margin: 0 0 24px; color: #5b6470; font-family: system-ui, sans-serif; font-size: .9rem; }
+  .card { margin: 16px 0; padding: 20px; border: 1px solid #cfe8dc; border-radius: 14px; background: white; break-inside: avoid; page-break-inside: avoid; }
+  .number { margin: 0 0 4px; color: #047857; font-family: system-ui, sans-serif; font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+  h2 { margin: 0; font-size: 1.2rem; }
+  .meta { margin: 5px 0 14px; color: #68717c; font-family: system-ui, sans-serif; font-size: .78rem; }
+  .body { font-size: 1rem; line-height: 1.6; }
+  @media print { body { background: white; } .wrap { max-width: none; padding: 0; } }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="brand">iBOARD evidence portfolio</p>
+    <h1>${escapeHtml(studentName || 'Student')}</h1>
+    <p class="summary">Room ${escapeHtml(roomCode)} · ${list.length} saved submission${list.length === 1 ? '' : 's'}</p>
+    ${cards || '<p>No saved submissions.</p>'}
+  </main>
+</body>
+</html>`;
+}
+
 export function downloadTextFile(filename, text, mime = 'text/plain;charset=utf-8') {
   const blob = new Blob([text], { type: mime });
   const a = document.createElement('a');

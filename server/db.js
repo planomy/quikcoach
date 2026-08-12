@@ -668,6 +668,28 @@ export const queries = {
     );
   },
 
+  listSnapshots(db, roomCode) {
+    return all(
+      db,
+      `SELECT * FROM room_snapshots WHERE room_code = ? ORDER BY id DESC`,
+      [roomCode]
+    ).map((row) => {
+      let payload;
+      try {
+        payload = JSON.parse(row.payload_json || '{}');
+      } catch {
+        payload = null;
+      }
+      return {
+        id: row.id,
+        room_code: row.room_code,
+        label: row.label,
+        created_at: row.created_at,
+        payload,
+      };
+    });
+  },
+
   getSnapshot(db, snapshotId) {
     const row = get(db, `SELECT * FROM room_snapshots WHERE id = ?`, [snapshotId]);
     if (!row) return null;

@@ -23,6 +23,8 @@ import {
   buildEvidenceHtml,
   evidenceFilenames,
   buildStudentEvidenceText,
+  buildStudentPortfolioHtml,
+  buildStudentPortfolioText,
 } from '../lib/exportRoom.js';
 
 const MODE_LABELS = {
@@ -141,6 +143,9 @@ function TeacherDashboardInner() {
   const [broadcastPick, setBroadcastPick] = useState({});
   const [snapshots, setSnapshots] = useState([]);
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
+  const [evidenceStudents, setEvidenceStudents] = useState([]);
+  const [evidenceStudentsBusy, setEvidenceStudentsBusy] = useState(false);
+  const [selectedEvidenceStudentKey, setSelectedEvidenceStudentKey] = useState('');
   const [snapshotViewer, setSnapshotViewer] = useState(null);
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
@@ -412,6 +417,37 @@ function TeacherDashboardInner() {
       .catch(() => {});
   }, [joined, codeInput]);
 
+  useEffect(() => {
+    if (!joined || !snapshotsOpen || codeInput.length !== 4 || !snapshots.length) return;
+    let cancelled = false;
+    setEvidenceStudentsBusy(true);
+    fetch(`/api/rooms/${codeInput}/evidence-students`)
+      .then((r) => {
+        if (!r.ok) throw new Error('Could not load student evidence');
+        return r.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const profiles = Array.isArray(data.students) ? data.students : [];
+        setEvidenceStudents(profiles);
+        setSelectedEvidenceStudentKey((current) => (
+          current && profiles.some((profile) => profile.key === current) ? current : ''
+        ));
+      })
+      .catch(() => {
+        if (!cancelled) setError('Could not load student evidence history');
+      })
+      .finally(() => {
+        if (!cancelled) setEvidenceStudentsBusy(false);
+      });
+    return () => { cancelled = true; };
+  }, [joined, codeInput, snapshotsOpen, snapshots.length]);
+
+  const selectedEvidenceStudent = useMemo(
+    () => evidenceStudents.find((profile) => profile.key === selectedEvidenceStudentKey) || null,
+    [evidenceStudents, selectedEvidenceStudentKey]
+  );
+
   /** When the modal is closed, prefer server `room` for the AI prompt so Copy for AI matches saved settings (avoids stale React state before/without socket sync). */
   const promptModeKey = useMemo(() => {
     if (modalOpen) return feedbackMode;
@@ -676,6 +712,35 @@ function TeacherDashboardInner() {
     } catch {
       setError('Could not open evidence pack');
     }
+  }
+
+  async function copyStudentPortfolio() {
+    if (!selectedEvidenceStudent) return;
+    const text = buildStudentPortfolioText({
+      roomCode: codeInput,
+      studentName: selectedEvidenceStudent.name,
+      entries: selectedEvidenceStudent.entries,
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyToast(`Copied ${selectedEvidenceStudent.name}’s evidence`);
+    } catch {
+      setCopyToast('Copy failed — download the portfolio instead');
+    }
+    setTimeout(() => setCopyToast(''), 3000);
+  }
+
+  function downloadStudentPortfolio() {
+    if (!selectedEvidenceStudent) return;
+    const html = buildStudentPortfolioHtml({
+      roomCode: codeInput,
+      studentName: selectedEvidenceStudent.name,
+      entries: selectedEvidenceStudent.entries,
+    });
+    const names = evidenceFilenames(codeInput, `${selectedEvidenceStudent.name}-portfolio`);
+    downloadTextFile(names.html, html, 'text/html;charset=utf-8');
+    setCopyToast(`Downloaded ${selectedEvidenceStudent.name}’s portfolio`);
+    setTimeout(() => setCopyToast(''), 3000);
   }
 
   function saveFeedbackSettings() {
@@ -1192,7 +1257,68 @@ function TeacherDashboardInner() {
                 <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
                   Download any earlier save again as HTML.
                 </p>
-                <ul className="mt-2 divide-y divide-emerald-100/80 dark:divide-emerald-900/50">
+                <section className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Student evidence finder</p>
+                      <h4 className="mt-1 font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Show one student’s saved work</h4>
+                    </div>
+                    {selectedEvidenceStudent && (
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+                        {selectedEvidenceStudent.entries.length} {selectedEvidenceStudent.entries.length === 1 ? 'submission' : 'submissions'}
+                      </span>
+                    )}
+                  </div>
+                  <label htmlFor="evidence-student" className="mt-4 block text-xs font-bold text-slate-600 dark:text-slate-300">Student</label>
+                  <select
+                    id="evidence-student"
+                    value={selectedEvidenceStudentKey}
+                    onChange={(event) => setSelectedEvidenceStudentKey(event.target.value)}
+                    disabled={evidenceStudentsBusy}
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  >
+                    <option value="">{evidenceStudentsBusy ? 'Loading students…' : 'Select a student…'}</option>
+                    {evidenceStudents.map((profile) => (
+                      <option key={profile.key} value={profile.key}>{profile.name} · {profile.entries.length}</option>
+                    ))}
+                  </select>
+                  {!evidenceStudentsBusy && !evidenceStudents.length && (
+                    <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">No written submissions were found in these saves.</p>
+                  )}
+                  {selectedEvidenceStudent && (
+                    <div className="mt-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
+                        <div>
+                          <p className="font-black text-slate-900 dark:text-white">{selectedEvidenceStudent.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {selectedEvidenceStudent.entries.reduce((total, entry) => total + wordCount(entry.text), 0)} words across saved work
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" onClick={copyStudentPortfolio} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">Copy all</button>
+                          <button type="button" onClick={downloadStudentPortfolio} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700">Download portfolio</button>
+                        </div>
+                      </div>
+                      <div className="mt-3 max-h-[32rem] space-y-3 overflow-y-auto pr-1 scrollbar-thin">
+                        {selectedEvidenceStudent.entries.map((entry) => (
+                          <article key={`${entry.snapshotId}-${entry.studentId}-${entry.updatedAt}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <p className="font-bold text-slate-900 dark:text-white">{entry.label}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{entry.createdAt} · {wordCount(entry.text)} words</p>
+                              </div>
+                              <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">Open lesson save</button>
+                            </div>
+                            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">{entry.text}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">Names are matched ignoring capital letters and extra spaces. Blank cards and unchanged duplicate drafts are left out.</p>
+                </section>
+                <h4 className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-emerald-800 dark:text-emerald-300">All saved lessons</h4>
+                <ul className="mt-2 max-h-80 divide-y divide-emerald-100/80 overflow-y-auto pr-1 scrollbar-thin dark:divide-emerald-900/50">
                   {snapshots.map((sn) => (
                     <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                       <span className="text-slate-800 dark:text-slate-200">

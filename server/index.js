@@ -134,6 +134,60 @@ app.get('/api/rooms/:code/snapshots', (req, res) => {
   }
 });
 
+app.get('/api/rooms/:code/evidence-students', (req, res) => {
+  try {
+    const code = String(req.params.code || '')
+      .replace(/\D/g, '')
+      .slice(0, 4)
+      .padStart(4, '0');
+    if (code.length !== 4) return res.status(400).json({ error: 'Invalid room' });
+    queries.ensureRoom(db, code);
+    const grouped = new Map();
+
+    for (const snapshot of queries.listSnapshots(db, code)) {
+      const rows = Array.isArray(snapshot.payload?.students) ? snapshot.payload.students : [];
+      for (const student of rows) {
+        const name = String(student?.name || '').trim().replace(/\s+/g, ' ');
+        const text = String(student?.text || '').trim();
+        if (!name || !text) continue;
+        const key = name.toLocaleLowerCase();
+        if (!grouped.has(key)) {
+          grouped.set(key, { key, name, aliases: new Set(), entries: [], seen: new Set() });
+        }
+        const profile = grouped.get(key);
+        profile.aliases.add(name);
+        // A saved room can contain the same untouched card repeatedly. Keep it once,
+        // while allowing an intentionally repeated answer in a later lesson.
+        const duplicateKey = `${String(student.updated_at || '')}\u0000${text}`;
+        if (profile.seen.has(duplicateKey)) continue;
+        profile.seen.add(duplicateKey);
+        profile.entries.push({
+          snapshotId: Number(snapshot.id),
+          label: snapshot.label || `Evidence #${snapshot.id}`,
+          createdAt: snapshot.created_at,
+          studentId: Number(student.id) || null,
+          updatedAt: student.updated_at || '',
+          classGroup: student.class_group != null ? String(student.class_group) : '',
+          text,
+        });
+      }
+    }
+
+    const students = [...grouped.values()]
+      .map((profile) => ({
+        key: profile.key,
+        name: profile.name,
+        aliases: [...profile.aliases],
+        entries: profile.entries,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    res.json({ students });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/rooms/:code/snapshots/:id', (req, res) => {
   try {
     const code = String(req.params.code || '')
