@@ -428,7 +428,7 @@ export default function StudentView() {
               value={student?.year_level || yearInput}
               onChange={setMyYearLevel}
             />
-            <PulseLink size="md" code={codeInput} />
+            <PulseLink size="md" code={codeInput} studentId={student?.id} />
             <SupaCoachLink size="md" />
             <ThemeToggle />
           </div>

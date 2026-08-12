@@ -8,6 +8,8 @@ import ThemeToggle from '../components/ThemeToggle.jsx';
 import { createSocket } from '../lib/socket.js';
 
 const SESSION_KEY = 'quik-coach-student';
+const HANDOFF_PREFIX = 'iboard-pulse-handoff:';
+const HANDOFF_MAX_AGE_MS = 2 * 60 * 1000;
 
 function cleanCode(value) {
   return String(value || '').replace(/\D/g, '').slice(0, 4);
@@ -39,6 +41,7 @@ function prepareFloatingDocument(targetWindow) {
 export default function PulseStudent() {
   const [searchParams] = useSearchParams();
   const codeFromLink = cleanCode(searchParams.get('code'));
+  const handoffFromLink = String(searchParams.get('handoff') || '');
   const [codeInput, setCodeInput] = useState(codeFromLink);
   const [nameInput, setNameInput] = useState('');
   const [joined, setJoined] = useState(false);
@@ -80,21 +83,35 @@ export default function PulseStudent() {
 
   useEffect(() => {
     try {
-      const parsed = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+      let parsed = null;
+      if (handoffFromLink) {
+        const handoffKey = `${HANDOFF_PREFIX}${handoffFromLink}`;
+        const rawHandoff = localStorage.getItem(handoffKey);
+        localStorage.removeItem(handoffKey);
+        const handoff = JSON.parse(rawHandoff || 'null');
+        const age = Date.now() - Number(handoff?.createdAt || 0);
+        if (age >= 0 && age <= HANDOFF_MAX_AGE_MS) parsed = handoff;
+      }
+      if (!parsed) parsed = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
       if (!parsed?.code || !parsed?.studentId) return;
       const saved = { code: cleanCode(parsed.code), studentId: Number(parsed.studentId) };
       if (codeFromLink && saved.code !== codeFromLink) return;
       sessionRef.current = saved;
       setCodeInput(saved.code);
       socket.emit('student:rejoin', saved, (ack) => {
-        if (!ack?.ok) return;
+        if (!ack?.ok) {
+          sessionRef.current = null;
+          setError('Your iBOARD session could not be reopened. Please join Pulse below.');
+          return;
+        }
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(saved));
         setStudent(ack.student || null);
         setJoined(true);
       });
     } catch {
       /* ignore */
     }
-  }, [codeFromLink, socket]);
+  }, [codeFromLink, handoffFromLink, socket]);
 
   function join() {
     setError('');
