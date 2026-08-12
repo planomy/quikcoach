@@ -33,19 +33,33 @@ const CONFIDENCE_ANSWERED_CLASS = {
   guessed: 'text-red-600 dark:text-red-400',
 };
 
+const CONFIDENCE_TILE_RING = {
+  confident: 'ring-emerald-400',
+  unsure: 'ring-orange-400',
+  guessed: 'ring-red-400',
+};
+
 function studentStatusLine(student) {
   if (student.engagement_status) {
-    return { label: STATUS_LABELS[student.engagement_status] || student.engagement_status, className: 'text-slate-500' };
+    return { label: STATUS_LABELS[student.engagement_status] || student.engagement_status, className: 'text-slate-500', short: 'Help', confidence: '' };
   }
   if (student.hasResponded) {
-    const confidence = student.response?.confidence;
+    const confidence = student.response?.confidence || '';
     return {
       label: 'Answered',
+      short: 'Ans',
+      confidence,
       className: CONFIDENCE_ANSWERED_CLASS[confidence] || 'text-slate-500',
     };
   }
-  if (student.connected) return { label: 'Waiting', className: 'text-slate-500' };
-  return { label: 'Offline', className: 'text-slate-500' };
+  if (student.connected) return { label: 'Waiting', short: 'Wait', className: 'text-slate-500', confidence: '' };
+  return { label: 'Offline', short: 'Off', className: 'text-slate-400', confidence: '' };
+}
+
+function firstName(name) {
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return 'Student';
+  return trimmed.split(/\s+/)[0];
 }
 
 function Results({ activity, responses, display = false, onPublish }) {
@@ -372,21 +386,34 @@ export default function LiveResponseTeacher({ socket }) {
           </div>
           <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{students.filter((student) => student.connected).length} online</span>
         </div>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
           {students.map((student) => {
             const status = studentStatusLine(student);
+            const confidenceRing = CONFIDENCE_TILE_RING[status.confidence] || '';
             return (
-            <div key={student.id} className="flex w-[min(100%,220px)] items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 dark:border-slate-700 dark:bg-slate-900">
-              <EngagementRing engagement={student.engagement} connected={student.connected} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-black text-slate-900 dark:text-white">{student.name}</p>
-                <p className={`truncate text-[10px] font-semibold ${status.className}`}>{status.label}</p>
+              <div
+                key={student.id}
+                title={`${student.name} · ${status.label}${status.confidence ? ` (${status.confidence})` : ''}`}
+                className={`relative flex aspect-square flex-col items-center justify-between rounded-[1.15rem] border border-slate-200 bg-white p-1.5 dark:border-slate-700 dark:bg-slate-900 ${confidenceRing ? `ring-2 ${confidenceRing}` : ''}`}
+              >
+                <button
+                  type="button"
+                  disabled={!student.connected}
+                  onClick={() => nudge(student.id)}
+                  title="Send a private check-in"
+                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-md bg-indigo-50 text-[9px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-30 dark:bg-indigo-950 dark:text-indigo-200"
+                >
+                  N
+                </button>
+                <EngagementRing engagement={student.engagement} connected={student.connected} size={40} />
+                <div className="w-full min-w-0 text-center">
+                  <p className="truncate text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</p>
+                  <p className={`truncate text-[9px] font-bold leading-tight ${status.className}`}>{status.short}</p>
+                </div>
               </div>
-              <button type="button" disabled={!student.connected} onClick={() => nudge(student.id)} title="Send a private check-in" className="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-30 dark:bg-indigo-950 dark:text-indigo-200">Nudge</button>
-            </div>
             );
           })}
-          {!students.length && <p className="text-xs text-slate-500">Students will appear here when they join.</p>}
+          {!students.length && <p className="col-span-full text-xs text-slate-500">Students will appear here when they join.</p>}
         </div>
       </div>
       {message && <p className="border-t border-slate-200 px-4 py-1.5 text-[11px] font-bold text-indigo-700 dark:border-slate-700 dark:text-indigo-300">{message}</p>}
