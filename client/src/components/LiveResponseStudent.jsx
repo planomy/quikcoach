@@ -172,7 +172,14 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       return undefined;
     }
     const tick = () => {
-      const end = Date.parse(`${activity.launchedAt}Z`) + activity.timerSeconds * 1000;
+      // SQLite datetime('now') is "YYYY-MM-DD HH:MM:SS" — normalise for Date.parse
+      const raw = String(activity.launchedAt || '').trim();
+      let start = Date.parse(raw);
+      if (!Number.isFinite(start) && raw) {
+        start = Date.parse(`${raw.replace(' ', 'T')}Z`);
+      }
+      if (!Number.isFinite(start)) start = Date.now();
+      const end = start + Number(activity.timerSeconds) * 1000;
       setSecondsLeft(Math.max(0, Math.ceil((end - Date.now()) / 1000)));
     };
     tick();
@@ -278,15 +285,30 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         <section ref={panelRef} className={`scroll-mt-4 rounded-3xl border-2 bg-white p-4 shadow-xl ring-4 dark:bg-slate-900 ${compact ? '' : 'sm:p-6'} ${theme.panel} ${pulse ? 'iboard-question-pulse' : ''}`} aria-live="polite">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className={`text-xs font-black uppercase tracking-[0.22em] ${theme.label}`}>Question {activity.questionNumber || 1} · Live now</p>
-            <button type="button" onClick={toggleSound} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300" title="Turn new-question sound on or off">
-              {soundOn ? '🔔 Sound on' : '🔕 Sound off'}
-            </button>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${answersClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-              {answersClosed ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {secondsLeft !== null && (
+                <span
+                  className={`rounded-full px-2.5 py-1 font-mono text-xs font-black tabular-nums ${
+                    secondsLeft === 0
+                      ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                      : secondsLeft <= 5
+                        ? 'iboard-timer-urgent bg-red-600 text-white'
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                  }`}
+                  aria-live="polite"
+                >
+                  {secondsLeft > 0 ? `${secondsLeft}s` : '0s'}
+                </span>
+              )}
+              <button type="button" onClick={toggleSound} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300" title="Turn new-question sound on or off">
+                {soundOn ? '🔔 Sound on' : '🔕 Sound off'}
+              </button>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${answersClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                {answersClosed ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
+              </span>
+            </div>
           </div>
           <h2 className={`mt-3 font-display font-black leading-snug text-slate-950 dark:text-white ${compact ? 'text-lg' : 'text-xl sm:text-2xl'}`}>{activity.prompt}</h2>
-          {secondsLeft !== null && <div className={`mt-3 rounded-xl px-3 py-2 text-center font-mono text-lg font-black ${secondsLeft <= 5 ? 'bg-red-600 text-white' : 'bg-amber-100 text-amber-900'}`}>{secondsLeft > 0 ? `${secondsLeft}s remaining` : 'Time is up'}</div>}
           {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-4 max-h-72 w-full rounded-2xl bg-white object-contain" />}
 
           {activity.type === 'short' ? (

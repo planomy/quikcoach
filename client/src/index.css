@@ -36,9 +36,19 @@
   animation: iboardQuestionPulse 0.65s ease-in-out 4;
 }
 
+@keyframes iboardTimerUrgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.iboard-timer-urgent {
+  animation: iboardTimerUrgent 0.7s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .iboard-question-arrival,
-  .iboard-question-pulse {
+  .iboard-question-pulse,
+  .iboard-timer-urgent {
     animation: none;
   }
 }
