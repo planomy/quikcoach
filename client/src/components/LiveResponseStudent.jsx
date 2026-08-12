@@ -6,7 +6,6 @@ const STATUS_OPTIONS = [
   ['unsure', 'I’m unsure'],
   ['tech', 'Tech problem'],
 ];
-const HELP_OPTIONS = [['stuck', 'I’m stuck'], ['slow', 'Please slow down'], ['explain', 'Explain again'], ['tech', 'Tech problem'], ['private', 'I need help privately']];
 const CONFIDENCE_OPTIONS = [
   ['confident', 'Confident', '🟢'],
   ['unsure', 'Not sure', '🟡'],
@@ -74,8 +73,6 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const [arrival, setArrival] = useState(null);
   const [pulse, setPulse] = useState(false);
   const [themeIndex, setThemeIndex] = useState(0);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [helpMessage, setHelpMessage] = useState('');
   const [featuredNotice, setFeaturedNotice] = useState(false);
   const [soundOn, setSoundOn] = useState(() => {
     try {
@@ -161,13 +158,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         drawAttention(payload.activity, true);
       }
     };
-    const onHelpSeen = () => { setHelpOpen(false); setHelpMessage('Your teacher has seen this ✓'); };
     const onFeatured = () => { setFeaturedNotice(true); setTimeout(() => setFeaturedNotice(false), 5000); };
     socket.on('live:activity', onActivity);
     socket.on('live:student', onMine);
     socket.on('live:nudge', onNudge);
     socket.on('live:realert', onRealert);
-    socket.on('live:help-seen', onHelpSeen);
     socket.on('live:featured', onFeatured);
     socket.emit('student:live-sync', {});
     return () => {
@@ -175,7 +170,6 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       socket.off('live:student', onMine);
       socket.off('live:nudge', onNudge);
       socket.off('live:realert', onRealert);
-      socket.off('live:help-seen', onHelpSeen);
       socket.off('live:featured', onFeatured);
       if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
       if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
@@ -210,13 +204,6 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   function answerNudge(status) {
     socket.emit('student:live-status', { status }, () => {});
     setNudge(false);
-  }
-
-  function requestHelp(status) {
-    socket.emit('student:live-status', { status }, (ack) => {
-      setHelpMessage(ack?.ok ? 'Sent privately to your teacher ✓' : 'Could not send');
-      if (ack?.ok) setHelpOpen(false);
-    });
   }
 
   function setConfidence(confidence) {
@@ -291,12 +278,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   ) : null;
 
   if (!activity && !nudge) {
-    if (!standalone) return <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />;
+    if (!standalone) return null;
     return (
       <div>
         {collapseButton}
-        <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />
-        <section className={`mt-2 grid place-items-center rounded-2xl border-2 border-dashed border-indigo-300 bg-white text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'min-h-[140px] p-3' : 'min-h-[240px] p-6'}`}>
+        <section className={`grid place-items-center rounded-2xl border-2 border-dashed border-indigo-300 bg-white text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'min-h-[140px] p-3' : 'min-h-[240px] p-6'}`}>
           <div>
             <div className={`mx-auto grid place-items-center rounded-full bg-indigo-100 dark:bg-indigo-950 ${compact ? 'h-10 w-10 text-xl' : 'h-16 w-16 text-3xl'}`}>⚡</div>
             <p className={`font-black uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300 ${compact ? 'mt-2 text-[10px]' : 'mt-4 text-xs'}`}>Pulse is ready</p>
@@ -315,7 +301,6 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     <>
       {featuredNotice && <div className="fixed inset-x-3 top-3 z-[75] mx-auto max-w-md rounded-3xl bg-gradient-to-r from-amber-400 to-yellow-300 p-5 text-center text-amber-950 shadow-2xl"><p className="text-3xl">⭐</p><p className="font-display text-xl font-black">Your answer was featured!</p></div>}
       {collapseButton}
-      <HelpControl open={helpOpen} setOpen={setHelpOpen} message={helpMessage} onSelect={requestHelp} compact={compact} />
       {arrival && (
         <button
           type="button"
@@ -424,26 +409,5 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         </section>
       )}
     </>
-  );
-}
-
-function HelpControl({ open, setOpen, message, onSelect, compact = false }) {
-  return (
-    <section className={`border border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/30 ${compact ? 'rounded-xl p-2' : 'rounded-2xl p-3'}`}>
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className={`font-black uppercase tracking-wide text-rose-700 dark:text-rose-300 ${compact ? 'text-[10px]' : 'text-xs'}`}>Need help?</p>
-          {message && <p className={`font-bold text-emerald-700 dark:text-emerald-300 ${compact ? 'text-[10px]' : 'text-xs'}`}>{message}</p>}
-        </div>
-        <button type="button" onClick={() => setOpen(!open)} className={`rounded-xl bg-rose-600 font-black text-white ${compact ? 'px-2.5 py-1 text-[10px]' : 'px-3 py-2 text-xs'}`}>{open ? 'Close' : 'Tell teacher'}</button>
-      </div>
-      {open && (
-        <div className={`grid gap-1.5 ${compact ? 'mt-2' : 'mt-3 sm:grid-cols-2'}`}>
-          {HELP_OPTIONS.map(([value, label]) => (
-            <button key={value} type="button" onClick={() => onSelect(value)} className={`rounded-xl bg-white text-left font-bold text-rose-900 shadow-sm dark:bg-slate-900 dark:text-rose-100 ${compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}>{label}</button>
-          ))}
-        </div>
-      )}
-    </section>
   );
 }
