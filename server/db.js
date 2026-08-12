@@ -481,11 +481,12 @@ export const queries = {
     );
     const room = get(db, `SELECT live_question_number FROM rooms WHERE code = ?`, [roomCode]);
     const questionNumber = Math.max(1, Number(room?.live_question_number) || 1);
+    const launchedAt = new Date().toISOString();
     run(
       db,
       `INSERT INTO live_activities
        (room_code, activity_id, question_number, type, prompt, options_json, correct_answer, anonymous, optional, image_url, timer_seconds, locked, revealed, launched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
        ON CONFLICT(room_code) DO UPDATE SET
          activity_id = excluded.activity_id,
          question_number = excluded.question_number,
@@ -499,7 +500,7 @@ export const queries = {
          timer_seconds = excluded.timer_seconds,
          locked = 0,
          revealed = 0,
-         launched_at = datetime('now')`,
+         launched_at = excluded.launched_at`,
       [
         roomCode,
         activity.id,
@@ -512,6 +513,7 @@ export const queries = {
         activity.optional ? 1 : 0,
         activity.imageUrl || '',
         Math.max(0, Number(activity.timerSeconds) || 0),
+        launchedAt,
       ]
     );
     return queries.getLiveActivity(db, roomCode);
@@ -817,6 +819,18 @@ function parseRecent(raw) {
   }
 }
 
+function sqliteUtcToMs(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return Date.now();
+  if (raw.includes('T') || /Z$|[+-]\d{2}:\d{2}$/.test(raw)) {
+    const ms = Date.parse(raw);
+    return Number.isFinite(ms) ? ms : Date.now();
+  }
+  // SQLite datetime('now') → "YYYY-MM-DD HH:MM:SS" (UTC)
+  const ms = Date.parse(`${raw.replace(' ', 'T')}Z`);
+  return Number.isFinite(ms) ? ms : Date.now();
+}
+
 function rowToLiveActivity(row) {
   if (!row) return null;
   let options = [];
@@ -826,6 +840,8 @@ function rowToLiveActivity(row) {
   } catch {
     options = [];
   }
+  const timerSeconds = Math.max(0, Number(row.timer_seconds) || 0);
+  const launchedMs = sqliteUtcToMs(row.launched_at);
   return {
     id: row.activity_id,
     questionNumber: Math.max(1, Number(row.question_number) || 1),
@@ -836,9 +852,10 @@ function rowToLiveActivity(row) {
     anonymous: !!row.anonymous,
     optional: !!row.optional,
     imageUrl: row.image_url || '',
-    timerSeconds: Math.max(0, Number(row.timer_seconds) || 0),
+    timerSeconds,
     locked: !!row.locked,
     revealed: !!row.revealed,
-    launchedAt: row.launched_at,
+    launchedAt: new Date(launchedMs).toISOString(),
+    endsAt: timerSeconds > 0 ? new Date(launchedMs + timerSeconds * 1000).toISOString() : '',
   };
 }

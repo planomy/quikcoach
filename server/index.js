@@ -521,7 +521,13 @@ io.on('connection', (socket) => {
         cb?.({ ok: false, error: 'Answers are locked' });
         return;
       }
-      if (activity.timerSeconds > 0 && Date.now() >= Date.parse(`${activity.launchedAt}Z`) + activity.timerSeconds * 1000) {
+      if (
+        activity.timerSeconds > 0 &&
+        Date.now() >=
+          (activity.endsAt
+            ? Date.parse(activity.endsAt)
+            : Date.parse(activity.launchedAt) + activity.timerSeconds * 1000)
+      ) {
         queries.updateLiveActivity(db, code, { locked: true });
         emitLiveState(code);
         cb?.({ ok: false, error: 'Time is up' });

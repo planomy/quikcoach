@@ -171,21 +171,20 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       setSecondsLeft(null);
       return undefined;
     }
+    const endMs = activity.endsAt
+      ? Date.parse(activity.endsAt)
+      : Date.parse(activity.launchedAt) + Number(activity.timerSeconds) * 1000;
+    if (!Number.isFinite(endMs)) {
+      setSecondsLeft(null);
+      return undefined;
+    }
     const tick = () => {
-      // SQLite datetime('now') is "YYYY-MM-DD HH:MM:SS" — normalise for Date.parse
-      const raw = String(activity.launchedAt || '').trim();
-      let start = Date.parse(raw);
-      if (!Number.isFinite(start) && raw) {
-        start = Date.parse(`${raw.replace(' ', 'T')}Z`);
-      }
-      if (!Number.isFinite(start)) start = Date.now();
-      const end = start + Number(activity.timerSeconds) * 1000;
-      setSecondsLeft(Math.max(0, Math.ceil((end - Date.now()) / 1000)));
+      setSecondsLeft(Math.max(0, Math.ceil((endMs - Date.now()) / 1000)));
     };
     tick();
-    const timer = setInterval(tick, 250);
+    const timer = setInterval(tick, 200);
     return () => clearInterval(timer);
-  }, [activity?.id, activity?.launchedAt, activity?.locked, activity?.timerSeconds]);
+  }, [activity?.id, activity?.endsAt, activity?.launchedAt, activity?.locked, activity?.timerSeconds]);
 
   function toggleSound() {
     const next = !soundOn;
