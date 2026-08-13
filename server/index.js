@@ -38,6 +38,10 @@ function normalizeRoomCode(code) {
     .padStart(4, '0');
 }
 
+function normalizeStudentName(name) {
+  return String(name || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+}
+
 function roomSocketName(code) {
   return `room:${normalizeRoomCode(code)}`;
 }
@@ -328,7 +332,7 @@ function buildTeacherLivePayload(code) {
   const activity = liveActivityForClients(queries.getLiveActivity(db, c));
   const responses = activity ? queries.listLiveResponses(db, c) : [];
   const responseByStudent = new Map(responses.map((response) => [response.studentId, response]));
-  const students = queries.listStudents(db, c).map((row) => {
+  const allStudents = queries.listStudents(db, c).map((row) => {
     const student = queries.rowToStudent(row);
     return {
       id: student.id,
@@ -341,7 +345,28 @@ function buildTeacherLivePayload(code) {
       response: responseByStudent.get(student.id) || null,
     };
   });
-  return { activity, responses, students, featuredWall: queries.listFeaturedWall(db, c), serverNow: Date.now() };
+  const groups = new Map();
+  for (const student of allStudents) {
+    const key = normalizeStudentName(student.name);
+    groups.set(key, [...(groups.get(key) || []), student]);
+  }
+  const students = [...groups.values()].flatMap((matches) => {
+    if (matches.length === 1) return matches;
+    const connected = matches.filter((student) => student.connected);
+    // Preserve genuinely different same-name students while both are present.
+    if (connected.length > 1) return matches;
+    const best = [...matches].sort((a, b) => {
+      if (Number(b.connected) !== Number(a.connected)) return Number(b.connected) - Number(a.connected);
+      if (Number(b.hasResponded) !== Number(a.hasResponded)) return Number(b.hasResponded) - Number(a.hasResponded);
+      if (b.engagement.opportunities !== a.engagement.opportunities) return b.engagement.opportunities - a.engagement.opportunities;
+      if (b.engagement.responded !== a.engagement.responded) return b.engagement.responded - a.engagement.responded;
+      return Number(b.id) - Number(a.id);
+    })[0];
+    return [best];
+  });
+  const visibleIds = new Set(students.map((student) => student.id));
+  const visibleResponses = responses.filter((response) => visibleIds.has(response.studentId));
+  return { activity, responses: visibleResponses, students, featuredWall: queries.listFeaturedWall(db, c), serverNow: Date.now() };
 }
 
 function emitStudentLiveState(code, studentId) {
@@ -423,7 +448,40 @@ io.on('connection', (socket) => {
         return;
       }
       queries.ensureRoom(db, c);
-      const studentRow = queries.addStudent(db, c, n);
+      const sameName = queries.listStudents(db, c).filter(
+        (row) => normalizeStudentName(row.name) === normalizeStudentName(n)
+      );
+      const disconnectedMatches = sameName.filter((row) => !isStudentConnected(row.id));
+      let studentRow = null;
+      let resumed = false;
+
+      if (disconnectedMatches.length) {
+        // Older rooms may already contain duplicate ghost rows. Prefer the card with
+        // the strongest engagement history, then the most recently active card.
+        const currentResponseIds = new Set(
+          queries.listLiveResponses(db, c).map((response) => response.studentId)
+        );
+        studentRow = [...disconnectedMatches].sort((a, b) => {
+          if (Number(currentResponseIds.has(b.id)) !== Number(currentResponseIds.has(a.id))) {
+            return Number(currentResponseIds.has(b.id)) - Number(currentResponseIds.has(a.id));
+          }
+          const aRecent = queries.rowToStudent(a).engagement;
+          const bRecent = queries.rowToStudent(b).engagement;
+          if (bRecent.opportunities !== aRecent.opportunities) return bRecent.opportunities - aRecent.opportunities;
+          if (bRecent.responded !== aRecent.responded) return bRecent.responded - aRecent.responded;
+          const activeOrder = String(b.last_engaged_at || '').localeCompare(String(a.last_engaged_at || ''));
+          return activeOrder || Number(b.id) - Number(a.id);
+        })[0];
+        resumed = true;
+      } else if (sameName.length) {
+        cb?.({
+          ok: false,
+          error: 'That name is already connected. If it is another student, add your surname initial.',
+        });
+        return;
+      } else {
+        studentRow = queries.addStudent(db, c, n);
+      }
       const student = queries.rowToStudent(studentRow);
       socket.join(roomSocketName(c));
       socket.join(studentSocketName(student.id));
@@ -432,7 +490,7 @@ io.on('connection', (socket) => {
       socket.data.studentId = student.id;
       addStudentPresence(student.id, socket.id);
       const payload = buildRoomPayload(c);
-      cb?.({ ok: true, student, room: payload.room, students: payload.students });
+      cb?.({ ok: true, student, room: payload.room, students: payload.students, resumed });
       emitRoomState(c, payload);
       const last = lastBroadcastByRoom.get(c);
       if (last) socket.emit('broadcast:exemplars', last);

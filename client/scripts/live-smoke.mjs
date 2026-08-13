@@ -6,6 +6,8 @@ const room = '7742';
 const teacher = io(url, { transports: ['websocket'] });
 const alex = io(url, { transports: ['websocket'] });
 const sam = io(url, { transports: ['websocket'] });
+let returningStudent = null;
+let duplicateStudent = null;
 
 function emitAck(socket, event, payload) {
   return new Promise((resolve, reject) => {
@@ -154,9 +156,43 @@ try {
   const persisted = await persistedPromise;
   assert.equal(persisted.featuredWall[0].label, 'Clear explanation');
 
+  const originalStudent = io(url, { transports: ['websocket'] });
+  const originalJoin = await emitAck(originalStudent, 'student:join', { code: room, name: 'Taylor Smith' });
+  assert.equal(originalJoin.ok, true);
+  const identityLaunch = await emitAck(teacher, 'teacher:live-launch', {
+    type: 'truefalse', prompt: 'Identity should survive a fresh login.', options: [],
+  });
+  assert.equal(identityLaunch.ok, true);
+  assert.equal((await emitAck(originalStudent, 'student:live-response', {
+    activityId: identityLaunch.activity.id,
+    value: 'True',
+  })).ok, true);
+  const identityStatePromise = nextEvent(teacher, 'live:teacher');
+  await emitAck(teacher, 'teacher:live-sync', {});
+  const identityState = await identityStatePromise;
+  const beforeLogout = identityState.students.find((student) => student.id === originalJoin.student.id);
+  assert.equal(beforeLogout.engagement.responded, 1);
+  originalStudent.disconnect();
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  returningStudent = io(url, { transports: ['websocket'] });
+  const returnJoin = await emitAck(returningStudent, 'student:join', { code: room, name: '  taylor   smith ' });
+  assert.equal(returnJoin.ok, true);
+  assert.equal(returnJoin.resumed, true);
+  assert.equal(returnJoin.student.id, originalJoin.student.id);
+  assert.equal(returnJoin.student.engagement.responded, 1);
+  assert.equal(returnJoin.student.engagement.opportunities, beforeLogout.engagement.opportunities);
+
+  duplicateStudent = io(url, { transports: ['websocket'] });
+  const duplicateJoin = await emitAck(duplicateStudent, 'student:join', { code: room, name: 'Taylor Smith' });
+  assert.equal(duplicateJoin.ok, false);
+  assert.match(duplicateJoin.error, /already connected/i);
+
   console.log('Live classroom smoke test passed.');
 } finally {
   teacher.disconnect();
   alex.disconnect();
   sam.disconnect();
+  returningStudent?.disconnect();
+  duplicateStudent?.disconnect();
 }

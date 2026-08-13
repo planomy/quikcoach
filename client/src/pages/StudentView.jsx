@@ -13,6 +13,25 @@ import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 
 const SESSION_KEY = 'quik-coach-student';
 
+function readSavedStudentSession() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function saveStudentSession(session) {
+  const value = JSON.stringify(session);
+  try { sessionStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
+  try { localStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
+}
+
+function clearStudentSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+  try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+}
+
 function newId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
   return `fb-${Date.now()}`;
@@ -84,9 +103,9 @@ export default function StudentView() {
   useEffect(() => {
     const onConnect = () => {
       try {
-        const raw = sessionStorage.getItem(SESSION_KEY);
-        if (!raw) return;
-        const { code, studentId } = JSON.parse(raw);
+        const saved = readSavedStudentSession();
+        if (!saved) return;
+        const { code, studentId } = saved;
         if (!code || !studentId) return;
         const sidNum = Number(studentId);
         if (!sidNum) return;
@@ -180,9 +199,9 @@ export default function StudentView() {
   useEffect(() => {
     let cancelled = false;
     try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      if (!raw) return;
-      const { code, studentId } = JSON.parse(raw);
+      const saved = readSavedStudentSession();
+      if (!saved) return;
+      const { code, studentId } = saved;
       if (!code || !studentId) return;
       const sidNum = Number(studentId);
       if (!sidNum) return;
@@ -192,7 +211,7 @@ export default function StudentView() {
         if (!ack?.ok) {
           hydrateStudentIdRef.current = null;
           try {
-            sessionStorage.removeItem(SESSION_KEY);
+            clearStudentSession();
           } catch {
             /* ignore */
           }
@@ -235,7 +254,7 @@ export default function StudentView() {
         return;
       }
       hydrateStudentIdRef.current = ack.student?.id ?? null;
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ code: c, studentId: ack.student.id }));
+      saveStudentSession({ code: c, studentId: ack.student.id });
       setStudent(ack.student);
       if (ack.room) setRoom(ack.room);
       const lim =

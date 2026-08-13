@@ -14,6 +14,25 @@ const FLOAT_COLLAPSED_KEY = 'iboard-pulse-collapsed';
 const FLOAT_EXPANDED_SIZE = { width: 300, height: 420 };
 const FLOAT_COLLAPSED_SIZE = { width: 300, height: 116 };
 
+function readSavedStudentSession() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function saveStudentSession(session) {
+  const value = JSON.stringify(session);
+  try { sessionStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
+  try { localStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
+}
+
+function clearStudentSession() {
+  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+  try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+}
+
 function cleanCode(value) {
   return String(value || '').replace(/\D/g, '').slice(0, 4);
 }
@@ -102,7 +121,7 @@ export default function PulseStudent() {
         const age = Date.now() - Number(handoff?.createdAt || 0);
         if (age >= 0 && age <= HANDOFF_MAX_AGE_MS) parsed = handoff;
       }
-      if (!parsed) parsed = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+      if (!parsed) parsed = readSavedStudentSession();
       if (!parsed?.code || !parsed?.studentId) return;
       const saved = { code: cleanCode(parsed.code), studentId: Number(parsed.studentId) };
       if (codeFromLink && saved.code !== codeFromLink) return;
@@ -111,10 +130,11 @@ export default function PulseStudent() {
       socket.emit('student:rejoin', saved, (ack) => {
         if (!ack?.ok) {
           sessionRef.current = null;
+          clearStudentSession();
           setError('Your iBOARD session could not be reopened. Please join Pulse below.');
           return;
         }
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(saved));
+        saveStudentSession(saved);
         setStudent(ack.student || null);
         setJoined(true);
       });
@@ -138,7 +158,7 @@ export default function PulseStudent() {
       }
       const saved = { code, studentId: Number(ack.student.id) };
       sessionRef.current = saved;
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(saved));
+      saveStudentSession(saved);
       setStudent(ack.student);
       setJoined(true);
     });
