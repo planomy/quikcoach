@@ -112,6 +112,7 @@ export default function StudentView() {
         hydrateStudentIdRef.current = sidNum;
         socket.emit('student:rejoin', { code, studentId: sidNum }, (ack) => {
           if (!ack?.ok) return;
+          saveStudentSession({ code, studentId: ack.student?.id ?? sidNum });
           if (ack.student) setStudent(ack.student);
           if (ack.room) setRoom(ack.room);
           setJoined(true);
@@ -219,6 +220,7 @@ export default function StudentView() {
           return;
         }
         hydrateStudentIdRef.current = ack.student?.id ?? sidNum;
+        saveStudentSession({ code, studentId: ack.student?.id ?? sidNum });
         setCodeInput(code);
         setStudent(ack.student);
         if (ack.room) setRoom(ack.room);
