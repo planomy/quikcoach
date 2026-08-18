@@ -40,11 +40,14 @@ const insertFeedback = feedbackDb.prepare(
 );
 const selectFeedback = feedbackDb.prepare(`SELECT * FROM teacher_feedback_messages WHERE id = ?`);
 const listStudentFeedback = feedbackDb.prepare(
-  `SELECT * FROM teacher_feedback_messages WHERE student_id = ? ORDER BY id ASC LIMIT 200`
+  `SELECT * FROM teacher_feedback_messages WHERE student_id = ? ORDER BY id DESC LIMIT 200`
 );
 
 function feedbackHistory(studentId) {
-  return listStudentFeedback.all(Number(studentId)).map(feedbackForClient);
+  return listStudentFeedback
+    .all(Number(studentId))
+    .map(feedbackForClient)
+    .reverse();
 }
 
 function emitHistoryAfterJoin(socket) {
@@ -88,9 +91,15 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       io.to(targetRoom).emit('feedback:batch', { items: [item] });
     }
 
+    if (rawItems.length > 0 && saved.length === 0) {
+      cb?.({ ok: false, error: 'No matching students were available for that feedback' });
+      return;
+    }
+
     cb?.({
       ok: true,
       count: saved.length,
+      requested: rawItems.length,
       reached: reachedStudents.size,
       persisted: saved.length,
     });
