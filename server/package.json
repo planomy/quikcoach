@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node --import ./richTextPatch.js index.js",
-    "dev": "node --import ./richTextPatch.js index.js"
+    "start": "node --import ./richTextPatch.js --import ./feedbackPatch.js index.js",
+    "dev": "node --import ./richTextPatch.js --import ./feedbackPatch.js index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
