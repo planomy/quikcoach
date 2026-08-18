@@ -6,12 +6,24 @@ import Whiteboard from './pages/Whiteboard.jsx';
 import PulseStudent from './pages/PulseStudent.jsx';
 import PulseTeacher from './pages/PulseTeacher.jsx';
 import StudentFormattingControl from './components/StudentFormattingControl.jsx';
+import TeacherAnnotationController from './components/TeacherAnnotationController.jsx';
+import StudentAnnotationController from './components/StudentAnnotationController.jsx';
 
 function TeacherConsole() {
   return (
     <>
       <TeacherDashboard />
       <StudentFormattingControl />
+      <TeacherAnnotationController />
+    </>
+  );
+}
+
+function StudentConsole() {
+  return (
+    <>
+      <StudentView />
+      <StudentAnnotationController />
     </>
   );
 }
@@ -21,7 +33,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/teacher" element={<TeacherConsole />} />
-      <Route path="/student" element={<StudentView />} />
+      <Route path="/student" element={<StudentConsole />} />
       <Route path="/pulse/teacher" element={<PulseTeacher />} />
       <Route path="/pulse" element={<PulseStudent />} />
       <Route path="/iboard" element={<Whiteboard />} />
