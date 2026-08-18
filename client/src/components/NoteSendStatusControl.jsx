@@ -44,9 +44,14 @@ export default function NoteSendStatusControl() {
       const button = noteButtonForStudent(studentId);
       if (!button) return;
       button.dataset.noteStatus = status;
-      if (status === 'sent') button.title = 'Note saved and sent to this student';
-      else if (status === 'failed') button.title = 'Note failed to send — click to retry';
-      else button.title = 'Sending private note…';
+      button.setAttribute(
+        'aria-label',
+        status === 'sent'
+          ? 'Note saved successfully'
+          : status === 'failed'
+            ? 'Note failed to send — click to retry'
+            : 'Sending private note'
+      );
     };
 
     document.addEventListener('click', onCapture, true);
