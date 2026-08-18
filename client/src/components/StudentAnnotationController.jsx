@@ -86,15 +86,25 @@ export default function StudentAnnotationController() {
       setAnnotations(Array.isArray(list) ? list : []);
     };
     const schedule = () => requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
+    const sync = () => {
+      socket.emit('student:annotations-sync', {}, (ack) => {
+        if (!ack?.ok) return;
+        onMine(ack);
+      });
+    };
     socket.on('teacher-annotations:mine', onMine);
     socket.on('teacher-annotations:update', onUpdate);
     socket.on('room:state', schedule);
     socket.on('student:live', schedule);
+    socket.on('connect', sync);
+    const timer = setTimeout(sync, 250);
     return () => {
+      clearTimeout(timer);
       socket.off('teacher-annotations:mine', onMine);
       socket.off('teacher-annotations:update', onUpdate);
       socket.off('room:state', schedule);
       socket.off('student:live', schedule);
+      socket.off('connect', sync);
     };
   }, [socket, studentId, refreshHighlights]);
 
