@@ -10,6 +10,9 @@ import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import PulseLink from '../components/PulseLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
+import RichTextEditor from '../components/RichTextEditor.jsx';
+import RichTextDisplay from '../components/RichTextDisplay.jsx';
+import { plainTextToRichHtml } from '../lib/richText.js';
 
 const SESSION_KEY = 'quik-coach-student';
 
@@ -47,6 +50,7 @@ export default function StudentView() {
   const [student, setStudent] = useState(null);
   const [room, setRoom] = useState(null);
   const [draft, setDraft] = useState('');
+  const [draftHtml, setDraftHtml] = useState('');
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState('');
   const [feedbackInbox, setFeedbackInbox] = useState([]);
@@ -59,7 +63,7 @@ export default function StudentView() {
   const [yearInput, setYearInput] = useState('');
 
   const socket = useMemo(() => createSocket(), []);
-  const pendingRef = useRef('');
+  const pendingRef = useRef({ text: '', richTextHtml: '' });
   const studentRef = useRef(null);
   /** Until React commits `student`, `room:state` may arrive first; match payload by this id. */
   const hydrateStudentIdRef = useRef(null);
@@ -134,12 +138,18 @@ export default function StudentView() {
       if (!me) return;
       hydrateStudentIdRef.current = null;
       setStudent(me);
-      const typing = document.activeElement?.tagName === 'TEXTAREA';
+      const typing = !!document.activeElement?.isContentEditable;
       const r = payload.room;
       const lim =
         r?.enforce_word_count && (r?.word_target ?? 0) > 0 ? Number(r.word_target) : 0;
       const raw = me.text || '';
-      if (!typing) setDraft(lim > 0 ? truncateToWordLimit(raw, lim) : raw);
+      if (!typing) {
+        const next = lim > 0 ? truncateToWordLimit(raw, lim) : raw;
+        setDraft(next);
+        setDraftHtml(
+          next === raw && me.rich_text_html ? me.rich_text_html : plainTextToRichHtml(next)
+        );
+      }
     };
     const onLive = ({ student: s }) => {
       const sid = studentRef.current?.id ?? hydrateStudentIdRef.current;
@@ -179,13 +189,13 @@ export default function StudentView() {
   }, [socket]);
 
   useEffect(() => {
-    pendingRef.current = draft;
-  }, [draft]);
+    pendingRef.current = { text: draft, richTextHtml: draftHtml };
+  }, [draft, draftHtml]);
 
   useEffect(() => {
     if (!joined || !student) return;
     const t = setInterval(() => {
-      socket.emit('student:text', { text: pendingRef.current }, () => {});
+      socket.emit('student:text', pendingRef.current, () => {});
     }, 2000);
     return () => clearInterval(t);
   }, [joined, student, socket]);
@@ -194,7 +204,11 @@ export default function StudentView() {
     if (!joined || !room) return;
     const wt = room.word_target ?? 0;
     if (!room.enforce_word_count || wt <= 0) return;
-    setDraft((d) => truncateToWordLimit(d, wt));
+    setDraft((d) => {
+      const next = truncateToWordLimit(d, wt);
+      if (next !== d) setDraftHtml(plainTextToRichHtml(next));
+      return next;
+    });
   }, [joined, room?.enforce_word_count, room?.word_target]);
 
   useEffect(() => {
@@ -229,7 +243,13 @@ export default function StudentView() {
             ? Number(ack.room.word_target)
             : 0;
         const raw = ack.student.text || '';
-        setDraft(lim > 0 ? truncateToWordLimit(raw, lim) : raw);
+        const next = lim > 0 ? truncateToWordLimit(raw, lim) : raw;
+        setDraft(next);
+        setDraftHtml(
+          next === raw && ack.student?.rich_text_html
+            ? ack.student.rich_text_html
+            : plainTextToRichHtml(next)
+        );
         setJoined(true);
         const yl = String(ack.student?.year_level || '').trim().toLowerCase();
         if (yl) setYearInput(yl);
@@ -264,7 +284,13 @@ export default function StudentView() {
           ? Number(ack.room.word_target)
           : 0;
       const raw = ack.student.text || '';
-      setDraft(lim > 0 ? truncateToWordLimit(raw, lim) : raw);
+      const next = lim > 0 ? truncateToWordLimit(raw, lim) : raw;
+      setDraft(next);
+      setDraftHtml(
+        next === raw && ack.student?.rich_text_html
+          ? ack.student.rich_text_html
+          : plainTextToRichHtml(next)
+      );
       setJoined(true);
       const fromServer = String(ack.student?.year_level || '').trim().toLowerCase();
       const chosen = String(yearInput || '').trim().toLowerCase();
@@ -511,9 +537,11 @@ export default function StudentView() {
                     />
                   )}
                   {ex.text?.trim() ? (
-                    <p className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-slate-700 dark:text-slate-300 scrollbar-thin">
-                      {ex.text}
-                    </p>
+                    <RichTextDisplay
+                      html={ex.rich_text_html}
+                      text={ex.text}
+                      className="mt-2 max-h-48 overflow-auto text-slate-700 dark:text-slate-300 scrollbar-thin"
+                    />
                   ) : !ex.image_url ? (
                     <p className="mt-2 text-slate-500">—</p>
                   ) : null}
@@ -548,21 +576,17 @@ export default function StudentView() {
           </p>
         )}
         {error && joined && <p className="text-sm text-red-600">{error}</p>}
-        <textarea
-          value={draft}
-          onChange={(e) => {
-            let v = e.target.value;
-            if (enforce && wt > 0) v = truncateToWordLimit(v, wt);
-            setDraft(v);
+        <RichTextEditor
+          text={draft}
+          html={draftHtml}
+          onChange={({ text, html }) => {
+            setDraft(text);
+            setDraftHtml(html);
           }}
           onPaste={onDraftPaste}
-          readOnly={frozen}
-          placeholder={
-            frozen
-              ? 'Class is frozen by your teacher.'
-              : 'Write here… or paste an image (Ctrl+V / Cmd+V)'
-          }
-          className="min-h-[280px] flex-1 rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-800 shadow-card outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 read-only:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:read-only:bg-slate-800"
+          disabled={frozen}
+          maxWords={enforce && wt > 0 ? wt : 0}
+          placeholder="Write here… or paste an image (Ctrl+V / Cmd+V)"
         />
         {feedbackInbox.length > 0 && (
           <section className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-950/50">
