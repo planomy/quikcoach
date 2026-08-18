@@ -5,12 +5,22 @@ import StudentView from './pages/StudentView.jsx';
 import Whiteboard from './pages/Whiteboard.jsx';
 import PulseStudent from './pages/PulseStudent.jsx';
 import PulseTeacher from './pages/PulseTeacher.jsx';
+import StudentFormattingControl from './components/StudentFormattingControl.jsx';
+
+function TeacherConsole() {
+  return (
+    <>
+      <TeacherDashboard />
+      <StudentFormattingControl />
+    </>
+  );
+}
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/teacher" element={<TeacherDashboard />} />
+      <Route path="/teacher" element={<TeacherConsole />} />
       <Route path="/student" element={<StudentView />} />
       <Route path="/pulse/teacher" element={<PulseTeacher />} />
       <Route path="/pulse" element={<PulseStudent />} />
