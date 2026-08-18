@@ -15,6 +15,53 @@ export function createSocket() {
     maxHttpBufferSize: 3e6,
   });
 
+  // The NOTE button is visually tied to the server acknowledgement. The reliable
+  // feedback patch now means ack.ok=true only after the note has been persisted.
+  const baseEmit = socket.emit.bind(socket);
+  socket.emit = (eventName, ...args) => {
+    if (typeof window !== 'undefined' && eventName === 'teacher:distribute') {
+      const pendingStudentId = Number(window.__iboardPendingNoteStudentId) || 0;
+      const items = Array.isArray(args[0]?.items) ? args[0].items : [];
+      const isPendingNote =
+        pendingStudentId > 0 &&
+        items.length === 1 &&
+        Number(items[0]?.studentId) === pendingStudentId;
+
+      if (isPendingNote) {
+        window.__iboardPendingNoteStudentId = 0;
+        dispatchWindowEvent('iboard:note-send-status', {
+          studentId: pendingStudentId,
+          status: 'sending',
+        });
+
+        const callbackIndex = args.length - 1;
+        const originalCallback =
+          callbackIndex >= 0 && typeof args[callbackIndex] === 'function' ? args[callbackIndex] : null;
+
+        if (originalCallback) {
+          let settled = false;
+          let timer = null;
+          const finish = (ack) => {
+            if (settled) return;
+            settled = true;
+            if (timer) clearTimeout(timer);
+            dispatchWindowEvent('iboard:note-send-status', {
+              studentId: pendingStudentId,
+              status: ack?.ok ? 'sent' : 'failed',
+            });
+            originalCallback(ack);
+          };
+          args[callbackIndex] = finish;
+          timer = setTimeout(
+            () => finish({ ok: false, error: 'No response from the server' }),
+            6000
+          );
+        }
+      }
+    }
+    return baseEmit(eventName, ...args);
+  };
+
   // A reconnect can replay persisted feedback that this still-open tab already displayed.
   // Filter duplicate server ids before StudentView's existing feedback listener sees them.
   const seenFeedbackIds = new Set();
