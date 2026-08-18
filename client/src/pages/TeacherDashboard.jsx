@@ -18,6 +18,7 @@ import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
+import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import {
   downloadTextFile,
   buildEvidenceHtml,
@@ -85,6 +86,7 @@ function normalizeStudentFromServer(s) {
     id: Number(s.id),
     name: String(s.name ?? ''),
     text: String(s.text ?? ''),
+    rich_text_html: String(s.rich_text_html ?? ''),
     room_code: s.room_code != null ? String(s.room_code) : '',
     updated_at: s.updated_at,
     class_group: s.class_group != null ? String(s.class_group) : '',
@@ -256,6 +258,7 @@ function TeacherDashboardInner() {
         const cur = prev[i];
         if (
           cur.text === row.text &&
+          cur.rich_text_html === row.rich_text_html &&
           cur.updated_at === row.updated_at &&
           cur.name === row.name &&
           cur.class_group === row.class_group &&
@@ -1217,10 +1220,11 @@ function TeacherDashboardInner() {
                       className="mb-2 max-h-36 w-full object-contain"
                     />
                   )}
-                  {displayText ||
-                    (!s.image_url && (
-                      <span className="italic text-slate-400 dark:text-slate-500">No text yet</span>
-                    ))}
+                  {displayText ? (
+                    <RichTextDisplay html={s.rich_text_html} text={displayText} />
+                  ) : !s.image_url ? (
+                    <span className="italic text-slate-400 dark:text-slate-500">No text yet</span>
+                  ) : null}
                 </div>
               </article>
             );
