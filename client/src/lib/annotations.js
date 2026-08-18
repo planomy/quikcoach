@@ -1,5 +1,7 @@
 import { richHtmlToPlainText } from './richText.js';
 
+const BLOCK_TAGS = new Set(['div', 'p', 'li']);
+
 function normalise(value) {
   return String(value ?? '').replace(/\r\n?/g, '\n');
 }
@@ -63,6 +65,89 @@ function fragmentToPlainText(fragment) {
   return richHtmlToPlainText(holder.innerHTML);
 }
 
+function mappedPlainTokens(root) {
+  const raw = [];
+
+  function pushVirtualNewline(node) {
+    raw.push({ char: '\n', virtual: true, node });
+  }
+
+  function walk(node) {
+    if (!node) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const value = String(node.nodeValue || '').replace(/\u00a0/g, ' ');
+      for (let i = 0; i < value.length; i += 1) {
+        raw.push({
+          char: value[i],
+          virtual: false,
+          node,
+          startOffset: i,
+          endOffset: i + 1,
+        });
+      }
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const tag = String(node.tagName || '').toLowerCase();
+    if (tag === 'br') {
+      pushVirtualNewline(node);
+      return;
+    }
+    for (const child of Array.from(node.childNodes || [])) walk(child);
+    if (node !== root && BLOCK_TAGS.has(tag)) pushVirtualNewline(node);
+  }
+
+  for (const child of Array.from(root.childNodes || [])) walk(child);
+
+  // Match richHtmlToPlainText normalisation while retaining DOM positions for real characters.
+  const noTrailingSpaces = [];
+  for (const token of raw) {
+    if (token.char === '\n') {
+      while (
+        noTrailingSpaces.length &&
+        (noTrailingSpaces[noTrailingSpaces.length - 1].char === ' ' ||
+          noTrailingSpaces[noTrailingSpaces.length - 1].char === '\t')
+      ) {
+        noTrailingSpaces.pop();
+      }
+    }
+    noTrailingSpaces.push(token);
+  }
+
+  const collapsed = [];
+  for (const token of noTrailingSpaces) {
+    if (
+      token.char === '\n' &&
+      collapsed.length >= 2 &&
+      collapsed[collapsed.length - 1].char === '\n' &&
+      collapsed[collapsed.length - 2].char === '\n'
+    ) {
+      continue;
+    }
+    collapsed.push(token);
+  }
+  while (collapsed.length && collapsed[collapsed.length - 1].char === '\n') collapsed.pop();
+  return collapsed;
+}
+
+function tokenIndexForDomPoint(tokens, node, offset, preferEnd = false) {
+  if (!node) return -1;
+  if (node.nodeType === Node.TEXT_NODE) {
+    if (preferEnd) {
+      for (let i = tokens.length - 1; i >= 0; i -= 1) {
+        const token = tokens[i];
+        if (!token.virtual && token.node === node && token.endOffset <= offset) return i + 1;
+      }
+    } else {
+      for (let i = 0; i < tokens.length; i += 1) {
+        const token = tokens[i];
+        if (!token.virtual && token.node === node && token.startOffset >= offset) return i;
+      }
+    }
+  }
+  return -1;
+}
+
 export function selectionOffsetsWithin(root, rawExpectedText) {
   if (!root || typeof window === 'undefined') return null;
   const selection = window.getSelection?.();
@@ -71,19 +156,28 @@ export function selectionOffsetsWithin(root, rawExpectedText) {
   if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
 
   const expectedText = normalise(rawExpectedText);
-  const prefixRange = document.createRange();
-  prefixRange.setStart(root, 0);
-  prefixRange.setEnd(range.startContainer, range.startOffset);
-  const selectedRange = range.cloneRange();
+  const tokens = mappedPlainTokens(root);
+  const mappedText = tokens.map((token) => token.char).join('');
+  let mappedStart = tokenIndexForDomPoint(tokens, range.startContainer, range.startOffset, false);
+  let mappedEnd = tokenIndexForDomPoint(tokens, range.endContainer, range.endOffset, true);
 
-  const prefixText = fragmentToPlainText(prefixRange.cloneContents());
+  const selectedRange = range.cloneRange();
   const selectedText = fragmentToPlainText(selectedRange.cloneContents());
   const quote = normalise(selectedText).trim();
   if (!quote) return null;
 
-  let start = prefixText.length;
+  if (mappedStart < 0 || mappedEnd < mappedStart) {
+    const prefixRange = document.createRange();
+    prefixRange.setStart(root, 0);
+    prefixRange.setEnd(range.startContainer, range.startOffset);
+    mappedStart = fragmentToPlainText(prefixRange.cloneContents()).length;
+    mappedEnd = mappedStart + quote.length;
+  }
+
+  let start = mappedStart;
   let end = start + quote.length;
-  if (expectedText.slice(start, end) !== quote) {
+  const sourceText = mappedText === expectedText ? mappedText : expectedText;
+  if (sourceText.slice(start, end) !== quote) {
     const nearest = [];
     let cursor = 0;
     while (cursor <= expectedText.length - quote.length) {
@@ -107,37 +201,28 @@ export function selectionOffsetsWithin(root, rawExpectedText) {
   };
 }
 
-function pointForPlainOffset(root, target, preferEnd = false) {
-  if (!root || typeof document === 'undefined') return null;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let node = walker.nextNode();
-  let last = null;
-  while (node) {
-    const beforeRange = document.createRange();
-    beforeRange.setStart(root, 0);
-    beforeRange.setEnd(node, 0);
-    const before = fragmentToPlainText(beforeRange.cloneContents());
-    const start = before.length;
-    const end = start + (node.nodeValue || '').length;
-    if (target >= start && target <= end) {
-      return { node, offset: Math.max(0, Math.min((node.nodeValue || '').length, target - start)) };
-    }
-    if (target < start && last) return preferEnd ? last : { node, offset: 0 };
-    last = { node, offset: (node.nodeValue || '').length };
-    node = walker.nextNode();
+function nearestRealToken(tokens, index, direction) {
+  let i = index;
+  while (i >= 0 && i < tokens.length) {
+    if (!tokens[i].virtual) return tokens[i];
+    i += direction;
   }
-  return last;
+  return null;
 }
 
 export function rangeForPlainOffsets(root, start, end) {
   if (!root || typeof document === 'undefined') return null;
-  const a = pointForPlainOffset(root, Math.max(0, Number(start) || 0), false);
-  const b = pointForPlainOffset(root, Math.max(0, Number(end) || 0), true);
-  if (!a || !b) return null;
+  const tokens = mappedPlainTokens(root);
+  if (!tokens.length) return null;
+  const aIndex = Math.max(0, Math.min(tokens.length - 1, Number(start) || 0));
+  const bIndex = Math.max(0, Math.min(tokens.length - 1, Math.max(0, (Number(end) || 0) - 1)));
+  const a = nearestRealToken(tokens, aIndex, 1) || nearestRealToken(tokens, aIndex, -1);
+  const b = nearestRealToken(tokens, bIndex, -1) || nearestRealToken(tokens, bIndex, 1);
+  if (!a?.node || !b?.node) return null;
   try {
     const range = document.createRange();
-    range.setStart(a.node, a.offset);
-    range.setEnd(b.node, b.offset);
+    range.setStart(a.node, a.startOffset);
+    range.setEnd(b.node, b.endOffset);
     return range.collapsed ? null : range;
   } catch {
     return null;
