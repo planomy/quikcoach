@@ -23,11 +23,19 @@ export function createSocket() {
     });
 
     socket.onAnyOutgoing((eventName, payload) => {
-      if (eventName !== 'teacher:join') return;
-      const code = String(payload?.code || '');
-      window.__iboardTeacherSocket = socket;
-      window.__iboardTeacherRoomCode = code;
-      dispatchWindowEvent('iboard:teacher-socket', { socket, code });
+      if (eventName === 'teacher:join') {
+        const code = String(payload?.code || '');
+        window.__iboardTeacherSocket = socket;
+        window.__iboardTeacherRoomCode = code;
+        dispatchWindowEvent('iboard:teacher-socket', { socket, code });
+        return;
+      }
+      if (eventName === 'student:join' || eventName === 'student:rejoin') {
+        const code = String(payload?.code || '');
+        window.__iboardStudentSocket = socket;
+        window.__iboardStudentRoomCode = code;
+        dispatchWindowEvent('iboard:student-socket', { socket, code });
+      }
     });
   }
 
