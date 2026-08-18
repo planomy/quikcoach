@@ -10,6 +10,7 @@ import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import FlipCountdown from '../components/FlipCountdown.jsx';
+import RichTextDisplay from '../components/RichTextDisplay.jsx';
 
 const TABLE_GROUP_LETTERS = ['A', 'B', 'C', 'D', 'E'];
 const MAX_BROADCAST = 6;
@@ -36,6 +37,7 @@ function normalizeStudentFromServer(s) {
     id: Number(s.id),
     name: String(s.name ?? ''),
     text: String(s.text ?? ''),
+    rich_text_html: String(s.rich_text_html ?? ''),
     class_group: s.class_group != null ? String(s.class_group) : '',
     year_level: s.year_level != null ? String(s.year_level) : '',
     updated_at: s.updated_at,
@@ -125,7 +127,7 @@ const BoardCard = memo(function BoardCard({ s, displayName, picked, selectMode, 
           />
         )}
         {s.text?.trim() ? (
-          <p className="whitespace-pre-wrap break-words">{s.text}</p>
+          <RichTextDisplay html={s.rich_text_html} text={s.text} />
         ) : !s.image_url ? (
           <p className="italic text-slate-500">No text yet</p>
         ) : null}
@@ -326,7 +328,12 @@ function WhiteboardInner() {
           const old = prevById.get(s.id);
           if (!old) return s;
           if (old.updated_at && s.updated_at && String(old.updated_at) > String(s.updated_at)) {
-            return { ...s, text: old.text, updated_at: old.updated_at };
+            return {
+              ...s,
+              text: old.text,
+              rich_text_html: old.rich_text_html,
+              updated_at: old.updated_at,
+            };
           }
           return s;
         });
@@ -340,7 +347,13 @@ function WhiteboardInner() {
         const i = prev.findIndex((x) => x.id === n.id);
         if (i < 0) return [...prev, n].sort((a, b) => a.id - b.id);
         const cur = prev[i];
-        if (cur.text === n.text && cur.updated_at === n.updated_at && cur.name === n.name && cur.image_url === n.image_url) {
+        if (
+          cur.text === n.text &&
+          cur.rich_text_html === n.rich_text_html &&
+          cur.updated_at === n.updated_at &&
+          cur.name === n.name &&
+          cur.image_url === n.image_url
+        ) {
           return prev;
         }
         const next = [...prev];
