@@ -15,6 +15,20 @@ export function createSocket() {
     maxHttpBufferSize: 3e6,
   });
 
+  // A reconnect can replay persisted feedback that this still-open tab already displayed.
+  // Filter duplicate server ids before StudentView's existing feedback listener sees them.
+  const seenFeedbackIds = new Set();
+  socket.on('feedback:batch', (payload) => {
+    if (!Array.isArray(payload?.items)) return;
+    payload.items = payload.items.filter((item) => {
+      const id = Number(item?.feedbackId);
+      if (!id) return true;
+      if (seenFeedbackIds.has(id)) return false;
+      seenFeedbackIds.add(id);
+      return true;
+    });
+  });
+
   if (typeof window !== 'undefined') {
     socket.on('room:state', (payload) => {
       if (!payload?.room) return;
