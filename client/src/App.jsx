@@ -8,6 +8,7 @@ import PulseTeacher from './pages/PulseTeacher.jsx';
 import StudentFormattingControl from './components/StudentFormattingControl.jsx';
 import TeacherAnnotationController from './components/TeacherAnnotationController.jsx';
 import StudentAnnotationController from './components/StudentAnnotationController.jsx';
+import NoteSendStatusControl from './components/NoteSendStatusControl.jsx';
 
 function TeacherConsole() {
   return (
@@ -15,6 +16,7 @@ function TeacherConsole() {
       <TeacherDashboard />
       <StudentFormattingControl />
       <TeacherAnnotationController />
+      <NoteSendStatusControl />
     </>
   );
 }
