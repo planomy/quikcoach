@@ -17,7 +17,9 @@ export function createSocket() {
 
   if (typeof window !== 'undefined') {
     socket.on('room:state', (payload) => {
-      if (payload?.room) dispatchWindowEvent('iboard:room-state', payload.room);
+      if (!payload?.room) return;
+      window.__iboardStudentFormattingEnabled = payload.room.student_formatting !== false;
+      dispatchWindowEvent('iboard:room-state', payload.room);
     });
 
     socket.onAnyOutgoing((eventName, payload) => {
