@@ -6,6 +6,11 @@ function countWords(value) {
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
 }
 
+function initialFormattingEnabled() {
+  if (typeof window === 'undefined') return true;
+  return window.__iboardStudentFormattingEnabled !== false;
+}
+
 function insertPlainTextAtSelection(text) {
   if (document.execCommand?.('insertText', false, text)) return;
   const selection = window.getSelection?.();
@@ -49,11 +54,21 @@ export default function RichTextEditor({
   const lastAcceptedHtmlRef = useRef('');
   const [focused, setFocused] = useState(false);
   const [empty, setEmpty] = useState(!String(text || '').trim());
+  const [formattingEnabled, setFormattingEnabled] = useState(initialFormattingEnabled);
 
   const incomingHtml = useMemo(() => {
     const safe = sanitizeRichHtml(html);
     return safe || plainTextToRichHtml(text);
   }, [html, text]);
+
+  useEffect(() => {
+    const onRoomState = (event) => {
+      const enabled = event.detail?.student_formatting !== false;
+      setFormattingEnabled(enabled);
+    };
+    window.addEventListener('iboard:room-state', onRoomState);
+    return () => window.removeEventListener('iboard:room-state', onRoomState);
+  }, []);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -62,6 +77,18 @@ export default function RichTextEditor({
     lastAcceptedHtmlRef.current = incomingHtml;
     setEmpty(!richHtmlToPlainText(incomingHtml).trim());
   }, [incomingHtml]);
+
+  useEffect(() => {
+    if (formattingEnabled) return;
+    const editor = editorRef.current;
+    const plainHtml = plainTextToRichHtml(text);
+    if (editor) editor.innerHTML = plainHtml;
+    lastAcceptedHtmlRef.current = plainHtml;
+    setEmpty(!String(text || '').trim());
+    onChange?.({ text: String(text || ''), html: '' });
+    // Only run when the teacher changes the room capability.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formattingEnabled]);
 
   function commitFromDom({ normaliseDom = false } = {}) {
     const editor = editorRef.current;
@@ -76,14 +103,15 @@ export default function RichTextEditor({
       return;
     }
 
-    lastAcceptedHtmlRef.current = safeHtml;
-    if (normaliseDom && editor.innerHTML !== safeHtml) editor.innerHTML = safeHtml;
+    const acceptedDomHtml = formattingEnabled ? safeHtml : plainTextToRichHtml(plainText);
+    lastAcceptedHtmlRef.current = acceptedDomHtml;
+    if (normaliseDom && editor.innerHTML !== acceptedDomHtml) editor.innerHTML = acceptedDomHtml;
     setEmpty(!plainText.trim());
-    onChange?.({ text: plainText, html: safeHtml });
+    onChange?.({ text: plainText, html: formattingEnabled ? safeHtml : '' });
   }
 
   function runCommand(command, value = null) {
-    if (disabled) return;
+    if (disabled || !formattingEnabled) return;
     const editor = editorRef.current;
     if (!editor) return;
     editor.focus();
@@ -96,7 +124,7 @@ export default function RichTextEditor({
   }
 
   function highlightSelection() {
-    if (disabled) return;
+    if (disabled || !formattingEnabled) return;
     const editor = editorRef.current;
     if (!editor) return;
     editor.focus();
@@ -125,24 +153,32 @@ export default function RichTextEditor({
     commitFromDom();
   }
 
+  function handleKeyDown(event) {
+    if (formattingEnabled) return;
+    if (!(event.ctrlKey || event.metaKey)) return;
+    if (['b', 'i', 'u'].includes(String(event.key || '').toLowerCase())) event.preventDefault();
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card ring-indigo-500 focus-within:border-indigo-500 focus-within:ring-2 dark:border-slate-600 dark:bg-slate-900">
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
-        <ToolbarButton disabled={disabled} label="B" title="Bold" onClick={() => runCommand('bold')} />
-        <ToolbarButton disabled={disabled} label={<span className="italic">I</span>} title="Italic" onClick={() => runCommand('italic')} />
-        <ToolbarButton disabled={disabled} label={<span className="underline">U</span>} title="Underline" onClick={() => runCommand('underline')} />
-        <ToolbarButton
-          disabled={disabled}
-          label={<span className="rounded bg-yellow-200 px-1.5 py-0.5 text-xs text-slate-900">H</span>}
-          title="Highlight"
-          onClick={highlightSelection}
-        />
-        <ToolbarButton disabled={disabled} label="•" title="Bullet list" onClick={() => runCommand('insertUnorderedList')} />
-        <span className="mx-0.5 h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
-        <ToolbarButton disabled={disabled} label="↶" title="Undo" onClick={() => runCommand('undo')} />
-        <ToolbarButton disabled={disabled} label="↷" title="Redo" onClick={() => runCommand('redo')} />
-        <span className="ml-auto text-[11px] font-medium text-slate-400">Select text, then format</span>
-      </div>
+      {formattingEnabled && (
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
+          <ToolbarButton disabled={disabled} label="B" title="Bold" onClick={() => runCommand('bold')} />
+          <ToolbarButton disabled={disabled} label={<span className="italic">I</span>} title="Italic" onClick={() => runCommand('italic')} />
+          <ToolbarButton disabled={disabled} label={<span className="underline">U</span>} title="Underline" onClick={() => runCommand('underline')} />
+          <ToolbarButton
+            disabled={disabled}
+            label={<span className="rounded bg-yellow-200 px-1.5 py-0.5 text-xs text-slate-900">H</span>}
+            title="Highlight"
+            onClick={highlightSelection}
+          />
+          <ToolbarButton disabled={disabled} label="•" title="Bullet list" onClick={() => runCommand('insertUnorderedList')} />
+          <span className="mx-0.5 h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
+          <ToolbarButton disabled={disabled} label="↶" title="Undo" onClick={() => runCommand('undo')} />
+          <ToolbarButton disabled={disabled} label="↷" title="Redo" onClick={() => runCommand('redo')} />
+          <span className="ml-auto text-[11px] font-medium text-slate-400">Select text, then format</span>
+        </div>
+      )}
       <div className="relative">
         {empty && !focused && (
           <div className="pointer-events-none absolute left-4 top-4 text-sm text-slate-400 dark:text-slate-500">
@@ -158,12 +194,13 @@ export default function RichTextEditor({
           aria-readonly={disabled}
           onInput={() => commitFromDom()}
           onPaste={handlePaste}
+          onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => {
             setFocused(false);
             commitFromDom({ normaliseDom: true });
           }}
-          className={`min-h-[280px] whitespace-pre-wrap p-4 text-sm leading-relaxed text-slate-800 outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:px-0.5 [&_mark]:text-slate-900 dark:text-slate-100 ${
+          className={`min-h-[280px] whitespace-pre-wrap p-4 text-sm leading-relaxed text-slate-800 outline-none [&_div+div]:mt-2 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:px-0.5 [&_mark]:text-slate-900 dark:text-slate-100 ${
             disabled ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''
           }`}
         />
