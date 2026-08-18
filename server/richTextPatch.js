@@ -22,6 +22,15 @@ queries.rowToStudent = (row) => {
   };
 };
 
+// The legacy clear-drafts path only knows about the plain-text column. Clear the companion
+// formatting column at the same time so an old formatted draft can never reappear client-side.
+const baseClearStudentContents = queries.clearStudentContents;
+queries.clearStudentContents = (db, roomCode) => {
+  const result = baseClearStudentContents(db, roomCode);
+  db.prepare(`UPDATE students SET rich_text_html = '' WHERE room_code = ?`).run(roomCode);
+  return result;
+};
+
 function normaliseRoomCode(code) {
   return String(code ?? '')
     .replace(/\D/g, '')
@@ -59,8 +68,9 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           // If the existing server hard-limit shortened the plain draft, formatting no
           // longer lines up exactly. Drop formatting rather than display the wrong marks.
           const safeRich = String(current.text || '') === plainText ? richTextHtml : '';
-          saveRichText.run(safeRich, studentId);
+          if (String(current.rich_text_html || '') === safeRich) return;
 
+          saveRichText.run(safeRich, studentId);
           const updated = selectStudent.get(studentId);
           const student = queries.rowToStudent(updated);
           io.to(`room:${roomCode}`).emit('student:live', { student });
