@@ -1,0 +1,59 @@
+name: Apply student rich text upgrade
+
+on:
+  push:
+    branches:
+      - agent/student-rich-text-toolbar
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/student-rich-text-toolbar
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply rich-text patch
+        run: python3 scripts/apply-rich-text.py
+
+      - name: Install client dependencies
+        run: npm ci --prefix client
+
+      - name: Build client
+        run: npm run build --prefix client
+
+      - name: Check server syntax
+        run: |
+          node --check server/index.js
+          node --check server/db.js
+
+      - name: Remove temporary patch tooling
+        run: |
+          rm scripts/apply-rich-text.py
+          rm .github/workflows/apply-rich-text.yml
+
+      - name: Commit validated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add client/src/lib/richText.js
+          git add client/src/components/RichTextDisplay.jsx
+          git add client/src/components/RichTextEditor.jsx
+          git add client/src/pages/StudentView.jsx
+          git add client/src/pages/TeacherDashboard.jsx
+          git add client/src/pages/Whiteboard.jsx
+          git add server/db.js server/index.js
+          git add -u scripts/apply-rich-text.py .github/workflows/apply-rich-text.yml
+          git diff --cached --check
+          git commit -m "Add student rich text toolbar"
+          git push origin HEAD:agent/student-rich-text-toolbar
