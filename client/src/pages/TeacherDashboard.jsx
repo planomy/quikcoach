@@ -19,6 +19,7 @@ import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
+import StudentFormattingControl from '../components/StudentFormattingControl.jsx';
 import {
   downloadTextFile,
   buildEvidenceHtml,
@@ -1128,22 +1129,25 @@ function TeacherDashboardInner() {
                     {orderedStudents.length ? `${orderedStudents.length} student${orderedStudents.length === 1 ? '' : 's'} in this room` : 'Waiting for students to join'}
                   </p>
                 </div>
-                <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900" role="group" aria-label="Student card view">
-                  {CARD_VIEWS.map((view) => (
-                    <button
-                      key={view.id}
-                      type="button"
-                      onClick={() => setCardView(view.id)}
-                      aria-pressed={cardView === view.id}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                        cardView === view.id
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200'
-                      }`}
-                    >
-                      {view.label}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900" role="group" aria-label="Student card view">
+                    {CARD_VIEWS.map((view) => (
+                      <button
+                        key={view.id}
+                        type="button"
+                        onClick={() => setCardView(view.id)}
+                        aria-pressed={cardView === view.id}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                          cardView === view.id
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200'
+                        }`}
+                      >
+                        {view.label}
+                      </button>
+                    ))}
+                  </div>
+                  <StudentFormattingControl compact />
                 </div>
               </div>
 
