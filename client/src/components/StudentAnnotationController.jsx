@@ -3,11 +3,6 @@ import { plainTextFromElement, rangeForPlainOffsets, resolveAnnotation } from '.
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 
-function currentSocket() {
-  if (typeof window === 'undefined') return null;
-  return window.__iboardStudentSocket || null;
-}
-
 function currentStudentId() {
   if (typeof window === 'undefined') return 0;
   try {
@@ -23,9 +18,8 @@ function editorElement() {
   return document.querySelector('[role="textbox"][contenteditable]');
 }
 
-export default function StudentAnnotationController() {
-  const [socket, setSocket] = useState(currentSocket);
-  const [studentId, setStudentId] = useState(currentStudentId);
+export default function StudentAnnotationController({ socket, studentId: suppliedStudentId }) {
+  const studentId = Number(suppliedStudentId) || currentStudentId();
   const [annotations, setAnnotations] = useState([]);
   const [markers, setMarkers] = useState([]);
   const [openMarker, setOpenMarker] = useState(null);
@@ -64,22 +58,12 @@ export default function StudentAnnotationController() {
   }, [annotations]);
 
   useEffect(() => {
-    const onSocket = (event) => {
-      setSocket(event.detail?.socket || currentSocket());
-      setStudentId(currentStudentId());
-    };
-    window.addEventListener('iboard:student-socket', onSocket);
-    if (currentSocket()) setSocket(currentSocket());
-    return () => window.removeEventListener('iboard:student-socket', onSocket);
-  }, []);
-
-  useEffect(() => {
     if (!socket) return;
     let cancelled = false;
     let retryTimer = null;
     const onMine = ({ studentId: incomingId, annotations: list }) => {
       const id = Number(incomingId) || currentStudentId();
-      if (id) setStudentId(id);
+      if (studentId && id && id !== Number(studentId)) return;
       setAnnotations(Array.isArray(list) ? list : []);
     };
     const onUpdate = ({ studentId: incomingId, annotations: list }) => {
@@ -118,7 +102,6 @@ export default function StudentAnnotationController() {
     socket.on('room:state', onRoomState);
     socket.on('student:live', schedule);
     socket.on('connect', requestSync);
-    window.addEventListener('iboard:student-socket', requestSync);
     queueSync();
     return () => {
       cancelled = true;
@@ -128,7 +111,6 @@ export default function StudentAnnotationController() {
       socket.off('room:state', onRoomState);
       socket.off('student:live', schedule);
       socket.off('connect', requestSync);
-      window.removeEventListener('iboard:student-socket', requestSync);
     };
   }, [socket, studentId, refreshHighlights]);
 
