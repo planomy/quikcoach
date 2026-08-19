@@ -48,6 +48,23 @@ const TEACHER_WORKSPACES = [
   { id: 'reports', label: 'Reports', icon: '≡' },
 ];
 
+const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
+const CARD_VIEWS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'reading', label: 'Reading' },
+  { id: 'full', label: 'Full drafts' },
+];
+
+function initialCardView() {
+  if (typeof window === 'undefined') return 'overview';
+  try {
+    const saved = localStorage.getItem(CARD_VIEW_STORAGE_KEY);
+    return CARD_VIEWS.some((view) => view.id === saved) ? saved : 'overview';
+  } catch {
+    return 'overview';
+  }
+}
+
 function normalizedTableGroup(raw) {
   const g = String(raw || '').trim().toUpperCase();
   return TABLE_GROUP_LETTERS.includes(g) ? g : null;
@@ -165,6 +182,8 @@ function TeacherDashboardInner() {
   const [evidenceLabel, setEvidenceLabel] = useState('');
   const [evidenceBusy, setEvidenceBusy] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState('live');
+  const [cardView, setCardView] = useState(initialCardView);
+  const [focusedStudentId, setFocusedStudentId] = useState(null);
 
   const socket = useMemo(() => createSocket(), []);
   const teacherRoomRef = useRef('');
@@ -202,6 +221,16 @@ function TeacherDashboardInner() {
   useEffect(() => {
     joinedRef.current = joined;
   }, [joined]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CARD_VIEW_STORAGE_KEY, cardView);
+    } catch {
+      /* The view still works when browser storage is unavailable. */
+    }
+    const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
+    return () => cancelAnimationFrame(frame);
+  }, [cardView]);
 
   const hydrateFeedbackStateFromRoom = useCallback((r) => {
     if (!r?.feedback_toggles) return;
@@ -917,6 +946,19 @@ function TeacherDashboardInner() {
   const wt = room?.word_target ?? 0;
   const enforceWords = !!room?.enforce_word_count;
   const frozen = !!room?.freeze_class;
+  const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
+  const studentGridClass =
+    cardView === 'overview'
+      ? 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 min-[1800px]:grid-cols-5'
+      : cardView === 'reading'
+        ? 'md:grid-cols-2 xl:grid-cols-3'
+        : 'lg:grid-cols-2';
+  const writingPaneClass =
+    cardView === 'overview'
+      ? 'max-h-52 overflow-auto'
+      : cardView === 'reading'
+        ? 'min-h-[22rem] max-h-[32rem] overflow-auto'
+        : 'overflow-visible';
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-indigo-50/40 dark:from-slate-950 dark:to-indigo-950/40">
@@ -929,7 +971,7 @@ function TeacherDashboardInner() {
         </div>
       )}
       <header className="border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Teacher</p>
             <h1 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">
@@ -965,7 +1007,7 @@ function TeacherDashboardInner() {
       </header>
 
       <div className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="mx-auto flex max-w-[1800px] flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="flex flex-1 flex-col gap-1.5 sm:max-w-md">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span>Word target</span>
@@ -1023,7 +1065,7 @@ function TeacherDashboardInner() {
         </div>
       </div>
 
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-start">
+      <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-start">
         <nav
           aria-label="Teacher tools"
           className="sticky top-[76px] z-10 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:w-24 lg:shrink-0 lg:flex-col lg:overflow-visible"
@@ -1079,12 +1121,29 @@ function TeacherDashboardInner() {
 
           {activeWorkspace === 'live' && (
             <>
-              <div className="mb-4 flex items-end justify-between gap-3">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Live student work</h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
                     {orderedStudents.length ? `${orderedStudents.length} student${orderedStudents.length === 1 ? '' : 's'} in this room` : 'Waiting for students to join'}
                   </p>
+                </div>
+                <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900" role="group" aria-label="Student card view">
+                  {CARD_VIEWS.map((view) => (
+                    <button
+                      key={view.id}
+                      type="button"
+                      onClick={() => setCardView(view.id)}
+                      aria-pressed={cardView === view.id}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                        cardView === view.id
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200'
+                      }`}
+                    >
+                      {view.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -1128,7 +1187,7 @@ function TeacherDashboardInner() {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={`grid gap-4 ${studentGridClass}`}>
           {orderedStudents.length === 0 && (
             <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
               Waiting for students to join…
@@ -1152,6 +1211,7 @@ function TeacherDashboardInner() {
             return (
               <article
                 key={s.id}
+                data-student-id={s.id}
                 className="flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900 p-3 shadow-card"
               >
                 <div className="flex items-center gap-1.5">
@@ -1195,6 +1255,15 @@ function TeacherDashboardInner() {
                     title="Send a private note to this student only"
                   >
                     Note
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFocusedStudentId(s.id)}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-indigo-200 text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+                    title={`Open ${s.name}'s full draft`}
+                    aria-label={`Open ${s.name}'s full draft`}
+                  >
+                    ↗
                   </button>
                   <button
                     type="button"
@@ -1255,7 +1324,10 @@ function TeacherDashboardInner() {
                       </span>
                     )}
                 </div>
-                <div className="mt-2 max-h-52 overflow-auto rounded-xl bg-slate-50 p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300">
+                <div
+                  data-student-writing-pane
+                  className={`mt-2 rounded-xl bg-slate-50 p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
+                >
                   {s.image_url && (
                     <img
                       src={s.image_url}
@@ -1522,6 +1594,46 @@ function TeacherDashboardInner() {
       </main>
 
       <AppFooter />
+
+      {focusedStudent && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center">
+          <article
+            data-student-id={focusedStudent.id}
+            className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="focused-student-title"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Full draft</p>
+                <h2 id="focused-student-title" title={`ID #${focusedStudent.id}`} className="truncate font-display text-xl font-bold text-ink-900 dark:text-slate-100">
+                  {focusedStudent.name}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{wordCount(focusedStudent.text)} words · select text to add an inline comment</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setFocusedStudentId(null); openNoteForStudent(focusedStudent); }} className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-900 dark:text-violet-300 dark:hover:bg-violet-950/40">
+                  Send note
+                </button>
+                <button type="button" onClick={() => setFocusedStudentId(null)} className="flex h-10 w-10 items-center justify-center rounded-xl text-xl font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-label="Close full draft">
+                  ×
+                </button>
+              </div>
+            </div>
+            <div data-student-writing-pane className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap px-6 py-5 text-base leading-7 text-slate-800 scrollbar-thin dark:text-slate-200">
+              {focusedStudent.image_url && (
+                <img src={focusedStudent.image_url} alt="" className="mb-5 max-h-80 w-full object-contain" />
+              )}
+              {focusedStudent.text ? (
+                <RichTextDisplay html={focusedStudent.rich_text_html} text={focusedStudent.text} />
+              ) : !focusedStudent.image_url ? (
+                <span className="italic text-slate-400 dark:text-slate-500">No text yet</span>
+              ) : null}
+            </div>
+          </article>
+        </div>
+      )}
 
       {noteTarget && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
