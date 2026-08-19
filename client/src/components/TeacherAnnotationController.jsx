@@ -50,6 +50,7 @@ export default function TeacherAnnotationController() {
   const [pending, setPending] = useState(null);
   const [draftNote, setDraftNote] = useState('');
   const [commentError, setCommentError] = useState('');
+  const [saveNotice, setSaveNotice] = useState('');
   const [openMarker, setOpenMarker] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [detachedCount, setDetachedCount] = useState(0);
@@ -147,7 +148,12 @@ export default function TeacherAnnotationController() {
   }, [refreshHighlights]);
 
   useEffect(() => {
-    function onMouseUp() {
+    function onMouseUp(event) {
+      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
+      // Releasing the mouse on the comment popup must not be treated as a new text
+      // selection. In particular, closing the popup on Add comment removes the button
+      // before its click event can fire, so the annotation never reaches the server.
+      if (target?.closest?.('[data-teacher-annotation-ui]')) return;
       const selection = window.getSelection?.();
       if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) {
         setPending(null);
@@ -162,6 +168,7 @@ export default function TeacherAnnotationController() {
       const rect = range.getBoundingClientRect();
       setDraftNote('');
       setCommentError('');
+      setSaveNotice('');
       setPending({
         studentId: card.studentId,
         ...offsets,
@@ -174,9 +181,16 @@ export default function TeacherAnnotationController() {
     return () => document.removeEventListener('mouseup', onMouseUp);
   }, []);
 
+  useEffect(() => {
+    if (!saveNotice) return undefined;
+    const timer = setTimeout(() => setSaveNotice(''), 3000);
+    return () => clearTimeout(timer);
+  }, [saveNotice]);
+
   function addComment() {
     const note = draftNote.trim();
     if (!socket || !pending || !note) return;
+    const quotedText = pending.quote;
     setCommentError('');
     socket.emit(
       'teacher:annotation-add',
@@ -197,6 +211,7 @@ export default function TeacherAnnotationController() {
         setPending(null);
         setDraftNote('');
         setCommentError('');
+        setSaveNotice(`Inline comment saved for “${quotedText}”`);
         window.getSelection?.()?.removeAllRanges?.();
       }
     );
@@ -292,6 +307,17 @@ export default function TeacherAnnotationController() {
       {detachedCount > 0 && (
         <div data-teacher-annotation-ui className="fixed bottom-4 left-4 z-40 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 shadow-lg dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
           {detachedCount} inline {detachedCount === 1 ? 'comment is' : 'comments are'} waiting because the student changed that passage.
+        </div>
+      )}
+
+      {saveNotice && (
+        <div
+          data-teacher-annotation-ui
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-4 left-1/2 z-[80] -translate-x-1/2 rounded-xl border border-emerald-300 bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-2xl"
+        >
+          ✓ {saveNotice}
         </div>
       )}
     </>
