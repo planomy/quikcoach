@@ -162,6 +162,33 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   return (
     <>
       <style>{`::highlight(${HIGHLIGHT_NAME}) { background: rgba(196, 181, 253, 0.78); text-decoration: underline 2px rgb(124, 58, 237); text-underline-offset: 2px; }`}</style>
+      {annotations.length > 0 && (
+        <section
+          data-teacher-annotation-ui
+          role="status"
+          aria-live="polite"
+          className="rounded-2xl border-2 border-violet-300 bg-violet-50/90 p-4 shadow-sm dark:border-violet-700 dark:bg-violet-950/60"
+        >
+          <h2 className="font-display text-sm font-semibold text-violet-900 dark:text-violet-200">
+            Teacher comments
+          </h2>
+          <ul className="mt-3 space-y-3">
+            {annotations.map((annotation) => (
+              <li
+                key={annotation.id}
+                className="rounded-xl border border-violet-100 bg-white p-3 shadow-sm dark:border-violet-900 dark:bg-slate-900"
+              >
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">
+                  Comment on “{annotation.quote}”
+                </p>
+                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">
+                  {annotation.note}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {markers.map((marker) => (
         <button
           key={marker.annotation.id}
@@ -176,28 +203,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           💬
         </button>
       ))}
-      {annotations.length > 0 && markers.length === 0 && (
-        <button
-          data-teacher-annotation-ui
-          type="button"
-          onClick={() =>
-            setOpenMarker({
-              annotation: annotations[0],
-              top: Math.max(10, window.innerHeight - 220),
-              left: Math.max(300, window.innerWidth - 40),
-            })
-          }
-          className="fixed bottom-4 right-4 z-[55] rounded-2xl border-2 border-violet-300 bg-violet-600 px-4 py-3 text-left text-white shadow-2xl hover:bg-violet-700"
-          aria-label="Open teacher inline comment"
-        >
-          <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-violet-100">
-            Teacher comment
-          </span>
-          <span className="mt-1 block text-sm font-bold">
-            💬 Open teacher comment{annotations.length === 1 ? '' : ` (${annotations.length})`}
-          </span>
-        </button>
-      )}
       {openMarker && (
         <div
           data-teacher-annotation-ui
