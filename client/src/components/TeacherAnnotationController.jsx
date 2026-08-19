@@ -7,6 +7,36 @@ import {
 } from '../lib/annotations.js';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
+const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
+const CORE_COMMENTS = [
+  'Check GPS',
+  'This is an incomplete fragment sentence',
+  'Repeated word or idea',
+  "I'm not following what you mean",
+  'Too many little words',
+  'Change this',
+  'Love this',
+];
+
+function loadCustomComments() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CUSTOM_COMMENTS_KEY) || '[]');
+    return Array.isArray(parsed)
+      ? parsed.map((item) => String(item || '').trim().slice(0, 500)).filter(Boolean).slice(0, 30)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomComments(comments) {
+  try {
+    localStorage.setItem(CUSTOM_COMMENTS_KEY, JSON.stringify(comments.slice(0, 30)));
+  } catch {
+    /* ignore storage failures */
+  }
+}
 
 function currentSocket() {
   if (typeof window === 'undefined') return null;
@@ -49,6 +79,9 @@ export default function TeacherAnnotationController() {
   const [byStudent, setByStudent] = useState({});
   const [pending, setPending] = useState(null);
   const [draftNote, setDraftNote] = useState('');
+  const [customComments, setCustomComments] = useState(loadCustomComments);
+  const [customCommentDraft, setCustomCommentDraft] = useState('');
+  const [addingCustomComment, setAddingCustomComment] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
   const [openMarker, setOpenMarker] = useState(null);
@@ -158,13 +191,15 @@ export default function TeacherAnnotationController() {
       if (!offsets || offsets.quote.length > 1200) return;
       const rect = range.getBoundingClientRect();
       setDraftNote('');
+      setCustomCommentDraft('');
+      setAddingCustomComment(false);
       setCommentError('');
       setSaveNotice('');
       setPending({
         studentId: card.studentId,
         ...offsets,
-        left: Math.max(10, Math.min(window.innerWidth - 310, rect.left)),
-        top: Math.min(window.innerHeight - 180, rect.bottom + 8),
+        left: Math.max(10, Math.min(window.innerWidth - 370, rect.left)),
+        top: Math.max(10, Math.min(window.innerHeight - 460, rect.bottom + 8)),
       });
       setOpenMarker(null);
     }
@@ -177,6 +212,31 @@ export default function TeacherAnnotationController() {
     const timer = setTimeout(() => setSaveNotice(''), 3000);
     return () => clearTimeout(timer);
   }, [saveNotice]);
+
+  function addCustomComment() {
+    const comment = customCommentDraft.trim().slice(0, 500);
+    if (!comment) return;
+    const allComments = [...CORE_COMMENTS, ...customComments];
+    const existing = allComments.find((item) => item.toLocaleLowerCase() === comment.toLocaleLowerCase());
+    if (existing) {
+      setDraftNote(existing);
+      setCustomCommentDraft('');
+      setAddingCustomComment(false);
+      return;
+    }
+    const next = [...customComments, comment].slice(0, 30);
+    setCustomComments(next);
+    saveCustomComments(next);
+    setDraftNote(comment);
+    setCustomCommentDraft('');
+    setAddingCustomComment(false);
+  }
+
+  function removeCustomComment(comment) {
+    const next = customComments.filter((item) => item !== comment);
+    setCustomComments(next);
+    saveCustomComments(next);
+  }
 
   function addComment() {
     const note = draftNote.trim();
@@ -247,11 +307,102 @@ export default function TeacherAnnotationController() {
       {pending && (
         <div
           data-teacher-annotation-ui
-          className="fixed z-[70] w-[300px] rounded-2xl border border-violet-200 bg-white p-3 shadow-2xl dark:border-violet-800 dark:bg-slate-900"
+          className="fixed z-[70] max-h-[calc(100vh-20px)] w-[360px] max-w-[calc(100vw-20px)] overflow-y-auto rounded-2xl border border-violet-200 bg-white p-3 shadow-2xl dark:border-violet-800 dark:bg-slate-900"
           style={{ top: pending.top, left: pending.left }}
         >
           <p className="text-[10px] font-black uppercase tracking-[0.13em] text-violet-600">Inline comment</p>
           <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{pending.quote}”</p>
+          <div className="mt-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                Quick comments
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAddingCustomComment((open) => !open);
+                  setCustomCommentDraft('');
+                }}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-sm font-black text-violet-700 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200"
+                aria-label="Add a reusable comment"
+                title="Add your own quick comment"
+              >
+                +
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {CORE_COMMENTS.map((comment) => (
+                <button
+                  key={comment}
+                  type="button"
+                  onClick={() => setDraftNote(comment)}
+                  className={`rounded-lg border px-2 py-1.5 text-left text-[11px] font-semibold leading-tight transition ${
+                    draftNote === comment
+                      ? 'border-violet-600 bg-violet-600 text-white'
+                      : 'border-violet-200 bg-violet-50 text-violet-800 hover:border-violet-400 hover:bg-violet-100 dark:border-violet-900 dark:bg-violet-950/60 dark:text-violet-200'
+                  }`}
+                >
+                  {comment}
+                </button>
+              ))}
+              {customComments.map((comment) => (
+                <span
+                  key={comment}
+                  className={`inline-flex overflow-hidden rounded-lg border text-[11px] font-semibold leading-tight transition ${
+                    draftNote === comment
+                      ? 'border-violet-600 bg-violet-600 text-white'
+                      : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                  }`}
+                >
+                  <button type="button" onClick={() => setDraftNote(comment)} className="px-2 py-1.5 text-left hover:bg-violet-100/70 dark:hover:bg-violet-950/70">
+                    {comment}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeCustomComment(comment)}
+                    className="border-l border-current/20 px-1.5 text-current/60 hover:text-red-600"
+                    aria-label={`Remove reusable comment: ${comment}`}
+                    title="Remove quick comment"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            {addingCustomComment && (
+              <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50 p-2 dark:border-violet-900 dark:bg-violet-950/40">
+                <label htmlFor="custom-inline-comment" className="text-[10px] font-bold text-violet-700 dark:text-violet-200">
+                  New reusable comment
+                </label>
+                <div className="mt-1.5 flex gap-1.5">
+                  <input
+                    id="custom-inline-comment"
+                    autoFocus
+                    value={customCommentDraft}
+                    maxLength={500}
+                    onChange={(event) => setCustomCommentDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addCustomComment();
+                      }
+                      if (event.key === 'Escape') setAddingCustomComment(false);
+                    }}
+                    placeholder="Type your comment…"
+                    className="min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none ring-violet-500 focus:ring-2 dark:border-violet-800 dark:bg-slate-950 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    disabled={!customCommentDraft.trim()}
+                    onClick={addCustomComment}
+                    className="rounded-lg bg-violet-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-violet-700 disabled:opacity-40"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           <textarea
             autoFocus
             value={draftNote}
@@ -261,7 +412,7 @@ export default function TeacherAnnotationController() {
               if (event.key === 'Escape') setPending(null);
             }}
             placeholder="Type your comment…"
-            className="mt-2 min-h-20 w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-violet-500 focus:border-violet-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="mt-3 min-h-20 w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-violet-500 focus:border-violet-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
           {commentError && (
             <p className="mt-2 text-xs font-semibold leading-relaxed text-red-600 dark:text-red-300">
