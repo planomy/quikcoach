@@ -50,17 +50,23 @@ function findCardFromNode(node) {
   if (!article) return null;
   const heading = article.querySelector('h2[title^="ID #"]');
   const match = String(heading?.getAttribute('title') || '').match(/ID #(\d+)/);
-  const studentId = Number(match?.[1]);
+  const studentId = Number(article.dataset.studentId || match?.[1]);
   if (!studentId) return null;
-  const textPane = el.closest('div.max-h-52') || article.querySelector('div.max-h-52');
+  const textPane =
+    el.closest('[data-student-writing-pane]') ||
+    article.querySelector('[data-student-writing-pane]') ||
+    el.closest('div.max-h-52') ||
+    article.querySelector('div.max-h-52');
   if (!textPane || !textPane.contains(el)) return null;
   return { article, textPane, studentId };
 }
 
 function cardForStudent(studentId) {
-  const heading = document.querySelector(`h2[title="ID #${Number(studentId)}"]`);
-  const article = heading?.closest('article');
-  const textPane = article?.querySelector('div.max-h-52');
+  const article =
+    document.querySelector(`article[data-student-id="${Number(studentId)}"]`) ||
+    document.querySelector(`h2[title="ID #${Number(studentId)}"]`)?.closest('article');
+  const textPane =
+    article?.querySelector('[data-student-writing-pane]') || article?.querySelector('div.max-h-52');
   return article && textPane ? { article, textPane } : null;
 }
 
@@ -164,9 +170,11 @@ export default function TeacherAnnotationController() {
     const onMove = () => refreshHighlights();
     window.addEventListener('resize', onMove);
     window.addEventListener('scroll', onMove, true);
+    window.addEventListener('iboard:teacher-layout', onMove);
     return () => {
       window.removeEventListener('resize', onMove);
       window.removeEventListener('scroll', onMove, true);
+      window.removeEventListener('iboard:teacher-layout', onMove);
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
     };
   }, [refreshHighlights]);
