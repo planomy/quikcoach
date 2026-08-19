@@ -35,9 +35,25 @@ function clearStudentSession() {
   try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
 }
 
-function newId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  return `fb-${Date.now()}`;
+function feedbackInboxItem(item) {
+  const feedbackId = Number(item?.feedbackId) || 0;
+  const text = String(item?.text || '');
+  const createdAt = String(item?.createdAt || '');
+  return {
+    id: feedbackId
+      ? `feedback-${feedbackId}`
+      : `feedback-${Number(item?.studentId) || 0}-${createdAt}-${text}`,
+    text,
+  };
+}
+
+function mergeFeedbackInbox(previous, incoming) {
+  const existingIds = new Set(previous.map((item) => item.id));
+  const fresh = [...incoming]
+    .reverse()
+    .map(feedbackInboxItem)
+    .filter((item) => item.text && !existingIds.has(item.id));
+  return fresh.length ? [...fresh, ...previous] : previous;
 }
 
 export default function StudentView() {
@@ -157,14 +173,14 @@ export default function StudentView() {
       setStudent((prev) => ({ ...(prev || {}), ...s }));
     };
     const onBatch = ({ items }) => {
-      const sid = studentRef.current?.id;
+      const sid =
+        studentRef.current?.id ??
+        hydrateStudentIdRef.current ??
+        Number(readSavedStudentSession()?.studentId);
       if (!sid || !Array.isArray(items)) return;
-      const mine = items.filter((i) => i.studentId === sid);
+      const mine = items.filter((i) => Number(i?.studentId) === Number(sid));
       if (!mine.length) return;
-      setFeedbackInbox((prev) => [
-        ...mine.map((i) => ({ id: newId(), text: i.text, at: Date.now() })),
-        ...prev,
-      ]);
+      setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine));
     };
     const onBroadcast = ({ items }) => {
       setBroadcastExemplars(Array.isArray(items) ? items : []);
@@ -187,6 +203,18 @@ export default function StudentView() {
       if (exemplarFlashTimerRef.current) clearTimeout(exemplarFlashTimerRef.current);
     };
   }, [socket]);
+
+  // Recover the durable mailbox only after React has committed the student identity.
+  // This closes the join/rejoin race even if the server replay arrived during startup.
+  useEffect(() => {
+    const sid = Number(student?.id);
+    if (!joined || !sid) return;
+    socket.emit('student:feedback-sync', {}, (ack) => {
+      if (!ack?.ok || !Array.isArray(ack.items)) return;
+      const mine = ack.items.filter((item) => Number(item?.studentId) === sid);
+      if (mine.length) setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine));
+    });
+  }, [joined, student?.id, socket]);
 
   useEffect(() => {
     pendingRef.current = { text: draft, richTextHtml: draftHtml };
@@ -550,6 +578,27 @@ export default function StudentView() {
             </div>
           </section>
         )}
+        {feedbackInbox.length > 0 && (
+          <section
+            role="status"
+            aria-live="polite"
+            className="rounded-2xl border-2 border-indigo-300 bg-indigo-50/90 p-4 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/60"
+          >
+            <h2 className="font-display text-sm font-semibold text-indigo-900 dark:text-indigo-200">
+              Teacher feedback
+            </h2>
+            <ul className="mt-2 space-y-2">
+              {feedbackInbox.map((f) => (
+                <li
+                  key={f.id}
+                  className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-300"
+                >
+                  {f.text}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Tip: paste a screenshot into the box (Ctrl+V / Cmd+V) to add an image to your board card.
         </p>
@@ -588,18 +637,6 @@ export default function StudentView() {
           maxWords={enforce && wt > 0 ? wt : 0}
           placeholder="Write here… or paste an image (Ctrl+V / Cmd+V)"
         />
-        {feedbackInbox.length > 0 && (
-          <section className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 dark:border-indigo-800 dark:bg-indigo-950/50">
-            <h2 className="font-display text-sm font-semibold text-indigo-900 dark:text-indigo-200">Feedback</h2>
-            <ul className="mt-2 space-y-2">
-              {feedbackInbox.map((f) => (
-                <li key={f.id} className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-300">
-                  {f.text}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
       </main>
       <AppFooter />
     </div>
