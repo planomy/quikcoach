@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { plainTextFromElement, rangeForPlainOffsets, resolveAnnotation } from '../lib/annotations.js';
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
+const DISMISSED_STORAGE_PREFIX = 'iboard-dismissed-inline-comments';
 
 function currentStudentId() {
   if (typeof window === 'undefined') return 0;
@@ -18,9 +19,39 @@ function editorElement() {
   return document.querySelector('[role="textbox"][contenteditable]');
 }
 
+function annotationVersionKey(annotation) {
+  return `${Number(annotation?.id) || 0}\u0000${String(annotation?.updated_at || '')}\u0000${String(annotation?.note || '')}`;
+}
+
+function loadDismissedAnnotations(studentId) {
+  if (typeof window === 'undefined' || !studentId) return [];
+  try {
+    const raw = localStorage.getItem(`${DISMISSED_STORAGE_PREFIX}:${studentId}`) || '[]';
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDismissedAnnotations(studentId, keys) {
+  if (typeof window === 'undefined' || !studentId) return;
+  try {
+    localStorage.setItem(
+      `${DISMISSED_STORAGE_PREFIX}:${studentId}`,
+      JSON.stringify(keys.slice(-500))
+    );
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
 export default function StudentAnnotationController({ socket, studentId: suppliedStudentId }) {
   const studentId = Number(suppliedStudentId) || currentStudentId();
   const [annotations, setAnnotations] = useState([]);
+  const [dismissedAnnotationKeys, setDismissedAnnotationKeys] = useState(() =>
+    loadDismissedAnnotations(studentId)
+  );
   const [markers, setMarkers] = useState([]);
   const [openMarker, setOpenMarker] = useState(null);
 
@@ -35,7 +66,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     const text = plainTextFromElement(editor);
     const ranges = [];
     const nextMarkers = [];
+    const dismissed = new Set(dismissedAnnotationKeys);
     for (const annotation of annotations || []) {
+      if (dismissed.has(annotationVersionKey(annotation))) continue;
       const resolved = resolveAnnotation(annotation, text);
       if (resolved.detached) continue;
       const range = rangeForPlainOffsets(editor, resolved.start, resolved.end);
@@ -55,7 +88,11 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
     }
     setMarkers(nextMarkers);
-  }, [annotations]);
+  }, [annotations, dismissedAnnotationKeys]);
+
+  useEffect(() => {
+    setDismissedAnnotationKeys(loadDismissedAnnotations(studentId));
+  }, [studentId]);
 
   useEffect(() => {
     if (!socket) return;
@@ -100,7 +137,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     socket.on('teacher-annotations:mine', onMine);
     socket.on('teacher-annotations:update', onUpdate);
     socket.on('room:state', onRoomState);
-    socket.on('student:live', schedule);
     socket.on('connect', requestSync);
     queueSync();
     return () => {
@@ -109,7 +145,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       socket.off('teacher-annotations:mine', onMine);
       socket.off('teacher-annotations:update', onUpdate);
       socket.off('room:state', onRoomState);
-      socket.off('student:live', schedule);
       socket.off('connect', requestSync);
     };
   }, [socket, studentId, refreshHighlights]);
@@ -159,36 +194,24 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     };
   }, [refreshHighlights]);
 
+  function dismissComment(marker) {
+    const key = annotationVersionKey(marker?.annotation);
+    if (!key) return;
+    setDismissedAnnotationKeys((previous) => {
+      if (previous.includes(key)) return previous;
+      const next = [...previous, key];
+      saveDismissedAnnotations(studentId, next);
+      return next;
+    });
+    setMarkers((previous) =>
+      previous.filter((item) => Number(item.annotation?.id) !== Number(marker.annotation?.id))
+    );
+    setOpenMarker(null);
+  }
+
   return (
     <>
       <style>{`::highlight(${HIGHLIGHT_NAME}) { background: rgba(196, 181, 253, 0.78); text-decoration: underline 2px rgb(124, 58, 237); text-underline-offset: 2px; }`}</style>
-      {annotations.length > 0 && (
-        <section
-          data-teacher-annotation-ui
-          role="status"
-          aria-live="polite"
-          className="rounded-2xl border-2 border-violet-300 bg-violet-50/90 p-4 shadow-sm dark:border-violet-700 dark:bg-violet-950/60"
-        >
-          <h2 className="font-display text-sm font-semibold text-violet-900 dark:text-violet-200">
-            Teacher comments
-          </h2>
-          <ul className="mt-3 space-y-3">
-            {annotations.map((annotation) => (
-              <li
-                key={annotation.id}
-                className="rounded-xl border border-violet-100 bg-white p-3 shadow-sm dark:border-violet-900 dark:bg-slate-900"
-              >
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">
-                  Comment on “{annotation.quote}”
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">
-                  {annotation.note}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {markers.map((marker) => (
         <button
           key={marker.annotation.id}
@@ -212,7 +235,15 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             left: Math.max(10, Math.min(window.innerWidth - 300, openMarker.left - 250)),
           }}
         >
-          <button type="button" onClick={() => setOpenMarker(null)} className="float-right text-lg font-black text-slate-400 hover:text-slate-700">×</button>
+          <button
+            type="button"
+            onClick={() => dismissComment(openMarker)}
+            className="float-right text-lg font-black text-slate-400 hover:text-slate-700"
+            aria-label="Dismiss teacher comment"
+            title="Dismiss comment"
+          >
+            ×
+          </button>
           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">Teacher comment</p>
           <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{openMarker.annotation.quote}”</p>
           <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">{openMarker.annotation.note}</p>
