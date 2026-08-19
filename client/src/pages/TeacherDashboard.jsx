@@ -28,6 +28,7 @@ import {
   buildStudentPortfolioHtml,
   buildStudentPortfolioText,
 } from '../lib/exportRoom.js';
+import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 
 const MODE_LABELS = {
   writing: 'Writing',
@@ -153,6 +154,7 @@ function TeacherDashboardInner() {
   const [joined, setJoined] = useState(false);
   const [room, setRoom] = useState(null);
   const [students, setStudents] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [error, setError] = useState('');
   const [socketConnected, setSocketConnected] = useState(true);
 
@@ -185,6 +187,12 @@ function TeacherDashboardInner() {
   const [activeWorkspace, setActiveWorkspace] = useState('live');
   const [cardView, setCardView] = useState(initialCardView);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
+  const [addCardOpen, setAddCardOpen] = useState(false);
+  const [addCardTitle, setAddCardTitle] = useState('Teacher');
+  const [addCardText, setAddCardText] = useState('');
+  const [addCardImage, setAddCardImage] = useState('');
+  const [addCardBusy, setAddCardBusy] = useState(false);
+  const [addCardError, setAddCardError] = useState('');
 
   const socket = useMemo(() => createSocket(), []);
   const teacherRoomRef = useRef('');
@@ -285,6 +293,7 @@ function TeacherDashboardInner() {
     const onState = (payload) => {
       setRoom(payload.room);
       setStudents((payload.students || []).map(normalizeStudentFromServer));
+      setPosts(Array.isArray(payload.posts) ? payload.posts : []);
       const r = payload.room;
       if (!modalOpen && r?.feedback_toggles) {
         hydrateFeedbackStateFromRoom(r);
@@ -663,17 +672,30 @@ function TeacherDashboardInner() {
     });
   }
 
+  function toggleBroadcastCard(key) {
+    setBroadcastPick((current) => {
+      if (current[key]) return { ...current, [key]: false };
+      if (Object.values(current).filter(Boolean).length >= 6) {
+        setError('Broadcast is limited to 6 cards');
+        return current;
+      }
+      return { ...current, [key]: true };
+    });
+  }
+
   function sendBroadcastToClass() {
     /** Use everyone in the room, not only the group filter — otherwise a filter can hide checked cards and send zero IDs. */
-    const ids = orderedStudents.filter((s) => broadcastPick[s.id]).map((s) => s.id).slice(0, 6);
-    if (!ids.length) {
+    const postIds = posts.filter((post) => broadcastPick[`post:${post.id}`]).map((post) => post.id).slice(0, 6);
+    const remaining = Math.max(0, 6 - postIds.length);
+    const ids = orderedStudents.filter((s) => broadcastPick[s.id]).map((s) => s.id).slice(0, remaining);
+    if (!ids.length && !postIds.length) {
       setError(
-        'Tick “Include in broadcast” on at least one student card (up to 6). Names are not sent — only Exemplar A, B, …'
+        'Tick “Include in broadcast” on at least one student or teacher card (up to 6). Names are not sent — only Exemplar A, B, …'
       );
       return;
     }
     setError('');
-    socket.emit('teacher:broadcast', { studentIds: ids }, (ack) => {
+    socket.emit('teacher:broadcast', { studentIds: ids, postIds }, (ack) => {
       if (!ack?.ok) setError(ack?.error || 'Broadcast failed — check you opened the room and students are connected');
       else {
         if (ack.count > 0 && ack.reached === 0) {
@@ -684,6 +706,80 @@ function TeacherDashboardInner() {
         setTimeout(() => setCopyToast(''), 4000);
         setBroadcastPick({});
       }
+    });
+  }
+
+  function openAddCard() {
+    setAddCardTitle('Teacher');
+    setAddCardText('');
+    setAddCardImage('');
+    setAddCardError('');
+    setAddCardOpen(true);
+  }
+
+  async function handleAddCardPaste(event) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (!item.type.startsWith('image/')) continue;
+      event.preventDefault();
+      const file = item.getAsFile();
+      if (!file) return;
+      try {
+        setAddCardImage(await fileToCompressedJpegDataUrl(file));
+        setAddCardError('');
+      } catch {
+        setAddCardError('Could not read that image');
+      }
+      return;
+    }
+  }
+
+  function submitTeacherCard() {
+    const title = String(addCardTitle || 'Teacher').trim() || 'Teacher';
+    const finish = (ack, message) => {
+      setAddCardBusy(false);
+      if (!ack?.ok) {
+        setAddCardError(ack?.error || 'Could not add teacher card');
+        return;
+      }
+      setAddCardOpen(false);
+      setAddCardText('');
+      setAddCardImage('');
+      setCopyToast(message);
+      setTimeout(() => setCopyToast(''), 2500);
+    };
+
+    if (addCardImage) {
+      setAddCardBusy(true);
+      socket.emit(
+        'teacher:board-post',
+        { kind: 'image', title, imageBase64: addCardImage, mimeType: 'image/jpeg' },
+        (ack) => finish(ack, 'Teacher image card added')
+      );
+      return;
+    }
+
+    const text = addCardText.trim();
+    if (!text) {
+      setAddCardError('Type some text or paste an image');
+      return;
+    }
+    setAddCardBusy(true);
+    socket.emit('teacher:board-post', { kind: 'text', title, text }, (ack) => finish(ack, 'Teacher card added'));
+  }
+
+  function deleteTeacherCard(postId) {
+    socket.emit('teacher:board-post-delete', { postId }, (ack) => {
+      if (!ack?.ok) {
+        setError(ack?.error || 'Could not remove teacher card');
+        return;
+      }
+      setBroadcastPick((current) => {
+        const next = { ...current };
+        delete next[`post:${postId}`];
+        return next;
+      });
     });
   }
 
@@ -822,6 +918,7 @@ function TeacherDashboardInner() {
         return;
       }
       setStudents([]);
+      setPosts([]);
       setBroadcastPick({});
       setActiveWorkspace('live');
       setCopyToast('Board cleared — ready for a new class');
@@ -971,45 +1068,15 @@ function TeacherDashboardInner() {
           Connection lost — reconnecting…
         </div>
       )}
-      <header className="border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/95">
+        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+          <div className="min-w-[9rem] shrink-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Teacher</p>
             <h1 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">
               Room <span className="font-mono text-indigo-600">{codeInput}</span>
             </h1>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={() => {
-                const url = `${window.location.origin}/iboard?code=${encodeURIComponent(codeInput)}`;
-                // Keep opener link so FULL SCREEN can return without reloading the room
-                window.open(url, 'iboard-fullscreen');
-              }}
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white shadow-sm hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
-              title="Opens full-screen student cards (up to 7 across) with broadcast"
-            >
-              FULL SCREEN
-            </button>
-            <details className="relative">
-              <summary className="flex cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
-                Room actions ···
-              </summary>
-              <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button type="button" onClick={startNewClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
-                  Start new class
-                </button>
-              </div>
-            </details>
-          </div>
-        </div>
-      </header>
-
-      <div className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-[1800px] flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex flex-1 flex-col gap-1.5 sm:max-w-md">
+          <div className="min-w-[15rem] flex-1 sm:max-w-md">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span>Word target</span>
               <span className="font-mono text-indigo-600">{wt} words</span>
@@ -1027,13 +1094,13 @@ function TeacherDashboardInner() {
               className="h-2 w-full cursor-pointer accent-indigo-600"
             />
             {enforceWords && wt <= 0 && (
-              <p className="text-xs font-medium text-amber-800">Set the slider above zero to cap how many words are saved.</p>
+              <p className="text-xs font-medium text-amber-800">Set the slider above zero to cap saved words.</p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             <label
-              className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-200"
-              title="When on, only the first N words (word target) of each student draft are saved. Set word target above to N."
+              className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+              title="When on, only the first N words (word target) of each student draft are saved."
             >
               <input
                 type="checkbox"
@@ -1043,7 +1110,7 @@ function TeacherDashboardInner() {
                   setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
                   pushSettings({ enforce_word_count: v });
                 }}
-                className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
               />
               Enforce word count
             </label>
@@ -1057,19 +1124,30 @@ function TeacherDashboardInner() {
               className={`rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition ${
                 frozen
                   ? 'bg-amber-500 text-white ring-2 ring-amber-300'
-                  : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:border-amber-200 dark:border-amber-800'
+                  : 'border border-slate-200 bg-white text-slate-800 hover:border-amber-200 dark:border-amber-800 dark:bg-slate-900 dark:text-slate-200'
               }`}
             >
               {frozen ? 'Class frozen' : 'Freeze class'}
             </button>
+            <ThemeToggle />
+            <details className="relative">
+              <summary className="flex cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                Room actions ···
+              </summary>
+              <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <button type="button" onClick={startNewClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
+                  Start new class
+                </button>
+              </div>
+            </details>
           </div>
         </div>
-      </div>
+      </header>
 
       <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-start">
         <nav
           aria-label="Teacher tools"
-          className="sticky top-[76px] z-10 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:w-24 lg:shrink-0 lg:flex-col lg:overflow-visible"
+          className="z-10 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:sticky lg:top-[76px] lg:w-24 lg:shrink-0 lg:flex-col lg:overflow-visible"
         >
           {TEACHER_WORKSPACES.map((workspace) => (
             <button
@@ -1126,7 +1204,11 @@ function TeacherDashboardInner() {
                 <div>
                   <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Live student work</h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {orderedStudents.length ? `${orderedStudents.length} student${orderedStudents.length === 1 ? '' : 's'} in this room` : 'Waiting for students to join'}
+                    {orderedStudents.length
+                      ? `${orderedStudents.length} student${orderedStudents.length === 1 ? '' : 's'} in this room${posts.length ? ` · ${posts.length} teacher card${posts.length === 1 ? '' : 's'}` : ''}`
+                      : posts.length
+                        ? `${posts.length} teacher card${posts.length === 1 ? '' : 's'} · waiting for students`
+                        : 'Waiting for students to join'}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1175,10 +1257,21 @@ function TeacherDashboardInner() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
+              onClick={openAddCard}
+              className="rounded-xl bg-amber-400 px-3 py-2 text-sm font-bold text-slate-950 shadow-sm hover:bg-amber-300"
+              title="Add your own text or image card to this room"
+            >
+              Add card
+            </button>
+            <button
+              type="button"
               onClick={sendBroadcastToClass}
               className="rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
             >
               Send broadcast
+              {Object.values(broadcastPick).filter(Boolean).length
+                ? ` (${Math.min(6, Object.values(broadcastPick).filter(Boolean).length)})`
+                : ''}
             </button>
             <button
               type="button"
@@ -1192,16 +1285,50 @@ function TeacherDashboardInner() {
         </div>
 
         <div className={`grid gap-4 ${studentGridClass}`}>
-          {orderedStudents.length === 0 && (
+          {orderedStudents.length === 0 && posts.length === 0 && (
             <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
               Waiting for students to join…
             </div>
           )}
-          {orderedStudents.length > 0 && visibleStudents.length === 0 && (
+          {orderedStudents.length > 0 && visibleStudents.length === 0 && posts.length === 0 && (
             <div className="col-span-full rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 p-6 text-center text-sm text-amber-950 dark:text-amber-100">
               No students in this group. Choose &quot;All students&quot; or assign A–E on each card.
             </div>
           )}
+          {posts.map((post) => (
+            <article key={`post-${post.id}`} className="flex flex-col rounded-2xl border border-amber-200 bg-amber-50/60 p-3 shadow-card dark:border-amber-900 dark:bg-amber-950/20">
+              <div className="flex items-center gap-1.5">
+                <label className="flex shrink-0 cursor-pointer items-center" title="Include in broadcast">
+                  <input
+                    type="checkbox"
+                    checked={!!broadcastPick[`post:${post.id}`]}
+                    onChange={() => toggleBroadcastCard(`post:${post.id}`)}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-violet-600 dark:border-slate-600"
+                  />
+                  <span className="sr-only">Include teacher card in broadcast</span>
+                </label>
+                <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-ink-900 dark:text-slate-100">{post.title || 'Teacher'}</h2>
+                <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-900 dark:bg-amber-900 dark:text-amber-100">Teacher</span>
+                <button
+                  type="button"
+                  onClick={() => deleteTeacherCard(post.id)}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
+                  title="Remove teacher card"
+                >
+                  ×
+                </button>
+              </div>
+              <div className={`mt-2 rounded-xl bg-white p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}>
+                {post.kind === 'image' && post.image_url ? (
+                  <img src={post.image_url} alt={post.title || 'Teacher card'} className="mx-auto max-h-80 w-full object-contain" />
+                ) : post.text?.trim() ? (
+                  <p className="whitespace-pre-wrap break-words">{post.text}</p>
+                ) : (
+                  <span className="italic text-slate-400">Empty card</span>
+                )}
+              </div>
+            </article>
+          ))}
           {visibleStudents.map((s) => {
             const displayText = s.text || '';
             const wc = wordCount(s.text);
@@ -1226,9 +1353,7 @@ function TeacherDashboardInner() {
                     <input
                       type="checkbox"
                       checked={!!broadcastPick[s.id]}
-                      onChange={() =>
-                        setBroadcastPick((p) => ({ ...p, [s.id]: !p[s.id] }))
-                      }
+                      onChange={() => toggleBroadcastCard(s.id)}
                       className="h-3.5 w-3.5 rounded border-slate-300 text-violet-600 dark:border-slate-600"
                     />
                     <span className="sr-only">Include in broadcast</span>
@@ -1598,6 +1723,60 @@ function TeacherDashboardInner() {
       </main>
 
       <AppFooter />
+
+      {addCardOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center">
+          <form
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-2xl dark:border-amber-900 dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-teacher-card-title"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitTeacherCard();
+            }}
+          >
+            <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+              <h2 id="add-teacher-card-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Add teacher card</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Type text, or click the writing box and paste a screenshot.</p>
+            </div>
+            <div className="space-y-3 px-5 py-4">
+              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Title</label>
+              <input
+                autoFocus
+                value={addCardTitle}
+                onChange={(event) => setAddCardTitle(event.target.value)}
+                maxLength={80}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-amber-400 focus:border-amber-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                placeholder="Teacher"
+              />
+              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Text or pasted image</label>
+              <textarea
+                value={addCardText}
+                onChange={(event) => setAddCardText(event.target.value)}
+                onPaste={handleAddCardPaste}
+                rows={6}
+                disabled={!!addCardImage}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-amber-400 focus:border-amber-400 focus:ring-2 disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                placeholder="Write here, or paste a screenshot…"
+              />
+              {addCardImage && (
+                <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950/30">
+                  <img src={addCardImage} alt="Pasted card preview" className="max-h-48 w-full object-contain" />
+                  <button type="button" onClick={() => setAddCardImage('')} className="mt-2 text-xs font-bold text-amber-800 hover:text-amber-950 dark:text-amber-200 dark:hover:text-white">Clear image and use text</button>
+                </div>
+              )}
+              {addCardError && <p className="text-sm font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-950">
+              <button type="button" disabled={addCardBusy} onClick={() => setAddCardOpen(false)} className="rounded-xl px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800">Cancel</button>
+              <button type="submit" disabled={addCardBusy || (!addCardImage && !addCardText.trim())} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-amber-300 disabled:opacity-50">
+                {addCardBusy ? 'Adding…' : 'Add card'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {focusedStudent && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center">
