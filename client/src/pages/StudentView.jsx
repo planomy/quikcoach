@@ -12,6 +12,7 @@ import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
+import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import { plainTextToRichHtml } from '../lib/richText.js';
 
 const SESSION_KEY = 'quik-coach-student';
@@ -637,6 +638,7 @@ export default function StudentView() {
           maxWords={enforce && wt > 0 ? wt : 0}
           placeholder="Write here… or paste an image (Ctrl+V / Cmd+V)"
         />
+        <StudentAnnotationController socket={socket} studentId={student?.id} />
       </main>
       <AppFooter />
     </div>
