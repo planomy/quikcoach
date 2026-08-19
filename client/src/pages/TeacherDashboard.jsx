@@ -141,6 +141,10 @@ function TeacherDashboardInner() {
 
   const [pasteBox, setPasteBox] = useState('');
   const [copyToast, setCopyToast] = useState('');
+  const [noteTarget, setNoteTarget] = useState(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteError, setNoteError] = useState('');
+  const [noteSending, setNoteSending] = useState(false);
   const [groupFilter, setGroupFilter] = useState('');
   const [broadcastPick, setBroadcastPick] = useState({});
   const [snapshots, setSnapshots] = useState([]);
@@ -581,20 +585,42 @@ function TeacherDashboardInner() {
     commitStudentGroup(studentId, g);
   }
 
-  function sendNoteToStudent(s) {
-    const note = window.prompt(`Private note for ${s.name} (appears in their feedback inbox):`);
-    if (note == null) return;
-    const text = String(note).trim();
+  function openNoteForStudent(student) {
+    setNoteTarget({ id: Number(student.id), name: String(student.name || 'Student') });
+    setNoteDraft('');
+    setNoteError('');
+    setNoteSending(false);
+  }
+
+  function closeNoteComposer() {
+    if (noteSending) return;
+    setNoteTarget(null);
+    setNoteDraft('');
+    setNoteError('');
+  }
+
+  function sendNoteToStudent() {
+    if (!noteTarget || noteSending) return;
+    const text = noteDraft.trim();
     if (!text) {
-      setError('Note was empty');
+      setNoteError('Write a note before sending.');
       return;
     }
-    socket.emit('teacher:distribute', { items: [{ studentId: s.id, text }] }, (ack) => {
-      if (!ack?.ok) setError('Could not send note');
-      else {
-        setCopyToast(`Note sent to ${s.name}`);
-        setTimeout(() => setCopyToast(''), 2500);
+
+    const target = noteTarget;
+    setNoteError('');
+    setNoteSending(true);
+    window.__iboardPendingNoteStudentId = target.id;
+    socket.emit('teacher:distribute', { items: [{ studentId: target.id, text }] }, (ack) => {
+      setNoteSending(false);
+      if (!ack?.ok) {
+        setNoteError(ack?.error || 'Could not send this note.');
+        return;
       }
+      setNoteTarget(null);
+      setNoteDraft('');
+      setCopyToast(`Note sent to ${target.name}`);
+      setTimeout(() => setCopyToast(''), 2500);
     });
   }
 
@@ -1147,7 +1173,7 @@ function TeacherDashboardInner() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => sendNoteToStudent(s)}
+                    onClick={() => openNoteForStudent(s)}
                     className="shrink-0 rounded-md border border-violet-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 hover:bg-violet-50 dark:border-violet-900 dark:text-violet-300"
                     title="Send a private note to this student only"
                   >
@@ -1415,6 +1441,87 @@ function TeacherDashboardInner() {
       </main>
 
       <AppFooter />
+
+      {noteTarget && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
+          <form
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-2xl dark:border-violet-800 dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="private-note-title"
+            onSubmit={(event) => {
+              event.preventDefault();
+              sendNoteToStudent();
+            }}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-violet-600 dark:text-violet-300">
+                  Private feedback
+                </p>
+                <h2 id="private-note-title" className="mt-1 font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+                  Note for {noteTarget.name}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  This will appear in the student&apos;s feedback inbox.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={noteSending}
+                onClick={closeNoteComposer}
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                aria-label="Close private note"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <label htmlFor="private-note-text" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+                Your note
+              </label>
+              <textarea
+                id="private-note-text"
+                autoFocus
+                rows={5}
+                maxLength={5000}
+                value={noteDraft}
+                onChange={(event) => setNoteDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                    event.preventDefault();
+                    sendNoteToStudent();
+                  }
+                  if (event.key === 'Escape') closeNoteComposer();
+                }}
+                placeholder="Write a private note…"
+                className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-relaxed text-slate-900 outline-none ring-violet-500 focus:border-violet-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+              <div className="mt-2 flex items-start justify-between gap-3">
+                <p className="text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p>
+                <p className="shrink-0 text-[11px] text-slate-400">{noteDraft.length}/5000</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-950">
+              <button
+                type="button"
+                disabled={noteSending}
+                onClick={closeNoteComposer}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={noteSending || !noteDraft.trim()}
+                className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-violet-700 disabled:opacity-40"
+              >
+                {noteSending ? 'Sending…' : 'Send note'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {evidenceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
