@@ -53,7 +53,6 @@ export default function TeacherAnnotationController() {
   const [saveNotice, setSaveNotice] = useState('');
   const [openMarker, setOpenMarker] = useState(null);
   const [markers, setMarkers] = useState([]);
-  const [detachedCount, setDetachedCount] = useState(0);
 
   const annotationTotal = useMemo(
     () => Object.values(byStudent).reduce((n, list) => n + (Array.isArray(list) ? list.length : 0), 0),
@@ -64,7 +63,6 @@ export default function TeacherAnnotationController() {
     if (typeof document === 'undefined') return;
     const ranges = [];
     const nextMarkers = [];
-    let detached = 0;
 
     for (const [studentKey, annotations] of Object.entries(byStudent)) {
       const studentId = Number(studentKey);
@@ -73,15 +71,9 @@ export default function TeacherAnnotationController() {
       const fullText = plainTextFromElement(card.textPane);
       for (const annotation of annotations || []) {
         const resolved = resolveAnnotation(annotation, fullText);
-        if (resolved.detached) {
-          detached += 1;
-          continue;
-        }
+        if (resolved.detached) continue;
         const range = rangeForPlainOffsets(card.textPane, resolved.start, resolved.end);
-        if (!range) {
-          detached += 1;
-          continue;
-        }
+        if (!range) continue;
         ranges.push(range);
         const rect = range.getBoundingClientRect();
         if (rect.width || rect.height) {
@@ -100,7 +92,6 @@ export default function TeacherAnnotationController() {
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
     }
     setMarkers(nextMarkers);
-    setDetachedCount(detached);
   }, [byStudent]);
 
   useEffect(() => {
@@ -301,12 +292,6 @@ export default function TeacherAnnotationController() {
             <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-bold text-violet-800 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200">Edit</button>
             <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
           </div>
-        </div>
-      )}
-
-      {detachedCount > 0 && (
-        <div data-teacher-annotation-ui className="fixed bottom-4 left-4 z-40 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 shadow-lg dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
-          {detachedCount} inline {detachedCount === 1 ? 'comment is' : 'comments are'} waiting because the student changed that passage.
         </div>
       )}
 
