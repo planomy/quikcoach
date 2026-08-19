@@ -40,6 +40,14 @@ const MODE_LABELS = {
 const TABLE_GROUP_LETTERS = ['A', 'B', 'C', 'D', 'E'];
 const GROUP_FILTER_UNASSIGNED = '__unassigned__';
 
+const TEACHER_WORKSPACES = [
+  { id: 'live', label: 'Live', icon: '●' },
+  { id: 'pulse', label: 'Pulse', icon: '◉' },
+  { id: 'feedback', label: 'Feedback', icon: '✦' },
+  { id: 'evidence', label: 'Evidence', icon: '▣' },
+  { id: 'reports', label: 'Reports', icon: '≡' },
+];
+
 function normalizedTableGroup(raw) {
   const g = String(raw || '').trim().toUpperCase();
   return TABLE_GROUP_LETTERS.includes(g) ? g : null;
@@ -156,6 +164,7 @@ function TeacherDashboardInner() {
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
   const [evidenceBusy, setEvidenceBusy] = useState(false);
+  const [activeWorkspace, setActiveWorkspace] = useState('live');
 
   const socket = useMemo(() => createSocket(), []);
   const teacherRoomRef = useRef('');
@@ -772,6 +781,24 @@ function TeacherDashboardInner() {
     setTimeout(() => setCopyToast(''), 3000);
   }
 
+  function startNewClass() {
+    const ok = window.confirm(
+      'Start a new class?\n\nThis removes every student card and teacher card from this room. Students will need to join again.'
+    );
+    if (!ok) return;
+    socket.emit('teacher:clear-cards', {}, (ack) => {
+      if (!ack?.ok) {
+        setError(ack?.error || 'Could not clear cards');
+        return;
+      }
+      setStudents([]);
+      setBroadcastPick({});
+      setActiveWorkspace('live');
+      setCopyToast('Board cleared — ready for a new class');
+      setTimeout(() => setCopyToast(''), 3000);
+    });
+  }
+
   function saveFeedbackSettings() {
     if (!room) return;
     pushSettings({
@@ -911,13 +938,6 @@ function TeacherDashboardInner() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <ThemeToggle />
-            <a
-              href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`}
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white shadow-sm hover:bg-indigo-700"
-              title="Open the standalone live polling console"
-            >
-              Pulse only
-            </a>
             <button
               type="button"
               onClick={() => {
@@ -930,13 +950,23 @@ function TeacherDashboardInner() {
             >
               FULL SCREEN
             </button>
+            <details className="relative">
+              <summary className="flex cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                Room actions ···
+              </summary>
+              <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <button type="button" onClick={startNewClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
+                  Start new class
+                </button>
+              </div>
+            </details>
           </div>
         </div>
       </header>
 
       <div className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex flex-1 flex-col gap-2 sm:max-w-md">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex flex-1 flex-col gap-1.5 sm:max-w-md">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
               <span>Word target</span>
               <span className="font-mono text-indigo-600">{wt} words</span>
@@ -993,54 +1023,72 @@ function TeacherDashboardInner() {
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
-        <LiveResponseTeacher socket={socket} />
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lift hover:bg-indigo-700"
-          >
-            Prepare feedback
-          </button>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            Mode:{' '}
-            <strong className="text-slate-700 dark:text-slate-300">
-              {MODE_LABELS[normalizeFeedbackMode(room?.genre)] || 'Writing'}
-            </strong>
-            {room?.feedback_toggles?.subjectAssist &&
-              room.feedback_toggles.subjectAssist !== 'general' && (
-                <>
-                  {' '}
-                  · Subject:{' '}
-                  <strong className="text-slate-700 dark:text-slate-300">
-                    {SUBJECT_ASSIST_OPTIONS.find((o) => o.id === room.feedback_toggles.subjectAssist)
-                      ?.label || room.feedback_toggles.subjectAssist}
-                  </strong>
-                </>
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-start">
+        <nav
+          aria-label="Teacher tools"
+          className="sticky top-[76px] z-10 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:w-24 lg:shrink-0 lg:flex-col lg:overflow-visible"
+        >
+          {TEACHER_WORKSPACES.map((workspace) => (
+            <button
+              key={workspace.id}
+              type="button"
+              onClick={() => {
+                setActiveWorkspace(workspace.id);
+                if (workspace.id === 'evidence' || workspace.id === 'reports') setSnapshotsOpen(true);
+              }}
+              aria-current={activeWorkspace === workspace.id ? 'page' : undefined}
+              className={`flex min-w-[4.6rem] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-bold transition lg:min-w-0 lg:py-3 ${
+                activeWorkspace === workspace.id
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200'
+              }`}
+            >
+              <span aria-hidden="true" className="text-base leading-none">{workspace.icon}</span>
+              <span>{workspace.label}</span>
+              {workspace.id === 'evidence' && snapshots.length > 0 && (
+                <span className={`rounded-full px-1.5 text-[9px] ${activeWorkspace === workspace.id ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200'}`}>
+                  {snapshots.length}
+                </span>
               )}
-            {room?.feedback_toggles?.yearLevel &&
-              room.feedback_toggles.yearLevel !== 'general' && (
-                <>
-                  {' '}
-                  · Year:{' '}
-                  <strong className="text-slate-700 dark:text-slate-300">
-                    {YEAR_LEVEL_OPTIONS.find((o) => o.id === room.feedback_toggles.yearLevel)?.label ||
-                      room.feedback_toggles.yearLevel}
-                  </strong>
-                </>
-              )}
-          </span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="min-w-0 flex-1">
           {copyToast && (
-            <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-3 py-1 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+            <div className="mb-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               {copyToast}
-            </span>
+            </div>
           )}
-        </div>
+          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          {activeWorkspace === 'pulse' && (
+            <section>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Pulse</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Run a quick whole-class check without leaving the room.</p>
+                </div>
+                <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">
+                  Open Pulse in its own window ↗
+                </a>
+              </div>
+              <LiveResponseTeacher socket={socket} />
+            </section>
+          )}
 
-        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end">
+          {activeWorkspace === 'live' && (
+            <>
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Live student work</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {orderedStudents.length ? `${orderedStudents.length} student${orderedStudents.length === 1 ? '' : 's'} in this room` : 'Waiting for students to join'}
+                  </p>
+                </div>
+              </div>
+
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-end">
           <div className="min-w-[10rem] flex-1">
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Show group</label>
             <select
@@ -1077,38 +1125,7 @@ function TeacherDashboardInner() {
             >
               Save evidence
             </button>
-            <button
-              type="button"
-              title="Clear writing and images from every student card"
-              onClick={() => {
-                const ok = window.confirm(
-                  'Start a new class?\n\nThis removes every student card and teacher card from this room. Students will need to join again.'
-                );
-                if (!ok) return;
-                socket.emit('teacher:clear-cards', {}, (ack) => {
-                  if (!ack?.ok) {
-                    setError(ack?.error || 'Could not clear cards');
-                    return;
-                  }
-                  setStudents([]);
-                  setBroadcastPick({});
-                  setCopyToast('Board cleared — ready for a new class');
-                  setTimeout(() => setCopyToast(''), 3000);
-                });
-              }}
-              className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-300 dark:hover:bg-red-950/40"
-            >
-              New class
-            </button>
           </div>
-          <p className="w-full text-xs text-slate-500 dark:text-slate-400">
-            <strong className="text-slate-700 dark:text-slate-300">Save evidence</strong> downloads one HTML file you can
-            open or print. <strong className="text-slate-700 dark:text-slate-300">New class</strong> wipes the room for a
-            new class (use this when reusing a code like 1111).{' '}
-            <strong className="text-slate-700 dark:text-slate-300">Broadcast</strong>: tick students, then send (max 6).{' '}
-            <strong className="text-slate-700 dark:text-slate-300">Show group</strong> filters the grid and what gets
-            saved.
-          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1256,9 +1273,35 @@ function TeacherDashboardInner() {
             );
           })}
         </div>
+            </>
+          )}
 
-        {snapshots.length > 0 && (
-          <section className="mt-8 overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/40 shadow-card dark:border-emerald-800 dark:bg-emerald-950/30">
+        {activeWorkspace === 'evidence' && snapshots.length === 0 && (
+          <section className="rounded-2xl border border-dashed border-emerald-300 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-slate-900">
+            <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Evidence</h2>
+            <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
+              Save the current student drafts to create lesson evidence and unlock individual student reports.
+            </p>
+            <button type="button" onClick={openEvidenceModal} className="mt-5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
+              Save current evidence
+            </button>
+          </section>
+        )}
+
+        {activeWorkspace === 'reports' && snapshots.length === 0 && (
+          <section className="rounded-2xl border border-dashed border-indigo-300 bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+            <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Student reports</h2>
+            <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
+              Reports build automatically from saved evidence. Save at least one lesson first, then each student&apos;s work will appear here over time.
+            </p>
+            <button type="button" onClick={openEvidenceModal} className="mt-5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
+              Save current evidence
+            </button>
+          </section>
+        )}
+
+        {(activeWorkspace === 'evidence' || activeWorkspace === 'reports') && snapshots.length > 0 && (
+          <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/40 shadow-card dark:border-emerald-800 dark:bg-emerald-950/30">
             <button
               type="button"
               onClick={() => setSnapshotsOpen((open) => !open)}
@@ -1268,13 +1311,19 @@ function TeacherDashboardInner() {
             >
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Saved evidence</span>
+                  <span className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">
+                    {activeWorkspace === 'reports' ? 'Student reports' : 'Saved evidence'}
+                  </span>
                   <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
                     {snapshots.length} {snapshots.length === 1 ? 'save' : 'saves'}
                   </span>
                 </span>
                 <span className="mt-1 block truncate text-sm text-slate-600 dark:text-slate-400">
-                  {snapshotsOpen ? 'Earlier saves from this room.' : `Latest: ${snapshots[0]?.label || `Evidence #${snapshots[0]?.id}`}`}
+                  {activeWorkspace === 'reports'
+                    ? 'Review one student’s contributions across saved lessons.'
+                    : snapshotsOpen
+                      ? 'Earlier saves from this room.'
+                      : `Latest: ${snapshots[0]?.label || `Evidence #${snapshots[0]?.id}`}`}
                 </span>
               </span>
               <span className="flex shrink-0 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200">
@@ -1284,9 +1333,10 @@ function TeacherDashboardInner() {
             </button>
             {snapshotsOpen && (
               <div id="saved-evidence-list" className="border-t border-emerald-200 px-5 pb-4 dark:border-emerald-800">
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-                  Download any earlier save again as HTML.
-                </p>
+                {activeWorkspace === 'evidence' && (
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Download any earlier save again as HTML.</p>
+                )}
+                {activeWorkspace === 'reports' && (
                 <section className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -1347,6 +1397,9 @@ function TeacherDashboardInner() {
                   )}
                   <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">Names are matched ignoring capital letters and extra spaces. Blank cards and unchanged duplicate drafts are left out.</p>
                 </section>
+                )}
+                {activeWorkspace === 'evidence' && (
+                  <>
                 <h4 className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-emerald-800 dark:text-emerald-300">All saved lessons</h4>
                 <ul className="mt-2 max-h-80 divide-y divide-emerald-100/80 overflow-y-auto pr-1 scrollbar-thin dark:divide-emerald-900/50">
                   {snapshots.map((sn) => (
@@ -1374,12 +1427,37 @@ function TeacherDashboardInner() {
                     </li>
                   ))}
                 </ul>
+                  </>
+                )}
               </div>
             )}
           </section>
         )}
 
-        <section className="mt-10 grid gap-6 lg:grid-cols-2">
+        {activeWorkspace === 'feedback' && (
+          <section>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+              <div>
+                <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Feedback</h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {MODE_LABELS[normalizeFeedbackMode(room?.genre)] || 'Writing'}
+                  {room?.feedback_toggles?.subjectAssist && room.feedback_toggles.subjectAssist !== 'general'
+                    ? ` · ${SUBJECT_ASSIST_OPTIONS.find((o) => o.id === room.feedback_toggles.subjectAssist)?.label || room.feedback_toggles.subjectAssist}`
+                    : ''}
+                  {room?.feedback_toggles?.yearLevel && room.feedback_toggles.yearLevel !== 'general'
+                    ? ` · ${YEAR_LEVEL_OPTIONS.find((o) => o.id === room.feedback_toggles.yearLevel)?.label || room.feedback_toggles.yearLevel}`
+                    : ''}
+                </p>
+              </div>
+              <button type="button" onClick={() => setModalOpen(true)} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700">
+                Feedback settings
+              </button>
+            </div>
+            <div className="mb-3">
+              <h3 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">AI batch feedback</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Copy student work, paste the numbered feedback, then distribute it to the visible group.</p>
+            </div>
+        <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
             <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Copy for AI</h3>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -1437,7 +1515,10 @@ function TeacherDashboardInner() {
               Distribute to students
             </button>
           </div>
-        </section>
+        </div>
+          </section>
+        )}
+        </div>
       </main>
 
       <AppFooter />
