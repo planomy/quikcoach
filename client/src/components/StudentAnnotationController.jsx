@@ -75,53 +75,104 @@ export default function StudentAnnotationController() {
 
   useEffect(() => {
     if (!socket) return;
+    let cancelled = false;
+    let retryTimer = null;
     const onMine = ({ studentId: incomingId, annotations: list }) => {
       const id = Number(incomingId) || currentStudentId();
       if (id) setStudentId(id);
       setAnnotations(Array.isArray(list) ? list : []);
     };
     const onUpdate = ({ studentId: incomingId, annotations: list }) => {
-      const mine = studentId || currentStudentId();
+      const mine = currentStudentId() || studentId;
       if (mine && Number(incomingId) !== Number(mine)) return;
       setAnnotations(Array.isArray(list) ? list : []);
     };
     const schedule = () => requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
-    const sync = () => {
+    const queueSync = (delay = 0, attempt = 0) => {
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => sync(attempt), delay);
+    };
+    const sync = (attempt = 0) => {
+      if (cancelled) return;
       socket.emit('student:annotations-sync', {}, (ack) => {
-        if (!ack?.ok) return;
+        if (cancelled) return;
+        if (!ack?.ok) {
+          // The socket often connects just before student:join/rejoin has assigned its
+          // identity. Retry until that join has completed instead of losing the mailbox.
+          if (attempt < 30) queueSync(100, attempt + 1);
+          return;
+        }
         onMine(ack);
+        schedule();
       });
     };
+    const onRoomState = () => {
+      schedule();
+      // room:state is emitted after a successful join/rejoin, so it is the most reliable
+      // point to recover comments that arrived while the student page was starting.
+      queueSync();
+    };
+    const requestSync = () => queueSync();
     socket.on('teacher-annotations:mine', onMine);
     socket.on('teacher-annotations:update', onUpdate);
-    socket.on('room:state', schedule);
+    socket.on('room:state', onRoomState);
     socket.on('student:live', schedule);
-    socket.on('connect', sync);
-    const timer = setTimeout(sync, 250);
+    socket.on('connect', requestSync);
+    window.addEventListener('iboard:student-socket', requestSync);
+    queueSync();
     return () => {
-      clearTimeout(timer);
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       socket.off('teacher-annotations:mine', onMine);
       socket.off('teacher-annotations:update', onUpdate);
-      socket.off('room:state', schedule);
+      socket.off('room:state', onRoomState);
       socket.off('student:live', schedule);
-      socket.off('connect', sync);
+      socket.off('connect', requestSync);
+      window.removeEventListener('iboard:student-socket', requestSync);
     };
   }, [socket, studentId, refreshHighlights]);
 
   useEffect(() => {
     const schedule = () => requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
+    let observedEditor = null;
+    const observer = new MutationObserver(() => {
+      const nextEditor = editorElement();
+      if (nextEditor && nextEditor !== observedEditor) {
+        observer.disconnect();
+        observedEditor = nextEditor;
+        observer.observe(nextEditor, { childList: true, subtree: true, characterData: true });
+      }
+      schedule();
+    });
+    const attachObserver = () => {
+      const nextEditor = editorElement();
+      if (nextEditor === observedEditor) return;
+      observer.disconnect();
+      observedEditor = nextEditor;
+      if (nextEditor) {
+        observer.observe(nextEditor, { childList: true, subtree: true, characterData: true });
+      } else if (document.body) {
+        // Watch only until the student joins and the editor is mounted.
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+      schedule();
+    };
     const onInput = (event) => {
       if (event.target?.matches?.('[role="textbox"][contenteditable]')) schedule();
     };
     document.addEventListener('input', onInput, true);
     window.addEventListener('resize', schedule);
     window.addEventListener('scroll', schedule, true);
+    window.addEventListener('iboard:room-state', attachObserver);
+    attachObserver();
     const id = requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
     return () => {
       cancelAnimationFrame(id);
+      observer.disconnect();
       document.removeEventListener('input', onInput, true);
       window.removeEventListener('resize', schedule);
       window.removeEventListener('scroll', schedule, true);
+      window.removeEventListener('iboard:room-state', attachObserver);
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
     };
   }, [refreshHighlights]);
@@ -143,6 +194,28 @@ export default function StudentAnnotationController() {
           💬
         </button>
       ))}
+      {annotations.length > 0 && markers.length === 0 && (
+        <button
+          data-teacher-annotation-ui
+          type="button"
+          onClick={() =>
+            setOpenMarker({
+              annotation: annotations[0],
+              top: Math.max(10, window.innerHeight - 220),
+              left: Math.max(300, window.innerWidth - 40),
+            })
+          }
+          className="fixed bottom-4 right-4 z-[55] rounded-2xl border-2 border-violet-300 bg-violet-600 px-4 py-3 text-left text-white shadow-2xl hover:bg-violet-700"
+          aria-label="Open teacher inline comment"
+        >
+          <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-violet-100">
+            Teacher comment
+          </span>
+          <span className="mt-1 block text-sm font-bold">
+            💬 Open teacher comment{annotations.length === 1 ? '' : ` (${annotations.length})`}
+          </span>
+        </button>
+      )}
       {openMarker && (
         <div
           data-teacher-annotation-ui
