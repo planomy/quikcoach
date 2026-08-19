@@ -5,7 +5,6 @@ import StudentView from './pages/StudentView.jsx';
 import Whiteboard from './pages/Whiteboard.jsx';
 import PulseStudent from './pages/PulseStudent.jsx';
 import PulseTeacher from './pages/PulseTeacher.jsx';
-import StudentFormattingControl from './components/StudentFormattingControl.jsx';
 import TeacherAnnotationController from './components/TeacherAnnotationController.jsx';
 import NoteSendStatusControl from './components/NoteSendStatusControl.jsx';
 
@@ -13,7 +12,6 @@ function TeacherConsole() {
   return (
     <>
       <TeacherDashboard />
-      <StudentFormattingControl />
       <TeacherAnnotationController />
       <NoteSendStatusControl />
     </>
