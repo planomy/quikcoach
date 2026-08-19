@@ -49,6 +49,7 @@ export default function TeacherAnnotationController() {
   const [byStudent, setByStudent] = useState({});
   const [pending, setPending] = useState(null);
   const [draftNote, setDraftNote] = useState('');
+  const [commentError, setCommentError] = useState('');
   const [openMarker, setOpenMarker] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [detachedCount, setDetachedCount] = useState(0);
@@ -160,6 +161,7 @@ export default function TeacherAnnotationController() {
       if (!offsets || offsets.quote.length > 1200) return;
       const rect = range.getBoundingClientRect();
       setDraftNote('');
+      setCommentError('');
       setPending({
         studentId: card.studentId,
         ...offsets,
@@ -175,6 +177,7 @@ export default function TeacherAnnotationController() {
   function addComment() {
     const note = draftNote.trim();
     if (!socket || !pending || !note) return;
+    setCommentError('');
     socket.emit(
       'teacher:annotation-add',
       {
@@ -187,9 +190,13 @@ export default function TeacherAnnotationController() {
         note,
       },
       (ack) => {
-        if (!ack?.ok) return;
+        if (!ack?.ok) {
+          setCommentError(ack?.error || 'Could not save this inline comment. Try selecting the passage again.');
+          return;
+        }
         setPending(null);
         setDraftNote('');
+        setCommentError('');
         window.getSelection?.()?.removeAllRanges?.();
       }
     );
@@ -250,6 +257,11 @@ export default function TeacherAnnotationController() {
             placeholder="Type your comment…"
             className="mt-2 min-h-20 w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-violet-500 focus:border-violet-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
+          {commentError && (
+            <p className="mt-2 text-xs font-semibold leading-relaxed text-red-600 dark:text-red-300">
+              {commentError}
+            </p>
+          )}
           <div className="mt-2 flex justify-end gap-2">
             <button type="button" onClick={() => setPending(null)} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
             <button type="button" disabled={!draftNote.trim()} onClick={addComment} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700 disabled:opacity-40">Add comment</button>
