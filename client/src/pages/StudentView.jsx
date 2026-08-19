@@ -626,6 +626,7 @@ export default function StudentView() {
           </p>
         )}
         {error && joined && <p className="text-sm text-red-600">{error}</p>}
+        <StudentAnnotationController socket={socket} studentId={student?.id} />
         <RichTextEditor
           text={draft}
           html={draftHtml}
@@ -638,7 +639,6 @@ export default function StudentView() {
           maxWords={enforce && wt > 0 ? wt : 0}
           placeholder="Write here… or paste an image (Ctrl+V / Cmd+V)"
         />
-        <StudentAnnotationController socket={socket} studentId={student?.id} />
       </main>
       <AppFooter />
     </div>
