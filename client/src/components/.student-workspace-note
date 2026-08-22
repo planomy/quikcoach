@@ -1,0 +1,1 @@
+Student workspace enhancements are implemented by LiveResponseStudent.jsx + studentWorkspace.css. The original Pulse implementation is retained in LiveResponseStudentCore.jsx so standalone Pulse keeps its existing behaviour.
