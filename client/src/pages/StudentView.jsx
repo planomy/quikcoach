@@ -402,6 +402,45 @@ export default function StudentView() {
   const progress = wt > 0 ? Math.min(100, Math.round((wc / wt) * 100)) : 0;
   const wordBand = useMemo(() => recommendedWordRange(wt), [wt]);
 
+  function renderProgressPanel() {
+    if (wt > 0) {
+      return (
+        <div>
+          <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
+            <span>Progress</span>
+            <span>
+              {wc} / {wt} words
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+            <div className="h-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} />
+          </div>
+          {wordBand && !enforce && (
+            <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              Suggested range for this task: about <span className="font-medium text-slate-600 dark:text-slate-400">{wordBand.low}–</span>
+              <span className="font-medium text-slate-600 dark:text-slate-400">{wordBand.high} words</span> (guide only — you won&apos;t be
+              cut off).
+            </p>
+          )}
+          {enforce && (
+            <p className="mt-2 text-xs font-medium leading-relaxed text-amber-800">
+              Hard limit: only the first {wt} words are saved. Extra words are dropped when you type or when your draft
+              syncs.
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+        {enforce
+          ? 'Your teacher must set a word target above 0 for the class limit to apply.'
+          : 'Tip: keep your draft focused; very long pieces are slower for whole-class AI feedback.'}
+      </p>
+    );
+  }
+
   if (!joined) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
@@ -494,7 +533,7 @@ export default function StudentView() {
         </div>
       )}
       <header className="border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/90 px-4 py-4 backdrop-blur sm:px-6">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 xl:max-w-7xl">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Writing</p>
             <h1 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">{student?.name}</h1>
@@ -510,135 +549,111 @@ export default function StudentView() {
           </div>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
-        <LiveResponseStudent socket={socket} />
-        {wt > 0 && (
-          <div>
-            <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
-              <span>Progress</span>
-              <span>
-                {wc} / {wt} words
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-              <div className="h-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} />
-            </div>
-            {wordBand && !enforce && (
-              <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                Suggested range for this task: about <span className="font-medium text-slate-600 dark:text-slate-400">{wordBand.low}–</span>
-                <span className="font-medium text-slate-600 dark:text-slate-400">{wordBand.high} words</span> (guide only — you won&apos;t be
-                cut off).
-              </p>
-            )}
-            {enforce && (
-              <p className="mt-2 text-xs font-medium leading-relaxed text-amber-800">
-                Hard limit: only the first {wt} words are saved. Extra words are dropped when you type or when your draft
-                syncs.
-              </p>
-            )}
-          </div>
-        )}
-        {wt <= 0 && (
-          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-            {enforce
-              ? 'Your teacher must set a word target above 0 for the class limit to apply.'
-              : 'Tip: keep your draft focused; very long pieces are slower for whole-class AI feedback.'}
-          </p>
-        )}
-        {broadcastExemplars.length > 0 && (
-          <section className="rounded-2xl border border-violet-200 bg-violet-50/90 p-4 shadow-sm">
-            <h2 className="font-display text-sm font-semibold text-violet-900">Broadcast</h2>
-            <p className="mt-1 text-xs leading-relaxed text-violet-800 dark:text-violet-300">
-              Your teacher shared anonymised exemplar drafts for the class. Names are not shown.
-            </p>
-            <div className="mt-3 space-y-3">
-              {broadcastExemplars.map((ex, i) => (
-                <div
-                  key={`${ex.label}-${i}`}
-                  className="rounded-xl border border-violet-100 bg-white dark:bg-slate-900 p-3 text-sm shadow-sm"
-                >
-                  <p className="text-xs font-bold uppercase tracking-wide text-violet-700">{ex.label}</p>
-                  {ex.image_url && (
-                    <img
-                      src={ex.image_url}
-                      alt=""
-                      className="mt-2 max-h-48 w-full object-contain"
-                    />
-                  )}
-                  {ex.text?.trim() ? (
-                    <RichTextDisplay
-                      html={ex.rich_text_html}
-                      text={ex.text}
-                      className="mt-2 max-h-48 overflow-auto text-slate-700 dark:text-slate-300 scrollbar-thin"
-                    />
-                  ) : !ex.image_url ? (
-                    <p className="mt-2 text-slate-500">—</p>
-                  ) : null}
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
+          <aside className="order-1 flex min-w-0 flex-col gap-4 xl:col-start-2 xl:row-start-1">
+            <LiveResponseStudent socket={socket} />
+            <div className="xl:hidden">{renderProgressPanel()}</div>
+            {broadcastExemplars.length > 0 && (
+              <section className="rounded-2xl border border-violet-200 bg-violet-50/90 p-4 shadow-sm">
+                <h2 className="font-display text-sm font-semibold text-violet-900">Broadcast</h2>
+                <p className="mt-1 text-xs leading-relaxed text-violet-800 dark:text-violet-300">
+                  Your teacher shared anonymised exemplar drafts for the class. Names are not shown.
+                </p>
+                <div className="mt-3 space-y-3">
+                  {broadcastExemplars.map((ex, i) => (
+                    <div
+                      key={`${ex.label}-${i}`}
+                      className="rounded-xl border border-violet-100 bg-white dark:bg-slate-900 p-3 text-sm shadow-sm"
+                    >
+                      <p className="text-xs font-bold uppercase tracking-wide text-violet-700">{ex.label}</p>
+                      {ex.image_url && (
+                        <img
+                          src={ex.image_url}
+                          alt=""
+                          className="mt-2 max-h-48 w-full object-contain"
+                        />
+                      )}
+                      {ex.text?.trim() ? (
+                        <RichTextDisplay
+                          html={ex.rich_text_html}
+                          text={ex.text}
+                          className="mt-2 max-h-48 overflow-auto text-slate-700 dark:text-slate-300 scrollbar-thin"
+                        />
+                      ) : !ex.image_url ? (
+                        <p className="mt-2 text-slate-500">—</p>
+                      ) : null}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
-        {feedbackInbox.length > 0 && (
-          <section
-            role="status"
-            aria-live="polite"
-            className="rounded-2xl border-2 border-indigo-300 bg-indigo-50/90 p-4 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/60"
-          >
-            <h2 className="font-display text-sm font-semibold text-indigo-900 dark:text-indigo-200">
-              Teacher feedback
-            </h2>
-            <ul className="mt-2 space-y-2">
-              {feedbackInbox.map((f) => (
-                <li
-                  key={f.id}
-                  className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-300"
+              </section>
+            )}
+            {feedbackInbox.length > 0 && (
+              <section
+                role="status"
+                aria-live="polite"
+                className="rounded-2xl border-2 border-indigo-300 bg-indigo-50/90 p-4 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/60"
+              >
+                <h2 className="font-display text-sm font-semibold text-indigo-900 dark:text-indigo-200">
+                  Teacher feedback
+                </h2>
+                <ul className="mt-2 space-y-2">
+                  {feedbackInbox.map((f) => (
+                    <li
+                      key={f.id}
+                      className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-300"
+                    >
+                      {f.text}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </aside>
+
+          <section className="order-2 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
+            <div className="hidden xl:block">{renderProgressPanel()}</div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Tip: paste a screenshot into the box (Ctrl+V / Cmd+V) to add an image to your board card.
+            </p>
+            {student?.image_url && (
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900">
+                <img
+                  src={student.image_url}
+                  alt="Your uploaded image"
+                  className="mx-auto max-h-56 w-full object-contain"
+                />
+                <button
+                  type="button"
+                  disabled={frozen || imageBusy}
+                  onClick={clearMyImage}
+                  className="mt-2 text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
                 >
-                  {f.text}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Tip: paste a screenshot into the box (Ctrl+V / Cmd+V) to add an image to your board card.
-        </p>
-        {student?.image_url && (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900">
-            <img
-              src={student.image_url}
-              alt="Your uploaded image"
-              className="mx-auto max-h-56 w-full object-contain"
+                  Remove image
+                </button>
+              </div>
+            )}
+            {(imageBusy || imageHint) && (
+              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-300">
+                {imageBusy ? 'Uploading image…' : imageHint}
+              </p>
+            )}
+            {error && joined && <p className="text-sm text-red-600">{error}</p>}
+            <StudentAnnotationController socket={socket} studentId={student?.id} />
+            <RichTextEditor
+              text={draft}
+              html={draftHtml}
+              onChange={({ text, html }) => {
+                setDraft(text);
+                setDraftHtml(html);
+              }}
+              onPaste={onDraftPaste}
+              disabled={frozen}
+              maxWords={enforce && wt > 0 ? wt : 0}
+              placeholder="Write here… or paste an image (Ctrl+V / Cmd+V)"
             />
-            <button
-              type="button"
-              disabled={frozen || imageBusy}
-              onClick={clearMyImage}
-              className="mt-2 text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
-            >
-              Remove image
-            </button>
-          </div>
-        )}
-        {(imageBusy || imageHint) && (
-          <p className="text-xs font-medium text-indigo-600 dark:text-indigo-300">
-            {imageBusy ? 'Uploading image…' : imageHint}
-          </p>
-        )}
-        {error && joined && <p className="text-sm text-red-600">{error}</p>}
-        <StudentAnnotationController socket={socket} studentId={student?.id} />
-        <RichTextEditor
-          text={draft}
-          html={draftHtml}
-          onChange={({ text, html }) => {
-            setDraft(text);
-            setDraftHtml(html);
-          }}
-          onPaste={onDraftPaste}
-          disabled={frozen}
-          maxWords={enforce && wt > 0 ? wt : 0}
-          placeholder="Write here… or paste an image (Ctrl+V / Cmd+V)"
-        />
+          </section>
+        </div>
       </main>
       <AppFooter />
     </div>
