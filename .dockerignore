@@ -1,0 +1,18 @@
+.git
+.github
+.vscode
+.DS_Store
+
+node_modules
+**/node_modules
+client/dist
+server/data
+
+.env
+.env.*
+*.log
+coverage
+
+# Local/editor artefacts should never bloat the image context.
+*.swp
+*.swo
