@@ -68,6 +68,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const [response, setResponse] = useState(null);
   const [featured, setFeatured] = useState([]);
   const [draft, setDraft] = useState('');
+  const [confidenceChoice, setConfidenceChoice] = useState('');
   const [nudge, setNudge] = useState(false);
   const [message, setMessage] = useState('');
   const [arrival, setArrival] = useState(null);
@@ -135,12 +136,14 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       if (isNew) {
         setResponse(null);
         setDraft('');
+        setConfidenceChoice('');
         drawAttention(nextActivity);
       }
       if (!nextActivity) {
         activityIdRef.current = '';
         setResponse(null);
         setDraft('');
+        setConfidenceChoice('');
       }
     };
     const onMine = (payload) => {
@@ -150,6 +153,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       if (nextActivity?.id && nextActivity.id !== activityIdRef.current) drawAttention(nextActivity);
       setResponse(payload?.response || null);
       setDraft(payload?.response?.value || '');
+      setConfidenceChoice(payload?.response?.confidence || '');
     };
     const onNudge = () => setNudge(true);
     const onRealert = (payload) => {
@@ -191,12 +195,20 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
   function submit(value) {
     if (!activity || activity.locked) return;
+    const selectedConfidence = confidenceChoice;
     setMessage('Sending…');
     socket.emit('student:live-response', { activityId: activity.id, value }, (ack) => {
       setMessage(ack?.ok ? 'Answer sent ✓' : ack?.error || 'Could not send');
       if (ack?.ok) {
-        setResponse({ value });
+        setResponse({ value, confidence: selectedConfidence });
         setDraft(value);
+        if (selectedConfidence) {
+          socket.emit('student:live-confidence', { activityId: activity.id, confidence: selectedConfidence }, (confidenceAck) => {
+            if (confidenceAck?.ok) {
+              setResponse((current) => ({ ...(current || { value }), confidence: selectedConfidence }));
+            }
+          });
+        }
       }
     });
   }
@@ -207,10 +219,33 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   }
 
   function setConfidence(confidence) {
-    if (!activity || !response) return;
+    if (!activity) return;
+    setConfidenceChoice(confidence);
+    if (!response) return;
     socket.emit('student:live-confidence', { activityId: activity.id, confidence }, (ack) => {
       if (ack?.ok) setResponse((current) => ({ ...current, confidence }));
     });
+  }
+
+  function renderConfidenceControls(withDivider = false) {
+    return (
+      <div className={`${withDivider ? 'border-t border-slate-200 dark:border-slate-700' : ''} ${compact ? 'mt-2 pt-2' : 'mt-3 pt-2'}`}>
+        <p className={`text-center font-black uppercase tracking-wide text-slate-500 ${compact ? 'text-[10px]' : 'text-xs'}`}>How sure?</p>
+        <div className={`grid grid-cols-3 ${compact ? 'mt-1 gap-1' : 'mt-2 gap-2'}`}>
+          {CONFIDENCE_OPTIONS.map(([value, label, icon]) => (
+            <button
+              key={value}
+              type="button"
+              disabled={answersClosed}
+              onClick={() => setConfidence(value)}
+              className={`font-black disabled:cursor-not-allowed disabled:opacity-50 ${compact ? 'rounded-lg px-1 py-1.5 text-[10px] leading-tight' : 'rounded-xl px-2 py-2 text-xs'} ${confidenceChoice === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}
+            >
+              {compact ? `${icon} ${label}` : `${icon} ${label === 'Guessed' ? 'I guessed' : label}`}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (collapsed) {
@@ -367,6 +402,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
           {activity.type === 'short' ? (
             <div className={compact ? 'mt-2' : 'mt-5'}>
               <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed} placeholder="Type a short answer…" className={`w-full rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
+              {renderConfidenceControls(false)}
               <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className={`w-full rounded-2xl bg-indigo-600 font-black text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'mt-2 px-3 py-2 text-sm' : 'mt-3 px-5 py-3 text-base'}`}>Send answer</button>
             </div>
           ) : (
@@ -383,23 +419,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             </div>
           )}
           {message && <p className={`text-center font-bold text-indigo-700 dark:text-indigo-300 ${compact ? 'mt-1.5 text-xs' : 'mt-3 text-sm'}`}>{message}</p>}
-          {response && (
-            <div className={`border-t border-slate-200 dark:border-slate-700 ${compact ? 'mt-2 pt-2' : 'mt-4 pt-4'}`}>
-              <p className={`text-center font-black uppercase tracking-wide text-slate-500 ${compact ? 'text-[10px]' : 'text-xs'}`}>How sure?</p>
-              <div className={`grid grid-cols-3 ${compact ? 'mt-1 gap-1' : 'mt-2 gap-2'}`}>
-                {CONFIDENCE_OPTIONS.map(([value, label, icon]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setConfidence(value)}
-                    className={`font-black ${compact ? 'rounded-lg px-1 py-1.5 text-[10px] leading-tight' : 'rounded-xl px-2 py-2 text-xs'} ${response.confidence === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}
-                  >
-                    {compact ? `${icon} ${label}` : `${icon} ${label === 'Guessed' ? 'I guessed' : label}`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {response && activity.type !== 'short' && renderConfidenceControls(true)}
           {activity.type === 'short' && featured.length > 0 && (
             <div className={`border-t border-slate-200 dark:border-slate-700 ${compact ? 'mt-2 pt-2' : 'mt-5 pt-4'}`}>
               <p className="text-xs font-black uppercase tracking-wide text-slate-500">Shared by your teacher</p>
