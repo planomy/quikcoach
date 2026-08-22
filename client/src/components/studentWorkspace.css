@@ -6,6 +6,12 @@
   z-index: 35;
 }
 
+/* Draw mode replaces the main work surface. Hide the live attachment preview while
+   the student is actively drawing so their own autosaved sketch does not stack above it. */
+html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> img[alt='Your uploaded image']) {
+  display: none !important;
+}
+
 /* The compact dock already carries the new-question state, so the full-screen
    arrival card is unnecessary inside the writing workspace. */
 .iboard-student-pulse-dock .iboard-question-arrival {

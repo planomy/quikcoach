@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { plainTextToRichHtml, richHtmlToPlainText, sanitizeRichHtml } from '../lib/richText.js';
+import StudentDrawPad from './StudentDrawPad.jsx';
 
 function countWords(value) {
   const text = String(value || '').trim();
@@ -23,6 +24,31 @@ function insertPlainTextAtSelection(text) {
   range.collapse(true);
   selection.removeAllRanges();
   selection.addRange(range);
+}
+
+function studentSocketEmit(eventName, payload) {
+  return new Promise((resolve, reject) => {
+    const socket = typeof window !== 'undefined' ? window.__iboardStudentSocket : null;
+    if (!socket?.connected) {
+      reject(new Error('Reconnecting… drawing not saved yet'));
+      return;
+    }
+
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('Could not save drawing'));
+    }, 6500);
+
+    socket.emit(eventName, payload, (ack) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (ack?.ok) resolve(ack);
+      else reject(new Error(ack?.error || 'Could not save drawing'));
+    });
+  });
 }
 
 function ToolbarButton({ label, title, onClick, disabled = false, className = '' }) {
@@ -55,6 +81,7 @@ export default function RichTextEditor({
   const [focused, setFocused] = useState(false);
   const [empty, setEmpty] = useState(!String(text || '').trim());
   const [formattingEnabled, setFormattingEnabled] = useState(initialFormattingEnabled);
+  const [drawMode, setDrawMode] = useState(false);
 
   const incomingHtml = useMemo(() => {
     const safe = sanitizeRichHtml(html);
@@ -89,6 +116,16 @@ export default function RichTextEditor({
     // Only run when the teacher changes the room capability.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formattingEnabled]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    document.documentElement.classList.toggle('iboard-student-draw-mode', drawMode);
+    const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+    return () => {
+      cancelAnimationFrame(frame);
+      if (drawMode) document.documentElement.classList.remove('iboard-student-draw-mode');
+    };
+  }, [drawMode]);
 
   function commitFromDom({ normaliseDom = false } = {}) {
     const editor = editorRef.current;
@@ -159,52 +196,82 @@ export default function RichTextEditor({
     if (['b', 'i', 'u'].includes(String(event.key || '').toLowerCase())) event.preventDefault();
   }
 
+  async function saveDrawing(imageBase64) {
+    await studentSocketEmit('student:image', { imageBase64, mimeType: 'image/jpeg' });
+  }
+
+  async function clearDrawing() {
+    await studentSocketEmit('student:image-clear', {});
+  }
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card ring-indigo-500 focus-within:border-indigo-500 focus-within:ring-2 dark:border-slate-600 dark:bg-slate-900">
-      {formattingEnabled && (
+    <>
+      {drawMode && (
+        <StudentDrawPad
+          disabled={disabled}
+          onSave={saveDrawing}
+          onClear={clearDrawing}
+          onDone={() => setDrawMode(false)}
+        />
+      )}
+
+      <div className={`${drawMode ? 'hidden' : ''} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card ring-indigo-500 focus-within:border-indigo-500 focus-within:ring-2 dark:border-slate-600 dark:bg-slate-900`}>
         <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
-          <ToolbarButton disabled={disabled} label="B" title="Bold" onClick={() => runCommand('bold')} />
-          <ToolbarButton disabled={disabled} label={<span className="italic">I</span>} title="Italic" onClick={() => runCommand('italic')} />
-          <ToolbarButton disabled={disabled} label={<span className="underline">U</span>} title="Underline" onClick={() => runCommand('underline')} />
+          {formattingEnabled ? (
+            <>
+              <ToolbarButton disabled={disabled} label="B" title="Bold" onClick={() => runCommand('bold')} />
+              <ToolbarButton disabled={disabled} label={<span className="italic">I</span>} title="Italic" onClick={() => runCommand('italic')} />
+              <ToolbarButton disabled={disabled} label={<span className="underline">U</span>} title="Underline" onClick={() => runCommand('underline')} />
+              <ToolbarButton
+                disabled={disabled}
+                label={<span className="rounded bg-yellow-200 px-1.5 py-0.5 text-xs text-slate-900">H</span>}
+                title="Highlight"
+                onClick={highlightSelection}
+              />
+              <ToolbarButton disabled={disabled} label="•" title="Bullet list" onClick={() => runCommand('insertUnorderedList')} />
+              <span className="mx-0.5 h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
+              <ToolbarButton disabled={disabled} label="↶" title="Undo" onClick={() => runCommand('undo')} />
+              <ToolbarButton disabled={disabled} label="↷" title="Redo" onClick={() => runCommand('redo')} />
+              <span className="ml-auto text-[11px] font-medium text-slate-400">Select text, then format</span>
+            </>
+          ) : (
+            <span className="text-[11px] font-medium text-slate-400">Writing mode</span>
+          )}
           <ToolbarButton
             disabled={disabled}
-            label={<span className="rounded bg-yellow-200 px-1.5 py-0.5 text-xs text-slate-900">H</span>}
-            title="Highlight"
-            onClick={highlightSelection}
+            label="✏ Draw"
+            title="Draw or show your working"
+            onClick={() => setDrawMode(true)}
+            className={formattingEnabled ? '' : 'ml-auto'}
           />
-          <ToolbarButton disabled={disabled} label="•" title="Bullet list" onClick={() => runCommand('insertUnorderedList')} />
-          <span className="mx-0.5 h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
-          <ToolbarButton disabled={disabled} label="↶" title="Undo" onClick={() => runCommand('undo')} />
-          <ToolbarButton disabled={disabled} label="↷" title="Redo" onClick={() => runCommand('redo')} />
-          <span className="ml-auto text-[11px] font-medium text-slate-400">Select text, then format</span>
         </div>
-      )}
-      <div className="relative">
-        {empty && !focused && (
-          <div className="pointer-events-none absolute left-4 top-4 text-sm text-slate-400 dark:text-slate-500">
-            {disabled ? 'Class is frozen by your teacher.' : placeholder}
-          </div>
-        )}
-        <div
-          ref={editorRef}
-          contentEditable={!disabled}
-          suppressContentEditableWarning
-          role="textbox"
-          aria-multiline="true"
-          aria-readonly={disabled}
-          onInput={() => commitFromDom()}
-          onPaste={handlePaste}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setFocused(true)}
-          onBlur={() => {
-            setFocused(false);
-            commitFromDom({ normaliseDom: true });
-          }}
-          className={`min-h-[280px] whitespace-pre-wrap p-4 text-sm leading-relaxed text-slate-800 outline-none [&_div+div]:mt-2 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:px-0.5 [&_mark]:text-slate-900 dark:text-slate-100 ${
-            disabled ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''
-          }`}
-        />
+        <div className="relative">
+          {empty && !focused && (
+            <div className="pointer-events-none absolute left-4 top-4 text-sm text-slate-400 dark:text-slate-500">
+              {disabled ? 'Class is frozen by your teacher.' : placeholder}
+            </div>
+          )}
+          <div
+            ref={editorRef}
+            contentEditable={!disabled}
+            suppressContentEditableWarning
+            role="textbox"
+            aria-multiline="true"
+            aria-readonly={disabled}
+            onInput={() => commitFromDom()}
+            onPaste={handlePaste}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => {
+              setFocused(false);
+              commitFromDom({ normaliseDom: true });
+            }}
+            className={`min-h-[280px] whitespace-pre-wrap p-4 text-sm leading-relaxed text-slate-800 outline-none [&_div+div]:mt-2 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:px-0.5 [&_mark]:text-slate-900 dark:text-slate-100 ${
+              disabled ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''
+            }`}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
