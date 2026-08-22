@@ -1,0 +1,97 @@
+/* Student workspace: use the available screen, preserve readable writing measure,
+   and keep reference material visible without letting Pulse dominate the page. */
+
+.iboard-student-pulse-dock {
+  order: 99;
+  z-index: 35;
+}
+
+/* The compact dock already carries the new-question state, so the full-screen
+   arrival card is unnecessary inside the writing workspace. */
+.iboard-student-pulse-dock .iboard-question-arrival {
+  display: none !important;
+}
+
+@media (max-width: 1279px) {
+  .iboard-student-workspace main {
+    padding-bottom: 6.5rem !important;
+  }
+
+  .iboard-student-pulse-dock {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    max-height: min(72vh, 36rem);
+    overflow-y: auto;
+    border-radius: 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  /* Fluid desktop canvas. The viewport decides the width; only the gutters are bounded. */
+  .iboard-student-workspace header > div,
+  .iboard-student-workspace main,
+  .iboard-student-workspace main > div {
+    max-width: none !important;
+  }
+
+  .iboard-student-workspace header > div,
+  .iboard-student-workspace main {
+    padding-right: clamp(1.5rem, 2.2vw, 3rem);
+    padding-left: clamp(1.5rem, 2.2vw, 3rem);
+  }
+
+  .iboard-student-workspace main > div {
+    grid-template-columns: minmax(36rem, 3fr) minmax(22rem, 2fr) !important;
+    gap: clamp(1.25rem, 2vw, 2.5rem) !important;
+  }
+
+  /* The support rail stays beside the student's writing. It scrolls independently
+     if feedback becomes long, while Pulse remains docked at the bottom. */
+  .iboard-student-workspace main aside:has(.iboard-student-pulse-dock) {
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+  }
+
+  .iboard-student-workspace main aside:has(.iboard-student-pulse-dock) > section.border-indigo-300 {
+    order: 1;
+    max-height: min(44vh, 30rem);
+    overflow-y: auto;
+  }
+
+  .iboard-student-workspace main aside:has(.iboard-student-pulse-dock) > section.border-violet-200 {
+    order: 2;
+    max-height: min(32vh, 22rem);
+    overflow-y: auto;
+  }
+
+  .iboard-student-pulse-dock {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    padding-top: 0.75rem;
+    padding-bottom: 0.125rem;
+    background: linear-gradient(to bottom, transparent, rgb(248 250 252 / 0.96) 22%);
+  }
+
+  .dark .iboard-student-pulse-dock {
+    background: linear-gradient(to bottom, transparent, rgb(2 6 23 / 0.96) 22%);
+  }
+
+  /* Use viewport height for the student's main task, but keep line length readable.
+     This uses the large screen without turning each sentence into a railway timetable. */
+  .iboard-student-workspace main [role='textbox'][contenteditable='true'],
+  .iboard-student-workspace main [role='textbox'][contenteditable='false'] {
+    min-height: max(22rem, calc(100vh - 16rem));
+    width: min(100%, 100ch);
+    margin-right: auto;
+    margin-left: auto;
+  }
+}
