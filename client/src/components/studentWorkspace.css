@@ -12,6 +12,58 @@
   display: none !important;
 }
 
+/* Pulse uses the same disclosure language as Feedback and Broadcast.
+   The core component already owns the open/collapse actions; these rules simply
+   turn its larger labels into the quiet caret treatment used by the workspace. */
+.iboard-student-pulse-dock.is-collapsed > button > span:last-child {
+  display: grid;
+  height: 1.75rem;
+  width: 1.75rem;
+  place-items: center;
+  padding: 0;
+  font-size: 0;
+}
+
+.iboard-student-pulse-dock.is-collapsed > button > span:last-child::before {
+  content: '▾';
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.iboard-student-pulse-dock.is-expanded {
+  position: relative;
+}
+
+.iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
+  position: absolute;
+  top: 1rem;
+  right: 0.5rem;
+  z-index: 10;
+  display: grid;
+  height: 1.75rem;
+  width: 1.75rem;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border-radius: 9999px;
+  font-size: 0;
+}
+
+.iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill']::before {
+  content: '▴';
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] > span {
+  display: none;
+}
+
+/* Reserve the caret's corner so it never sits on top of Pulse timer/sound controls. */
+.iboard-student-pulse-dock.is-expanded > section > div:first-child {
+  padding-right: 2.25rem;
+}
+
 @media (max-width: 1279px) {
   .iboard-student-workspace main {
     padding-bottom: 6.5rem !important;
