@@ -71,7 +71,9 @@ export default function StudentView() {
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState('');
   const [feedbackInbox, setFeedbackInbox] = useState([]);
+  const [feedbackOpen, setFeedbackOpen] = useState(true);
   const [broadcastHistory, setBroadcastHistory] = useState([]);
+  const [broadcastOpen, setBroadcastOpen] = useState(true);
   // null always means "show the latest" so a new teacher broadcast jumps forward automatically.
   const [broadcastCursor, setBroadcastCursor] = useState(null);
   const [exemplarFlash, setExemplarFlash] = useState(false);
@@ -184,6 +186,7 @@ export default function StudentView() {
       const mine = items.filter((i) => Number(i?.studentId) === Number(sid));
       if (!mine.length) return;
       setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine));
+      setFeedbackOpen(true);
     };
     const onBroadcast = (payload = {}) => {
       const serverHistory = Array.isArray(payload.history)
@@ -206,6 +209,7 @@ export default function StudentView() {
       setBroadcastCursor(null);
 
       if (items.length || serverHistory?.length) {
+        setBroadcastOpen(true);
         setExemplarFlash(true);
         if (exemplarFlashTimerRef.current) clearTimeout(exemplarFlashTimerRef.current);
         exemplarFlashTimerRef.current = setTimeout(() => setExemplarFlash(false), 4000);
@@ -587,98 +591,128 @@ export default function StudentView() {
             <LiveResponseStudent socket={socket} />
             <div className="xl:hidden">{renderProgressPanel()}</div>
             {broadcastExemplars.length > 0 && (
-              <section className="rounded-2xl border border-violet-200 bg-violet-50/90 p-4 shadow-sm">
+              <section className={`rounded-2xl border border-violet-200 bg-violet-50/90 shadow-sm ${broadcastOpen ? 'p-4' : 'px-4 py-3'}`}>
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="font-display text-sm font-semibold text-violet-900">Broadcast</h2>
-                  {broadcastHistory.length > 1 && (
-                    <div className="flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-white/80 p-0.5 text-violet-800 shadow-sm dark:border-violet-800 dark:bg-slate-900 dark:text-violet-200">
-                      <button
-                        type="button"
-                        onClick={() => setBroadcastCursor(Math.max(0, broadcastIndex - 1))}
-                        disabled={broadcastIndex <= 0}
-                        className="grid h-7 w-7 place-items-center rounded-full text-lg font-bold leading-none hover:bg-violet-100 disabled:cursor-default disabled:opacity-30 dark:hover:bg-violet-950"
-                        aria-label="Previous broadcast"
-                        title="Previous broadcast"
-                      >
-                        ‹
-                      </button>
-                      <span className="min-w-[3.8rem] text-center text-[11px] font-bold tabular-nums">
-                        {broadcastIndex + 1} of {broadcastHistory.length}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = Math.min(broadcastHistory.length - 1, broadcastIndex + 1);
-                          setBroadcastCursor(next === broadcastHistory.length - 1 ? null : next);
-                        }}
-                        disabled={broadcastIndex >= broadcastHistory.length - 1}
-                        className="grid h-7 w-7 place-items-center rounded-full text-lg font-bold leading-none hover:bg-violet-100 disabled:cursor-default disabled:opacity-30 dark:hover:bg-violet-950"
-                        aria-label="Next broadcast"
-                        title="Next broadcast"
-                      >
-                        ›
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <p className="mt-1 text-xs leading-relaxed text-violet-800 dark:text-violet-300">
-                  Your teacher shared anonymised exemplar drafts for the class. Names are not shown.
-                </p>
-                {Number.isFinite(Number(currentBroadcast?.at)) && (
-                  <p className="mt-1 text-[11px] font-medium text-violet-600/80 dark:text-violet-300/80">
-                    {new Date(Number(currentBroadcast.at)).toLocaleTimeString([], {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                )}
-                <div className="mt-3 space-y-3">
-                  {broadcastExemplars.map((ex, i) => (
-                    <div
-                      key={`${ex.label}-${i}`}
-                      className="rounded-xl border border-violet-100 bg-white dark:bg-slate-900 p-3 text-sm shadow-sm"
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {broadcastHistory.length > 1 && (
+                      <div className="flex items-center gap-1 rounded-full border border-violet-200 bg-white/80 p-0.5 text-violet-800 shadow-sm dark:border-violet-800 dark:bg-slate-900 dark:text-violet-200">
+                        <button
+                          type="button"
+                          onClick={() => setBroadcastCursor(Math.max(0, broadcastIndex - 1))}
+                          disabled={broadcastIndex <= 0}
+                          className="grid h-7 w-7 place-items-center rounded-full text-lg font-bold leading-none hover:bg-violet-100 disabled:cursor-default disabled:opacity-30 dark:hover:bg-violet-950"
+                          aria-label="Previous broadcast"
+                          title="Previous broadcast"
+                        >
+                          ‹
+                        </button>
+                        <span className="min-w-[3.8rem] text-center text-[11px] font-bold tabular-nums">
+                          {broadcastIndex + 1} of {broadcastHistory.length}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = Math.min(broadcastHistory.length - 1, broadcastIndex + 1);
+                            setBroadcastCursor(next === broadcastHistory.length - 1 ? null : next);
+                          }}
+                          disabled={broadcastIndex >= broadcastHistory.length - 1}
+                          className="grid h-7 w-7 place-items-center rounded-full text-lg font-bold leading-none hover:bg-violet-100 disabled:cursor-default disabled:opacity-30 dark:hover:bg-violet-950"
+                          aria-label="Next broadcast"
+                          title="Next broadcast"
+                        >
+                          ›
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastOpen((open) => !open)}
+                      className="grid h-7 w-7 place-items-center rounded-full text-base font-black text-violet-700 hover:bg-violet-100 dark:text-violet-200 dark:hover:bg-violet-950"
+                      aria-expanded={broadcastOpen}
+                      aria-label={broadcastOpen ? 'Collapse Broadcast' : 'Expand Broadcast'}
+                      title={broadcastOpen ? 'Collapse Broadcast' : 'Expand Broadcast'}
                     >
-                      <p className="text-xs font-bold uppercase tracking-wide text-violet-700">{ex.label}</p>
-                      {ex.image_url && (
-                        <img
-                          src={ex.image_url}
-                          alt=""
-                          className="mt-2 max-h-48 w-full object-contain"
-                        />
-                      )}
-                      {ex.text?.trim() ? (
-                        <RichTextDisplay
-                          html={ex.rich_text_html}
-                          text={ex.text}
-                          className="mt-2 max-h-48 overflow-auto text-slate-700 dark:text-slate-300 scrollbar-thin"
-                        />
-                      ) : !ex.image_url ? (
-                        <p className="mt-2 text-slate-500">—</p>
-                      ) : null}
-                    </div>
-                  ))}
+                      {broadcastOpen ? '▴' : '▾'}
+                    </button>
+                  </div>
                 </div>
+                {broadcastOpen && (
+                  <>
+                    <p className="mt-1 text-xs leading-relaxed text-violet-800 dark:text-violet-300">
+                      Your teacher shared anonymised exemplar drafts for the class. Names are not shown.
+                    </p>
+                    {Number.isFinite(Number(currentBroadcast?.at)) && (
+                      <p className="mt-1 text-[11px] font-medium text-violet-600/80 dark:text-violet-300/80">
+                        {new Date(Number(currentBroadcast.at)).toLocaleTimeString([], {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    )}
+                    <div className="mt-3 space-y-3">
+                      {broadcastExemplars.map((ex, i) => (
+                        <div
+                          key={`${ex.label}-${i}`}
+                          className="rounded-xl border border-violet-100 bg-white dark:bg-slate-900 p-3 text-sm shadow-sm"
+                        >
+                          <p className="text-xs font-bold uppercase tracking-wide text-violet-700">{ex.label}</p>
+                          {ex.image_url && (
+                            <img
+                              src={ex.image_url}
+                              alt=""
+                              className="mt-2 max-h-48 w-full object-contain"
+                            />
+                          )}
+                          {ex.text?.trim() ? (
+                            <RichTextDisplay
+                              html={ex.rich_text_html}
+                              text={ex.text}
+                              className="mt-2 max-h-48 overflow-auto text-slate-700 dark:text-slate-300 scrollbar-thin"
+                            />
+                          ) : !ex.image_url ? (
+                            <p className="mt-2 text-slate-500">—</p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </section>
             )}
             {feedbackInbox.length > 0 && (
               <section
                 role="status"
                 aria-live="polite"
-                className="rounded-2xl border-2 border-indigo-300 bg-indigo-50/90 p-4 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/60"
+                className={`rounded-2xl border-2 border-indigo-300 bg-indigo-50/90 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/60 ${feedbackOpen ? 'p-4' : 'px-4 py-3'}`}
               >
-                <h2 className="font-display text-sm font-semibold text-indigo-900 dark:text-indigo-200">
-                  Teacher feedback
-                </h2>
-                <ul className="mt-2 space-y-2">
-                  {feedbackInbox.map((f) => (
-                    <li
-                      key={f.id}
-                      className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-300"
-                    >
-                      {f.text}
-                    </li>
-                  ))}
-                </ul>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-display text-sm font-semibold text-indigo-900 dark:text-indigo-200">
+                    Teacher feedback
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackOpen((open) => !open)}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-base font-black text-indigo-700 hover:bg-indigo-100 dark:text-indigo-200 dark:hover:bg-indigo-950"
+                    aria-expanded={feedbackOpen}
+                    aria-label={feedbackOpen ? 'Collapse teacher feedback' : 'Expand teacher feedback'}
+                    title={feedbackOpen ? 'Collapse teacher feedback' : 'Expand teacher feedback'}
+                  >
+                    {feedbackOpen ? '▴' : '▾'}
+                  </button>
+                </div>
+                {feedbackOpen && (
+                  <ul className="mt-2 space-y-2">
+                    {feedbackInbox.map((f) => (
+                      <li
+                        key={f.id}
+                        className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-300"
+                      >
+                        {f.text}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
             )}
           </aside>
