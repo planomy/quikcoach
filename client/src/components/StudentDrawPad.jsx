@@ -117,7 +117,9 @@ export default function StudentDrawPad({ disabled = false, onSave, onClear, onDo
 
     dirtyRef.current = false;
     setStatus('Saving…');
-    const hasDrawing = strokesRef.current.length > 0;
+    const hasDrawing =
+      strokesRef.current.length > 0 ||
+      (currentStrokeRef.current?.points?.length || 0) > 0;
     const task = hasDrawing
       ? Promise.resolve(onSave?.(canvas.toDataURL('image/jpeg', 0.82)))
       : Promise.resolve(onClear?.());
@@ -167,6 +169,7 @@ export default function StudentDrawPad({ disabled = false, onSave, onClear, onDo
     currentStrokeRef.current = stroke;
     const ctx = canvas.getContext('2d');
     if (ctx) drawStroke(ctx, stroke);
+    markDirty();
   }
 
   function continueStroke(event) {
@@ -186,6 +189,7 @@ export default function StudentDrawPad({ disabled = false, onSave, onClear, onDo
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
     ctx.restore();
+    markDirty();
   }
 
   function finishStroke(event) {
@@ -222,6 +226,8 @@ export default function StudentDrawPad({ disabled = false, onSave, onClear, onDo
     if (saved) onDone?.();
     else setFinishing(false);
   }
+
+  const saveFailed = status.toLowerCase().includes('could not') || status.toLowerCase().includes('failed');
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -265,7 +271,7 @@ export default function StudentDrawPad({ disabled = false, onSave, onClear, onDo
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2 text-xs dark:border-slate-700">
         <span className="text-slate-500 dark:text-slate-400">Black pen · white eraser · autosaves while you work</span>
-        <span className={`font-semibold ${status === 'Could not save drawing' ? 'text-red-600' : 'text-indigo-600 dark:text-indigo-300'}`} aria-live="polite">
+        <span className={`font-semibold ${saveFailed ? 'text-red-600' : 'text-indigo-600 dark:text-indigo-300'}`} aria-live="polite">
           {disabled ? 'Class is frozen' : status}
         </span>
       </div>
