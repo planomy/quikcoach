@@ -117,6 +117,16 @@ export default function RichTextEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formattingEnabled]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    document.documentElement.classList.toggle('iboard-student-draw-mode', drawMode);
+    const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+    return () => {
+      cancelAnimationFrame(frame);
+      if (drawMode) document.documentElement.classList.remove('iboard-student-draw-mode');
+    };
+  }, [drawMode]);
+
   function commitFromDom({ normaliseDom = false } = {}) {
     const editor = editorRef.current;
     if (!editor) return;
@@ -186,11 +196,6 @@ export default function RichTextEditor({
     if (['b', 'i', 'u'].includes(String(event.key || '').toLowerCase())) event.preventDefault();
   }
 
-  function changeDrawMode(next) {
-    setDrawMode(next);
-    requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
-  }
-
   async function saveDrawing(imageBase64) {
     await studentSocketEmit('student:image', { imageBase64, mimeType: 'image/jpeg' });
   }
@@ -206,7 +211,7 @@ export default function RichTextEditor({
           disabled={disabled}
           onSave={saveDrawing}
           onClear={clearDrawing}
-          onDone={() => changeDrawMode(false)}
+          onDone={() => setDrawMode(false)}
         />
       )}
 
@@ -236,7 +241,7 @@ export default function RichTextEditor({
             disabled={disabled}
             label="✏ Draw"
             title="Draw or show your working"
-            onClick={() => changeDrawMode(true)}
+            onClick={() => setDrawMode(true)}
             className={formattingEnabled ? '' : 'ml-auto'}
           />
         </div>
