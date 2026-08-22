@@ -272,8 +272,9 @@ function broadcastRoom(code) {
   return payload;
 }
 
-/** Last broadcast per room — resent when a student joins/rejoins so late/reconnect tabs still see it. */
-const lastBroadcastByRoom = new Map();
+const BROADCAST_HISTORY_LIMIT = 10;
+/** Current-lesson broadcast history per room. Cleared with teacher:clear-cards. */
+const broadcastHistoryByRoom = new Map();
 
 /** Active student sockets are kept in memory; learning history stays in SQLite. */
 const connectedStudentSockets = new Map();
@@ -410,11 +411,23 @@ function connectedStudentsInRoom(code) {
     .filter(isStudentConnected);
 }
 
+function broadcastHistoryForRoom(code) {
+  return broadcastHistoryByRoom.get(normalizeRoomCode(code)) || [];
+}
+
+function emitBroadcastHistoryToSocket(socket, code) {
+  const history = broadcastHistoryForRoom(code);
+  if (!history.length) return;
+  const latest = history[history.length - 1];
+  socket.emit('broadcast:exemplars', { ...latest, history });
+}
+
 function emitBroadcastToRoom(code, payload) {
   const c = normalizeRoomCode(code);
   const room = roomSocketName(c);
-  lastBroadcastByRoom.set(c, payload);
-  io.to(room).emit('broadcast:exemplars', payload);
+  const history = [...broadcastHistoryForRoom(c), payload].slice(-BROADCAST_HISTORY_LIMIT);
+  broadcastHistoryByRoom.set(c, history);
+  io.to(room).emit('broadcast:exemplars', { ...payload, history });
 }
 
 io.on('connection', (socket) => {
@@ -492,8 +505,7 @@ io.on('connection', (socket) => {
       const payload = buildRoomPayload(c);
       cb?.({ ok: true, student, room: payload.room, students: payload.students, resumed });
       emitRoomState(c, payload);
-      const last = lastBroadcastByRoom.get(c);
-      if (last) socket.emit('broadcast:exemplars', last);
+      emitBroadcastHistoryToSocket(socket, c);
       emitLiveState(c);
     } catch (e) {
       console.error(e);
@@ -524,8 +536,7 @@ io.on('connection', (socket) => {
       const payload = buildRoomPayload(c);
       cb?.({ ok: true, student, room: payload.room, students: payload.students });
       emitRoomState(c, payload);
-      const last = lastBroadcastByRoom.get(c);
-      if (last) socket.emit('broadcast:exemplars', last);
+      emitBroadcastHistoryToSocket(socket, c);
       emitLiveState(c);
     } catch (e) {
       console.error(e);
@@ -1327,7 +1338,12 @@ io.on('connection', (socket) => {
       for (const p of postRows) {
         if (p.image_filename) unlinkRoomMedia(code, p.image_filename);
       }
-      lastBroadcastByRoom.delete(code);
+      broadcastHistoryByRoom.delete(code);
+      io.to(roomSocketName(code)).emit('broadcast:exemplars', {
+        items: [],
+        history: [],
+        at: Date.now(),
+      });
       queries.clearLiveActivity(db, code);
       queries.clearFeaturedWall(db, code);
       queries.resetLiveQuestionNumber(db, code);

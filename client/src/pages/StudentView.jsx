@@ -71,7 +71,9 @@ export default function StudentView() {
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState('');
   const [feedbackInbox, setFeedbackInbox] = useState([]);
-  const [broadcastExemplars, setBroadcastExemplars] = useState([]);
+  const [broadcastHistory, setBroadcastHistory] = useState([]);
+  // null always means "show the latest" so a new teacher broadcast jumps forward automatically.
+  const [broadcastCursor, setBroadcastCursor] = useState(null);
   const [exemplarFlash, setExemplarFlash] = useState(false);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
@@ -183,11 +185,33 @@ export default function StudentView() {
       if (!mine.length) return;
       setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine));
     };
-    const onBroadcast = ({ items }) => {
-      setBroadcastExemplars(Array.isArray(items) ? items : []);
-      setExemplarFlash(true);
-      if (exemplarFlashTimerRef.current) clearTimeout(exemplarFlashTimerRef.current);
-      exemplarFlashTimerRef.current = setTimeout(() => setExemplarFlash(false), 4000);
+    const onBroadcast = (payload = {}) => {
+      const serverHistory = Array.isArray(payload.history)
+        ? payload.history.filter((entry) => Array.isArray(entry?.items)).slice(-10)
+        : null;
+      const items = Array.isArray(payload.items) ? payload.items : [];
+
+      if (serverHistory) {
+        setBroadcastHistory(serverHistory);
+      } else if (items.length) {
+        // Compatibility with a server that only sends the newest broadcast.
+        const entry = { items, at: Number(payload.at) || Date.now() };
+        setBroadcastHistory((previous) => {
+          const deduped = previous.filter((old) => Number(old?.at) !== Number(entry.at));
+          return [...deduped, entry].slice(-10);
+        });
+      } else {
+        setBroadcastHistory([]);
+      }
+      setBroadcastCursor(null);
+
+      if (items.length || serverHistory?.length) {
+        setExemplarFlash(true);
+        if (exemplarFlashTimerRef.current) clearTimeout(exemplarFlashTimerRef.current);
+        exemplarFlashTimerRef.current = setTimeout(() => setExemplarFlash(false), 4000);
+      } else {
+        setExemplarFlash(false);
+      }
     };
     const onTimesUp = () => setTimesUp(true);
     socket.on('room:state', onState);
@@ -401,6 +425,14 @@ export default function StudentView() {
   const frozen = !!room?.freeze_class;
   const progress = wt > 0 ? Math.min(100, Math.round((wc / wt) * 100)) : 0;
   const wordBand = useMemo(() => recommendedWordRange(wt), [wt]);
+  const broadcastIndex = broadcastHistory.length
+    ? Math.min(
+        Math.max(broadcastCursor ?? broadcastHistory.length - 1, 0),
+        broadcastHistory.length - 1
+      )
+    : -1;
+  const currentBroadcast = broadcastIndex >= 0 ? broadcastHistory[broadcastIndex] : null;
+  const broadcastExemplars = Array.isArray(currentBroadcast?.items) ? currentBroadcast.items : [];
 
   function renderProgressPanel() {
     if (wt > 0) {
@@ -556,10 +588,50 @@ export default function StudentView() {
             <div className="xl:hidden">{renderProgressPanel()}</div>
             {broadcastExemplars.length > 0 && (
               <section className="rounded-2xl border border-violet-200 bg-violet-50/90 p-4 shadow-sm">
-                <h2 className="font-display text-sm font-semibold text-violet-900">Broadcast</h2>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-display text-sm font-semibold text-violet-900">Broadcast</h2>
+                  {broadcastHistory.length > 1 && (
+                    <div className="flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-white/80 p-0.5 text-violet-800 shadow-sm dark:border-violet-800 dark:bg-slate-900 dark:text-violet-200">
+                      <button
+                        type="button"
+                        onClick={() => setBroadcastCursor(Math.max(0, broadcastIndex - 1))}
+                        disabled={broadcastIndex <= 0}
+                        className="grid h-7 w-7 place-items-center rounded-full text-lg font-bold leading-none hover:bg-violet-100 disabled:cursor-default disabled:opacity-30 dark:hover:bg-violet-950"
+                        aria-label="Previous broadcast"
+                        title="Previous broadcast"
+                      >
+                        ‹
+                      </button>
+                      <span className="min-w-[3.8rem] text-center text-[11px] font-bold tabular-nums">
+                        {broadcastIndex + 1} of {broadcastHistory.length}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = Math.min(broadcastHistory.length - 1, broadcastIndex + 1);
+                          setBroadcastCursor(next === broadcastHistory.length - 1 ? null : next);
+                        }}
+                        disabled={broadcastIndex >= broadcastHistory.length - 1}
+                        className="grid h-7 w-7 place-items-center rounded-full text-lg font-bold leading-none hover:bg-violet-100 disabled:cursor-default disabled:opacity-30 dark:hover:bg-violet-950"
+                        aria-label="Next broadcast"
+                        title="Next broadcast"
+                      >
+                        ›
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <p className="mt-1 text-xs leading-relaxed text-violet-800 dark:text-violet-300">
                   Your teacher shared anonymised exemplar drafts for the class. Names are not shown.
                 </p>
+                {Number.isFinite(Number(currentBroadcast?.at)) && (
+                  <p className="mt-1 text-[11px] font-medium text-violet-600/80 dark:text-violet-300/80">
+                    {new Date(Number(currentBroadcast.at)).toLocaleTimeString([], {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                )}
                 <div className="mt-3 space-y-3">
                   {broadcastExemplars.map((ex, i) => (
                     <div
