@@ -12,6 +12,67 @@
   display: none !important;
 }
 
+/* Pulse should read as a crisp control, not a glowing card. Tailwind rings are
+   implemented as box-shadows, so clear both the ring and the large panel shadow
+   inside the embedded student workspace. */
+.iboard-student-pulse-dock.is-collapsed > button,
+.iboard-student-pulse-dock.is-expanded > section,
+.iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
+  box-shadow: none !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+/* Collapsed Pulse uses a flat status colour with a real one-pixel border.
+   Preserve the existing state palette, just remove the fuzzy gradient/ring. */
+.iboard-student-pulse-dock.is-collapsed > button {
+  border: 1px solid transparent;
+  background-image: none !important;
+}
+
+.iboard-student-pulse-dock.is-collapsed > button[class*='from-indigo-600'] {
+  border-color: #3730a3;
+  background-color: #4f46e5 !important;
+}
+
+.iboard-student-pulse-dock.is-collapsed > button[class*='from-rose-600'] {
+  border-color: #9f1239;
+  background-color: #e11d48 !important;
+}
+
+.iboard-student-pulse-dock.is-collapsed > button[class*='from-amber-400'] {
+  border-color: #b45309;
+  background-color: #fbbf24 !important;
+}
+
+.iboard-student-pulse-dock.is-collapsed > button[class*='from-fuchsia-600'] {
+  border-color: #86198f;
+  background-color: #c026d3 !important;
+}
+
+.iboard-student-pulse-dock.is-collapsed > button[class*='from-emerald-500'] {
+  border-color: #047857;
+  background-color: #10b981 !important;
+}
+
+.iboard-student-pulse-dock.is-collapsed > button[class*='from-slate-600'] {
+  border-color: #334155;
+  background-color: #475569 !important;
+}
+
+/* Expanded question card keeps the rotating question colour, but with one clean
+   edge rather than border + ring + shadow. */
+.iboard-student-pulse-dock.is-expanded > section {
+  border-width: 1px !important;
+}
+
+/* The option fields are intentionally flat too. Their existing selected/correct
+   colours remain untouched; only the heavy outline is reduced. */
+.iboard-student-pulse-dock.is-expanded > section button[class*='border-2'] {
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+
 /* Pulse uses the same disclosure language as Feedback and Broadcast.
    The core component already owns the open/collapse actions; these rules simply
    turn its larger labels into the quiet caret treatment used by the workspace. */
@@ -21,6 +82,8 @@
   width: 1.75rem;
   place-items: center;
   padding: 0;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  box-shadow: none !important;
   font-size: 0;
 }
 
@@ -41,8 +104,13 @@
   place-items: center;
   margin: 0;
   padding: 0;
+  border: 1px solid #cbd5e1;
   border-radius: 9999px;
   font-size: 0;
+}
+
+.dark .iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
+  border-color: #475569;
 }
 
 .iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill']::before {
@@ -126,11 +194,11 @@
     margin-top: auto;
     padding-top: 0.75rem;
     padding-bottom: 0.125rem;
-    background: linear-gradient(to bottom, transparent, rgb(248 250 252 / 0.96) 22%);
+    background: transparent;
   }
 
   .dark .iboard-student-pulse-dock {
-    background: linear-gradient(to bottom, transparent, rgb(2 6 23 / 0.96) 22%);
+    background: transparent;
   }
 
   /* Use viewport height for the student's main task, but keep line length readable.
