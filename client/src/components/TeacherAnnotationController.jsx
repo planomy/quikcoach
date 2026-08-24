@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   plainTextFromElement,
   rangeForPlainOffsets,
@@ -8,6 +8,9 @@ import {
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
+const MARKER_SIZE = 28;
+const MARKER_GAP = 5;
+const MARKER_MARGIN = 6;
 const CORE_COMMENTS = [
   'Check GPS',
   'This is an incomplete fragment sentence',
@@ -70,6 +73,41 @@ function cardForStudent(studentId) {
   return article && textPane ? { article, textPane } : null;
 }
 
+function markerPosition(rangeRect, card) {
+  if (typeof window === 'undefined' || !card?.article || !card?.textPane) return null;
+
+  const paneRect = card.textPane.getBoundingClientRect();
+  const cardRect = card.article.getBoundingClientRect();
+  const visible = {
+    top: Math.max(0, paneRect.top, cardRect.top),
+    bottom: Math.min(window.innerHeight, paneRect.bottom, cardRect.bottom),
+    left: Math.max(0, paneRect.left, cardRect.left),
+    right: Math.min(window.innerWidth, paneRect.right, cardRect.right),
+  };
+
+  if (
+    visible.bottom - visible.top < MARKER_SIZE ||
+    visible.right <= visible.left ||
+    rangeRect.bottom < visible.top ||
+    rangeRect.top > visible.bottom ||
+    rangeRect.right < visible.left ||
+    rangeRect.left > visible.right
+  ) {
+    return null;
+  }
+
+  return {
+    top: Math.min(
+      Math.max(rangeRect.top - 3, visible.top + 2),
+      visible.bottom - MARKER_SIZE - 2
+    ),
+    left: Math.min(
+      window.innerWidth - MARKER_SIZE - MARKER_MARGIN,
+      Math.max(MARKER_MARGIN, rangeRect.right + MARKER_GAP)
+    ),
+  };
+}
+
 function annotationMap(raw) {
   if (!raw || typeof raw !== 'object') return {};
   const out = {};
@@ -92,6 +130,7 @@ export default function TeacherAnnotationController() {
   const [saveNotice, setSaveNotice] = useState('');
   const [openMarker, setOpenMarker] = useState(null);
   const [markers, setMarkers] = useState([]);
+  const moveFrameRef = useRef(null);
 
   const annotationTotal = useMemo(
     () => Object.values(byStudent).reduce((n, list) => n + (Array.isArray(list) ? list.length : 0), 0),
@@ -116,11 +155,12 @@ export default function TeacherAnnotationController() {
         ranges.push(range);
         const rect = range.getBoundingClientRect();
         if (rect.width || rect.height) {
+          const position = markerPosition(rect, card);
+          if (!position) continue;
           nextMarkers.push({
             studentId,
             annotation,
-            top: Math.max(6, rect.top - 3),
-            left: Math.min(window.innerWidth - 34, rect.right + 5),
+            ...position,
           });
         }
       }
@@ -131,6 +171,16 @@ export default function TeacherAnnotationController() {
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
     }
     setMarkers(nextMarkers);
+    setOpenMarker((previous) => {
+      if (!previous) return previous;
+      return (
+        nextMarkers.find(
+          (marker) =>
+            Number(marker.studentId) === Number(previous.studentId) &&
+            Number(marker.annotation?.id) === Number(previous.annotation?.id)
+        ) || null
+      );
+    });
   }, [byStudent]);
 
   useEffect(() => {
@@ -167,14 +217,23 @@ export default function TeacherAnnotationController() {
   }, [refreshHighlights, annotationTotal]);
 
   useEffect(() => {
-    const onMove = () => refreshHighlights();
+    const onMove = () => {
+      if (moveFrameRef.current != null) return;
+      moveFrameRef.current = requestAnimationFrame(() => {
+        moveFrameRef.current = null;
+        refreshHighlights();
+      });
+    };
+    const scrollOptions = { capture: true, passive: true };
     window.addEventListener('resize', onMove);
-    window.addEventListener('scroll', onMove, true);
+    window.addEventListener('scroll', onMove, scrollOptions);
     window.addEventListener('iboard:teacher-layout', onMove);
     return () => {
       window.removeEventListener('resize', onMove);
-      window.removeEventListener('scroll', onMove, true);
+      window.removeEventListener('scroll', onMove, scrollOptions);
       window.removeEventListener('iboard:teacher-layout', onMove);
+      if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
+      moveFrameRef.current = null;
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
     };
   }, [refreshHighlights]);
