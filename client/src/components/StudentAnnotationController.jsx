@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { plainTextFromElement, rangeForPlainOffsets, resolveAnnotation } from '../lib/annotations.js';
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
-const DISMISSED_STORAGE_PREFIX = 'iboard-dismissed-inline-comments';
 
 function currentStudentId() {
   if (typeof window === 'undefined') return 0;
@@ -19,39 +18,38 @@ function editorElement() {
   return document.querySelector('[role="textbox"][contenteditable]');
 }
 
-function annotationVersionKey(annotation) {
-  return `${Number(annotation?.id) || 0}\u0000${String(annotation?.updated_at || '')}\u0000${String(annotation?.note || '')}`;
-}
+function commentPopupPosition(marker) {
+  const popupWidth = 290;
+  const gap = 12;
+  const viewportPadding = 10;
+  const markerWidth = 28;
+  const markerLeft = Number(marker?.left) || viewportPadding;
+  const markerTop = Number(marker?.top) || viewportPadding;
+  const rightEdge = markerLeft + markerWidth;
+  const roomOnRight = window.innerWidth - rightEdge - viewportPadding;
+  const roomOnLeft = markerLeft - viewportPadding;
 
-function loadDismissedAnnotations(studentId) {
-  if (typeof window === 'undefined' || !studentId) return [];
-  try {
-    const raw = localStorage.getItem(`${DISMISSED_STORAGE_PREFIX}:${studentId}`) || '[]';
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
-}
+  let left;
+  let top = Math.max(viewportPadding, Math.min(window.innerHeight - 200, markerTop - 8));
 
-function saveDismissedAnnotations(studentId, keys) {
-  if (typeof window === 'undefined' || !studentId) return;
-  try {
-    localStorage.setItem(
-      `${DISMISSED_STORAGE_PREFIX}:${studentId}`,
-      JSON.stringify(keys.slice(-500))
+  if (roomOnRight >= popupWidth + gap) {
+    left = rightEdge + gap;
+  } else if (roomOnLeft >= popupWidth + gap) {
+    left = markerLeft - popupWidth - gap;
+  } else {
+    left = Math.max(
+      viewportPadding,
+      Math.min(window.innerWidth - popupWidth - viewportPadding, markerLeft - popupWidth / 2)
     );
-  } catch {
-    /* ignore storage failures */
+    top = Math.max(viewportPadding, Math.min(window.innerHeight - 200, markerTop + markerWidth + gap));
   }
+
+  return { top, left };
 }
 
 export default function StudentAnnotationController({ socket, studentId: suppliedStudentId }) {
   const studentId = Number(suppliedStudentId) || currentStudentId();
   const [annotations, setAnnotations] = useState([]);
-  const [dismissedAnnotationKeys, setDismissedAnnotationKeys] = useState(() =>
-    loadDismissedAnnotations(studentId)
-  );
   const [markers, setMarkers] = useState([]);
   const [openMarker, setOpenMarker] = useState(null);
 
@@ -66,9 +64,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     const text = plainTextFromElement(editor);
     const ranges = [];
     const nextMarkers = [];
-    const dismissed = new Set(dismissedAnnotationKeys);
     for (const annotation of annotations || []) {
-      if (dismissed.has(annotationVersionKey(annotation))) continue;
       const resolved = resolveAnnotation(annotation, text);
       if (resolved.detached) continue;
       const range = rangeForPlainOffsets(editor, resolved.start, resolved.end);
@@ -88,11 +84,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
     }
     setMarkers(nextMarkers);
-  }, [annotations, dismissedAnnotationKeys]);
-
-  useEffect(() => {
-    setDismissedAnnotationKeys(loadDismissedAnnotations(studentId));
-  }, [studentId]);
+  }, [annotations]);
 
   useEffect(() => {
     if (!socket) return;
@@ -194,20 +186,19 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     };
   }, [refreshHighlights]);
 
-  function dismissComment(marker) {
-    const key = annotationVersionKey(marker?.annotation);
-    if (!key) return;
-    setDismissedAnnotationKeys((previous) => {
-      if (previous.includes(key)) return previous;
-      const next = [...previous, key];
-      saveDismissedAnnotations(studentId, next);
-      return next;
-    });
-    setMarkers((previous) =>
-      previous.filter((item) => Number(item.annotation?.id) !== Number(marker.annotation?.id))
+  useEffect(() => {
+    if (!openMarker) return;
+    const current = markers.find(
+      (marker) => Number(marker.annotation?.id) === Number(openMarker.annotation?.id)
     );
-    setOpenMarker(null);
-  }
+    if (!current) {
+      setOpenMarker(null);
+      return;
+    }
+    if (current.top !== openMarker.top || current.left !== openMarker.left) {
+      setOpenMarker(current);
+    }
+  }, [markers, openMarker]);
 
   return (
     <>
@@ -230,17 +221,14 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         <div
           data-teacher-annotation-ui
           className="fixed z-[70] w-[290px] rounded-2xl border border-violet-200 bg-white p-4 shadow-2xl dark:border-violet-800 dark:bg-slate-900"
-          style={{
-            top: Math.max(10, Math.min(window.innerHeight - 200, openMarker.top + 30)),
-            left: Math.max(10, Math.min(window.innerWidth - 300, openMarker.left - 250)),
-          }}
+          style={commentPopupPosition(openMarker)}
         >
           <button
             type="button"
-            onClick={() => dismissComment(openMarker)}
+            onClick={() => setOpenMarker(null)}
             className="float-right text-lg font-black text-slate-400 hover:text-slate-700"
-            aria-label="Dismiss teacher comment"
-            title="Dismiss comment"
+            aria-label="Close teacher comment"
+            title="Close comment"
           >
             ×
           </button>
