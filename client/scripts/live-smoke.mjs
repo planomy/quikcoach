@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 
 const url = process.env.IBOARD_TEST_URL || 'http://127.0.0.1:3211';
 const room = '7742';
+const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 const teacher = io(url, { transports: ['websocket'] });
 const alex = io(url, { transports: ['websocket'] });
 const sam = io(url, { transports: ['websocket'] });
@@ -35,6 +36,38 @@ try {
   const samJoin = await emitAck(sam, 'student:join', { code: room, name: 'Sam' });
   assert.equal(alexJoin.ok, true);
   assert.equal(samJoin.ok, true);
+
+  const drawing = await emitAck(alex, 'student:image', { imageBase64: tinyPng, mimeType: 'image/png' });
+  assert.equal(drawing.ok, true);
+  assert.match(drawing.student.image_url, /^\/api\/board-media\//);
+  const drawingBaseUrl = drawing.student.image_url;
+  const markup = await emitAck(teacher, 'teacher:drawing-markup', {
+    studentId: alexJoin.student.id,
+    imageBase64: tinyPng,
+    mimeType: 'image/png',
+    baseImageUrl: drawingBaseUrl,
+  });
+  assert.equal(markup.ok, true);
+  assert.match(markup.student.teacher_markup_url, /^\/api\/board-media\//);
+  assert.equal((await fetch(`${url}${markup.student.teacher_markup_url}`)).status, 200);
+  const clearedMarkup = await emitAck(teacher, 'teacher:drawing-markup-clear', {
+    studentId: alexJoin.student.id,
+    baseImageUrl: drawingBaseUrl,
+  });
+  assert.equal(clearedMarkup.ok, true);
+  assert.equal(clearedMarkup.student.teacher_markup_url, null);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  const replacement = await emitAck(alex, 'student:image', { imageBase64: tinyPng, mimeType: 'image/png' });
+  assert.equal(replacement.ok, true);
+  assert.equal(replacement.student.teacher_markup_url, null);
+  const staleMarkup = await emitAck(teacher, 'teacher:drawing-markup', {
+    studentId: alexJoin.student.id,
+    imageBase64: tinyPng,
+    mimeType: 'image/png',
+    baseImageUrl: drawingBaseUrl,
+  });
+  assert.equal(staleMarkup.ok, false);
+  assert.match(staleMarkup.error, /changed their drawing/i);
 
   assert.equal((await emitAck(alex, 'student:text', { text: 'My first saved classroom response.' })).ok, true);
   assert.equal((await emitAck(teacher, 'teacher:snapshot-save', { label: 'Evidence lesson one' })).ok, true);
