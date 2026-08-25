@@ -10,12 +10,13 @@ try {
   /* column already exists */
 }
 try {
-  // Default ON preserves the behaviour introduced by the rich-text upgrade.
-  // Teachers can switch it off per room from the teacher console.
+  // Formatting is always available to students.
   richDb.exec(`ALTER TABLE rooms ADD COLUMN student_formatting INTEGER NOT NULL DEFAULT 1`);
 } catch {
   /* column already exists */
 }
+// Retire the old per-room switch without leaving previously disabled rooms stuck off.
+richDb.exec(`UPDATE rooms SET student_formatting = 1 WHERE student_formatting != 1`);
 
 // Inline teacher annotations are stored separately from student text. This prevents feedback
 // markup from ever changing word counts, AI prompts, evidence exports or what the student typed.
@@ -49,19 +50,20 @@ for (const sql of [
   try { richDb.exec(sql); } catch { /* column already exists */ }
 }
 
-// All existing room payloads use queries.rowToRoom(). Extend that conversion point so
-// every teacher/student room:state message carries the capability flag.
+// Keep the legacy field in room payloads for backwards compatibility, but formatting
+// is now permanently available rather than a teacher-controlled room capability.
 const baseRowToRoom = queries.rowToRoom;
 queries.rowToRoom = (row) => {
   const room = baseRowToRoom(row);
   if (!room) return room;
   return {
     ...room,
-    student_formatting: row?.student_formatting == null ? true : !!row.student_formatting,
+    student_formatting: true,
   };
 };
 
-// Keep the setting in the rooms table without disturbing the existing settings pipeline.
+// Older open clients may still send this retired setting. Keep the database pinned on
+// so a stale teacher tab cannot disable formatting for students.
 const baseUpdateRoomSettings = queries.updateRoomSettings;
 queries.updateRoomSettings = (db, code, settings) => {
   const hasFormattingSetting =
@@ -72,13 +74,7 @@ queries.updateRoomSettings = (db, code, settings) => {
   const row = baseUpdateRoomSettings(db, code, settings);
   if (!hasFormattingSetting) return row;
 
-  const enabled = settings.student_formatting !== false;
-  db.prepare(`UPDATE rooms SET student_formatting = ? WHERE code = ?`).run(enabled ? 1 : 0, code);
-  if (!enabled) {
-    // Switching the capability off also removes existing styling so it cannot reappear
-    // if the teacher later turns formatting back on.
-    db.prepare(`UPDATE students SET rich_text_html = '' WHERE room_code = ?`).run(code);
-  }
+  db.prepare(`UPDATE rooms SET student_formatting = 1 WHERE code = ?`).run(code);
   return db.prepare(`SELECT * FROM rooms WHERE code = ?`).get(code);
 };
 
@@ -133,7 +129,6 @@ function annotationForClient(row) {
 }
 
 const selectStudent = richDb.prepare('SELECT * FROM students WHERE id = ?');
-const selectRoomFormatting = richDb.prepare('SELECT student_formatting FROM rooms WHERE code = ?');
 const saveRichText = richDb.prepare('UPDATE students SET rich_text_html = ? WHERE id = ?');
 const listAnnotationsForStudentStmt = richDb.prepare(
   `SELECT * FROM teacher_annotations
@@ -239,14 +234,9 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           const current = selectStudent.get(studentId);
           if (!current || normaliseRoomCode(current.room_code) !== roomCode) return;
 
-          const roomFormatting = selectRoomFormatting.get(roomCode);
-          const formattingAllowed = roomFormatting?.student_formatting !== 0;
-
           // If the existing server hard-limit shortened the plain draft, formatting no
           // longer lines up exactly. Drop formatting rather than display the wrong marks.
-          // Formatting is also rejected server-side whenever the teacher has disabled it.
-          const safeRich =
-            formattingAllowed && String(current.text || '') === plainText ? richTextHtml : '';
+          const safeRich = String(current.text || '') === plainText ? richTextHtml : '';
           if (String(current.rich_text_html || '') === safeRich) return;
 
           saveRichText.run(safeRich, studentId);
