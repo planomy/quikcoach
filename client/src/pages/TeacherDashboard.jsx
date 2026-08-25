@@ -147,6 +147,9 @@ function TeacherDashboardInner() {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState('');
   const [socketConnected, setSocketConnected] = useState(true);
+  const [newClassConfirmOpen, setNewClassConfirmOpen] = useState(false);
+  const [newClassBusy, setNewClassBusy] = useState(false);
+  const roomActionsRef = useRef(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [feedbackMode, setFeedbackMode] = useState('writing');
@@ -1002,12 +1005,23 @@ function TeacherDashboardInner() {
     );
   }
 
+  function openNewClassConfirmation() {
+    if (roomActionsRef.current) roomActionsRef.current.open = false;
+    setError('');
+    setNewClassConfirmOpen(true);
+  }
+
+  function closeNewClassConfirmation() {
+    if (newClassBusy) return;
+    setNewClassConfirmOpen(false);
+  }
+
   function startNewClass() {
-    const ok = window.confirm(
-      'Start a new class?\n\nThis removes every student card and teacher card from this room. Students will need to join again.'
-    );
-    if (!ok) return;
+    if (newClassBusy) return;
+    setNewClassBusy(true);
+    setError('');
     socket.emit('teacher:clear-cards', {}, (ack) => {
+      setNewClassBusy(false);
       if (!ack?.ok) {
         setError(ack?.error || 'Could not clear cards');
         return;
@@ -1016,6 +1030,7 @@ function TeacherDashboardInner() {
       setPosts([]);
       setBroadcastPick({});
       setActiveWorkspace('live');
+      setNewClassConfirmOpen(false);
       setCopyToast('Board cleared — ready for a new class');
       setTimeout(() => setCopyToast(''), 3000);
     });
@@ -1225,12 +1240,12 @@ function TeacherDashboardInner() {
               {frozen ? 'Class frozen' : 'Freeze class'}
             </button>
             <ThemeToggle />
-            <details className="relative">
+            <details ref={roomActionsRef} className="relative">
               <summary className="flex cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
                 Room actions ···
               </summary>
               <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button type="button" onClick={startNewClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
+                <button type="button" onClick={openNewClassConfirmation} className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
                   Start new class
                 </button>
               </div>
@@ -1949,6 +1964,60 @@ function TeacherDashboardInner() {
       </main>
 
       <AppFooter />
+
+      {newClassConfirmOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-4 backdrop-blur-[2px] sm:items-center">
+          <div
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-red-200 bg-white shadow-2xl dark:border-red-900 dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-class-confirm-title"
+            aria-describedby="new-class-confirm-description"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') closeNewClassConfirmation();
+            }}
+          >
+            <div className="flex items-start gap-4 border-b border-slate-200 px-5 py-5 dark:border-slate-700">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-red-100 text-xl font-black text-red-700 dark:bg-red-950 dark:text-red-300" aria-hidden="true">
+                !
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Room action</p>
+                <h2 id="new-class-confirm-title" className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">
+                  Start a new class?
+                </h2>
+                <p id="new-class-confirm-description" className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  This removes every student card and teacher card from Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again.
+                </p>
+              </div>
+            </div>
+            {error && (
+              <p role="alert" className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+                {error}
+              </p>
+            )}
+            <div className="flex flex-col-reverse gap-2 bg-slate-50 px-5 py-4 dark:bg-slate-950 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                autoFocus
+                disabled={newClassBusy}
+                onClick={closeNewClassConfirmation}
+                className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Keep current class
+              </button>
+              <button
+                type="button"
+                disabled={newClassBusy}
+                onClick={startNewClass}
+                className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white shadow-sm hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
+              >
+                {newClassBusy ? 'Starting…' : 'Clear board & start'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {addCardOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center">
