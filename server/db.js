@@ -77,6 +77,16 @@ export function migrate(db) {
     /* column already exists */
   }
   try {
+    db.exec(`ALTER TABLE students ADD COLUMN teacher_markup_filename TEXT NOT NULL DEFAULT ''`);
+  } catch {
+    /* column already exists */
+  }
+  try {
+    db.exec(`ALTER TABLE students ADD COLUMN teacher_markup_base_filename TEXT NOT NULL DEFAULT ''`);
+  } catch {
+    /* column already exists */
+  }
+  try {
     db.exec(`ALTER TABLE students ADD COLUMN year_level TEXT NOT NULL DEFAULT ''`);
   } catch {
     /* column already exists */
@@ -376,22 +386,46 @@ export const queries = {
   },
 
   updateStudentImage(db, studentId, imageFilename) {
-    run(db, `UPDATE students SET image_filename = ?, updated_at = datetime('now') WHERE id = ?`, [
+    run(db, `UPDATE students
+      SET image_filename = ?, teacher_markup_filename = '', teacher_markup_base_filename = '',
+          updated_at = datetime('now')
+      WHERE id = ?`, [
       String(imageFilename || '').slice(0, 120),
       studentId,
     ]);
     return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
   },
 
+  updateStudentDrawingMarkup(db, studentId, markupFilename, baseFilename) {
+    run(db, `UPDATE students
+      SET teacher_markup_filename = ?, teacher_markup_base_filename = ?, updated_at = datetime('now')
+      WHERE id = ?`, [
+      String(markupFilename || '').slice(0, 120),
+      String(baseFilename || '').slice(0, 120),
+      studentId,
+    ]);
+    return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
+  },
+
+  clearStudentDrawingMarkup(db, studentId) {
+    run(db, `UPDATE students
+      SET teacher_markup_filename = '', teacher_markup_base_filename = '', updated_at = datetime('now')
+      WHERE id = ?`, [studentId]);
+    return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
+  },
+
   clearStudentContents(db, roomCode) {
     const rows = all(
       db,
-      `SELECT id, image_filename FROM students WHERE room_code = ?`,
+      `SELECT id, image_filename, teacher_markup_filename FROM students WHERE room_code = ?`,
       [roomCode]
     );
     run(
       db,
-      `UPDATE students SET text = '', image_filename = '', updated_at = datetime('now') WHERE room_code = ?`,
+      `UPDATE students
+       SET text = '', image_filename = '', teacher_markup_filename = '',
+           teacher_markup_base_filename = '', updated_at = datetime('now')
+       WHERE room_code = ?`,
       [roomCode]
     );
     return rows;
@@ -401,7 +435,7 @@ export const queries = {
   deleteAllStudents(db, roomCode) {
     const rows = all(
       db,
-      `SELECT id, image_filename FROM students WHERE room_code = ?`,
+      `SELECT id, image_filename, teacher_markup_filename FROM students WHERE room_code = ?`,
       [roomCode]
     );
     run(db, `DELETE FROM students WHERE room_code = ?`, [roomCode]);
@@ -890,6 +924,11 @@ export const queries = {
   rowToStudent(row) {
     if (!row) return null;
     const filename = String(row.image_filename || '');
+    const markupFilename = String(row.teacher_markup_filename || '');
+    const markupMatchesImage =
+      !!filename &&
+      !!markupFilename &&
+      String(row.teacher_markup_base_filename || '') === filename;
     const recent = parseRecent(row.engagement_recent);
     const responded = recent.filter(Boolean).length;
     return {
@@ -911,6 +950,10 @@ export const queries = {
       image_url:
         filename
           ? `/api/board-media/${encodeURIComponent(row.room_code)}/${encodeURIComponent(filename)}`
+          : null,
+      teacher_markup_url:
+        markupMatchesImage
+          ? `/api/board-media/${encodeURIComponent(row.room_code)}/${encodeURIComponent(markupFilename)}`
           : null,
     };
   },
