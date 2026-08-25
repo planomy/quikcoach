@@ -42,6 +42,62 @@ function normalizeStudentName(name) {
   return String(name || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 }
 
+function buildEvidenceStudentProfiles(code) {
+  const aliasByKey = new Map(
+    queries.listReportAliases(db, code).map((row) => [String(row.alias_key), row])
+  );
+  const grouped = new Map();
+
+  for (const snapshot of queries.listSnapshots(db, code)) {
+    const rows = Array.isArray(snapshot.payload?.students) ? snapshot.payload.students : [];
+    for (const student of rows) {
+      const name = String(student?.name || '').trim().replace(/\s+/g, ' ');
+      const text = String(student?.text || '').trim();
+      if (!name || !text) continue;
+
+      const rawKey = normalizeStudentName(name);
+      const alias = aliasByKey.get(rawKey);
+      const key = String(alias?.canonical_key || rawKey);
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          key,
+          name: String(alias?.canonical_name || name),
+          aliases: new Set(),
+          sourceKeys: new Set(),
+          entries: [],
+          seen: new Set(),
+        });
+      }
+      const profile = grouped.get(key);
+      profile.aliases.add(name);
+      profile.sourceKeys.add(rawKey);
+      const duplicateKey = `${String(student.updated_at || '')}\u0000${text}`;
+      if (profile.seen.has(duplicateKey)) continue;
+      profile.seen.add(duplicateKey);
+      profile.entries.push({
+        snapshotId: Number(snapshot.id),
+        label: snapshot.label || `Evidence #${snapshot.id}`,
+        createdAt: snapshot.created_at,
+        studentId: Number(student.id) || null,
+        updatedAt: student.updated_at || '',
+        classGroup: student.class_group != null ? String(student.class_group) : '',
+        sourceName: name,
+        text,
+      });
+    }
+  }
+
+  return [...grouped.values()]
+    .map((profile) => ({
+      key: profile.key,
+      name: profile.name,
+      aliases: [...profile.aliases].sort((a, b) => a.localeCompare(b)),
+      combined: profile.sourceKeys.size > 1,
+      entries: profile.entries,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function roomSocketName(code) {
   return `room:${normalizeRoomCode(code)}`;
 }
@@ -146,46 +202,7 @@ app.get('/api/rooms/:code/evidence-students', (req, res) => {
       .padStart(4, '0');
     if (code.length !== 4) return res.status(400).json({ error: 'Invalid room' });
     queries.ensureRoom(db, code);
-    const grouped = new Map();
-
-    for (const snapshot of queries.listSnapshots(db, code)) {
-      const rows = Array.isArray(snapshot.payload?.students) ? snapshot.payload.students : [];
-      for (const student of rows) {
-        const name = String(student?.name || '').trim().replace(/\s+/g, ' ');
-        const text = String(student?.text || '').trim();
-        if (!name || !text) continue;
-        const key = name.toLocaleLowerCase();
-        if (!grouped.has(key)) {
-          grouped.set(key, { key, name, aliases: new Set(), entries: [], seen: new Set() });
-        }
-        const profile = grouped.get(key);
-        profile.aliases.add(name);
-        // A saved room can contain the same untouched card repeatedly. Keep it once,
-        // while allowing an intentionally repeated answer in a later lesson.
-        const duplicateKey = `${String(student.updated_at || '')}\u0000${text}`;
-        if (profile.seen.has(duplicateKey)) continue;
-        profile.seen.add(duplicateKey);
-        profile.entries.push({
-          snapshotId: Number(snapshot.id),
-          label: snapshot.label || `Evidence #${snapshot.id}`,
-          createdAt: snapshot.created_at,
-          studentId: Number(student.id) || null,
-          updatedAt: student.updated_at || '',
-          classGroup: student.class_group != null ? String(student.class_group) : '',
-          text,
-        });
-      }
-    }
-
-    const students = [...grouped.values()]
-      .map((profile) => ({
-        key: profile.key,
-        name: profile.name,
-        aliases: [...profile.aliases],
-        entries: profile.entries,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    res.json({ students });
+    res.json({ students: buildEvidenceStudentProfiles(code) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
@@ -1180,6 +1197,59 @@ io.on('connection', (socket) => {
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Broadcast failed' });
+    }
+  });
+
+  socket.on('teacher:evidence-combine', ({ profileKeys, canonicalKey }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !code) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const requested = [...new Set(
+        (Array.isArray(profileKeys) ? profileKeys : [])
+          .map((value) => String(value || '').trim())
+          .filter(Boolean)
+      )].slice(0, 50);
+      const profiles = buildEvidenceStudentProfiles(code);
+      const byKey = new Map(profiles.map((profile) => [profile.key, profile]));
+      const selected = requested.filter((key) => byKey.has(key));
+      const canonical = byKey.get(String(canonicalKey || ''));
+      if (selected.length < 2 || !canonical || !selected.includes(canonical.key)) {
+        cb?.({ ok: false, error: 'Select at least two names and choose the name to keep' });
+        return;
+      }
+      queries.combineReportAliases(db, code, selected, canonical.key, canonical.name);
+      cb?.({
+        ok: true,
+        students: buildEvidenceStudentProfiles(code),
+        selectedKey: canonical.key,
+      });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not combine those names' });
+    }
+  });
+
+  socket.on('teacher:evidence-uncombine', ({ profileKey }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !code) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const key = String(profileKey || '').trim();
+      const profile = buildEvidenceStudentProfiles(code).find((item) => item.key === key);
+      if (!profile?.combined) {
+        cb?.({ ok: false, error: 'That report does not contain combined names' });
+        return;
+      }
+      queries.clearReportAliasGroup(db, code, key);
+      cb?.({ ok: true, students: buildEvidenceStudentProfiles(code) });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not separate those names' });
     }
   });
 
