@@ -14,7 +14,6 @@ import {
 import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import { gradeShortLabel } from '../components/StudentGradeSelect.jsx';
-import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
@@ -37,10 +36,6 @@ const MODE_LABELS = {
   problem_solving: 'Problem Solving',
   custom: 'Custom',
 };
-
-/** Fixed “table” groups for quick assignment (stored as one letter in `class_group`). */
-const TABLE_GROUP_LETTERS = ['A', 'B', 'C', 'D', 'E'];
-const GROUP_FILTER_UNASSIGNED = '__unassigned__';
 
 const TEACHER_WORKSPACES = [
   { id: 'live', label: 'Live', icon: '●' },
@@ -65,11 +60,6 @@ function initialCardView() {
   } catch {
     return 'overview';
   }
-}
-
-function normalizedTableGroup(raw) {
-  const g = String(raw || '').trim().toUpperCase();
-  return TABLE_GROUP_LETTERS.includes(g) ? g : null;
 }
 
 /** Saved room settings with this version use merged toggles; older saves default to all-on. */
@@ -174,7 +164,6 @@ function TeacherDashboardInner() {
   const [noteDraft, setNoteDraft] = useState('');
   const [noteError, setNoteError] = useState('');
   const [noteSending, setNoteSending] = useState(false);
-  const [groupFilter, setGroupFilter] = useState('');
   const [broadcastPick, setBroadcastPick] = useState({});
   const [snapshots, setSnapshots] = useState([]);
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
@@ -455,15 +444,7 @@ function TeacherDashboardInner() {
     [students]
   );
 
-  const visibleStudents = useMemo(() => {
-    if (groupFilter === GROUP_FILTER_UNASSIGNED) {
-      return orderedStudents.filter((s) => normalizedTableGroup(s.class_group) === null);
-    }
-    if (groupFilter && TABLE_GROUP_LETTERS.includes(groupFilter)) {
-      return orderedStudents.filter((s) => normalizedTableGroup(s.class_group) === groupFilter);
-    }
-    return orderedStudents;
-  }, [orderedStudents, groupFilter]);
+  const visibleStudents = orderedStudents;
 
   useEffect(() => {
     if (!joined || codeInput.length !== 4) return;
@@ -608,30 +589,6 @@ function TeacherDashboardInner() {
         setTimeout(() => setCopyToast(''), 2500);
       }
     });
-  }
-
-  function updateStudentGroupDraft(studentId, class_group) {
-    setStudents((prev) =>
-      prev.map((x) => (x.id === studentId ? { ...x, class_group: String(class_group) } : x))
-    );
-  }
-
-  function commitStudentGroup(studentId, class_group) {
-    socket.emit('teacher:student-group', { studentId, class_group }, (ack) => {
-      if (!ack?.ok) setError('Could not update group');
-    });
-  }
-
-  /** Set group to A–E or clear. Always commits immediately (no blur needed). */
-  function setStudentTableGroup(studentId, letterOrEmpty) {
-    const g =
-      letterOrEmpty === '' || letterOrEmpty == null
-        ? ''
-        : TABLE_GROUP_LETTERS.includes(String(letterOrEmpty).toUpperCase())
-          ? String(letterOrEmpty).toUpperCase()
-          : '';
-    updateStudentGroupDraft(studentId, g);
-    commitStudentGroup(studentId, g);
   }
 
   function openNoteForStudent(student) {
@@ -1267,27 +1224,7 @@ function TeacherDashboardInner() {
                 </div>
               </div>
 
-        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="min-w-[10rem] flex-1">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Show group</label>
-            <select
-              value={groupFilter}
-              onChange={(e) => setGroupFilter(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-            >
-              <option value="">All students ({orderedStudents.length})</option>
-              <option value={GROUP_FILTER_UNASSIGNED}>
-                Unassigned / other (
-                {orderedStudents.filter((s) => normalizedTableGroup(s.class_group) === null).length})
-              </option>
-              {TABLE_GROUP_LETTERS.map((letter) => (
-                <option key={letter} value={letter}>
-                  Group {letter} (
-                  {orderedStudents.filter((s) => normalizedTableGroup(s.class_group) === letter).length})
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -1322,11 +1259,6 @@ function TeacherDashboardInner() {
           {orderedStudents.length === 0 && posts.length === 0 && (
             <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
               Waiting for students to join…
-            </div>
-          )}
-          {orderedStudents.length > 0 && visibleStudents.length === 0 && posts.length === 0 && (
-            <div className="col-span-full rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 p-6 text-center text-sm text-amber-950 dark:text-amber-100">
-              No students in this group. Choose &quot;All students&quot; or assign A–E on each card.
             </div>
           )}
           {posts.map((post) => (
@@ -1379,7 +1311,7 @@ function TeacherDashboardInner() {
                 data-student-id={s.id}
                 className="flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900 p-3 shadow-card"
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <label
                     className="flex shrink-0 cursor-pointer items-center"
                     title="Include in broadcast"
@@ -1394,7 +1326,7 @@ function TeacherDashboardInner() {
                   </label>
                   <h2
                     className="min-w-0 flex-1 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100"
-                    title={`ID #${s.id}`}
+                    title={`${s.name} · ID #${s.id}`}
                   >
                     {s.name}
                   </h2>
@@ -1402,126 +1334,102 @@ function TeacherDashboardInner() {
                   <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
                     {wc}w
                   </span>
-                  <button
-                    type="button"
-                    disabled={!displayText.trim()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      copyStudentText(s);
-                    }}
-                    className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition disabled:cursor-not-allowed disabled:opacity-30 ${
-                      copiedStudentId === s.id
-                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                        : 'border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:hover:text-indigo-300'
-                    }`}
-                    title={
-                      !displayText.trim()
-                        ? 'No writing to copy'
-                        : copiedStudentId === s.id
-                          ? 'Copied to clipboard'
-                          : `Copy ${s.name}'s writing`
-                    }
-                    aria-label={
-                      copiedStudentId === s.id
-                        ? `Copied ${s.name}'s writing`
-                        : `Copy ${s.name}'s writing`
-                    }
-                  >
-                    {copiedStudentId === s.id ? (
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="m5 12 4 4L19 6" />
-                      </svg>
-                    ) : (
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="8" y="8" width="11" height="11" rx="2" />
-                        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
-                      </svg>
-                    )}
-                  </button>
-                  <SupaCoachLink />
-                  <button
-                    type="button"
-                    onClick={() => downloadOneStudent(s)}
-                    className="shrink-0 rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 hover:border-emerald-300 hover:text-emerald-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-emerald-300"
-                    title="Download this student's draft"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openNoteForStudent(s)}
-                    className="shrink-0 rounded-md border border-violet-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 hover:bg-violet-50 dark:border-violet-900 dark:text-violet-300"
-                    title="Send a private note to this student only"
-                  >
-                    Note
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFocusedStudentId(s.id)}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-indigo-200 text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
-                    title={`Open ${s.name}'s full draft`}
-                    aria-label={`Open ${s.name}'s full draft`}
-                  >
-                    ↗
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const ok = window.confirm(
-                        `Remove "${s.name}" from the room?\n\nTheir card will disappear. They can join again with a new card.`
-                      );
-                      if (!ok) return;
-                      socket.emit('teacher:student-remove', { studentId: s.id }, (ack) => {
-                        if (!ack?.ok) {
-                          setError(ack?.error || 'Could not remove student');
-                          return;
-                        }
-                        setStudents((prev) => prev.filter((x) => x.id !== s.id));
-                        setBroadcastPick((p) => {
-                          const next = { ...p };
-                          delete next[s.id];
-                          return next;
-                        });
-                      });
-                    }}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-300"
-                    title="Remove this student card from the room"
-                  >
-                    ×
-                  </button>
                 </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
                   {gradeShortLabel(s.year_level) && (
-                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       {gradeShortLabel(s.year_level)}
                     </span>
                   )}
-                  {TABLE_GROUP_LETTERS.map((letter) => {
-                    const current = normalizedTableGroup(s.class_group);
-                    const active = current === letter;
-                    return (
-                      <button
-                        key={letter}
-                        type="button"
-                        aria-pressed={active}
-                        title={`Table ${letter}`}
-                        onClick={() => setStudentTableGroup(s.id, active ? '' : letter)}
-                        className={`flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold transition ${
-                          active
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-indigo-300'
-                        }`}
-                      >
-                        {letter}
-                      </button>
-                    );
-                  })}
-                  {normalizedTableGroup(s.class_group) === null &&
-                    String(s.class_group || '').trim() !== '' && (
-                      <span className="text-[10px] text-amber-700" title="Legacy group label">
-                        !
-                      </span>
-                    )}
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={!displayText.trim()}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        copyStudentText(s);
+                      }}
+                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                        copiedStudentId === s.id
+                          ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:hover:text-indigo-300'
+                      }`}
+                      title={
+                        !displayText.trim()
+                          ? 'No writing to copy'
+                          : copiedStudentId === s.id
+                            ? 'Copied to clipboard'
+                            : `Copy ${s.name}'s writing`
+                      }
+                      aria-label={
+                        copiedStudentId === s.id
+                          ? `Copied ${s.name}'s writing`
+                          : `Copy ${s.name}'s writing`
+                      }
+                    >
+                      {copiedStudentId === s.id ? (
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m5 12 4 4L19 6" />
+                        </svg>
+                      ) : (
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="8" y="8" width="11" height="11" rx="2" />
+                          <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadOneStudent(s)}
+                      className="shrink-0 rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 hover:border-emerald-300 hover:text-emerald-800 dark:border-slate-700 dark:text-slate-400 dark:hover:text-emerald-300"
+                      title="Download this student's draft"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openNoteForStudent(s)}
+                      className="shrink-0 rounded-md border border-violet-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 hover:bg-violet-50 dark:border-violet-900 dark:text-violet-300"
+                      title="Send a private note to this student only"
+                    >
+                      Note
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFocusedStudentId(s.id)}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-indigo-200 text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+                      title={`Open ${s.name}'s full draft`}
+                      aria-label={`Open ${s.name}'s full draft`}
+                    >
+                      ↗
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const ok = window.confirm(
+                          `Remove "${s.name}" from the room?\n\nTheir card will disappear. They can join again with a new card.`
+                        );
+                        if (!ok) return;
+                        socket.emit('teacher:student-remove', { studentId: s.id }, (ack) => {
+                          if (!ack?.ok) {
+                            setError(ack?.error || 'Could not remove student');
+                            return;
+                          }
+                          setStudents((prev) => prev.filter((x) => x.id !== s.id));
+                          setBroadcastPick((p) => {
+                            const next = { ...p };
+                            delete next[s.id];
+                            return next;
+                          });
+                        });
+                      }}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-300"
+                      title="Remove this student card from the room"
+                      aria-label={`Remove ${s.name} from the room`}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
                 <div
                   data-student-writing-pane
@@ -1984,8 +1892,7 @@ function TeacherDashboardInner() {
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 Downloads one HTML file with{' '}
                 {(visibleStudents.length ? visibleStudents : orderedStudents).length} student
-                {(visibleStudents.length ? visibleStudents : orderedStudents).length === 1 ? '' : 's'}
-                {groupFilter ? ` · group ${groupFilter}` : ''}.
+                {(visibleStudents.length ? visibleStudents : orderedStudents).length === 1 ? '' : 's'}.
               </p>
             </div>
             <div className="space-y-3 px-5 py-4">
