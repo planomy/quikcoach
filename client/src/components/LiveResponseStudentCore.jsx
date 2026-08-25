@@ -313,9 +313,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   ) : null;
 
   if (!activity && !nudge) {
-    // The embedded dock can be opened while idle; show its compact waiting state\n    // instead of rendering nothing and making the Pulse control disappear.\n    if (!standalone && !compact) return null;
+    // The embedded dock can be opened while idle; show its compact waiting state
+    // instead of rendering nothing and making the Pulse control disappear.
+    if (!standalone && !compact) return null;
     return (
-      <div>
+      <>
         {collapseButton}
         <section className={`grid place-items-center rounded-2xl border-2 border-dashed border-indigo-300 bg-white text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'min-h-[140px] p-3' : 'min-h-[240px] p-6'}`}>
           <div>
@@ -325,7 +327,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             {!compact && <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">Your next question will appear here automatically.</p>}
           </div>
         </section>
-      </div>
+      </>
     );
   }
 
