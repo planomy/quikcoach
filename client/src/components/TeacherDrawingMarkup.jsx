@@ -61,6 +61,7 @@ function ToolButton({ active = false, children, onClick, title, disabled = false
 
 export default function TeacherDrawingMarkup({ student, socket, onClose }) {
   const canvasRef = useRef(null);
+  const redrawRef = useRef(null);
   const existingMarkupRef = useRef(null);
   const includeExistingRef = useRef(false);
   const strokesRef = useRef([]);
@@ -88,6 +89,7 @@ export default function TeacherDrawingMarkup({ student, socket, onClose }) {
     }
     for (const stroke of strokesRef.current) drawStroke(ctx, stroke, penWidth);
   }, [penWidth]);
+  redrawRef.current = redraw;
 
   useEffect(() => {
     strokesRef.current = [];
@@ -107,7 +109,7 @@ export default function TeacherDrawingMarkup({ student, socket, onClose }) {
       if (cancelled) return;
       existingMarkupRef.current = image;
       includeExistingRef.current = true;
-      redraw();
+      redrawRef.current?.();
       setStatus('Existing correction loaded');
     };
     image.onerror = () => {
@@ -115,7 +117,13 @@ export default function TeacherDrawingMarkup({ student, socket, onClose }) {
     };
     image.src = student.teacher_markup_url;
     return () => { cancelled = true; };
-  }, [student.image_url, student.teacher_markup_url, redraw]);
+  }, [student.image_url, student.teacher_markup_url]);
+
+  // Changing the canvas dimensions clears its pixels. Restore the existing layer and
+  // any new strokes after the student's image reports its real aspect ratio.
+  useEffect(() => {
+    redraw();
+  }, [size.width, size.height, redraw]);
 
   useEffect(() => () => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -170,7 +178,7 @@ export default function TeacherDrawingMarkup({ student, socket, onClose }) {
       },
       (ack) => {
         if (!ack?.ok) setStatus(ack?.error || 'Could not send correction');
-        else setStatus('Visible on student screen');
+        else setStatus('Saved and visible on student screen');
         finishOrClose(!!ack?.ok);
       }
     );

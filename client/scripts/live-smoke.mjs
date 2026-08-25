@@ -51,6 +51,16 @@ try {
   assert.equal(markup.ok, true);
   assert.match(markup.student.teacher_markup_url, /^\/api\/board-media\//);
   assert.equal((await fetch(`${url}${markup.student.teacher_markup_url}`)).status, 200);
+  const replacementMarkup = await emitAck(teacher, 'teacher:drawing-markup', {
+    studentId: alexJoin.student.id,
+    imageBase64: tinyPng,
+    mimeType: 'image/png',
+    baseImageUrl: drawingBaseUrl,
+  });
+  assert.equal(replacementMarkup.ok, true);
+  assert.notEqual(replacementMarkup.student.teacher_markup_url, markup.student.teacher_markup_url);
+  assert.equal((await fetch(`${url}${replacementMarkup.student.teacher_markup_url}`)).status, 200);
+  assert.equal((await fetch(`${url}${markup.student.teacher_markup_url}`)).status, 404);
   const clearedMarkup = await emitAck(teacher, 'teacher:drawing-markup-clear', {
     studentId: alexJoin.student.id,
     baseImageUrl: drawingBaseUrl,

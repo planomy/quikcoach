@@ -322,7 +322,9 @@ function TeacherDashboardInner() {
           cur.updated_at === row.updated_at &&
           cur.name === row.name &&
           cur.class_group === row.class_group &&
-          cur.year_level === row.year_level
+          cur.year_level === row.year_level &&
+          cur.image_url === row.image_url &&
+          cur.teacher_markup_url === row.teacher_markup_url
         ) {
           return prev;
         }
