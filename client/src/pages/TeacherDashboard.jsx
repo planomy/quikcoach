@@ -169,6 +169,7 @@ function TeacherDashboardInner() {
 
   const [pasteBox, setPasteBox] = useState('');
   const [copyToast, setCopyToast] = useState('');
+  const [copiedStudentId, setCopiedStudentId] = useState(null);
   const [noteTarget, setNoteTarget] = useState(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [noteError, setNoteError] = useState('');
@@ -850,6 +851,39 @@ function TeacherDashboardInner() {
     setTimeout(() => setCopyToast(''), 2000);
   }
 
+  async function copyStudentText(student) {
+    const text = String(student?.text || '');
+    if (!text.trim()) return;
+
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const copyBox = document.createElement('textarea');
+        copyBox.value = text;
+        copyBox.setAttribute('readonly', '');
+        copyBox.style.position = 'fixed';
+        copyBox.style.left = '-9999px';
+        document.body.appendChild(copyBox);
+        copyBox.select();
+        copyBox.setSelectionRange(0, copyBox.value.length);
+        const copied = document.execCommand('copy');
+        copyBox.remove();
+        if (!copied) throw new Error('Copy command failed');
+      }
+
+      const toast = `Copied ${student.name}'s work`;
+      setCopiedStudentId(student.id);
+      setCopyToast(toast);
+      window.setTimeout(() => {
+        setCopiedStudentId((current) => (current === student.id ? null : current));
+        setCopyToast((current) => (current === toast ? '' : current));
+      }, 2000);
+    } catch {
+      setError('Could not copy that writing. Open the full draft and try again.');
+    }
+  }
+
   async function loadSnapshotForView(id) {
     try {
       const r = await fetch(`/api/rooms/${codeInput}/snapshots/${id}`);
@@ -1368,6 +1402,42 @@ function TeacherDashboardInner() {
                   <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
                     {wc}w
                   </span>
+                  <button
+                    type="button"
+                    disabled={!displayText.trim()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      copyStudentText(s);
+                    }}
+                    className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                      copiedStudentId === s.id
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        : 'border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:hover:text-indigo-300'
+                    }`}
+                    title={
+                      !displayText.trim()
+                        ? 'No writing to copy'
+                        : copiedStudentId === s.id
+                          ? 'Copied to clipboard'
+                          : `Copy ${s.name}'s writing`
+                    }
+                    aria-label={
+                      copiedStudentId === s.id
+                        ? `Copied ${s.name}'s writing`
+                        : `Copy ${s.name}'s writing`
+                    }
+                  >
+                    {copiedStudentId === s.id ? (
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m5 12 4 4L19 6" />
+                      </svg>
+                    ) : (
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="8" y="8" width="11" height="11" rx="2" />
+                        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                      </svg>
+                    )}
+                  </button>
                   <SupaCoachLink />
                   <button
                     type="button"
