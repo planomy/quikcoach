@@ -313,7 +313,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   ) : null;
 
   if (!activity && !nudge) {
-    if (!standalone) return null;
+    // The embedded dock can be opened while idle; show its compact waiting state\n    // instead of rendering nothing and making the Pulse control disappear.\n    if (!standalone && !compact) return null;
     return (
       <div>
         {collapseButton}

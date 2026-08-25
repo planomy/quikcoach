@@ -54,7 +54,7 @@ function DockedPulse({ socket, ...props }) {
         expandSoon();
         return;
       }
-      if (response) collapseSoon();
+      // Keep the question open after the answer so the student can choose confidence.\n      // Once confidence is saved, roll the compact panel up as before.\n      if (response?.confidence) collapseSoon();
     };
 
     const onActivity = (payload) => noteActivity(payload?.activity, null);
