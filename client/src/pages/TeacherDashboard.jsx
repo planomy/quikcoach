@@ -170,6 +170,11 @@ function TeacherDashboardInner() {
   const [evidenceStudents, setEvidenceStudents] = useState([]);
   const [evidenceStudentsBusy, setEvidenceStudentsBusy] = useState(false);
   const [selectedEvidenceStudentKey, setSelectedEvidenceStudentKey] = useState('');
+  const [reportSearch, setReportSearch] = useState('');
+  const [reportMergeMode, setReportMergeMode] = useState(false);
+  const [reportMergeKeys, setReportMergeKeys] = useState([]);
+  const [reportMergeCanonicalKey, setReportMergeCanonicalKey] = useState('');
+  const [reportMergeBusy, setReportMergeBusy] = useState(false);
   const [snapshotViewer, setSnapshotViewer] = useState(null);
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
@@ -468,8 +473,13 @@ function TeacherDashboardInner() {
         const profiles = Array.isArray(data.students) ? data.students : [];
         setEvidenceStudents(profiles);
         setSelectedEvidenceStudentKey((current) => (
-          current && profiles.some((profile) => profile.key === current) ? current : ''
+          current && profiles.some((profile) => profile.key === current)
+            ? current
+            : profiles[0]?.key || ''
         ));
+        setReportMergeMode(false);
+        setReportMergeKeys([]);
+        setReportMergeCanonicalKey('');
       })
       .catch(() => {
         if (!cancelled) setError('Could not load student evidence history');
@@ -483,6 +493,20 @@ function TeacherDashboardInner() {
   const selectedEvidenceStudent = useMemo(
     () => evidenceStudents.find((profile) => profile.key === selectedEvidenceStudentKey) || null,
     [evidenceStudents, selectedEvidenceStudentKey]
+  );
+  const filteredEvidenceStudents = useMemo(() => {
+    const needle = reportSearch.trim().toLocaleLowerCase();
+    if (!needle) return evidenceStudents;
+    return evidenceStudents.filter((profile) =>
+      [profile.name, ...(profile.aliases || [])]
+        .some((value) => String(value || '').toLocaleLowerCase().includes(needle))
+    );
+  }, [evidenceStudents, reportSearch]);
+  const reportMergeProfiles = useMemo(
+    () => reportMergeKeys
+      .map((key) => evidenceStudents.find((profile) => profile.key === key))
+      .filter(Boolean),
+    [evidenceStudents, reportMergeKeys]
   );
 
   /** When the modal is closed, prefer server `room` for the AI prompt so Copy for AI matches saved settings (avoids stale React state before/without socket sync). */
@@ -896,6 +920,86 @@ function TeacherDashboardInner() {
     downloadTextFile(names.html, html, 'text/html;charset=utf-8');
     setCopyToast(`Downloaded ${selectedEvidenceStudent.name}’s portfolio`);
     setTimeout(() => setCopyToast(''), 3000);
+  }
+
+  function applyEvidenceProfiles(nextProfiles, preferredKey = '') {
+    const profiles = Array.isArray(nextProfiles) ? nextProfiles : [];
+    setEvidenceStudents(profiles);
+    setSelectedEvidenceStudentKey((current) => {
+      if (preferredKey && profiles.some((profile) => profile.key === preferredKey)) return preferredKey;
+      if (current && profiles.some((profile) => profile.key === current)) return current;
+      return profiles[0]?.key || '';
+    });
+  }
+
+  function toggleReportMergeProfile(key) {
+    setReportMergeKeys((current) => {
+      const next = current.includes(key)
+        ? current.filter((value) => value !== key)
+        : [...current, key];
+      setReportMergeCanonicalKey((canonical) =>
+        canonical && next.includes(canonical) ? canonical : next[0] || ''
+      );
+      return next;
+    });
+  }
+
+  function cancelReportMerge() {
+    setReportMergeMode(false);
+    setReportMergeKeys([]);
+    setReportMergeCanonicalKey('');
+  }
+
+  function combineReportProfiles() {
+    if (reportMergeKeys.length < 2 || !reportMergeCanonicalKey) return;
+    setReportMergeBusy(true);
+    setError('');
+    socket.emit(
+      'teacher:evidence-combine',
+      { profileKeys: reportMergeKeys, canonicalKey: reportMergeCanonicalKey },
+      (ack) => {
+        setReportMergeBusy(false);
+        if (!ack?.ok) {
+          setError(ack?.error || 'Could not combine those names');
+          return;
+        }
+        applyEvidenceProfiles(ack.students, ack.selectedKey || reportMergeCanonicalKey);
+        const kept = reportMergeProfiles.find((profile) => profile.key === reportMergeCanonicalKey);
+        cancelReportMerge();
+        setCopyToast(`Combined names under ${kept?.name || 'one student'}`);
+        setTimeout(() => setCopyToast(''), 3000);
+      }
+    );
+  }
+
+  function separateReportProfile() {
+    if (!selectedEvidenceStudent?.combined) return;
+    const aliases = selectedEvidenceStudent.aliases || [];
+    const ok = window.confirm(
+      `Separate ${aliases.join(', ')} into individual reports again?\n\nThe saved evidence will not be changed.`
+    );
+    if (!ok) return;
+    setReportMergeBusy(true);
+    setError('');
+    socket.emit(
+      'teacher:evidence-uncombine',
+      { profileKey: selectedEvidenceStudent.key },
+      (ack) => {
+        setReportMergeBusy(false);
+        if (!ack?.ok) {
+          setError(ack?.error || 'Could not separate those names');
+          return;
+        }
+        const profiles = Array.isArray(ack.students) ? ack.students : [];
+        const preferred = profiles.find((profile) =>
+          profile.name === selectedEvidenceStudent.name ||
+          (profile.aliases || []).includes(selectedEvidenceStudent.name)
+        )?.key;
+        applyEvidenceProfiles(profiles, preferred || '');
+        setCopyToast('Names separated');
+        setTimeout(() => setCopyToast(''), 2500);
+      }
+    );
   }
 
   function startNewClass() {
@@ -1516,65 +1620,209 @@ function TeacherDashboardInner() {
                   <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Download any earlier save again as HTML.</p>
                 )}
                 {activeWorkspace === 'reports' && (
-                <section className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm dark:border-indigo-800 dark:bg-slate-900">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                <section className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+                  <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Student evidence finder</p>
-                      <h4 className="mt-1 font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Show one student’s saved work</h4>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Student reports</p>
+                      <h4 className="mt-1 font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Browse saved work quickly</h4>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose a name on the left; their complete saved history appears on the right.</p>
                     </div>
-                    {selectedEvidenceStudent && (
-                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
-                        {selectedEvidenceStudent.entries.length} {selectedEvidenceStudent.entries.length === 1 ? 'submission' : 'submissions'}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (reportMergeMode) cancelReportMerge();
+                        else {
+                          setReportMergeMode(true);
+                          setReportMergeKeys([]);
+                          setReportMergeCanonicalKey('');
+                        }
+                      }}
+                      className={`rounded-xl px-3 py-2 text-xs font-black transition ${
+                        reportMergeMode
+                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                          : 'bg-violet-100 text-violet-800 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200'
+                      }`}
+                    >
+                      {reportMergeMode ? 'Cancel combining' : 'Combine names'}
+                    </button>
                   </div>
-                  <label htmlFor="evidence-student" className="mt-4 block text-xs font-bold text-slate-600 dark:text-slate-300">Student</label>
-                  <select
-                    id="evidence-student"
-                    value={selectedEvidenceStudentKey}
-                    onChange={(event) => setSelectedEvidenceStudentKey(event.target.value)}
-                    disabled={evidenceStudentsBusy}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                  >
-                    <option value="">{evidenceStudentsBusy ? 'Loading students…' : 'Select a student…'}</option>
-                    {evidenceStudents.map((profile) => (
-                      <option key={profile.key} value={profile.key}>{profile.name} · {profile.entries.length}</option>
-                    ))}
-                  </select>
-                  {!evidenceStudentsBusy && !evidenceStudents.length && (
-                    <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">No written submissions were found in these saves.</p>
-                  )}
-                  {selectedEvidenceStudent && (
-                    <div className="mt-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
-                        <div>
-                          <p className="font-black text-slate-900 dark:text-white">{selectedEvidenceStudent.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {selectedEvidenceStudent.entries.reduce((total, entry) => total + wordCount(entry.text), 0)} words across saved work
+
+                  <div className="grid min-h-[34rem] border-t border-indigo-100 dark:border-slate-700 md:grid-cols-[17rem_minmax(0,1fr)]">
+                    <aside className="flex min-h-0 flex-col border-b border-indigo-100 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-950/40 md:border-b-0 md:border-r">
+                      <div className="border-b border-slate-200 p-3 dark:border-slate-700">
+                        <label htmlFor="report-student-search" className="sr-only">Search students</label>
+                        <input
+                          id="report-student-search"
+                          value={reportSearch}
+                          onChange={(event) => setReportSearch(event.target.value)}
+                          placeholder="Search students…"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                        {reportMergeMode && (
+                          <p className="mt-2 text-[11px] font-semibold leading-relaxed text-violet-700 dark:text-violet-300">
+                            Tick every name used by the same student.
                           </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button type="button" onClick={copyStudentPortfolio} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">Copy all</button>
-                          <button type="button" onClick={downloadStudentPortfolio} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700">Download portfolio</button>
-                        </div>
+                        )}
                       </div>
-                      <div className="mt-3 max-h-[32rem] space-y-3 overflow-y-auto pr-1 scrollbar-thin">
-                        {selectedEvidenceStudent.entries.map((entry) => (
-                          <article key={`${entry.snapshotId}-${entry.studentId}-${entry.updatedAt}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950">
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <div>
-                                <p className="font-bold text-slate-900 dark:text-white">{entry.label}</p>
-                                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{entry.createdAt} · {wordCount(entry.text)} words</p>
-                              </div>
-                              <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">Open lesson save</button>
-                            </div>
-                            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">{entry.text}</p>
-                          </article>
+
+                      <div className="max-h-[32rem] flex-1 overflow-y-auto p-2 scrollbar-thin">
+                        {evidenceStudentsBusy && (
+                          <p className="p-3 text-sm text-slate-500 dark:text-slate-400">Loading students…</p>
+                        )}
+                        {!evidenceStudentsBusy && filteredEvidenceStudents.map((profile) => (
+                          reportMergeMode ? (
+                            <label
+                              key={profile.key}
+                              className={`mb-1 flex cursor-pointer items-start gap-2 rounded-xl border px-3 py-2.5 transition ${
+                                reportMergeKeys.includes(profile.key)
+                                  ? 'border-violet-300 bg-violet-50 dark:border-violet-700 dark:bg-violet-950/50'
+                                  : 'border-transparent bg-white hover:border-indigo-200 dark:bg-slate-900 dark:hover:border-indigo-800'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={reportMergeKeys.includes(profile.key)}
+                                onChange={() => toggleReportMergeProfile(profile.key)}
+                                className="mt-0.5 h-4 w-4 shrink-0 accent-violet-600"
+                              />
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-black text-slate-900 dark:text-white">{profile.name}</span>
+                                <span className="block text-[11px] text-slate-500 dark:text-slate-400">
+                                  {profile.entries.length} {profile.entries.length === 1 ? 'submission' : 'submissions'}
+                                  {profile.combined ? ' · combined' : ''}
+                                </span>
+                              </span>
+                            </label>
+                          ) : (
+                            <button
+                              key={profile.key}
+                              type="button"
+                              onClick={() => setSelectedEvidenceStudentKey(profile.key)}
+                              aria-pressed={selectedEvidenceStudentKey === profile.key}
+                              className={`mb-1 flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
+                                selectedEvidenceStudentKey === profile.key
+                                  ? 'border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-indigo-500'
+                                  : 'border-transparent bg-white text-slate-900 hover:border-indigo-200 hover:bg-indigo-50 dark:bg-slate-900 dark:text-white dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40'
+                              }`}
+                            >
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-black">{profile.name}</span>
+                                {profile.combined && (
+                                  <span className={`block truncate text-[10px] font-semibold ${selectedEvidenceStudentKey === profile.key ? 'text-indigo-100' : 'text-violet-600 dark:text-violet-300'}`}>
+                                    Combined profile
+                                  </span>
+                                )}
+                              </span>
+                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${
+                                selectedEvidenceStudentKey === profile.key
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'
+                              }`}>
+                                {profile.entries.length}
+                              </span>
+                            </button>
+                          )
                         ))}
+                        {!evidenceStudentsBusy && !filteredEvidenceStudents.length && (
+                          <p className="p-3 text-sm text-slate-500 dark:text-slate-400">
+                            {evidenceStudents.length ? 'No students match that search.' : 'No written submissions were found in these saves.'}
+                          </p>
+                        )}
                       </div>
+
+                      {reportMergeMode && (
+                        <div className="border-t border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                          <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                            {reportMergeKeys.length} selected
+                          </p>
+                          {reportMergeKeys.length >= 2 && (
+                            <>
+                              <label htmlFor="report-canonical-name" className="mt-2 block text-[11px] font-bold text-slate-600 dark:text-slate-300">Name to keep</label>
+                              <select
+                                id="report-canonical-name"
+                                value={reportMergeCanonicalKey}
+                                onChange={(event) => setReportMergeCanonicalKey(event.target.value)}
+                                className="mt-1 w-full rounded-lg border border-violet-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-900 dark:border-violet-800 dark:bg-slate-950 dark:text-white"
+                              >
+                                {reportMergeProfiles.map((profile) => (
+                                  <option key={profile.key} value={profile.key}>{profile.name}</option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                disabled={reportMergeBusy || !reportMergeCanonicalKey}
+                                onClick={combineReportProfiles}
+                                className="mt-2 w-full rounded-lg bg-violet-600 px-3 py-2 text-xs font-black text-white hover:bg-violet-700 disabled:opacity-50"
+                              >
+                                {reportMergeBusy ? 'Combining…' : 'Combine selected names'}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </aside>
+
+                    <div className="min-w-0 p-4">
+                      {selectedEvidenceStudent ? (
+                        <>
+                          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+                            <div className="min-w-0">
+                              <p className="truncate font-display text-xl font-black text-slate-900 dark:text-white">{selectedEvidenceStudent.name}</p>
+                              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                {selectedEvidenceStudent.entries.length} {selectedEvidenceStudent.entries.length === 1 ? 'submission' : 'submissions'} · {selectedEvidenceStudent.entries.reduce((total, entry) => total + wordCount(entry.text), 0)} words
+                              </p>
+                              {(selectedEvidenceStudent.aliases || []).length > 1 && (
+                                <p className="mt-1 text-[11px] text-violet-700 dark:text-violet-300">
+                                  Joined as: {selectedEvidenceStudent.aliases.join(', ')}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedEvidenceStudent.combined && (
+                                <button
+                                  type="button"
+                                  disabled={reportMergeBusy}
+                                  onClick={separateReportProfile}
+                                  className="rounded-lg border border-violet-200 px-3 py-2 text-xs font-black text-violet-700 hover:bg-violet-50 disabled:opacity-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/40"
+                                >
+                                  Separate names
+                                </button>
+                              )}
+                              <button type="button" onClick={copyStudentPortfolio} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">Copy all</button>
+                              <button type="button" onClick={downloadStudentPortfolio} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700">Download portfolio</button>
+                            </div>
+                          </div>
+                          <div className="mt-3 max-h-[34rem] space-y-3 overflow-y-auto pr-1 scrollbar-thin">
+                            {selectedEvidenceStudent.entries.map((entry) => (
+                              <article key={`${entry.snapshotId}-${entry.studentId}-${entry.updatedAt}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div>
+                                    <p className="font-bold text-slate-900 dark:text-white">{entry.label}</p>
+                                    <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                      {entry.createdAt} · {wordCount(entry.text)} words
+                                      {(selectedEvidenceStudent.aliases || []).length > 1 && entry.sourceName ? ` · as ${entry.sourceName}` : ''}
+                                    </p>
+                                  </div>
+                                  <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">Open lesson save</button>
+                                </div>
+                                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">{entry.text}</p>
+                              </article>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="grid min-h-[28rem] place-items-center text-center">
+                          <div>
+                            <p className="font-display text-lg font-black text-slate-700 dark:text-slate-200">Choose a student</p>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Their saved work will appear here.</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">Names are matched ignoring capital letters and extra spaces. Blank cards and unchanged duplicate drafts are left out.</p>
+                  </div>
+                  <p className="border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    iBoard still matches capital letters and extra spaces automatically. Other name variations are combined only when you approve them.
+                  </p>
                 </section>
                 )}
                 {activeWorkspace === 'evidence' && (
