@@ -30,6 +30,9 @@ richDb.exec(`
     note TEXT NOT NULL,
     prefix_context TEXT NOT NULL DEFAULT '',
     suffix_context TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'open',
+    student_fixed_at TEXT,
+    resolved_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (room_code) REFERENCES rooms(code) ON DELETE CASCADE,
@@ -38,6 +41,13 @@ richDb.exec(`
 `);
 richDb.exec(`CREATE INDEX IF NOT EXISTS idx_teacher_annotations_student ON teacher_annotations(student_id)`);
 richDb.exec(`CREATE INDEX IF NOT EXISTS idx_teacher_annotations_room ON teacher_annotations(room_code)`);
+for (const sql of [
+  `ALTER TABLE teacher_annotations ADD COLUMN status TEXT NOT NULL DEFAULT 'open'`,
+  `ALTER TABLE teacher_annotations ADD COLUMN student_fixed_at TEXT`,
+  `ALTER TABLE teacher_annotations ADD COLUMN resolved_at TEXT`,
+]) {
+  try { richDb.exec(sql); } catch { /* column already exists */ }
+}
 
 // All existing room payloads use queries.rowToRoom(). Extend that conversion point so
 // every teacher/student room:state message carries the capability flag.
@@ -114,6 +124,9 @@ function annotationForClient(row) {
     note: String(row.note || ''),
     prefix_context: String(row.prefix_context || ''),
     suffix_context: String(row.suffix_context || ''),
+    status: ['open', 'fixed', 'resolved'].includes(String(row.status)) ? String(row.status) : 'open',
+    student_fixed_at: row.student_fixed_at || '',
+    resolved_at: row.resolved_at || '',
     created_at: row.created_at || '',
     updated_at: row.updated_at || '',
   };
@@ -123,10 +136,14 @@ const selectStudent = richDb.prepare('SELECT * FROM students WHERE id = ?');
 const selectRoomFormatting = richDb.prepare('SELECT student_formatting FROM rooms WHERE code = ?');
 const saveRichText = richDb.prepare('UPDATE students SET rich_text_html = ? WHERE id = ?');
 const listAnnotationsForStudentStmt = richDb.prepare(
-  `SELECT * FROM teacher_annotations WHERE student_id = ? ORDER BY id ASC`
+  `SELECT * FROM teacher_annotations
+   WHERE student_id = ? AND status != 'resolved'
+   ORDER BY id ASC`
 );
 const listAnnotationsForRoomStmt = richDb.prepare(
-  `SELECT * FROM teacher_annotations WHERE room_code = ? ORDER BY student_id ASC, id ASC`
+  `SELECT * FROM teacher_annotations
+   WHERE room_code = ? AND status != 'resolved'
+   ORDER BY student_id ASC, id ASC`
 );
 const selectAnnotationStmt = richDb.prepare(
   `SELECT a.*, s.room_code AS student_room_code
@@ -141,6 +158,22 @@ const insertAnnotationStmt = richDb.prepare(
 );
 const updateAnnotationStmt = richDb.prepare(
   `UPDATE teacher_annotations SET note = ?, updated_at = datetime('now') WHERE id = ?`
+);
+const markAnnotationFixedStmt = richDb.prepare(
+  `UPDATE teacher_annotations
+   SET status = 'fixed', student_fixed_at = datetime('now'), resolved_at = NULL,
+       updated_at = datetime('now')
+   WHERE id = ?`
+);
+const resolveAnnotationStmt = richDb.prepare(
+  `UPDATE teacher_annotations
+   SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now')
+   WHERE id = ?`
+);
+const reopenAnnotationStmt = richDb.prepare(
+  `UPDATE teacher_annotations
+   SET status = 'open', resolved_at = NULL, updated_at = datetime('now')
+   WHERE id = ?`
 );
 const deleteAnnotationStmt = richDb.prepare(`DELETE FROM teacher_annotations WHERE id = ?`);
 
@@ -340,6 +373,59 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
       } catch (error) {
         console.error('Could not update teacher annotation', error);
         cb?.({ ok: false, error: 'Could not update the inline comment' });
+      }
+    });
+
+    socket.on('student:annotation-fixed', (payload = {}, cb) => {
+      try {
+        const studentId = Number(socket.data.studentId);
+        const annotationId = Number(payload.annotationId);
+        const row = annotationId ? selectAnnotationStmt.get(annotationId) : null;
+        if (
+          socket.data.role !== 'student' ||
+          !studentId ||
+          !row ||
+          Number(row.student_id) !== studentId ||
+          row.status === 'resolved'
+        ) {
+          cb?.({ ok: false, error: 'Comment not found' });
+          return;
+        }
+        markAnnotationFixedStmt.run(annotationId);
+        emitAnnotationUpdate(io, row.student_room_code, studentId);
+        cb?.({ ok: true });
+      } catch (error) {
+        console.error('Could not mark annotation fixed', error);
+        cb?.({ ok: false, error: 'Could not mark this comment as fixed' });
+      }
+    });
+
+    socket.on('teacher:annotation-status', (payload = {}, cb) => {
+      try {
+        const roomCode = normaliseRoomCode(socket.data.roomCode);
+        const annotationId = Number(payload.annotationId);
+        const action = String(payload.action || '');
+        const row = annotationId ? selectAnnotationStmt.get(annotationId) : null;
+        if (
+          socket.data.role !== 'teacher' ||
+          roomCode.length !== 4 ||
+          !row ||
+          normaliseRoomCode(row.student_room_code) !== roomCode
+        ) {
+          cb?.({ ok: false, error: 'Comment not found' });
+          return;
+        }
+        if (action === 'confirm') resolveAnnotationStmt.run(annotationId);
+        else if (action === 'reopen') reopenAnnotationStmt.run(annotationId);
+        else {
+          cb?.({ ok: false, error: 'Choose confirm or reopen' });
+          return;
+        }
+        emitAnnotationUpdate(io, roomCode, row.student_id);
+        cb?.({ ok: true });
+      } catch (error) {
+        console.error('Could not update annotation status', error);
+        cb?.({ ok: false, error: 'Could not update the comment status' });
       }
     });
 
