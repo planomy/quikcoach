@@ -232,7 +232,7 @@ export default function RichTextEditor({
               <span className="mx-0.5 h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
               <ToolbarButton disabled={disabled} label="↶" title="Undo" onClick={() => runCommand('undo')} />
               <ToolbarButton disabled={disabled} label="↷" title="Redo" onClick={() => runCommand('redo')} />
-              <span className="ml-auto text-[11px] font-medium text-slate-400">Select text, then format</span>
+              <span className="ml-1 text-[11px] font-medium text-slate-400">Select text, then format</span>
             </>
           ) : (
             <span className="text-[11px] font-medium text-slate-400">Writing mode</span>
@@ -242,7 +242,7 @@ export default function RichTextEditor({
             label="✏ Draw"
             title="Draw or show your working"
             onClick={() => setDrawMode(true)}
-            className={formattingEnabled ? '' : 'ml-auto'}
+            className="ml-auto"
           />
         </div>
         <div className="relative">
