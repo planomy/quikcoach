@@ -13,6 +13,7 @@ import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
+import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import { plainTextToRichHtml } from '../lib/richText.js';
 import {
   clearStudentSession,
@@ -842,10 +843,16 @@ export default function StudentView() {
             </p>
             {student?.image_url && (
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900">
-                <img
-                  src={student.image_url}
+                {student.teacher_markup_url && (
+                  <p className="mb-2 inline-flex rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-black text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                    Teacher correction
+                  </p>
+                )}
+                <AnnotatedStudentImage
+                  imageUrl={student.image_url}
+                  markupUrl={student.teacher_markup_url}
                   alt="Your uploaded image"
-                  className="mx-auto max-h-56 w-full object-contain"
+                  imageClassName="max-h-56 w-full object-contain"
                 />
                 <button
                   type="button"
