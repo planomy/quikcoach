@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { plainTextFromElement, rangeForPlainOffsets, resolveAnnotation } from '../lib/annotations.js';
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
+const FIXED_HIGHLIGHT_NAME = 'iboard-student-fixed-comments';
 
 function currentStudentId() {
   if (typeof window === 'undefined') return 0;
@@ -52,28 +53,46 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const [annotations, setAnnotations] = useState([]);
   const [markers, setMarkers] = useState([]);
   const [openMarker, setOpenMarker] = useState(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const refreshHighlights = useCallback(() => {
     if (typeof document === 'undefined') return;
     const editor = editorElement();
     if (!editor) {
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(FIXED_HIGHLIGHT_NAME);
       setMarkers([]);
       return;
     }
     const text = plainTextFromElement(editor);
     const ranges = [];
+    const fixedRanges = [];
     const nextMarkers = [];
+    let detachedCount = 0;
+    const editorRect = editor.getBoundingClientRect();
     for (const annotation of annotations || []) {
+      const fixed = annotation.status === 'fixed';
       const resolved = resolveAnnotation(annotation, text);
-      if (resolved.detached) continue;
-      const range = rangeForPlainOffsets(editor, resolved.start, resolved.end);
-      if (!range) continue;
-      ranges.push(range);
+      const range = resolved.detached ? null : rangeForPlainOffsets(editor, resolved.start, resolved.end);
+      if (!range) {
+        if (editorRect.bottom > 0 && editorRect.top < window.innerHeight) {
+          nextMarkers.push({
+            annotation,
+            detached: true,
+            top: Math.max(6, Math.min(window.innerHeight - 34, editorRect.top + 8 + detachedCount * 32)),
+            left: Math.max(6, Math.min(window.innerWidth - 34, editorRect.right - 34)),
+          });
+          detachedCount += 1;
+        }
+        continue;
+      }
+      (fixed ? fixedRanges : ranges).push(range);
       const rect = range.getBoundingClientRect();
       if (rect.width || rect.height) {
         nextMarkers.push({
           annotation,
+          detached: false,
           top: Math.max(6, rect.top - 2),
           left: Math.min(window.innerWidth - 34, rect.right + 5),
         });
@@ -82,6 +101,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     if (globalThis.CSS?.highlights && typeof globalThis.Highlight !== 'undefined') {
       if (ranges.length) globalThis.CSS.highlights.set(HIGHLIGHT_NAME, new globalThis.Highlight(...ranges));
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
+      if (fixedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...fixedRanges));
+      else globalThis.CSS.highlights.delete(FIXED_HIGHLIGHT_NAME);
     }
     setMarkers(nextMarkers);
   }, [annotations]);
@@ -183,6 +204,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       window.removeEventListener('scroll', schedule, true);
       window.removeEventListener('iboard:room-state', attachObserver);
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(FIXED_HIGHLIGHT_NAME);
     };
   }, [refreshHighlights]);
 
@@ -200,21 +222,45 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     }
   }, [markers, openMarker]);
 
+  function markCommentFixed(marker) {
+    if (!socket || !marker?.annotation?.id || actionBusy) return;
+    setActionBusy(true);
+    setActionError('');
+    socket.emit('student:annotation-fixed', { annotationId: marker.annotation.id }, (ack) => {
+      setActionBusy(false);
+      if (!ack?.ok) {
+        setActionError(ack?.error || 'Could not mark this comment as fixed');
+        return;
+      }
+      setOpenMarker(null);
+    });
+  }
+
   return (
     <>
-      <style>{`::highlight(${HIGHLIGHT_NAME}) { background: rgba(196, 181, 253, 0.78); text-decoration: underline 2px rgb(124, 58, 237); text-underline-offset: 2px; }`}</style>
+      <style>{`
+        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(196, 181, 253, 0.78); text-decoration: underline 2px rgb(124, 58, 237); text-underline-offset: 2px; }
+        ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.62); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
+      `}</style>
       {markers.map((marker) => (
         <button
           key={marker.annotation.id}
           data-teacher-annotation-ui
           type="button"
-          onClick={() => setOpenMarker(marker)}
-          className="fixed z-[50] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-violet-600 text-xs font-black text-white shadow-lg hover:bg-violet-700"
+          onClick={() => {
+            setActionError('');
+            setOpenMarker(marker);
+          }}
+          className={`fixed z-[50] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-lg transition ${
+            marker.annotation.status === 'fixed'
+              ? 'bg-emerald-500/80 hover:bg-emerald-600'
+              : 'bg-violet-600 hover:bg-violet-700'
+          }`}
           style={{ top: marker.top, left: marker.left }}
-          title="Teacher comment"
-          aria-label="Open teacher comment"
+          title={marker.annotation.status === 'fixed' ? 'Marked fixed — waiting for teacher' : 'Teacher comment'}
+          aria-label={marker.annotation.status === 'fixed' ? 'Comment marked fixed' : 'Open teacher comment'}
         >
-          💬
+          {marker.annotation.status === 'fixed' ? '✓' : '💬'}
         </button>
       ))}
       {openMarker && (
@@ -232,9 +278,35 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           >
             ×
           </button>
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">Teacher comment</p>
+          <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${
+            openMarker.annotation.status === 'fixed'
+              ? 'text-emerald-600 dark:text-emerald-300'
+              : 'text-violet-600 dark:text-violet-300'
+          }`}>
+            {openMarker.annotation.status === 'fixed' ? 'Marked as fixed' : 'Teacher comment'}
+          </p>
           <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{openMarker.annotation.quote}”</p>
           <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">{openMarker.annotation.note}</p>
+          {openMarker.detached && openMarker.annotation.status !== 'fixed' && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              Your edit changed the highlighted passage. Check the teacher comment, then mark it fixed when you are happy.
+            </p>
+          )}
+          {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
+          {openMarker.annotation.status === 'fixed' ? (
+            <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
+              Your teacher can now check the change.
+            </p>
+          ) : (
+            <button
+              type="button"
+              disabled={actionBusy}
+              onClick={() => markCommentFixed(openMarker)}
+              className="mt-3 w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {actionBusy ? 'Marking…' : 'I’ve fixed this'}
+            </button>
+          )}
         </div>
       )}
     </>
