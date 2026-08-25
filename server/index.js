@@ -918,6 +918,7 @@ io.on('connection', (socket) => {
         cb?.({ ok: false, error: 'Session expired' });
         return;
       }
+      if (existing.teacher_markup_filename) unlinkRoomMedia(code, existing.teacher_markup_filename);
       if (existing.image_filename) unlinkRoomMedia(code, existing.image_filename);
       const filename = `s${sid}-${Date.now()}.${decoded.ext}`;
       fs.writeFileSync(path.join(boardMediaDir(code), filename), decoded.buf);
@@ -945,6 +946,7 @@ io.on('connection', (socket) => {
         cb?.({ ok: false });
         return;
       }
+      if (existing.teacher_markup_filename) unlinkRoomMedia(code, existing.teacher_markup_filename);
       if (existing.image_filename) unlinkRoomMedia(code, existing.image_filename);
       const row = queries.updateStudentImage(db, sid, '');
       const student = queries.rowToStudent(row);
@@ -953,6 +955,87 @@ io.on('connection', (socket) => {
     } catch (e) {
       console.error(e);
       cb?.({ ok: false });
+    }
+  });
+
+  socket.on('teacher:drawing-markup', ({ studentId, imageBase64, mimeType, baseImageUrl }, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const sid = Number(studentId);
+      const existing = sid ? queries.getStudent(db, sid) : null;
+      if (!existing || normalizeRoomCode(existing.room_code) !== code || !existing.image_filename) {
+        cb?.({ ok: false, error: 'That drawing is no longer available' });
+        return;
+      }
+      let requestedBase = '';
+      try {
+        requestedBase = safeMediaFilename(decodeURIComponent(String(baseImageUrl || '').split('/').pop().split('?')[0]));
+      } catch {
+        requestedBase = '';
+      }
+      if (!requestedBase || requestedBase !== safeMediaFilename(existing.image_filename)) {
+        cb?.({ ok: false, error: 'The student changed their drawing — reopen it before marking up' });
+        return;
+      }
+      if (String(mimeType || '').toLowerCase() !== 'image/png') {
+        cb?.({ ok: false, error: 'Teacher markup must be a PNG overlay' });
+        return;
+      }
+      const decoded = decodeImageBase64(imageBase64, 'image/png');
+      if (decoded.error) {
+        cb?.({ ok: false, error: decoded.error });
+        return;
+      }
+      const filename = `tm${sid}-${Date.now()}.png`;
+      fs.writeFileSync(path.join(boardMediaDir(code), filename), decoded.buf);
+      const updated = queries.updateStudentDrawingMarkup(db, sid, filename, existing.image_filename);
+      if (existing.teacher_markup_filename) unlinkRoomMedia(code, existing.teacher_markup_filename);
+      const student = queries.rowToStudent(updated);
+      io.to(roomSocketName(code)).emit('student:live', { student });
+      cb?.({ ok: true, student });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not send the drawing correction' });
+    }
+  });
+
+  socket.on('teacher:drawing-markup-clear', ({ studentId, baseImageUrl }, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const sid = Number(studentId);
+      const existing = sid ? queries.getStudent(db, sid) : null;
+      if (!existing || normalizeRoomCode(existing.room_code) !== code || !existing.image_filename) {
+        cb?.({ ok: false, error: 'That drawing is no longer available' });
+        return;
+      }
+      let requestedBase = '';
+      try {
+        requestedBase = safeMediaFilename(decodeURIComponent(String(baseImageUrl || '').split('/').pop().split('?')[0]));
+      } catch {
+        requestedBase = '';
+      }
+      if (!requestedBase || requestedBase !== safeMediaFilename(existing.image_filename)) {
+        cb?.({ ok: false, error: 'The student changed their drawing — reopen it before marking up' });
+        return;
+      }
+      const updated = queries.clearStudentDrawingMarkup(db, sid);
+      if (existing.teacher_markup_filename) unlinkRoomMedia(code, existing.teacher_markup_filename);
+      const student = queries.rowToStudent(updated);
+      io.to(roomSocketName(code)).emit('student:live', { student });
+      cb?.({ ok: true, student });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not clear the drawing correction' });
     }
   });
 
@@ -1096,6 +1179,7 @@ io.on('connection', (socket) => {
       }
       queries.deleteStudent(db, sid);
       if (row.image_filename) unlinkRoomMedia(code, row.image_filename);
+      if (row.teacher_markup_filename) unlinkRoomMedia(code, row.teacher_markup_filename);
       broadcastRoom(code);
       cb?.({ ok: true });
     } catch (e) {
@@ -1409,6 +1493,7 @@ io.on('connection', (socket) => {
       const studentRows = queries.deleteAllStudents(db, code);
       for (const s of studentRows) {
         if (s.image_filename) unlinkRoomMedia(code, s.image_filename);
+        if (s.teacher_markup_filename) unlinkRoomMedia(code, s.teacher_markup_filename);
       }
       const postRows = queries.deleteAllBoardPosts(db, code);
       for (const p of postRows) {
