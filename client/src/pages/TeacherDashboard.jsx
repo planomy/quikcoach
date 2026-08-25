@@ -51,6 +51,11 @@ const CARD_VIEWS = [
   { id: 'full', label: 'Full drafts' },
 ];
 
+function csvCell(value) {
+  const text = String(value ?? '');
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
 function initialCardView() {
   if (typeof window === 'undefined') return 'overview';
   try {
@@ -148,6 +153,7 @@ function TeacherDashboardInner() {
   const [socketConnected, setSocketConnected] = useState(true);
   const [newClassConfirmOpen, setNewClassConfirmOpen] = useState(false);
   const [newClassBusy, setNewClassBusy] = useState(false);
+  const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const roomActionsRef = useRef(null);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -1015,6 +1021,44 @@ function TeacherDashboardInner() {
     setNewClassConfirmOpen(false);
   }
 
+  function studentJoinUrl() {
+    const base = `${window.location.origin}/student`;
+    return codeInput.length === 4 ? `${base}?code=${encodeURIComponent(codeInput)}` : base;
+  }
+
+  async function copyStudentJoinLink() {
+    try {
+      await navigator.clipboard.writeText(studentJoinUrl());
+      setCopyToast('Participant join link copied');
+      setTimeout(() => setCopyToast(''), 3000);
+    } catch {
+      setError('Could not copy the participant join link');
+    }
+  }
+
+  function openJoinScreen() {
+    if (roomActionsRef.current) roomActionsRef.current.open = false;
+    setJoinScreenOpen(true);
+  }
+
+  function downloadParticipantList() {
+    if (roomActionsRef.current) roomActionsRef.current.open = false;
+    const rows = [
+      ['Name', 'Year level', 'Group', 'Words', 'Last updated'],
+      ...orderedStudents.map((student) => [
+        student.name,
+        gradeShortLabel(student.year_level) || student.year_level || '',
+        student.class_group || '',
+        wordCount(student.text),
+        student.updated_at || '',
+      ]),
+    ];
+    const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}`;
+    downloadTextFile(`iboard-room-${codeInput}-participants.csv`, csv, 'text/csv;charset=utf-8');
+    setCopyToast(`Downloaded ${orderedStudents.length} participant${orderedStudents.length === 1 ? '' : 's'}`);
+    setTimeout(() => setCopyToast(''), 3000);
+  }
+
   function startNewClass() {
     if (newClassBusy) return;
     setNewClassBusy(true);
@@ -1115,11 +1159,8 @@ function TeacherDashboardInner() {
               <button
                 type="button"
                 onClick={async () => {
-                  const base = `${window.location.origin}/student`;
-                  const url =
-                    codeInput.length === 4 ? `${base}?code=${encodeURIComponent(codeInput)}` : base;
                   try {
-                    await navigator.clipboard.writeText(url);
+                    await navigator.clipboard.writeText(studentJoinUrl());
                     setCopyToast(
                       codeInput.length === 4
                         ? 'Student join link copied (includes room code)'
@@ -1243,7 +1284,14 @@ function TeacherDashboardInner() {
               <summary className="flex cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
                 Room actions ···
               </summary>
-              <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="absolute right-0 z-30 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <button type="button" onClick={openJoinScreen} className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
+                  Present join screen
+                </button>
+                <button type="button" onClick={downloadParticipantList} className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Download participant list
+                </button>
+                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
                 <button type="button" onClick={openNewClassConfirmation} className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
                   Start new class
                 </button>
@@ -1962,6 +2010,46 @@ function TeacherDashboardInner() {
       </main>
 
       <AppFooter />
+
+      {joinScreenOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center overflow-auto bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 p-5 text-white sm:p-10"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="join-screen-title"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setJoinScreenOpen(false);
+          }}
+        >
+          <button
+            type="button"
+            autoFocus
+            onClick={() => setJoinScreenOpen(false)}
+            className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl"
+          >
+            Back to dashboard
+          </button>
+          <div className="mx-auto w-full max-w-5xl text-center">
+            <p className="text-sm font-black uppercase tracking-[0.3em] text-indigo-300">Join this iBOARD session</p>
+            <h2 id="join-screen-title" className="mt-6 font-display text-4xl font-black sm:text-6xl">Enter room code</h2>
+            <p className="mt-5 font-mono text-[clamp(5rem,20vw,12rem)] font-black leading-none tracking-[0.08em] text-white">
+              {codeInput}
+            </p>
+            <p className="mx-auto mt-6 max-w-3xl break-all rounded-2xl bg-white/10 px-5 py-4 text-lg font-bold text-indigo-100 ring-1 ring-white/20 sm:text-2xl">
+              {studentJoinUrl()}
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <button type="button" onClick={copyStudentJoinLink} className="rounded-2xl bg-emerald-400 px-6 py-3 text-base font-black text-emerald-950 shadow-xl hover:bg-emerald-300">
+                Copy join link
+              </button>
+              <span className="rounded-2xl bg-white/10 px-5 py-3 text-base font-bold ring-1 ring-white/20">
+                {orderedStudents.length} joined
+              </span>
+            </div>
+            <p className="mt-7 text-sm font-semibold text-white/60">Keep this screen up while participants arrive.</p>
+          </div>
+        </div>
+      )}
 
       {newClassConfirmOpen && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-4 backdrop-blur-[2px] sm:items-center">
