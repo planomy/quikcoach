@@ -4,6 +4,7 @@ import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 
 const QUEUE_KEY = 'iboard-pulse-question-queue';
+const TEMPLATE_KEY = 'iboard-pulse-question-templates';
 
 const TYPES = [
   ['choice', 'Multiple choice'],
@@ -130,6 +131,14 @@ export default function LiveResponseTeacher({ socket }) {
   const [queue, setQueue] = useState(() => {
     try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
   });
+  const [templates, setTemplates] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]');
+      return Array.isArray(saved) ? saved.slice(0, 20) : [];
+    } catch {
+      return [];
+    }
+  });
   const [wallSelected, setWallSelected] = useState([]);
   const [wallMode, setWallMode] = useState('');
   const [slideIndex, setSlideIndex] = useState(0);
@@ -151,6 +160,10 @@ export default function LiveResponseTeacher({ socket }) {
   useEffect(() => {
     try { localStorage.setItem(QUEUE_KEY, JSON.stringify(queue.slice(0, 30))); } catch { /* storage may be unavailable */ }
   }, [queue]);
+
+  useEffect(() => {
+    try { localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates.slice(0, 20))); } catch { /* storage may be unavailable */ }
+  }, [templates]);
 
   const activity = live.activity;
   const secondsLeft = useEndsAtCountdown(activity?.endsAt, {
@@ -191,6 +204,29 @@ export default function LiveResponseTeacher({ socket }) {
     setQueue((items) => [...items, { ...question, id: crypto.randomUUID?.() || `q-${Date.now()}` }]);
     setMessage('Question added to your queue.');
     setPrompt(''); setOptions(['', '', '', '']); setCorrectAnswer(''); setImageUrl('');
+  }
+
+  function saveTemplate() {
+    const question = currentDraft();
+    if (!question.prompt) { setMessage('Add a question first.'); return; }
+    if (question.type === 'choice' && question.options.length < 2) { setMessage('Add at least two choices.'); return; }
+    const id = globalThis.crypto?.randomUUID?.() || `template-${Date.now()}`;
+    setTemplates((items) => [{ ...question, imageUrl: '', id }, ...items].slice(0, 20));
+    setMessage(question.imageUrl ? 'Template saved on this browser without the image.' : 'Template saved on this browser.');
+  }
+
+  function loadTemplate(template) {
+    setType(template.type || 'choice');
+    setPrompt(String(template.prompt || '').slice(0, 500));
+    const savedOptions = Array.isArray(template.options) ? template.options.map(String).slice(0, 6) : [];
+    setOptions([...savedOptions, '', '', '', ''].slice(0, 4));
+    setCorrectAnswer(String(template.correctAnswer || ''));
+    setAnonymous(!!template.anonymous);
+    setOptional(!!template.optional);
+    setTimerSeconds(Number(template.timerSeconds) || 0);
+    setImageUrl('');
+    setComposerOpen(true);
+    setMessage('Template loaded — edit it or launch when ready.');
   }
 
   function moveQueued(index, direction) {
@@ -294,6 +330,27 @@ export default function LiveResponseTeacher({ socket }) {
           <p className="text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300">Instant checks</p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">{QUICK_CHECKS.map(([question, choices]) => <button key={question} type="button" onClick={() => launch({ type: 'choice', prompt: question, options: choices, correctAnswer: '', anonymous: false, optional: false, imageUrl: '', timerSeconds: 0 })} className="rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-black text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200">{question}</button>)}</div>
 
+          {templates.length > 0 && (
+            <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/70 p-3 dark:border-violet-800 dark:bg-violet-950/30">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] font-black uppercase tracking-wide text-violet-700 dark:text-violet-300">My templates</p>
+                <span className="text-[10px] font-semibold text-slate-500">Saved on this browser</span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {templates.map((template) => (
+                  <div key={template.id} className="flex max-w-full items-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-violet-200 dark:bg-slate-900 dark:ring-violet-800">
+                    <button type="button" onClick={() => loadTemplate(template)} title={template.prompt} className="max-w-xs truncate px-2.5 py-1.5 text-left text-xs font-bold text-violet-900 hover:bg-violet-100 dark:text-violet-100 dark:hover:bg-violet-950">
+                      {template.prompt}
+                    </button>
+                    <button type="button" onClick={() => setTemplates((items) => items.filter((item) => item.id !== template.id))} aria-label={`Delete template: ${template.prompt}`} className="border-l border-violet-200 px-2 py-1.5 text-xs font-black text-red-500 hover:bg-red-50 dark:border-violet-800 dark:hover:bg-red-950/40">
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-3 flex flex-wrap gap-1.5">
             {TYPES.map(([value, label]) => <button key={value} type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ${type === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}>{label}</button>)}
           </div>
@@ -321,7 +378,7 @@ export default function LiveResponseTeacher({ socket }) {
             {type === 'short' && <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-3.5 w-3.5 accent-indigo-600" /> Anonymous when featured</label>}
             <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-3.5 w-3.5 accent-indigo-600" /> Optional</label>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Timer <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="ml-1 rounded-lg border border-slate-200 px-2 py-1 dark:border-slate-700 dark:bg-slate-950"><option value="0">None</option><option value="15">15 sec</option><option value="30">30 sec</option><option value="60">1 min</option><option value="120">2 min</option></select></label>
-            <div className="ml-auto flex gap-2"><button type="button" onClick={addToQueue} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-900 hover:bg-violet-200">Add to queue</button><button type="button" onClick={() => launch()} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow-md hover:bg-indigo-700">Launch now</button></div>
+            <div className="ml-auto flex flex-wrap gap-2"><button type="button" onClick={saveTemplate} className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-black text-violet-800 hover:bg-violet-50 dark:border-violet-800 dark:bg-slate-900 dark:text-violet-200">Save template</button><button type="button" onClick={addToQueue} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-900 hover:bg-violet-200">Add to queue</button><button type="button" onClick={() => launch()} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow-md hover:bg-indigo-700">Launch now</button></div>
           </div>
         </div>
       )}
