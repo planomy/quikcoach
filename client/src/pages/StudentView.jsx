@@ -14,36 +14,13 @@ import RichTextEditor from '../components/RichTextEditor.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import { plainTextToRichHtml } from '../lib/richText.js';
-
-const SESSION_KEY = 'quik-coach-student';
-const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
-
-function readSavedStudentSession() {
-  try {
-    const saved = JSON.parse(
-      sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null'
-    );
-    const savedAt = Number(saved?.savedAt || 0);
-    if (savedAt && Date.now() - savedAt > SESSION_MAX_AGE_MS) {
-      clearStudentSession();
-      return null;
-    }
-    return saved;
-  } catch {
-    return null;
-  }
-}
-
-function saveStudentSession(session) {
-  const value = JSON.stringify({ ...session, savedAt: Date.now() });
-  try { sessionStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
-  try { localStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
-}
-
-function clearStudentSession() {
-  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-  try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-}
+import {
+  clearStudentSession,
+  forgetRecentStudentSession,
+  readSavedStudentSession,
+  recentStudentSessionForRoom,
+  saveStudentSession,
+} from '../lib/studentSession.js';
 
 function feedbackInboxItem(item) {
   const feedbackId = Number(item?.feedbackId) || 0;
@@ -91,6 +68,7 @@ export default function StudentView() {
   const [imageBusy, setImageBusy] = useState(false);
   const [imageHint, setImageHint] = useState('');
   const [yearInput, setYearInput] = useState('');
+  const [recentDismissedCode, setRecentDismissedCode] = useState('');
 
   const socket = useMemo(() => createSocket(), []);
   const pendingRef = useRef({ text: '', richTextHtml: '' });
@@ -151,7 +129,11 @@ export default function StudentView() {
         hydrateStudentIdRef.current = sidNum;
         socket.emit('student:rejoin', { code, studentId: sidNum }, (ack) => {
           if (!ack?.ok) return;
-          saveStudentSession({ code, studentId: ack.student?.id ?? sidNum });
+          saveStudentSession({
+            code,
+            studentId: ack.student?.id ?? sidNum,
+            name: ack.student?.name || saved.name,
+          });
           if (ack.student) setStudent(ack.student);
           if (ack.room) setRoom(ack.room);
           setJoined(true);
@@ -311,7 +293,11 @@ export default function StudentView() {
           return;
         }
         hydrateStudentIdRef.current = ack.student?.id ?? sidNum;
-        saveStudentSession({ code, studentId: ack.student?.id ?? sidNum });
+        saveStudentSession({
+          code,
+          studentId: ack.student?.id ?? sidNum,
+          name: ack.student?.name || saved.name,
+        });
         setCodeInput(code);
         setStudent(ack.student);
         if (ack.room) setRoom(ack.room);
@@ -339,6 +325,54 @@ export default function StudentView() {
     };
   }, [codeFromLink, socket]);
 
+  const recentRoomSession = useMemo(() => {
+    const code = String(codeInput || '').replace(/\D/g, '').slice(0, 4);
+    if (code.length !== 4 || recentDismissedCode === code) return null;
+    return recentStudentSessionForRoom(code);
+  }, [codeInput, recentDismissedCode]);
+
+  function continueRecentRoom() {
+    const saved = recentRoomSession;
+    if (!saved) return;
+    setError('');
+    hydrateStudentIdRef.current = saved.studentId;
+    socket.emit('student:rejoin', { code: saved.code, studentId: saved.studentId }, (ack) => {
+      if (!ack?.ok || !ack.student) {
+        hydrateStudentIdRef.current = null;
+        forgetRecentStudentSession(saved.code);
+        setRecentDismissedCode(saved.code);
+        setError('That previous student card is no longer available. Enter your name to join.');
+        return;
+      }
+
+      hydrateStudentIdRef.current = ack.student.id;
+      saveStudentSession({
+        code: saved.code,
+        studentId: ack.student.id,
+        name: ack.student.name || saved.name,
+      });
+      setCodeInput(saved.code);
+      setStudent(ack.student);
+      if (ack.room) setRoom(ack.room);
+
+      const limit =
+        ack.room?.enforce_word_count && (ack.room?.word_target ?? 0) > 0
+          ? Number(ack.room.word_target)
+          : 0;
+      const raw = ack.student.text || '';
+      const next = limit > 0 ? truncateToWordLimit(raw, limit) : raw;
+      setDraft(next);
+      setDraftHtml(
+        next === raw && ack.student.rich_text_html
+          ? ack.student.rich_text_html
+          : plainTextToRichHtml(next)
+      );
+      const savedYear = String(ack.student.year_level || '').trim().toLowerCase();
+      if (savedYear) setYearInput(savedYear);
+      setJoined(true);
+    });
+  }
+
   function join() {
     setError('');
     const c = codeInput.replace(/\D/g, '').slice(0, 4).padStart(4, '0');
@@ -353,7 +387,7 @@ export default function StudentView() {
         return;
       }
       hydrateStudentIdRef.current = ack.student?.id ?? null;
-      saveStudentSession({ code: c, studentId: ack.student.id });
+      saveStudentSession({ code: c, studentId: ack.student.id, name: ack.student?.name || n });
       setStudent(ack.student);
       if (ack.room) setRoom(ack.room);
       const lim =
@@ -526,32 +560,68 @@ export default function StudentView() {
               <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Room code</label>
               <input
                 value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                onChange={(e) => {
+                  setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4));
+                  setRecentDismissedCode('');
+                }}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 font-mono text-lg outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                 placeholder="0000"
                 inputMode="numeric"
               />
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Your name</label>
-              <input
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-                placeholder="Name as shown to teacher"
-              />
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Your year</label>
-              <StudentGradeSelect
-                value={yearInput}
-                onChange={setYearInput}
-                className="w-full !rounded-xl !px-3 !py-2.5 !text-sm"
-              />
               {error && <p className="text-sm text-red-600">{error}</p>}
-              <button
-                type="button"
-                onClick={join}
-                className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-lift hover:bg-indigo-700"
-              >
-                Join room
-              </button>
+              {recentRoomSession ? (
+                <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/50">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">
+                    Returning student
+                  </p>
+                  <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                    You previously joined this room as
+                  </p>
+                  <p className="mt-1 font-display text-lg font-black text-slate-950 dark:text-white">
+                    {recentRoomSession.name || 'your previous student card'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={continueRecentRoom}
+                    className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-lift hover:bg-indigo-700"
+                  >
+                    Continue and restore my work
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecentDismissedCode(recentRoomSession.code);
+                      setNameInput('');
+                    }}
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                  >
+                    This isn&apos;t me
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Your name</label>
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
+                    placeholder="Name as shown to teacher"
+                  />
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Your year</label>
+                  <StudentGradeSelect
+                    value={yearInput}
+                    onChange={setYearInput}
+                    className="w-full !rounded-xl !px-3 !py-2.5 !text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={join}
+                    className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-lift hover:bg-indigo-700"
+                  >
+                    Join room
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

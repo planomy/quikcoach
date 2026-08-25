@@ -6,41 +6,17 @@ import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { createSocket } from '../lib/socket.js';
+import {
+  clearStudentSession,
+  readSavedStudentSession,
+  saveStudentSession,
+} from '../lib/studentSession.js';
 
-const SESSION_KEY = 'quik-coach-student';
-const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const HANDOFF_PREFIX = 'iboard-pulse-handoff:';
 const HANDOFF_MAX_AGE_MS = 2 * 60 * 1000;
 const FLOAT_COLLAPSED_KEY = 'iboard-pulse-collapsed';
 const FLOAT_EXPANDED_SIZE = { width: 300, height: 420 };
 const FLOAT_COLLAPSED_SIZE = { width: 300, height: 116 };
-
-function readSavedStudentSession() {
-  try {
-    const saved = JSON.parse(
-      sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null'
-    );
-    const savedAt = Number(saved?.savedAt || 0);
-    if (savedAt && Date.now() - savedAt > SESSION_MAX_AGE_MS) {
-      clearStudentSession();
-      return null;
-    }
-    return saved;
-  } catch {
-    return null;
-  }
-}
-
-function saveStudentSession(session) {
-  const value = JSON.stringify({ ...session, savedAt: Date.now() });
-  try { sessionStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
-  try { localStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
-}
-
-function clearStudentSession() {
-  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-  try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-}
 
 function cleanCode(value) {
   return String(value || '').replace(/\D/g, '').slice(0, 4);
@@ -143,7 +119,7 @@ export default function PulseStudent() {
           setError('Your iBOARD session could not be reopened. Please join Pulse below.');
           return;
         }
-        saveStudentSession(saved);
+        saveStudentSession({ ...saved, name: ack.student?.name || saved.name });
         setStudent(ack.student || null);
         setJoined(true);
       });
@@ -165,7 +141,7 @@ export default function PulseStudent() {
         setError(ack?.error || 'Could not join Pulse.');
         return;
       }
-      const saved = { code, studentId: Number(ack.student.id) };
+      const saved = { code, studentId: Number(ack.student.id), name: ack.student?.name || name };
       sessionRef.current = saved;
       saveStudentSession(saved);
       setStudent(ack.student);
