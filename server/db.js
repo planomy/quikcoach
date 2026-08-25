@@ -108,6 +108,18 @@ export function migrate(db) {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_snapshots_room ON room_snapshots(room_code)`);
   db.exec(`
+    CREATE TABLE IF NOT EXISTS student_report_aliases (
+      room_code TEXT NOT NULL,
+      alias_key TEXT NOT NULL,
+      canonical_key TEXT NOT NULL,
+      canonical_name TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (room_code, alias_key),
+      FOREIGN KEY (room_code) REFERENCES rooms(code) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_report_aliases_canonical ON student_report_aliases(room_code, canonical_key)`);
+  db.exec(`
     CREATE TABLE IF NOT EXISTS board_posts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       room_code TEXT NOT NULL,
@@ -688,6 +700,78 @@ export const queries = {
         payload,
       };
     });
+  },
+
+  listReportAliases(db, roomCode) {
+    return all(
+      db,
+      `SELECT alias_key, canonical_key, canonical_name
+       FROM student_report_aliases
+       WHERE room_code = ?
+       ORDER BY alias_key ASC`,
+      [roomCode]
+    );
+  },
+
+  combineReportAliases(db, roomCode, profileKeys, canonicalKey, canonicalName) {
+    const keys = [...new Set(
+      (Array.isArray(profileKeys) ? profileKeys : [])
+        .map((value) => String(value || '').trim().slice(0, 160))
+        .filter(Boolean)
+    )].slice(0, 50);
+    const targetKey = String(canonicalKey || '').trim().slice(0, 160);
+    const targetName = String(canonicalName || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+    if (keys.length < 2 || !keys.includes(targetKey) || !targetName) {
+      throw new Error('Invalid report alias group');
+    }
+
+    const placeholders = keys.map(() => '?').join(', ');
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const related = all(
+        db,
+        `SELECT alias_key FROM student_report_aliases
+         WHERE room_code = ? AND canonical_key IN (${placeholders})`,
+        [roomCode, ...keys]
+      ).map((row) => String(row.alias_key || '')).filter(Boolean);
+      const aliases = [...new Set([...keys, ...related])];
+
+      run(
+        db,
+        `UPDATE student_report_aliases
+         SET canonical_key = ?, canonical_name = ?
+         WHERE room_code = ? AND canonical_key IN (${placeholders})`,
+        [targetKey, targetName, roomCode, ...keys]
+      );
+      for (const aliasKey of aliases) {
+        run(
+          db,
+          `INSERT INTO student_report_aliases
+             (room_code, alias_key, canonical_key, canonical_name)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(room_code, alias_key) DO UPDATE SET
+             canonical_key = excluded.canonical_key,
+             canonical_name = excluded.canonical_name`,
+          [roomCode, aliasKey, targetKey, targetName]
+        );
+      }
+      db.exec('COMMIT');
+    } catch (error) {
+      try { db.exec('ROLLBACK'); } catch { /* transaction already closed */ }
+      throw error;
+    }
+    return queries.listReportAliases(db, roomCode);
+  },
+
+  clearReportAliasGroup(db, roomCode, canonicalKey) {
+    const key = String(canonicalKey || '').trim().slice(0, 160);
+    if (!key) return;
+    run(
+      db,
+      `DELETE FROM student_report_aliases
+       WHERE room_code = ? AND canonical_key = ?`,
+      [roomCode, key]
+    );
   },
 
   getSnapshot(db, snapshotId) {
