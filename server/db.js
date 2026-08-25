@@ -200,6 +200,33 @@ export function migrate(db) {
     label TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(activity_id, student_id)
   )`);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS audience_questions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      room_code TEXT NOT NULL,
+      student_id INTEGER NOT NULL,
+      student_name TEXT NOT NULL,
+      text TEXT NOT NULL,
+      anonymous_requested INTEGER NOT NULL DEFAULT 0,
+      published_anonymous INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (room_code) REFERENCES rooms(code) ON DELETE CASCADE,
+      FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_audience_questions_room_status ON audience_questions(room_code, status)`);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS audience_question_votes (
+      question_id INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (question_id, student_id),
+      FOREIGN KEY (question_id) REFERENCES audience_questions(id) ON DELETE CASCADE,
+      FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    )
+  `);
 }
 
 /** @param {DatabaseSync} db */
@@ -676,6 +703,96 @@ export const queries = {
   },
 
   clearFeaturedWall(db, roomCode) { run(db, `DELETE FROM featured_wall WHERE room_code = ?`, [roomCode]); },
+
+  addAudienceQuestion(db, { roomCode, studentId, studentName, text, anonymousRequested }) {
+    const result = run(
+      db,
+      `INSERT INTO audience_questions
+       (room_code, student_id, student_name, text, anonymous_requested)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        roomCode,
+        Number(studentId),
+        String(studentName || '').trim().slice(0, 80),
+        String(text || '').trim().slice(0, 500),
+        anonymousRequested ? 1 : 0,
+      ]
+    );
+    return get(db, `SELECT * FROM audience_questions WHERE id = ?`, [result.lastInsertRowid]);
+  },
+
+  getAudienceQuestion(db, questionId) {
+    return get(db, `SELECT * FROM audience_questions WHERE id = ?`, [Number(questionId)]);
+  },
+
+  listAudienceQuestions(db, roomCode) {
+    return all(
+      db,
+      `SELECT q.*, COUNT(v.student_id) AS vote_count
+       FROM audience_questions q
+       LEFT JOIN audience_question_votes v ON v.question_id = q.id
+       WHERE q.room_code = ?
+       GROUP BY q.id
+       ORDER BY q.id DESC`,
+      [roomCode]
+    );
+  },
+
+  listAudienceQuestionVotes(db, roomCode) {
+    return all(
+      db,
+      `SELECT v.question_id, v.student_id
+       FROM audience_question_votes v
+       JOIN audience_questions q ON q.id = v.question_id
+       WHERE q.room_code = ?`,
+      [roomCode]
+    );
+  },
+
+  countOpenAudienceQuestions(db, roomCode, studentId) {
+    const row = get(
+      db,
+      `SELECT COUNT(*) AS count
+       FROM audience_questions
+       WHERE room_code = ? AND student_id = ? AND status IN ('pending', 'published')`,
+      [roomCode, Number(studentId)]
+    );
+    return Number(row?.count) || 0;
+  },
+
+  setAudienceQuestionStatus(db, roomCode, questionId, status, publishedAnonymous = false) {
+    run(
+      db,
+      `UPDATE audience_questions
+       SET status = ?, published_anonymous = ?, updated_at = datetime('now')
+       WHERE room_code = ? AND id = ?`,
+      [status, publishedAnonymous ? 1 : 0, roomCode, Number(questionId)]
+    );
+    return get(db, `SELECT * FROM audience_questions WHERE room_code = ? AND id = ?`, [roomCode, Number(questionId)]);
+  },
+
+  hasAudienceQuestionVote(db, questionId, studentId) {
+    return !!get(
+      db,
+      `SELECT 1 FROM audience_question_votes WHERE question_id = ? AND student_id = ?`,
+      [Number(questionId), Number(studentId)]
+    );
+  },
+
+  toggleAudienceQuestionVote(db, questionId, studentId) {
+    const qid = Number(questionId);
+    const sid = Number(studentId);
+    if (queries.hasAudienceQuestionVote(db, qid, sid)) {
+      run(db, `DELETE FROM audience_question_votes WHERE question_id = ? AND student_id = ?`, [qid, sid]);
+      return false;
+    }
+    run(db, `INSERT INTO audience_question_votes (question_id, student_id) VALUES (?, ?)`, [qid, sid]);
+    return true;
+  },
+
+  clearAudienceQuestions(db, roomCode) {
+    run(db, `DELETE FROM audience_questions WHERE room_code = ?`, [roomCode]);
+  },
 
   listStudents(db, roomCode) {
     return all(

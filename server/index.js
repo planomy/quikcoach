@@ -426,6 +426,64 @@ function emitLiveState(code) {
   for (const student of teacherPayload.students) emitStudentLiveState(c, student.id);
 }
 
+function audienceQuestionBase(row) {
+  return {
+    id: Number(row.id),
+    text: String(row.text || ''),
+    status: String(row.status || 'pending'),
+    votes: Number(row.vote_count) || 0,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function buildTeacherQnaPayload(code) {
+  const c = normalizeRoomCode(code);
+  return {
+    questions: queries.listAudienceQuestions(db, c).map((row) => ({
+      ...audienceQuestionBase(row),
+      studentId: Number(row.student_id),
+      studentName: String(row.student_name || ''),
+      anonymousRequested: !!row.anonymous_requested,
+      publishedAnonymous: !!row.published_anonymous,
+    })),
+  };
+}
+
+function buildStudentQnaPayload(code, studentId) {
+  const c = normalizeRoomCode(code);
+  const sid = Number(studentId);
+  const votesByQuestion = new Map();
+  for (const vote of queries.listAudienceQuestionVotes(db, c)) {
+    const qid = Number(vote.question_id);
+    const ids = votesByQuestion.get(qid) || new Set();
+    ids.add(Number(vote.student_id));
+    votesByQuestion.set(qid, ids);
+  }
+  const questions = queries.listAudienceQuestions(db, c).flatMap((row) => {
+    const mine = Number(row.student_id) === sid;
+    const isPublic = row.status === 'published' || row.status === 'answered';
+    if (!mine && !isPublic) return [];
+    const anonymous = isPublic ? !!row.published_anonymous : !!row.anonymous_requested;
+    return [{
+      ...audienceQuestionBase(row),
+      mine,
+      anonymous,
+      author: mine ? 'You' : anonymous ? 'Anonymous' : String(row.student_name || ''),
+      voted: votesByQuestion.get(Number(row.id))?.has(sid) || false,
+    }];
+  });
+  return { questions };
+}
+
+function emitAudienceQnaState(code) {
+  const c = normalizeRoomCode(code);
+  io.to(teacherSocketName(c)).emit('qna:teacher', buildTeacherQnaPayload(c));
+  for (const row of queries.listStudents(db, c)) {
+    io.to(studentSocketName(row.id)).emit('qna:student', buildStudentQnaPayload(c, row.id));
+  }
+}
+
 function connectedStudentsInRoom(code) {
   const c = normalizeRoomCode(code);
   return queries
@@ -468,6 +526,7 @@ io.on('connection', (socket) => {
       socket.data.roomCode = c;
       broadcastRoom(c);
       socket.emit('live:teacher', buildTeacherLivePayload(c));
+      socket.emit('qna:teacher', buildTeacherQnaPayload(c));
       cb?.({ ok: true });
     } catch (e) {
       console.error(e);
@@ -530,6 +589,7 @@ io.on('connection', (socket) => {
       emitRoomState(c, payload);
       emitBroadcastHistoryToSocket(socket, c);
       emitLiveState(c);
+      emitAudienceQnaState(c);
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Server error' });
@@ -561,6 +621,7 @@ io.on('connection', (socket) => {
       emitRoomState(c, payload);
       emitBroadcastHistoryToSocket(socket, c);
       emitLiveState(c);
+      emitAudienceQnaState(c);
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Server error' });
@@ -587,6 +648,175 @@ io.on('connection', (socket) => {
     }
     emitStudentLiveState(code, sid);
     cb?.({ ok: true });
+  });
+
+  socket.on('teacher:qna-sync', (_payload, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) {
+      cb?.({ ok: false });
+      return;
+    }
+    socket.emit('qna:teacher', buildTeacherQnaPayload(code));
+    cb?.({ ok: true });
+  });
+
+  socket.on('student:qna-sync', (_payload, cb) => {
+    const code = socket.data.roomCode;
+    const sid = Number(socket.data.studentId);
+    if (socket.data.role !== 'student' || !code || !sid) {
+      cb?.({ ok: false });
+      return;
+    }
+    socket.emit('qna:student', buildStudentQnaPayload(code, sid));
+    cb?.({ ok: true });
+  });
+
+  socket.on('student:qna-submit', ({ text, anonymous }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const sid = Number(socket.data.studentId);
+      if (socket.data.role !== 'student' || !code || !sid) {
+        cb?.({ ok: false, error: 'Join the room first' });
+        return;
+      }
+      const student = queries.getStudent(db, sid);
+      if (!student || normalizeRoomCode(student.room_code) !== normalizeRoomCode(code)) {
+        cb?.({ ok: false, error: 'Your session has expired' });
+        return;
+      }
+      const questionText = String(text || '').trim().replace(/\s+/g, ' ').slice(0, 500);
+      if (!questionText) {
+        cb?.({ ok: false, error: 'Write a question first' });
+        return;
+      }
+      if (queries.countOpenAudienceQuestions(db, code, sid) >= 3) {
+        cb?.({ ok: false, error: 'You already have three open questions' });
+        return;
+      }
+      queries.addAudienceQuestion(db, {
+        roomCode: normalizeRoomCode(code),
+        studentId: sid,
+        studentName: student.name,
+        text: questionText,
+        anonymousRequested: !!anonymous,
+      });
+      emitAudienceQnaState(code);
+      cb?.({ ok: true });
+    } catch (error) {
+      console.error(error);
+      cb?.({ ok: false, error: 'Could not send the question' });
+    }
+  });
+
+  socket.on('student:qna-vote', ({ questionId }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const sid = Number(socket.data.studentId);
+      const question = queries.getAudienceQuestion(db, Number(questionId));
+      const isPublic = question?.status === 'published' || question?.status === 'answered';
+      if (
+        socket.data.role !== 'student' || !code || !sid || !question || !isPublic ||
+        normalizeRoomCode(question.room_code) !== normalizeRoomCode(code)
+      ) {
+        cb?.({ ok: false, error: 'That question is not available' });
+        return;
+      }
+      if (Number(question.student_id) === sid) {
+        cb?.({ ok: false, error: 'You cannot vote for your own question' });
+        return;
+      }
+      const voted = queries.toggleAudienceQuestionVote(db, question.id, sid);
+      emitAudienceQnaState(code);
+      cb?.({ ok: true, voted });
+    } catch (error) {
+      console.error(error);
+      cb?.({ ok: false, error: 'Could not update your vote' });
+    }
+  });
+
+  socket.on('teacher:qna-status', ({ questionId, action, anonymous }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const question = queries.getAudienceQuestion(db, Number(questionId));
+      if (
+        socket.data.role !== 'teacher' || !code || !question ||
+        normalizeRoomCode(question.room_code) !== normalizeRoomCode(code)
+      ) {
+        cb?.({ ok: false, error: 'Question not found' });
+        return;
+      }
+      const nextStatus = {
+        publish: 'published',
+        answer: 'answered',
+        dismiss: 'dismissed',
+        pending: 'pending',
+        reopen: 'published',
+      }[String(action || '')];
+      if (!nextStatus) {
+        cb?.({ ok: false, error: 'Unknown action' });
+        return;
+      }
+      const publishedAnonymous = action === 'publish'
+        ? anonymous === undefined ? !!question.anonymous_requested : !!anonymous
+        : !!question.published_anonymous;
+      queries.setAudienceQuestionStatus(db, code, question.id, nextStatus, publishedAnonymous);
+      emitAudienceQnaState(code);
+      cb?.({ ok: true });
+    } catch (error) {
+      console.error(error);
+      cb?.({ ok: false, error: 'Could not update the question' });
+    }
+  });
+
+  socket.on('teacher:qna-ask-room', ({ questionId, anonymous }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const question = queries.getAudienceQuestion(db, Number(questionId));
+      if (
+        socket.data.role !== 'teacher' || !code || !question ||
+        normalizeRoomCode(question.room_code) !== normalizeRoomCode(code)
+      ) {
+        cb?.({ ok: false, error: 'Question not found' });
+        return;
+      }
+      const publishedAnonymous = anonymous === undefined
+        ? !!question.anonymous_requested
+        : !!anonymous;
+      queries.setAudienceQuestionStatus(db, code, question.id, 'published', publishedAnonymous);
+      const activity = queries.launchLiveActivity(db, code, {
+        id: randomUUID(),
+        type: 'short',
+        prompt: question.text,
+        options: [],
+        correctAnswer: '',
+        anonymous: true,
+        optional: true,
+        imageUrl: '',
+        timerSeconds: 0,
+      });
+      emitAudienceQnaState(code);
+      emitLiveState(code);
+      cb?.({ ok: true, activity: liveActivityForClients(activity) });
+    } catch (error) {
+      console.error(error);
+      cb?.({ ok: false, error: 'Could not ask the room' });
+    }
+  });
+
+  socket.on('teacher:qna-clear', (_payload, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !code) {
+        cb?.({ ok: false });
+        return;
+      }
+      queries.clearAudienceQuestions(db, code);
+      emitAudienceQnaState(code);
+      cb?.({ ok: true });
+    } catch (error) {
+      console.error(error);
+      cb?.({ ok: false, error: 'Could not clear Q&A' });
+    }
   });
 
   socket.on('teacher:live-launch', (raw, cb) => {
@@ -1490,6 +1720,7 @@ io.on('connection', (socket) => {
       }
       const code = normalizeRoomCode(codeRaw);
       // Delete students entirely so reused room codes don't keep ghost cards
+      queries.clearAudienceQuestions(db, code);
       const studentRows = queries.deleteAllStudents(db, code);
       for (const s of studentRows) {
         if (s.image_filename) unlinkRoomMedia(code, s.image_filename);
@@ -1510,6 +1741,7 @@ io.on('connection', (socket) => {
       queries.resetLiveQuestionNumber(db, code);
       broadcastRoom(code);
       emitLiveState(code);
+      emitAudienceQnaState(code);
       cb?.({
         ok: true,
         clearedStudents: studentRows.length,

@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
+import AudienceQnaStudent from '../components/AudienceQnaStudent.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { createSocket } from '../lib/socket.js';
 import {
@@ -198,14 +199,22 @@ export default function PulseStudent() {
   }
 
   const pulsePanel = (
-    <LiveResponseStudent
-      socket={socket}
-      standalone
-      compact={!!floatTarget}
-      collapsed={!!floatTarget && floatCollapsed}
-      onCollapse={() => resizeFloatingPanel(true)}
-      onExpand={() => resizeFloatingPanel(false)}
-    />
+    <div className="space-y-2">
+      <AudienceQnaStudent
+        socket={socket}
+        compact={!!floatTarget}
+        collapsed={!!floatTarget && floatCollapsed}
+        onRequestExpand={() => resizeFloatingPanel(false)}
+      />
+      <LiveResponseStudent
+        socket={socket}
+        standalone
+        compact={!!floatTarget}
+        collapsed={!!floatTarget && floatCollapsed}
+        onCollapse={() => resizeFloatingPanel(true)}
+        onExpand={() => resizeFloatingPanel(false)}
+      />
+    </div>
   );
 
   if (!joined) {

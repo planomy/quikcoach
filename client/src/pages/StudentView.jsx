@@ -10,6 +10,7 @@ import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import PulseLink from '../components/PulseLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
+import AudienceQnaStudent from '../components/AudienceQnaStudent.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
@@ -707,6 +708,7 @@ export default function StudentView() {
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
           <aside className="order-1 flex min-w-0 flex-col gap-4 xl:col-start-2 xl:row-start-1">
+            <AudienceQnaStudent socket={socket} />
             <LiveResponseStudent socket={socket} />
             <div className="xl:hidden">{renderProgressPanel()}</div>
             {broadcastExemplars.length > 0 && (

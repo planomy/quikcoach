@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import EngagementRing from './EngagementRing.jsx';
+import AudienceQnaTeacher from './AudienceQnaTeacher.jsx';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 
@@ -324,6 +325,8 @@ export default function LiveResponseTeacher({ socket }) {
           <button type="button" onClick={() => setComposerOpen((open) => !open)} className="rounded-lg bg-indigo-950/40 px-2.5 py-1.5 text-xs font-black ring-1 ring-white/30">{composerOpen ? 'Hide setup' : 'New question'}</button>
         </div>
       </div>
+
+      <AudienceQnaTeacher socket={socket} hasLiveActivity={!!activity} />
 
       {composerOpen && (
         <div className="border-b border-slate-200 p-4 dark:border-slate-700" onPaste={(event) => { const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/')); if (file) { event.preventDefault(); loadImage(file); } }}>

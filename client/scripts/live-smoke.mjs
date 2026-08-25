@@ -172,7 +172,7 @@ try {
   })).ok, true);
   const featuredState = await featuredPromise;
   await featuredNotice;
-  assert.deepEqual(featuredState.featured, [{ value: 'I compared the two examples.', name: 'Anonymous' }]);
+  assert.deepEqual(featuredState.featured, [{ value: 'I compared the two examples.', name: 'Anonymous', label: '' }]);
 
   const wallStatePromise = nextEvent(teacher, 'live:teacher');
   await emitAck(teacher, 'teacher:live-sync', {});
@@ -189,6 +189,50 @@ try {
   await emitAck(teacher, 'teacher:live-sync', {});
   const persisted = await persistedPromise;
   assert.equal(persisted.featuredWall[0].label, 'Clear explanation');
+
+  assert.equal((await emitAck(alex, 'student:qna-submit', {
+    text: 'Could we compare both methods?',
+    anonymous: true,
+  })).ok, true);
+  const teacherQnaPromise = nextEvent(teacher, 'qna:teacher');
+  await emitAck(teacher, 'teacher:qna-sync', {});
+  const teacherQna = await teacherQnaPromise;
+  const audienceQuestion = teacherQna.questions.find((question) => question.text === 'Could we compare both methods?');
+  assert.equal(audienceQuestion.status, 'pending');
+  assert.equal(audienceQuestion.studentName, 'Alex');
+  assert.equal(audienceQuestion.anonymousRequested, true);
+
+  const privateQnaPromise = nextEvent(sam, 'qna:student');
+  await emitAck(sam, 'student:qna-sync', {});
+  const privateQna = await privateQnaPromise;
+  assert.equal(privateQna.questions.some((question) => question.id === audienceQuestion.id), false);
+
+  assert.equal((await emitAck(teacher, 'teacher:qna-status', {
+    questionId: audienceQuestion.id,
+    action: 'publish',
+    anonymous: true,
+  })).ok, true);
+  const publicQnaPromise = nextEvent(sam, 'qna:student');
+  await emitAck(sam, 'student:qna-sync', {});
+  const publicQna = await publicQnaPromise;
+  const sharedQuestion = publicQna.questions.find((question) => question.id === audienceQuestion.id);
+  assert.equal(sharedQuestion.author, 'Anonymous');
+  assert.equal(sharedQuestion.votes, 0);
+  assert.equal((await emitAck(alex, 'student:qna-vote', { questionId: audienceQuestion.id })).ok, false);
+  assert.equal((await emitAck(sam, 'student:qna-vote', { questionId: audienceQuestion.id })).ok, true);
+
+  const feedbackLaunch = await emitAck(teacher, 'teacher:qna-ask-room', {
+    questionId: audienceQuestion.id,
+    anonymous: true,
+  });
+  assert.equal(feedbackLaunch.ok, true);
+  assert.equal(feedbackLaunch.activity.type, 'short');
+  assert.equal(feedbackLaunch.activity.optional, true);
+  assert.equal(feedbackLaunch.activity.prompt, 'Could we compare both methods?');
+  assert.equal((await emitAck(teacher, 'teacher:qna-status', {
+    questionId: audienceQuestion.id,
+    action: 'answer',
+  })).ok, true);
 
   const originalStudent = io(url, socketOptions);
   const originalJoin = await emitAck(originalStudent, 'student:join', { code: room, name: 'Taylor Smith' });
@@ -221,6 +265,12 @@ try {
   const duplicateJoin = await emitAck(duplicateStudent, 'student:join', { code: room, name: 'Taylor Smith' });
   assert.equal(duplicateJoin.ok, false);
   assert.match(duplicateJoin.error, /already connected/i);
+
+  assert.equal((await emitAck(sam, 'student:qna-submit', { text: 'This should disappear with the class.', anonymous: false })).ok, true);
+  assert.equal((await emitAck(teacher, 'teacher:clear-cards', {})).ok, true);
+  const resetQnaPromise = nextEvent(teacher, 'qna:teacher');
+  await emitAck(teacher, 'teacher:qna-sync', {});
+  assert.deepEqual((await resetQnaPromise).questions, []);
 
   console.log('Live classroom smoke test passed.');
 } finally {
