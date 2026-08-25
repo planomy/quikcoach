@@ -7,6 +7,7 @@ import {
 } from '../lib/annotations.js';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
+const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
 const MARKER_SIZE = 28;
 const MARKER_GAP = 5;
@@ -130,6 +131,8 @@ export default function TeacherAnnotationController() {
   const [saveNotice, setSaveNotice] = useState('');
   const [openMarker, setOpenMarker] = useState(null);
   const [markers, setMarkers] = useState([]);
+  const [reviewBusyId, setReviewBusyId] = useState(null);
+  const [reviewError, setReviewError] = useState('');
   const moveFrameRef = useRef(null);
 
   const annotationTotal = useMemo(
@@ -140,6 +143,7 @@ export default function TeacherAnnotationController() {
   const refreshHighlights = useCallback(() => {
     if (typeof document === 'undefined') return;
     const ranges = [];
+    const fixedRanges = [];
     const nextMarkers = [];
 
     for (const [studentKey, annotations] of Object.entries(byStudent)) {
@@ -147,12 +151,26 @@ export default function TeacherAnnotationController() {
       const card = cardForStudent(studentId);
       if (!card) continue;
       const fullText = plainTextFromElement(card.textPane);
+      const paneRect = card.textPane.getBoundingClientRect();
+      let detachedCount = 0;
       for (const annotation of annotations || []) {
+        const fixed = annotation.status === 'fixed';
         const resolved = resolveAnnotation(annotation, fullText);
-        if (resolved.detached) continue;
-        const range = rangeForPlainOffsets(card.textPane, resolved.start, resolved.end);
-        if (!range) continue;
-        ranges.push(range);
+        const range = resolved.detached ? null : rangeForPlainOffsets(card.textPane, resolved.start, resolved.end);
+        if (!range) {
+          if (paneRect.bottom > 0 && paneRect.top < window.innerHeight) {
+            nextMarkers.push({
+              studentId,
+              annotation,
+              detached: true,
+              top: Math.max(6, Math.min(window.innerHeight - MARKER_SIZE - 6, paneRect.top + 8 + detachedCount * (MARKER_SIZE + 4))),
+              left: Math.max(6, Math.min(window.innerWidth - MARKER_SIZE - 6, paneRect.right - MARKER_SIZE - 6)),
+            });
+            detachedCount += 1;
+          }
+          continue;
+        }
+        (fixed ? fixedRanges : ranges).push(range);
         const rect = range.getBoundingClientRect();
         if (rect.width || rect.height) {
           const position = markerPosition(rect, card);
@@ -160,6 +178,7 @@ export default function TeacherAnnotationController() {
           nextMarkers.push({
             studentId,
             annotation,
+            detached: false,
             ...position,
           });
         }
@@ -169,6 +188,8 @@ export default function TeacherAnnotationController() {
     if (globalThis.CSS?.highlights && typeof globalThis.Highlight !== 'undefined') {
       if (ranges.length) globalThis.CSS.highlights.set(HIGHLIGHT_NAME, new globalThis.Highlight(...ranges));
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
+      if (fixedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...fixedRanges));
+      else globalThis.CSS.highlights.delete(FIXED_HIGHLIGHT_NAME);
     }
     setMarkers(nextMarkers);
     setOpenMarker((previous) => {
@@ -235,6 +256,7 @@ export default function TeacherAnnotationController() {
       if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
       moveFrameRef.current = null;
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(FIXED_HIGHLIGHT_NAME);
     };
   }, [refreshHighlights]);
 
@@ -279,6 +301,51 @@ export default function TeacherAnnotationController() {
     const timer = setTimeout(() => setSaveNotice(''), 3000);
     return () => clearTimeout(timer);
   }, [saveNotice]);
+
+  async function copyPendingSelection() {
+    const text = String(pending?.quote || '');
+    if (!text) return;
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const copyBox = document.createElement('textarea');
+        copyBox.value = text;
+        copyBox.setAttribute('readonly', '');
+        copyBox.style.position = 'fixed';
+        copyBox.style.left = '-9999px';
+        document.body.appendChild(copyBox);
+        copyBox.select();
+        copyBox.setSelectionRange(0, copyBox.value.length);
+        const copied = document.execCommand('copy');
+        copyBox.remove();
+        if (!copied) throw new Error('Copy command failed');
+      }
+      setCommentError('');
+      setSaveNotice('Selection copied');
+    } catch {
+      setCommentError('Could not copy this selection.');
+    }
+  }
+
+  function reviewFixedComment(marker, action) {
+    if (!socket || !marker?.annotation?.id || reviewBusyId) return;
+    setReviewBusyId(marker.annotation.id);
+    setReviewError('');
+    socket.emit(
+      'teacher:annotation-status',
+      { annotationId: marker.annotation.id, action },
+      (ack) => {
+        setReviewBusyId(null);
+        if (!ack?.ok) {
+          setReviewError(ack?.error || 'Could not update this comment');
+          return;
+        }
+        setOpenMarker(null);
+        setSaveNotice(action === 'confirm' ? 'Fix confirmed' : 'Comment reopened for the student');
+      }
+    );
+  }
 
   function addCustomComment() {
     const comment = customCommentDraft.trim().slice(0, 500);
@@ -354,20 +421,30 @@ export default function TeacherAnnotationController() {
 
   return (
     <>
-      <style>{`::highlight(${HIGHLIGHT_NAME}) { background: rgba(196, 181, 253, 0.72); text-decoration: underline 2px rgb(124, 58, 237); text-underline-offset: 2px; }`}</style>
+      <style>{`
+        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(196, 181, 253, 0.72); text-decoration: underline 2px rgb(124, 58, 237); text-underline-offset: 2px; }
+        ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
+      `}</style>
 
       {markers.map((marker) => (
         <button
           key={`${marker.studentId}-${marker.annotation.id}`}
           data-teacher-annotation-ui
           type="button"
-          onClick={() => setOpenMarker(marker)}
-          className="fixed z-[45] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-violet-600 text-xs font-black text-white shadow-lg hover:bg-violet-700"
+          onClick={() => {
+            setReviewError('');
+            setOpenMarker(marker);
+          }}
+          className={`fixed z-[45] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-lg transition ${
+            marker.annotation.status === 'fixed'
+              ? 'bg-emerald-500/75 hover:bg-emerald-600'
+              : 'bg-violet-600 hover:bg-violet-700'
+          }`}
           style={{ top: marker.top, left: marker.left }}
-          title={marker.annotation.note}
-          aria-label="Open inline teacher comment"
+          title={marker.annotation.status === 'fixed' ? `Student marked fixed: ${marker.annotation.note}` : marker.annotation.note}
+          aria-label={marker.annotation.status === 'fixed' ? 'Review student fix' : 'Open inline teacher comment'}
         >
-          💬
+          {marker.annotation.status === 'fixed' ? '✓' : '💬'}
         </button>
       ))}
 
@@ -377,8 +454,19 @@ export default function TeacherAnnotationController() {
           className="fixed z-[70] max-h-[calc(100vh-20px)] w-[360px] max-w-[calc(100vw-20px)] overflow-y-auto rounded-2xl border border-violet-200 bg-white p-3 shadow-2xl dark:border-violet-800 dark:bg-slate-900"
           style={{ top: pending.top, left: pending.left }}
         >
-          <p className="text-[10px] font-black uppercase tracking-[0.13em] text-violet-600">Inline comment</p>
-          <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{pending.quote}”</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.13em] text-violet-600">Selected passage</p>
+              <p className="mt-1 line-clamp-3 text-xs italic text-slate-500 dark:text-slate-400">“{pending.quote}”</p>
+            </div>
+            <button
+              type="button"
+              onClick={copyPendingSelection}
+              className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+            >
+              Copy selection
+            </button>
+          </div>
           <div className="mt-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
@@ -503,13 +591,50 @@ export default function TeacherAnnotationController() {
           }}
         >
           <button type="button" onClick={() => setOpenMarker(null)} className="float-right text-sm font-black text-slate-400 hover:text-slate-700">×</button>
-          <p className="text-[10px] font-black uppercase tracking-[0.13em] text-violet-600">Your inline comment</p>
+          <p className={`text-[10px] font-black uppercase tracking-[0.13em] ${
+            openMarker.annotation.status === 'fixed'
+              ? 'text-emerald-600 dark:text-emerald-300'
+              : 'text-violet-600 dark:text-violet-300'
+          }`}>
+            {openMarker.annotation.status === 'fixed' ? 'Student marked fixed' : 'Your inline comment'}
+          </p>
           <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{openMarker.annotation.quote}”</p>
           <p className="mt-2 whitespace-pre-wrap text-sm font-medium text-slate-800 dark:text-slate-100">{openMarker.annotation.note}</p>
-          <div className="mt-3 flex gap-2">
-            <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-bold text-violet-800 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200">Edit</button>
-            <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
-          </div>
+          {openMarker.detached && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              The student changed the original highlighted passage.
+            </p>
+          )}
+          {reviewError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{reviewError}</p>}
+          {openMarker.annotation.status === 'fixed' ? (
+            <div className="mt-3 space-y-2">
+              <button
+                type="button"
+                disabled={reviewBusyId === openMarker.annotation.id}
+                onClick={() => reviewFixedComment(openMarker, 'confirm')}
+                className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                Confirm fixed
+              </button>
+              <button
+                type="button"
+                disabled={reviewBusyId === openMarker.annotation.id}
+                onClick={() => reviewFixedComment(openMarker, 'reopen')}
+                className="w-full rounded-lg bg-amber-100 px-3 py-2 text-xs font-black text-amber-900 hover:bg-amber-200 disabled:opacity-50"
+              >
+                Needs another look
+              </button>
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-bold text-violet-800 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200">Edit</button>
+                <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-bold text-violet-800 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200">Edit</button>
+              <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
+            </div>
+          )}
         </div>
       )}
 
