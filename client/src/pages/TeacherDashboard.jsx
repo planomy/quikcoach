@@ -158,6 +158,7 @@ function TeacherDashboardInner() {
   const [newClassBusy, setNewClassBusy] = useState(false);
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
+  const [audienceQuestions, setAudienceQuestions] = useState([]);
   const roomActionsRef = useRef(null);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -337,6 +338,14 @@ function TeacherDashboardInner() {
       socket.off('student:live', onLive);
     };
   }, [socket, modalOpen, hydrateFeedbackStateFromRoom]);
+
+  useEffect(() => {
+    const onQna = (payload) => {
+      setAudienceQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
+    };
+    socket.on('qna:teacher', onQna);
+    return () => socket.off('qna:teacher', onQna);
+  }, [socket]);
 
   const prevModalOpenRef = useRef(false);
   useEffect(() => {
@@ -1198,6 +1207,18 @@ function TeacherDashboardInner() {
   const wt = room?.word_target ?? 0;
   const enforceWords = !!room?.enforce_word_count;
   const frozen = !!room?.freeze_class;
+  const waitingQuestionCount = audienceQuestions.filter((question) => question.status === 'pending').length;
+  const liveQuestionCount = audienceQuestions.filter((question) => question.status === 'published').length;
+
+  function openAudienceQna() {
+    setActiveWorkspace('pulse');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById('audience-qna-teacher')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
   const studentGridClass =
     cardView === 'overview'
@@ -1332,6 +1353,11 @@ function TeacherDashboardInner() {
                   {snapshots.length}
                 </span>
               )}
+              {workspace.id === 'pulse' && waitingQuestionCount > 0 && (
+                <span className={`rounded-full px-1.5 text-[9px] ${activeWorkspace === workspace.id ? 'bg-white text-fuchsia-700' : 'bg-fuchsia-600 text-white'}`}>
+                  {waitingQuestionCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -1373,6 +1399,19 @@ function TeacherDashboardInner() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  {(waitingQuestionCount > 0 || liveQuestionCount > 0) && (
+                    <button
+                      type="button"
+                      onClick={openAudienceQna}
+                      className={`rounded-xl px-3 py-2 text-xs font-black shadow-sm transition ${
+                        waitingQuestionCount > 0
+                          ? 'animate-pulse bg-fuchsia-600 text-white ring-4 ring-fuchsia-200 hover:bg-fuchsia-700 dark:ring-fuchsia-950'
+                          : 'bg-fuchsia-100 text-fuchsia-800 hover:bg-fuchsia-200 dark:bg-fuchsia-950 dark:text-fuchsia-200'
+                      }`}
+                    >
+                      Q&amp;A · {waitingQuestionCount > 0 ? `${waitingQuestionCount} waiting` : `${liveQuestionCount} live`}
+                    </button>
+                  )}
                   <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900" role="group" aria-label="Student card view">
                     {CARD_VIEWS.map((view) => (
                       <button

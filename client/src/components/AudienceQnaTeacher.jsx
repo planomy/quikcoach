@@ -95,7 +95,7 @@ export default function AudienceQnaTeacher({ socket, hasLiveActivity = false }) 
 
   return (
     <>
-      <section className="border-b border-fuchsia-200 bg-fuchsia-50/70 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
+      <section id="audience-qna-teacher" className="scroll-mt-4 border-b border-fuchsia-200 bg-fuchsia-50/70 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
         <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
           <span>
             <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-300">Audience Q&amp;A</span>
