@@ -16,17 +16,26 @@ import StudentAnnotationController from '../components/StudentAnnotationControll
 import { plainTextToRichHtml } from '../lib/richText.js';
 
 const SESSION_KEY = 'quik-coach-student';
+const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 function readSavedStudentSession() {
   try {
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null');
+    const saved = JSON.parse(
+      sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null'
+    );
+    const savedAt = Number(saved?.savedAt || 0);
+    if (savedAt && Date.now() - savedAt > SESSION_MAX_AGE_MS) {
+      clearStudentSession();
+      return null;
+    }
+    return saved;
   } catch {
     return null;
   }
 }
 
 function saveStudentSession(session) {
-  const value = JSON.stringify(session);
+  const value = JSON.stringify({ ...session, savedAt: Date.now() });
   try { sessionStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
   try { localStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
 }
@@ -132,6 +141,11 @@ export default function StudentView() {
         if (!saved) return;
         const { code, studentId } = saved;
         if (!code || !studentId) return;
+        const savedCode = String(code).replace(/\D/g, '').slice(0, 4);
+        if (codeFromLink && savedCode !== codeFromLink) {
+          clearStudentSession();
+          return;
+        }
         const sidNum = Number(studentId);
         if (!sidNum) return;
         hydrateStudentIdRef.current = sidNum;
@@ -148,7 +162,7 @@ export default function StudentView() {
     };
     socket.on('connect', onConnect);
     return () => socket.off('connect', onConnect);
-  }, [socket]);
+  }, [codeFromLink, socket]);
 
   useEffect(() => {
     const onState = (payload) => {
@@ -275,6 +289,12 @@ export default function StudentView() {
       if (!saved) return;
       const { code, studentId } = saved;
       if (!code || !studentId) return;
+      const savedCode = String(code).replace(/\D/g, '').slice(0, 4);
+      if (codeFromLink && savedCode !== codeFromLink) {
+        hydrateStudentIdRef.current = null;
+        clearStudentSession();
+        return;
+      }
       const sidNum = Number(studentId);
       if (!sidNum) return;
       hydrateStudentIdRef.current = sidNum;
@@ -317,7 +337,7 @@ export default function StudentView() {
     return () => {
       cancelled = true;
     };
-  }, [socket]);
+  }, [codeFromLink, socket]);
 
   function join() {
     setError('');
@@ -411,6 +431,18 @@ export default function StudentView() {
     });
   }
 
+  function changeRoom() {
+    clearStudentSession();
+    hydrateStudentIdRef.current = null;
+    studentRef.current = null;
+    try {
+      socket.disconnect();
+    } catch {
+      /* Page navigation will still close the old room connection. */
+    }
+    window.location.assign('/student');
+  }
+
   function clearMyImage() {
     if (frozen) return;
     socket.emit('student:image-clear', {}, (ack) => {
@@ -423,6 +455,8 @@ export default function StudentView() {
     });
   }
 
+  const activeRoomDigits = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
+  const activeRoomCode = activeRoomDigits ? activeRoomDigits.padStart(4, '0') : '';
   const wt = room?.word_target ?? 0;
   const enforce = !!room?.enforce_word_count;
   const wc = wordCount(draft);
@@ -572,7 +606,21 @@ export default function StudentView() {
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 xl:max-w-7xl">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Writing</p>
-            <h1 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">{student?.name}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">{student?.name}</h1>
+              {activeRoomCode && (
+                <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-black text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                  Room {activeRoomCode}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={changeRoom}
+                className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              >
+                Change room
+              </button>
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <StudentGradeSelect

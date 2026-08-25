@@ -8,6 +8,7 @@ import ThemeToggle from '../components/ThemeToggle.jsx';
 import { createSocket } from '../lib/socket.js';
 
 const SESSION_KEY = 'quik-coach-student';
+const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const HANDOFF_PREFIX = 'iboard-pulse-handoff:';
 const HANDOFF_MAX_AGE_MS = 2 * 60 * 1000;
 const FLOAT_COLLAPSED_KEY = 'iboard-pulse-collapsed';
@@ -16,14 +17,22 @@ const FLOAT_COLLAPSED_SIZE = { width: 300, height: 116 };
 
 function readSavedStudentSession() {
   try {
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null');
+    const saved = JSON.parse(
+      sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY) || 'null'
+    );
+    const savedAt = Number(saved?.savedAt || 0);
+    if (savedAt && Date.now() - savedAt > SESSION_MAX_AGE_MS) {
+      clearStudentSession();
+      return null;
+    }
+    return saved;
   } catch {
     return null;
   }
 }
 
 function saveStudentSession(session) {
-  const value = JSON.stringify(session);
+  const value = JSON.stringify({ ...session, savedAt: Date.now() });
   try { sessionStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
   try { localStorage.setItem(SESSION_KEY, value); } catch { /* ignore */ }
 }
