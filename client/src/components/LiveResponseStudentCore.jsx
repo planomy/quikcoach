@@ -425,7 +425,16 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
           {activity.type === 'short' && featured.length > 0 && (
             <div className={`border-t border-slate-200 dark:border-slate-700 ${compact ? 'mt-2 pt-2' : 'mt-5 pt-4'}`}>
               <p className="text-xs font-black uppercase tracking-wide text-slate-500">Shared by your teacher</p>
-              {featured.map((item, index) => <blockquote key={index} className="mt-2 rounded-xl bg-violet-50 p-3 text-sm text-violet-950 dark:bg-violet-950 dark:text-violet-100">“{item.value}” <span className="font-bold">— {item.name}</span></blockquote>)}
+              {featured.map((item, index) => (
+                <blockquote key={index} className="mt-2 rounded-xl bg-violet-50 p-3 text-sm text-violet-950 dark:bg-violet-950 dark:text-violet-100">
+                  {item.label && (
+                    <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-violet-700 dark:text-violet-300">
+                      Why it was featured: {item.label}
+                    </span>
+                  )}
+                  “{item.value}” <span className="font-bold">— {item.name}</span>
+                </blockquote>
+              ))}
             </div>
           )}
         </section>

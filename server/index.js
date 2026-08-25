@@ -388,10 +388,16 @@ function emitLiveState(code) {
   io.to(teacherSocketName(c)).emit('live:teacher', teacherPayload);
   const activity = teacherPayload.activity;
   const responses = teacherPayload.responses || [];
+  const featuredLabels = new Map(
+    (teacherPayload.featuredWall || [])
+      .filter((item) => String(item.activityId) === String(activity?.id))
+      .map((item) => [Number(item.studentId), String(item.label || '')])
+  );
   const featured = activity?.type === 'short'
     ? responses.filter((response) => response.published).map((response) => ({
         value: response.value,
         name: activity.anonymous ? 'Anonymous' : response.name,
+        label: featuredLabels.get(Number(response.studentId)) || '',
       }))
     : [];
   io.to(roomSocketName(c)).emit('live:activity', {
