@@ -18,7 +18,6 @@ import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
-import StudentFormattingControl from '../components/StudentFormattingControl.jsx';
 import {
   downloadTextFile,
   buildEvidenceHtml,
@@ -1339,7 +1338,6 @@ function TeacherDashboardInner() {
                       </button>
                     ))}
                   </div>
-                  <StudentFormattingControl compact />
                 </div>
               </div>
 
