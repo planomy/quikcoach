@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { io } from 'socket.io-client';
 
 const url = process.env.IBOARD_TEST_URL || 'http://127.0.0.1:3211';
-const room = '7742';
+const room = process.env.IBOARD_TEST_ROOM || '7742';
 const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
-const teacher = io(url, { transports: ['websocket'] });
-const alex = io(url, { transports: ['websocket'] });
-const sam = io(url, { transports: ['websocket'] });
+const socketOptions = process.env.IBOARD_TEST_URL ? {} : { transports: ['websocket'] };
+const teacher = io(url, socketOptions);
+const alex = io(url, socketOptions);
+const sam = io(url, socketOptions);
 let returningStudent = null;
 let duplicateStudent = null;
 
@@ -189,7 +190,7 @@ try {
   const persisted = await persistedPromise;
   assert.equal(persisted.featuredWall[0].label, 'Clear explanation');
 
-  const originalStudent = io(url, { transports: ['websocket'] });
+  const originalStudent = io(url, socketOptions);
   const originalJoin = await emitAck(originalStudent, 'student:join', { code: room, name: 'Taylor Smith' });
   assert.equal(originalJoin.ok, true);
   const identityLaunch = await emitAck(teacher, 'teacher:live-launch', {
@@ -208,7 +209,7 @@ try {
   originalStudent.disconnect();
   await new Promise((resolve) => setTimeout(resolve, 100));
 
-  returningStudent = io(url, { transports: ['websocket'] });
+  returningStudent = io(url, socketOptions);
   const returnJoin = await emitAck(returningStudent, 'student:join', { code: room, name: '  taylor   smith ' });
   assert.equal(returnJoin.ok, true);
   assert.equal(returnJoin.resumed, true);
@@ -216,7 +217,7 @@ try {
   assert.equal(returnJoin.student.engagement.responded, 1);
   assert.equal(returnJoin.student.engagement.opportunities, beforeLogout.engagement.opportunities);
 
-  duplicateStudent = io(url, { transports: ['websocket'] });
+  duplicateStudent = io(url, socketOptions);
   const duplicateJoin = await emitAck(duplicateStudent, 'student:join', { code: room, name: 'Taylor Smith' });
   assert.equal(duplicateJoin.ok, false);
   assert.match(duplicateJoin.error, /already connected/i);
