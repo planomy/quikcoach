@@ -18,6 +18,8 @@ import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
+import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
+import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
 import {
   downloadTextFile,
   buildEvidenceHtml,
@@ -113,6 +115,7 @@ function normalizeStudentFromServer(s) {
     class_group: s.class_group != null ? String(s.class_group) : '',
     year_level: s.year_level != null ? String(s.year_level) : '',
     image_url: s.image_url || null,
+    teacher_markup_url: s.teacher_markup_url || null,
   };
 }
 
@@ -154,6 +157,7 @@ function TeacherDashboardInner() {
   const [newClassConfirmOpen, setNewClassConfirmOpen] = useState(false);
   const [newClassBusy, setNewClassBusy] = useState(false);
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
+  const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const roomActionsRef = useRef(null);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -1601,11 +1605,21 @@ function TeacherDashboardInner() {
                   className={`mt-2 rounded-xl bg-slate-50 p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
                 >
                   {s.image_url && (
-                    <img
-                      src={s.image_url}
-                      alt=""
-                      className="mb-2 max-h-36 w-full object-contain"
-                    />
+                    <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
+                      <AnnotatedStudentImage
+                        imageUrl={s.image_url}
+                        markupUrl={s.teacher_markup_url}
+                        alt={`${s.name}'s drawing`}
+                        imageClassName="max-h-36 w-full object-contain"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setDrawingMarkupTarget(s)}
+                        className="absolute bottom-2 right-2 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white shadow-lg hover:bg-indigo-700"
+                      >
+                        ✎ Mark up
+                      </button>
+                    </div>
                   )}
                   {displayText ? (
                     <RichTextDisplay html={s.rich_text_html} text={displayText} />
@@ -2180,6 +2194,11 @@ function TeacherDashboardInner() {
                 <button type="button" onClick={() => { setFocusedStudentId(null); openNoteForStudent(focusedStudent); }} className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-900 dark:text-violet-300 dark:hover:bg-violet-950/40">
                   Send note
                 </button>
+                {focusedStudent.image_url && (
+                  <button type="button" onClick={() => setDrawingMarkupTarget(focusedStudent)} className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-black text-white hover:bg-indigo-700">
+                    ✎ Mark up drawing
+                  </button>
+                )}
                 <button type="button" onClick={() => setFocusedStudentId(null)} className="flex h-10 w-10 items-center justify-center rounded-xl text-xl font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-label="Close full draft">
                   ×
                 </button>
@@ -2187,7 +2206,13 @@ function TeacherDashboardInner() {
             </div>
             <div data-student-writing-pane className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap px-6 py-5 text-base leading-7 text-slate-800 scrollbar-thin dark:text-slate-200">
               {focusedStudent.image_url && (
-                <img src={focusedStudent.image_url} alt="" className="mb-5 max-h-80 w-full object-contain" />
+                <AnnotatedStudentImage
+                  imageUrl={focusedStudent.image_url}
+                  markupUrl={focusedStudent.teacher_markup_url}
+                  alt={`${focusedStudent.name}'s drawing`}
+                  className="mb-5"
+                  imageClassName="max-h-80 w-full object-contain"
+                />
               )}
               {focusedStudent.text ? (
                 <RichTextDisplay html={focusedStudent.rich_text_html} text={focusedStudent.text} />
@@ -2197,6 +2222,14 @@ function TeacherDashboardInner() {
             </div>
           </article>
         </div>
+      )}
+
+      {drawingMarkupTarget?.image_url && (
+        <TeacherDrawingMarkup
+          student={drawingMarkupTarget}
+          socket={socket}
+          onClose={() => setDrawingMarkupTarget(null)}
+        />
       )}
 
       {noteTarget && (
