@@ -125,6 +125,7 @@ export default function LiveResponseTeacher({ socket }) {
   const [optional, setOptional] = useState(false);
   const [displayMode, setDisplayMode] = useState(false);
   const [composerOpen, setComposerOpen] = useState(true);
+  const [engagementOpen, setEngagementOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -167,6 +168,13 @@ export default function LiveResponseTeacher({ socket }) {
   }, [templates]);
 
   const activity = live.activity;
+
+  useEffect(() => {
+    if (!activity?.id) return;
+    setComposerOpen(false);
+    setEngagementOpen(false);
+  }, [activity?.id]);
+
   const secondsLeft = useEndsAtCountdown(activity?.endsAt, {
     enabled: !!activity?.timerSeconds && !activity?.locked,
     clockOffsetRef,
@@ -180,6 +188,11 @@ export default function LiveResponseTeacher({ socket }) {
   const unansweredCount = students.filter(
     (student) => student.connected && !student.hasResponded
   ).length;
+  const connectedCount = students.filter((student) => student.connected).length;
+  const participantCount = Math.max(students.length, responses.length);
+  const responseSummary = participantCount
+    ? `${responses.length} of ${participantCount} responded`
+    : `${responses.length} responded`;
   const attention = students.filter(
     (student) => student.engagement_status && student.engagement_status !== 'ready'
   );
@@ -251,7 +264,10 @@ export default function LiveResponseTeacher({ socket }) {
   function control(action) {
     socket.emit('teacher:live-control', { action }, (ack) => {
       if (!ack?.ok) setMessage(ack?.error || 'Could not update question');
-      if (action === 'clear' && ack?.ok) setComposerOpen(true);
+      if (action === 'clear' && ack?.ok) {
+        setComposerOpen(true);
+        setMessage('Question ended. Ready for the next one.');
+      }
     });
   }
 
@@ -316,21 +332,65 @@ export default function LiveResponseTeacher({ socket }) {
     <section className="mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-indigo-700 to-violet-700 px-4 py-3 text-white">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">iBOARD Pulse</p>
-          <h2 className="font-display text-lg font-black">Live class response</h2>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">{activity ? 'Pulse is live' : 'iBOARD Pulse'}</p>
+          <h2 className="font-display text-lg font-black">{activity ? 'Live response' : 'Ask the class'}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           {queue.length > 0 && <button type="button" onClick={() => launch(queue[0], queue[0].id)} className="rounded-lg bg-emerald-400 px-2.5 py-1.5 text-xs font-black text-emerald-950 shadow-sm">Launch next ({queue.length})</button>}
-          {activity && <button type="button" onClick={() => setDisplayMode(true)} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-black text-indigo-800 shadow-sm">Display results</button>}
-          <button type="button" onClick={() => setComposerOpen((open) => !open)} className="rounded-lg bg-indigo-950/40 px-2.5 py-1.5 text-xs font-black ring-1 ring-white/30">{composerOpen ? 'Hide setup' : 'New question'}</button>
+          {activity && <button type="button" onClick={() => setDisplayMode(true)} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-black text-indigo-800 shadow-sm">Share results</button>}
+          <button type="button" onClick={() => setComposerOpen((open) => !open)} className="rounded-lg bg-indigo-950/40 px-2.5 py-1.5 text-xs font-black ring-1 ring-white/30">{composerOpen ? 'Close builder' : activity ? 'Ask another' : 'Build a question'}</button>
         </div>
       </div>
 
-      <AudienceQnaTeacher socket={socket} hasLiveActivity={!!activity} />
+      {message && <p aria-live="polite" className="border-b border-indigo-100 bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">{message}</p>}
+
+      {activity && (
+        <div className="border-b border-indigo-100 bg-gradient-to-b from-indigo-50/80 to-white p-4 dark:border-indigo-900 dark:from-indigo-950/30 dark:to-slate-900">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">Live</span>
+                <span className="text-xs font-black text-indigo-700 dark:text-indigo-300">Question {activity.questionNumber || 1}</span>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{responseSummary}</span>
+              </div>
+              <h3 className="mt-2 font-display text-xl font-black text-slate-950 dark:text-white">{activity.prompt}</h3>
+              {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-2 max-h-48 rounded-lg bg-white object-contain" />}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {secondsLeft !== null && (
+                <span
+                  className={`rounded-lg px-2.5 py-1.5 font-mono text-[11px] font-black tabular-nums ${
+                    secondsLeft === 0
+                      ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                      : secondsLeft <= 5
+                        ? 'iboard-timer-urgent bg-red-600 text-white'
+                        : 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
+                  }`}
+                >
+                  {secondsLeft > 0 ? `${secondsLeft}s` : '0s'}
+                </span>
+              )}
+              <button type="button" disabled={!unansweredCount || activity.locked} onClick={realertUnanswered} className="rounded-lg bg-violet-100 px-2.5 py-1.5 text-[11px] font-black text-violet-900 disabled:cursor-not-allowed disabled:opacity-40">
+                Remind {unansweredCount}
+              </button>
+              <button type="button" onClick={() => control(activity.locked ? 'unlock' : 'lock')} className="rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-black text-amber-900">{activity.locked ? 'Reopen answers' : 'Pause answers'}</button>
+              {activity.correctAnswer && !activity.revealed && <button type="button" onClick={() => control('reveal')} className="rounded-lg bg-emerald-100 px-2.5 py-1.5 text-[11px] font-black text-emerald-900">Reveal answer</button>}
+              <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-[11px] font-black text-white dark:bg-slate-100 dark:text-slate-900">End question</button>
+            </div>
+          </div>
+          <div className="mt-4"><Results activity={activity} responses={responses} onPublish={publish} /></div>
+        </div>
+      )}
+
+      <AudienceQnaTeacher socket={socket} hasLiveActivity={!!activity} liveActivityId={activity?.id} />
 
       {composerOpen && (
         <div className="border-b border-slate-200 p-4 dark:border-slate-700" onPaste={(event) => { const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/')); if (file) { event.preventDefault(); loadImage(file); } }}>
-          <p className="text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300">Instant checks</p>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div><p className="text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300">{activity ? 'Build next question' : 'Start a Pulse'}</p><h3 className="text-sm font-black text-slate-950 dark:text-white">{activity ? 'Ask a follow-up when you are ready' : 'What do you want to ask?'}</h3></div>
+            {activity && <button type="button" onClick={() => setComposerOpen(false)} className="text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">Close builder</button>}
+          </div>
+          <p className="mt-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Instant checks</p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">{QUICK_CHECKS.map(([question, choices]) => <button key={question} type="button" onClick={() => launch({ type: 'choice', prompt: question, options: choices, correctAnswer: '', anonymous: false, optional: false, imageUrl: '', timerSeconds: 0 })} className="rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-black text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200">{question}</button>)}</div>
 
           {templates.length > 0 && (
@@ -386,44 +446,7 @@ export default function LiveResponseTeacher({ socket }) {
         </div>
       )}
 
-      {queue.length > 0 && <div className="border-b border-slate-200 bg-violet-50 p-3 dark:border-slate-700 dark:bg-violet-950/30"><div className="flex items-center justify-between"><h3 className="text-sm font-black text-violet-950 dark:text-violet-100">Queue · {queue.length}</h3><button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button></div><div className="mt-2 space-y-1.5">{queue.map((item, index) => <div key={item.id} className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 shadow-sm dark:bg-slate-900"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-violet-600 text-[10px] font-black text-white">{index + 1}</span><div className="flex flex-col"><button type="button" disabled={index === 0} onClick={() => moveQueued(index, -1)} className="text-[10px] font-black disabled:opacity-20">▲</button><button type="button" disabled={index === queue.length - 1} onClick={() => moveQueued(index, 1)} className="text-[10px] font-black disabled:opacity-20">▼</button></div>{item.imageUrl && <span title="Includes image">🖼️</span>}<p className="min-w-0 flex-1 truncate text-xs font-bold text-slate-900 dark:text-white">{item.prompt}</p><span className="text-[10px] font-bold text-slate-500">{item.timerSeconds ? `${item.timerSeconds}s` : '—'}</span><button type="button" onClick={() => launch(item, item.id)} className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-900">Launch</button><button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="px-1 text-sm font-black text-red-500">×</button></div>)}</div></div>}
-
-      {activity && (
-        <div className="p-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0 max-w-2xl">
-              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600">
-                Q{activity.questionNumber || 1} · Live · {responses.length} answered
-                {secondsLeft !== null ? ` · ${secondsLeft}s` : ''}
-              </p>
-              <h3 className="mt-0.5 font-display text-lg font-black text-slate-950 dark:text-white">{activity.prompt}</h3>
-              {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-2 max-h-48 rounded-lg bg-white object-contain" />}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {secondsLeft !== null && (
-                <span
-                  className={`rounded-lg px-2.5 py-1.5 font-mono text-[11px] font-black tabular-nums ${
-                    secondsLeft === 0
-                      ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                      : secondsLeft <= 5
-                        ? 'iboard-timer-urgent bg-red-600 text-white'
-                        : 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
-                  }`}
-                >
-                  {secondsLeft > 0 ? `${secondsLeft}s` : '0s'}
-                </span>
-              )}
-              <button type="button" disabled={!unansweredCount || activity.locked} onClick={realertUnanswered} className="rounded-lg bg-violet-100 px-2.5 py-1.5 text-[11px] font-black text-violet-900 disabled:cursor-not-allowed disabled:opacity-40">
-                Re-alert {unansweredCount}
-              </button>
-              <button type="button" onClick={() => control(activity.locked ? 'unlock' : 'lock')} className="rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-black text-amber-900">{activity.locked ? 'Unlock' : 'Lock'}</button>
-              {activity.correctAnswer && !activity.revealed && <button type="button" onClick={() => control('reveal')} className="rounded-lg bg-emerald-100 px-2.5 py-1.5 text-[11px] font-black text-emerald-900">Reveal</button>}
-              <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">End</button>
-            </div>
-          </div>
-          <div className="mt-3"><Results activity={activity} responses={responses} onPublish={publish} /></div>
-        </div>
-      )}
+      {queue.length > 0 && (!activity || composerOpen) && <div className="border-b border-slate-200 bg-violet-50 p-3 dark:border-slate-700 dark:bg-violet-950/30"><div className="flex items-center justify-between"><h3 className="text-sm font-black text-violet-950 dark:text-violet-100">Queue · {queue.length}</h3><button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button></div><div className="mt-2 space-y-1.5">{queue.map((item, index) => <div key={item.id} className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 shadow-sm dark:bg-slate-900"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-violet-600 text-[10px] font-black text-white">{index + 1}</span><div className="flex flex-col"><button type="button" disabled={index === 0} onClick={() => moveQueued(index, -1)} className="text-[10px] font-black disabled:opacity-20">▲</button><button type="button" disabled={index === queue.length - 1} onClick={() => moveQueued(index, 1)} className="text-[10px] font-black disabled:opacity-20">▼</button></div>{item.imageUrl && <span title="Includes image">🖼️</span>}<p className="min-w-0 flex-1 truncate text-xs font-bold text-slate-900 dark:text-white">{item.prompt}</p><span className="text-[10px] font-bold text-slate-500">{item.timerSeconds ? `${item.timerSeconds}s` : '—'}</span><button type="button" onClick={() => launch(item, item.id)} className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-900">Launch</button><button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="px-1 text-sm font-black text-red-500">×</button></div>)}</div></div>}
 
       {featuredWall.length > 0 && <section className="border-t border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/20"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Featured Wall</p><h3 className="text-sm font-black text-amber-950 dark:text-amber-100">Highlights · {featuredWall.length}</h3></div><div className="flex gap-1.5"><button type="button" onClick={compareFeatured} className="rounded-lg bg-violet-600 px-2.5 py-1.5 text-[11px] font-black text-white">Compare</button><button type="button" onClick={() => { setSlideIndex(0); setWallMode('slides'); }} className="rounded-lg bg-amber-600 px-2.5 py-1.5 text-[11px] font-black text-white">Present</button><button type="button" onClick={downloadWall} className="rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-black text-amber-900 shadow-sm">Save</button><button type="button" onClick={clearFeaturedWall} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-black text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300">Clear wall</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{featuredWall.map((item) => <article key={item.id} className={`rounded-xl border-2 bg-white p-3 dark:bg-slate-900 ${wallSelected.includes(item.id) ? 'border-violet-500' : 'border-amber-200 dark:border-amber-800'}`}><div className="flex items-start gap-2"><input type="checkbox" checked={wallSelected.includes(item.id)} onChange={(event) => setWallSelected((ids) => event.target.checked ? [...ids.filter((id) => id !== item.id), item.id].slice(-2) : ids.filter((id) => id !== item.id))} className="mt-0.5 h-4 w-4 accent-violet-600" /><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase text-amber-700">Q{item.questionNumber} · {item.name}</p><p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">“{item.value}”</p><select value={item.label} onChange={(event) => labelFeatured(item.id, event.target.value)} className="mt-2 w-full rounded-md border border-amber-200 px-2 py-1 text-[11px] font-bold dark:border-amber-800 dark:bg-slate-950">{FEATURE_LABELS.map((label) => <option key={label} value={label}>{label || 'Why is this featured?'}</option>)}</select><div className="mt-2 flex gap-1.5"><button type="button" onClick={() => improveFeatured(item)} className="rounded-md bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-800">Improve</button><button type="button" onClick={() => removeFeatured(item.id)} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600">Remove</button></div></div></div></article>)}</div></section>}
 
@@ -450,11 +473,15 @@ export default function LiveResponseTeacher({ socket }) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white">Engagement pulse</h3>
-            <p className="text-[10px] text-slate-500">Participation only — teachers only</p>
+            <p className="text-[10px] text-slate-500">{engagementOpen ? 'Participation only — teachers only' : 'Student overview is tucked away'}</p>
           </div>
-          <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{students.filter((student) => student.connected).length} online</span>
+          <div className="flex items-center gap-2">
+            {attention.length > 0 && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black text-amber-800">{attention.length} need{attention.length === 1 ? 's' : ''} attention</span>}
+            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{connectedCount} online</span>
+            <button type="button" aria-expanded={engagementOpen} onClick={() => setEngagementOpen((open) => !open)} className="rounded-lg bg-slate-200 px-2.5 py-1.5 text-[10px] font-black text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">{engagementOpen ? 'Hide students' : 'Show students'}</button>
+          </div>
         </div>
-        <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-2">
+        {engagementOpen && <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-2">
           {students.map((student) => {
             const tile = studentTileMeta(student);
             return (
@@ -478,9 +505,8 @@ export default function LiveResponseTeacher({ socket }) {
             );
           })}
           {!students.length && <p className="col-span-full text-xs text-slate-500">Students will appear here when they join.</p>}
-        </div>
+        </div>}
       </div>
-      {message && <p className="border-t border-slate-200 px-4 py-1.5 text-[11px] font-bold text-indigo-700 dark:border-slate-700 dark:text-indigo-300">{message}</p>}
 
       {displayMode && activity && (
         <div className="fixed inset-0 z-[80] overflow-auto bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 p-6 text-white sm:p-10">

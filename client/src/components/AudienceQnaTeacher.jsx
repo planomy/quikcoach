@@ -4,9 +4,9 @@ function sortQuestions(items) {
   return [...items].sort((a, b) => Number(b.votes) - Number(a.votes) || Number(a.id) - Number(b.id));
 }
 
-export default function AudienceQnaTeacher({ socket, hasLiveActivity = false }) {
+export default function AudienceQnaTeacher({ socket, hasLiveActivity = false, liveActivityId = '' }) {
   const [questions, setQuestions] = useState([]);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [presenting, setPresenting] = useState(false);
   const [clearStep, setClearStep] = useState(false);
   const [message, setMessage] = useState('');
@@ -17,6 +17,10 @@ export default function AudienceQnaTeacher({ socket, hasLiveActivity = false }) 
     socket.emit('teacher:qna-sync', {});
     return () => socket.off('qna:teacher', onState);
   }, [socket]);
+
+  useEffect(() => {
+    if (hasLiveActivity) setOpen(false);
+  }, [hasLiveActivity, liveActivityId]);
 
   const pending = useMemo(() => questions.filter((question) => question.status === 'pending').sort((a, b) => Number(a.id) - Number(b.id)), [questions]);
   const published = useMemo(() => sortQuestions(questions.filter((question) => question.status === 'published')), [questions]);
@@ -40,6 +44,7 @@ export default function AudienceQnaTeacher({ socket, hasLiveActivity = false }) 
       setMessage(ack?.ok
         ? 'Sent to every participant as a Pulse feedback prompt.'
         : ack?.error || 'Could not ask the room.');
+      if (ack?.ok) setOpen(false);
     });
   }
 
@@ -96,14 +101,15 @@ export default function AudienceQnaTeacher({ socket, hasLiveActivity = false }) 
   return (
     <>
       <section id="audience-qna-teacher" className="scroll-mt-4 border-b border-fuchsia-200 bg-fuchsia-50/70 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
-        <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
-          <span>
-            <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-300">Audience Q&amp;A</span>
-            <span className="font-display text-sm font-black text-slate-950 dark:text-white">{pending.length ? `${pending.length} waiting for review` : 'Moderated questions'}</span>
+        <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left">
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-300">Audience Q&amp;A</span>
+            <span className="truncate text-xs font-bold text-slate-600 dark:text-slate-300">{pending.length ? `${pending.length} waiting for review` : questions.length ? `${questions.length} question${questions.length === 1 ? '' : 's'}` : 'No questions waiting'}</span>
           </span>
           <span className="flex items-center gap-2">
+            {pending.length > 0 && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black text-amber-800">{pending.length} waiting</span>}
             {published.length > 0 && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black text-emerald-800">{published.length} live</span>}
-            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black text-fuchsia-800 shadow-sm dark:bg-slate-900 dark:text-fuchsia-200">{open ? 'Hide' : 'Open'}</span>
+            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black text-fuchsia-800 shadow-sm dark:bg-slate-900 dark:text-fuchsia-200">{open ? 'Close' : 'Review'}</span>
           </span>
         </button>
 
