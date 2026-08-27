@@ -31,7 +31,7 @@ const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').repla
 
 /** Border colour encodes answer state; tooltip keeps the full label for hover. */
 function studentTileMeta(student) {
-  if (student.engagement_status) {
+  if (student.engagement_status && student.engagement_status !== 'ready') {
     return {
       title: student.connected
         ? (STATUS_LABELS[student.engagement_status] || student.engagement_status)
@@ -124,8 +124,9 @@ export default function LiveResponseTeacher({ socket }) {
   const [anonymous, setAnonymous] = useState(false);
   const [optional, setOptional] = useState(false);
   const [displayMode, setDisplayMode] = useState(false);
-  const [composerOpen, setComposerOpen] = useState(true);
-  const [engagementOpen, setEngagementOpen] = useState(false);
+  const [activeView, setActiveView] = useState('idle');
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [qnaQuestions, setQnaQuestions] = useState([]);
   const [message, setMessage] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -160,6 +161,13 @@ export default function LiveResponseTeacher({ socket }) {
   }, [socket]);
 
   useEffect(() => {
+    const onQna = (payload) => setQnaQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
+    socket.on('qna:teacher', onQna);
+    socket.emit('teacher:qna-sync', {});
+    return () => socket.off('qna:teacher', onQna);
+  }, [socket]);
+
+  useEffect(() => {
     try { localStorage.setItem(QUEUE_KEY, JSON.stringify(queue.slice(0, 30))); } catch { /* storage may be unavailable */ }
   }, [queue]);
 
@@ -171,9 +179,18 @@ export default function LiveResponseTeacher({ socket }) {
 
   useEffect(() => {
     if (!activity?.id) return;
-    setComposerOpen(false);
-    setEngagementOpen(false);
+    setActiveView('live');
   }, [activity?.id]);
+
+  useEffect(() => {
+    if (!activity && activeView === 'live') setActiveView('idle');
+  }, [activity, activeView]);
+
+  useEffect(() => {
+    if (!message) return undefined;
+    const timer = window.setTimeout(() => setMessage(''), 3500);
+    return () => window.clearTimeout(timer);
+  }, [message]);
 
   const secondsLeft = useEndsAtCountdown(activity?.endsAt, {
     enabled: !!activity?.timerSeconds && !activity?.locked,
@@ -196,6 +213,13 @@ export default function LiveResponseTeacher({ socket }) {
   const attention = students.filter(
     (student) => student.engagement_status && student.engagement_status !== 'ready'
   );
+  const pendingQuestions = qnaQuestions.filter((question) => question.status === 'pending');
+  const pendingByStudent = pendingQuestions.reduce((counts, question) => {
+    const studentId = Number(question.studentId);
+    counts[studentId] = (counts[studentId] || 0) + 1;
+    return counts;
+  }, {});
+  const selectedStudent = students.find((student) => Number(student.id) === Number(selectedStudentId)) || null;
 
   function currentDraft() {
     return { type, prompt: prompt.trim(), options: options.map((value) => value.trim()).filter(Boolean), correctAnswer, anonymous, optional, imageUrl, timerSeconds };
@@ -205,7 +229,7 @@ export default function LiveResponseTeacher({ socket }) {
     socket.emit('teacher:live-launch', question, (ack) => {
       setMessage(ack?.ok ? 'Question is live.' : ack?.error || 'Could not launch');
       if (ack?.ok) {
-        setComposerOpen(false);
+        setActiveView('live');
         if (queueId) setQueue((items) => items.filter((item) => item.id !== queueId));
       }
     });
@@ -239,7 +263,7 @@ export default function LiveResponseTeacher({ socket }) {
     setOptional(!!template.optional);
     setTimerSeconds(Number(template.timerSeconds) || 0);
     setImageUrl('');
-    setComposerOpen(true);
+    setActiveView('build');
     setMessage('Template loaded — edit it or launch when ready.');
   }
 
@@ -265,7 +289,7 @@ export default function LiveResponseTeacher({ socket }) {
     socket.emit('teacher:live-control', { action }, (ack) => {
       if (!ack?.ok) setMessage(ack?.error || 'Could not update question');
       if (action === 'clear' && ack?.ok) {
-        setComposerOpen(true);
+        setActiveView('idle');
         setMessage('Question ended. Ready for the next one.');
       }
     });
@@ -328,184 +352,76 @@ export default function LiveResponseTeacher({ socket }) {
     });
   }
 
+  function returnToPrimaryView() {
+    setActiveView(activity ? 'live' : 'idle');
+    setSelectedStudentId(null);
+  }
+
+  function openStudent(student) {
+    setSelectedStudentId(student.id);
+    setActiveView(pendingByStudent[Number(student.id)] ? 'qna' : 'student');
+  }
+
   return (
     <section className="mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-indigo-700 to-violet-700 px-4 py-3 text-white">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">{activity ? 'Pulse is live' : 'iBOARD Pulse'}</p>
-          <h2 className="font-display text-lg font-black">{activity ? 'Live response' : 'Ask the class'}</h2>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">iBOARD Pulse</p>
+          <h2 className="font-display text-lg font-black">Class response</h2>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {queue.length > 0 && <button type="button" onClick={() => launch(queue[0], queue[0].id)} className="rounded-lg bg-emerald-400 px-2.5 py-1.5 text-xs font-black text-emerald-950 shadow-sm">Launch next ({queue.length})</button>}
-          {activity && <button type="button" onClick={() => setDisplayMode(true)} className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-black text-indigo-800 shadow-sm">Share results</button>}
-          <button type="button" onClick={() => setComposerOpen((open) => !open)} className="rounded-lg bg-indigo-950/40 px-2.5 py-1.5 text-xs font-black ring-1 ring-white/30">{composerOpen ? 'Close builder' : activity ? 'Ask another' : 'Build a question'}</button>
+        <div className="flex flex-wrap items-center gap-2">
+          {message && <span aria-live="polite" className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold ring-1 ring-white/25">{message}</span>}
+          {activity && <span className="rounded-full bg-emerald-400 px-3 py-1.5 text-xs font-black text-emerald-950">Live · {responseSummary}</span>}
         </div>
       </div>
 
-      {message && <p aria-live="polite" className="border-b border-indigo-100 bg-indigo-50 px-4 py-2 text-xs font-bold text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">{message}</p>}
-
-      {activity && (
-        <div className="border-b border-indigo-100 bg-gradient-to-b from-indigo-50/80 to-white p-4 dark:border-indigo-900 dark:from-indigo-950/30 dark:to-slate-900">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 max-w-2xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">Live</span>
-                <span className="text-xs font-black text-indigo-700 dark:text-indigo-300">Question {activity.questionNumber || 1}</span>
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{responseSummary}</span>
-              </div>
-              <h3 className="mt-2 font-display text-xl font-black text-slate-950 dark:text-white">{activity.prompt}</h3>
-              {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-2 max-h-48 rounded-lg bg-white object-contain" />}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {secondsLeft !== null && (
-                <span
-                  className={`rounded-lg px-2.5 py-1.5 font-mono text-[11px] font-black tabular-nums ${
-                    secondsLeft === 0
-                      ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                      : secondsLeft <= 5
-                        ? 'iboard-timer-urgent bg-red-600 text-white'
-                        : 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
-                  }`}
-                >
-                  {secondsLeft > 0 ? `${secondsLeft}s` : '0s'}
-                </span>
-              )}
-              <button type="button" disabled={!unansweredCount || activity.locked} onClick={realertUnanswered} className="rounded-lg bg-violet-100 px-2.5 py-1.5 text-[11px] font-black text-violet-900 disabled:cursor-not-allowed disabled:opacity-40">
-                Remind {unansweredCount}
-              </button>
-              <button type="button" onClick={() => control(activity.locked ? 'unlock' : 'lock')} className="rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-black text-amber-900">{activity.locked ? 'Reopen answers' : 'Pause answers'}</button>
-              {activity.correctAnswer && !activity.revealed && <button type="button" onClick={() => control('reveal')} className="rounded-lg bg-emerald-100 px-2.5 py-1.5 text-[11px] font-black text-emerald-900">Reveal answer</button>}
-              <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-[11px] font-black text-white dark:bg-slate-100 dark:text-slate-900">End question</button>
-            </div>
-          </div>
-          <div className="mt-4"><Results activity={activity} responses={responses} onPublish={publish} /></div>
+      <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div><h3 className="text-sm font-black text-slate-900 dark:text-white">Class awareness</h3><p className="text-[10px] text-slate-500">{connectedCount} online{attention.length ? ` · ${attention.length} need attention` : ''}{pendingQuestions.length ? ` · ${pendingQuestions.length} question${pendingQuestions.length === 1 ? '' : 's'} waiting` : ''}</p></div>
+          <span className="text-[10px] font-bold text-slate-500">Click a student to check in</span>
         </div>
-      )}
-
-      <AudienceQnaTeacher socket={socket} hasLiveActivity={!!activity} liveActivityId={activity?.id} />
-
-      {composerOpen && (
-        <div className="border-b border-slate-200 p-4 dark:border-slate-700" onPaste={(event) => { const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/')); if (file) { event.preventDefault(); loadImage(file); } }}>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <div><p className="text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300">{activity ? 'Build next question' : 'Start a Pulse'}</p><h3 className="text-sm font-black text-slate-950 dark:text-white">{activity ? 'Ask a follow-up when you are ready' : 'What do you want to ask?'}</h3></div>
-            {activity && <button type="button" onClick={() => setComposerOpen(false)} className="text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">Close builder</button>}
-          </div>
-          <p className="mt-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Instant checks</p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">{QUICK_CHECKS.map(([question, choices]) => <button key={question} type="button" onClick={() => launch({ type: 'choice', prompt: question, options: choices, correctAnswer: '', anonymous: false, optional: false, imageUrl: '', timerSeconds: 0 })} className="rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-black text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200">{question}</button>)}</div>
-
-          {templates.length > 0 && (
-            <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/70 p-3 dark:border-violet-800 dark:bg-violet-950/30">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] font-black uppercase tracking-wide text-violet-700 dark:text-violet-300">My templates</p>
-                <span className="text-[10px] font-semibold text-slate-500">Saved on this browser</span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {templates.map((template) => (
-                  <div key={template.id} className="flex max-w-full items-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-violet-200 dark:bg-slate-900 dark:ring-violet-800">
-                    <button type="button" onClick={() => loadTemplate(template)} title={template.prompt} className="max-w-xs truncate px-2.5 py-1.5 text-left text-xs font-bold text-violet-900 hover:bg-violet-100 dark:text-violet-100 dark:hover:bg-violet-950">
-                      {template.prompt}
-                    </button>
-                    <button type="button" onClick={() => setTemplates((items) => items.filter((item) => item.id !== template.id))} aria-label={`Delete template: ${template.prompt}`} className="border-l border-violet-200 px-2 py-1.5 text-xs font-black text-red-500 hover:bg-red-50 dark:border-violet-800 dark:hover:bg-red-950/40">
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {TYPES.map(([value, label]) => <button key={value} type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ${type === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}>{label}</button>)}
-          </div>
-          <label className="mt-3 block text-[10px] font-black uppercase tracking-wide text-slate-500">Question or prompt</label>
-          <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full max-w-2xl rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <label className="cursor-pointer rounded-lg bg-sky-100 px-2.5 py-1.5 text-xs font-black text-sky-900 hover:bg-sky-200">{imageBusy ? 'Preparing image…' : imageUrl ? 'Replace image' : 'Add image / screenshot'}<input type="file" accept="image/*" className="hidden" onChange={(event) => loadImage(event.target.files?.[0])} /></label>
-            {imageUrl && <><img src={imageUrl} alt="Question preview" className="h-12 w-20 rounded-lg bg-white object-contain" /><button type="button" onClick={() => setImageUrl('')} className="text-xs font-black text-red-600">Remove</button></>}
-            <span className="text-[11px] text-slate-500">Paste screenshot OK</span>
-          </div>
-          {type === 'choice' && (
-            <div className="mt-2 grid max-w-2xl grid-cols-2 gap-1.5">
-              {options.map((option, index) => <input key={index} value={option} onChange={(event) => setOptions((current) => current.map((value, i) => i === index ? event.target.value.slice(0, 120) : value))} placeholder={`Choice ${String.fromCharCode(65 + index)}`} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />)}
-            </div>
-          )}
-          {type !== 'short' && (
-            <label className="mt-2 block max-w-xs text-xs font-bold text-slate-600 dark:text-slate-300">Correct answer (optional)
-              <select value={correctAnswer} onChange={(event) => setCorrectAnswer(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-950">
-                <option value="">No correct answer / opinion poll</option>
-                {(type === 'choice' ? options.filter(Boolean) : type === 'truefalse' ? ['True', 'False'] : ['1', '2', '3', '4', '5']).map((value) => <option key={value} value={value}>{value}</option>)}
-              </select>
-            </label>
-          )}
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            {type === 'short' && <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-3.5 w-3.5 accent-indigo-600" /> Anonymous when featured</label>}
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-3.5 w-3.5 accent-indigo-600" /> Optional</label>
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Timer <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="ml-1 rounded-lg border border-slate-200 px-2 py-1 dark:border-slate-700 dark:bg-slate-950"><option value="0">None</option><option value="15">15 sec</option><option value="30">30 sec</option><option value="60">1 min</option><option value="120">2 min</option></select></label>
-            <div className="ml-auto flex flex-wrap gap-2"><button type="button" onClick={saveTemplate} className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-black text-violet-800 hover:bg-violet-50 dark:border-violet-800 dark:bg-slate-900 dark:text-violet-200">Save template</button><button type="button" onClick={addToQueue} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-900 hover:bg-violet-200">Add to queue</button><button type="button" onClick={() => launch()} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow-md hover:bg-indigo-700">Launch now</button></div>
-          </div>
-        </div>
-      )}
-
-      {queue.length > 0 && (!activity || composerOpen) && <div className="border-b border-slate-200 bg-violet-50 p-3 dark:border-slate-700 dark:bg-violet-950/30"><div className="flex items-center justify-between"><h3 className="text-sm font-black text-violet-950 dark:text-violet-100">Queue · {queue.length}</h3><button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button></div><div className="mt-2 space-y-1.5">{queue.map((item, index) => <div key={item.id} className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 shadow-sm dark:bg-slate-900"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-violet-600 text-[10px] font-black text-white">{index + 1}</span><div className="flex flex-col"><button type="button" disabled={index === 0} onClick={() => moveQueued(index, -1)} className="text-[10px] font-black disabled:opacity-20">▲</button><button type="button" disabled={index === queue.length - 1} onClick={() => moveQueued(index, 1)} className="text-[10px] font-black disabled:opacity-20">▼</button></div>{item.imageUrl && <span title="Includes image">🖼️</span>}<p className="min-w-0 flex-1 truncate text-xs font-bold text-slate-900 dark:text-white">{item.prompt}</p><span className="text-[10px] font-bold text-slate-500">{item.timerSeconds ? `${item.timerSeconds}s` : '—'}</span><button type="button" onClick={() => launch(item, item.id)} className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-900">Launch</button><button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="px-1 text-sm font-black text-red-500">×</button></div>)}</div></div>}
-
-      {featuredWall.length > 0 && <section className="border-t border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/20"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Featured Wall</p><h3 className="text-sm font-black text-amber-950 dark:text-amber-100">Highlights · {featuredWall.length}</h3></div><div className="flex gap-1.5"><button type="button" onClick={compareFeatured} className="rounded-lg bg-violet-600 px-2.5 py-1.5 text-[11px] font-black text-white">Compare</button><button type="button" onClick={() => { setSlideIndex(0); setWallMode('slides'); }} className="rounded-lg bg-amber-600 px-2.5 py-1.5 text-[11px] font-black text-white">Present</button><button type="button" onClick={downloadWall} className="rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-black text-amber-900 shadow-sm">Save</button><button type="button" onClick={clearFeaturedWall} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-black text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300">Clear wall</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{featuredWall.map((item) => <article key={item.id} className={`rounded-xl border-2 bg-white p-3 dark:bg-slate-900 ${wallSelected.includes(item.id) ? 'border-violet-500' : 'border-amber-200 dark:border-amber-800'}`}><div className="flex items-start gap-2"><input type="checkbox" checked={wallSelected.includes(item.id)} onChange={(event) => setWallSelected((ids) => event.target.checked ? [...ids.filter((id) => id !== item.id), item.id].slice(-2) : ids.filter((id) => id !== item.id))} className="mt-0.5 h-4 w-4 accent-violet-600" /><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase text-amber-700">Q{item.questionNumber} · {item.name}</p><p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">“{item.value}”</p><select value={item.label} onChange={(event) => labelFeatured(item.id, event.target.value)} className="mt-2 w-full rounded-md border border-amber-200 px-2 py-1 text-[11px] font-bold dark:border-amber-800 dark:bg-slate-950">{FEATURE_LABELS.map((label) => <option key={label} value={label}>{label || 'Why is this featured?'}</option>)}</select><div className="mt-2 flex gap-1.5"><button type="button" onClick={() => improveFeatured(item)} className="rounded-md bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-800">Improve</button><button type="button" onClick={() => removeFeatured(item.id)} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600">Remove</button></div></div></div></article>)}</div></section>}
-
-      <div className="border-t border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">
-        {attention.length > 0 && (
-          <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
-            <h3 className="text-sm font-black text-amber-950 dark:text-amber-100">Check now · {attention.length}</h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {attention.map((student) => {
-                const reason = STATUS_LABELS[student.engagement_status] || student.engagement_status;
-                return (
-                  <div key={student.id} className="flex w-[min(100%,220px)] items-center gap-2 rounded-lg bg-white px-2.5 py-2 dark:bg-slate-900">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-black text-slate-900 dark:text-white">{student.name}</p>
-                      <p className="truncate text-[10px] font-bold text-amber-800 dark:text-amber-300">{reason}</p>
-                    </div>
-                    <button type="button" onClick={() => acknowledge(student.id)} className="shrink-0 rounded-md bg-amber-600 px-2 py-1 text-[10px] font-black text-white">Seen</button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-black text-slate-900 dark:text-white">Engagement pulse</h3>
-            <p className="text-[10px] text-slate-500">{engagementOpen ? 'Participation only — teachers only' : 'Student overview is tucked away'}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {attention.length > 0 && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black text-amber-800">{attention.length} need{attention.length === 1 ? 's' : ''} attention</span>}
-            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">{connectedCount} online</span>
-            <button type="button" aria-expanded={engagementOpen} onClick={() => setEngagementOpen((open) => !open)} className="rounded-lg bg-slate-200 px-2.5 py-1.5 text-[10px] font-black text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">{engagementOpen ? 'Hide students' : 'Show students'}</button>
-          </div>
-        </div>
-        {engagementOpen && <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {students.map((student) => {
             const tile = studentTileMeta(student);
+            const questionCount = pendingByStudent[Number(student.id)] || 0;
+            const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
             return (
-              <div
-                key={student.id}
-                title={`${student.name} · ${tile.title}`}
-                className={`relative flex flex-col items-center gap-1 rounded-[1.1rem] bg-white px-1 pb-1.5 pt-2 dark:bg-slate-900 ${tile.className}`}
-              >
-                <button
-                  type="button"
-                  disabled={!student.connected}
-                  onClick={() => nudge(student.id)}
-                  title="Send a private check-in"
-                  className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-md bg-indigo-50 text-[9px] font-black text-indigo-700 hover:bg-indigo-100 disabled:opacity-30 dark:bg-indigo-950 dark:text-indigo-200"
-                >
-                  N
+              <div key={student.id} className="relative w-[70px] shrink-0">
+                <button type="button" onClick={() => openStudent(student)} title={`${student.name} · ${tile.title}`} className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] bg-white px-1 pb-1.5 pt-2 dark:bg-slate-900 ${tile.className}`}>
+                  <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
+                  <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
                 </button>
-                <EngagementRing engagement={student.engagement} connected={student.connected} size={36} />
-                <p className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</p>
+                {needsAttention && <span title={STATUS_LABELS[student.engagement_status] || student.engagement_status} className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>}
+                {questionCount > 0 && <button type="button" onClick={() => { setSelectedStudentId(student.id); setActiveView('qna'); }} aria-label={`Review ${questionCount} question${questionCount === 1 ? '' : 's'} from ${student.name}`} className="absolute -right-1 -top-1 grid h-6 min-w-6 place-items-center rounded-full bg-fuchsia-600 px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">?{questionCount > 1 ? questionCount : ''}</button>}
               </div>
             );
           })}
-          {!students.length && <p className="col-span-full text-xs text-slate-500">Students will appear here when they join.</p>}
-        </div>}
+          {!students.length && <p className="py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
+        </div>
+      </div>
+
+      <nav aria-label="Pulse tools" className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-slate-700">
+        <button type="button" onClick={() => setActiveView('build')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'build' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200'}`}>Ask the class</button>
+        {activity && <button type="button" onClick={() => setActiveView('live')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'live' ? 'bg-emerald-500 text-emerald-950' : 'bg-emerald-100 text-emerald-800'}`}>Live · {responses.length}/{participantCount}</button>}
+        <button type="button" onClick={() => { setSelectedStudentId(null); setActiveView('qna'); }} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'qna' ? 'bg-fuchsia-600 text-white' : 'bg-fuchsia-50 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-200'}`}>Questions{pendingQuestions.length ? ` · ${pendingQuestions.length}` : ''}</button>
+        <button type="button" onClick={() => setActiveView('prepared')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'prepared' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}>Prepared · {queue.length + templates.length}</button>
+        {featuredWall.length > 0 && <button type="button" onClick={() => setActiveView('featured')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'featured' ? 'bg-amber-500 text-amber-950' : 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200'}`}>Featured · {featuredWall.length}</button>}
+      </nav>
+
+      <div className="min-h-[260px]">
+        {activeView === 'idle' && <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center"><div><p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Pulse is ready</p><h3 className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">A quiet workspace until you need it</h3><p className="mx-auto mt-2 max-w-lg text-sm text-slate-500">Ask the class, choose something prepared, or click a question mark when a student asks something.</p><button type="button" onClick={() => setActiveView('build')} className="mt-5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-sm hover:bg-indigo-700">Ask the class</button></div></div>}
+
+        {activeView === 'student' && selectedStudent && <div className="p-4"><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Student check-in</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{selectedStudent.name}</h3><p className="mt-1 text-xs text-slate-500">{studentTileMeta(selectedStudent).title}</p></div><button type="button" onClick={returnToPrimaryView} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={!selectedStudent.connected} onClick={() => nudge(selectedStudent.id)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Send private check-in</button>{selectedStudent.engagement_status && selectedStudent.engagement_status !== 'ready' && <button type="button" onClick={() => acknowledge(selectedStudent.id)} className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-black text-amber-950">Mark request seen</button>}{pendingByStudent[Number(selectedStudent.id)] > 0 && <button type="button" onClick={() => setActiveView('qna')} className="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-black text-white">Review questions</button>}</div></div>}
+
+        {activeView === 'qna' && <AudienceQnaTeacher socket={socket} questions={qnaQuestions} focusedStudentId={selectedStudentId} hasLiveActivity={!!activity} onClose={returnToPrimaryView} onQuestionLaunched={() => setActiveView('live')} />}
+
+        {activeView === 'live' && activity && <div className="p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0 max-w-2xl"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">Live</span><span className="text-xs font-black text-indigo-700 dark:text-indigo-300">Question {activity.questionNumber || 1}</span><span className="text-xs font-bold text-slate-500">{responseSummary}</span></div><h3 className="mt-2 font-display text-xl font-black text-slate-950 dark:text-white">{activity.prompt}</h3>{activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-2 max-h-48 rounded-lg bg-white object-contain" />}</div><div className="flex flex-wrap gap-1.5">{secondsLeft !== null && <span className={`rounded-lg px-2.5 py-1.5 font-mono text-[11px] font-black tabular-nums ${secondsLeft === 0 ? 'bg-slate-100 text-slate-600' : secondsLeft <= 5 ? 'iboard-timer-urgent bg-red-600 text-white' : 'bg-indigo-100 text-indigo-900'}`}>{secondsLeft > 0 ? `${secondsLeft}s` : '0s'}</span>}<button type="button" onClick={() => setDisplayMode(true)} className="rounded-lg bg-indigo-100 px-2.5 py-1.5 text-[11px] font-black text-indigo-900">Share results</button><button type="button" disabled={!unansweredCount || activity.locked} onClick={realertUnanswered} className="rounded-lg bg-violet-100 px-2.5 py-1.5 text-[11px] font-black text-violet-900 disabled:opacity-40">Remind {unansweredCount}</button><button type="button" onClick={() => control(activity.locked ? 'unlock' : 'lock')} className="rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-black text-amber-900">{activity.locked ? 'Reopen answers' : 'Pause answers'}</button>{activity.correctAnswer && !activity.revealed && <button type="button" onClick={() => control('reveal')} className="rounded-lg bg-emerald-100 px-2.5 py-1.5 text-[11px] font-black text-emerald-900">Reveal answer</button>}<button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-[11px] font-black text-white dark:bg-slate-100 dark:text-slate-900">End question</button></div></div><div className="mt-4"><Results activity={activity} responses={responses} onPublish={publish} /></div></div>}
+
+        {activeView === 'build' && <div className="p-4" onPaste={(event) => { const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/')); if (file) { event.preventDefault(); loadImage(file); } }}><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Ask the class</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Create a question</h3></div><button type="button" onClick={returnToPrimaryView} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Close</button></div><p className="mt-3 text-[10px] font-black uppercase tracking-wide text-slate-500">Instant checks</p><div className="mt-1.5 flex flex-wrap gap-1.5">{QUICK_CHECKS.map(([question, choices]) => <button key={question} type="button" onClick={() => launch({ type: 'choice', prompt: question, options: choices, correctAnswer: '', anonymous: false, optional: false, imageUrl: '', timerSeconds: 0 })} className="rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-black text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200">{question}</button>)}</div><div className="mt-4 grid gap-5 lg:grid-cols-2"><div><label className="block text-[10px] font-black uppercase tracking-wide text-slate-500">Question or prompt</label><input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /><div className="mt-2 flex flex-wrap items-center gap-2"><label className="cursor-pointer rounded-lg bg-sky-100 px-2.5 py-1.5 text-xs font-black text-sky-900 hover:bg-sky-200">{imageBusy ? 'Preparing image…' : imageUrl ? 'Replace image' : 'Add image / screenshot'}<input type="file" accept="image/*" className="hidden" onChange={(event) => loadImage(event.target.files?.[0])} /></label>{imageUrl && <><img src={imageUrl} alt="Question preview" className="h-12 w-20 rounded-lg bg-white object-contain" /><button type="button" onClick={() => setImageUrl('')} className="text-xs font-black text-red-600">Remove</button></>}<span className="text-[11px] text-slate-500">Paste screenshot OK</span></div><div className="mt-4 flex flex-wrap items-center gap-3"><label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-3.5 w-3.5 accent-indigo-600" /> Optional</label><label className="text-xs font-bold text-slate-700 dark:text-slate-200">Timer <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="ml-1 rounded-lg border border-slate-200 px-2 py-1 dark:border-slate-700 dark:bg-slate-950"><option value="0">None</option><option value="15">15 sec</option><option value="30">30 sec</option><option value="60">1 min</option><option value="120">2 min</option></select></label>{type === 'short' && <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"><input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-3.5 w-3.5 accent-indigo-600" /> Anonymous when featured</label>}</div></div><div><div className="flex flex-wrap gap-1.5">{TYPES.map(([value, label]) => <button key={value} type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ${type === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}>{label}</button>)}</div>{type === 'choice' && <div className="mt-3 grid grid-cols-2 gap-2">{options.map((option, index) => <input key={index} value={option} onChange={(event) => setOptions((current) => current.map((value, i) => i === index ? event.target.value.slice(0, 120) : value))} placeholder={`Choice ${String.fromCharCode(65 + index)}`} className="rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />)}</div>}{type !== 'short' && <label className="mt-3 block text-xs font-bold text-slate-600 dark:text-slate-300">Correct answer (optional)<select value={correctAnswer} onChange={(event) => setCorrectAnswer(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="">No correct answer / opinion poll</option>{(type === 'choice' ? options.filter(Boolean) : type === 'truefalse' ? ['True', 'False'] : ['1', '2', '3', '4', '5']).map((value) => <option key={value} value={value}>{value}</option>)}</select></label>}</div></div><div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-3 dark:border-slate-700"><button type="button" onClick={saveTemplate} className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-black text-violet-800 dark:border-violet-800 dark:bg-slate-900 dark:text-violet-200">Save template</button><button type="button" onClick={addToQueue} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-900">Add to queue</button><button type="button" onClick={() => launch()} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow-md hover:bg-indigo-700">Launch now</button></div></div>}
+
+        {activeView === 'prepared' && <div className="grid gap-5 p-4 lg:grid-cols-2"><section><div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600">Prepared</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Question queue · {queue.length}</h3></div>{queue.length > 0 && <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>}</div><div className="mt-3 space-y-2">{queue.map((item, index) => <div key={item.id} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-violet-600 text-[10px] font-black text-white">{index + 1}</span><div className="flex flex-col"><button type="button" disabled={index === 0} onClick={() => moveQueued(index, -1)} className="text-[10px] font-black disabled:opacity-20">▲</button><button type="button" disabled={index === queue.length - 1} onClick={() => moveQueued(index, 1)} className="text-[10px] font-black disabled:opacity-20">▼</button></div><p className="min-w-0 flex-1 truncate text-xs font-bold text-slate-900 dark:text-white">{item.prompt}</p><button type="button" onClick={() => launch(item, item.id)} className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-900">Launch</button><button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="text-sm font-black text-red-500">×</button></div>)}{!queue.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No questions queued.</p>}</div></section><section><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600">Reusable</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Templates · {templates.length}</h3></div><div className="mt-3 space-y-2">{templates.map((template) => <div key={template.id} className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700"><button type="button" onClick={() => loadTemplate(template)} className="min-w-0 flex-1 truncate px-3 py-2 text-left text-xs font-bold text-slate-900 hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800">{template.prompt}</button><button type="button" onClick={() => setTemplates((items) => items.filter((item) => item.id !== template.id))} aria-label={`Delete template: ${template.prompt}`} className="border-l border-slate-200 px-3 py-2 text-sm font-black text-red-500 dark:border-slate-700">×</button></div>)}{!templates.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No templates saved on this browser.</p>}</div></section></div>}
+
+        {activeView === 'featured' && <section className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Featured Wall</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Highlights · {featuredWall.length}</h3></div><div className="flex gap-1.5"><button type="button" onClick={compareFeatured} className="rounded-lg bg-violet-600 px-2.5 py-1.5 text-[11px] font-black text-white">Compare</button><button type="button" onClick={() => { setSlideIndex(0); setWallMode('slides'); }} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-black text-amber-950">Present</button><button type="button" onClick={downloadWall} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-800">Save</button><button type="button" onClick={clearFeaturedWall} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-black text-red-700">Clear wall</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{featuredWall.map((item) => <article key={item.id} className={`rounded-xl border-2 bg-white p-3 dark:bg-slate-900 ${wallSelected.includes(item.id) ? 'border-violet-500' : 'border-amber-200 dark:border-amber-800'}`}><div className="flex items-start gap-2"><input type="checkbox" checked={wallSelected.includes(item.id)} onChange={(event) => setWallSelected((ids) => event.target.checked ? [...ids.filter((id) => id !== item.id), item.id].slice(-2) : ids.filter((id) => id !== item.id))} className="mt-0.5 h-4 w-4 accent-violet-600" /><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase text-amber-700">Q{item.questionNumber} · {item.name}</p><p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">“{item.value}”</p><select value={item.label} onChange={(event) => labelFeatured(item.id, event.target.value)} className="mt-2 w-full rounded-md border border-amber-200 px-2 py-1 text-[11px] font-bold dark:border-amber-800 dark:bg-slate-950">{FEATURE_LABELS.map((label) => <option key={label} value={label}>{label || 'Why is this featured?'}</option>)}</select><div className="mt-2 flex gap-1.5"><button type="button" onClick={() => improveFeatured(item)} className="rounded-md bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-800">Improve</button><button type="button" onClick={() => removeFeatured(item.id)} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600">Remove</button></div></div></div></article>)}</div></section>}
       </div>
 
       {displayMode && activity && (

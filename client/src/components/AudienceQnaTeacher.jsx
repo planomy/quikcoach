@@ -1,32 +1,35 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 function sortQuestions(items) {
   return [...items].sort((a, b) => Number(b.votes) - Number(a.votes) || Number(a.id) - Number(b.id));
 }
 
-export default function AudienceQnaTeacher({ socket, hasLiveActivity = false, liveActivityId = '' }) {
-  const [questions, setQuestions] = useState([]);
-  const [open, setOpen] = useState(false);
+export default function AudienceQnaTeacher({
+  socket,
+  questions = [],
+  focusedStudentId = null,
+  hasLiveActivity = false,
+  onClose,
+  onQuestionLaunched,
+}) {
   const [presenting, setPresenting] = useState(false);
   const [clearStep, setClearStep] = useState(false);
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    const onState = (payload) => setQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
-    socket.on('qna:teacher', onState);
-    socket.emit('teacher:qna-sync', {});
-    return () => socket.off('qna:teacher', onState);
-  }, [socket]);
-
-  useEffect(() => {
-    if (hasLiveActivity) setOpen(false);
-  }, [hasLiveActivity, liveActivityId]);
-
-  const pending = useMemo(() => questions.filter((question) => question.status === 'pending').sort((a, b) => Number(a.id) - Number(b.id)), [questions]);
-  const published = useMemo(() => sortQuestions(questions.filter((question) => question.status === 'published')), [questions]);
-  const answered = useMemo(() => sortQuestions(questions.filter((question) => question.status === 'answered')), [questions]);
-  const dismissed = useMemo(() => questions.filter((question) => question.status === 'dismissed'), [questions]);
-  const presentable = useMemo(() => sortQuestions([...published, ...answered]), [published, answered]);
+  const scopedQuestions = useMemo(
+    () => focusedStudentId
+      ? questions.filter((question) => Number(question.studentId) === Number(focusedStudentId))
+      : questions,
+    [focusedStudentId, questions]
+  );
+  const pending = useMemo(() => scopedQuestions.filter((question) => question.status === 'pending').sort((a, b) => Number(a.id) - Number(b.id)), [scopedQuestions]);
+  const published = useMemo(() => sortQuestions(scopedQuestions.filter((question) => question.status === 'published')), [scopedQuestions]);
+  const answered = useMemo(() => sortQuestions(scopedQuestions.filter((question) => question.status === 'answered')), [scopedQuestions]);
+  const dismissed = useMemo(() => scopedQuestions.filter((question) => question.status === 'dismissed'), [scopedQuestions]);
+  const presentable = useMemo(() => sortQuestions(questions.filter((question) => question.status === 'published' || question.status === 'answered')), [questions]);
+  const focusedName = focusedStudentId
+    ? questions.find((question) => Number(question.studentId) === Number(focusedStudentId))?.studentName
+    : '';
 
   function update(question, action, anonymous) {
     setMessage('');
@@ -44,7 +47,7 @@ export default function AudienceQnaTeacher({ socket, hasLiveActivity = false, li
       setMessage(ack?.ok
         ? 'Sent to every participant as a Pulse feedback prompt.'
         : ack?.error || 'Could not ask the room.');
-      if (ack?.ok) setOpen(false);
+      if (ack?.ok) onQuestionLaunched?.();
     });
   }
 
@@ -100,21 +103,20 @@ export default function AudienceQnaTeacher({ socket, hasLiveActivity = false, li
 
   return (
     <>
-      <section id="audience-qna-teacher" className="scroll-mt-4 border-b border-fuchsia-200 bg-fuchsia-50/70 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
-        <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left">
-          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-300">Audience Q&amp;A</span>
-            <span className="truncate text-xs font-bold text-slate-600 dark:text-slate-300">{pending.length ? `${pending.length} waiting for review` : questions.length ? `${questions.length} question${questions.length === 1 ? '' : 's'}` : 'No questions waiting'}</span>
-          </span>
-          <span className="flex items-center gap-2">
-            {pending.length > 0 && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black text-amber-800">{pending.length} waiting</span>}
-            {published.length > 0 && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black text-emerald-800">{published.length} live</span>}
-            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black text-fuchsia-800 shadow-sm dark:bg-slate-900 dark:text-fuchsia-200">{open ? 'Close' : 'Review'}</span>
-          </span>
-        </button>
+      <section id="audience-qna-teacher" className="scroll-mt-4 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-300">Audience Q&amp;A</p>
+            <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{focusedName ? `${focusedName}'s questions` : 'Class questions'}</h3>
+            <p className="mt-1 text-xs text-slate-500">Questions stay quiet until you choose to review them.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {hasLiveActivity && <span className="rounded-full bg-emerald-100 px-2.5 py-1.5 text-[10px] font-black text-emerald-800">Live Pulse continues</span>}
+            <button type="button" onClick={onClose} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">{hasLiveActivity ? 'Back to live question' : 'Close questions'}</button>
+          </div>
+        </div>
 
-        {open && (
-          <div className="space-y-4 border-t border-fuchsia-200 p-4 dark:border-fuchsia-900">
+        <div className="mt-4 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <p className="mr-auto max-w-2xl text-xs text-slate-600 dark:text-slate-300">Questions arrive privately. Publish the best ones, collect votes, or send one straight to every participant as a Pulse feedback prompt.</p>
               <button type="button" disabled={!presentable.length} onClick={() => setPresenting(true)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Present Q&amp;A</button>
@@ -126,9 +128,8 @@ export default function AudienceQnaTeacher({ socket, hasLiveActivity = false, li
             {published.length > 0 && <div><h3 className="mb-2 text-[10px] font-black uppercase tracking-wide text-emerald-700">Live with participants</h3><div className="grid gap-2 lg:grid-cols-2">{published.map((question) => <QuestionCard key={question.id} question={question} mode="published" />)}</div></div>}
             {answered.length > 0 && <details><summary className="cursor-pointer text-[10px] font-black uppercase tracking-wide text-slate-500">Answered · {answered.length}</summary><div className="mt-2 grid gap-2 lg:grid-cols-2">{answered.map((question) => <QuestionCard key={question.id} question={question} mode="answered" />)}</div></details>}
             {dismissed.length > 0 && <details><summary className="cursor-pointer text-[10px] font-black uppercase tracking-wide text-slate-500">Dismissed · {dismissed.length}</summary><div className="mt-2 grid gap-2 lg:grid-cols-2">{dismissed.map((question) => <QuestionCard key={question.id} question={question} mode="dismissed" />)}</div></details>}
-            {!questions.length && <p className="rounded-xl border border-dashed border-fuchsia-200 bg-white/60 px-4 py-5 text-center text-xs text-slate-500 dark:border-fuchsia-900 dark:bg-slate-900/50">Participant questions will collect here—even when no Pulse poll is running.</p>}
-          </div>
-        )}
+            {!scopedQuestions.length && <p className="rounded-xl border border-dashed border-fuchsia-200 bg-white/60 px-4 py-5 text-center text-xs text-slate-500 dark:border-fuchsia-900 dark:bg-slate-900/50">No questions are waiting here.</p>}
+        </div>
       </section>
 
       {presenting && (
