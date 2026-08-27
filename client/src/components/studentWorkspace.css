@@ -134,7 +134,10 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
   padding-right: 2.25rem;
 }
 
-@media (max-width: 1279px) {
+/* Genuinely narrow screens keep the single-column workspace and floating Pulse.
+   Normal laptop viewports should not be forced into this layout just because
+   Windows display scaling or browser chrome trims their effective CSS width. */
+@media (max-width: 1023px) {
   .iboard-student-workspace main {
     padding-bottom: 6.5rem !important;
   }
@@ -150,8 +153,9 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
   }
 }
 
-@media (min-width: 1280px) {
-  /* Fluid desktop canvas. The viewport decides the width; only the gutters are bounded. */
+@media (min-width: 1024px) {
+  /* Fluid laptop/desktop canvas. CSS owns the two-column layout from 1024px up,
+     rather than waiting for Tailwind's 1280px xl breakpoint. */
   .iboard-student-workspace header > div,
   .iboard-student-workspace main,
   .iboard-student-workspace main > div {
@@ -160,13 +164,27 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
 
   .iboard-student-workspace header > div,
   .iboard-student-workspace main {
-    padding-right: clamp(1.5rem, 2.2vw, 3rem);
-    padding-left: clamp(1.5rem, 2.2vw, 3rem);
+    padding-right: clamp(1rem, 2vw, 3rem);
+    padding-left: clamp(1rem, 2vw, 3rem);
   }
 
   .iboard-student-workspace main > div {
-    grid-template-columns: minmax(36rem, 3fr) minmax(22rem, 2fr) !important;
-    gap: clamp(1.25rem, 2vw, 2.5rem) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr) !important;
+    align-items: start !important;
+    gap: clamp(1rem, 1.6vw, 2.5rem) !important;
+  }
+
+  /* StudentView's Tailwind column placement starts at xl. Place the two direct
+     workspace children explicitly so the same arrangement also works on laptops. */
+  .iboard-student-workspace main > div > aside {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .iboard-student-workspace main > div > section {
+    grid-column: 1;
+    grid-row: 1;
   }
 
   /* The support rail stays beside the student's writing. It scrolls independently
