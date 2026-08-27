@@ -11,7 +11,51 @@ main section.order-2 > p.text-xs.text-slate-500 {
   display: none !important;
 }
 
-/* On the normal student board, an idle collapsed Pulse dock adds no useful information. */
-.iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] {
+/* Idle Pulse should match the compact Q&A control above it: no readiness copy or decorative graphic. */
+main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] {
+  min-height: 0 !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem 0.75rem !important;
+  background: rgb(79 70 229) !important;
+  box-shadow: 0 4px 6px -1px rgb(15 23 42 / 0.12) !important;
+  font-size: 0.75rem !important;
+  font-weight: 900 !important;
+  color: white !important;
+}
+
+main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] > span:first-child,
+main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] > span:nth-child(2) {
   display: none !important;
+}
+
+main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.']::before {
+  content: 'Pulse';
+}
+
+main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] > span:last-child {
+  background: transparent !important;
+  padding: 0 !important;
+  color: white !important;
+  box-shadow: none !important;
+}
+
+/* If a student manually opens Pulse while idle, keep that waiting state equally restrained. */
+main .iboard-student-pulse-dock.is-expanded section.grid.place-items-center.border-dashed > div > div:first-child,
+main .iboard-student-pulse-dock.is-expanded section.grid.place-items-center.border-dashed > div > p {
+  display: none !important;
+}
+
+main .iboard-student-pulse-dock.is-expanded section.grid.place-items-center.border-dashed {
+  min-height: 0 !important;
+  border-style: solid !important;
+  padding: 0.75rem 1rem !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+main .iboard-student-pulse-dock.is-expanded section.grid.place-items-center.border-dashed h2 {
+  margin-top: 0 !important;
+  font-size: 0.875rem !important;
 }
