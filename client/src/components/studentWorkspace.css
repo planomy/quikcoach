@@ -134,10 +134,9 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
   padding-right: 2.25rem;
 }
 
-/* Genuinely narrow screens keep the single-column workspace and floating Pulse.
-   Normal laptop viewports should not be forced into this layout just because
-   Windows display scaling or browser chrome trims their effective CSS width. */
-@media (max-width: 1023px) {
+/* Phones and genuinely narrow windows keep the single-column workspace and
+   floating Pulse. Tablet-sized viewports are wide enough for the working layout. */
+@media (max-width: 767px) {
   .iboard-student-workspace main {
     padding-bottom: 6.5rem !important;
   }
@@ -153,9 +152,10 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
   }
 }
 
-@media (min-width: 1024px) {
-  /* Fluid laptop/desktop canvas. CSS owns the two-column layout from 1024px up,
-     rather than waiting for Tailwind's 1280px xl breakpoint. */
+@media (min-width: 768px) {
+  /* Keep the writing surface and support rail side-by-side from tablet size up.
+     This avoids device-brand/browser quirks deciding whether feedback falls below
+     the student's work simply because effective CSS width is under 1280px. */
   .iboard-student-workspace header > div,
   .iboard-student-workspace main,
   .iboard-student-workspace main > div {
@@ -164,19 +164,19 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
 
   .iboard-student-workspace header > div,
   .iboard-student-workspace main {
-    padding-right: clamp(1rem, 2vw, 3rem);
-    padding-left: clamp(1rem, 2vw, 3rem);
+    padding-right: clamp(0.75rem, 1.8vw, 3rem);
+    padding-left: clamp(0.75rem, 1.8vw, 3rem);
   }
 
   .iboard-student-workspace main > div {
     display: grid !important;
-    grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr) !important;
+    grid-template-columns: minmax(0, 3fr) minmax(15rem, 2fr) !important;
     align-items: start !important;
-    gap: clamp(1rem, 1.6vw, 2.5rem) !important;
+    gap: clamp(0.75rem, 1.4vw, 2.5rem) !important;
   }
 
   /* StudentView's Tailwind column placement starts at xl. Place the two direct
-     workspace children explicitly so the same arrangement also works on laptops. */
+     workspace children explicitly so tablets and laptops use the same arrangement. */
   .iboard-student-workspace main > div > aside {
     grid-column: 2;
     grid-row: 1;
@@ -225,13 +225,20 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
     background: transparent;
   }
 
-  /* Use viewport height for the student's main task, but keep line length readable.
-     This uses the large screen without turning each sentence into a railway timetable. */
+  /* Use viewport height for the student's main task, but keep line length readable. */
   .iboard-student-workspace main [role='textbox'][contenteditable='true'],
   .iboard-student-workspace main [role='textbox'][contenteditable='false'] {
     min-height: max(22rem, calc(100vh - 16rem));
     width: min(100%, 100ch);
     margin-right: auto;
     margin-left: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Give laptop/desktop support panels more breathing room once the viewport allows it. */
+  .iboard-student-workspace main > div {
+    grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr) !important;
+    gap: clamp(1rem, 1.6vw, 2.5rem) !important;
   }
 }
