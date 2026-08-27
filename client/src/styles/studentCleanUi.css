@@ -11,17 +11,15 @@ main section.order-2 > p.text-xs.text-slate-500 {
   display: none !important;
 }
 
-/* Idle Pulse should match the compact Q&A control above it: no readiness copy or decorative graphic. */
+/* Idle response control mirrors the Ask a question control above it. */
 main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] {
   min-height: 0 !important;
   justify-content: space-between !important;
   gap: 0.75rem !important;
-  border-radius: 0.75rem !important;
-  padding: 0.5rem 0.75rem !important;
-  background: rgb(79 70 229) !important;
-  box-shadow: 0 4px 6px -1px rgb(15 23 42 / 0.12) !important;
-  font-size: 0.75rem !important;
-  font-weight: 900 !important;
+  border-radius: 1rem !important;
+  padding: 0.75rem 1rem !important;
+  background: linear-gradient(to right, rgb(79 70 229), rgb(109 40 217)) !important;
+  box-shadow: var(--tw-shadow, 0 1px 3px rgb(15 23 42 / 0.12)) !important;
   color: white !important;
 }
 
@@ -31,17 +29,24 @@ main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] 
 }
 
 main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.']::before {
-  content: 'Pulse';
+  content: 'Add a response';
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 900;
+  line-height: 1.25rem;
 }
 
 main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] > span:last-child {
-  background: transparent !important;
-  padding: 0 !important;
+  border-radius: 9999px !important;
+  background: rgb(255 255 255 / 0.2) !important;
+  padding: 0.25rem 0.625rem !important;
   color: white !important;
   box-shadow: none !important;
+  font-size: 0.6875rem !important;
+  font-weight: 900 !important;
 }
 
-/* If a student manually opens Pulse while idle, keep that waiting state equally restrained. */
+/* If a student opens responses while idle, keep the waiting state restrained. */
 main .iboard-student-pulse-dock.is-expanded section.grid.place-items-center.border-dashed > div > div:first-child,
 main .iboard-student-pulse-dock.is-expanded section.grid.place-items-center.border-dashed > div > p {
   display: none !important;
