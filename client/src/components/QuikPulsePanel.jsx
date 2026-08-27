@@ -136,7 +136,7 @@ function QuikPulseIcon({ name }) {
         <rect x="35" y="9" width="20" height="20" rx="6" />
         <rect x="9" y="35" width="20" height="20" rx="6" />
         <rect x="35" y="35" width="20" height="20" rx="6" />
-        <path d="m15 23 4-9 4 9m-6.3-3h4.6M42 14h3.7a4 4 0 0 1 0 8H42V14Zm0 4h3.5M23 39.5a7 7 0 1 0 0 11M41 40h3.5a6.5 6.5 0 0 1 0 13H41V40Z" strokeWidth="2" />
+        <path d="m15 23 4-9 4 9m-6.3-3h4.6M41.5 14v10m0-10h4.1c2.4 0 3.8 1 3.8 2.7s-1.4 2.7-3.8 2.7h-4.1m4.7 0c2.5 0 4 1 4 2.8S48.7 24 46.2 24h-4.7M23 39.5a7 7 0 1 0 0 11M41 40h3.5a6.5 6.5 0 0 1 0 13H41V40Z" strokeWidth="2" />
       </svg>
     );
   }
