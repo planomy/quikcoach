@@ -8,6 +8,7 @@ import PulseTeacher from './pages/PulseTeacher.jsx';
 import TeacherAnnotationController from './components/TeacherAnnotationController.jsx';
 import NoteSendStatusControl from './components/NoteSendStatusControl.jsx';
 import TeacherPresenterDock from './components/TeacherPresenterDock.jsx';
+import './styles/teacherCleanUi.css';
 
 function TeacherConsole() {
   return (

@@ -1,0 +1,23 @@
+/* Teacher console cleanup: the active controls already explain the workflow.
+   Keep the live teaching surface visually quiet instead of narrating empty states. */
+
+/* The Pulse workspace already has its own card header and toolbar. Remove the
+   duplicate page heading/subtitle/link immediately above it. */
+main section > div.mb-4:has(+ section nav[aria-label='Pulse tools']) {
+  display: none !important;
+}
+
+/* Inside Pulse, the toolbar is the empty-state UI. Do not reserve a large blank
+   stage for explanatory copy when no question is active. */
+nav[aria-label='Pulse tools'] + div {
+  min-height: 0 !important;
+}
+
+nav[aria-label='Pulse tools'] + div > div.grid.place-items-center.text-center {
+  display: none !important;
+}
+
+/* The purple Pulse header only needs one title. */
+section:has(nav[aria-label='Pulse tools']) > div:first-child > div:first-child > p:first-child {
+  display: none !important;
+}

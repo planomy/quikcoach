@@ -30,14 +30,27 @@ export default function AudienceQnaTeacher({
     () => Object.fromEntries(globalPending.map((question, index) => [Number(question.id), index + 1])),
     [globalPending]
   );
-  const pending = useMemo(() => scopedQuestions.filter((question) => question.status === 'pending').sort((a, b) => Number(a.id) - Number(b.id)), [scopedQuestions]);
-  const published = useMemo(() => sortQuestions(scopedQuestions.filter((question) => question.status === 'published')), [scopedQuestions]);
-  const answered = useMemo(() => sortQuestions(scopedQuestions.filter((question) => question.status === 'answered')), [scopedQuestions]);
-  const dismissed = useMemo(() => scopedQuestions.filter((question) => question.status === 'dismissed'), [scopedQuestions]);
-  const presentable = useMemo(() => sortQuestions(questions.filter((question) => question.status === 'published' || question.status === 'answered')), [questions]);
-  const focusedName = focusedStudentId
-    ? questions.find((question) => Number(question.studentId) === Number(focusedStudentId))?.studentName
-    : '';
+  const pending = useMemo(
+    () => scopedQuestions.filter((question) => question.status === 'pending').sort((a, b) => Number(a.id) - Number(b.id)),
+    [scopedQuestions]
+  );
+  const published = useMemo(
+    () => sortQuestions(scopedQuestions.filter((question) => question.status === 'published')),
+    [scopedQuestions]
+  );
+  const answered = useMemo(
+    () => sortQuestions(scopedQuestions.filter((question) => question.status === 'answered')),
+    [scopedQuestions]
+  );
+  const dismissed = useMemo(
+    () => scopedQuestions.filter((question) => question.status === 'dismissed'),
+    [scopedQuestions]
+  );
+  const presentable = useMemo(
+    () => sortQuestions(questions.filter((question) => question.status === 'published' || question.status === 'answered')),
+    [questions]
+  );
+  const activeCount = pending.length + published.length;
 
   function update(question, action, anonymous) {
     setMessage('');
@@ -52,10 +65,11 @@ export default function AudienceQnaTeacher({
       ? question.publishedAnonymous
       : question.anonymousRequested;
     socket.emit('teacher:qna-ask-room', { questionId: question.id, anonymous }, (ack) => {
-      setMessage(ack?.ok
-        ? 'Sent to every participant as a Pulse feedback prompt.'
-        : ack?.error || 'Could not ask the room.');
-      if (ack?.ok) onQuestionLaunched?.();
+      if (!ack?.ok) {
+        setMessage(ack?.error || 'Could not ask the class.');
+        return;
+      }
+      onQuestionLaunched?.();
     });
   }
 
@@ -66,52 +80,60 @@ export default function AudienceQnaTeacher({
     }
     socket.emit('teacher:qna-clear', {}, (ack) => {
       setClearStep(false);
-      setMessage(ack?.ok ? 'Q&A cleared.' : ack?.error || 'Could not clear Q&A.');
+      if (!ack?.ok) setMessage(ack?.error || 'Could not clear Q&A.');
     });
   }
 
-  function IdentityControls({ question }) {
-    const isAnonymous = question.status === 'pending' ? question.anonymousRequested : question.publishedAnonymous;
+  function ShareMenu({ question }) {
+    const isAnonymous = question.status === 'pending'
+      ? question.anonymousRequested
+      : question.publishedAnonymous;
     return (
-      <div className="flex flex-wrap gap-1.5">
-        <button type="button" onClick={() => update(question, 'publish', false)} className={`rounded-md px-2 py-1 text-[10px] font-black ${!isAnonymous && question.status !== 'pending' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>Share named</button>
-        <button type="button" onClick={() => update(question, 'publish', true)} className={`rounded-md px-2 py-1 text-[10px] font-black ${isAnonymous && question.status !== 'pending' ? 'bg-fuchsia-600 text-white' : 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200'}`}>Share anonymous</button>
-      </div>
+      <details className="relative">
+        <summary className={`list-none cursor-pointer rounded-lg px-3 py-2 text-xs font-black ${isAnonymous ? 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>
+          Share ▾
+        </summary>
+        <div className="absolute left-0 top-full z-20 mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+          <button type="button" onClick={() => update(question, 'publish', false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
+          <button type="button" onClick={() => update(question, 'publish', true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
+        </div>
+      </details>
     );
   }
 
   function QuestionCard({ question, mode }) {
     const queuePosition = queuePositions[Number(question.id)];
+    const isLive = mode === 'published';
     return (
-      <article className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex items-start gap-2">
+      <article className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="flex items-start gap-3">
           {mode === 'pending' && queuePosition && (
-            <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-fuchsia-600 px-1 text-xs font-black text-white shadow-sm" title={`Question ${queuePosition} in the queue`}>
+            <span className="grid h-8 min-w-8 shrink-0 place-items-center rounded-full bg-fuchsia-600 px-1 text-sm font-black text-white" title={`Question ${queuePosition} in the queue`}>
               {queuePosition}
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-slate-500">
-                  <span>{question.studentName}</span>
-                  {question.anonymousRequested && <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200">asked for anonymity</span>}
-                  {mode !== 'pending' && <span>· {question.votes} vote{Number(question.votes) === 1 ? '' : 's'}</span>}
-                </div>
-                <p className="mt-1 text-sm font-semibold text-slate-950 dark:text-white">{question.text}</p>
-              </div>
-              {mode === 'published' && <span className={`rounded-full px-2 py-1 text-[10px] font-black ${question.publishedAnonymous ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-indigo-100 text-indigo-800'}`}>{question.publishedAnonymous ? 'Anonymous live' : 'Named live'}</span>}
+            <div className="flex items-center gap-2">
+              <span className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">{question.studentName}</span>
+              {isLive && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-800">{question.publishedAnonymous ? 'Anon live' : 'Live'}</span>}
+              {mode !== 'pending' && Number(question.votes) > 0 && <span className="text-[10px] font-bold text-slate-400">▲ {question.votes}</span>}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {(mode === 'pending' || mode === 'published') && <IdentityControls question={question} />}
+            <p className="mt-1 text-base font-bold leading-snug text-slate-950 dark:text-white">{question.text}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {(mode === 'pending' || mode === 'published') && <ShareMenu question={question} />}
               {mode !== 'dismissed' && (
-                <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'This replaces the current Pulse prompt' : 'Launch as an optional short-response prompt'} className="rounded-md bg-emerald-500 px-2.5 py-1 text-[10px] font-black text-emerald-950">
+                <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'Replaces the current Pulse prompt' : 'Ask every participant'} className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-black text-emerald-950">
                   Ask class
                 </button>
               )}
-              {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">Mark answered</button>}
-              {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className="rounded-md bg-violet-100 px-2 py-1 text-[10px] font-black text-violet-800">Reopen</button>}
-              {mode === 'dismissed' ? <button type="button" onClick={() => update(question, 'pending')} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Return to queue</button> : <button type="button" onClick={() => update(question, 'dismiss')} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600 dark:bg-red-950/40 dark:text-red-300">Dismiss</button>}
+              {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Done</button>}
+              {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-800">Reopen</button>}
+              {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Return</button>}
+              {mode !== 'dismissed' && (
+                <button type="button" onClick={() => update(question, 'dismiss')} title="Dismiss question" aria-label={`Dismiss question from ${question.studentName}`} className="ml-auto grid h-8 w-8 place-items-center rounded-full text-lg font-black text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40">
+                  ×
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -122,44 +144,57 @@ export default function AudienceQnaTeacher({
   return (
     <>
       <section id="audience-qna-teacher" className="scroll-mt-4 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-300">Audience Q&amp;A</p>
-            <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{focusedName ? `${focusedName}'s questions` : 'Class questions'}</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {hasLiveActivity && <span className="rounded-full bg-emerald-100 px-2.5 py-1.5 text-[10px] font-black text-emerald-800">Live Pulse continues</span>}
-            <button type="button" onClick={onClose} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">{hasLiveActivity ? 'Back to live question' : 'Close questions'}</button>
-          </div>
+        <div className="flex items-center gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+          <h3 className="min-w-0 flex-1 font-display text-lg font-black text-slate-950 dark:text-white">
+            Questions{activeCount ? ` · ${activeCount}` : ''}
+          </h3>
+          {!focusedStudentId && presentable.length > 0 && (
+            <>
+              <button type="button" onClick={() => setPresenting(true)} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-800 dark:bg-violet-950 dark:text-violet-200">Present</button>
+              <button type="button" onClick={clearAll} onBlur={() => setClearStep(false)} className={`rounded-lg px-3 py-2 text-xs font-black ${clearStep ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{clearStep ? 'Confirm clear' : 'Clear'}</button>
+            </>
+          )}
+          <button type="button" onClick={onClose} title={hasLiveActivity ? 'Back to live question' : 'Close questions'} aria-label={hasLiveActivity ? 'Back to live question' : 'Close questions'} className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-lg font-black text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">
+            ×
+          </button>
         </div>
 
-        <div className="mt-4 space-y-4">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <button type="button" disabled={!presentable.length} onClick={() => setPresenting(true)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Present Q&amp;A</button>
-              {!!questions.length && <button type="button" onClick={clearAll} onBlur={() => setClearStep(false)} className={`rounded-lg px-3 py-2 text-xs font-black ${clearStep ? 'bg-red-600 text-white' : 'bg-white text-red-600 shadow-sm dark:bg-slate-900'}`}>{clearStep ? 'Confirm clear all' : 'Clear Q&A'}</button>}
-            </div>
-            {message && <p className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-fuchsia-800 shadow-sm dark:bg-slate-900 dark:text-fuchsia-200">{message}</p>}
+        {message && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-200">{message}</p>}
 
-            {pending.length > 0 && <div><h3 className="mb-2 text-[10px] font-black uppercase tracking-wide text-amber-700">Waiting · private</h3><div className="grid gap-2 lg:grid-cols-2">{pending.map((question) => <QuestionCard key={question.id} question={question} mode="pending" />)}</div></div>}
-            {published.length > 0 && <div><h3 className="mb-2 text-[10px] font-black uppercase tracking-wide text-emerald-700">Live with participants</h3><div className="grid gap-2 lg:grid-cols-2">{published.map((question) => <QuestionCard key={question.id} question={question} mode="published" />)}</div></div>}
-            {answered.length > 0 && <details><summary className="cursor-pointer text-[10px] font-black uppercase tracking-wide text-slate-500">Answered · {answered.length}</summary><div className="mt-2 grid gap-2 lg:grid-cols-2">{answered.map((question) => <QuestionCard key={question.id} question={question} mode="answered" />)}</div></details>}
-            {dismissed.length > 0 && <details><summary className="cursor-pointer text-[10px] font-black uppercase tracking-wide text-slate-500">Dismissed · {dismissed.length}</summary><div className="mt-2 grid gap-2 lg:grid-cols-2">{dismissed.map((question) => <QuestionCard key={question.id} question={question} mode="dismissed" />)}</div></details>}
-            {!scopedQuestions.length && <p className="rounded-xl border border-dashed border-fuchsia-200 bg-white/60 px-4 py-5 text-center text-xs text-slate-500 dark:border-fuchsia-900 dark:bg-slate-900/50">No questions are waiting here.</p>}
+        <div className="mt-3 space-y-3">
+          {pending.map((question) => <QuestionCard key={question.id} question={question} mode="pending" />)}
+          {published.map((question) => <QuestionCard key={question.id} question={question} mode="published" />)}
+
+          {answered.length > 0 && (
+            <details>
+              <summary className="cursor-pointer py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Answered · {answered.length}</summary>
+              <div className="mt-2 space-y-2">{answered.map((question) => <QuestionCard key={question.id} question={question} mode="answered" />)}</div>
+            </details>
+          )}
+          {dismissed.length > 0 && (
+            <details>
+              <summary className="cursor-pointer py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Dismissed · {dismissed.length}</summary>
+              <div className="mt-2 space-y-2">{dismissed.map((question) => <QuestionCard key={question.id} question={question} mode="dismissed" />)}</div>
+            </details>
+          )}
+          {!scopedQuestions.length && <div className="h-4" aria-hidden="true" />}
         </div>
       </section>
 
       {presenting && (
         <div className="fixed inset-0 z-[90] overflow-auto bg-gradient-to-br from-fuchsia-950 via-violet-950 to-slate-950 p-6 text-white sm:p-10">
-          <button type="button" onClick={() => setPresenting(false)} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-violet-950 shadow-xl">Back to facilitator</button>
+          <button type="button" onClick={() => setPresenting(false)} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-violet-950 shadow-xl">Back</button>
           <div className="mx-auto max-w-6xl py-14">
-            <p className="text-sm font-black uppercase tracking-[0.28em] text-fuchsia-300">Audience Q&amp;A</p>
-            <h2 className="mt-2 font-display text-4xl font-black sm:text-6xl">What the room wants to discuss</h2>
+            <h2 className="font-display text-4xl font-black sm:text-6xl">Questions</h2>
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               {presentable.map((question) => (
                 <article key={question.id} className="rounded-3xl bg-white/10 p-6 ring-1 ring-white/20">
                   <div className="flex items-start gap-4">
                     <span className="grid min-w-14 place-items-center rounded-2xl bg-fuchsia-400 px-3 py-2 font-black text-fuchsia-950">▲ {question.votes}</span>
-                    <div><p className="text-2xl font-bold leading-snug">{question.text}</p><p className="mt-3 text-sm font-black uppercase tracking-wide text-fuchsia-300">{question.publishedAnonymous ? 'Anonymous' : question.studentName}{question.status === 'answered' ? ' · answered' : ''}</p></div>
+                    <div>
+                      <p className="text-2xl font-bold leading-snug">{question.text}</p>
+                      <p className="mt-3 text-sm font-black uppercase tracking-wide text-fuchsia-300">{question.publishedAnonymous ? 'Anonymous' : question.studentName}{question.status === 'answered' ? ' · answered' : ''}</p>
+                    </div>
                   </div>
                 </article>
               ))}
