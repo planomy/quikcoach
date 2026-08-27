@@ -10,3 +10,8 @@ main section.order-2 > div.hidden.xl\:block {
 main section.order-2 > p.text-xs.text-slate-500 {
   display: none !important;
 }
+
+/* On the normal student board, an idle collapsed Pulse dock adds no useful information. */
+.iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] {
+  display: none !important;
+}
