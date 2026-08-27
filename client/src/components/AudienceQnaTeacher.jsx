@@ -88,14 +88,18 @@ export default function AudienceQnaTeacher({
     const isAnonymous = question.status === 'pending'
       ? question.anonymousRequested
       : question.publishedAnonymous;
+    const chooseShare = (event, anonymous) => {
+      event.currentTarget.closest('details')?.removeAttribute('open');
+      update(question, 'publish', anonymous);
+    };
     return (
-      <details className="relative">
+      <details>
         <summary className={`list-none cursor-pointer rounded-lg px-3 py-2 text-xs font-black ${isAnonymous ? 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>
           Share ▾
         </summary>
-        <div className="absolute left-0 top-full z-20 mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-          <button type="button" onClick={() => update(question, 'publish', false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
-          <button type="button" onClick={() => update(question, 'publish', true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
+        <div className="mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <button type="button" onClick={(event) => chooseShare(event, false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
+          <button type="button" onClick={(event) => chooseShare(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
         </div>
       </details>
     );
@@ -119,7 +123,7 @@ export default function AudienceQnaTeacher({
               {mode !== 'pending' && Number(question.votes) > 0 && <span className="text-[10px] font-bold text-slate-400">▲ {question.votes}</span>}
             </div>
             <p className="mt-1 text-base font-bold leading-snug text-slate-950 dark:text-white">{question.text}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-start gap-2">
               {(mode === 'pending' || mode === 'published') && <ShareMenu question={question} />}
               {mode !== 'dismissed' && (
                 <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'Replaces the current Pulse prompt' : 'Ask every participant'} className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-black text-emerald-950">
