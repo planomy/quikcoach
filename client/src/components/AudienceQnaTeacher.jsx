@@ -4,6 +4,8 @@ function sortQuestions(items) {
   return [...items].sort((a, b) => Number(b.votes) - Number(a.votes) || Number(a.id) - Number(b.id));
 }
 
+const ACTION_CLASS = 'h-9 rounded-lg px-3 text-xs font-black';
+
 export default function AudienceQnaTeacher({
   socket,
   questions = [],
@@ -13,7 +15,6 @@ export default function AudienceQnaTeacher({
   onQuestionLaunched,
 }) {
   const [presenting, setPresenting] = useState(false);
-  const [clearStep, setClearStep] = useState(false);
   const [message, setMessage] = useState('');
 
   const scopedQuestions = useMemo(
@@ -73,33 +74,22 @@ export default function AudienceQnaTeacher({
     });
   }
 
-  function clearAll() {
-    if (!clearStep) {
-      setClearStep(true);
-      return;
-    }
-    socket.emit('teacher:qna-clear', {}, (ack) => {
-      setClearStep(false);
-      if (!ack?.ok) setMessage(ack?.error || 'Could not clear Q&A.');
-    });
-  }
-
-  function ShareMenu({ question }) {
+  function DisplayMenu({ question }) {
     const isAnonymous = question.status === 'pending'
       ? question.anonymousRequested
       : question.publishedAnonymous;
-    const chooseShare = (event, anonymous) => {
+    const chooseDisplay = (event, anonymous) => {
       event.currentTarget.closest('details')?.removeAttribute('open');
       update(question, 'publish', anonymous);
     };
     return (
       <details>
-        <summary className={`list-none cursor-pointer rounded-lg px-3 py-2 text-xs font-black ${isAnonymous ? 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>
-          Share ▾
+        <summary className={`flex h-9 list-none cursor-pointer items-center rounded-lg px-3 text-xs font-black ${isAnonymous ? 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>
+          Display ▾
         </summary>
         <div className="mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <button type="button" onClick={(event) => chooseShare(event, false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
-          <button type="button" onClick={(event) => chooseShare(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
+          <button type="button" onClick={(event) => chooseDisplay(event, false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
+          <button type="button" onClick={(event) => chooseDisplay(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
         </div>
       </details>
     );
@@ -123,21 +113,17 @@ export default function AudienceQnaTeacher({
               {mode !== 'pending' && Number(question.votes) > 0 && <span className="text-[10px] font-bold text-slate-400">▲ {question.votes}</span>}
             </div>
             <p className="mt-1 text-base font-bold leading-snug text-slate-950 dark:text-white">{question.text}</p>
-            <div className="mt-3 flex flex-wrap items-start gap-2">
-              {(mode === 'pending' || mode === 'published') && <ShareMenu question={question} />}
-              {mode !== 'dismissed' && (
-                <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'Replaces the current Pulse prompt' : 'Ask every participant'} className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-black text-emerald-950">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {(mode === 'pending' || mode === 'published') && <DisplayMenu question={question} />}
+              {mode !== 'dismissed' && mode !== 'answered' && (
+                <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'Replaces the current response prompt' : 'Ask every participant'} className={`${ACTION_CLASS} bg-emerald-500 text-emerald-950`}>
                   Ask class
                 </button>
               )}
-              {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Done</button>}
-              {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-800">Reopen</button>}
-              {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Return</button>}
-              {mode !== 'dismissed' && (
-                <button type="button" onClick={() => update(question, 'dismiss')} title="Dismiss question" aria-label={`Dismiss question from ${question.studentName}`} className="ml-auto grid h-8 w-8 place-items-center rounded-full text-lg font-black text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40">
-                  ×
-                </button>
-              )}
+              {mode === 'pending' && <button type="button" onClick={() => update(question, 'dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>}
+              {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>}
+              {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className={`${ACTION_CLASS} bg-violet-100 text-violet-800`}>Reopen</button>}
+              {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Return</button>}
             </div>
           </div>
         </div>
@@ -148,17 +134,14 @@ export default function AudienceQnaTeacher({
   return (
     <>
       <section id="audience-qna-teacher" className="scroll-mt-4 p-4">
-        <div className="flex items-center gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
           <h3 className="min-w-0 flex-1 font-display text-lg font-black text-slate-950 dark:text-white">
             Questions{activeCount ? ` · ${activeCount}` : ''}
           </h3>
           {!focusedStudentId && presentable.length > 0 && (
-            <>
-              <button type="button" onClick={() => setPresenting(true)} className="rounded-lg bg-violet-100 px-3 py-2 text-xs font-black text-violet-800 dark:bg-violet-950 dark:text-violet-200">Present</button>
-              <button type="button" onClick={clearAll} onBlur={() => setClearStep(false)} className={`rounded-lg px-3 py-2 text-xs font-black ${clearStep ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{clearStep ? 'Confirm clear' : 'Clear'}</button>
-            </>
+            <button type="button" onClick={() => setPresenting(true)} className={`${ACTION_CLASS} bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200`}>Present</button>
           )}
-          <button type="button" onClick={onClose} title={hasLiveActivity ? 'Back to live question' : 'Close questions'} aria-label={hasLiveActivity ? 'Back to live question' : 'Close questions'} className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-lg font-black text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">
+          <button type="button" onClick={onClose} title={hasLiveActivity ? 'Back to live response' : 'Close questions'} aria-label={hasLiveActivity ? 'Back to live response' : 'Close questions'} className="grid h-9 w-9 place-items-center rounded-lg bg-slate-100 text-lg font-black text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">
             ×
           </button>
         </div>
@@ -177,7 +160,7 @@ export default function AudienceQnaTeacher({
           )}
           {dismissed.length > 0 && (
             <details>
-              <summary className="cursor-pointer py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Dismissed · {dismissed.length}</summary>
+              <summary className="cursor-pointer py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Done · {dismissed.length}</summary>
               <div className="mt-2 space-y-2">{dismissed.map((question) => <QuestionCard key={question.id} question={question} mode="dismissed" />)}</div>
             </details>
           )}

@@ -4,7 +4,7 @@ const STATUS_LABELS = {
   pending: 'Waiting for facilitator',
   published: 'Shared with the room',
   answered: 'Answered',
-  dismissed: 'Not published',
+  dismissed: 'Done',
 };
 
 export default function AudienceQnaStudent({ socket, compact = false, collapsed = false, onRequestExpand }) {
@@ -27,6 +27,10 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
       .filter((question) => question.status === 'published' || question.status === 'answered')
       .sort((a, b) => Number(b.votes) - Number(a.votes) || Number(b.id) - Number(a.id)),
     [questions]
+  );
+  const liveQuestions = useMemo(
+    () => publicQuestions.filter((question) => question.status === 'published'),
+    [publicQuestions]
   );
   const myPrivateQuestions = useMemo(
     () => questions
@@ -66,11 +70,13 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
     });
   }
 
+  const statusLabel = liveQuestions.length ? `${liveQuestions.length} live` : open ? 'Close' : 'Open';
+
   if (collapsed) {
     return (
       <button type="button" onClick={showPanel} className="flex w-full items-center justify-between rounded-xl bg-fuchsia-600 px-3 py-2 text-xs font-black text-white shadow-md">
         <span>Ask a question</span>
-        <span>{publicQuestions.length ? `${publicQuestions.length} live` : 'Q&A'}</span>
+        <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-black">{liveQuestions.length ? `${liveQuestions.length} live` : 'Open'}</span>
       </button>
     );
   }
@@ -78,13 +84,8 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
   return (
     <section className={`overflow-hidden rounded-2xl border border-fuchsia-200 bg-white shadow-card dark:border-fuchsia-900 dark:bg-slate-900 ${compact ? 'text-xs' : ''}`}>
       <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 text-left text-white">
-        <span>
-          <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-100">Audience Q&amp;A</span>
-          <span className="font-display text-sm font-black">Ask a question</span>
-        </span>
-        <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-black">
-          {publicQuestions.length ? `${publicQuestions.length} live` : open ? 'Close' : 'Open'}
-        </span>
+        <span className="font-display text-sm font-black">Ask a question</span>
+        <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-black">{statusLabel}</span>
       </button>
 
       {open && (
@@ -101,7 +102,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300">
                 <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-4 w-4 accent-fuchsia-600" />
-                Show anonymously if published
+                Display anonymously if shared
               </label>
               <button type="submit" disabled={!draft.trim() || sending} className="ml-auto rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">
                 {sending ? 'Sending…' : 'Send privately'}
@@ -127,15 +128,15 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
           )}
 
           <div>
-            <h3 className="text-[10px] font-black uppercase tracking-wide text-slate-500">Questions shared with the room</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-wide text-slate-500">Questions displayed to the room</h3>
             <div className="mt-2 space-y-2">
               {publicQuestions.map((question) => (
                 <article key={question.id} className="flex gap-3 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 p-3 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
                   <button
                     type="button"
-                    disabled={question.mine}
+                    disabled={question.mine || question.status === 'answered'}
                     onClick={() => vote(question)}
-                    title={question.mine ? 'You cannot vote for your own question' : question.voted ? 'Remove your vote' : 'Vote for this question'}
+                    title={question.status === 'answered' ? 'This question is finished' : question.mine ? 'You cannot vote for your own question' : question.voted ? 'Remove your vote' : 'Vote for this question'}
                     className={`flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-lg text-[11px] font-black ${question.voted ? 'bg-fuchsia-600 text-white' : 'bg-white text-fuchsia-700 shadow-sm dark:bg-slate-900 dark:text-fuchsia-300'} disabled:opacity-50`}
                   >
                     <span>▲</span><span>{question.votes}</span>
@@ -146,7 +147,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
                   </div>
                 </article>
               ))}
-              {!publicQuestions.length && <p className="rounded-xl border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-700">Published questions will appear here.</p>}
+              {!publicQuestions.length && <p className="rounded-xl border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-700">Displayed questions will appear here.</p>}
             </div>
           </div>
         </div>
