@@ -22,6 +22,14 @@ export default function AudienceQnaTeacher({
       : questions,
     [focusedStudentId, questions]
   );
+  const globalPending = useMemo(
+    () => questions.filter((question) => question.status === 'pending').sort((a, b) => Number(a.id) - Number(b.id)),
+    [questions]
+  );
+  const queuePositions = useMemo(
+    () => Object.fromEntries(globalPending.map((question, index) => [Number(question.id), index + 1])),
+    [globalPending]
+  );
   const pending = useMemo(() => scopedQuestions.filter((question) => question.status === 'pending').sort((a, b) => Number(a.id) - Number(b.id)), [scopedQuestions]);
   const published = useMemo(() => sortQuestions(scopedQuestions.filter((question) => question.status === 'published')), [scopedQuestions]);
   const answered = useMemo(() => sortQuestions(scopedQuestions.filter((question) => question.status === 'answered')), [scopedQuestions]);
@@ -66,36 +74,46 @@ export default function AudienceQnaTeacher({
     const isAnonymous = question.status === 'pending' ? question.anonymousRequested : question.publishedAnonymous;
     return (
       <div className="flex flex-wrap gap-1.5">
-        <button type="button" onClick={() => update(question, 'publish', false)} className={`rounded-md px-2 py-1 text-[10px] font-black ${!isAnonymous && question.status !== 'pending' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>Publish named</button>
-        <button type="button" onClick={() => update(question, 'publish', true)} className={`rounded-md px-2 py-1 text-[10px] font-black ${isAnonymous && question.status !== 'pending' ? 'bg-fuchsia-600 text-white' : 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200'}`}>Publish anonymous</button>
+        <button type="button" onClick={() => update(question, 'publish', false)} className={`rounded-md px-2 py-1 text-[10px] font-black ${!isAnonymous && question.status !== 'pending' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>Share named</button>
+        <button type="button" onClick={() => update(question, 'publish', true)} className={`rounded-md px-2 py-1 text-[10px] font-black ${isAnonymous && question.status !== 'pending' ? 'bg-fuchsia-600 text-white' : 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200'}`}>Share anonymous</button>
       </div>
     );
   }
 
   function QuestionCard({ question, mode }) {
+    const queuePosition = queuePositions[Number(question.id)];
     return (
       <article className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-slate-500">
-              <span>{question.studentName}</span>
-              {question.anonymousRequested && <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200">asked for anonymity</span>}
-              {mode !== 'pending' && <span>· {question.votes} vote{Number(question.votes) === 1 ? '' : 's'}</span>}
-            </div>
-            <p className="mt-1 text-sm font-semibold text-slate-950 dark:text-white">{question.text}</p>
-          </div>
-          {mode === 'published' && <span className={`rounded-full px-2 py-1 text-[10px] font-black ${question.publishedAnonymous ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-indigo-100 text-indigo-800'}`}>{question.publishedAnonymous ? 'Anonymous live' : 'Named live'}</span>}
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          {(mode === 'pending' || mode === 'published') && <IdentityControls question={question} />}
-          {mode !== 'dismissed' && (
-            <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'This replaces the current Pulse prompt' : 'Launch as an optional short-response prompt'} className="rounded-md bg-emerald-500 px-2.5 py-1 text-[10px] font-black text-emerald-950">
-              Ask the room{hasLiveActivity ? ' · replaces live prompt' : ''}
-            </button>
+        <div className="flex items-start gap-2">
+          {mode === 'pending' && queuePosition && (
+            <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-full bg-fuchsia-600 px-1 text-xs font-black text-white shadow-sm" title={`Question ${queuePosition} in the queue`}>
+              {queuePosition}
+            </span>
           )}
-          {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">Mark answered</button>}
-          {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className="rounded-md bg-violet-100 px-2 py-1 text-[10px] font-black text-violet-800">Reopen</button>}
-          {mode === 'dismissed' ? <button type="button" onClick={() => update(question, 'pending')} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Return to queue</button> : <button type="button" onClick={() => update(question, 'dismiss')} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600 dark:bg-red-950/40 dark:text-red-300">Dismiss</button>}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                  <span>{question.studentName}</span>
+                  {question.anonymousRequested && <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200">asked for anonymity</span>}
+                  {mode !== 'pending' && <span>· {question.votes} vote{Number(question.votes) === 1 ? '' : 's'}</span>}
+                </div>
+                <p className="mt-1 text-sm font-semibold text-slate-950 dark:text-white">{question.text}</p>
+              </div>
+              {mode === 'published' && <span className={`rounded-full px-2 py-1 text-[10px] font-black ${question.publishedAnonymous ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-indigo-100 text-indigo-800'}`}>{question.publishedAnonymous ? 'Anonymous live' : 'Named live'}</span>}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              {(mode === 'pending' || mode === 'published') && <IdentityControls question={question} />}
+              {mode !== 'dismissed' && (
+                <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'This replaces the current Pulse prompt' : 'Launch as an optional short-response prompt'} className="rounded-md bg-emerald-500 px-2.5 py-1 text-[10px] font-black text-emerald-950">
+                  Ask class
+                </button>
+              )}
+              {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className="rounded-md bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">Mark answered</button>}
+              {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className="rounded-md bg-violet-100 px-2 py-1 text-[10px] font-black text-violet-800">Reopen</button>}
+              {mode === 'dismissed' ? <button type="button" onClick={() => update(question, 'pending')} className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Return to queue</button> : <button type="button" onClick={() => update(question, 'dismiss')} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600 dark:bg-red-950/40 dark:text-red-300">Dismiss</button>}
+            </div>
+          </div>
         </div>
       </article>
     );
@@ -108,7 +126,6 @@ export default function AudienceQnaTeacher({
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-700 dark:text-fuchsia-300">Audience Q&amp;A</p>
             <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{focusedName ? `${focusedName}'s questions` : 'Class questions'}</h3>
-            <p className="mt-1 text-xs text-slate-500">Questions stay quiet until you choose to review them.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {hasLiveActivity && <span className="rounded-full bg-emerald-100 px-2.5 py-1.5 text-[10px] font-black text-emerald-800">Live Pulse continues</span>}
@@ -117,8 +134,7 @@ export default function AudienceQnaTeacher({
         </div>
 
         <div className="mt-4 space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="mr-auto max-w-2xl text-xs text-slate-600 dark:text-slate-300">Questions arrive privately. Publish the best ones, collect votes, or send one straight to every participant as a Pulse feedback prompt.</p>
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <button type="button" disabled={!presentable.length} onClick={() => setPresenting(true)} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Present Q&amp;A</button>
               {!!questions.length && <button type="button" onClick={clearAll} onBlur={() => setClearStep(false)} className={`rounded-lg px-3 py-2 text-xs font-black ${clearStep ? 'bg-red-600 text-white' : 'bg-white text-red-600 shadow-sm dark:bg-slate-900'}`}>{clearStep ? 'Confirm clear all' : 'Clear Q&A'}</button>}
             </div>
