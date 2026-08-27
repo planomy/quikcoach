@@ -6,6 +6,8 @@ const baseQuestion = {
   timerSeconds: 0,
 };
 
+const choicePrompt = 'Choose the option that best answers the question you just heard.';
+
 const pulseCards = [
   {
     id: 'yes-no',
@@ -68,6 +70,12 @@ const pulseCards = [
     },
   },
 ];
+
+export function isQuikPulseActivity(activity) {
+  if (!activity?.prompt) return false;
+  return activity.prompt === choicePrompt
+    || pulseCards.some((card) => card.question.prompt === activity.prompt);
+}
 
 function QuikPulseIcon({ name }) {
   const shared = {
@@ -170,7 +178,7 @@ export default function QuikPulsePanel({ onLaunch, onClose }) {
   const launchChoice = (count) => onLaunch({
     ...baseQuestion,
     type: 'choice',
-    prompt: 'Choose the option that best answers the question you just heard.',
+    prompt: choicePrompt,
     options: ['A', 'B', 'C', 'D'].slice(0, count),
   });
 
