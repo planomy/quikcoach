@@ -51,13 +51,27 @@ function studentSocketEmit(eventName, payload) {
   });
 }
 
-function ToolbarButton({ label, title, onClick, disabled = false, className = '' }) {
+function ToolbarButton({
+  label,
+  title,
+  onClick,
+  disabled = false,
+  className = '',
+  requiresSelection = false,
+  hasSelection,
+}) {
   return (
     <button
       type="button"
       title={title}
       aria-label={title}
       disabled={disabled}
+      onMouseEnter={(event) => {
+        event.currentTarget.title = requiresSelection && !hasSelection?.() ? 'Select text first' : title;
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.title = title;
+      }}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       className={`flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60 ${className}`}
@@ -78,10 +92,12 @@ export default function RichTextEditor({
 }) {
   const editorRef = useRef(null);
   const lastAcceptedHtmlRef = useRef('');
+  const formatHintTimerRef = useRef(null);
   const [focused, setFocused] = useState(false);
   const [empty, setEmpty] = useState(!String(text || '').trim());
   const [formattingEnabled, setFormattingEnabled] = useState(initialFormattingEnabled);
   const [drawMode, setDrawMode] = useState(false);
+  const [formatHint, setFormatHint] = useState('');
 
   const incomingHtml = useMemo(() => {
     const safe = sanitizeRichHtml(html);
@@ -127,6 +143,24 @@ export default function RichTextEditor({
     };
   }, [drawMode]);
 
+  useEffect(() => () => {
+    if (formatHintTimerRef.current) clearTimeout(formatHintTimerRef.current);
+  }, []);
+
+  function showFormatHint() {
+    setFormatHint('Select text first');
+    if (formatHintTimerRef.current) clearTimeout(formatHintTimerRef.current);
+    formatHintTimerRef.current = setTimeout(() => setFormatHint(''), 1800);
+  }
+
+  function hasSelectedText() {
+    const editor = editorRef.current;
+    const selection = window.getSelection?.();
+    if (!editor || !selection?.rangeCount || selection.isCollapsed) return false;
+    const range = selection.getRangeAt(0);
+    return editor.contains(range.commonAncestorContainer);
+  }
+
   function commitFromDom({ normaliseDom = false } = {}) {
     const editor = editorRef.current;
     if (!editor) return;
@@ -147,10 +181,14 @@ export default function RichTextEditor({
     onChange?.({ text: plainText, html: formattingEnabled ? safeHtml : '' });
   }
 
-  function runCommand(command, value = null) {
+  function runCommand(command, value = null, requiresSelection = false) {
     if (disabled || !formattingEnabled) return;
     const editor = editorRef.current;
     if (!editor) return;
+    if (requiresSelection && !hasSelectedText()) {
+      showFormatHint();
+      return;
+    }
     editor.focus();
     try {
       document.execCommand(command, false, value);
@@ -164,6 +202,10 @@ export default function RichTextEditor({
     if (disabled || !formattingEnabled) return;
     const editor = editorRef.current;
     if (!editor) return;
+    if (!hasSelectedText()) {
+      showFormatHint();
+      return;
+    }
     editor.focus();
     let worked = false;
     try {
@@ -204,6 +246,8 @@ export default function RichTextEditor({
     await studentSocketEmit('student:image-clear', {});
   }
 
+  const currentWordCount = countWords(text);
+
   return (
     <>
       {drawMode && (
@@ -216,34 +260,45 @@ export default function RichTextEditor({
       )}
 
       <div className={`${drawMode ? 'hidden' : ''} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card ring-indigo-500 focus-within:border-indigo-500 focus-within:ring-2 dark:border-slate-600 dark:bg-slate-900`}>
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
+        <div className="relative flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
           {formattingEnabled ? (
             <>
-              <ToolbarButton disabled={disabled} label="B" title="Bold" onClick={() => runCommand('bold')} />
-              <ToolbarButton disabled={disabled} label={<span className="italic">I</span>} title="Italic" onClick={() => runCommand('italic')} />
-              <ToolbarButton disabled={disabled} label={<span className="underline">U</span>} title="Underline" onClick={() => runCommand('underline')} />
+              <ToolbarButton disabled={disabled} label="B" title="Bold" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('bold', null, true)} />
+              <ToolbarButton disabled={disabled} label={<span className="italic">I</span>} title="Italic" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('italic', null, true)} />
+              <ToolbarButton disabled={disabled} label={<span className="underline">U</span>} title="Underline" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('underline', null, true)} />
               <ToolbarButton
                 disabled={disabled}
                 label={<span className="rounded bg-yellow-200 px-1.5 py-0.5 text-xs text-slate-900">H</span>}
                 title="Highlight"
+                requiresSelection
+                hasSelection={hasSelectedText}
                 onClick={highlightSelection}
               />
               <ToolbarButton disabled={disabled} label="•" title="Bullet list" onClick={() => runCommand('insertUnorderedList')} />
               <span className="mx-0.5 h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
               <ToolbarButton disabled={disabled} label="↶" title="Undo" onClick={() => runCommand('undo')} />
               <ToolbarButton disabled={disabled} label="↷" title="Redo" onClick={() => runCommand('redo')} />
-              <span className="ml-1 text-[11px] font-medium text-slate-400">Select text, then format</span>
             </>
           ) : (
             <span className="text-[11px] font-medium text-slate-400">Writing mode</span>
           )}
+          <span className="ml-auto shrink-0 text-[11px] font-bold tabular-nums text-slate-500 dark:text-slate-400">
+            {currentWordCount} {currentWordCount === 1 ? 'word' : 'words'}
+          </span>
           <ToolbarButton
             disabled={disabled}
             label="✏ Draw"
             title="Draw or show your working"
             onClick={() => setDrawMode(true)}
-            className="ml-auto"
           />
+          {formatHint && (
+            <span
+              role="status"
+              className="absolute right-3 top-full z-20 mt-2 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold text-white shadow-lg dark:bg-white dark:text-slate-900"
+            >
+              {formatHint}
+            </span>
+          )}
         </div>
         <div className="relative">
           {empty && !focused && (

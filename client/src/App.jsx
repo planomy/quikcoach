@@ -10,6 +10,7 @@ import NoteSendStatusControl from './components/NoteSendStatusControl.jsx';
 import TeacherPresenterDock from './components/TeacherPresenterDock.jsx';
 import TeacherLiveQuestionIndicators from './components/TeacherLiveQuestionIndicators.jsx';
 import './styles/teacherCleanUi.css';
+import './styles/studentCleanUi.css';
 
 function TeacherConsole() {
   return (

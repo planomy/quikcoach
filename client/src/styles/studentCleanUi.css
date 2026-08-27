@@ -1,0 +1,12 @@
+/* Student workspace cleanup: remove permanent coaching copy that now lives in-context. */
+
+/* Hide the paragraph progress / target panels on both desktop and mobile. */
+main aside.order-1 > div.xl\:hidden,
+main section.order-2 > div.hidden.xl\:block {
+  display: none !important;
+}
+
+/* The editor placeholder already teaches screenshot paste, so remove the duplicate tip line. */
+main section.order-2 > p.text-xs.text-slate-500 {
+  display: none !important;
+}
