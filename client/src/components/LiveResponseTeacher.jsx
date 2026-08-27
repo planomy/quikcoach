@@ -217,11 +217,18 @@ export default function LiveResponseTeacher({ socket }) {
   const attention = students.filter(
     (student) => student.engagement_status && student.engagement_status !== 'ready'
   );
-  const pendingQuestions = qnaQuestions.filter((question) => question.status === 'pending');
+  const pendingQuestions = qnaQuestions
+    .filter((question) => question.status === 'pending')
+    .sort((a, b) => Number(a.id) - Number(b.id));
   const pendingByStudent = pendingQuestions.reduce((counts, question) => {
     const studentId = Number(question.studentId);
     counts[studentId] = (counts[studentId] || 0) + 1;
     return counts;
+  }, {});
+  const firstPendingPositionByStudent = pendingQuestions.reduce((positions, question, index) => {
+    const studentId = Number(question.studentId);
+    if (!positions[studentId]) positions[studentId] = index + 1;
+    return positions;
   }, {});
   const selectedStudent = students.find((student) => Number(student.id) === Number(selectedStudentId)) || null;
 
@@ -400,12 +407,12 @@ export default function LiveResponseTeacher({ socket }) {
       <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div><h3 className="text-sm font-black text-slate-900 dark:text-white">Class awareness</h3><p className="text-[10px] text-slate-500">{connectedCount} online{attention.length ? ` · ${attention.length} need attention` : ''}{pendingQuestions.length ? ` · ${pendingQuestions.length} question${pendingQuestions.length === 1 ? '' : 's'} waiting` : ''}</p></div>
-          <span className="text-[10px] font-bold text-slate-500">Click a student to check in</span>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {students.map((student) => {
             const tile = studentTileMeta(student);
             const questionCount = pendingByStudent[Number(student.id)] || 0;
+            const queuePosition = firstPendingPositionByStudent[Number(student.id)] || 0;
             const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
             return (
               <div key={student.id} className="relative w-[70px] shrink-0">
@@ -414,7 +421,7 @@ export default function LiveResponseTeacher({ socket }) {
                   <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
                 </button>
                 {needsAttention && <span title={STATUS_LABELS[student.engagement_status] || student.engagement_status} className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>}
-                {questionCount > 0 && <button type="button" onClick={() => { setSelectedStudentId(student.id); setActiveView('qna'); }} aria-label={`Review ${questionCount} question${questionCount === 1 ? '' : 's'} from ${student.name}`} className="absolute -right-1 -top-1 grid h-6 min-w-6 place-items-center rounded-full bg-fuchsia-600 px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">?{questionCount > 1 ? questionCount : ''}</button>}
+                {questionCount > 0 && <button type="button" onClick={() => { setSelectedStudentId(student.id); setActiveView('qna'); }} aria-label={`Question ${queuePosition} in the queue from ${student.name}${questionCount > 1 ? ` · ${questionCount} questions waiting` : ''}`} title={`Question ${queuePosition} in the queue`} className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-fuchsia-600 px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">{queuePosition}</button>}
               </div>
             );
           })}
