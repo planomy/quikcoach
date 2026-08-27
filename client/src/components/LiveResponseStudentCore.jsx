@@ -412,9 +412,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               {activity.options.map((option, index) => {
                 const selected = response?.value === option;
                 const correct = activity.correctAnswer && option === activity.correctAnswer;
+                const optionsAreLetters = activity.type === 'choice'
+                  && activity.options.every((item, itemIndex) => item === String.fromCharCode(65 + itemIndex));
                 return (
                   <button key={option} type="button" disabled={answersClosed} onClick={() => submit(option)} className={`rounded-2xl border-2 text-left font-black transition ${compact ? 'min-h-10 px-3 py-2 text-sm' : 'min-h-14 px-4 py-3 text-base'} ${selected ? 'border-indigo-600 bg-indigo-600 text-white' : correct ? 'border-emerald-500 bg-emerald-100 text-emerald-950' : 'border-slate-200 bg-slate-50 text-slate-900 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white'}`}>
-                    <span className="mr-2 opacity-60">{activity.type === 'choice' ? String.fromCharCode(65 + index) : ''}</span>{option}
+                    <span className="mr-2 opacity-60">{activity.type === 'choice' && !optionsAreLetters ? String.fromCharCode(65 + index) : ''}</span>{option}
                   </button>
                 );
               })}
