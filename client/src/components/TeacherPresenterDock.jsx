@@ -633,23 +633,28 @@ export default function TeacherPresenterDock() {
           type="button"
           onClick={openDock}
           title="Open Presenter Dock"
+          aria-label="Open Presenter Dock"
           style={{
             position: 'fixed',
             right: 16,
             bottom: 16,
             zIndex: 70,
-            border: '1px solid #3730a3',
-            borderRadius: 999,
-            background: '#4f46e5',
-            color: '#fff',
-            padding: '10px 14px',
-            fontSize: 12,
-            fontWeight: 900,
-            boxShadow: '0 10px 24px rgba(15,23,42,.18)',
+            width: 40,
+            height: 40,
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            background: '#fff',
+            color: '#64748b',
+            padding: 0,
+            fontSize: 16,
+            fontWeight: 700,
+            boxShadow: '0 4px 14px rgba(15,23,42,.08)',
             cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
           }}
         >
-          Presenter
+          ◈
         </button>
       )}
       {fallbackOpen && <div className="iboard-presenter-fallback">{dock}</div>}
