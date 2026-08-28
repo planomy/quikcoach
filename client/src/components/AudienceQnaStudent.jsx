@@ -74,18 +74,18 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
 
   if (collapsed) {
     return (
-      <button type="button" onClick={showPanel} className="flex w-full items-center justify-between rounded-xl bg-fuchsia-600 px-3 py-2 text-xs font-black text-white shadow-md">
-        <span>Ask a question</span>
-        <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-black">{liveQuestions.length ? `${liveQuestions.length} live` : 'Open'}</span>
+      <button type="button" onClick={showPanel} className="flex w-full items-center justify-between rounded-2xl bg-indigo-600 px-4 py-3 text-left text-white">
+        <span className="font-display text-sm font-black">Ask a question</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-indigo-800">{liveQuestions.length ? `${liveQuestions.length} live` : 'Open'}</span>
       </button>
     );
   }
 
   return (
-    <section className={`overflow-hidden rounded-2xl border border-fuchsia-200 bg-white shadow-card dark:border-fuchsia-900 dark:bg-slate-900 ${compact ? 'text-xs' : ''}`}>
-      <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 text-left text-white">
+    <section className={`overflow-hidden rounded-2xl border border-indigo-200 bg-white dark:border-indigo-900 dark:bg-slate-900 ${compact ? 'text-xs' : ''}`}>
+      <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-indigo-600 px-4 py-3 text-left text-white">
         <span className="font-display text-sm font-black">Ask a question</span>
-        <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-black">{statusLabel}</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-indigo-800">{statusLabel}</span>
       </button>
 
       {open && (
@@ -97,21 +97,21 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
               onChange={(event) => setDraft(event.target.value.slice(0, 500))}
               rows={compact ? 2 : 3}
               placeholder="What would you like the facilitator to explain or ask the room?"
-              className="mt-1 w-full resize-y rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-fuchsia-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="mt-1 w-full resize-y rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-4 w-4 accent-fuchsia-600" />
+                <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-4 w-4 accent-indigo-600" />
                 Display anonymously if shared
               </label>
-              <button type="submit" disabled={!draft.trim() || sending} className="ml-auto rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">
+              <button type="submit" disabled={!draft.trim() || sending} className="ml-auto rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">
                 {sending ? 'Sending…' : 'Send privately'}
               </button>
             </div>
             <div className="mt-1 flex justify-between text-[10px] font-semibold text-slate-400"><span>The facilitator sees who sent it.</span><span>{draft.length}/500</span></div>
           </form>
 
-          {message && <p className="rounded-lg bg-fuchsia-50 px-3 py-2 text-xs font-bold text-fuchsia-800 dark:bg-fuchsia-950/40 dark:text-fuchsia-200">{message}</p>}
+          {message && <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">{message}</p>}
 
           {myPrivateQuestions.length > 0 && (
             <div>
@@ -131,19 +131,19 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
             <h3 className="text-[10px] font-black uppercase tracking-wide text-slate-500">Questions displayed to the room</h3>
             <div className="mt-2 space-y-2">
               {publicQuestions.map((question) => (
-                <article key={question.id} className="flex gap-3 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 p-3 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
+                <article key={question.id} className="flex gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 dark:border-indigo-900 dark:bg-indigo-950/20">
                   <button
                     type="button"
                     disabled={question.mine || question.status === 'answered'}
                     onClick={() => vote(question)}
                     title={question.status === 'answered' ? 'This question is finished' : question.mine ? 'You cannot vote for your own question' : question.voted ? 'Remove your vote' : 'Vote for this question'}
-                    className={`flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-lg text-[11px] font-black ${question.voted ? 'bg-fuchsia-600 text-white' : 'bg-white text-fuchsia-700 shadow-sm dark:bg-slate-900 dark:text-fuchsia-300'} disabled:opacity-50`}
+                    className={`flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-lg text-[11px] font-black ${question.voted ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700 shadow-sm dark:bg-slate-900 dark:text-indigo-300'} disabled:opacity-50`}
                   >
                     <span>▲</span><span>{question.votes}</span>
                   </button>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-950 dark:text-white">{question.text}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-fuchsia-700 dark:text-fuchsia-300">{question.author} · {STATUS_LABELS[question.status] || question.status}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300">{question.author} · {STATUS_LABELS[question.status] || question.status}</p>
                   </div>
                 </article>
               ))}
