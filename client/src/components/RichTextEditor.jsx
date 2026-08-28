@@ -93,11 +93,13 @@ export default function RichTextEditor({
   const editorRef = useRef(null);
   const lastAcceptedHtmlRef = useRef('');
   const formatHintTimerRef = useRef(null);
+  const formatMenuRef = useRef(null);
   const [focused, setFocused] = useState(false);
   const [empty, setEmpty] = useState(!String(text || '').trim());
   const [formattingEnabled, setFormattingEnabled] = useState(initialFormattingEnabled);
   const [drawMode, setDrawMode] = useState(false);
   const [formatHint, setFormatHint] = useState('');
+  const [formatMenuOpen, setFormatMenuOpen] = useState(false);
 
   const incomingHtml = useMemo(() => {
     const safe = sanitizeRichHtml(html);
@@ -123,6 +125,7 @@ export default function RichTextEditor({
 
   useEffect(() => {
     if (formattingEnabled) return;
+    setFormatMenuOpen(false);
     const editor = editorRef.current;
     const plainHtml = plainTextToRichHtml(text);
     if (editor) editor.innerHTML = plainHtml;
@@ -142,6 +145,22 @@ export default function RichTextEditor({
       if (drawMode) document.documentElement.classList.remove('iboard-student-draw-mode');
     };
   }, [drawMode]);
+
+  useEffect(() => {
+    if (!formatMenuOpen) return undefined;
+    const onPointerDown = (event) => {
+      if (!formatMenuRef.current?.contains(event.target)) setFormatMenuOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setFormatMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [formatMenuOpen]);
 
   useEffect(() => () => {
     if (formatHintTimerRef.current) clearTimeout(formatHintTimerRef.current);
@@ -262,23 +281,39 @@ export default function RichTextEditor({
       <div className={`${drawMode ? 'hidden' : ''} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card ring-indigo-500 focus-within:border-indigo-500 focus-within:ring-2 dark:border-slate-600 dark:bg-slate-900`}>
         <div className="relative flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
           {formattingEnabled ? (
-            <>
-              <ToolbarButton disabled={disabled} label="B" title="Bold" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('bold', null, true)} />
-              <ToolbarButton disabled={disabled} label={<span className="italic">I</span>} title="Italic" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('italic', null, true)} />
-              <ToolbarButton disabled={disabled} label={<span className="underline">U</span>} title="Underline" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('underline', null, true)} />
-              <ToolbarButton
+            <div ref={formatMenuRef} className="relative">
+              <button
+                type="button"
                 disabled={disabled}
-                label={<span className="rounded bg-yellow-200 px-1.5 py-0.5 text-xs text-slate-900">H</span>}
-                title="Highlight"
-                requiresSelection
-                hasSelection={hasSelectedText}
-                onClick={highlightSelection}
-              />
-              <ToolbarButton disabled={disabled} label="•" title="Bullet list" onClick={() => runCommand('insertUnorderedList')} />
-              <span className="mx-0.5 h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
-              <ToolbarButton disabled={disabled} label="↶" title="Undo" onClick={() => runCommand('undo')} />
-              <ToolbarButton disabled={disabled} label="↷" title="Redo" onClick={() => runCommand('redo')} />
-            </>
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => setFormatMenuOpen((open) => !open)}
+                aria-expanded={formatMenuOpen}
+                aria-label="Formatting tools"
+                title="Formatting tools"
+                className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-sm font-black text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60"
+              >
+                Aa
+              </button>
+              {formatMenuOpen && (
+                <div className="absolute left-0 top-full z-30 mt-2 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                  <ToolbarButton disabled={disabled} label="B" title="Bold" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('bold', null, true)} />
+                  <ToolbarButton disabled={disabled} label={<span className="italic">I</span>} title="Italic" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('italic', null, true)} />
+                  <ToolbarButton disabled={disabled} label={<span className="underline">U</span>} title="Underline" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('underline', null, true)} />
+                  <ToolbarButton
+                    disabled={disabled}
+                    label={<span className="rounded bg-yellow-200 px-1.5 py-0.5 text-xs text-slate-900">H</span>}
+                    title="Highlight"
+                    requiresSelection
+                    hasSelection={hasSelectedText}
+                    onClick={highlightSelection}
+                  />
+                  <ToolbarButton disabled={disabled} label="•" title="Bullet list" onClick={() => runCommand('insertUnorderedList')} />
+                  <span className="mx-0.5 h-5 w-px bg-slate-300 dark:bg-slate-700" aria-hidden="true" />
+                  <ToolbarButton disabled={disabled} label="↶" title="Undo" onClick={() => runCommand('undo')} />
+                  <ToolbarButton disabled={disabled} label="↷" title="Redo" onClick={() => runCommand('redo')} />
+                </div>
+              )}
+            </div>
           ) : (
             <span className="text-[11px] font-medium text-slate-400">Writing mode</span>
           )}
