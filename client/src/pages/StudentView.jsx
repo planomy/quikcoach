@@ -677,32 +677,59 @@ export default function StudentView() {
       <header className="border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/90 px-4 py-4 backdrop-blur sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 xl:max-w-7xl">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">Writing</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">{student?.name}</h1>
               {activeRoomCode && (
                 <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-black text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
                   Room {activeRoomCode}
                 </span>
               )}
+            </div>
+          </div>
+          <details className="group relative shrink-0">
+            <summary
+              className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 [&::-webkit-details-marker]:hidden"
+              aria-label="Student tools"
+              title="Student tools"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M4 7h10" />
+                <path d="M18 7h2" />
+                <circle cx="16" cy="7" r="2" />
+                <path d="M4 17h2" />
+                <path d="M10 17h10" />
+                <circle cx="8" cy="17" r="2" />
+              </svg>
+            </summary>
+            <div className="absolute right-0 top-full z-50 mt-2 w-64 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div>
+                <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Year level</p>
+                <StudentGradeSelect
+                  value={student?.year_level || yearInput}
+                  onChange={setMyYearLevel}
+                  className="w-full"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                  <span>Pulse</span>
+                  <PulseLink size="md" code={codeInput} studentId={student?.id} />
+                </div>
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                  <span>SupaCoach</span>
+                  <SupaCoachLink size="md" />
+                </div>
+              </div>
+              <ThemeToggle className="w-full justify-center" />
               <button
                 type="button"
                 onClick={changeRoom}
-                className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               >
                 Change room
               </button>
             </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <StudentGradeSelect
-              value={student?.year_level || yearInput}
-              onChange={setMyYearLevel}
-            />
-            <PulseLink size="md" code={codeInput} studentId={student?.id} />
-            <SupaCoachLink size="md" />
-            <ThemeToggle />
-          </div>
+          </details>
         </div>
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
