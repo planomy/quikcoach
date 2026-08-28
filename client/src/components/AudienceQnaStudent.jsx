@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const STATUS_LABELS = {
   pending: 'Waiting for facilitator',
-  published: 'Shared with the room',
+  published: 'Displayed',
   answered: 'Answered',
   dismissed: 'Done',
 };
@@ -59,7 +59,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
       }
       setDraft('');
       setAnonymous(false);
-      setMessage('Sent privately to the facilitator.');
+      setMessage('Sent.');
     });
   }
 
@@ -101,17 +101,17 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
             />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-4 w-4 accent-fuchsia-600" />
-                Display anonymously if shared
+                <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-4 w-4 accent-indigo-600" />
+                Anonymous if displayed
               </label>
-              <button type="submit" disabled={!draft.trim() || sending} className="ml-auto rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">
-                {sending ? 'Sending…' : 'Send privately'}
+              <button type="submit" disabled={!draft.trim() || sending} className="ml-auto rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">
+                {sending ? 'Sending…' : 'Send'}
               </button>
             </div>
-            <div className="mt-1 flex justify-between text-[10px] font-semibold text-slate-400"><span>The facilitator sees who sent it.</span><span>{draft.length}/500</span></div>
+            <div className="mt-1 text-right text-[10px] font-semibold text-slate-400">{draft.length}/500</div>
           </form>
 
-          {message && <p className="rounded-lg bg-fuchsia-50 px-3 py-2 text-xs font-bold text-fuchsia-800 dark:bg-fuchsia-950/40 dark:text-fuchsia-200">{message}</p>}
+          {message && <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">{message}</p>}
 
           {myPrivateQuestions.length > 0 && (
             <div>
@@ -127,9 +127,8 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
             </div>
           )}
 
-          <div>
-            <h3 className="text-[10px] font-black uppercase tracking-wide text-slate-500">Questions displayed to the room</h3>
-            <div className="mt-2 space-y-2">
+          {publicQuestions.length > 0 && (
+            <div className="space-y-2">
               {publicQuestions.map((question) => (
                 <article key={question.id} className="flex gap-3 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 p-3 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
                   <button
@@ -147,9 +146,8 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
                   </div>
                 </article>
               ))}
-              {!publicQuestions.length && <p className="rounded-xl border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-700">Displayed questions will appear here.</p>}
             </div>
-          </div>
+          )}
         </div>
       )}
     </section>
