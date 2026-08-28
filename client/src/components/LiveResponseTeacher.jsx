@@ -118,7 +118,14 @@ function Results({ activity, responses, display = false, onPublish }) {
   );
 }
 
-export default function LiveResponseTeacher({ socket, onCopyStudentLink }) {
+export default function LiveResponseTeacher({
+  socket,
+  onCopyStudentLink,
+  embedded = false,
+  collapsed = false,
+  onExpand,
+  onLiveSummary,
+}) {
   const [live, setLive] = useState({ activity: null, responses: [], students: [] });
   const [type, setType] = useState('choice');
   const [prompt, setPrompt] = useState('');
@@ -220,6 +227,22 @@ export default function LiveResponseTeacher({ socket, onCopyStudentLink }) {
   const pendingQuestions = qnaQuestions
     .filter((question) => question.status === 'pending')
     .sort((a, b) => Number(a.id) - Number(b.id));
+
+  useEffect(() => {
+    onLiveSummary?.({
+      hasActivity: !!activity,
+      activityPrompt: activity?.prompt || '',
+      responseCount: responses.length,
+      participantCount,
+      pendingQuestions: pendingQuestions.length,
+    });
+  }, [
+    activity,
+    responses.length,
+    participantCount,
+    pendingQuestions.length,
+    onLiveSummary,
+  ]);
   const pendingByStudent = pendingQuestions.reduce((counts, question) => {
     const studentId = Number(question.studentId);
     counts[studentId] = (counts[studentId] || 0) + 1;
@@ -391,20 +414,73 @@ export default function LiveResponseTeacher({ socket, onCopyStudentLink }) {
     }, '', 'Fresh Quik Pulse is live.');
   }
 
-  return (
-    <section className="mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900">
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-indigo-700 to-violet-700 px-4 py-3 text-white">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">iBOARD Pulse</p>
-          <h2 className="font-display text-lg font-black">Class response</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {message && <span aria-live="polite" className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold ring-1 ring-white/25">{message}</span>}
-          {activity && <span className="rounded-full bg-emerald-400 px-3 py-1.5 text-xs font-black text-emerald-950">Live · {responseSummary}</span>}
-        </div>
-      </div>
+  if (collapsed && !activity && pendingQuestions.length === 0) {
+    return null;
+  }
 
-      {!activity && (
+  if (collapsed && (activity || pendingQuestions.length > 0)) {
+    return (
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200/80 bg-indigo-50/60 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/40">
+        <div className="min-w-0 flex-1">
+          {activity ? (
+            <>
+              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Question live</p>
+              <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{activity.prompt}</p>
+              <p className="text-[11px] text-slate-500">{responseSummary}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-[10px] font-black uppercase tracking-wide text-fuchsia-600">Student questions</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">{pendingQuestions.length} waiting for you</p>
+            </>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onExpand}
+          className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
+        >
+          Open Ask
+        </button>
+      </div>
+    );
+  }
+
+  const sectionClass = embedded
+    ? 'mb-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900'
+    : 'mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900';
+
+  return (
+    <section className={sectionClass}>
+      {!embedded && (
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-indigo-700 to-violet-700 px-4 py-3 text-white">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">iBOARD Pulse</p>
+            <h2 className="font-display text-lg font-black">Class response</h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {message && <span aria-live="polite" className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold ring-1 ring-white/25">{message}</span>}
+            {activity && <span className="rounded-full bg-emerald-400 px-3 py-1.5 text-xs font-black text-emerald-950">Live · {responseSummary}</span>}
+          </div>
+        </div>
+      )}
+
+      {embedded && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 dark:border-slate-800">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <p className="text-xs font-black text-slate-700 dark:text-slate-200">Ask the room</p>
+            {message && <span aria-live="polite" className="truncate rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">{message}</span>}
+            {activity && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Live · {responseSummary}</span>}
+          </div>
+          {typeof onExpand === 'function' && (
+            <button type="button" onClick={() => onExpand(false)} className="text-[11px] font-bold text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+              Hide
+            </button>
+          )}
+        </div>
+      )}
+
+      {!embedded && !activity && (
         <div className="border-b border-indigo-100 bg-indigo-50/80 px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/40">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">First minute</p>
           <ol className="mt-1.5 space-y-1 text-sm font-semibold text-indigo-950 dark:text-indigo-100">

@@ -38,14 +38,6 @@ const MODE_LABELS = {
   custom: 'Custom',
 };
 
-const TEACHER_WORKSPACES = [
-  { id: 'live', label: 'Live', icon: '●' },
-  { id: 'pulse', label: 'Pulse', icon: '◉' },
-  { id: 'feedback', label: 'Feedback', icon: '✦' },
-  { id: 'evidence', label: 'Evidence', icon: '▣' },
-  { id: 'reports', label: 'Reports', icon: '≡' },
-];
-
 const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
 const CARD_VIEWS = [
   { id: 'overview', label: 'Overview' },
@@ -192,7 +184,9 @@ function TeacherDashboardInner() {
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
   const [evidenceBusy, setEvidenceBusy] = useState(false);
-  const [activeWorkspace, setActiveWorkspace] = useState('live');
+  const [askExpanded, setAskExpanded] = useState(false);
+  const [libraryPanel, setLibraryPanel] = useState(null);
+  const [liveSummary, setLiveSummary] = useState({ hasActivity: false, pendingQuestions: 0 });
   const [cardView, setCardView] = useState(initialCardView);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [addCardOpen, setAddCardOpen] = useState(false);
@@ -1215,17 +1209,21 @@ function TeacherDashboardInner() {
   const wt = room?.word_target ?? 0;
   const enforceWords = !!room?.enforce_word_count;
   const frozen = !!room?.freeze_class;
-  const waitingQuestionCount = audienceQuestions.filter((question) => question.status === 'pending').length;
-  const liveQuestionCount = audienceQuestions.filter((question) => question.status === 'published').length;
 
-  function openAudienceQna() {
-    setActiveWorkspace('pulse');
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.getElementById('audience-qna-teacher')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    });
+  function closeRoomMenu() {
+    if (roomActionsRef.current) roomActionsRef.current.open = false;
   }
+
+  function openLibrary(panel) {
+    closeRoomMenu();
+    setLibraryPanel(panel);
+    if (panel === 'evidence' || panel === 'reports') setSnapshotsOpen(true);
+  }
+
+  const handleLiveSummary = useCallback((summary) => {
+    setLiveSummary(summary);
+    if (summary.hasActivity) setAskExpanded(true);
+  }, []);
 
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
   const studentGridClass =
@@ -1282,14 +1280,33 @@ function TeacherDashboardInner() {
                 </svg>
               </summary>
               <div className="absolute right-0 z-30 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button type="button" onClick={openJoinScreen} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Present join screen
+                <button type="button" onClick={() => openLibrary('feedback')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  AI feedback
                 </button>
-                <button type="button" onClick={downloadParticipantList} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Download participant list
+                <button type="button" onClick={() => openLibrary('evidence')} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Saved evidence
+                  {snapshots.length > 0 && (
+                    <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">{snapshots.length}</span>
+                  )}
+                </button>
+                <button type="button" onClick={() => openLibrary('reports')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Student reports
+                </button>
+                <button type="button" onClick={() => { closeRoomMenu(); openEvidenceModal(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Save current evidence
                 </button>
                 <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-                <button type="button" onClick={openNewClassConfirmation} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
+                <button type="button" onClick={() => { closeRoomMenu(); openJoinScreen(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Present join screen
+                </button>
+                <button type="button" onClick={() => { closeRoomMenu(); downloadParticipantList(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Download participant list
+                </button>
+                <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Open Ask-only window ↗
+                </a>
+                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                <button type="button" onClick={() => { closeRoomMenu(); openNewClassConfirmation(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
                   Start new class
                 </button>
               </div>
@@ -1298,43 +1315,7 @@ function TeacherDashboardInner() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-start">
-        <nav
-          aria-label="Teacher tools"
-          className="z-10 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:sticky lg:top-[60px] lg:w-[4.5rem] lg:shrink-0 lg:flex-col lg:overflow-visible"
-        >
-          {TEACHER_WORKSPACES.map((workspace) => (
-            <button
-              key={workspace.id}
-              type="button"
-              onClick={() => {
-                setActiveWorkspace(workspace.id);
-                if (workspace.id === 'evidence' || workspace.id === 'reports') setSnapshotsOpen(true);
-              }}
-              aria-current={activeWorkspace === workspace.id ? 'page' : undefined}
-              className={`flex min-w-[4.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-2 text-[10px] font-bold tracking-wide transition lg:min-w-0 lg:py-2.5 ${
-                activeWorkspace === workspace.id
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <span aria-hidden="true" className="text-sm leading-none opacity-90">{workspace.icon}</span>
-              <span>{workspace.label}</span>
-              {workspace.id === 'evidence' && snapshots.length > 0 && (
-                <span className={`rounded-full px-1.5 text-[9px] ${activeWorkspace === workspace.id ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200'}`}>
-                  {snapshots.length}
-                </span>
-              )}
-              {workspace.id === 'pulse' && waitingQuestionCount > 0 && (
-                <span className={`rounded-full px-1.5 text-[9px] ${activeWorkspace === workspace.id ? 'bg-white text-indigo-700' : 'bg-indigo-600 text-white'}`}>
-                  {waitingQuestionCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        <div className="min-w-0 flex-1">
+      <main className="mx-auto w-full max-w-[1800px] flex-1 px-4 py-5 sm:px-6">
           {copyToast && (
             <div className="mb-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               {copyToast}
@@ -1342,39 +1323,9 @@ function TeacherDashboardInner() {
           )}
           {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-          {activeWorkspace === 'pulse' && (
-            <section>
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Pulse</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Run a quick whole-class check without leaving the room.</p>
-                </div>
-                <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">
-                  Open Pulse in its own window ↗
-                </a>
-              </div>
-              <LiveResponseTeacher
-                socket={socket}
-                onCopyStudentLink={async () => {
-                  const base = `${window.location.origin}/student`;
-                  const url = codeInput.length === 4 ? `${base}?code=${encodeURIComponent(codeInput)}` : base;
-                  try {
-                    await navigator.clipboard.writeText(url);
-                    setCopyToast(codeInput.length === 4 ? 'Student join link copied ✓' : 'Student join link copied');
-                    setTimeout(() => setCopyToast(''), 2500);
-                  } catch {
-                    setError('Could not copy — select and copy the link manually');
-                  }
-                }}
-              />
-            </section>
-          )}
-
-          {activeWorkspace === 'live' && (
-            <>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Live</h2>
+                  <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Room</h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {orderedStudents.length
                       ? `${orderedStudents.length} writing${posts.length ? ` · ${posts.length} card${posts.length === 1 ? '' : 's'}` : ''}`
@@ -1384,19 +1335,6 @@ function TeacherDashboardInner() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {(waitingQuestionCount > 0 || liveQuestionCount > 0) && (
-                    <button
-                      type="button"
-                      onClick={openAudienceQna}
-                      className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
-                        waitingQuestionCount > 0
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200'
-                      }`}
-                    >
-                      Q&amp;A · {waitingQuestionCount > 0 ? `${waitingQuestionCount} waiting` : `${liveQuestionCount} live`}
-                    </button>
-                  )}
                   <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900" role="group" aria-label="Student card view">
                     {CARD_VIEWS.map((view) => (
                       <button
@@ -1430,15 +1368,12 @@ function TeacherDashboardInner() {
                       <button type="button" onClick={sendBroadcastToClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                         Send broadcast{broadcastPickCount ? ` (${Math.min(6, broadcastPickCount)})` : ''}
                       </button>
-                      <button type="button" onClick={openEvidenceModal} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                        Save evidence
-                      </button>
                     </div>
                   </details>
                 </div>
               </div>
 
-              <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70">
                 <div className="flex min-w-[12rem] flex-1 items-center gap-2 sm:max-w-xs">
                   <span className="shrink-0 text-[11px] font-semibold text-slate-500">Words</span>
                   <input
@@ -1479,7 +1414,7 @@ function TeacherDashboardInner() {
                     setRoom((r) => (r ? { ...r, freeze_class: v } : r));
                     pushSettings({ freeze_class: v });
                   }}
-                  className={`ml-auto rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${
                     frozen
                       ? 'bg-amber-500 text-white'
                       : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
@@ -1487,6 +1422,30 @@ function TeacherDashboardInner() {
                 >
                   {frozen ? 'Unfreeze' : 'Freeze'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setAskExpanded((open) => !open)}
+                  className={`ml-auto rounded-lg px-3 py-1.5 text-[11px] font-black transition ${
+                    askExpanded || liveSummary.hasActivity || liveSummary.pendingQuestions > 0
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
+                  }`}
+                >
+                  Ask
+                  {liveSummary.pendingQuestions > 0 && ` · ${liveSummary.pendingQuestions}`}
+                  {liveSummary.hasActivity && !liveSummary.pendingQuestions && ' · live'}
+                </button>
+              </div>
+
+              <div id="room-ask-panel">
+                <LiveResponseTeacher
+                  socket={socket}
+                  embedded
+                  collapsed={!askExpanded}
+                  onExpand={(open = true) => setAskExpanded(open)}
+                  onLiveSummary={handleLiveSummary}
+                  onCopyStudentLink={copyStudentJoinLink}
+                />
               </div>
 
         <div className={`grid gap-4 ${studentGridClass}`}>
@@ -1711,10 +1670,26 @@ function TeacherDashboardInner() {
             );
           })}
         </div>
-            </>
-          )}
+      </main>
 
-        {activeWorkspace === 'evidence' && snapshots.length === 0 && (
+      {libraryPanel && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
+          <div
+            className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="library-panel-title"
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+              <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+                {libraryPanel === 'feedback' ? 'AI feedback' : libraryPanel === 'evidence' ? 'Saved evidence' : 'Student reports'}
+              </h2>
+              <button type="button" onClick={() => setLibraryPanel(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto p-5 scrollbar-thin">
+        {libraryPanel === 'evidence' && snapshots.length === 0 && (
           <section className="rounded-2xl border border-dashed border-emerald-300 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-slate-900">
             <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Evidence</h2>
             <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
@@ -1726,7 +1701,7 @@ function TeacherDashboardInner() {
           </section>
         )}
 
-        {activeWorkspace === 'reports' && snapshots.length === 0 && (
+        {libraryPanel === 'reports' && snapshots.length === 0 && (
           <section className="rounded-2xl border border-dashed border-indigo-300 bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
             <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Student reports</h2>
             <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
@@ -1738,7 +1713,7 @@ function TeacherDashboardInner() {
           </section>
         )}
 
-        {(activeWorkspace === 'evidence' || activeWorkspace === 'reports') && snapshots.length > 0 && (
+        {(libraryPanel === 'evidence' || libraryPanel === 'reports') && snapshots.length > 0 && (
           <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/40 shadow-card dark:border-emerald-800 dark:bg-emerald-950/30">
             <button
               type="button"
@@ -1750,14 +1725,14 @@ function TeacherDashboardInner() {
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">
-                    {activeWorkspace === 'reports' ? 'Student reports' : 'Saved evidence'}
+                    {libraryPanel === 'reports' ? 'Student reports' : 'Saved evidence'}
                   </span>
                   <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
                     {snapshots.length} {snapshots.length === 1 ? 'save' : 'saves'}
                   </span>
                 </span>
                 <span className="mt-1 block truncate text-sm text-slate-600 dark:text-slate-400">
-                  {activeWorkspace === 'reports'
+                  {libraryPanel === 'reports'
                     ? 'Review one student’s contributions across saved lessons.'
                     : snapshotsOpen
                       ? 'Earlier saves from this room.'
@@ -1771,10 +1746,10 @@ function TeacherDashboardInner() {
             </button>
             {snapshotsOpen && (
               <div id="saved-evidence-list" className="border-t border-emerald-200 px-5 pb-4 dark:border-emerald-800">
-                {activeWorkspace === 'evidence' && (
+                {libraryPanel === 'evidence' && (
                   <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Download any earlier save again as HTML.</p>
                 )}
-                {activeWorkspace === 'reports' && (
+                {libraryPanel === 'reports' && (
                 <section className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                   <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                     <div>
@@ -1980,7 +1955,7 @@ function TeacherDashboardInner() {
                   </p>
                 </section>
                 )}
-                {activeWorkspace === 'evidence' && (
+                {libraryPanel === 'evidence' && (
                   <>
                 <h4 className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-emerald-800 dark:text-emerald-300">All saved lessons</h4>
                 <ul className="mt-2 max-h-80 divide-y divide-emerald-100/80 overflow-y-auto pr-1 scrollbar-thin dark:divide-emerald-900/50">
@@ -2016,7 +1991,7 @@ function TeacherDashboardInner() {
           </section>
         )}
 
-        {activeWorkspace === 'feedback' && (
+        {libraryPanel === 'feedback' && (
           <section>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm dark:border-indigo-800 dark:bg-slate-900">
               <div>
@@ -2100,8 +2075,10 @@ function TeacherDashboardInner() {
         </div>
           </section>
         )}
+            </div>
+          </div>
         </div>
-      </main>
+      )}
 
       <AppFooter />
 
