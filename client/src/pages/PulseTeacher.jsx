@@ -78,14 +78,21 @@ function PulseTeacherInner() {
         <main className="grid flex-1 place-items-center px-4 py-10">
           <section className="w-full max-w-md rounded-3xl border border-indigo-200 bg-white p-7 shadow-card dark:border-indigo-900 dark:bg-slate-900">
             <div className="flex items-start justify-between gap-3"><div><IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" /><p className="mt-1 text-xs font-black uppercase tracking-[0.22em] text-violet-600">Pulse teacher</p></div><ThemeToggle /></div>
-            <h1 className="mt-7 font-display text-2xl font-black text-slate-950 dark:text-white">Start an instant response room</h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Polling without the writing board—ideal while students work in OneNote.</p>
+            <h1 className="mt-7 font-display text-2xl font-black text-slate-950 dark:text-white">Ask the room — live</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Share a link, launch a question, see who answers. Ideal while people keep working in another app.
+            </p>
+            <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm font-medium text-slate-600 dark:text-slate-400">
+              <li>Pick or randomise a 4-digit room code</li>
+              <li>Copy the student link and send it</li>
+              <li>Launch an Instant check when they’re in</li>
+            </ol>
             <div className="mt-6 space-y-3">
               <label className="block text-xs font-black uppercase tracking-wide text-slate-500">Room code</label>
               <div className="flex gap-2"><input value={codeInput} onChange={(event) => setCodeInput(cleanCode(event.target.value))} inputMode="numeric" maxLength={4} placeholder="0000" className="min-w-0 flex-1 rounded-xl border-2 border-slate-200 px-4 py-3 font-mono text-xl tracking-widest outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /><button type="button" onClick={() => setCodeInput(randomRoomCode())} className="rounded-xl bg-slate-100 px-4 text-sm font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">Random</button></div>
               {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
-              <button type="button" onClick={() => openRoom()} className="w-full rounded-xl bg-indigo-600 px-5 py-3 font-black text-white shadow-lift hover:bg-indigo-700">Open Pulse room</button>
-              <Link to="/teacher" className="block text-center text-sm font-bold text-indigo-600 hover:text-indigo-800">Open full iBOARD instead</Link>
+              <button type="button" onClick={() => openRoom()} className="w-full rounded-xl bg-indigo-600 px-5 py-3 font-black text-white shadow-lift hover:bg-indigo-700">Open room</button>
+              <Link to="/teacher" className="block text-center text-sm font-bold text-indigo-600 hover:text-indigo-800">Need live writing too? Open full iBOARD</Link>
             </div>
           </section>
         </main>
@@ -103,7 +110,7 @@ function PulseTeacherInner() {
         </div>
         {copyMessage && <p className="mx-auto mt-2 max-w-5xl text-right text-xs font-bold text-emerald-700 dark:text-emerald-300">{copyMessage}</p>}
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-4"><LiveResponseTeacher socket={socket} /></main>
+      <main className="mx-auto max-w-5xl px-4 py-4"><LiveResponseTeacher socket={socket} onCopyStudentLink={copyStudentLink} /></main>
     </div>
   );
 }

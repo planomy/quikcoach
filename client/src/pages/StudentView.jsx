@@ -557,9 +557,11 @@ export default function StudentView() {
               <ThemeToggle />
             </div>
             <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">Join your class</h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Enter the room code from your teacher.</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              Your writing appears on your teacher’s screen as you type. Live questions can also show up here.
+            </p>
             <div className="mt-6 space-y-3">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Room code</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Room code from your teacher</label>
               <input
                 value={codeInput}
                 onChange={(e) => {
@@ -620,7 +622,7 @@ export default function StudentView() {
                     onClick={join}
                     className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-lift hover:bg-indigo-700"
                   >
-                    Join room
+                    Join and start writing
                   </button>
                 </>
               )}

@@ -118,7 +118,7 @@ function Results({ activity, responses, display = false, onPublish }) {
   );
 }
 
-export default function LiveResponseTeacher({ socket }) {
+export default function LiveResponseTeacher({ socket, onCopyStudentLink }) {
   const [live, setLive] = useState({ activity: null, responses: [], students: [] });
   const [type, setType] = useState('choice');
   const [prompt, setPrompt] = useState('');
@@ -403,6 +403,32 @@ export default function LiveResponseTeacher({ socket }) {
           {activity && <span className="rounded-full bg-emerald-400 px-3 py-1.5 text-xs font-black text-emerald-950">Live · {responseSummary}</span>}
         </div>
       </div>
+
+      {!activity && (
+        <div className="border-b border-indigo-100 bg-indigo-50/80 px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/40">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">First minute</p>
+          <ol className="mt-1.5 space-y-1 text-sm font-semibold text-indigo-950 dark:text-indigo-100">
+            <li className="flex flex-wrap items-center gap-2">
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-indigo-600 text-[10px] font-black text-white">1</span>
+              Share the student link
+              {typeof onCopyStudentLink === 'function' && (
+                <button type="button" onClick={onCopyStudentLink} className="rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-black text-white hover:bg-indigo-700">
+                  Copy link
+                </button>
+              )}
+              {connectedCount > 0 && <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">· {connectedCount} online</span>}
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-indigo-600 text-[10px] font-black text-white">2</span>
+              Tap Quik Pulse or Ask the class, then launch a question
+            </li>
+            <li className="flex items-center gap-2 text-indigo-800/80 dark:text-indigo-200/80">
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-indigo-200 text-[10px] font-black text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">3</span>
+              Watch answers and coloured student tiles update above
+            </li>
+          </ol>
+        </div>
+      )}
 
       <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">

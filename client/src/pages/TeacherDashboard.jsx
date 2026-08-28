@@ -1132,11 +1132,17 @@ function TeacherDashboardInner() {
               <IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" />
               <ThemeToggle />
             </div>
-            <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">Teacher dashboard</h1>
+            <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">Teacher room</h1>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Create a room with a 4-digit code, or enter an existing code. Students join at the main site with that code
-              (they do not see this teacher page).
+              Open a room to watch writing live as they type — and ask questions without them leaving their work.
             </p>
+            <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-950">
+              <p className="font-semibold text-slate-800 dark:text-slate-200">Two ways in</p>
+              <ul className="mt-1.5 list-disc space-y-1 pl-5 text-slate-600 dark:text-slate-400">
+                <li><span className="font-semibold text-slate-800 dark:text-slate-200">Open room</span> — full board: live writing + Pulse questions</li>
+                <li><span className="font-semibold text-slate-800 dark:text-slate-200">Open Pulse only</span> — questions and answers only (faster for presenting)</li>
+              </ul>
+            </div>
             <div className="mt-6 space-y-3">
               <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 Room code
@@ -1383,7 +1389,20 @@ function TeacherDashboardInner() {
                   Open Pulse in its own window ↗
                 </a>
               </div>
-              <LiveResponseTeacher socket={socket} />
+              <LiveResponseTeacher
+                socket={socket}
+                onCopyStudentLink={async () => {
+                  const base = `${window.location.origin}/student`;
+                  const url = codeInput.length === 4 ? `${base}?code=${encodeURIComponent(codeInput)}` : base;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setCopyToast(codeInput.length === 4 ? 'Student join link copied ✓' : 'Student join link copied');
+                    setTimeout(() => setCopyToast(''), 2500);
+                  } catch {
+                    setError('Could not copy — select and copy the link manually');
+                  }
+                }}
+              />
             </section>
           )}
 

@@ -226,15 +226,20 @@ export default function PulseStudent() {
               <div><IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" /><p className="mt-1 text-xs font-black uppercase tracking-[0.22em] text-violet-600">Pulse</p></div>
               <ThemeToggle />
             </div>
-            <h1 className="mt-7 font-display text-2xl font-black text-slate-950 dark:text-white">Join a live question room</h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Keep answering while you work in OneNote, Teams or another app.</p>
+            <h1 className="mt-7 font-display text-2xl font-black text-slate-950 dark:text-white">Join live questions</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Your teacher will send questions here. You can keep OneNote or Teams open at the same time.</p>
+            <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm font-medium text-slate-600 dark:text-slate-400">
+              <li>Enter the 4-digit code they gave you</li>
+              <li>Type your name exactly as they know it</li>
+              <li>Wait — the next question appears automatically</li>
+            </ol>
             <div className="mt-6 space-y-3">
-              <label className="block text-xs font-black uppercase tracking-wide text-slate-500">Room code</label>
+              <label className="block text-xs font-black uppercase tracking-wide text-slate-500">Room code from your teacher</label>
               <input value={codeInput} onChange={(event) => setCodeInput(cleanCode(event.target.value))} inputMode="numeric" maxLength={4} placeholder="0000" className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 font-mono text-xl tracking-widest outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
               <label className="block text-xs font-black uppercase tracking-wide text-slate-500">Your name</label>
               <input value={nameInput} onChange={(event) => setNameInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') join(); }} placeholder="Name as shown to your teacher" className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
               {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
-              <button type="button" onClick={join} className="w-full rounded-xl bg-indigo-600 px-5 py-3 font-black text-white shadow-lift hover:bg-indigo-700">Join Pulse</button>
+              <button type="button" onClick={join} className="w-full rounded-xl bg-indigo-600 px-5 py-3 font-black text-white shadow-lift hover:bg-indigo-700">Join and wait for a question</button>
             </div>
           </section>
         </main>
@@ -253,10 +258,10 @@ export default function PulseStudent() {
       </header>
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 py-6">
         <section className="rounded-3xl bg-gradient-to-br from-indigo-700 to-violet-700 p-5 text-white shadow-xl">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-200">Use Pulse over your work</p>
-          <h1 className="mt-2 font-display text-2xl font-black">Keep the answer panel on top</h1>
-          <p className="mt-2 text-sm font-medium text-indigo-100">Open it once, then return to OneNote. Collapse it to a small pill so it stays out of the way.</p>
-          <button type="button" onClick={openFloatingPanel} disabled={!!floatTarget} className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-black text-indigo-800 shadow-md hover:bg-indigo-50 disabled:opacity-60">{floatTarget ? 'Floating panel is open ✓' : 'Float my answer panel'}</button>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-200">You’re in · optional next step</p>
+          <h1 className="mt-2 font-display text-2xl font-black">Need OneNote open too?</h1>
+          <p className="mt-2 text-sm font-medium text-indigo-100">Float a small answer panel, then go back to your work. Questions still appear here if you skip this. Collapse it to a pill when you need more space.</p>
+          <button type="button" onClick={openFloatingPanel} disabled={!!floatTarget} className="mt-4 w-full rounded-2xl bg-white px-5 py-3 font-black text-indigo-800 shadow-md hover:bg-indigo-50 disabled:opacity-60">{floatTarget ? 'Floating panel is open ✓' : 'Float answer panel (optional)'}</button>
           {floatKind === 'mini-window' && <p className="mt-2 text-xs font-bold text-amber-200">Mini-window open — use Collapse when you need more room for your work.</p>}
           {floatKind === 'always-on-top' && <p className="mt-2 text-xs font-bold text-emerald-200">Always-on-top panel active. Use Collapse to turn it into a small alert pill.</p>}
           {error && <p className="mt-2 text-sm font-bold text-amber-200">{error}</p>}
