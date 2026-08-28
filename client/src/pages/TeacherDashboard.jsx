@@ -29,6 +29,7 @@ import {
   buildStudentPortfolioText,
 } from '../lib/exportRoom.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
+import { studentTileMeta } from '../lib/liveResponseMeta.js';
 
 const MODE_LABELS = {
   writing: 'Writing',
@@ -184,9 +185,9 @@ function TeacherDashboardInner() {
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
   const [evidenceBusy, setEvidenceBusy] = useState(false);
-  const [askExpanded, setAskExpanded] = useState(false);
+  const [askOverlayOpen, setAskOverlayOpen] = useState(false);
   const [libraryPanel, setLibraryPanel] = useState(null);
-  const [liveSummary, setLiveSummary] = useState({ hasActivity: false, pendingQuestions: 0 });
+  const [livePulse, setLivePulse] = useState({ activity: null, responses: [], students: [] });
   const [cardView, setCardView] = useState(initialCardView);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [addCardOpen, setAddCardOpen] = useState(false);
@@ -593,10 +594,32 @@ function TeacherDashboardInner() {
     return { promptChars, draftChars, totalDraftWords, promptKb, level };
   }, [aiPrompt, visibleStudents]);
 
-  const handleLiveSummary = useCallback((summary) => {
-    setLiveSummary(summary);
-    if (summary.hasActivity) setAskExpanded(true);
-  }, []);
+  useEffect(() => {
+    if (!joined) return;
+    const onLive = (payload) => {
+      setLivePulse(payload || { activity: null, responses: [], students: [] });
+    };
+    socket.on('live:teacher', onLive);
+    socket.emit('teacher:live-sync', {});
+    return () => socket.off('live:teacher', onLive);
+  }, [socket, joined]);
+
+  useEffect(() => {
+    if (livePulse.activity?.id) setAskOverlayOpen(false);
+  }, [livePulse.activity?.id]);
+
+  const pendingQuestionCount = useMemo(
+    () => audienceQuestions.filter((question) => question.status === 'pending').length,
+    [audienceQuestions]
+  );
+
+  const liveStudentById = useMemo(() => {
+    const map = new Map();
+    for (const student of livePulse.students || []) {
+      map.set(Number(student.id), student);
+    }
+    return map;
+  }, [livePulse.students]);
 
   async function copyForAi() {
     try {
@@ -1242,7 +1265,7 @@ function TeacherDashboardInner() {
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100 dark:bg-slate-950">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
       {!socketConnected && (
         <div
           role="status"
@@ -1258,7 +1281,7 @@ function TeacherDashboardInner() {
               Room <span className="font-mono text-indigo-600">{codeInput}</span>
             </h1>
             <span className="hidden rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300 sm:inline">
-              {orderedStudents.length} online
+              {orderedStudents.length} writing
             </span>
             {frozen && (
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
@@ -1315,66 +1338,33 @@ function TeacherDashboardInner() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1800px] flex-1 px-4 py-5 sm:px-6">
+      <main className="mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col px-4 py-3 sm:px-6">
           {copyToast && (
-            <div className="mb-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            <div className="mb-2 inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               {copyToast}
             </div>
           )}
-          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
 
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Room</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {orderedStudents.length
-                      ? `${orderedStudents.length} writing${posts.length ? ` · ${posts.length} card${posts.length === 1 ? '' : 's'}` : ''}`
-                      : posts.length
-                        ? `${posts.length} teacher card${posts.length === 1 ? '' : 's'} · waiting`
-                        : 'Waiting for students'}
-                  </p>
+              <div className="mb-2 flex shrink-0 flex-wrap items-center gap-2">
+                <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900" role="group" aria-label="Student card view">
+                  {CARD_VIEWS.map((view) => (
+                    <button
+                      key={view.id}
+                      type="button"
+                      onClick={() => setCardView(view.id)}
+                      aria-pressed={cardView === view.id}
+                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
+                        cardView === view.id
+                          ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {view.label}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900" role="group" aria-label="Student card view">
-                    {CARD_VIEWS.map((view) => (
-                      <button
-                        key={view.id}
-                        type="button"
-                        onClick={() => setCardView(view.id)}
-                        aria-pressed={cardView === view.id}
-                        className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
-                          cardView === view.id
-                            ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                        }`}
-                      >
-                        {view.label}
-                      </button>
-                    ))}
-                  </div>
-                  <details className="relative">
-                    <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
-                      Act
-                      {broadcastPickCount > 0 && (
-                        <span className="rounded-full bg-indigo-100 px-1.5 text-[10px] font-black text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
-                          {Math.min(6, broadcastPickCount)}
-                        </span>
-                      )}
-                    </summary>
-                    <div className="absolute right-0 z-20 mt-1.5 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                      <button type="button" onClick={openAddCard} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                        Add card
-                      </button>
-                      <button type="button" onClick={sendBroadcastToClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                        Send broadcast{broadcastPickCount ? ` (${Math.min(6, broadcastPickCount)})` : ''}
-                      </button>
-                    </div>
-                  </details>
-                </div>
-              </div>
-
-              <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70">
-                <div className="flex min-w-[12rem] flex-1 items-center gap-2 sm:max-w-xs">
+                <div className="flex min-w-[10rem] flex-1 items-center gap-2 sm:max-w-xs">
                   <span className="shrink-0 text-[11px] font-semibold text-slate-500">Words</span>
                   <input
                     type="range"
@@ -1424,30 +1414,54 @@ function TeacherDashboardInner() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAskExpanded((open) => !open)}
-                  className={`ml-auto rounded-lg px-3 py-1.5 text-[11px] font-black transition ${
-                    askExpanded || liveSummary.hasActivity || liveSummary.pendingQuestions > 0
+                  onClick={() => setAskOverlayOpen(true)}
+                  className={`rounded-lg px-3 py-1.5 text-[11px] font-black transition ${
+                    livePulse.activity || pendingQuestionCount > 0
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                       : 'border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
                   }`}
                 >
                   Ask
-                  {liveSummary.pendingQuestions > 0 && ` · ${liveSummary.pendingQuestions}`}
-                  {liveSummary.hasActivity && !liveSummary.pendingQuestions && ' · live'}
+                  {pendingQuestionCount > 0 && ` · ${pendingQuestionCount}`}
+                  {livePulse.activity && !pendingQuestionCount && ' · live'}
                 </button>
+                <details className="relative ml-auto">
+                  <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                    Act
+                    {broadcastPickCount > 0 && (
+                      <span className="rounded-full bg-indigo-100 px-1.5 text-[10px] font-black text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+                        {Math.min(6, broadcastPickCount)}
+                      </span>
+                    )}
+                  </summary>
+                  <div className="absolute right-0 z-20 mt-1.5 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                    <button type="button" onClick={openAddCard} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                      Add card
+                    </button>
+                    <button type="button" onClick={sendBroadcastToClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                      Send broadcast{broadcastPickCount ? ` (${Math.min(6, broadcastPickCount)})` : ''}
+                    </button>
+                  </div>
+                </details>
               </div>
 
-              <div id="room-ask-panel">
-                <LiveResponseTeacher
-                  socket={socket}
-                  embedded
-                  collapsed={!askExpanded}
-                  onExpand={(open = true) => setAskExpanded(open)}
-                  onLiveSummary={handleLiveSummary}
-                  onCopyStudentLink={copyStudentJoinLink}
-                />
-              </div>
+              {livePulse.activity && (
+                <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200/80 bg-indigo-50/70 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/40">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Question live</p>
+                    <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{livePulse.activity.prompt}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAskOverlayOpen(true)}
+                    className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
+                  >
+                    Controls
+                  </button>
+                </div>
+              )}
 
+              <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
         <div className={`grid gap-4 ${studentGridClass}`}>
           {orderedStudents.length === 0 && posts.length === 0 && (
             <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
@@ -1492,17 +1506,33 @@ function TeacherDashboardInner() {
             const displayText = s.text || '';
             const wc = wordCount(s.text);
             const st = activityStatus(s.updated_at);
+            const pulseStudent = liveStudentById.get(Number(s.id));
+            const inQuestion = !!livePulse.activity;
+            const pulseMeta = pulseStudent ? studentTileMeta(pulseStudent) : null;
+            const showPulseState = pulseMeta && (inQuestion || (pulseStudent.engagement_status && pulseStudent.engagement_status !== 'ready'));
+            const liveResponse = inQuestion
+              ? (livePulse.responses || []).find((response) => Number(response.studentId) === Number(s.id))
+              : null;
             const light =
-              st === 'live'
-                ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]'
-                : st === 'warm'
-                  ? 'bg-amber-400'
-                  : 'bg-slate-300';
+              showPulseState
+                ? pulseStudent?.hasResponded
+                  ? 'bg-indigo-500'
+                  : pulseStudent?.connected
+                    ? 'bg-slate-300'
+                    : 'bg-slate-200'
+                : st === 'live'
+                  ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]'
+                  : st === 'warm'
+                    ? 'bg-amber-400'
+                    : 'bg-slate-300';
             return (
               <article
                 key={s.id}
                 data-student-id={s.id}
-                className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-3 dark:border-slate-700/80 dark:bg-slate-900"
+                title={showPulseState ? pulseMeta.title : undefined}
+                className={`flex flex-col rounded-2xl bg-white p-3 dark:bg-slate-900 ${
+                  showPulseState ? pulseMeta.className : 'border border-slate-200/80 dark:border-slate-700/80'
+                }`}
               >
                 <div className="flex min-w-0 items-center gap-1.5">
                   <label
@@ -1523,10 +1553,16 @@ function TeacherDashboardInner() {
                   >
                     {s.name}
                   </h2>
-                  <span title="Activity" className={`h-2 w-2 shrink-0 rounded-full ${light}`} />
-                  <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-                    {wc}w
-                  </span>
+                  <span title={showPulseState ? pulseMeta.title : 'Writing activity'} className={`h-2 w-2 shrink-0 rounded-full ${light}`} />
+                  {showPulseState && inQuestion ? (
+                    <span className="max-w-[6rem] shrink-0 truncate rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300" title={liveResponse?.value || pulseMeta.title}>
+                      {pulseStudent?.hasResponded ? (liveResponse?.value || 'Answered') : 'Waiting'}
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+                      {wc}w
+                    </span>
+                  )}
                 </div>
                 <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
                   {gradeShortLabel(s.year_level) && (
@@ -1670,7 +1706,29 @@ function TeacherDashboardInner() {
             );
           })}
         </div>
+              </div>
       </main>
+
+      {askOverlayOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[4.5rem] sm:p-6 sm:pt-[5rem]">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px]"
+            aria-label="Close Ask overlay"
+            onClick={() => setAskOverlayOpen(false)}
+          />
+          <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+            <LiveResponseTeacher
+              socket={socket}
+              overlay
+              onClose={() => setAskOverlayOpen(false)}
+              onCopyStudentLink={copyStudentJoinLink}
+            />
+          </div>
+        </div>
+      )}
+
+      <AppFooter />
 
       {libraryPanel && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">

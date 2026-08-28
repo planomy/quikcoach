@@ -4,6 +4,16 @@ import AudienceQnaTeacher from './AudienceQnaTeacher.jsx';
 import QuikPulsePanel, { isQuikPulseActivity } from './QuikPulsePanel.jsx';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
+import { studentTileMeta, LIVE_STATUS_LABELS as STATUS_LABELS } from '../lib/liveResponseMeta.js';
+
+const QUICK_CHECKS = [
+  ['Ready to continue?', ['Ready', 'Not yet']],
+  ['How is the pace?', ['Too fast', 'Just right', 'Too slow']],
+  ['How well do you understand?', ['I understand', 'Almost', 'Not yet']],
+  ['What do you think?', ['Agree', 'Unsure', 'Disagree']],
+];
+const FEATURE_LABELS = ['', 'Strong evidence', 'Clear explanation', 'Excellent vocabulary', 'Interesting idea', 'Common misconception', 'Nearly there'];
+const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
 const QUEUE_KEY = 'iboard-pulse-question-queue';
 const TEMPLATE_KEY = 'iboard-pulse-question-templates';
@@ -14,50 +24,6 @@ const TYPES = [
   ['rating', '1–5 scale'],
   ['short', 'Short answer'],
 ];
-
-const STATUS_LABELS = {
-  ready: 'Ready',
-  unsure: 'Unsure',
-  tech: 'Tech issue',
-  stuck: 'I’m stuck', slow: 'Please slow down', explain: 'Explain again', private: 'Needs private help',
-};
-const QUICK_CHECKS = [
-  ['Ready to continue?', ['Ready', 'Not yet']],
-  ['How is the pace?', ['Too fast', 'Just right', 'Too slow']],
-  ['How well do you understand?', ['I understand', 'Almost', 'Not yet']],
-  ['What do you think?', ['Agree', 'Unsure', 'Disagree']],
-];
-const FEATURE_LABELS = ['', 'Strong evidence', 'Clear explanation', 'Excellent vocabulary', 'Interesting idea', 'Common misconception', 'Nearly there'];
-const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
-
-/** Border colour encodes answer state; tooltip keeps the full label for hover. */
-function studentTileMeta(student) {
-  if (student.engagement_status && student.engagement_status !== 'ready') {
-    return {
-      title: student.connected
-        ? (STATUS_LABELS[student.engagement_status] || student.engagement_status)
-        : `Offline · ${STATUS_LABELS[student.engagement_status] || student.engagement_status}`,
-      className: 'border-2 border-amber-400',
-    };
-  }
-  if (student.hasResponded) {
-    const confidence = student.response?.confidence || '';
-    if (confidence === 'confident') {
-      return { title: student.connected ? 'Answered · confident' : 'Offline · answered · confident', className: 'border-2 border-emerald-500' };
-    }
-    if (confidence === 'unsure') {
-      return { title: student.connected ? 'Answered · not sure' : 'Offline · answered · not sure', className: 'border-2 border-[#f5e000]' };
-    }
-    if (confidence === 'guessed') {
-      return { title: student.connected ? 'Answered · guessed' : 'Offline · answered · guessed', className: 'border-2 border-red-500' };
-    }
-    return { title: student.connected ? 'Answered' : 'Offline · answered', className: 'border-2 border-indigo-400' };
-  }
-  return {
-    title: student.connected ? 'Waiting' : 'Offline',
-    className: 'border-2 border-slate-200 dark:border-slate-700',
-  };
-}
 
 function firstName(name) {
   const trimmed = String(name || '').trim();
@@ -122,8 +88,10 @@ export default function LiveResponseTeacher({
   socket,
   onCopyStudentLink,
   embedded = false,
+  overlay = false,
   collapsed = false,
   onExpand,
+  onClose,
   onLiveSummary,
 }) {
   const [live, setLive] = useState({ activity: null, responses: [], students: [] });
@@ -414,11 +382,11 @@ export default function LiveResponseTeacher({
     }, '', 'Fresh Quik Pulse is live.');
   }
 
-  if (collapsed && !activity && pendingQuestions.length === 0) {
+  if (!overlay && collapsed && !activity && pendingQuestions.length === 0) {
     return null;
   }
 
-  if (collapsed && (activity || pendingQuestions.length > 0)) {
+  if (!overlay && collapsed && (activity || pendingQuestions.length > 0)) {
     return (
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200/80 bg-indigo-50/60 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/40">
         <div className="min-w-0 flex-1">
@@ -446,13 +414,32 @@ export default function LiveResponseTeacher({
     );
   }
 
-  const sectionClass = embedded
-    ? 'mb-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900'
-    : 'mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900';
+  const sectionClass = overlay
+    ? 'flex max-h-[min(70vh,640px)] flex-col overflow-hidden bg-white dark:bg-slate-900'
+    : embedded
+      ? 'mb-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900'
+      : 'mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900';
 
   return (
     <section className={sectionClass}>
-      {!embedded && (
+      {overlay && (
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+          <div>
+            <p className="text-xs font-black text-slate-900 dark:text-white">Ask the room</p>
+            {activity && <p className="text-[11px] text-slate-500">{responseSummary}</p>}
+          </div>
+          <div className="flex items-center gap-2">
+            {message && <span aria-live="polite" className="max-w-[12rem] truncate rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">{message}</span>}
+            {typeof onClose === 'function' && (
+              <button type="button" onClick={onClose} className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                Close
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!embedded && !overlay && (
         <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-indigo-700 to-violet-700 px-4 py-3 text-white">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">iBOARD Pulse</p>
@@ -480,7 +467,7 @@ export default function LiveResponseTeacher({
         </div>
       )}
 
-      {!embedded && !activity && (
+      {!embedded && !overlay && !activity && (
         <div className="border-b border-indigo-100 bg-indigo-50/80 px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/40">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">First minute</p>
           <ol className="mt-1.5 space-y-1 text-sm font-semibold text-indigo-950 dark:text-indigo-100">
@@ -506,6 +493,7 @@ export default function LiveResponseTeacher({
         </div>
       )}
 
+      {!overlay && (
       <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div><h3 className="text-sm font-black text-slate-900 dark:text-white">Class awareness</h3><p className="text-[10px] text-slate-500">{connectedCount} online{attention.length ? ` · ${attention.length} need attention` : ''}{pendingQuestions.length ? ` · ${pendingQuestions.length} question${pendingQuestions.length === 1 ? '' : 's'} waiting` : ''}</p></div>
@@ -530,8 +518,9 @@ export default function LiveResponseTeacher({
           {!students.length && <p className="py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
         </div>
       </div>
+      )}
 
-      <nav aria-label="Pulse tools" className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-slate-700">
+      <nav aria-label="Pulse tools" className="flex shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-slate-700">
         <button type="button" onClick={() => setActiveView('quik')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'quik' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200'}`}>Quik Pulse</button>
         <button type="button" onClick={() => setActiveView('build')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'build' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200'}`}>Ask the class</button>
         {activity && <button type="button" onClick={() => setActiveView('live')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'live' ? 'bg-emerald-500 text-emerald-950' : 'bg-emerald-100 text-emerald-800'}`}>Live · {responses.length}/{participantCount}</button>}
@@ -540,8 +529,17 @@ export default function LiveResponseTeacher({
         {featuredWall.length > 0 && <button type="button" onClick={() => setActiveView('featured')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'featured' ? 'bg-amber-500 text-amber-950' : 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200'}`}>Featured · {featuredWall.length}</button>}
       </nav>
 
-      <div className="min-h-[260px]">
-        {activeView === 'idle' && <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center"><div><p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Pulse is ready</p><h3 className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">A quiet workspace until you need it</h3><p className="mx-auto mt-2 max-w-lg text-sm text-slate-500">Ask aloud with Quik Pulse, build a question, choose something prepared, or open a participant question.</p><div className="mt-5 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setActiveView('quik')} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-sm hover:bg-indigo-700">Quik Pulse</button><button type="button" onClick={() => setActiveView('build')} className="rounded-xl bg-indigo-50 px-5 py-2.5 text-sm font-black text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200">Build a question</button></div></div></div>}
+      <div className={`min-h-0 flex-1 overflow-y-auto ${overlay ? '' : 'min-h-[260px]'}`}>
+        {activeView === 'idle' && !overlay && <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center"><div><p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">Pulse is ready</p><h3 className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">A quiet workspace until you need it</h3><p className="mx-auto mt-2 max-w-lg text-sm text-slate-500">Ask aloud with Quik Pulse, build a question, choose something prepared, or open a participant question.</p><div className="mt-5 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setActiveView('quik')} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-sm hover:bg-indigo-700">Quik Pulse</button><button type="button" onClick={() => setActiveView('build')} className="rounded-xl bg-indigo-50 px-5 py-2.5 text-sm font-black text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200">Build a question</button></div></div></div>}
+        {activeView === 'idle' && overlay && (
+          <div className="grid place-items-center px-6 py-8 text-center">
+            <p className="text-sm text-slate-500">Pick a quick pulse or build a question below.</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button type="button" onClick={() => setActiveView('quik')} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700">Quik Pulse</button>
+              <button type="button" onClick={() => setActiveView('build')} className="rounded-xl bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200">Build a question</button>
+            </div>
+          </div>
+        )}
 
         {activeView === 'quik' && <QuikPulsePanel onLaunch={launchQuikPulse} onClose={returnToPrimaryView} />}
 
