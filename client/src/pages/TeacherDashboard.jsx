@@ -30,6 +30,7 @@ import {
 } from '../lib/exportRoom.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { studentTileMeta } from '../lib/liveResponseMeta.js';
+import { useTheme } from '../lib/theme.jsx';
 
 const MODE_LABELS = {
   writing: 'Writing',
@@ -136,6 +137,7 @@ function ToggleRow({ label, checked, onChange }) {
 }
 
 function TeacherDashboardInner() {
+  const { isDark, toggleTheme } = useTheme();
   const [searchParams] = useSearchParams();
   const codeFromLink = String(searchParams.get('code') || '')
     .replace(/\D/g, '')
@@ -1274,7 +1276,7 @@ function TeacherDashboardInner() {
           Connection lost — reconnecting…
         </div>
       )}
-      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+      <header className="shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
         <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
@@ -1290,7 +1292,37 @@ function TeacherDashboardInner() {
             )}
           </div>
           <div className="ml-auto flex items-center gap-1.5">
-            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => setAskOverlayOpen(true)}
+              className={`rounded-lg px-3 py-1.5 text-[11px] font-black transition ${
+                livePulse.activity || pendingQuestionCount > 0
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  : 'border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
+              }`}
+            >
+              Ask
+              {pendingQuestionCount > 0 && ` · ${pendingQuestionCount}`}
+              {livePulse.activity && !pendingQuestionCount && ' · live'}
+            </button>
+            <details className="relative">
+              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                Act
+                {broadcastPickCount > 0 && (
+                  <span className="rounded-full bg-indigo-100 px-1.5 text-[10px] font-black text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
+                    {Math.min(6, broadcastPickCount)}
+                  </span>
+                )}
+              </summary>
+              <div className="absolute right-0 z-30 mt-1.5 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <button type="button" onClick={openAddCard} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Add card
+                </button>
+                <button type="button" onClick={sendBroadcastToClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Send broadcast{broadcastPickCount ? ` (${Math.min(6, broadcastPickCount)})` : ''}
+                </button>
+              </div>
+            </details>
             <details ref={roomActionsRef} className="relative">
               <summary
                 className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
@@ -1298,11 +1330,81 @@ function TeacherDashboardInner() {
                 aria-label="Room settings"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+                  <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
+                  <path d="M2 14h4M10 8h4M18 16h4" />
                 </svg>
               </summary>
-              <div className="absolute right-0 z-30 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
+                <div className="mb-1 flex gap-1 px-2">
+                  {CARD_VIEWS.map((view) => (
+                    <button
+                      key={view.id}
+                      type="button"
+                      onClick={() => setCardView(view.id)}
+                      className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition ${
+                        cardView === view.id
+                          ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                          : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {view.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Lesson</p>
+                <div className="px-3 py-2">
+                  <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                    <span>Word target</span>
+                    <span className="font-mono text-indigo-600">{wt}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={500}
+                    value={wt}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setRoom((r) => (r ? { ...r, word_target: v } : r));
+                      pushSettings({ word_target: v });
+                    }}
+                    className="mt-1 h-1.5 w-full cursor-pointer accent-indigo-600"
+                    aria-label="Word target"
+                  />
+                </div>
+                <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <span>Enforce word count</span>
+                  <input
+                    type="checkbox"
+                    checked={enforceWords}
+                    onChange={(e) => {
+                      const v = e.target.checked;
+                      setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
+                      pushSettings({ enforce_word_count: v });
+                    }}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = !frozen;
+                    setRoom((r) => (r ? { ...r, freeze_class: v } : r));
+                    pushSettings({ freeze_class: v });
+                  }}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  {frozen ? 'Unfreeze class' : 'Freeze class'}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  {isDark ? 'Light mode' : 'Dark mode'}
+                </button>
+                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
                 <button type="button" onClick={() => openLibrary('feedback')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                   AI feedback
                 </button>
@@ -1345,105 +1447,6 @@ function TeacherDashboardInner() {
             </div>
           )}
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
-
-              <div className="mb-2 flex shrink-0 flex-wrap items-center gap-2">
-                <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900" role="group" aria-label="Student card view">
-                  {CARD_VIEWS.map((view) => (
-                    <button
-                      key={view.id}
-                      type="button"
-                      onClick={() => setCardView(view.id)}
-                      aria-pressed={cardView === view.id}
-                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
-                        cardView === view.id
-                          ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                      }`}
-                    >
-                      {view.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex min-w-[10rem] flex-1 items-center gap-2 sm:max-w-xs">
-                  <span className="shrink-0 text-[11px] font-semibold text-slate-500">Words</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={500}
-                    value={wt}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      setRoom((r) => (r ? { ...r, word_target: v } : r));
-                      pushSettings({ word_target: v });
-                    }}
-                    className="h-1.5 w-full cursor-pointer accent-indigo-600"
-                    aria-label="Word target"
-                  />
-                  <span className="w-8 shrink-0 text-right font-mono text-[11px] font-bold text-indigo-600">{wt}</span>
-                </div>
-                <label
-                  className="flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300"
-                  title="When on, only the first N words of each student draft are saved."
-                >
-                  <input
-                    type="checkbox"
-                    checked={enforceWords}
-                    onChange={(e) => {
-                      const v = e.target.checked;
-                      setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
-                      pushSettings({ enforce_word_count: v });
-                    }}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
-                  />
-                  Enforce
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const v = !frozen;
-                    setRoom((r) => (r ? { ...r, freeze_class: v } : r));
-                    pushSettings({ freeze_class: v });
-                  }}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${
-                    frozen
-                      ? 'bg-amber-500 text-white'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {frozen ? 'Unfreeze' : 'Freeze'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAskOverlayOpen(true)}
-                  className={`rounded-lg px-3 py-1.5 text-[11px] font-black transition ${
-                    livePulse.activity || pendingQuestionCount > 0
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
-                  }`}
-                >
-                  Ask
-                  {pendingQuestionCount > 0 && ` · ${pendingQuestionCount}`}
-                  {livePulse.activity && !pendingQuestionCount && ' · live'}
-                </button>
-                <details className="relative ml-auto">
-                  <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
-                    Act
-                    {broadcastPickCount > 0 && (
-                      <span className="rounded-full bg-indigo-100 px-1.5 text-[10px] font-black text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
-                        {Math.min(6, broadcastPickCount)}
-                      </span>
-                    )}
-                  </summary>
-                  <div className="absolute right-0 z-20 mt-1.5 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                    <button type="button" onClick={openAddCard} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                      Add card
-                    </button>
-                    <button type="button" onClick={sendBroadcastToClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                      Send broadcast{broadcastPickCount ? ` (${Math.min(6, broadcastPickCount)})` : ''}
-                    </button>
-                  </div>
-                </details>
-              </div>
 
               {livePulse.activity && (
                 <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200/80 bg-indigo-50/70 px-3 py-2 dark:border-indigo-900 dark:bg-indigo-950/40">
@@ -1530,7 +1533,7 @@ function TeacherDashboardInner() {
                 key={s.id}
                 data-student-id={s.id}
                 title={showPulseState ? pulseMeta.title : undefined}
-                className={`flex flex-col rounded-2xl bg-white p-3 dark:bg-slate-900 ${
+                className={`relative flex flex-col overflow-visible rounded-2xl bg-white p-3 dark:bg-slate-900 ${
                   showPulseState ? pulseMeta.className : 'border border-slate-200/80 dark:border-slate-700/80'
                 }`}
               >
@@ -1727,8 +1730,6 @@ function TeacherDashboardInner() {
           </div>
         </div>
       )}
-
-      <AppFooter />
 
       {libraryPanel && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
@@ -2137,8 +2138,6 @@ function TeacherDashboardInner() {
           </div>
         </div>
       )}
-
-      <AppFooter />
 
       {joinScreenOpen && (
         <div

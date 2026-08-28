@@ -170,7 +170,7 @@ export default function TeacherLiveQuestionIndicators() {
       <style>{`
         main article[data-student-id][data-live-question-waiting='true'] { position: relative; }
         main button[data-live-question-badge='true'] {
-          position:absolute;top:-0.5rem;right:0.75rem;z-index:3;display:grid;min-width:1.45rem;height:1.45rem;
+          position:absolute;top:0.45rem;right:0.45rem;z-index:3;display:grid;min-width:1.45rem;height:1.45rem;
           place-items:center;border:0;border-radius:9999px;padding:0 0.3rem;background:rgb(192 38 211);color:white;
           cursor:pointer;font-size:0.625rem;font-weight:900;line-height:1;letter-spacing:-0.01em;
           box-shadow:0 0 0 2px white,0 2px 7px rgb(15 23 42 / 0.18);transition:transform 120ms ease,background 120ms ease;
