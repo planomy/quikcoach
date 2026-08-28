@@ -99,39 +99,47 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
   line-height: 1;
 }
 
+/* Match Ask a question: a simple Close pill instead of a second disclosure metaphor. */
 .iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
   position: absolute;
   top: 1rem;
   right: 0.5rem;
   z-index: 10;
-  display: grid;
-  height: 1.75rem;
-  width: 1.75rem;
-  place-items: center;
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  align-items: center;
+  justify-content: center;
   margin: 0;
-  padding: 0;
-  border: 1px solid #cbd5e1;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid #c7d2fe;
   border-radius: 9999px;
+  background: white;
+  color: #3730a3;
   font-size: 0;
-}
-
-.dark .iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
-  border-color: #475569;
+  font-weight: 900;
+  line-height: 1rem;
 }
 
 .iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill']::before {
-  content: '▴';
-  font-size: 1rem;
-  line-height: 1;
+  content: 'Close';
+  font-size: 0.6875rem;
+  line-height: 1rem;
 }
 
 .iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] > span {
   display: none;
 }
 
-/* Reserve the caret's corner so it never sits on top of Pulse timer/sound controls. */
+.dark .iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
+  border-color: #818cf8;
+  background: white;
+  color: #3730a3;
+}
+
+/* Reserve the close pill's corner so it never sits on top of Pulse timer/sound controls. */
 .iboard-student-pulse-dock.is-expanded > section > div:first-child {
-  padding-right: 2.25rem;
+  padding-right: 3.75rem;
 }
 
 /* Phones and genuinely narrow windows keep the single-column workspace and
