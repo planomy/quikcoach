@@ -18,8 +18,8 @@ main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] 
   gap: 0.75rem !important;
   border-radius: 1rem !important;
   padding: 0.75rem 1rem !important;
-  background: linear-gradient(to right, rgb(79 70 229), rgb(109 40 217)) !important;
-  box-shadow: var(--tw-shadow, 0 1px 3px rgb(15 23 42 / 0.12)) !important;
+  background: linear-gradient(to right, rgb(192 38 211), rgb(124 58 237)) !important;
+  box-shadow: none !important;
   color: white !important;
 }
 
@@ -36,7 +36,17 @@ main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.']:
   line-height: 1.25rem;
 }
 
+/* Match the Ask a question Open pill exactly, rather than inheriting the old Pulse circle treatment. */
 main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] > span:last-child {
+  position: static !important;
+  display: inline-flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  border: 0 !important;
   border-radius: 9999px !important;
   background: rgb(255 255 255 / 0.2) !important;
   padding: 0.25rem 0.625rem !important;
@@ -44,6 +54,8 @@ main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] 
   box-shadow: none !important;
   font-size: 0.6875rem !important;
   font-weight: 900 !important;
+  line-height: 1rem !important;
+  transform: none !important;
 }
 
 /* If a student opens responses while idle, keep the waiting state restrained. */
