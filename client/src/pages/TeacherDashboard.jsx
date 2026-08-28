@@ -593,6 +593,11 @@ function TeacherDashboardInner() {
     return { promptChars, draftChars, totalDraftWords, promptKb, level };
   }, [aiPrompt, visibleStudents]);
 
+  const handleLiveSummary = useCallback((summary) => {
+    setLiveSummary(summary);
+    if (summary.hasActivity) setAskExpanded(true);
+  }, []);
+
   async function copyForAi() {
     try {
       await navigator.clipboard.writeText(aiPrompt);
@@ -1219,11 +1224,6 @@ function TeacherDashboardInner() {
     setLibraryPanel(panel);
     if (panel === 'evidence' || panel === 'reports') setSnapshotsOpen(true);
   }
-
-  const handleLiveSummary = useCallback((summary) => {
-    setLiveSummary(summary);
-    if (summary.hasActivity) setAskExpanded(true);
-  }, []);
 
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
   const studentGridClass =
