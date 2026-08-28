@@ -1,6 +1,59 @@
 /* Student workspace: use the available screen, preserve readable writing measure,
    and keep reference material visible without letting Pulse dominate the page. */
 
+/* Header utilities must sit above the support rail when its menu is open. */
+html.iboard-student-workspace header {
+  position: relative;
+  z-index: 60;
+}
+
+/* In the compact student tools menu, Pulse and SupaCoach read as simple text links.
+   Keep their existing link behaviour/handoff logic, but remove the coloured letter badges. */
+html.iboard-student-workspace header details div.grid.grid-cols-2 > div {
+  padding: 0;
+  border: 0;
+}
+
+html.iboard-student-workspace header details div.grid.grid-cols-2 > div > span {
+  display: none;
+}
+
+html.iboard-student-workspace header details a[href^='/pulse'],
+html.iboard-student-workspace header details a[href*='supacoach'] {
+  display: inline-flex;
+  width: 100%;
+  height: auto;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: white !important;
+  color: #3730a3 !important;
+  box-shadow: none !important;
+  font-size: 0 !important;
+  line-height: 1;
+}
+
+html.iboard-student-workspace header details a[href^='/pulse']::before {
+  content: 'Pulse';
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+html.iboard-student-workspace header details a[href*='supacoach']::before {
+  content: 'SupaCoach';
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+html.dark.iboard-student-workspace header details a[href^='/pulse'],
+html.dark.iboard-student-workspace header details a[href*='supacoach'] {
+  border-color: #475569;
+  background: #0f172a !important;
+  color: #c7d2fe !important;
+}
+
 .iboard-student-pulse-dock {
   order: 99;
   z-index: 35;
