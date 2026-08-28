@@ -74,18 +74,18 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
 
   if (collapsed) {
     return (
-      <button type="button" onClick={showPanel} className="flex w-full items-center justify-between rounded-xl bg-fuchsia-600 px-3 py-2 text-xs font-black text-white shadow-md">
-        <span>Ask a question</span>
-        <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-black">{liveQuestions.length ? `${liveQuestions.length} live` : 'Open'}</span>
+      <button type="button" onClick={showPanel} className="flex w-full items-center justify-between rounded-2xl bg-indigo-600 px-4 py-3 text-left text-white">
+        <span className="font-display text-sm font-black">Ask a question</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-indigo-800">{liveQuestions.length ? `${liveQuestions.length} live` : 'Open'}</span>
       </button>
     );
   }
 
   return (
     <section className={`overflow-hidden rounded-2xl border border-fuchsia-200 bg-white shadow-card dark:border-fuchsia-900 dark:bg-slate-900 ${compact ? 'text-xs' : ''}`}>
-      <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-gradient-to-r from-fuchsia-600 to-violet-600 px-4 py-3 text-left text-white">
+      <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-indigo-600 px-4 py-3 text-left text-white">
         <span className="font-display text-sm font-black">Ask a question</span>
-        <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-black">{statusLabel}</span>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-indigo-800">{statusLabel}</span>
       </button>
 
       {open && (
