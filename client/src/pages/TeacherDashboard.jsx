@@ -158,7 +158,6 @@ function TeacherDashboardInner() {
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
   const roomActionsRef = useRef(null);
-  const actMenuRef = useRef(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [feedbackMode, setFeedbackMode] = useState('writing');
@@ -629,15 +628,11 @@ function TeacherDashboardInner() {
   useEffect(() => {
     if (!joined) return undefined;
     function closeIfOutside(event) {
-      const target = event.target;
-      const act = actMenuRef.current;
       const room = roomActionsRef.current;
-      if (act?.open && !act.contains(target)) act.open = false;
-      if (room?.open && !room.contains(target)) room.open = false;
+      if (room?.open && !room.contains(event.target)) room.open = false;
     }
     function onKeyDown(event) {
       if (event.key !== 'Escape') return;
-      if (actMenuRef.current) actMenuRef.current.open = false;
       if (roomActionsRef.current) roomActionsRef.current.open = false;
     }
     document.addEventListener('pointerdown', closeIfOutside);
@@ -1088,8 +1083,7 @@ function TeacherDashboardInner() {
   }
 
   function openNewClassConfirmation() {
-    if (roomActionsRef.current) roomActionsRef.current.open = false;
-    if (actMenuRef.current) actMenuRef.current.open = false;
+    closeRoomMenu();
     setError('');
     setNewClassConfirmOpen(true);
   }
@@ -1115,14 +1109,12 @@ function TeacherDashboardInner() {
   }
 
   function openJoinScreen() {
-    if (roomActionsRef.current) roomActionsRef.current.open = false;
-    if (actMenuRef.current) actMenuRef.current.open = false;
+    closeRoomMenu();
     setJoinScreenOpen(true);
   }
 
   function downloadParticipantList() {
-    if (roomActionsRef.current) roomActionsRef.current.open = false;
-    if (actMenuRef.current) actMenuRef.current.open = false;
+    closeRoomMenu();
     const rows = [
       ['Name', 'Year level', 'Group', 'Words', 'Last updated'],
       ...orderedStudents.map((student) => [
@@ -1271,7 +1263,6 @@ function TeacherDashboardInner() {
 
   function closeRoomMenu() {
     if (roomActionsRef.current) roomActionsRef.current.open = false;
-    if (actMenuRef.current) actMenuRef.current.open = false;
   }
 
   function openAnswerInRail(studentId) {
@@ -1341,64 +1332,49 @@ function TeacherDashboardInner() {
                 closeRoomMenu();
                 setAskOverlayOpen(true);
               }}
-              className={`rounded-lg px-3 py-1.5 text-[11px] font-black transition ${
-                livePulse.activity || pendingQuestionCount > 0
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  : 'border border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200'
-              }`}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-indigo-700 sm:px-3.5"
             >
-              Ask
-              {pendingQuestionCount > 0 && ` · ${pendingQuestionCount}`}
-              {livePulse.activity && !pendingQuestionCount && ' · live'}
+              Ask a Question
+              {(livePulse.activity || pendingQuestionCount > 0) && (
+                <span className="rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none">
+                  {pendingQuestionCount > 0 ? pendingQuestionCount : '●'}
+                </span>
+              )}
             </button>
-            <details
-              ref={actMenuRef}
-              className="relative z-50"
-              onToggle={(event) => {
-                if (event.currentTarget.open && roomActionsRef.current) {
-                  roomActionsRef.current.open = false;
-                }
+            <button
+              type="button"
+              onClick={() => {
+                closeRoomMenu();
+                openAddCard();
               }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+              title="Add card"
+              aria-label="Add card"
             >
-              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
-                Act
-                {broadcastPickCount > 0 && (
-                  <span className="rounded-full bg-indigo-100 px-1.5 text-[10px] font-black text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
-                    {Math.min(6, broadcastPickCount)}
-                  </span>
-                )}
-              </summary>
-              <div className="absolute right-0 z-50 mt-1.5 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeRoomMenu();
-                    openAddCard();
-                  }}
-                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  Add card
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeRoomMenu();
-                    sendBroadcastToClass();
-                  }}
-                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  Send broadcast{broadcastPickCount ? ` (${Math.min(6, broadcastPickCount)})` : ''}
-                </button>
-              </div>
-            </details>
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+            {broadcastPickCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  closeRoomMenu();
+                  sendBroadcastToClass();
+                }}
+                className="relative flex h-9 items-center gap-1 rounded-xl bg-amber-500 px-2.5 text-amber-950 shadow-sm hover:bg-amber-400"
+                title={`Broadcast ${Math.min(6, broadcastPickCount)} exemplar${broadcastPickCount === 1 ? '' : 's'} to class`}
+                aria-label={`Broadcast ${Math.min(6, broadcastPickCount)} selected cards`}
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 17L17 7M8 7h9v9" />
+                </svg>
+                <span className="text-[11px] font-black tabular-nums">{Math.min(6, broadcastPickCount)}</span>
+              </button>
+            )}
             <details
               ref={roomActionsRef}
               className="relative z-50"
-              onToggle={(event) => {
-                if (event.currentTarget.open && actMenuRef.current) {
-                  actMenuRef.current.open = false;
-                }
-              }}
             >
               <summary
                 className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
