@@ -502,14 +502,14 @@ export default function LiveResponseTeacher({
       </div>
       )}
 
-      <nav aria-label="Ask pages" className="flex shrink-0 items-end gap-0 border-b border-slate-200 px-2 dark:border-slate-700">
+      <nav aria-label="Ask pages" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
         <button
           type="button"
           onClick={() => setActiveView('quik')}
-          className={`relative px-3 py-2.5 text-[11px] font-bold transition sm:text-xs ${
+          className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'quik'
-              ? 'text-indigo-700 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-indigo-600 dark:text-indigo-300'
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
           }`}
         >
           Quick Question
@@ -517,10 +517,10 @@ export default function LiveResponseTeacher({
         <button
           type="button"
           onClick={() => setActiveView('build')}
-          className={`relative px-3 py-2.5 text-[11px] font-bold transition sm:text-xs ${
+          className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'build'
-              ? 'text-indigo-700 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-indigo-600 dark:text-indigo-300'
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
           }`}
         >
           Custom Question
@@ -529,31 +529,31 @@ export default function LiveResponseTeacher({
           type="button"
           onClick={() => activity && setActiveView('live')}
           disabled={!activity}
-          className={`relative px-3 py-2.5 text-[11px] font-bold transition sm:text-xs ${
+          className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'live'
-              ? 'text-emerald-700 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-emerald-500 dark:text-emerald-300'
+              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
               : activity
-                ? 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                : 'cursor-not-allowed text-slate-300 dark:text-slate-600'
+                ? 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+                : 'cursor-not-allowed border border-transparent bg-slate-100 text-slate-300 dark:bg-slate-900 dark:text-slate-600'
           }`}
         >
-          Live Questions{activity ? ` · ${responses.length}/${participantCount}` : ''}
+          Live Questions{activity ? ` · ${responses.length}/{participantCount}` : ''}
         </button>
         {pendingQuestions.length > 0 && (
           <button
             type="button"
             onClick={() => { setSelectedStudentId(null); setActiveView('qna'); }}
-            className={`relative px-3 py-2.5 text-[11px] font-bold transition sm:text-xs ${
+            className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
               activeView === 'qna'
-                ? 'text-fuchsia-700 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-fuchsia-600 dark:text-fuchsia-300'
-                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+                : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
             From students · {pendingQuestions.length}
           </button>
         )}
-        <details className="relative ml-auto self-center">
-          <summary className="cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200">More</summary>
+        <details className="relative ml-auto self-center pb-1.5">
+          <summary className="cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-white/80 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200">More</summary>
           <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <button type="button" onClick={() => setActiveView('prepared')} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Saved · {queue.length + templates.length}
