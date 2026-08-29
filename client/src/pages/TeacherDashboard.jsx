@@ -17,6 +17,7 @@ import { gradeShortLabel } from '../components/StudentGradeSelect.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
+import TeacherAnswerRail from '../components/TeacherAnswerRail.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
@@ -191,6 +192,9 @@ function TeacherDashboardInner() {
   const [evidenceLabel, setEvidenceLabel] = useState('');
   const [evidenceBusy, setEvidenceBusy] = useState(false);
   const [askOverlayOpen, setAskOverlayOpen] = useState(false);
+  const [answerRailOpen, setAnswerRailOpen] = useState(false);
+  const [answerRailHighlightId, setAnswerRailHighlightId] = useState(null);
+  const [answerRailDismissedId, setAnswerRailDismissedId] = useState(null);
   const [libraryPanel, setLibraryPanel] = useState(null);
   const [livePulse, setLivePulse] = useState({ activity: null, responses: [], students: [] });
   const [cardView, setCardView] = useState(initialCardView);
@@ -608,6 +612,19 @@ function TeacherDashboardInner() {
     socket.emit('teacher:live-sync', {});
     return () => socket.off('live:teacher', onLive);
   }, [socket, joined]);
+
+  useEffect(() => {
+    const activityId = livePulse.activity?.id || null;
+    if (!activityId) {
+      setAnswerRailOpen(false);
+      setAnswerRailHighlightId(null);
+      setAnswerRailDismissedId(null);
+      return;
+    }
+    if (answerRailDismissedId !== activityId) {
+      setAnswerRailOpen(true);
+    }
+  }, [livePulse.activity?.id, answerRailDismissedId]);
 
   useEffect(() => {
     if (!joined) return undefined;
@@ -1257,6 +1274,19 @@ function TeacherDashboardInner() {
     if (actMenuRef.current) actMenuRef.current.open = false;
   }
 
+  function openAnswerInRail(studentId) {
+    if (!livePulse.activity) return;
+    setAnswerRailOpen(true);
+    setAnswerRailDismissedId(null);
+    if (studentId != null) setAnswerRailHighlightId(Number(studentId));
+  }
+
+  function dismissAnswerRail() {
+    setAnswerRailOpen(false);
+    if (livePulse.activity?.id) setAnswerRailDismissedId(livePulse.activity.id);
+  }
+
+
   function openLibrary(panel) {
     closeRoomMenu();
     setLibraryPanel(panel);
@@ -1502,10 +1532,13 @@ function TeacherDashboardInner() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setAskOverlayOpen(true)}
+                    onClick={() => {
+                      setAnswerRailOpen(true);
+                      setAnswerRailDismissedId(null);
+                    }}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700"
-                    title="Open live results"
-                    aria-label="Open live results"
+                    title="Show answers"
+                    aria-label="Show answers"
                   >
                     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 20V10" />
@@ -1603,16 +1636,22 @@ function TeacherDashboardInner() {
                     <span className="sr-only">Include in broadcast</span>
                   </label>
                   <h2
-                    className="min-w-0 flex-1 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100"
-                    title={`${s.name} · ID #${s.id}`}
+                    className={`min-w-0 flex-1 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100 ${inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''}`}
+                    title={inQuestion ? `Show ${s.name}'s answer` : `${s.name} · ID #${s.id}`}
+                    onClick={inQuestion ? () => openAnswerInRail(s.id) : undefined}
                   >
                     {s.name}
                   </h2>
                   <span title={showPulseState ? pulseMeta.title : 'Writing activity'} className={`h-2 w-2 shrink-0 rounded-full ${light}`} />
                   {showPulseState && inQuestion ? (
-                    <span className="max-w-[6rem] shrink-0 truncate rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300" title={liveResponse?.value || pulseMeta.title}>
+                    <button
+                      type="button"
+                      onClick={() => openAnswerInRail(s.id)}
+                      className="max-w-[6rem] shrink-0 truncate rounded-full bg-indigo-50 px-1.5 py-0.5 text-left text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900"
+                      title={liveResponse?.value || pulseMeta.title}
+                    >
                       {pulseStudent?.hasResponded ? (liveResponse?.value || 'Answered') : 'Waiting'}
-                    </span>
+                    </button>
                   ) : (
                     <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
                       {wc}w
@@ -1763,6 +1802,23 @@ function TeacherDashboardInner() {
         </div>
               </div>
       </main>
+
+
+      <TeacherAnswerRail
+        open={answerRailOpen}
+        onOpen={() => {
+          setAnswerRailOpen(true);
+          setAnswerRailDismissedId(null);
+        }}
+        onClose={dismissAnswerRail}
+        activity={livePulse.activity}
+        responses={livePulse.responses || []}
+        highlightStudentId={answerRailHighlightId}
+        onClearHighlight={() => setAnswerRailHighlightId(null)}
+        onOpenAsk={() => {
+          setAskOverlayOpen(true);
+        }}
+      />
 
       {askOverlayOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[4.5rem] sm:p-6 sm:pt-[5rem]">
