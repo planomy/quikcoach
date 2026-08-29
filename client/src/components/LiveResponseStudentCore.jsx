@@ -250,33 +250,27 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
   if (collapsed) {
     const needsAnswer = !!activity && !response && !activity.locked && secondsLeft !== 0;
-    let icon = '⚡';
     let label = 'Pulse ready';
     let detail = 'Waiting for a question';
     let colour = 'from-indigo-600 to-violet-700 text-white ring-indigo-300';
 
     if (nudge) {
-      icon = '👋';
       label = 'Teacher check-in';
       detail = 'Tap to reply';
       colour = 'from-rose-600 to-red-600 text-white ring-rose-300';
     } else if (featuredNotice) {
-      icon = '⭐';
       label = 'Answer featured!';
       detail = 'Tap to see it';
       colour = 'from-amber-400 to-yellow-300 text-amber-950 ring-amber-200';
     } else if (needsAnswer) {
-      icon = '🔔';
       label = `New question · Q${activity.questionNumber || 1}`;
       detail = 'Tap to answer now';
       colour = 'from-fuchsia-600 to-violet-700 text-white ring-fuchsia-300';
     } else if (activity && response) {
-      icon = '✓';
       label = `Answer sent · Q${activity.questionNumber || 1}`;
       detail = 'Tap to review';
       colour = 'from-emerald-500 to-teal-600 text-white ring-emerald-300';
     } else if (activity) {
-      icon = '⏱';
       label = `Question closed · Q${activity.questionNumber || 1}`;
       detail = 'Tap to review';
       colour = 'from-slate-600 to-slate-700 text-white ring-slate-300';
@@ -286,17 +280,12 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       <button
         type="button"
         onClick={onExpand}
-        className={`flex min-h-16 w-full items-center gap-2.5 rounded-2xl bg-gradient-to-r px-3 py-2 text-left shadow-xl ring-2 transition hover:brightness-110 ${colour} ${(pulse || nudge) ? 'iboard-question-pulse' : ''}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl bg-gradient-to-r px-4 py-3 text-left transition hover:brightness-110 ${colour} ${(pulse || nudge) ? 'iboard-question-pulse' : ''}`}
         aria-label={`${label}. ${detail}. Open Pulse panel.`}
         aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
       >
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/20 text-xl font-black">{icon}</span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[9px] font-black uppercase tracking-[0.18em] opacity-80">iBOARD Pulse</span>
-          <span className="block truncate text-sm font-black leading-tight">{label}</span>
-          <span className="block truncate text-[10px] font-bold opacity-85">{detail}</span>
-        </span>
-        <span className="shrink-0 rounded-full bg-white/90 px-2 py-1 text-[10px] font-black text-indigo-800 shadow-sm">Open</span>
+        <span className="min-w-0 truncate text-sm font-black leading-none">{label}</span>
+        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-black leading-none text-indigo-800 shadow-sm">Open</span>
       </button>
     );
   }

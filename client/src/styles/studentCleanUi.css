@@ -53,6 +53,16 @@ main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.']:
   line-height: 1rem;
 }
 
+/* Answered / closed / active states: same height + Open pill as Ask. */
+main .iboard-student-pulse-dock.is-collapsed > button {
+  min-height: 0 !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  border-radius: 1rem !important;
+  padding: 0.75rem 1rem !important;
+  box-shadow: none !important;
+}
+
 /* If a student opens responses while idle, keep the waiting state restrained. */
 main .iboard-student-pulse-dock.is-expanded section.grid.place-items-center.border-dashed > div > div:first-child,
 main .iboard-student-pulse-dock.is-expanded section.grid.place-items-center.border-dashed > div > p {
