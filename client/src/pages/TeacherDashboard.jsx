@@ -142,7 +142,9 @@ function TeacherDashboardInner() {
   const codeFromLink = String(searchParams.get('code') || '')
     .replace(/\D/g, '')
     .slice(0, 4);
-  const [codeInput, setCodeInput] = useState(codeFromLink);
+  const [codeInput, setCodeInput] = useState(() =>
+    codeFromLink.length === 4 ? codeFromLink : randomRoomCode()
+  );
   const [joined, setJoined] = useState(false);
   const [room, setRoom] = useState(null);
   const [students, setStudents] = useState([]);
@@ -1150,85 +1152,73 @@ function TeacherDashboardInner() {
     }
     return (
       <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
-        <div className="flex flex-1 flex-col px-4 py-10">
-          <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-card">
-            <div className="flex items-start justify-between gap-3">
-              <IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" />
-              <ThemeToggle />
-            </div>
-            <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">Teacher room</h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Open a room to watch writing live as they type — and ask questions without them leaving their work.
-            </p>
-            <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-950">
-              <p className="font-semibold text-slate-800 dark:text-slate-200">Two ways in</p>
-              <ul className="mt-1.5 list-disc space-y-1 pl-5 text-slate-600 dark:text-slate-400">
-                <li><span className="font-semibold text-slate-800 dark:text-slate-200">Open room</span> — full board: live writing + Pulse questions</li>
-                <li><span className="font-semibold text-slate-800 dark:text-slate-200">Open Pulse only</span> — questions and answers only (faster for presenting)</li>
-              </ul>
-            </div>
-            <div className="mt-6 space-y-3">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Room code
-              </label>
-              <div className="flex gap-2">
-                <input
-                  value={codeInput}
-                  onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  placeholder="e.g. 4821"
-                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 font-mono text-lg tracking-widest outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-                  maxLength={4}
-                />
-                <button
-                  type="button"
-                  onClick={() => setCodeInput(randomRoomCode())}
-                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
-                >
-                  Random
-                </button>
-              </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="absolute right-4 top-4 z-10">
+          <ThemeToggle />
+        </div>
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
+          <div className="w-full max-w-sm text-center">
+            <IBoardWordmark className="text-3xl" iClassName="italic text-indigo-600" />
+            <div className="mt-10 flex items-center gap-2">
+              <input
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && codeInput.length === 4) createOrJoin();
+                }}
+                placeholder="0000"
+                inputMode="numeric"
+                aria-label="Room code"
+                className="min-w-0 flex-1 rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-center font-mono text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                maxLength={4}
+              />
               <button
                 type="button"
-                onClick={() => createOrJoin()}
-                className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-lift hover:bg-indigo-700"
+                onClick={() => setCodeInput(randomRoomCode())}
+                aria-label="Generate new room code"
+                className="shrink-0 rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                Open room
+                New
               </button>
-              <a
-                href={codeInput.length === 4 ? `/pulse/teacher?code=${encodeURIComponent(codeInput)}` : '/pulse/teacher'}
-                className="block w-full rounded-xl bg-violet-100 py-3 text-center text-sm font-black text-violet-800 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200"
-              >
-                Open Pulse only
-              </a>
+            </div>
+            {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+            <button
+              type="button"
+              onClick={() => createOrJoin()}
+              disabled={codeInput.length !== 4}
+              className="mt-5 w-full rounded-2xl bg-indigo-600 py-4 text-base font-bold text-white shadow-lift hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Open room
+            </button>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
               <button
                 type="button"
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(studentJoinUrl());
-                    setCopyToast(
-                      codeInput.length === 4
-                        ? 'Student join link copied (includes room code)'
-                        : 'Student join link copied'
-                    );
+                    setCopyToast('Student link copied');
                   } catch {
                     setError('Could not copy — select and copy the link manually');
                     return;
                   }
-                  setTimeout(() => setCopyToast(''), 3000);
+                  setTimeout(() => setCopyToast(''), 2500);
                 }}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="font-medium text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline dark:text-slate-300"
               >
-                Copy student join link
+                Copy student link
               </button>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Paste into Teams so students can click to join
-                {codeInput.length === 4 ? ' with this room code.' : '. Add a room code first to include it in the link.'}
-              </p>
-              {copyToast && (
-                <p className="text-center text-sm font-medium text-emerald-700 dark:text-emerald-400">{copyToast}</p>
-              )}
+              <span aria-hidden className="text-slate-300 dark:text-slate-600">
+                ·
+              </span>
+              <a
+                href={codeInput.length === 4 ? `/pulse/teacher?code=${encodeURIComponent(codeInput)}` : '/pulse/teacher'}
+                className="font-medium text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline dark:text-slate-300"
+              >
+                Pulse only
+              </a>
             </div>
+            {copyToast && (
+              <p className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-400">{copyToast}</p>
+            )}
           </div>
         </div>
         <AppFooter />
