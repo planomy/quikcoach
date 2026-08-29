@@ -1283,7 +1283,7 @@ function TeacherDashboardInner() {
               Room <span className="font-mono text-indigo-600">{codeInput}</span>
             </h1>
             <span className="hidden rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300 sm:inline">
-              {orderedStudents.length} writing
+              Participants: {orderedStudents.length}
             </span>
             {frozen && (
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
