@@ -118,6 +118,29 @@ export default function LiveResponseTeacher({
   const [wallMode, setWallMode] = useState('');
   const [slideIndex, setSlideIndex] = useState(0);
   const clockOffsetRef = useRef(0);
+  const moreMenuRef = useRef(null);
+  const liveMoreMenuRef = useRef(null);
+
+  useEffect(() => {
+    function closeIfOutside(event) {
+      const target = event.target;
+      const more = moreMenuRef.current;
+      const liveMore = liveMoreMenuRef.current;
+      if (more?.open && !more.contains(target)) more.open = false;
+      if (liveMore?.open && !liveMore.contains(target)) liveMore.open = false;
+    }
+    function onKeyDown(event) {
+      if (event.key !== 'Escape') return;
+      if (moreMenuRef.current) moreMenuRef.current.open = false;
+      if (liveMoreMenuRef.current) liveMoreMenuRef.current.open = false;
+    }
+    document.addEventListener('pointerdown', closeIfOutside);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', closeIfOutside);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     const onLive = (payload) => {
@@ -547,19 +570,25 @@ export default function LiveResponseTeacher({
             From students · {pendingQuestions.length}
           </button>
         )}
-        <details className="relative ml-auto self-center pb-1.5">
+        <details
+          ref={moreMenuRef}
+          className="relative ml-auto self-center pb-1.5"
+          onToggle={(event) => {
+            if (event.currentTarget.open && liveMoreMenuRef.current) liveMoreMenuRef.current.open = false;
+          }}
+        >
           <summary className="cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-white/80 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200">More</summary>
           <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-            <button type="button" onClick={() => setActiveView('prepared')} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+            <button type="button" onClick={() => { if (moreMenuRef.current) moreMenuRef.current.open = false; setActiveView('prepared'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Saved · {queue.length + templates.length}
             </button>
             {featuredWall.length > 0 && (
-              <button type="button" onClick={() => setActiveView('featured')} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              <button type="button" onClick={() => { if (moreMenuRef.current) moreMenuRef.current.open = false; setActiveView('featured'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                 Featured · {featuredWall.length}
               </button>
             )}
             {!overlay && pendingQuestions.length === 0 && (
-              <button type="button" onClick={() => { setSelectedStudentId(null); setActiveView('qna'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              <button type="button" onClick={() => { if (moreMenuRef.current) moreMenuRef.current.open = false; setSelectedStudentId(null); setActiveView('qna'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                 From students
               </button>
             )}
@@ -602,13 +631,19 @@ export default function LiveResponseTeacher({
                   </>
                 )}
                 <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white dark:bg-white dark:text-slate-900">Done</button>
-                <details className="relative">
+                <details
+                  ref={liveMoreMenuRef}
+                  className="relative"
+                  onToggle={(event) => {
+                    if (event.currentTarget.open && moreMenuRef.current) moreMenuRef.current.open = false;
+                  }}
+                >
                   <summary className="cursor-pointer list-none rounded-lg px-2.5 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">⋯</summary>
                   <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                    <button type="button" disabled={!unansweredCount || activity.locked} onClick={realertUnanswered} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800">Remind unanswered</button>
-                    <button type="button" onClick={() => control(activity.locked ? 'unlock' : 'lock')} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">{activity.locked ? 'Reopen answers' : 'Pause answers'}</button>
+                    <button type="button" disabled={!unansweredCount || activity.locked} onClick={() => { if (liveMoreMenuRef.current) liveMoreMenuRef.current.open = false; realertUnanswered(); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800">Remind unanswered</button>
+                    <button type="button" onClick={() => { if (liveMoreMenuRef.current) liveMoreMenuRef.current.open = false; control(activity.locked ? 'unlock' : 'lock'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">{activity.locked ? 'Reopen answers' : 'Pause answers'}</button>
                     {activity.correctAnswer && !activity.revealed && (
-                      <button type="button" onClick={() => control('reveal')} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Reveal answer</button>
+                      <button type="button" onClick={() => { if (liveMoreMenuRef.current) liveMoreMenuRef.current.open = false; control('reveal'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Reveal answer</button>
                     )}
                   </div>
                 </details>
