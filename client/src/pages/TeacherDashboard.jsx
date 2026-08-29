@@ -1276,7 +1276,7 @@ function TeacherDashboardInner() {
           Connection lost — reconnecting…
         </div>
       )}
-      <header className="shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+      <header className="relative z-40 shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
         <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
@@ -1305,7 +1305,7 @@ function TeacherDashboardInner() {
               {pendingQuestionCount > 0 && ` · ${pendingQuestionCount}`}
               {livePulse.activity && !pendingQuestionCount && ' · live'}
             </button>
-            <details className="relative">
+            <details className="relative z-50">
               <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
                 Act
                 {broadcastPickCount > 0 && (
@@ -1314,7 +1314,7 @@ function TeacherDashboardInner() {
                   </span>
                 )}
               </summary>
-              <div className="absolute right-0 z-30 mt-1.5 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="absolute right-0 z-50 mt-1.5 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                 <button type="button" onClick={openAddCard} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                   Add card
                 </button>
@@ -1323,7 +1323,7 @@ function TeacherDashboardInner() {
                 </button>
               </div>
             </details>
-            <details ref={roomActionsRef} className="relative">
+            <details ref={roomActionsRef} className="relative z-50">
               <summary
                 className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                 title="Room settings"
@@ -1334,7 +1334,7 @@ function TeacherDashboardInner() {
                   <path d="M2 14h4M10 8h4M18 16h4" />
                 </svg>
               </summary>
-              <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                 <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
                 <div className="mb-1 flex gap-1 px-2">
                   {CARD_VIEWS.map((view) => (
