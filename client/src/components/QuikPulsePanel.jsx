@@ -183,12 +183,7 @@ export default function QuikPulsePanel({ onLaunch }) {
 
   return (
     <section className="flex h-full flex-col p-3 sm:p-4">
-      <div className="shrink-0">
-        <h3 className="font-display text-base font-black text-slate-950 dark:text-white">Speak it. Tap a response type.</h3>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Nothing to type — students answer right away.</p>
-      </div>
-
-      <div className="mt-3 grid min-h-0 flex-1 grid-cols-2 content-start gap-2 sm:grid-cols-3">
+      <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-2 sm:grid-cols-3">
         {pulseCards.slice(0, 3).map((card) => <PulseCard key={card.id} card={card} onLaunch={onLaunch} />)}
 
         <div className="flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-100 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300">
