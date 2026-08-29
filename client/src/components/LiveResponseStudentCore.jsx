@@ -308,13 +308,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     return (
       <>
         {collapseButton}
-        <section className={`grid place-items-center rounded-2xl border-2 border-dashed border-indigo-300 bg-white text-center shadow-xl dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'min-h-[140px] p-3' : 'min-h-[240px] p-6'}`}>
-          <div>
-            <div className={`mx-auto grid place-items-center rounded-full bg-indigo-100 dark:bg-indigo-950 ${compact ? 'h-10 w-10 text-xl' : 'h-16 w-16 text-3xl'}`}>⚡</div>
-            <p className={`font-black uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300 ${compact ? 'mt-2 text-[10px]' : 'mt-4 text-xs'}`}>You’re connected</p>
-            <h2 className={`font-display font-black text-slate-950 dark:text-white ${compact ? 'mt-1 text-base' : 'mt-2 text-2xl'}`}>Waiting for a question</h2>
-            {!compact && <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">No need to refresh. When your teacher launches one, tap an answer here.</p>}
-          </div>
+        <section className={`grid place-items-center rounded-2xl border border-dashed border-slate-200 bg-white text-center dark:border-slate-700 dark:bg-slate-900 ${compact ? 'min-h-[72px] p-3' : 'min-h-[96px] p-4'}`}>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Waiting for a question</p>
         </section>
       </>
     );
