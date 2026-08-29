@@ -594,7 +594,7 @@ export default function LiveResponseTeacher({
                 {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className="mt-2 max-h-48 rounded-lg bg-white object-contain" />}
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                <button type="button" onClick={() => setDisplayMode(true)} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Share</button>
+                <button type="button" onClick={() => setDisplayMode(true)} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Present</button>
                 {currentActivityIsQuikPulse && (
                   <>
                     <button type="button" onClick={repeatQuikPulse} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Repeat</button>
