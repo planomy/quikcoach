@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const STATUS_LABELS = {
   pending: 'Waiting for facilitator',
-  published: 'Displayed',
+  published: 'Shown',
   answered: 'Answered',
   dismissed: 'Done',
 };
@@ -105,7 +105,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300">
                 <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-4 w-4 accent-indigo-600" />
-                Anonymous if displayed
+                Anonymous if shown
               </label>
               <button type="submit" disabled={!draft.trim() || sending} className="ml-auto rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">
                 {sending ? 'Sending…' : 'Send'}
@@ -123,7 +123,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
                 {myPrivateQuestions.map((question) => (
                   <article key={question.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">{question.text}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-slate-500">{STATUS_LABELS[question.status] || question.status}{question.anonymous ? ' · anonymous requested' : ''}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-slate-500">{STATUS_LABELS[question.status] || question.status}{question.anonymous ? ' · anonymous if shown' : ''}</p>
                   </article>
                 ))}
               </div>

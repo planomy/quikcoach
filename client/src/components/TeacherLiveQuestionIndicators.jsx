@@ -203,7 +203,7 @@ export default function TeacherLiveQuestionIndicators() {
 
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
             <details>
-              <summary className={`flex ${ACTION_CLASS} list-none cursor-pointer items-center bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200`}>Display ▾</summary>
+              <summary className={`flex ${ACTION_CLASS} list-none cursor-pointer items-center bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200`}>Show ▾</summary>
               <div className="mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', false); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
                 <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', true); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
