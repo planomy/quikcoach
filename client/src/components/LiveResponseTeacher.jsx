@@ -626,11 +626,7 @@ export default function LiveResponseTeacher({
               if (file) { event.preventDefault(); loadImage(file); }
             }}
           >
-            <div className="border-b border-slate-200 pb-3 dark:border-slate-700">
-              <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Your question</h3>
-              <p className="mt-0.5 text-xs text-slate-500">Type a prompt, pick a type, then Launch.</p>
-            </div>
-            <label className="mt-4 block text-[10px] font-black uppercase tracking-wide text-slate-500">Question</label>
+            <label className="block text-[10px] font-black uppercase tracking-wide text-slate-500">Question</label>
             <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
             <div className="mt-3 flex flex-wrap gap-1.5">
               {TYPES.map(([value, label]) => (
