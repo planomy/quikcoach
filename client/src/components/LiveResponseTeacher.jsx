@@ -409,7 +409,7 @@ export default function LiveResponseTeacher({
   }
 
   const sectionClass = overlay
-    ? 'flex max-h-[min(70vh,640px)] flex-col overflow-hidden bg-white dark:bg-slate-900'
+    ? 'flex h-[min(72vh,560px)] flex-col overflow-hidden bg-white dark:bg-slate-900'
     : embedded
       ? 'mb-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900'
       : 'mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900';
@@ -425,8 +425,8 @@ export default function LiveResponseTeacher({
           <div className="flex items-center gap-2">
             {message && <span aria-live="polite" className="max-w-[12rem] truncate rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">{message}</span>}
             {typeof onClose === 'function' && (
-              <button type="button" onClick={onClose} className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
-                Close
+              <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-lg leading-none text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close">
+                ×
               </button>
             )}
           </div>
@@ -464,7 +464,7 @@ export default function LiveResponseTeacher({
       {!embedded && !overlay && !activity && (
         <div className="border-b border-indigo-100 bg-indigo-50/80 px-4 py-2.5 dark:border-indigo-900 dark:bg-indigo-950/40">
           <p className="text-sm font-semibold text-indigo-950 dark:text-indigo-100">
-            Tap a Quick type, or Write your own — then watch answers come in.
+            Pick Quick Question or Custom Question — then watch answers come in.
             {typeof onCopyStudentLink === 'function' && (
               <button type="button" onClick={onCopyStudentLink} className="ml-2 rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-black text-white hover:bg-indigo-700">
                 Copy student link
@@ -502,21 +502,58 @@ export default function LiveResponseTeacher({
       </div>
       )}
 
-      <nav aria-label="Ask tools" className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-slate-200 px-4 py-2 dark:border-slate-700">
-        <button type="button" onClick={() => setActiveView('quik')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'quik' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200'}`}>Quick</button>
-        <button type="button" onClick={() => setActiveView('build')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'build' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'}`}>Write</button>
-        {activity && (
-          <button type="button" onClick={() => setActiveView('live')} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'live' ? 'bg-emerald-500 text-emerald-950' : 'bg-emerald-100 text-emerald-800'}`}>
-            Live · {responses.length}/{participantCount}
-          </button>
-        )}
+      <nav aria-label="Ask pages" className="flex shrink-0 items-end gap-0 border-b border-slate-200 px-2 dark:border-slate-700">
+        <button
+          type="button"
+          onClick={() => setActiveView('quik')}
+          className={`relative px-3 py-2.5 text-[11px] font-bold transition sm:text-xs ${
+            activeView === 'quik'
+              ? 'text-indigo-700 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-indigo-600 dark:text-indigo-300'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+          }`}
+        >
+          Quick Question
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveView('build')}
+          className={`relative px-3 py-2.5 text-[11px] font-bold transition sm:text-xs ${
+            activeView === 'build'
+              ? 'text-indigo-700 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-indigo-600 dark:text-indigo-300'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+          }`}
+        >
+          Custom Question
+        </button>
+        <button
+          type="button"
+          onClick={() => activity && setActiveView('live')}
+          disabled={!activity}
+          className={`relative px-3 py-2.5 text-[11px] font-bold transition sm:text-xs ${
+            activeView === 'live'
+              ? 'text-emerald-700 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-emerald-500 dark:text-emerald-300'
+              : activity
+                ? 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                : 'cursor-not-allowed text-slate-300 dark:text-slate-600'
+          }`}
+        >
+          Live Questions{activity ? ` · ${responses.length}/${participantCount}` : ''}
+        </button>
         {pendingQuestions.length > 0 && (
-          <button type="button" onClick={() => { setSelectedStudentId(null); setActiveView('qna'); }} className={`rounded-lg px-3 py-2 text-xs font-black ${activeView === 'qna' ? 'bg-fuchsia-600 text-white' : 'bg-fuchsia-50 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-200'}`}>
+          <button
+            type="button"
+            onClick={() => { setSelectedStudentId(null); setActiveView('qna'); }}
+            className={`relative px-3 py-2.5 text-[11px] font-bold transition sm:text-xs ${
+              activeView === 'qna'
+                ? 'text-fuchsia-700 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-fuchsia-600 dark:text-fuchsia-300'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+            }`}
+          >
             From students · {pendingQuestions.length}
           </button>
         )}
-        <details className="relative ml-auto">
-          <summary className="cursor-pointer list-none rounded-lg px-2.5 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200">More</summary>
+        <details className="relative ml-auto self-center">
+          <summary className="cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200">More</summary>
           <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <button type="button" onClick={() => setActiveView('prepared')} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Saved · {queue.length + templates.length}
@@ -538,7 +575,8 @@ export default function LiveResponseTeacher({
       <div className={`min-h-0 flex-1 overflow-y-auto ${overlay ? '' : 'min-h-[260px]'}`}>
 
 
-        {activeView === 'quik' && <QuikPulsePanel onLaunch={launchQuikPulse} onClose={returnToPrimaryView} />}
+
+        {activeView === 'quik' && <QuikPulsePanel onLaunch={launchQuikPulse} />}
 
         {activeView === 'student' && selectedStudent && <div className="p-4"><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Student check-in</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{selectedStudent.name}</h3><p className="mt-1 text-xs text-slate-500">{studentTileMeta(selectedStudent).title}</p></div><button type="button" onClick={returnToPrimaryView} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={!selectedStudent.connected} onClick={() => nudge(selectedStudent.id)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Send private check-in</button>{selectedStudent.engagement_status && selectedStudent.engagement_status !== 'ready' && <button type="button" onClick={() => acknowledge(selectedStudent.id)} className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-black text-amber-950">Mark request seen</button>}{pendingByStudent[Number(selectedStudent.id)] > 0 && <button type="button" onClick={() => setActiveView('qna')} className="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-black text-white">Review questions</button>}</div></div>}
 
@@ -593,12 +631,9 @@ export default function LiveResponseTeacher({
               if (file) { event.preventDefault(); loadImage(file); }
             }}
           >
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Write</p>
-                <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Your question</h3>
-              </div>
-              <button type="button" onClick={returnToPrimaryView} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Close</button>
+            <div className="border-b border-slate-200 pb-3 dark:border-slate-700">
+              <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Your question</h3>
+              <p className="mt-0.5 text-xs text-slate-500">Type a prompt, pick a type, then Launch.</p>
             </div>
             <label className="mt-4 block text-[10px] font-black uppercase tracking-wide text-slate-500">Question</label>
             <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />

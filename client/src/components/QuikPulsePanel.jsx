@@ -36,7 +36,7 @@ const pulseCards = [
   {
     id: 'agreement',
     label: 'Agreement Scale',
-    hint: 'From strongly disagree to strongly agree',
+    hint: 'Strongly disagree → strongly agree',
     icon: 'agreement',
     question: {
       ...baseQuestion,
@@ -80,24 +80,23 @@ export function isQuikPulseActivity(activity) {
 function QuikPulseIcon({ name }) {
   const shared = {
     viewBox: '0 0 64 64',
+    className: 'h-full w-full',
     fill: 'none',
     stroke: 'currentColor',
-    strokeWidth: 2.6,
+    strokeWidth: '2.5',
     strokeLinecap: 'round',
     strokeLinejoin: 'round',
-    'aria-hidden': true,
-    className: 'h-12 w-12',
   };
 
   if (name === 'yes-no') {
     return (
       <svg {...shared}>
-        <circle cx="14" cy="32" r="9" />
-        <circle cx="32" cy="32" r="9" />
-        <circle cx="50" cy="32" r="9" />
-        <path d="m10.5 32 2.3 2.5 4.8-5" />
-        <path d="m28.8 28.8 6.4 6.4m0-6.4-6.4 6.4" />
-        <path d="M47.8 29.7c.5-1.8 4.4-2 4.4.5 0 1.7-2.2 1.8-2.2 3.5m0 2.7h.01" />
+        <path d="M14 20h14v14H14z" />
+        <path d="m17.5 27 3 3 6-7" />
+        <path d="M36 20h14v14H36z" />
+        <path d="m40 24 6 6m0-6-6 6" />
+        <circle cx="32" cy="48" r="8" />
+        <path d="M32 44.5v5M32 52.5h.01" />
       </svg>
     );
   }
@@ -163,18 +162,18 @@ function PulseCard({ card, onLaunch }) {
     <button
       type="button"
       onClick={() => onLaunch(card.question)}
-      className="group flex min-h-36 flex-col items-center justify-center rounded-[1.4rem] border-2 border-indigo-100 bg-white px-3 py-4 text-center text-indigo-700 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50"
+      className="group flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-100 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50"
     >
-      <span className="grid h-14 w-14 place-items-center rounded-[1.1rem] bg-indigo-50 transition group-hover:bg-white dark:bg-indigo-950 dark:group-hover:bg-indigo-900/70">
+      <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950">
         <QuikPulseIcon name={card.icon} />
       </span>
-      <span className="mt-3 text-sm font-black text-slate-950 dark:text-white">{card.label}</span>
-      <span className="mt-1 text-[11px] font-semibold leading-snug text-slate-500 dark:text-slate-400">{card.hint}</span>
+      <span className="mt-1.5 text-[11px] font-black leading-tight text-slate-950 dark:text-white">{card.label}</span>
+      <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">{card.hint}</span>
     </button>
   );
 }
 
-export default function QuikPulsePanel({ onLaunch, onClose }) {
+export default function QuikPulsePanel({ onLaunch }) {
   const launchChoice = (count) => onLaunch({
     ...baseQuestion,
     type: 'choice',
@@ -183,28 +182,24 @@ export default function QuikPulsePanel({ onLaunch, onClose }) {
   });
 
   return (
-    <section className="p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-indigo-100 pb-4 dark:border-indigo-900">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">Quick</p>
-          <h3 className="font-display text-xl font-black text-slate-950 dark:text-white">Speak it. Tap a response type.</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Nothing to type — students answer right away.</p>
-        </div>
-        <button type="button" onClick={onClose} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">Close</button>
+    <section className="flex h-full flex-col p-3 sm:p-4">
+      <div className="shrink-0">
+        <h3 className="font-display text-base font-black text-slate-950 dark:text-white">Speak it. Tap a response type.</h3>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Nothing to type — students answer right away.</p>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="mt-3 grid min-h-0 flex-1 grid-cols-2 content-start gap-2 sm:grid-cols-3">
         {pulseCards.slice(0, 3).map((card) => <PulseCard key={card.id} card={card} onLaunch={onLaunch} />)}
 
-        <div className="flex min-h-36 flex-col items-center justify-center rounded-[1.4rem] border-2 border-indigo-100 bg-white px-3 py-4 text-center text-indigo-700 shadow-sm dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300">
-          <span className="grid h-14 w-14 place-items-center rounded-[1.1rem] bg-indigo-50 dark:bg-indigo-950">
+        <div className="flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-100 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950">
             <QuikPulseIcon name="choice" />
           </span>
-          <span className="mt-3 text-sm font-black text-slate-950 dark:text-white">A–D Choice</span>
-          <span className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">How many choices did you say?</span>
-          <div className="mt-3 flex gap-2" aria-label="Choose number of answer options">
+          <span className="mt-1.5 text-[11px] font-black leading-tight text-slate-950 dark:text-white">A–D Choice</span>
+          <span className="mt-0.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400">How many choices?</span>
+          <div className="mt-1.5 flex gap-1" aria-label="Choose number of answer options">
             {[2, 3, 4].map((count) => (
-              <button key={count} type="button" onClick={() => launchChoice(count)} className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-800 hover:bg-indigo-600 hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">
+              <button key={count} type="button" onClick={() => launchChoice(count)} className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-800 hover:bg-indigo-600 hover:text-white dark:bg-indigo-950 dark:text-indigo-200">
                 {count}
               </button>
             ))}
