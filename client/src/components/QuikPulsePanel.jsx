@@ -186,9 +186,9 @@ export default function QuikPulsePanel({ onLaunch, onClose }) {
     <section className="p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-indigo-100 pb-4 dark:border-indigo-900">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">Quik Pulse</p>
-          <h3 className="font-display text-xl font-black text-slate-950 dark:text-white">Speak the question. Tap the response.</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Participants can answer immediately—nothing for you to type.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">Quick</p>
+          <h3 className="font-display text-xl font-black text-slate-950 dark:text-white">Speak it. Tap a response type.</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Nothing to type — students answer right away.</p>
         </div>
         <button type="button" onClick={onClose} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">Close</button>
       </div>

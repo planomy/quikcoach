@@ -157,6 +157,7 @@ function TeacherDashboardInner() {
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
   const roomActionsRef = useRef(null);
+  const actMenuRef = useRef(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [feedbackMode, setFeedbackMode] = useState('writing');
@@ -609,8 +610,26 @@ function TeacherDashboardInner() {
   }, [socket, joined]);
 
   useEffect(() => {
-    if (livePulse.activity?.id) setAskOverlayOpen(false);
-  }, [livePulse.activity?.id]);
+    if (!joined) return undefined;
+    function closeIfOutside(event) {
+      const target = event.target;
+      const act = actMenuRef.current;
+      const room = roomActionsRef.current;
+      if (act?.open && !act.contains(target)) act.open = false;
+      if (room?.open && !room.contains(target)) room.open = false;
+    }
+    function onKeyDown(event) {
+      if (event.key !== 'Escape') return;
+      if (actMenuRef.current) actMenuRef.current.open = false;
+      if (roomActionsRef.current) roomActionsRef.current.open = false;
+    }
+    document.addEventListener('pointerdown', closeIfOutside);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', closeIfOutside);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [joined]);
 
   const pendingQuestionCount = useMemo(
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
@@ -1053,6 +1072,7 @@ function TeacherDashboardInner() {
 
   function openNewClassConfirmation() {
     if (roomActionsRef.current) roomActionsRef.current.open = false;
+    if (actMenuRef.current) actMenuRef.current.open = false;
     setError('');
     setNewClassConfirmOpen(true);
   }
@@ -1079,11 +1099,13 @@ function TeacherDashboardInner() {
 
   function openJoinScreen() {
     if (roomActionsRef.current) roomActionsRef.current.open = false;
+    if (actMenuRef.current) actMenuRef.current.open = false;
     setJoinScreenOpen(true);
   }
 
   function downloadParticipantList() {
     if (roomActionsRef.current) roomActionsRef.current.open = false;
+    if (actMenuRef.current) actMenuRef.current.open = false;
     const rows = [
       ['Name', 'Year level', 'Group', 'Words', 'Last updated'],
       ...orderedStudents.map((student) => [
@@ -1232,6 +1254,7 @@ function TeacherDashboardInner() {
 
   function closeRoomMenu() {
     if (roomActionsRef.current) roomActionsRef.current.open = false;
+    if (actMenuRef.current) actMenuRef.current.open = false;
   }
 
   function openLibrary(panel) {
@@ -1284,7 +1307,10 @@ function TeacherDashboardInner() {
           <div className="ml-auto flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setAskOverlayOpen(true)}
+              onClick={() => {
+                closeRoomMenu();
+                setAskOverlayOpen(true);
+              }}
               className={`rounded-lg px-3 py-1.5 text-[11px] font-black transition ${
                 livePulse.activity || pendingQuestionCount > 0
                   ? 'bg-indigo-600 text-white hover:bg-indigo-700'
@@ -1295,7 +1321,15 @@ function TeacherDashboardInner() {
               {pendingQuestionCount > 0 && ` · ${pendingQuestionCount}`}
               {livePulse.activity && !pendingQuestionCount && ' · live'}
             </button>
-            <details className="relative z-50">
+            <details
+              ref={actMenuRef}
+              className="relative z-50"
+              onToggle={(event) => {
+                if (event.currentTarget.open && roomActionsRef.current) {
+                  roomActionsRef.current.open = false;
+                }
+              }}
+            >
               <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
                 Act
                 {broadcastPickCount > 0 && (
@@ -1305,15 +1339,37 @@ function TeacherDashboardInner() {
                 )}
               </summary>
               <div className="absolute right-0 z-50 mt-1.5 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button type="button" onClick={openAddCard} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeRoomMenu();
+                    openAddCard();
+                  }}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
                   Add card
                 </button>
-                <button type="button" onClick={sendBroadcastToClass} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeRoomMenu();
+                    sendBroadcastToClass();
+                  }}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
                   Send broadcast{broadcastPickCount ? ` (${Math.min(6, broadcastPickCount)})` : ''}
                 </button>
               </div>
             </details>
-            <details ref={roomActionsRef} className="relative z-50">
+            <details
+              ref={roomActionsRef}
+              className="relative z-50"
+              onToggle={(event) => {
+                if (event.currentTarget.open && actMenuRef.current) {
+                  actMenuRef.current.open = false;
+                }
+              }}
+            >
               <summary
                 className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                 title="Room settings"
@@ -1448,11 +1504,13 @@ function TeacherDashboardInner() {
                     type="button"
                     onClick={() => setAskOverlayOpen(true)}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700"
-                    title="Question controls"
-                    aria-label="Open question controls"
+                    title="Open live results"
+                    aria-label="Open live results"
                   >
                     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                      <path d="M4 20V10" />
+                      <path d="M12 20V4" />
+                      <path d="M20 20v-7" />
                     </svg>
                   </button>
                 </div>
