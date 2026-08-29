@@ -151,11 +151,6 @@ export default function LiveResponseTeacher({
   const currentActivityIsQuikPulse = isQuikPulseActivity(activity);
 
   useEffect(() => {
-    if (!activity?.id) return;
-    setActiveView('live');
-  }, [activity?.id]);
-
-  useEffect(() => {
     if (!activity && activeView === 'live') setActiveView('quik');
   }, [activity, activeView]);
 
