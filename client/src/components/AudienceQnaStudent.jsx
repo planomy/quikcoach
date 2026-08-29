@@ -7,9 +7,9 @@ const STATUS_LABELS = {
   dismissed: 'Done',
 };
 
-export default function AudienceQnaStudent({ socket, compact = false, collapsed = false, onRequestExpand }) {
+export default function AudienceQnaStudent({ socket, compact = false, collapsed = false, onRequestExpand, embedded = false }) {
   const [questions, setQuestions] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!embedded);
   const [draft, setDraft] = useState('');
   const [anonymous, setAnonymous] = useState(false);
   const [sending, setSending] = useState(false);
@@ -71,6 +71,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
   }
 
   const statusLabel = liveQuestions.length ? `${liveQuestions.length} live` : open ? 'Close' : 'Open';
+  const showBody = embedded || open;
 
   if (collapsed) {
     return (
@@ -83,12 +84,14 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
 
   return (
     <section className={`overflow-hidden rounded-2xl border border-fuchsia-200 bg-white shadow-card dark:border-fuchsia-900 dark:bg-slate-900 ${compact ? 'text-xs' : ''}`}>
-      <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-indigo-600 px-4 py-3 text-left text-white">
-        <span className="font-display text-sm font-black">Ask a question</span>
-        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-indigo-800">{statusLabel}</span>
-      </button>
+      {!embedded && (
+        <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-indigo-600 px-4 py-3 text-left text-white">
+          <span className="font-display text-sm font-black">Ask a question</span>
+          <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-indigo-800">{statusLabel}</span>
+        </button>
+      )}
 
-      {open && (
+      {showBody && (
         <div className="space-y-4 p-4">
           <form onSubmit={submit}>
             <label className="block text-[10px] font-black uppercase tracking-wide text-slate-500">Your question</label>

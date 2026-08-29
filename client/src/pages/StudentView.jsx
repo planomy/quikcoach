@@ -11,8 +11,8 @@ import PulseLink from '../components/PulseLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import AudienceQnaStudent from '../components/AudienceQnaStudent.jsx';
+import StudentInbox from '../components/StudentInbox.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
-import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import { plainTextToRichHtml } from '../lib/richText.js';
@@ -28,11 +28,14 @@ function feedbackInboxItem(item) {
   const feedbackId = Number(item?.feedbackId) || 0;
   const text = String(item?.text || '');
   const createdAt = String(item?.createdAt || '');
+  const at = Date.parse(createdAt) || Date.now();
   return {
     id: feedbackId
       ? `feedback-${feedbackId}`
       : `feedback-${Number(item?.studentId) || 0}-${createdAt}-${text}`,
+    type: 'note',
     text,
+    at,
   };
 }
 
@@ -44,6 +47,12 @@ function mergeFeedbackInbox(previous, incoming) {
     .filter((item) => item.text && !existingIds.has(item.id));
   return fresh.length ? [...fresh, ...previous] : previous;
 }
+
+const SUPPORT_TABS = [
+  { id: 'ask', label: 'Ask a Question' },
+  { id: 'respond', label: 'Respond' },
+  { id: 'inbox', label: 'Inbox' },
+];
 
 export default function StudentView() {
   const [searchParams] = useSearchParams();
@@ -59,12 +68,11 @@ export default function StudentView() {
   const [joined, setJoined] = useState(false);
   const [error, setError] = useState('');
   const [feedbackInbox, setFeedbackInbox] = useState([]);
-  const [feedbackOpen, setFeedbackOpen] = useState(true);
   const [broadcastHistory, setBroadcastHistory] = useState([]);
-  const [broadcastOpen, setBroadcastOpen] = useState(true);
-  // null always means "show the latest" so a new teacher broadcast jumps forward automatically.
-  const [broadcastCursor, setBroadcastCursor] = useState(null);
-  const [exemplarFlash, setExemplarFlash] = useState(false);
+  const [supportTab, setSupportTab] = useState('ask');
+  const [inboxExpandedId, setInboxExpandedId] = useState(null);
+  const [inboxUnreadIds, setInboxUnreadIds] = useState(() => new Set());
+  const [respondLive, setRespondLive] = useState(false);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [imageBusy, setImageBusy] = useState(false);
@@ -78,12 +86,44 @@ export default function StudentView() {
   /** Until React commits `student`, `room:state` may arrive first; match payload by this id. */
   const hydrateStudentIdRef = useRef(null);
   const wasDisconnectedRef = useRef(false);
-  const exemplarFlashTimerRef = useRef(null);
   const onlineBannerTimerRef = useRef(null);
+  const supportTabRef = useRef(supportTab);
+  const broadcastBootstrappedRef = useRef(false);
+  const lastBroadcastAtRef = useRef(null);
 
   useEffect(() => {
     studentRef.current = student;
   }, [student]);
+
+  useEffect(() => {
+    supportTabRef.current = supportTab;
+  }, [supportTab]);
+
+  useEffect(() => {
+    if (!joined) return undefined;
+    document.documentElement.classList.add('iboard-student-workspace');
+    return () => document.documentElement.classList.remove('iboard-student-workspace');
+  }, [joined]);
+
+  function activateInbox(itemId) {
+    setSupportTab('inbox');
+    setInboxExpandedId(itemId);
+    setInboxUnreadIds((current) => {
+      const next = new Set(current);
+      next.add(itemId);
+      return next;
+    });
+  }
+
+  function selectSupportTab(tabId) {
+    setSupportTab(tabId);
+    if (tabId === 'inbox') {
+      setInboxUnreadIds(new Set());
+    }
+    if (tabId === 'respond') {
+      setRespondLive(false);
+    }
+  }
 
   useEffect(() => {
     socket.connect();
@@ -183,36 +223,53 @@ export default function StudentView() {
       if (!sid || !Array.isArray(items)) return;
       const mine = items.filter((i) => Number(i?.studentId) === Number(sid));
       if (!mine.length) return;
+      const mapped = mine.map(feedbackInboxItem).filter((item) => item.text);
       setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine));
-      setFeedbackOpen(true);
+      const newest = mapped[mapped.length - 1] || mapped[0];
+      if (newest) activateInbox(newest.id);
     };
     const onBroadcast = (payload = {}) => {
       const serverHistory = Array.isArray(payload.history)
         ? payload.history.filter((entry) => Array.isArray(entry?.items)).slice(-10)
         : null;
       const items = Array.isArray(payload.items) ? payload.items : [];
+      const entry = items.length ? { items, at: Number(payload.at) || Date.now() } : null;
 
-      if (serverHistory) {
-        setBroadcastHistory(serverHistory);
-      } else if (items.length) {
-        // Compatibility with a server that only sends the newest broadcast.
-        const entry = { items, at: Number(payload.at) || Date.now() };
-        setBroadcastHistory((previous) => {
+      setBroadcastHistory((previous) => {
+        let nextHistory;
+        if (serverHistory) nextHistory = serverHistory;
+        else if (entry) {
           const deduped = previous.filter((old) => Number(old?.at) !== Number(entry.at));
-          return [...deduped, entry].slice(-10);
-        });
-      } else {
-        setBroadcastHistory([]);
-      }
-      setBroadcastCursor(null);
+          nextHistory = [...deduped, entry].slice(-10);
+        } else {
+          nextHistory = [];
+        }
 
-      if (items.length || serverHistory?.length) {
-        setBroadcastOpen(true);
-        setExemplarFlash(true);
-        if (exemplarFlashTimerRef.current) clearTimeout(exemplarFlashTimerRef.current);
-        exemplarFlashTimerRef.current = setTimeout(() => setExemplarFlash(false), 4000);
+        const latest = nextHistory[nextHistory.length - 1];
+        const latestAt = latest ? Number(latest.at) || 0 : 0;
+        const hadBootstrap = broadcastBootstrappedRef.current;
+        const isNew = hadBootstrap && latestAt && latestAt !== Number(lastBroadcastAtRef.current || 0);
+        lastBroadcastAtRef.current = latestAt || null;
+        broadcastBootstrappedRef.current = true;
+
+        if (isNew && latest?.items?.length) {
+          queueMicrotask(() => activateInbox(`broadcast-${latestAt}`));
+        }
+        return nextHistory;
+      });
+    };
+    const onLiveActivity = (payload) => {
+      if (payload?.activity?.id) {
+        setRespondLive(true);
+        if (supportTabRef.current !== 'respond') setSupportTab('respond');
       } else {
-        setExemplarFlash(false);
+        setRespondLive(false);
+      }
+    };
+    const onLiveRealert = (payload) => {
+      if (payload?.activity?.id) {
+        setRespondLive(true);
+        setSupportTab('respond');
       }
     };
     const onTimesUp = () => setTimesUp(true);
@@ -220,14 +277,17 @@ export default function StudentView() {
     socket.on('student:live', onLive);
     socket.on('feedback:batch', onBatch);
     socket.on('broadcast:exemplars', onBroadcast);
+    socket.on('live:activity', onLiveActivity);
+    socket.on('live:realert', onLiveRealert);
     socket.on('timer:times-up', onTimesUp);
     return () => {
       socket.off('room:state', onState);
       socket.off('student:live', onLive);
       socket.off('feedback:batch', onBatch);
       socket.off('broadcast:exemplars', onBroadcast);
+      socket.off('live:activity', onLiveActivity);
+      socket.off('live:realert', onLiveRealert);
       socket.off('timer:times-up', onTimesUp);
-      if (exemplarFlashTimerRef.current) clearTimeout(exemplarFlashTimerRef.current);
     };
   }, [socket]);
 
@@ -499,14 +559,27 @@ export default function StudentView() {
   const frozen = !!room?.freeze_class;
   const progress = wt > 0 ? Math.min(100, Math.round((wc / wt) * 100)) : 0;
   const wordBand = useMemo(() => recommendedWordRange(wt), [wt]);
-  const broadcastIndex = broadcastHistory.length
-    ? Math.min(
-        Math.max(broadcastCursor ?? broadcastHistory.length - 1, 0),
-        broadcastHistory.length - 1
-      )
-    : -1;
-  const currentBroadcast = broadcastIndex >= 0 ? broadcastHistory[broadcastIndex] : null;
-  const broadcastExemplars = Array.isArray(currentBroadcast?.items) ? currentBroadcast.items : [];
+  const inboxItems = useMemo(() => {
+    const notes = feedbackInbox.map((item) => ({
+      ...item,
+      unread: inboxUnreadIds.has(item.id),
+    }));
+    const broadcasts = broadcastHistory
+      .filter((entry) => Array.isArray(entry?.items) && entry.items.length)
+      .map((entry) => {
+        const at = Number(entry.at) || 0;
+        const id = `broadcast-${at}`;
+        return {
+          id,
+          type: 'broadcast',
+          at,
+          exemplars: entry.items,
+          unread: inboxUnreadIds.has(id),
+        };
+      });
+    return [...notes, ...broadcasts].sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
+  }, [feedbackInbox, broadcastHistory, inboxUnreadIds]);
+  const inboxTabCount = inboxUnreadIds.size;
 
   function renderProgressPanel() {
     if (wt > 0) {
@@ -668,14 +741,6 @@ export default function StudentView() {
           Back online
         </div>
       )}
-      {exemplarFlash && (
-        <div
-          role="status"
-          className="sticky top-0 z-40 border-b border-violet-400 bg-violet-600 px-4 py-3 text-center text-base font-bold text-white shadow-md"
-        >
-          Your teacher shared exemplars
-        </div>
-      )}
       <header className="border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/90 px-4 py-4 backdrop-blur sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 xl:max-w-7xl">
           <div className="min-w-0">
@@ -736,135 +801,59 @@ export default function StudentView() {
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
-          <aside className="order-1 flex min-w-0 flex-col gap-4 xl:col-start-2 xl:row-start-1">
-            <AudienceQnaStudent socket={socket} />
-            <LiveResponseStudent socket={socket} />
-            <div className="xl:hidden">{renderProgressPanel()}</div>
-            {broadcastExemplars.length > 0 && (
-              <section className={`rounded-2xl border border-violet-200 bg-violet-50/90 shadow-sm ${broadcastOpen ? 'p-4' : 'px-4 py-3'}`}>
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-display text-sm font-semibold text-violet-900">Broadcast</h2>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {broadcastHistory.length > 1 && (
-                      <div className="flex items-center gap-1 rounded-full border border-violet-200 bg-white/80 p-0.5 text-violet-800 shadow-sm dark:border-violet-800 dark:bg-slate-900 dark:text-violet-200">
-                        <button
-                          type="button"
-                          onClick={() => setBroadcastCursor(Math.max(0, broadcastIndex - 1))}
-                          disabled={broadcastIndex <= 0}
-                          className="grid h-7 w-7 place-items-center rounded-full text-lg font-bold leading-none hover:bg-violet-100 disabled:cursor-default disabled:opacity-30 dark:hover:bg-violet-950"
-                          aria-label="Previous broadcast"
-                          title="Previous broadcast"
-                        >
-                          ‹
-                        </button>
-                        <span className="min-w-[3.8rem] text-center text-[11px] font-bold tabular-nums">
-                          {broadcastIndex + 1} of {broadcastHistory.length}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = Math.min(broadcastHistory.length - 1, broadcastIndex + 1);
-                            setBroadcastCursor(next === broadcastHistory.length - 1 ? null : next);
-                          }}
-                          disabled={broadcastIndex >= broadcastHistory.length - 1}
-                          className="grid h-7 w-7 place-items-center rounded-full text-lg font-bold leading-none hover:bg-violet-100 disabled:cursor-default disabled:opacity-30 dark:hover:bg-violet-950"
-                          aria-label="Next broadcast"
-                          title="Next broadcast"
-                        >
-                          ›
-                        </button>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setBroadcastOpen((open) => !open)}
-                      className="grid h-7 w-7 place-items-center rounded-full text-base font-black text-violet-700 hover:bg-violet-100 dark:text-violet-200 dark:hover:bg-violet-950"
-                      aria-expanded={broadcastOpen}
-                      aria-label={broadcastOpen ? 'Collapse Broadcast' : 'Expand Broadcast'}
-                      title={broadcastOpen ? 'Collapse Broadcast' : 'Expand Broadcast'}
-                    >
-                      {broadcastOpen ? '▴' : '▾'}
-                    </button>
-                  </div>
-                </div>
-                {broadcastOpen && (
-                  <>
-                    <p className="mt-1 text-xs leading-relaxed text-violet-800 dark:text-violet-300">
-                      Your teacher shared anonymised exemplar drafts for the class. Names are not shown.
-                    </p>
-                    {Number.isFinite(Number(currentBroadcast?.at)) && (
-                      <p className="mt-1 text-[11px] font-medium text-violet-600/80 dark:text-violet-300/80">
-                        {new Date(Number(currentBroadcast.at)).toLocaleTimeString([], {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })}
-                      </p>
-                    )}
-                    <div className="mt-3 space-y-3">
-                      {broadcastExemplars.map((ex, i) => (
-                        <div
-                          key={`${ex.label}-${i}`}
-                          className="rounded-xl border border-violet-100 bg-white dark:bg-slate-900 p-3 text-sm shadow-sm"
-                        >
-                          <p className="text-xs font-bold uppercase tracking-wide text-violet-700">{ex.label}</p>
-                          {ex.image_url && (
-                            <img
-                              src={ex.image_url}
-                              alt=""
-                              className="mt-2 max-h-48 w-full object-contain"
-                            />
-                          )}
-                          {ex.text?.trim() ? (
-                            <RichTextDisplay
-                              html={ex.rich_text_html}
-                              text={ex.text}
-                              className="mt-2 max-h-48 overflow-auto text-slate-700 dark:text-slate-300 scrollbar-thin"
-                            />
-                          ) : !ex.image_url ? (
-                            <p className="mt-2 text-slate-500">—</p>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </section>
-            )}
-            {feedbackInbox.length > 0 && (
-              <section
-                role="status"
-                aria-live="polite"
-                className={`rounded-2xl border-2 border-indigo-300 bg-indigo-50/90 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/60 ${feedbackOpen ? 'p-4' : 'px-4 py-3'}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-display text-sm font-semibold text-indigo-900 dark:text-indigo-200">
-                    Teacher feedback
-                  </h2>
+          <aside className="order-1 flex min-w-0 flex-col gap-3 xl:col-start-2 xl:row-start-1">
+            <nav aria-label="Student tools" className="flex items-end gap-1 border-b border-slate-200 dark:border-slate-700">
+              {SUPPORT_TABS.map((tab) => {
+                const active = supportTab === tab.id;
+                const badge = tab.id === 'inbox'
+                  ? inboxTabCount
+                  : tab.id === 'respond' && respondLive
+                    ? '●'
+                    : 0;
+                return (
                   <button
+                    key={tab.id}
                     type="button"
-                    onClick={() => setFeedbackOpen((open) => !open)}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-base font-black text-indigo-700 hover:bg-indigo-100 dark:text-indigo-200 dark:hover:bg-indigo-950"
-                    aria-expanded={feedbackOpen}
-                    aria-label={feedbackOpen ? 'Collapse teacher feedback' : 'Expand teacher feedback'}
-                    title={feedbackOpen ? 'Collapse teacher feedback' : 'Expand teacher feedback'}
+                    onClick={() => selectSupportTab(tab.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
+                      active
+                        ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+                        : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+                    }`}
                   >
-                    {feedbackOpen ? '▴' : '▾'}
+                    {tab.label}
+                    {badge ? (
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${active ? 'bg-white/25' : 'bg-amber-500 text-amber-950'}`}>
+                        {badge}
+                      </span>
+                    ) : null}
                   </button>
-                </div>
-                {feedbackOpen && (
-                  <ul className="mt-2 space-y-2">
-                    {feedbackInbox.map((f) => (
-                      <li
-                        key={f.id}
-                        className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-300"
-                      >
-                        {f.text}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            )}
+                );
+              })}
+            </nav>
+
+            <div className={supportTab === 'ask' ? '' : 'hidden'}>
+              <AudienceQnaStudent socket={socket} embedded />
+            </div>
+            <div className={supportTab === 'respond' ? '' : 'hidden'}>
+              <LiveResponseStudent socket={socket} standalone />
+            </div>
+            <div className={supportTab === 'inbox' ? '' : 'hidden'}>
+              <StudentInbox
+                items={inboxItems}
+                expandedId={inboxExpandedId}
+                onToggle={(id) => {
+                  setInboxExpandedId((current) => (current === id ? null : id));
+                  setInboxUnreadIds((current) => {
+                    if (!current.has(id)) return current;
+                    const next = new Set(current);
+                    next.delete(id);
+                    return next;
+                  });
+                }}
+              />
+            </div>
+            <div className="xl:hidden">{renderProgressPanel()}</div>
           </aside>
 
           <section className="order-2 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">

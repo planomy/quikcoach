@@ -200,17 +200,13 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
 /* Phones and genuinely narrow windows keep the single-column workspace and
    floating Pulse. Tablet-sized viewports are wide enough for the working layout. */
 @media (max-width: 767px) {
-  .iboard-student-workspace main {
-    padding-bottom: 6.5rem !important;
-  }
-
   .iboard-student-pulse-dock {
-    position: fixed;
-    right: 1rem;
-    bottom: 1rem;
-    left: 1rem;
-    max-height: min(72vh, 36rem);
-    overflow-y: auto;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    max-height: none;
+    overflow: visible;
     border-radius: 1rem;
   }
 }
@@ -250,9 +246,8 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
     grid-row: 1;
   }
 
-  /* The support rail stays beside the student's writing. It scrolls independently
-     if feedback becomes long, while Pulse remains docked at the bottom. */
-  .iboard-student-workspace main aside:has(.iboard-student-pulse-dock) {
+  /* The support rail stays beside the student's writing and scrolls on its own. */
+  .iboard-student-workspace main > div > aside {
     position: sticky;
     top: 1rem;
     align-self: start;
@@ -261,18 +256,6 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
     overscroll-behavior: contain;
     padding-bottom: 0.25rem;
     scrollbar-width: thin;
-  }
-
-  .iboard-student-workspace main aside:has(.iboard-student-pulse-dock) > section.border-indigo-300 {
-    order: 1;
-    max-height: min(44vh, 30rem);
-    overflow-y: auto;
-  }
-
-  .iboard-student-workspace main aside:has(.iboard-student-pulse-dock) > section.border-violet-200 {
-    order: 2;
-    max-height: min(32vh, 22rem);
-    overflow-y: auto;
   }
 
   .iboard-student-pulse-dock {
