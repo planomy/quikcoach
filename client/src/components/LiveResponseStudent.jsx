@@ -37,6 +37,7 @@ function TabbedStudentResponse({ socket, ...props }) {
   const [collapsed, setCollapsed] = useState(false);
   const [catchupActivityId, setCatchupActivityId] = useState('');
   const activityIdRef = useRef('');
+  const catchupActivityIdRef = useRef('');
   const bootstrappedRef = useRef(false);
   const collapseTimerRef = useRef(null);
   const catchupReturnTabRef = useRef('');
@@ -78,12 +79,14 @@ function TabbedStudentResponse({ socket, ...props }) {
         setResponse(null);
         setCollapsed(false);
         setCatchupActivityId('');
+        catchupActivityIdRef.current = '';
         catchupReturnTabRef.current = '';
         return;
       }
 
       if (firstState) {
         catchupReturnTabRef.current = activeSupportTabLabel();
+        catchupActivityIdRef.current = nextId;
         setCatchupActivityId(nextId);
         setTimeout(() => clickSupportTab(catchupReturnTabRef.current), 0);
         return;
@@ -94,6 +97,7 @@ function TabbedStudentResponse({ socket, ...props }) {
         setResponse(null);
         setCollapsed(false);
         setCatchupActivityId('');
+        catchupActivityIdRef.current = '';
         catchupReturnTabRef.current = '';
       }
     };
@@ -113,8 +117,10 @@ function TabbedStudentResponse({ socket, ...props }) {
 
       if (nextResponse) {
         scheduleCollapse(nextResponse);
-        if (nextId === catchupActivityId || nextId === activityIdRef.current) {
+        if (nextId === catchupActivityIdRef.current) {
           clearRespondIndicatorAndRestoreTab();
+        } else if (activeSupportTabLabel() === 'Respond') {
+          clickSupportTab('Respond');
         }
       } else {
         clearCollapse();
@@ -127,6 +133,7 @@ function TabbedStudentResponse({ socket, ...props }) {
       clearCollapse();
       setCollapsed(false);
       setCatchupActivityId('');
+      catchupActivityIdRef.current = '';
       catchupReturnTabRef.current = '';
     };
 
@@ -139,7 +146,7 @@ function TabbedStudentResponse({ socket, ...props }) {
       socket.off('live:realert', onRealert);
       clearCollapse();
     };
-  }, [socket, catchupActivityId]);
+  }, [socket]);
 
   return (
     <>
