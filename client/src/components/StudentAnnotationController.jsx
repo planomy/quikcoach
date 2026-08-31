@@ -9,7 +9,8 @@ const MARKER_SIZE = 28;
 const MARKER_GAP = 5;
 const MARKER_MARGIN = 6;
 const POPUP_WIDTH = 290;
-const POPUP_HEIGHT = 220;
+/** Placement budget — keep the action button visible on short iPad viewports. */
+const POPUP_HEIGHT = 300;
 
 function currentStudentId() {
   if (typeof window === 'undefined') return 0;
@@ -48,7 +49,13 @@ function detachedMarkerPosition(editorRect, index) {
   });
 }
 
+function commentPopupMaxHeight() {
+  const vp = viewportBox();
+  return Math.max(220, Math.min(POPUP_HEIGHT, vp.height - 24));
+}
+
 function commentPopupPosition(marker) {
+  const height = commentPopupMaxHeight();
   return placementNearAnchor({
     anchor: {
       top: marker.top,
@@ -59,7 +66,7 @@ function commentPopupPosition(marker) {
       height: MARKER_SIZE,
     },
     width: POPUP_WIDTH,
-    height: POPUP_HEIGHT,
+    height,
     gap: 10,
     prefer: 'below',
   });
@@ -302,47 +309,55 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       {openMarker && openPopupPosition && (
         <div
           data-teacher-annotation-ui
-          className="fixed z-[70] w-[290px] rounded-2xl border border-violet-200 bg-white p-4 shadow-2xl dark:border-violet-800 dark:bg-slate-900"
-          style={{ top: openPopupPosition.top, left: openPopupPosition.left }}
+          className="fixed z-[70] flex w-[290px] flex-col overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-2xl dark:border-violet-800 dark:bg-slate-900"
+          style={{
+            top: openPopupPosition.top,
+            left: openPopupPosition.left,
+            maxHeight: commentPopupMaxHeight(),
+          }}
         >
-          <button
-            type="button"
-            onClick={() => setOpenMarker(null)}
-            className="float-right text-lg font-black text-slate-400 hover:text-slate-700"
-            aria-label="Close teacher comment"
-            title="Close comment"
-          >
-            ×
-          </button>
-          <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${
-            openMarker.annotation.status === 'fixed'
-              ? 'text-emerald-600 dark:text-emerald-300'
-              : 'text-violet-600 dark:text-violet-300'
-          }`}>
-            {openMarker.annotation.status === 'fixed' ? 'Marked as fixed' : 'Teacher comment'}
-          </p>
-          <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{openMarker.annotation.quote}”</p>
-          <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">{openMarker.annotation.note}</p>
-          {openMarker.detached && openMarker.annotation.status !== 'fixed' && (
-            <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-              Your edit changed the highlighted passage. Check the teacher comment, then mark it fixed when you are happy.
-            </p>
-          )}
-          {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
-          {openMarker.annotation.status === 'fixed' ? (
-            <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
-              Your teacher can now check the change.
-            </p>
-          ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pb-2">
             <button
               type="button"
-              disabled={actionBusy}
-              onClick={() => markCommentFixed(openMarker)}
-              className="mt-3 w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+              onClick={() => setOpenMarker(null)}
+              className="float-right text-lg font-black leading-none text-slate-400 hover:text-slate-700"
+              aria-label="Close teacher comment"
+              title="Close comment"
             >
-              {actionBusy ? 'Marking…' : 'I’ve fixed this'}
+              ×
             </button>
-          )}
+            <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${
+              openMarker.annotation.status === 'fixed'
+                ? 'text-emerald-600 dark:text-emerald-300'
+                : 'text-violet-600 dark:text-violet-300'
+            }`}>
+              {openMarker.annotation.status === 'fixed' ? 'Marked as fixed' : 'Teacher comment'}
+            </p>
+            <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{openMarker.annotation.quote}”</p>
+            <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">{openMarker.annotation.note}</p>
+            {openMarker.detached && openMarker.annotation.status !== 'fixed' && (
+              <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                Your edit changed the highlighted passage. Check the teacher comment, then mark it fixed when you are happy.
+              </p>
+            )}
+            {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
+          </div>
+          <div className="shrink-0 border-t border-violet-100 bg-white p-3 dark:border-violet-900 dark:bg-slate-900">
+            {openMarker.annotation.status === 'fixed' ? (
+              <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
+                Your teacher can now check the change.
+              </p>
+            ) : (
+              <button
+                type="button"
+                disabled={actionBusy}
+                onClick={() => markCommentFixed(openMarker)}
+                className="w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {actionBusy ? 'Marking…' : 'I’ve fixed this'}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </>
