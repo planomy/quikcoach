@@ -13,6 +13,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
   const [draft, setDraft] = useState('');
   const [anonymous, setAnonymous] = useState(false);
   const [sending, setSending] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
   );
   const myPrivateQuestions = useMemo(
     () => questions
-      .filter((question) => question.mine && question.status !== 'published' && question.status !== 'answered')
+      .filter((question) => question.mine && question.status !== 'published' && question.status !== 'answered' && question.status !== 'dismissed')
       .sort((a, b) => Number(b.id) - Number(a.id)),
     [questions]
   );
@@ -60,6 +61,20 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
       setDraft('');
       setAnonymous(false);
       setMessage('Sent.');
+    });
+  }
+
+  function withdraw(question) {
+    if (!question?.mine || deletingId != null) return;
+    setDeletingId(question.id);
+    setMessage('');
+    socket.emit('student:qna-delete', { questionId: question.id }, (ack) => {
+      setDeletingId(null);
+      if (!ack?.ok) {
+        setMessage(ack?.error || 'Could not remove your question.');
+        return;
+      }
+      setQuestions((current) => current.filter((item) => Number(item.id) !== Number(question.id)));
     });
   }
 
@@ -121,7 +136,17 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
               <h3 className="text-[10px] font-black uppercase tracking-wide text-slate-500">My questions</h3>
               <div className="mt-2 space-y-2">
                 {myPrivateQuestions.map((question) => (
-                  <article key={question.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
+                  <article key={question.id} className="relative rounded-xl border border-slate-200 bg-slate-50 p-3 pr-10 dark:border-slate-700 dark:bg-slate-950/60">
+                    <button
+                      type="button"
+                      disabled={deletingId === question.id}
+                      onClick={() => withdraw(question)}
+                      className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg text-base font-bold text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                      title="Remove this question"
+                      aria-label="Remove this question"
+                    >
+                      ×
+                    </button>
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">{question.text}</p>
                     <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-slate-500">{STATUS_LABELS[question.status] || question.status}{question.anonymous ? ' · anonymous if shown' : ''}</p>
                   </article>
