@@ -1145,10 +1145,19 @@ function TeacherDashboardInner() {
       setStudents([]);
       setPosts([]);
       setBroadcastPick({});
-      setActiveWorkspace('live');
+      setAskOverlayOpen(false);
+      setLibraryPanel(null);
       setNewClassConfirmOpen(false);
       setCopyToast('Board cleared — ready for a new class');
       setTimeout(() => setCopyToast(''), 3000);
+      const code = String(codeInput || '').replace(/\D/g, '').slice(0, 4);
+      if (code.length === 4) {
+        // Same named window as the old FULL SCREEN control — reopen/focus the live board.
+        window.open(
+          `${window.location.origin}/iboard?code=${encodeURIComponent(code)}`,
+          'iboard-fullscreen'
+        );
+      }
     });
   }
 
