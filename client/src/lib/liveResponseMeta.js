@@ -8,6 +8,14 @@ export const LIVE_STATUS_LABELS = {
   private: 'Needs private help',
 };
 
+/**
+ * Shared “Not sure” colour — gold-amber between neon yellow and orange,
+ * clearly distinct from red “Guessed”.
+ */
+export const UNSURE_COLOR = '#f0a818';
+export const UNSURE_BORDER_CLASS = 'border-2 border-[#f0a818]';
+export const UNSURE_TEXT_CLASS = 'text-[#f0a818] dark:text-[#fbbf24]';
+
 /** Border colour encodes answer / engagement state for participant cards. */
 export function studentTileMeta(student) {
   if (student.engagement_status && student.engagement_status !== 'ready') {
@@ -24,7 +32,7 @@ export function studentTileMeta(student) {
       return { title: student.connected ? 'Answered · confident' : 'Offline · answered · confident', className: 'border-2 border-emerald-500' };
     }
     if (confidence === 'unsure') {
-      return { title: student.connected ? 'Answered · not sure' : 'Offline · answered · not sure', className: 'border-2 border-[#f5e000]' };
+      return { title: student.connected ? 'Answered · not sure' : 'Offline · answered · not sure', className: UNSURE_BORDER_CLASS };
     }
     if (confidence === 'guessed') {
       return { title: student.connected ? 'Answered · guessed' : 'Offline · answered · guessed', className: 'border-2 border-red-500' };

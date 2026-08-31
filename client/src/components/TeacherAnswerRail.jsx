@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
+import { UNSURE_TEXT_CLASS } from '../lib/liveResponseMeta.js';
 
 function confidenceNameClass(confidence) {
   if (confidence === 'confident') return 'text-emerald-600 dark:text-emerald-400';
-  if (confidence === 'unsure') return 'text-amber-500 dark:text-amber-300';
+  if (confidence === 'unsure') return UNSURE_TEXT_CLASS;
   if (confidence === 'guessed') return 'text-red-600 dark:text-red-400';
   return 'text-indigo-700 dark:text-indigo-300';
 }
@@ -316,7 +317,7 @@ export default function TeacherAnswerRail({
         {isShort && (
           <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-2 text-[10px] font-bold dark:border-slate-800">
             <span className="text-emerald-600">● Confident</span>
-            <span className="text-amber-500">● Not sure</span>
+            <span className={UNSURE_TEXT_CLASS}>● Not sure</span>
             <span className="text-red-600">● Guessed</span>
           </div>
         )}
