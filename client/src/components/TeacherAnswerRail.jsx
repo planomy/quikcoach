@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 function confidenceNameClass(confidence) {
   if (confidence === 'confident') return 'text-emerald-600 dark:text-emerald-400';
@@ -14,7 +14,7 @@ function confidenceLabel(confidence) {
   return 'Answered';
 }
 
-function ChoiceBars({ activity, responses }) {
+function ChoiceBars({ activity, responses, display = false }) {
   const counts = useMemo(() => {
     const result = Object.fromEntries((activity?.options || []).map((option) => [option, 0]));
     for (const response of responses || []) {
@@ -25,22 +25,22 @@ function ChoiceBars({ activity, responses }) {
   const max = Math.max(1, ...Object.values(counts));
   if (!activity?.options?.length) return null;
   return (
-    <div className="space-y-2.5">
+    <div className={display ? 'space-y-4' : 'space-y-2.5'}>
       {activity.options.map((option, index) => {
         const count = counts[option] || 0;
         return (
-          <div key={option} className="grid grid-cols-[minmax(3rem,5.5rem)_1fr_1.5rem] items-center gap-2">
-            <p className="truncate text-xs font-bold text-slate-700 dark:text-slate-200">
+          <div key={option} className={`grid items-center gap-3 ${display ? 'grid-cols-[minmax(5rem,10rem)_1fr_2.5rem]' : 'grid-cols-[minmax(3rem,5.5rem)_1fr_1.5rem]'}`}>
+            <p className={`truncate font-bold ${display ? 'text-xl text-white' : 'text-xs text-slate-700 dark:text-slate-200'}`}>
               <span className="mr-1 opacity-40">{String.fromCharCode(65 + index)}</span>
               {option}
             </p>
-            <div className="h-5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div className={`${display ? 'h-10 bg-white/15' : 'h-5 bg-slate-100 dark:bg-slate-800'} overflow-hidden rounded-full`}>
               <div
                 className="h-full min-w-1 rounded-full bg-indigo-500 transition-all duration-500"
                 style={{ width: `${(count / max) * 100}%` }}
               />
             </div>
-            <span className="text-right text-xs font-black text-slate-700 dark:text-slate-200">{count}</span>
+            <span className={`text-right font-black ${display ? 'text-2xl text-white' : 'text-xs text-slate-700 dark:text-slate-200'}`}>{count}</span>
           </div>
         );
       })}
@@ -48,7 +48,7 @@ function ChoiceBars({ activity, responses }) {
   );
 }
 
-/** Right-edge answer rail: auto-fills while a question is live. */
+/** Right-edge answer rail: the teacher's live monitoring and control surface. */
 export default function TeacherAnswerRail({
   open,
   onOpen,
@@ -61,6 +61,7 @@ export default function TeacherAnswerRail({
 }) {
   const listRef = useRef(null);
   const panelRef = useRef(null);
+  const [presenting, setPresenting] = useState(false);
   const isShort = activity?.type === 'short';
   const responded = (responses || []).length;
   const sorted = useMemo(() => {
@@ -78,19 +79,50 @@ export default function TeacherAnswerRail({
   }, [open, highlightStudentId, onClearHighlight, sorted.length]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || presenting) return undefined;
     function closeOnOutsidePointer(event) {
       if (panelRef.current?.contains(event.target)) return;
       onClose?.();
     }
     document.addEventListener('pointerdown', closeOnOutsidePointer);
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
-  }, [open, onClose]);
+  }, [open, presenting, onClose]);
+
+  function teacherSocket() {
+    return window.__iboardTeacherSocket;
+  }
 
   function finishQuestion() {
-    const socket = window.__iboardTeacherSocket;
+    const socket = teacherSocket();
     if (!socket?.connected) return;
     socket.emit('teacher:live-control', { action: 'clear' });
+  }
+
+  function repeatQuestion() {
+    const socket = teacherSocket();
+    if (!socket?.connected || !activity) return;
+    socket.emit('teacher:live-launch', {
+      type: activity.type,
+      prompt: activity.prompt,
+      options: Array.isArray(activity.options) ? activity.options : [],
+      correctAnswer: activity.correctAnswer || '',
+      anonymous: !!activity.anonymous,
+      optional: !!activity.optional,
+      imageUrl: activity.imageUrl || '',
+      timerSeconds: Number(activity.timerSeconds) || 0,
+    });
+  }
+
+  function liveControl(action) {
+    const socket = teacherSocket();
+    if (!socket?.connected) return;
+    socket.emit('teacher:live-control', { action });
+  }
+
+  function remindUnanswered() {
+    const socket = teacherSocket();
+    if (!socket?.connected) return;
+    socket.emit('teacher:live-realert', {});
   }
 
   if (!activity) return null;
@@ -131,13 +163,29 @@ export default function TeacherAnswerRail({
             <p className="mt-1 text-[11px] font-semibold text-slate-500">{responded} response{responded === 1 ? '' : 's'}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={repeatQuestion}
+              className="grid h-8 w-8 place-items-center rounded-lg text-base font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950"
+              title="Repeat this question"
+              aria-label="Repeat this question"
+            >
+              ↻
+            </button>
+            <button
+              type="button"
+              onClick={() => setPresenting(true)}
+              className="rounded-lg px-2 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950"
+            >
+              Present
+            </button>
             {typeof onOpenAsk === 'function' && (
               <button
                 type="button"
                 onClick={onOpenAsk}
                 className="rounded-lg px-2 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950"
               >
-                Ask
+                Ask another
               </button>
             )}
             <button
@@ -148,6 +196,16 @@ export default function TeacherAnswerRail({
             >
               Done
             </button>
+            <details className="relative">
+              <summary className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-lg text-lg font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="More live question controls">⋯</summary>
+              <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); remindUnanswered(); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Remind unanswered</button>
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); liveControl(activity.locked ? 'unlock' : 'lock'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">{activity.locked ? 'Reopen answers' : 'Pause answers'}</button>
+                {activity.correctAnswer && !activity.revealed && (
+                  <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); liveControl('reveal'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Reveal answer</button>
+                )}
+              </div>
+            </details>
             <button
               type="button"
               onClick={onClose}
@@ -235,6 +293,32 @@ export default function TeacherAnswerRail({
           )}
         </div>
       </aside>
+
+      {presenting && (
+        <div className="fixed inset-0 z-[95] overflow-auto bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 p-6 text-white sm:p-10">
+          <button type="button" onClick={() => setPresenting(false)} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl">Back</button>
+          <div className="mx-auto max-w-5xl py-14">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Live answers</p>
+            <h2 className="mt-2 font-display text-3xl font-black sm:text-5xl">{activity.prompt}</h2>
+            <p className="mt-3 text-sm font-bold text-indigo-200">{responded} response{responded === 1 ? '' : 's'}</p>
+            <div className="mt-10">
+              {isShort ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {sorted.map((response) => (
+                    <article key={`${response.studentId}-${response.submittedAt || response.value}`} className="rounded-2xl bg-white/10 p-5 ring-1 ring-white/15">
+                      <p className="text-xl leading-relaxed">“{response.value}”</p>
+                      {!activity.anonymous && <p className="mt-3 text-sm font-black text-indigo-300">{response.name || 'Student'}</p>}
+                    </article>
+                  ))}
+                  {!sorted.length && <p className="text-lg text-indigo-200">Waiting for answers…</p>}
+                </div>
+              ) : (
+                <ChoiceBars activity={activity} responses={responses} display />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
