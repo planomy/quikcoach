@@ -439,9 +439,11 @@ export default function TeacherAnnotationController() {
 
   function bulkConfirmFixed(studentId = 0) {
     if (!socket || bulkBusy || fixedCount <= 0) return;
-    const scope = studentId > 0 ? 'this student' : 'the whole room';
+    const n = fixedCount;
+    const label = n === 1 ? '1 fixed comment' : `${n} fixed comments`;
+    const scope = studentId > 0 ? ' for this student' : '';
     const ok = window.confirm(
-      `Confirm all ${fixedCount} student-fixed comment${fixedCount === 1 ? '' : 's'} for ${scope}?\n\nThey will be cleared from the board.`
+      `Clear ${label}${scope} from the board?\n\nPurple comments stay. Only green “fixed” ticks are removed.`
     );
     if (!ok) return;
     setBulkBusy(true);
@@ -455,7 +457,8 @@ export default function TeacherAnnotationController() {
           return;
         }
         setOpenMarker(null);
-        setSaveNotice(`Cleared ${ack.count || fixedCount} fixed comment${(ack.count || fixedCount) === 1 ? '' : 's'}`);
+        const cleared = ack.count || fixedCount;
+        setSaveNotice(`Cleared ${cleared} fixed comment${cleared === 1 ? '' : 's'}`);
       }
     );
   }
@@ -699,7 +702,7 @@ export default function TeacherAnnotationController() {
           className="fixed bottom-4 right-4 z-[75] flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-white px-3 py-2 shadow-2xl dark:border-emerald-900 dark:bg-slate-900"
         >
           <span className="text-xs font-bold text-emerald-800 dark:text-emerald-200">
-            {fixedCount} fixed — ready to clear
+            {fixedCount === 1 ? '1 marked fixed' : `${fixedCount} marked fixed`}
           </span>
           <button
             type="button"
@@ -707,7 +710,7 @@ export default function TeacherAnnotationController() {
             onClick={() => bulkConfirmFixed(0)}
             className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
           >
-            {bulkBusy ? 'Clearing…' : 'Confirm all fixed'}
+            {bulkBusy ? 'Clearing…' : 'Clear all fixed comments'}
           </button>
         </div>
       )}
