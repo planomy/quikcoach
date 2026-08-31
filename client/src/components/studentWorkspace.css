@@ -65,8 +65,13 @@ html.iboard-student-workspace.iboard-student-draw-mode [data-student-image-previ
   display: none !important;
 }
 
-/* The compact dock already carries the new-question state, so the full-screen
-   arrival card is unnecessary inside the writing workspace. */
+/* Prefer the red Respond/Inbox tab badge — never show the full-screen arrival splash. */
+html.iboard-student-workspace .iboard-question-arrival,
+html.iboard-student-workspace .iboard-featured-splash {
+  display: none !important;
+}
+
+/* Legacy dock selector kept for older embeds. */
 .iboard-student-pulse-dock .iboard-question-arrival {
   display: none !important;
 }

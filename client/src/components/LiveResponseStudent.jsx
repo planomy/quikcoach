@@ -157,9 +157,6 @@ function TabbedStudentResponse({ socket, ...props }) {
 
   return (
     <>
-      {catchupActivityId && (
-        <style>{'.iboard-student-workspace .iboard-question-arrival{display:none!important;}'}</style>
-      )}
       <div className={`relative ${collapsed && activity?.id && response ? 'hidden' : ''}`}>
         {activity?.id && response && !collapsed && (
           <button
@@ -235,9 +232,12 @@ function DockedPulse({ socket, ...props }) {
         return;
       }
       const id = String(activity.id);
+      // New questions: leave the dock collapsed. Student opens Respond via the tab badge.
       if (id !== activityIdRef.current) {
         activityIdRef.current = id;
-        expandSoon();
+        clearExpand();
+        clearCollapse();
+        setExpanded(false);
         return;
       }
       if (nextResponse?.confidence) collapseSoon();
@@ -248,7 +248,9 @@ function DockedPulse({ socket, ...props }) {
     const onRealert = (payload) => {
       if (payload?.activity?.id) {
         activityIdRef.current = String(payload.activity.id);
-        expandSoon();
+        clearExpand();
+        clearCollapse();
+        setExpanded(false);
       }
     };
 

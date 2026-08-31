@@ -90,6 +90,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const collapseTimerRef = useRef(null);
   const originalTitleRef = useRef('iBOARD');
   const clockOffsetRef = useRef(0);
+  /** Student writing board: tab badge only — no giant splash / featured toast. */
+  const quietAlerts =
+    standalone ||
+    compact ||
+    (typeof window !== 'undefined' && window.location.pathname === '/student');
 
   const secondsLeft = useEndsAtCountdown(activity?.endsAt, {
     enabled: !!activity?.timerSeconds && !activity?.locked,
@@ -103,23 +108,27 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     activityIdRef.current = nextActivity.id;
     const number = Math.max(1, Number(nextActivity.questionNumber) || 1);
     setThemeIndex((number - 1) % QUESTION_THEMES.length);
-    setArrival(nextActivity);
     setPulse(true);
     setMessage(force ? 'Your teacher has re-alerted this question.' : 'New question — answer now');
     if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
     if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
     if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
-    arrivalTimerRef.current = setTimeout(() => setArrival(null), 2600);
     pulseTimerRef.current = setTimeout(() => setPulse(false), 2600);
-    setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
-    if (!document.title.startsWith('🔔')) originalTitleRef.current = document.title || 'iBOARD';
-    document.title = `🔔 Question ${number} — iBOARD`;
-    titleTimerRef.current = setTimeout(() => {
-      document.title = originalTitleRef.current;
-    }, 7000);
+
+    if (!quietAlerts) {
+      setArrival(nextActivity);
+      arrivalTimerRef.current = setTimeout(() => setArrival(null), 2600);
+      setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+      if (!document.title.startsWith('🔔')) originalTitleRef.current = document.title || 'iBOARD';
+      document.title = `🔔 Question ${number} — iBOARD`;
+      titleTimerRef.current = setTimeout(() => {
+        document.title = originalTitleRef.current;
+      }, 7000);
+    }
+
     if (soundOn) playQuestionChime();
     return isNew;
-  }, [soundOn]);
+  }, [quietAlerts, soundOn]);
 
   useEffect(() => {
     const syncClock = (payload) => {
@@ -165,7 +174,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         drawAttention(payload.activity, true);
       }
     };
-    const onFeatured = () => { setFeaturedNotice(true); setTimeout(() => setFeaturedNotice(false), 5000); };
+    const onFeatured = () => {
+      if (quietAlerts) return;
+      setFeaturedNotice(true);
+      setTimeout(() => setFeaturedNotice(false), 5000);
+    };
     socket.on('live:activity', onActivity);
     socket.on('live:student', onMine);
     socket.on('live:nudge', onNudge);
@@ -184,7 +197,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
       document.title = originalTitleRef.current;
     };
-  }, [drawAttention, socket]);
+  }, [drawAttention, quietAlerts, socket]);
 
   function toggleSound() {
     const next = !soundOn;
@@ -334,9 +347,14 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
   return (
     <>
-      {featuredNotice && <div className="fixed inset-x-3 top-3 z-[75] mx-auto max-w-md rounded-3xl bg-gradient-to-r from-amber-400 to-yellow-300 p-5 text-center text-amber-950 shadow-2xl"><p className="text-3xl">⭐</p><p className="font-display text-xl font-black">Your answer was featured!</p></div>}
+      {featuredNotice && !quietAlerts && (
+        <div className="iboard-featured-splash fixed inset-x-3 top-3 z-[75] mx-auto max-w-md rounded-3xl bg-gradient-to-r from-amber-400 to-yellow-300 p-5 text-center text-amber-950 shadow-2xl">
+          <p className="text-3xl">⭐</p>
+          <p className="font-display text-xl font-black">Your answer was featured!</p>
+        </div>
+      )}
       {collapseButton}
-      {arrival && (
+      {arrival && !quietAlerts && (
         <button
           type="button"
           onClick={() => {

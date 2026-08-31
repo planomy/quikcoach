@@ -279,7 +279,6 @@ export default function StudentView() {
     const onLiveActivity = (payload) => {
       if (payload?.activity?.id) {
         setRespondLive(true);
-        if (supportTabRef.current !== 'respond') setSupportTab('respond');
       } else {
         setRespondLive(false);
       }
@@ -287,7 +286,6 @@ export default function StudentView() {
     const onLiveRealert = (payload) => {
       if (payload?.activity?.id) {
         setRespondLive(true);
-        setSupportTab('respond');
       }
     };
     const onTimesUp = () => setTimesUp(true);
