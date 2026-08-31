@@ -5,6 +5,7 @@ import QuikPulsePanel, { isQuikPulseActivity } from './QuikPulsePanel.jsx';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { studentTileMeta, LIVE_STATUS_LABELS as STATUS_LABELS } from '../lib/liveResponseMeta.js';
+import { downloadTextFile } from '../lib/exportRoom.js';
 
 const FEATURE_LABELS = ['', 'Strong evidence', 'Clear explanation', 'Excellent vocabulary', 'Interesting idea', 'Common misconception', 'Nearly there'];
 const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
@@ -350,8 +351,8 @@ export default function LiveResponseTeacher({
   }
   function downloadWall() {
     const body = featuredWall.map((item) => `<article><h2>Question ${item.questionNumber}: ${escapeHtml(item.prompt)}</h2><p>“${escapeHtml(item.value)}”</p><strong>${escapeHtml(item.label)}${item.name !== 'Anonymous' ? ` — ${escapeHtml(item.name)}` : ''}</strong></article>`).join('');
-    const blob = new Blob([`<!doctype html><meta charset="utf-8"><title>iBOARD Featured Wall</title><style>body{font-family:Arial;max-width:900px;margin:40px auto}article{padding:20px;margin:16px 0;border:2px solid #ddd;border-radius:18px}p{font-size:20px}</style><h1>iBOARD Featured Wall</h1>${body}`], { type: 'text/html' });
-    const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'iboard-featured-wall.html'; link.click(); URL.revokeObjectURL(url);
+    const html = `<!doctype html><meta charset="utf-8"><title>iBOARD Featured Wall</title><style>body{font-family:Arial;max-width:900px;margin:40px auto}article{padding:20px;margin:16px 0;border:2px solid #ddd;border-radius:18px}p{font-size:20px}</style><h1>iBOARD Featured Wall</h1>${body}`;
+    void downloadTextFile('iboard-featured-wall.html', html, 'text/html;charset=utf-8');
   }
 
   function realertUnanswered() {

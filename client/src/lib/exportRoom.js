@@ -235,13 +235,61 @@ export function buildStudentPortfolioHtml({ roomCode, studentName, entries }) {
 </html>`;
 }
 
-export function downloadTextFile(filename, text, mime = 'text/plain;charset=utf-8') {
-  const blob = new Blob([text], { type: mime });
+function extensionOf(filename) {
+  const match = String(filename || '').match(/\.([a-z0-9]+)$/i);
+  return match ? match[1].toLowerCase() : 'txt';
+}
+
+function pickerTypeFor(filename, mime) {
+  const ext = extensionOf(filename);
+  const type = String(mime || 'text/plain').split(';')[0].trim() || 'text/plain';
+  const description =
+    ext === 'html' ? 'HTML document' : ext === 'csv' ? 'CSV spreadsheet' : ext === 'txt' ? 'Text document' : `${ext.toUpperCase()} file`;
+  return {
+    description,
+    accept: { [type]: [`.${ext}`] },
+  };
+}
+
+function downloadViaAnchor(filename, text, mime) {
+  const blob = new Blob([String(text ?? '')], { type: mime });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+/**
+ * Save text to the device. Prefers the OS “Save As…” picker when available
+ * (Chrome/Edge/Opera on desktop); falls back to a normal browser download.
+ * Returns { ok, method: 'picker' | 'download' | 'cancelled' }.
+ */
+export async function downloadTextFile(filename, text, mime = 'text/plain;charset=utf-8') {
+  const name = String(filename || 'download.txt');
+  const body = String(text ?? '');
+  const blob = new Blob([body], { type: mime });
+
+  if (typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function') {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: name,
+        types: [pickerTypeFor(name, mime)],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return { ok: true, method: 'picker' };
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return { ok: false, method: 'cancelled' };
+      }
+      /* Unsupported in this context — fall through to anchor download. */
+    }
+  }
+
+  downloadViaAnchor(name, body, mime);
+  return { ok: true, method: 'download' };
 }
 
 export { stampForFilename, safeFilePart };

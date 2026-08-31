@@ -565,7 +565,7 @@ export default function StudentView() {
     });
   }
 
-  function saveDraftToDevice() {
+  async function saveDraftToDevice() {
     if (!student?.id || !activeRoomCode) return;
     saveDraftBackup({
       code: activeRoomCode,
@@ -575,7 +575,10 @@ export default function StudentView() {
       richHtml: draftHtml,
     });
     const filename = `iboard-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.txt`;
-    downloadTextFile(filename, draft, 'text/plain;charset=utf-8');
+    const result = await downloadTextFile(filename, draft, 'text/plain;charset=utf-8');
+    if (result?.method === 'cancelled') return;
+    setImageHint(result?.method === 'picker' ? 'Draft saved' : 'Draft downloaded');
+    setTimeout(() => setImageHint(''), 2500);
   }
 
   function changeRoom() {
