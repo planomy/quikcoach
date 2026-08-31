@@ -196,6 +196,9 @@ function TeacherDashboardInner() {
   const [answerRailHighlightId, setAnswerRailHighlightId] = useState(null);
   const [answerRailDismissedId, setAnswerRailDismissedId] = useState(null);
   const [libraryPanel, setLibraryPanel] = useState(null);
+  const [fixedCommentCount, setFixedCommentCount] = useState(0);
+  const [clearFixedBusy, setClearFixedBusy] = useState(false);
+  const [clearFixedArmed, setClearFixedArmed] = useState(false);
   const [livePulse, setLivePulse] = useState({ activity: null, responses: [], students: [] });
   const [cardView, setCardView] = useState(initialCardView);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
@@ -242,6 +245,18 @@ function TeacherDashboardInner() {
   useEffect(() => {
     joinedRef.current = joined;
   }, [joined]);
+
+  useEffect(() => {
+    const onFixed = (event) => {
+      const count = Number(event.detail?.count) || 0;
+      const busy = !!event.detail?.busy;
+      setFixedCommentCount(count);
+      setClearFixedBusy(busy);
+      if (count <= 0) setClearFixedArmed(false);
+    };
+    window.addEventListener('iboard:fixed-comments', onFixed);
+    return () => window.removeEventListener('iboard:fixed-comments', onFixed);
+  }, []);
 
   useEffect(() => {
     try {
@@ -1273,6 +1288,7 @@ function TeacherDashboardInner() {
 
   function closeRoomMenu() {
     if (roomActionsRef.current) roomActionsRef.current.open = false;
+    setClearFixedArmed(false);
   }
 
   function openAnswerInRail(studentId) {
@@ -1503,6 +1519,49 @@ function TeacherDashboardInner() {
                 >
                   {isDark ? 'Light mode' : 'Dark mode'}
                 </button>
+                {fixedCommentCount > 0 && (
+                  <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-950/40">
+                    {!clearFixedArmed ? (
+                      <button
+                        type="button"
+                        onClick={() => setClearFixedArmed(true)}
+                        className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
+                      >
+                        <span>Clear fixed comments</span>
+                        <span className="rounded-full bg-emerald-600 px-1.5 text-[10px] font-black text-white">
+                          {fixedCommentCount}
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="space-y-2 px-1 py-0.5">
+                        <p className="text-[11px] font-semibold leading-snug text-emerald-900 dark:text-emerald-100">
+                          Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={clearFixedBusy}
+                            onClick={() => {
+                              window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
+                              setClearFixedArmed(false);
+                              closeRoomMenu();
+                            }}
+                            className="flex-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            {clearFixedBusy ? 'Clearing…' : 'Clear'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setClearFixedArmed(false)}
+                            className="rounded-lg px-2 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
                 <button type="button" onClick={() => openLibrary('feedback')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                   AI feedback

@@ -437,15 +437,8 @@ export default function TeacherAnnotationController() {
     setOpenMarker(null);
   }
 
-  function bulkConfirmFixed(studentId = 0) {
+  const bulkConfirmFixed = useCallback((studentId = 0) => {
     if (!socket || bulkBusy || fixedCount <= 0) return;
-    const n = fixedCount;
-    const label = n === 1 ? '1 fixed comment' : `${n} fixed comments`;
-    const scope = studentId > 0 ? ' for this student' : '';
-    const ok = window.confirm(
-      `Clear ${label}${scope} from the board?\n\nPurple comments stay. Only green “fixed” ticks are removed.`
-    );
-    if (!ok) return;
     setBulkBusy(true);
     socket.emit(
       'teacher:annotation-bulk-confirm',
@@ -461,7 +454,21 @@ export default function TeacherAnnotationController() {
         setSaveNotice(`Cleared ${cleared} fixed comment${cleared === 1 ? '' : 's'}`);
       }
     );
-  }
+  }, [socket, bulkBusy, fixedCount]);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('iboard:fixed-comments', {
+        detail: { count: fixedCount, busy: bulkBusy },
+      })
+    );
+  }, [fixedCount, bulkBusy]);
+
+  useEffect(() => {
+    const onClear = () => bulkConfirmFixed(0);
+    window.addEventListener('iboard:clear-fixed-comments', onClear);
+    return () => window.removeEventListener('iboard:clear-fixed-comments', onClear);
+  }, [bulkConfirmFixed]);
 
   const openMarkerPos = openMarker
     ? placementNearAnchor({
@@ -693,25 +700,6 @@ export default function TeacherAnnotationController() {
               <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
             </div>
           )}
-        </div>
-      )}
-
-      {fixedCount > 0 && (
-        <div
-          data-teacher-annotation-ui
-          className="fixed bottom-4 right-4 z-[75] flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-white px-3 py-2 shadow-2xl dark:border-emerald-900 dark:bg-slate-900"
-        >
-          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-200">
-            {fixedCount === 1 ? '1 marked fixed' : `${fixedCount} marked fixed`}
-          </span>
-          <button
-            type="button"
-            disabled={bulkBusy}
-            onClick={() => bulkConfirmFixed(0)}
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {bulkBusy ? 'Clearing…' : 'Clear all fixed comments'}
-          </button>
         </div>
       )}
 
