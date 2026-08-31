@@ -60,6 +60,7 @@ export default function TeacherAnswerRail({
   onOpenAsk,
 }) {
   const listRef = useRef(null);
+  const panelRef = useRef(null);
   const isShort = activity?.type === 'short';
   const responded = (responses || []).length;
   const sorted = useMemo(() => {
@@ -75,6 +76,16 @@ export default function TeacherAnswerRail({
     const timer = window.setTimeout(() => onClearHighlight?.(), 2200);
     return () => window.clearTimeout(timer);
   }, [open, highlightStudentId, onClearHighlight, sorted.length]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function closeOnOutsidePointer(event) {
+      if (panelRef.current?.contains(event.target)) return;
+      onClose?.();
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
+  }, [open, onClose]);
 
   function finishQuestion() {
     const socket = window.__iboardTeacherSocket;
@@ -106,6 +117,7 @@ export default function TeacherAnswerRail({
       )}
 
       <aside
+        ref={panelRef}
         className={`fixed bottom-0 right-0 top-0 z-40 flex w-[min(24rem,92vw)] flex-col border-l border-indigo-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-indigo-900 dark:bg-slate-900 ${
           open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
         }`}
