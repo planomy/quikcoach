@@ -35,9 +35,20 @@ export default function ConnectionStatusController() {
 
   useEffect(() => {
     hideLegacyConnectionBanners();
-    const observer = new MutationObserver(hideLegacyConnectionBanners);
+    let frame = 0;
+    const scheduleHide = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        hideLegacyConnectionBanners();
+      });
+    };
+    const observer = new MutationObserver(scheduleHide);
     observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   useEffect(() => {

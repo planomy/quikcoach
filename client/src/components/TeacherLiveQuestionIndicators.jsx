@@ -124,7 +124,8 @@ export default function TeacherLiveQuestionIndicators() {
     };
     applyIndicators();
     const observer = new MutationObserver(scheduleApply);
-    observer.observe(document.body, { childList: true, subtree: true });
+    const main = document.querySelector('main');
+    if (main) observer.observe(main, { childList: true, subtree: true });
     window.addEventListener('iboard:teacher-layout', scheduleApply);
     return () => {
       observer.disconnect();

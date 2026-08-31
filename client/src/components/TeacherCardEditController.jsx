@@ -94,12 +94,8 @@ export default function TeacherCardEditController() {
 
     socket.on('room:state', onRoom);
     observerRef.current = new MutationObserver(() => requestAnimationFrame(decorate));
-    observerRef.current.observe(document.body, { childList: true, subtree: true });
-
-    const code = currentRoomCode();
-    if (code.length === 4) {
-      socket.emit('teacher:join', { code });
-    }
+    const main = document.querySelector('main');
+    if (main) observerRef.current.observe(main, { childList: true, subtree: true });
     requestAnimationFrame(decorate);
 
     return () => {

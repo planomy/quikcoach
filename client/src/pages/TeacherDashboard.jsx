@@ -32,6 +32,7 @@ import {
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { studentTileMeta } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
+import HintWrap from '../components/HintWrap.jsx';
 
 const MODE_LABELS = {
   writing: 'Writing',
@@ -1342,36 +1343,38 @@ function TeacherDashboardInner() {
                 </span>
               )}
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                closeRoomMenu();
-                openAddCard();
-              }}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-              title="Add card"
-              aria-label="Add card"
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
-            {broadcastPickCount > 0 && (
+            <HintWrap hint="Add card">
               <button
                 type="button"
                 onClick={() => {
                   closeRoomMenu();
-                  sendBroadcastToClass();
+                  openAddCard();
                 }}
-                className="relative flex h-9 items-center gap-1 rounded-xl bg-amber-500 px-2.5 text-amber-950 shadow-sm hover:bg-amber-400"
-                title={`Broadcast ${Math.min(6, broadcastPickCount)} exemplar${broadcastPickCount === 1 ? '' : 's'} to class`}
-                aria-label={`Broadcast ${Math.min(6, broadcastPickCount)} selected cards`}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                aria-label="Add card"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M7 17L17 7M8 7h9v9" />
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M12 5v14M5 12h14" />
                 </svg>
-                <span className="text-[11px] font-black tabular-nums">{Math.min(6, broadcastPickCount)}</span>
               </button>
+            </HintWrap>
+            {broadcastPickCount > 0 && (
+              <HintWrap hint="Send to Inbox">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeRoomMenu();
+                    sendBroadcastToClass();
+                  }}
+                  className="relative flex h-9 items-center gap-1 rounded-xl bg-amber-500 px-2.5 text-amber-950 shadow-sm hover:bg-amber-400"
+                  aria-label={`Broadcast ${Math.min(6, broadcastPickCount)} selected cards`}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 17L17 7M8 7h9v9" />
+                  </svg>
+                  <span className="text-[11px] font-black tabular-nums">{Math.min(6, broadcastPickCount)}</span>
+                </button>
+              </HintWrap>
             )}
             <details
               ref={roomActionsRef}
@@ -1536,25 +1539,29 @@ function TeacherDashboardInner() {
           {posts.map((post) => (
             <article key={`post-${post.id}`} className="flex flex-col rounded-2xl border border-amber-200 bg-amber-50/60 p-3 shadow-card dark:border-amber-900 dark:bg-amber-950/20">
               <div className="flex items-center gap-1.5">
-                <label className="flex shrink-0 cursor-pointer items-center" title="Include in broadcast">
-                  <input
-                    type="checkbox"
-                    checked={!!broadcastPick[`post:${post.id}`]}
-                    onChange={() => toggleBroadcastCard(`post:${post.id}`)}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 dark:border-slate-600"
-                  />
-                  <span className="sr-only">Include teacher card in broadcast</span>
-                </label>
+                <HintWrap hint="Send to Inbox">
+                  <label className="flex shrink-0 cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={!!broadcastPick[`post:${post.id}`]}
+                      onChange={() => toggleBroadcastCard(`post:${post.id}`)}
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 dark:border-slate-600"
+                    />
+                    <span className="sr-only">Include teacher card in broadcast</span>
+                  </label>
+                </HintWrap>
                 <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-ink-900 dark:text-slate-100">{post.title || 'Teacher'}</h2>
                 <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-900 dark:bg-amber-900 dark:text-amber-100">Teacher</span>
-                <button
-                  type="button"
-                  onClick={() => deleteTeacherCard(post.id)}
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
-                  title="Remove teacher card"
-                >
-                  ×
-                </button>
+                <HintWrap hint="Remove card">
+                  <button
+                    type="button"
+                    onClick={() => deleteTeacherCard(post.id)}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
+                    aria-label="Remove teacher card"
+                  >
+                    ×
+                  </button>
+                </HintWrap>
               </div>
               <div className={`mt-2 rounded-xl bg-white p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}>
                 {post.kind === 'image' && post.image_url ? (
@@ -1600,18 +1607,17 @@ function TeacherDashboardInner() {
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <label
-                    className="flex shrink-0 cursor-pointer items-center"
-                    title="Include in broadcast"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!broadcastPick[s.id]}
-                      onChange={() => toggleBroadcastCard(s.id)}
-                      className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 dark:border-slate-600"
-                    />
-                    <span className="sr-only">Include in broadcast</span>
-                  </label>
+                  <HintWrap hint="Send to Inbox">
+                    <label className="flex shrink-0 cursor-pointer items-center">
+                      <input
+                        type="checkbox"
+                        checked={!!broadcastPick[s.id]}
+                        onChange={() => toggleBroadcastCard(s.id)}
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 dark:border-slate-600"
+                      />
+                      <span className="sr-only">Include in broadcast</span>
+                    </label>
+                  </HintWrap>
                   <h2
                     className={`min-w-0 flex-1 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100 ${inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''}`}
                     title={inQuestion ? `Show ${s.name}'s answer` : `${s.name} · ID #${s.id}`}
@@ -1642,108 +1648,107 @@ function TeacherDashboardInner() {
                     </span>
                   )}
                   <div className="ml-auto flex items-center gap-0.5 opacity-70 transition hover:opacity-100">
-                    <button
-                      type="button"
-                      disabled={!displayText.trim()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        copyStudentText(s);
-                      }}
-                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition disabled:cursor-not-allowed disabled:opacity-30 ${
-                        copiedStudentId === s.id
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                          : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                      }`}
-                      title={
-                        !displayText.trim()
-                          ? 'No writing to copy'
-                          : copiedStudentId === s.id
-                            ? 'Copied to clipboard'
+                    <HintWrap hint={copiedStudentId === s.id ? 'Copied!' : 'Copy draft'}>
+                      <button
+                        type="button"
+                        disabled={!displayText.trim()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          copyStudentText(s);
+                        }}
+                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                          copiedStudentId === s.id
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                        }`}
+                        aria-label={
+                          copiedStudentId === s.id
+                            ? `Copied ${s.name}'s writing`
                             : `Copy ${s.name}'s writing`
-                      }
-                      aria-label={
-                        copiedStudentId === s.id
-                          ? `Copied ${s.name}'s writing`
-                          : `Copy ${s.name}'s writing`
-                      }
-                    >
-                      {copiedStudentId === s.id ? (
-                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m5 12 4 4L19 6" />
-                        </svg>
-                      ) : (
+                        }
+                      >
+                        {copiedStudentId === s.id ? (
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m5 12 4 4L19 6" />
+                          </svg>
+                        ) : (
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="8" y="8" width="11" height="11" rx="2" />
+                            <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                          </svg>
+                        )}
+                      </button>
+                    </HintWrap>
+                    <HintWrap hint="Save file">
+                      <button
+                        type="button"
+                        onClick={() => downloadOneStudent(s)}
+                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                        aria-label={`Save ${s.name}'s draft`}
+                      >
                         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="8" y="8" width="11" height="11" rx="2" />
-                          <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                          <path d="M12 3v12" />
+                          <path d="m7 10 5 5 5-5" />
+                          <path d="M5 21h14" />
                         </svg>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => downloadOneStudent(s)}
-                      className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                      title="Download this student's draft"
-                      aria-label={`Save ${s.name}'s draft`}
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 3v12" />
-                        <path d="m7 10 5 5 5-5" />
-                        <path d="M5 21h14" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openNoteForStudent(s)}
-                      className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                      title="Send a private note to this student only"
-                      aria-label={`Note ${s.name}`}
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFocusedStudentId(s.id)}
-                      className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                      title={`Open ${s.name}'s full draft`}
-                      aria-label={`Open ${s.name}'s full draft`}
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M15 3h6v6" />
-                        <path d="M10 14 21 3" />
-                        <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const ok = window.confirm(
-                          `Remove "${s.name}" from the room?\n\nTheir card will disappear. They can join again with a new card.`
-                        );
-                        if (!ok) return;
-                        socket.emit('teacher:student-remove', { studentId: s.id }, (ack) => {
-                          if (!ack?.ok) {
-                            setError(ack?.error || 'Could not remove student');
-                            return;
-                          }
-                          setStudents((prev) => prev.filter((x) => x.id !== s.id));
-                          setBroadcastPick((p) => {
-                            const next = { ...p };
-                            delete next[s.id];
-                            return next;
+                      </button>
+                    </HintWrap>
+                    <HintWrap hint="Send note">
+                      <button
+                        type="button"
+                        onClick={() => openNoteForStudent(s)}
+                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                        aria-label={`Note ${s.name}`}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </button>
+                    </HintWrap>
+                    <HintWrap hint="Open card">
+                      <button
+                        type="button"
+                        onClick={() => setFocusedStudentId(s.id)}
+                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                        aria-label={`Open ${s.name}'s full draft`}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M15 3h6v6" />
+                          <path d="M10 14 21 3" />
+                          <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+                        </svg>
+                      </button>
+                    </HintWrap>
+                    <HintWrap hint="Remove card">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const ok = window.confirm(
+                            `Remove "${s.name}" from the room?\n\nTheir card will disappear. They can join again with a new card.`
+                          );
+                          if (!ok) return;
+                          socket.emit('teacher:student-remove', { studentId: s.id }, (ack) => {
+                            if (!ack?.ok) {
+                              setError(ack?.error || 'Could not remove student');
+                              return;
+                            }
+                            setStudents((prev) => prev.filter((x) => x.id !== s.id));
+                            setBroadcastPick((p) => {
+                              const next = { ...p };
+                              delete next[s.id];
+                              return next;
+                            });
                           });
-                        });
-                      }}
-                      className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-600 dark:text-slate-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"
-                      title="Remove this student card from the room"
-                      aria-label={`Remove ${s.name} from the room`}
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg>
-                    </button>
+                        }}
+                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-600 dark:text-slate-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                        aria-label={`Remove ${s.name} from the room`}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 6 6 18" />
+                          <path d="m6 6 12 12" />
+                        </svg>
+                      </button>
+                    </HintWrap>
                   </div>
                 </div>
                 <div

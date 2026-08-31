@@ -32,7 +32,7 @@ export default function StudentInbox({ items, expandedId, onToggle }) {
             >
               <div className="min-w-0">
                 <p className={`font-display text-sm font-black ${isBroadcast ? 'text-violet-950 dark:text-violet-100' : 'text-indigo-950 dark:text-indigo-100'}`}>
-                  {isBroadcast ? 'Broadcast' : 'Note'}
+                  {isBroadcast ? 'Broadcast' : 'Teacher note'}
                   {item.unread ? <span className="ml-2 inline-block h-2 w-2 rounded-full bg-amber-500 align-middle" aria-label="New" /> : null}
                 </p>
                 <p className={`truncate text-[11px] font-semibold ${isBroadcast ? 'text-violet-700 dark:text-violet-300' : 'text-indigo-700 dark:text-indigo-300'}`}>

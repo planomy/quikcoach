@@ -100,7 +100,8 @@ export default function UiInteractionController() {
     document.addEventListener('keydown', onKeyDown);
 
     if (window.location.pathname === '/teacher') {
-      let closeQueued = false;
+      let teacherFrame = 0;
+      let railWasOpen = false;
       const applyTeacherLiveFlow = () => {
         for (const nav of document.querySelectorAll('nav[aria-label="Ask pages"]')) {
           for (const button of nav.querySelectorAll(':scope > button')) {
@@ -112,32 +113,30 @@ export default function UiInteractionController() {
           }
         }
 
-        if (closeQueued) return;
         const answerRail = document.querySelector('aside[aria-label="Live answers"]');
         const railOpen = answerRail?.className?.includes('translate-x-0');
-        if (!railOpen) return;
+        if (railOpen && !railWasOpen) {
+          const closeAsk = document.querySelector('button[aria-label="Close Ask overlay"]');
+          if (closeAsk) closeAsk.click();
+        }
+        railWasOpen = !!railOpen;
+      };
 
-        const closeAsk = document.querySelector('button[aria-label="Close Ask overlay"]');
-        if (!closeAsk) return;
-        const overlay = closeAsk.parentElement;
-        const liveDone = [...(overlay?.querySelectorAll('button') || [])].find(
-          (button) => button.textContent?.trim() === 'Done'
-        );
-        if (!liveDone) return;
-
-        closeQueued = true;
-        queueMicrotask(() => {
-          closeQueued = false;
-          if (document.body.contains(closeAsk)) closeAsk.click();
+      const scheduleTeacherLiveFlow = () => {
+        if (teacherFrame) return;
+        teacherFrame = window.requestAnimationFrame(() => {
+          teacherFrame = 0;
+          applyTeacherLiveFlow();
         });
       };
 
-      const teacherObserver = new MutationObserver(applyTeacherLiveFlow);
-      teacherObserver.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
+      const teacherObserver = new MutationObserver(scheduleTeacherLiveFlow);
+      teacherObserver.observe(document.body, { childList: true, subtree: true, attributes: true });
       applyTeacherLiveFlow();
 
       return () => {
         teacherObserver.disconnect();
+        if (teacherFrame) window.cancelAnimationFrame(teacherFrame);
         document.removeEventListener('pointerdown', closeFloatingMenus, true);
         document.removeEventListener('keydown', onKeyDown);
       };
@@ -198,12 +197,21 @@ export default function UiInteractionController() {
     };
 
     document.addEventListener('pointerdown', onStudentTabPointerDown, true);
-    const observer = new MutationObserver(applyStudentRail);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
+    let studentFrame = 0;
+    const scheduleStudentRail = () => {
+      if (studentFrame) return;
+      studentFrame = window.requestAnimationFrame(() => {
+        studentFrame = 0;
+        applyStudentRail();
+      });
+    };
+    const observer = new MutationObserver(scheduleStudentRail);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
     applyStudentRail();
 
     return () => {
       observer.disconnect();
+      if (studentFrame) window.cancelAnimationFrame(studentFrame);
       document.removeEventListener('pointerdown', onStudentTabPointerDown, true);
       document.removeEventListener('pointerdown', closeFloatingMenus, true);
       document.removeEventListener('keydown', onKeyDown);
