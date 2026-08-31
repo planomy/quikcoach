@@ -7,14 +7,7 @@ function formatTime(at) {
 
 export default function StudentInbox({ items, expandedId, onToggle }) {
   if (!items.length) {
-    return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-900">
-        <p className="font-display text-sm font-black text-slate-800 dark:text-slate-100">Inbox is empty</p>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Notes and class exemplars from your teacher will show up here.
-        </p>
-      </div>
-    );
+    return <div className="h-4" aria-hidden="true" />;
   }
 
   return (
