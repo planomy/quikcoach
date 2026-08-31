@@ -21,6 +21,7 @@ import TeacherAnswerRail from '../components/TeacherAnswerRail.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
+import SaveStatusChip from '../components/SaveStatusChip.jsx';
 import {
   downloadTextFile,
   buildEvidenceHtml,
@@ -208,19 +209,49 @@ function TeacherDashboardInner() {
   const [addCardImage, setAddCardImage] = useState('');
   const [addCardBusy, setAddCardBusy] = useState(false);
   const [addCardError, setAddCardError] = useState('');
+  const [saveStatus, setSaveStatus] = useState('idle');
 
   const socket = useMemo(() => createSocket(), []);
   const teacherRoomRef = useRef('');
   const joinedRef = useRef(false);
   const autoJoinTriedRef = useRef(false);
+  const savedClearRef = useRef(null);
+
+  const markSaved = useCallback(() => {
+    setSaveStatus('saved');
+    if (savedClearRef.current) clearTimeout(savedClearRef.current);
+    savedClearRef.current = setTimeout(() => setSaveStatus('idle'), 2200);
+  }, []);
 
   const pushSettings = useCallback(
     (partial) => {
       if (!room) return;
-      socket.emit('teacher:settings', partial);
+      setSaveStatus('saving');
+      socket.emit('teacher:settings', partial, (ack) => {
+        if (ack && ack.ok === false) {
+          setSaveStatus('error');
+          return;
+        }
+        markSaved();
+      });
     },
-    [room, socket]
+    [room, socket, markSaved]
   );
+
+  useEffect(() => () => {
+    if (savedClearRef.current) clearTimeout(savedClearRef.current);
+  }, []);
+
+  useEffect(() => {
+    const onStatus = (event) => {
+      const next = event.detail?.status;
+      if (next === 'saving') setSaveStatus('saving');
+      else if (next === 'error') setSaveStatus('error');
+      else if (next === 'saved') markSaved();
+    };
+    window.addEventListener('iboard:teacher-save-status', onStatus);
+    return () => window.removeEventListener('iboard:teacher-save-status', onStatus);
+  }, [markSaved]);
 
   useEffect(() => {
     socket.connect();
@@ -1358,6 +1389,7 @@ function TeacherDashboardInner() {
             <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
               Room <span className="font-mono text-indigo-600">{codeInput}</span>
             </h1>
+            <SaveStatusChip status={saveStatus} />
             <span className="hidden rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300 sm:inline">
               Participants: {orderedStudents.length}
             </span>

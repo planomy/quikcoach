@@ -122,6 +122,7 @@ export default function TeacherCardEditController() {
 
     setBusy(true);
     setError('');
+    window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'saving' } }));
     socket.emit(
       'teacher:board-post-update',
       { postId: editing.id, title: cleanTitle, text: cleanText },
@@ -129,20 +130,24 @@ export default function TeacherCardEditController() {
         if (!ack?.ok) {
           setBusy(false);
           setError(ack?.error || 'Could not update teacher card.');
+          window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'error' } }));
           return;
         }
         if (!rebroadcast) {
           setBusy(false);
           setEditing(null);
+          window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'saved' } }));
           return;
         }
         socket.emit('teacher:broadcast', { studentIds: [], postIds: [editing.id] }, (broadcastAck) => {
           setBusy(false);
           if (!broadcastAck?.ok) {
             setError(broadcastAck?.error || 'Card saved, but sending to Inbox failed.');
+            window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'error' } }));
             return;
           }
           setEditing(null);
+          window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'saved' } }));
         });
       }
     );
