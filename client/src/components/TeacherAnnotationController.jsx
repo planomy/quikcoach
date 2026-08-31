@@ -5,10 +5,16 @@ import {
   resolveAnnotation,
   selectionOffsetsWithin,
 } from '../lib/annotations.js';
+import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
+import { subscribeViewportChanges } from '../lib/viewport.js';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
+const PENDING_WIDTH = 360;
+const PENDING_HEIGHT = 460;
+const OPEN_WIDTH = 280;
+const OPEN_HEIGHT = 220;
 const MARKER_SIZE = 28;
 const MARKER_GAP = 5;
 const MARKER_MARGIN = 6;
@@ -133,10 +139,20 @@ export default function TeacherAnnotationController() {
   const [markers, setMarkers] = useState([]);
   const [reviewBusyId, setReviewBusyId] = useState(null);
   const [reviewError, setReviewError] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
   const moveFrameRef = useRef(null);
 
   const annotationTotal = useMemo(
     () => Object.values(byStudent).reduce((n, list) => n + (Array.isArray(list) ? list.length : 0), 0),
+    [byStudent]
+  );
+
+  const fixedCount = useMemo(
+    () =>
+      Object.values(byStudent).reduce(
+        (n, list) => n + (Array.isArray(list) ? list.filter((item) => item.status === 'fixed').length : 0),
+        0
+      ),
     [byStudent]
   );
 
@@ -245,13 +261,10 @@ export default function TeacherAnnotationController() {
         refreshHighlights();
       });
     };
-    const scrollOptions = { capture: true, passive: true };
-    window.addEventListener('resize', onMove);
-    window.addEventListener('scroll', onMove, scrollOptions);
+    const unsubscribe = subscribeViewportChanges(onMove);
     window.addEventListener('iboard:teacher-layout', onMove);
     return () => {
-      window.removeEventListener('resize', onMove);
-      window.removeEventListener('scroll', onMove, scrollOptions);
+      unsubscribe();
       window.removeEventListener('iboard:teacher-layout', onMove);
       if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
       moveFrameRef.current = null;
@@ -287,8 +300,13 @@ export default function TeacherAnnotationController() {
       setPending({
         studentId: card.studentId,
         ...offsets,
-        left: Math.max(10, Math.min(window.innerWidth - 370, rect.left)),
-        top: Math.max(10, Math.min(window.innerHeight - 460, rect.bottom + 8)),
+        ...clampFixedBox({
+          top: rect.bottom + 8,
+          left: rect.left,
+          width: Math.min(PENDING_WIDTH, window.innerWidth - 20),
+          height: PENDING_HEIGHT,
+          padding: 10,
+        }),
       });
       setOpenMarker(null);
     }
@@ -418,6 +436,46 @@ export default function TeacherAnnotationController() {
     socket.emit('teacher:annotation-delete', { annotationId: marker.annotation.id });
     setOpenMarker(null);
   }
+
+  function bulkConfirmFixed(studentId = 0) {
+    if (!socket || bulkBusy || fixedCount <= 0) return;
+    const scope = studentId > 0 ? 'this student' : 'the whole room';
+    const ok = window.confirm(
+      `Confirm all ${fixedCount} student-fixed comment${fixedCount === 1 ? '' : 's'} for ${scope}?\n\nThey will be cleared from the board.`
+    );
+    if (!ok) return;
+    setBulkBusy(true);
+    socket.emit(
+      'teacher:annotation-bulk-confirm',
+      studentId > 0 ? { studentId } : {},
+      (ack) => {
+        setBulkBusy(false);
+        if (!ack?.ok) {
+          setSaveNotice(ack?.error || 'Could not clear fixed comments');
+          return;
+        }
+        setOpenMarker(null);
+        setSaveNotice(`Cleared ${ack.count || fixedCount} fixed comment${(ack.count || fixedCount) === 1 ? '' : 's'}`);
+      }
+    );
+  }
+
+  const openMarkerPos = openMarker
+    ? placementNearAnchor({
+        anchor: {
+          top: openMarker.top,
+          left: openMarker.left,
+          right: openMarker.left + MARKER_SIZE,
+          bottom: openMarker.top + MARKER_SIZE,
+          width: MARKER_SIZE,
+          height: MARKER_SIZE,
+        },
+        width: OPEN_WIDTH,
+        height: OPEN_HEIGHT,
+        gap: 10,
+        prefer: 'below',
+      })
+    : null;
 
   return (
     <>
@@ -581,14 +639,11 @@ export default function TeacherAnnotationController() {
         </div>
       )}
 
-      {openMarker && (
+      {openMarker && openMarkerPos && (
         <div
           data-teacher-annotation-ui
           className="fixed z-[70] w-[280px] rounded-2xl border border-violet-200 bg-white p-3 shadow-2xl dark:border-violet-800 dark:bg-slate-900"
-          style={{
-            top: Math.max(10, Math.min(window.innerHeight - 180, openMarker.top + 30)),
-            left: Math.max(10, Math.min(window.innerWidth - 290, openMarker.left - 245)),
-          }}
+          style={{ top: openMarkerPos.top, left: openMarkerPos.left }}
         >
           <button type="button" onClick={() => setOpenMarker(null)} className="float-right text-sm font-black text-slate-400 hover:text-slate-700">×</button>
           <p className={`text-[10px] font-black uppercase tracking-[0.13em] ${
@@ -635,6 +690,25 @@ export default function TeacherAnnotationController() {
               <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
             </div>
           )}
+        </div>
+      )}
+
+      {fixedCount > 0 && (
+        <div
+          data-teacher-annotation-ui
+          className="fixed bottom-4 right-4 z-[75] flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-white px-3 py-2 shadow-2xl dark:border-emerald-900 dark:bg-slate-900"
+        >
+          <span className="text-xs font-bold text-emerald-800 dark:text-emerald-200">
+            {fixedCount} fixed — ready to clear
+          </span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => bulkConfirmFixed(0)}
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {bulkBusy ? 'Clearing…' : 'Confirm all fixed'}
+          </button>
         </div>
       )}
 

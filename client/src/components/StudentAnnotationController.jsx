@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { plainTextFromElement, rangeForPlainOffsets, resolveAnnotation } from '../lib/annotations.js';
+import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
+import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-student-fixed-comments';
+const MARKER_SIZE = 28;
+const MARKER_GAP = 5;
+const MARKER_MARGIN = 6;
+const POPUP_WIDTH = 290;
+const POPUP_HEIGHT = 220;
 
 function currentStudentId() {
   if (typeof window === 'undefined') return 0;
@@ -19,33 +26,43 @@ function editorElement() {
   return document.querySelector('[role="textbox"][contenteditable]');
 }
 
+function markerPosition(rangeRect) {
+  const clamped = clampFixedBox({
+    top: rangeRect.top - 2,
+    left: rangeRect.right + MARKER_GAP,
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
+    padding: MARKER_MARGIN,
+  });
+  return clamped;
+}
+
+function detachedMarkerPosition(editorRect, index) {
+  const vp = viewportBox();
+  return clampFixedBox({
+    top: editorRect.top + 8 + index * (MARKER_SIZE + 4),
+    left: editorRect.right - MARKER_SIZE - 6,
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
+    padding: MARKER_MARGIN,
+  });
+}
+
 function commentPopupPosition(marker) {
-  const popupWidth = 290;
-  const gap = 12;
-  const viewportPadding = 10;
-  const markerWidth = 28;
-  const markerLeft = Number(marker?.left) || viewportPadding;
-  const markerTop = Number(marker?.top) || viewportPadding;
-  const rightEdge = markerLeft + markerWidth;
-  const roomOnRight = window.innerWidth - rightEdge - viewportPadding;
-  const roomOnLeft = markerLeft - viewportPadding;
-
-  let left;
-  let top = Math.max(viewportPadding, Math.min(window.innerHeight - 200, markerTop - 8));
-
-  if (roomOnRight >= popupWidth + gap) {
-    left = rightEdge + gap;
-  } else if (roomOnLeft >= popupWidth + gap) {
-    left = markerLeft - popupWidth - gap;
-  } else {
-    left = Math.max(
-      viewportPadding,
-      Math.min(window.innerWidth - popupWidth - viewportPadding, markerLeft - popupWidth / 2)
-    );
-    top = Math.max(viewportPadding, Math.min(window.innerHeight - 200, markerTop + markerWidth + gap));
-  }
-
-  return { top, left };
+  return placementNearAnchor({
+    anchor: {
+      top: marker.top,
+      left: marker.left,
+      right: marker.left + MARKER_SIZE,
+      bottom: marker.top + MARKER_SIZE,
+      width: MARKER_SIZE,
+      height: MARKER_SIZE,
+    },
+    width: POPUP_WIDTH,
+    height: POPUP_HEIGHT,
+    gap: 10,
+    prefer: 'below',
+  });
 }
 
 export default function StudentAnnotationController({ socket, studentId: suppliedStudentId }) {
@@ -55,6 +72,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const [openMarker, setOpenMarker] = useState(null);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState('');
+  const moveFrameRef = useRef(null);
 
   const refreshHighlights = useCallback(() => {
     if (typeof document === 'undefined') return;
@@ -71,17 +89,24 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     const nextMarkers = [];
     let detachedCount = 0;
     const editorRect = editor.getBoundingClientRect();
+    const vp = viewportBox();
+    const editorVisible =
+      editorRect.bottom > vp.top &&
+      editorRect.top < vp.top + vp.height &&
+      editorRect.right > vp.left &&
+      editorRect.left < vp.left + vp.width;
     for (const annotation of annotations || []) {
       const fixed = annotation.status === 'fixed';
       const resolved = resolveAnnotation(annotation, text);
       const range = resolved.detached ? null : rangeForPlainOffsets(editor, resolved.start, resolved.end);
       if (!range) {
-        if (editorRect.bottom > 0 && editorRect.top < window.innerHeight) {
+        if (editorVisible) {
+          const pos = detachedMarkerPosition(editorRect, detachedCount);
           nextMarkers.push({
             annotation,
             detached: true,
-            top: Math.max(6, Math.min(window.innerHeight - 34, editorRect.top + 8 + detachedCount * 32)),
-            left: Math.max(6, Math.min(window.innerWidth - 34, editorRect.right - 34)),
+            top: pos.top,
+            left: pos.left,
           });
           detachedCount += 1;
         }
@@ -90,11 +115,12 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       (fixed ? fixedRanges : ranges).push(range);
       const rect = range.getBoundingClientRect();
       if (rect.width || rect.height) {
+        const pos = markerPosition(rect);
         nextMarkers.push({
           annotation,
           detached: false,
-          top: Math.max(6, rect.top - 2),
-          left: Math.min(window.innerWidth - 34, rect.right + 5),
+          top: pos.top,
+          left: pos.left,
         });
       }
     }
@@ -163,7 +189,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }, [socket, studentId, refreshHighlights]);
 
   useEffect(() => {
-    const schedule = () => requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
+    const schedule = () => {
+      if (moveFrameRef.current != null) return;
+      moveFrameRef.current = requestAnimationFrame(() => {
+        moveFrameRef.current = null;
+        refreshHighlights();
+      });
+    };
     let observedEditor = null;
     const observer = new MutationObserver(() => {
       const nextEditor = editorElement();
@@ -182,7 +214,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       if (nextEditor) {
         observer.observe(nextEditor, { childList: true, subtree: true, characterData: true });
       } else if (document.body) {
-        // Watch only until the student joins and the editor is mounted.
         observer.observe(document.body, { childList: true, subtree: true });
       }
       schedule();
@@ -191,8 +222,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       if (event.target?.matches?.('[role="textbox"][contenteditable]')) schedule();
     };
     document.addEventListener('input', onInput, true);
-    window.addEventListener('resize', schedule);
-    window.addEventListener('scroll', schedule, true);
+    const unsubscribe = subscribeViewportChanges(schedule);
     window.addEventListener('iboard:room-state', attachObserver);
     attachObserver();
     const id = requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
@@ -200,9 +230,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       cancelAnimationFrame(id);
       observer.disconnect();
       document.removeEventListener('input', onInput, true);
-      window.removeEventListener('resize', schedule);
-      window.removeEventListener('scroll', schedule, true);
+      unsubscribe();
       window.removeEventListener('iboard:room-state', attachObserver);
+      if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
+      moveFrameRef.current = null;
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(FIXED_HIGHLIGHT_NAME);
     };
@@ -221,6 +252,11 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       setOpenMarker(current);
     }
   }, [markers, openMarker]);
+
+  const openPopupPosition = useMemo(
+    () => (openMarker ? commentPopupPosition(openMarker) : null),
+    [openMarker]
+  );
 
   function markCommentFixed(marker) {
     if (!socket || !marker?.annotation?.id || actionBusy) return;
@@ -263,11 +299,11 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           {marker.annotation.status === 'fixed' ? '✓' : '💬'}
         </button>
       ))}
-      {openMarker && (
+      {openMarker && openPopupPosition && (
         <div
           data-teacher-annotation-ui
           className="fixed z-[70] w-[290px] rounded-2xl border border-violet-200 bg-white p-4 shadow-2xl dark:border-violet-800 dark:bg-slate-900"
-          style={commentPopupPosition(openMarker)}
+          style={{ top: openPopupPosition.top, left: openPopupPosition.left }}
         >
           <button
             type="button"

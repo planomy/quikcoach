@@ -171,6 +171,16 @@ const reopenAnnotationStmt = richDb.prepare(
    WHERE id = ?`
 );
 const deleteAnnotationStmt = richDb.prepare(`DELETE FROM teacher_annotations WHERE id = ?`);
+const bulkResolveFixedForRoomStmt = richDb.prepare(
+  `UPDATE teacher_annotations
+   SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now')
+   WHERE room_code = ? AND status = 'fixed'`
+);
+const bulkResolveFixedForStudentStmt = richDb.prepare(
+  `UPDATE teacher_annotations
+   SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now')
+   WHERE room_code = ? AND student_id = ? AND status = 'fixed'`
+);
 
 function listAnnotationsForStudent(studentId) {
   return listAnnotationsForStudentStmt.all(Number(studentId)).map(annotationForClient);
@@ -439,6 +449,39 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
       } catch (error) {
         console.error('Could not delete teacher annotation', error);
         cb?.({ ok: false, error: 'Could not delete the inline comment' });
+      }
+    });
+
+    socket.on('teacher:annotation-bulk-confirm', (payload = {}, cb) => {
+      try {
+        const roomCode = normaliseRoomCode(socket.data.roomCode);
+        if (socket.data.role !== 'teacher' || roomCode.length !== 4) {
+          cb?.({ ok: false, error: 'Open the room as teacher first' });
+          return;
+        }
+        const studentId = Number(payload.studentId);
+        let result;
+        if (studentId > 0) {
+          const student = selectStudent.get(studentId);
+          if (!student || normaliseRoomCode(student.room_code) !== roomCode) {
+            cb?.({ ok: false, error: 'Student not found' });
+            return;
+          }
+          result = bulkResolveFixedForStudentStmt.run(roomCode, studentId);
+          emitAnnotationUpdate(io, roomCode, studentId);
+        } else {
+          const studentRows = richDb
+            .prepare(
+              `SELECT DISTINCT student_id FROM teacher_annotations WHERE room_code = ? AND status = 'fixed'`
+            )
+            .all(roomCode);
+          result = bulkResolveFixedForRoomStmt.run(roomCode);
+          for (const row of studentRows) emitAnnotationUpdate(io, roomCode, row.student_id);
+        }
+        cb?.({ ok: true, count: Number(result?.changes) || 0 });
+      } catch (error) {
+        console.error('Could not bulk confirm teacher annotations', error);
+        cb?.({ ok: false, error: 'Could not clear fixed comments' });
       }
     });
 

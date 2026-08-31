@@ -16,6 +16,8 @@ import RichTextEditor from '../components/RichTextEditor.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import { plainTextToRichHtml } from '../lib/richText.js';
+import { downloadTextFile, safeFilePart, stampForFilename } from '../lib/exportRoom.js';
+import { readDraftBackup, saveDraftBackup } from '../lib/draftBackup.js';
 import {
   clearStudentSession,
   forgetRecentStudentSession,
@@ -53,6 +55,22 @@ const SUPPORT_TABS = [
   { id: 'respond', label: 'Respond' },
   { id: 'inbox', label: 'Inbox' },
 ];
+
+function draftFromJoin({ raw, richHtml, code, studentId, limit }) {
+  const next = limit > 0 ? truncateToWordLimit(raw, limit) : raw;
+  const backup = readDraftBackup(code, studentId);
+  if (!next.trim() && backup?.text?.trim()) {
+    const text = limit > 0 ? truncateToWordLimit(backup.text, limit) : backup.text;
+    return {
+      text,
+      html: backup.richHtml || plainTextToRichHtml(text),
+    };
+  }
+  return {
+    text: next,
+    html: next === raw && richHtml ? richHtml : plainTextToRichHtml(next),
+  };
+}
 
 export default function StudentView() {
   const [searchParams] = useSearchParams();
@@ -308,6 +326,22 @@ export default function StudentView() {
   }, [draft, draftHtml]);
 
   useEffect(() => {
+    if (!joined || !student?.id) return undefined;
+    const code = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
+    if (code.length !== 4) return undefined;
+    const t = setTimeout(() => {
+      saveDraftBackup({
+        code,
+        studentId: student.id,
+        name: student.name,
+        text: draft,
+        richHtml: draftHtml,
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [joined, student?.id, student?.name, room?.code, codeInput, draft, draftHtml]);
+
+  useEffect(() => {
     if (!joined || !student) return;
     const t = setInterval(() => {
       socket.emit('student:text', pendingRef.current, () => {});
@@ -368,13 +402,15 @@ export default function StudentView() {
             ? Number(ack.room.word_target)
             : 0;
         const raw = ack.student.text || '';
-        const next = lim > 0 ? truncateToWordLimit(raw, lim) : raw;
-        setDraft(next);
-        setDraftHtml(
-          next === raw && ack.student?.rich_text_html
-            ? ack.student.rich_text_html
-            : plainTextToRichHtml(next)
-        );
+        const joinedDraft = draftFromJoin({
+          raw,
+          richHtml: ack.student?.rich_text_html,
+          code,
+          studentId: ack.student?.id ?? sidNum,
+          limit: lim,
+        });
+        setDraft(joinedDraft.text);
+        setDraftHtml(joinedDraft.html);
         setJoined(true);
         const yl = String(ack.student?.year_level || '').trim().toLowerCase();
         if (yl) setYearInput(yl);
@@ -422,13 +458,15 @@ export default function StudentView() {
           ? Number(ack.room.word_target)
           : 0;
       const raw = ack.student.text || '';
-      const next = limit > 0 ? truncateToWordLimit(raw, limit) : raw;
-      setDraft(next);
-      setDraftHtml(
-        next === raw && ack.student.rich_text_html
-          ? ack.student.rich_text_html
-          : plainTextToRichHtml(next)
-      );
+      const joinedDraft = draftFromJoin({
+        raw,
+        richHtml: ack.student?.rich_text_html,
+        code: saved.code,
+        studentId: ack.student.id,
+        limit,
+      });
+      setDraft(joinedDraft.text);
+      setDraftHtml(joinedDraft.html);
       const savedYear = String(ack.student.year_level || '').trim().toLowerCase();
       if (savedYear) setYearInput(savedYear);
       setJoined(true);
@@ -457,13 +495,15 @@ export default function StudentView() {
           ? Number(ack.room.word_target)
           : 0;
       const raw = ack.student.text || '';
-      const next = lim > 0 ? truncateToWordLimit(raw, lim) : raw;
-      setDraft(next);
-      setDraftHtml(
-        next === raw && ack.student?.rich_text_html
-          ? ack.student.rich_text_html
-          : plainTextToRichHtml(next)
-      );
+      const joinedDraft = draftFromJoin({
+        raw,
+        richHtml: ack.student?.rich_text_html,
+        code: c,
+        studentId: ack.student.id,
+        limit: lim,
+      });
+      setDraft(joinedDraft.text);
+      setDraftHtml(joinedDraft.html);
       setJoined(true);
       const fromServer = String(ack.student?.year_level || '').trim().toLowerCase();
       const chosen = String(yearInput || '').trim().toLowerCase();
@@ -525,6 +565,19 @@ export default function StudentView() {
       }
       if (ack.student) setStudent(ack.student);
     });
+  }
+
+  function saveDraftToDevice() {
+    if (!student?.id || !activeRoomCode) return;
+    saveDraftBackup({
+      code: activeRoomCode,
+      studentId: student.id,
+      name: student.name,
+      text: draft,
+      richHtml: draftHtml,
+    });
+    const filename = `iboard-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.txt`;
+    downloadTextFile(filename, draft, 'text/plain;charset=utf-8');
   }
 
   function changeRoom() {
@@ -788,6 +841,14 @@ export default function StudentView() {
                 </div>
               </div>
               <ThemeToggle className="w-full justify-center" />
+              <button
+                type="button"
+                onClick={saveDraftToDevice}
+                disabled={!draft.trim()}
+                className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800 transition hover:border-indigo-300 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
+              >
+                Save draft to device
+              </button>
               <button
                 type="button"
                 onClick={changeRoom}
