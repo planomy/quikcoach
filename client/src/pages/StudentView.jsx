@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
-import { wordCount, recommendedWordRange, truncateToWordLimit } from '../lib/text.js';
+import { truncateToWordLimit } from '../lib/text.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
@@ -634,10 +634,7 @@ export default function StudentView() {
   const activeRoomCode = activeRoomDigits ? activeRoomDigits.padStart(4, '0') : '';
   const wt = room?.word_target ?? 0;
   const enforce = !!room?.enforce_word_count;
-  const wc = wordCount(draft);
   const frozen = !!room?.freeze_class;
-  const progress = wt > 0 ? Math.min(100, Math.round((wc / wt) * 100)) : 0;
-  const wordBand = useMemo(() => recommendedWordRange(wt), [wt]);
   const inboxItems = useMemo(() => {
     const notes = feedbackInbox.map((item) => ({
       ...item,
@@ -659,45 +656,6 @@ export default function StudentView() {
     return [...notes, ...broadcasts].sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
   }, [feedbackInbox, broadcastHistory, inboxUnreadIds]);
   const inboxTabCount = inboxUnreadIds.size;
-
-  function renderProgressPanel() {
-    if (wt > 0) {
-      return (
-        <div>
-          <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
-            <span>Progress</span>
-            <span>
-              {wc} / {wt} words
-            </span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-            <div className="h-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} />
-          </div>
-          {wordBand && !enforce && (
-            <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-              Suggested range for this task: about <span className="font-medium text-slate-600 dark:text-slate-400">{wordBand.low}–</span>
-              <span className="font-medium text-slate-600 dark:text-slate-400">{wordBand.high} words</span> (guide only — you won&apos;t be
-              cut off).
-            </p>
-          )}
-          {enforce && (
-            <p className="mt-2 text-xs font-medium leading-relaxed text-amber-800">
-              Hard limit: only the first {wt} words are saved. Extra words are dropped when you type or when your draft
-              syncs.
-            </p>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-        {enforce
-          ? 'Your teacher must set a word target above 0 for the class limit to apply.'
-          : 'Tip: keep your draft focused; very long pieces are slower for whole-class AI feedback.'}
-      </p>
-    );
-  }
 
   if (!joined) {
     return (
@@ -948,7 +906,6 @@ export default function StudentView() {
           </aside>
 
           <section className="order-2 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
-            {renderProgressPanel()}
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Tip: paste a screenshot into the box (Ctrl+V / Cmd+V) to add an image to your board card.
             </p>

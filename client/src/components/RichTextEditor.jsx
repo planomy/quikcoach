@@ -266,6 +266,11 @@ export default function RichTextEditor({
   }
 
   const currentWordCount = countWords(text);
+  const atWordLimit = maxWords > 0 && currentWordCount >= maxWords;
+  const wordCountLabel =
+    maxWords > 0
+      ? `${currentWordCount} / ${maxWords} words`
+      : `${currentWordCount} ${currentWordCount === 1 ? 'word' : 'words'}`;
 
   return (
     <>
@@ -317,8 +322,14 @@ export default function RichTextEditor({
           ) : (
             <span className="text-[11px] font-medium text-slate-400">Writing mode</span>
           )}
-          <span className="ml-auto shrink-0 text-[11px] font-bold tabular-nums text-slate-500 dark:text-slate-400">
-            {currentWordCount} {currentWordCount === 1 ? 'word' : 'words'}
+          <span
+            className={`ml-auto shrink-0 text-[11px] font-bold tabular-nums ${
+              atWordLimit
+                ? 'text-red-600 dark:text-red-400'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            {wordCountLabel}
           </span>
           <ToolbarButton
             disabled={disabled}
