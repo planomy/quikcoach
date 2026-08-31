@@ -260,7 +260,7 @@ export default function TeacherAnswerRail({
             </HintWrap>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Live question controls">
+          <div className="relative z-[60] mt-3 flex flex-wrap items-center gap-2 overflow-visible" aria-label="Live question controls">
             <ControlIcon label="Repeat this question" hint="Repeat" onClick={repeatQuestion}>
               <RepeatIcon />
             </ControlIcon>
