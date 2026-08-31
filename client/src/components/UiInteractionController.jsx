@@ -99,6 +99,50 @@ export default function UiInteractionController() {
     document.addEventListener('pointerdown', closeFloatingMenus, true);
     document.addEventListener('keydown', onKeyDown);
 
+    if (window.location.pathname === '/teacher') {
+      let closeQueued = false;
+      const applyTeacherLiveFlow = () => {
+        for (const nav of document.querySelectorAll('nav[aria-label="Ask pages"]')) {
+          for (const button of nav.querySelectorAll(':scope > button')) {
+            if (button.textContent?.trim().startsWith('Live Questions')) {
+              button.style.display = 'none';
+              button.setAttribute('aria-hidden', 'true');
+              button.tabIndex = -1;
+            }
+          }
+        }
+
+        if (closeQueued) return;
+        const answerRail = document.querySelector('aside[aria-label="Live answers"]');
+        const railOpen = answerRail?.className?.includes('translate-x-0');
+        if (!railOpen) return;
+
+        const closeAsk = document.querySelector('button[aria-label="Close Ask overlay"]');
+        if (!closeAsk) return;
+        const overlay = closeAsk.parentElement;
+        const liveDone = [...(overlay?.querySelectorAll('button') || [])].find(
+          (button) => button.textContent?.trim() === 'Done'
+        );
+        if (!liveDone) return;
+
+        closeQueued = true;
+        queueMicrotask(() => {
+          closeQueued = false;
+          if (document.body.contains(closeAsk)) closeAsk.click();
+        });
+      };
+
+      const teacherObserver = new MutationObserver(applyTeacherLiveFlow);
+      teacherObserver.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
+      applyTeacherLiveFlow();
+
+      return () => {
+        teacherObserver.disconnect();
+        document.removeEventListener('pointerdown', closeFloatingMenus, true);
+        document.removeEventListener('keydown', onKeyDown);
+      };
+    }
+
     if (window.location.pathname !== '/student') {
       return () => {
         document.removeEventListener('pointerdown', closeFloatingMenus, true);
