@@ -1332,9 +1332,10 @@ function TeacherDashboardInner() {
                 closeRoomMenu();
                 setAskOverlayOpen(true);
               }}
+              aria-label="Ask the room"
               className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-indigo-700 sm:px-3.5"
             >
-              Ask a Question
+              Ask the room
               {(livePulse.activity || pendingQuestionCount > 0) && (
                 <span className="rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none">
                   {pendingQuestionCount > 0 ? pendingQuestionCount : '●'}

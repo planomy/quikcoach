@@ -109,13 +109,6 @@ export default function TeacherLiveQuestionIndicators() {
       });
 
       document.querySelectorAll('main button').forEach((button) => {
-        const askRoomTextNode = Array.from(button.childNodes).find(
-          (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.includes('Ask a Question')
-        );
-        if (askRoomTextNode) {
-          askRoomTextNode.textContent = askRoomTextNode.textContent.replace('Ask a Question', 'Ask the room');
-          button.setAttribute('aria-label', 'Ask the room');
-        }
         if (button.textContent?.trim().startsWith('Q&A ·')) {
           button.dataset.liveQuestionHeaderButton = 'true';
           button.hidden = true;
