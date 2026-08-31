@@ -15,7 +15,6 @@ import StudentInbox from '../components/StudentInbox.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
-import SaveStatusChip from '../components/SaveStatusChip.jsx';
 import { plainTextToRichHtml } from '../lib/richText.js';
 import { downloadTextFile, safeFilePart, stampForFilename } from '../lib/exportRoom.js';
 import { readDraftBackup, saveDraftBackup } from '../lib/draftBackup.js';
@@ -96,7 +95,6 @@ export default function StudentView() {
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [imageBusy, setImageBusy] = useState(false);
   const [imageHint, setImageHint] = useState('');
-  const [saveStatus, setSaveStatus] = useState('idle');
   const [yearInput, setYearInput] = useState('');
   const [recentDismissedCode, setRecentDismissedCode] = useState('');
 
@@ -105,7 +103,6 @@ export default function StudentView() {
   const lastSentRef = useRef('');
   const saveBootstrappedRef = useRef(false);
   const saveTimerRef = useRef(null);
-  const savedClearRef = useRef(null);
   const studentRef = useRef(null);
   /** Until React commits `student`, `room:state` may arrive first; match payload by this id. */
   const hydrateStudentIdRef = useRef(null);
@@ -332,7 +329,6 @@ export default function StudentView() {
   useEffect(() => {
     if (!joined || !student?.id) {
       saveBootstrappedRef.current = false;
-      setSaveStatus('idle');
       return undefined;
     }
 
@@ -344,21 +340,14 @@ export default function StudentView() {
     }
     if (fingerprint === lastSentRef.current) return undefined;
 
-    setSaveStatus('saving');
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       const payload = pendingRef.current;
       const sentAt = `${payload.text}\n${payload.richTextHtml}`;
       socket.emit('student:text', payload, (ack) => {
         if (sentAt !== `${pendingRef.current.text}\n${pendingRef.current.richTextHtml}`) return;
-        if (ack && ack.ok === false) {
-          setSaveStatus('error');
-          return;
-        }
+        if (ack && ack.ok === false) return;
         lastSentRef.current = sentAt;
-        setSaveStatus('saved');
-        if (savedClearRef.current) clearTimeout(savedClearRef.current);
-        savedClearRef.current = setTimeout(() => setSaveStatus('idle'), 2200);
       });
     }, 700);
 
@@ -366,10 +355,6 @@ export default function StudentView() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [joined, student?.id, draft, draftHtml, socket]);
-
-  useEffect(() => () => {
-    if (savedClearRef.current) clearTimeout(savedClearRef.current);
-  }, []);
 
   useEffect(() => {
     if (!joined || !student?.id) return undefined;
@@ -845,7 +830,6 @@ export default function StudentView() {
                   Room {activeRoomCode}
                 </span>
               )}
-              <SaveStatusChip status={saveStatus} />
             </div>
           </div>
           <details className="group relative shrink-0">
