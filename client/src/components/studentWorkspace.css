@@ -246,15 +246,28 @@ html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> 
     grid-row: 1;
   }
 
-  /* The support rail stays beside the student's writing and scrolls on its own. */
+  /* The support rail stays beside the student's writing and scrolls on its own.
+     Tab badges float above the nav, so only the panel body scrolls — not the tabs. */
   .iboard-student-workspace main > div > aside {
     position: sticky;
     top: 1rem;
     align-self: start;
     max-height: calc(100vh - 2rem);
+    overflow: visible;
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+  }
+
+  .iboard-student-workspace nav[aria-label='Student tools'] {
+    overflow: visible;
+  }
+
+  .iboard-student-workspace .iboard-student-support-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: visible;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding-bottom: 0.25rem;
     scrollbar-width: thin;
   }
 

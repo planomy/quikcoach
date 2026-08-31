@@ -61,10 +61,11 @@ function styleAttentionBadge(button, label) {
   badge.textContent = display;
   badge.dataset.iboardAttentionBadge = 'true';
   button.style.position = 'relative';
+  button.style.overflow = 'visible';
   Object.assign(badge.style, {
     position: 'absolute',
-    top: '-7px',
-    right: '-7px',
+    top: '-8px',
+    right: '-8px',
     display: 'grid',
     placeItems: 'center',
     minWidth: '19px',
@@ -77,7 +78,8 @@ function styleAttentionBadge(button, label) {
     fontSize: '10px',
     fontWeight: '900',
     lineHeight: '1',
-    zIndex: '4',
+    zIndex: '30',
+    pointerEvents: 'none',
   });
   button.setAttribute('aria-label', ariaLabel);
 }

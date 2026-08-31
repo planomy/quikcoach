@@ -862,8 +862,8 @@ export default function StudentView() {
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
-          <aside className="order-1 flex min-w-0 flex-col gap-3 xl:col-start-2 xl:row-start-1">
-            <nav aria-label="Student tools" className="flex items-end gap-1 border-b border-slate-200 dark:border-slate-700">
+          <aside className="order-1 flex min-h-0 min-w-0 flex-col gap-3 xl:col-start-2 xl:row-start-1">
+            <nav aria-label="Student tools" className="relative z-10 flex shrink-0 items-end gap-1 overflow-visible border-b border-slate-200 pt-2 dark:border-slate-700">
               {SUPPORT_TABS.map((tab) => {
                 const active = supportTab === tab.id;
                 const badge = tab.id === 'inbox'
@@ -876,15 +876,18 @@ export default function StudentView() {
                     key={tab.id}
                     type="button"
                     onClick={() => selectSupportTab(tab.id)}
-                    className={`inline-flex items-center gap-1.5 rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
+                    className={`relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
                       active
-                        ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+                        ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
                         : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
                     }`}
                   >
                     {tab.label}
                     {badge ? (
-                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${active ? 'bg-white/25' : 'bg-amber-500 text-amber-950'}`}>
+                      <span
+                        data-iboard-tab-badge=""
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${active ? 'bg-white/25' : 'bg-amber-500 text-amber-950'}`}
+                      >
                         {badge}
                       </span>
                     ) : null}
@@ -893,6 +896,7 @@ export default function StudentView() {
               })}
             </nav>
 
+            <div className="iboard-student-support-scroll flex min-h-0 flex-1 flex-col gap-3">
             <div className={supportTab === 'ask' ? '' : 'hidden'}>
               <AudienceQnaStudent socket={socket} embedded />
             </div>
@@ -915,6 +919,7 @@ export default function StudentView() {
               />
             </div>
             <div className="xl:hidden">{renderProgressPanel()}</div>
+            </div>
           </aside>
 
           <section className="order-2 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
