@@ -148,12 +148,30 @@ function TabbedStudentResponse({ socket, ...props }) {
     };
   }, [socket]);
 
+  const closeReopenedAnswer = () => {
+    if (!activity?.id || !response) return;
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    collapseTimerRef.current = null;
+    setCollapsed(true);
+  };
+
   return (
     <>
       {catchupActivityId && (
         <style>{'.iboard-student-workspace .iboard-question-arrival{display:none!important;}'}</style>
       )}
-      <div className={collapsed && activity?.id && response ? 'hidden' : ''}>
+      <div className={`relative ${collapsed && activity?.id && response ? 'hidden' : ''}`}>
+        {activity?.id && response && !collapsed && (
+          <button
+            type="button"
+            onClick={closeReopenedAnswer}
+            className="absolute right-2 top-2 z-20 grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white/95 text-lg font-bold leading-none text-slate-400 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200"
+            title="Close answer"
+            aria-label="Close answer"
+          >
+            ×
+          </button>
+        )}
         <LiveResponseStudentCore {...props} socket={socket} standalone />
       </div>
       {collapsed && activity?.id && response && (
@@ -201,8 +219,6 @@ function DockedPulse({ socket, ...props }) {
     const expandSoon = () => {
       clearExpand();
       clearCollapse();
-      // Keep the panel collapsed long enough for the core attention effect to fire
-      // without scrolling the student's writing workspace. Then expand in-place.
       setExpanded(false);
       expandTimerRef.current = setTimeout(() => setExpanded(true), 180);
     };
@@ -224,8 +240,6 @@ function DockedPulse({ socket, ...props }) {
         expandSoon();
         return;
       }
-      // Keep the question open after the answer so the student can choose confidence.
-      // Once confidence is saved, roll the compact panel up as before.
       if (nextResponse?.confidence) collapseSoon();
     };
 
