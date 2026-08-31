@@ -9,6 +9,7 @@ import TeacherAnnotationController from './components/TeacherAnnotationControlle
 import NoteSendStatusControl from './components/NoteSendStatusControl.jsx';
 import TeacherPresenterDock from './components/TeacherPresenterDock.jsx';
 import TeacherLiveQuestionIndicators from './components/TeacherLiveQuestionIndicators.jsx';
+import UiInteractionController from './components/UiInteractionController.jsx';
 import './styles/teacherCleanUi.css';
 import './styles/studentCleanUi.css';
 
@@ -20,12 +21,18 @@ function TeacherConsole() {
       <NoteSendStatusControl />
       <TeacherPresenterDock />
       <TeacherLiveQuestionIndicators />
+      <UiInteractionController />
     </>
   );
 }
 
 function StudentConsole() {
-  return <StudentView />;
+  return (
+    <>
+      <StudentView />
+      <UiInteractionController />
+    </>
+  );
 }
 
 export default function App() {
