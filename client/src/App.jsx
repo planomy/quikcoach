@@ -13,6 +13,7 @@ import TeacherCardEditController from './components/TeacherCardEditController.js
 import UiInteractionController from './components/UiInteractionController.jsx';
 import ConnectionStatusController from './components/ConnectionStatusController.jsx';
 import ClassResetController from './components/ClassResetController.jsx';
+import AskTabLabelController from './components/AskTabLabelController.jsx';
 import './styles/teacherCleanUi.css';
 import './styles/studentCleanUi.css';
 
@@ -28,6 +29,7 @@ function TeacherConsole() {
       <UiInteractionController />
       <ConnectionStatusController />
       <ClassResetController role="teacher" />
+      <AskTabLabelController />
     </>
   );
 }
