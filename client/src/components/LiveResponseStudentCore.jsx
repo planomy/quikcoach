@@ -87,6 +87,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const arrivalTimerRef = useRef(null);
   const pulseTimerRef = useRef(null);
   const titleTimerRef = useRef(null);
+  const collapseTimerRef = useRef(null);
   const originalTitleRef = useRef('iBOARD');
   const clockOffsetRef = useRef(0);
 
@@ -134,12 +135,14 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       setActivity(nextActivity);
       setFeatured(Array.isArray(payload?.featured) ? payload.featured : []);
       if (isNew) {
+        if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
         setResponse(null);
         setDraft('');
         setConfidenceChoice('');
         drawAttention(nextActivity);
       }
       if (!nextActivity) {
+        if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
         activityIdRef.current = '';
         setResponse(null);
         setDraft('');
@@ -178,6 +181,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
       if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
       if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
+      if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
       document.title = originalTitleRef.current;
     };
   }, [drawAttention, socket]);
@@ -191,6 +195,15 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       /* ignore */
     }
     if (next) playQuestionChime();
+  }
+
+  function scheduleCollapse() {
+    if (typeof onCollapse !== 'function') return;
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    collapseTimerRef.current = setTimeout(() => {
+      collapseTimerRef.current = null;
+      onCollapse();
+    }, 900);
   }
 
   function submit(value) {
@@ -209,6 +222,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             }
           });
         }
+        scheduleCollapse();
       }
     });
   }
