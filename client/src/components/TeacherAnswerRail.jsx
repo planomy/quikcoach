@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import HintWrap from './HintWrap.jsx';
 
 function confidenceNameClass(confidence) {
   if (confidence === 'confident') return 'text-emerald-600 dark:text-emerald-400';
@@ -69,7 +70,7 @@ function ChoiceBars({ activity, responses, display = false }) {
   );
 }
 
-function ControlIcon({ children, label, onClick, active = false, primary = false }) {
+function ControlIcon({ children, label, hint, onClick, active = false, primary = false }) {
   const classes = primary
     ? 'border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700 dark:border-indigo-500 dark:bg-indigo-600 dark:hover:bg-indigo-500'
     : active
@@ -77,15 +78,16 @@ function ControlIcon({ children, label, onClick, active = false, primary = false
       : 'border-indigo-200 bg-white text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950';
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border shadow-sm transition ${classes}`}
-      title={label}
-      aria-label={label}
-    >
-      {children}
-    </button>
+    <HintWrap hint={hint || label}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border shadow-sm transition ${classes}`}
+        aria-label={label}
+      >
+        {children}
+      </button>
+    </HintWrap>
   );
 }
 
@@ -233,13 +235,13 @@ export default function TeacherAnswerRail({
   return (
     <>
       {!open && (
-        <button
-          type="button"
-          onClick={onOpen}
-          className="fixed right-0 top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-1 rounded-l-xl border border-r-0 border-indigo-200 bg-indigo-600 px-2 py-4 text-white shadow-lg hover:bg-indigo-700 dark:border-indigo-800"
-          title="Show answers"
-          aria-label={`Show answers · ${responded} so far`}
-        >
+        <HintWrap hint="Show answers">
+          <button
+            type="button"
+            onClick={onOpen}
+            className="fixed right-0 top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-1 rounded-l-xl border border-r-0 border-indigo-200 bg-indigo-600 px-2 py-4 text-white shadow-lg hover:bg-indigo-700 dark:border-indigo-800"
+            aria-label={`Show answers · ${responded} so far`}
+          >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 20V10" />
             <path d="M12 20V4" />
@@ -248,7 +250,8 @@ export default function TeacherAnswerRail({
           <span className="text-[10px] font-black uppercase tracking-wide" style={{ writingMode: 'vertical-rl' }}>
             Answers · {responded}
           </span>
-        </button>
+          </button>
+        </HintWrap>
       )}
 
       <aside
@@ -266,51 +269,54 @@ export default function TeacherAnswerRail({
               <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">{activity.prompt}</p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">{responded} response{responded === 1 ? '' : 's'}</p>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-              aria-label="Hide answers"
-              title="Close"
-            >
-              ×
-            </button>
+            <HintWrap hint="Hide">
+              <button
+                type="button"
+                onClick={onClose}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                aria-label="Hide answers"
+              >
+                ×
+              </button>
+            </HintWrap>
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Live question controls">
-            <ControlIcon label="Repeat this question" onClick={repeatQuestion}>
+            <ControlIcon label="Repeat this question" hint="Repeat" onClick={repeatQuestion}>
               <RepeatIcon />
             </ControlIcon>
-            <ControlIcon label="Present answers" onClick={() => setPresenting(true)}>
+            <ControlIcon label="Present answers on screen" hint="Present" onClick={() => setPresenting(true)}>
               <PresentIcon />
             </ControlIcon>
             {typeof onOpenAsk === 'function' && (
-              <ControlIcon label="Ask another question" onClick={onOpenAsk}>
+              <ControlIcon label="Ask another question" hint="Ask more" onClick={onOpenAsk}>
                 <AskIcon />
               </ControlIcon>
             )}
             <ControlIcon
               label={activity.locked ? 'Reopen answers' : 'Pause answers'}
+              hint={activity.locked ? 'Reopen' : 'Pause'}
               onClick={() => liveControl(activity.locked ? 'unlock' : 'lock')}
               active={!!activity.locked}
             >
               <PauseIcon paused={!!activity.locked} />
             </ControlIcon>
-            <ControlIcon label="Remind unanswered" onClick={remindUnanswered}>
+            <ControlIcon label="Remind students who have not answered" hint="Remind" onClick={remindUnanswered}>
               <BellIcon />
             </ControlIcon>
-            <ControlIcon label="Done" onClick={finishQuestion} primary>
+            <ControlIcon label="Finish this question" hint="Done" onClick={finishQuestion} primary>
               <DoneIcon />
             </ControlIcon>
             {activity.correctAnswer && !activity.revealed && (
               <details className="relative">
-                <summary
-                  className="grid h-9 w-9 cursor-pointer list-none place-items-center rounded-xl border border-indigo-200 bg-white text-lg font-black text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950 [&::-webkit-details-marker]:hidden"
-                  aria-label="More live question controls"
-                  title="More"
-                >
-                  ⋯
-                </summary>
+                <HintWrap hint="More">
+                  <summary
+                    className="grid h-9 w-9 cursor-pointer list-none place-items-center rounded-xl border border-indigo-200 bg-white text-lg font-black text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950 [&::-webkit-details-marker]:hidden"
+                    aria-label="More live question controls"
+                  >
+                    ⋯
+                  </summary>
+                </HintWrap>
                 <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                   <button
                     type="button"
