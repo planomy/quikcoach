@@ -51,7 +51,6 @@ export default function AudienceQnaTeacher({
     () => sortQuestions(questions.filter((question) => question.status === 'published' || question.status === 'answered')),
     [questions]
   );
-  const activeCount = pending.length + published.length;
 
   function update(question, action, anonymous) {
     setMessage('');
@@ -83,11 +82,11 @@ export default function AudienceQnaTeacher({
       update(question, 'publish', anonymous);
     };
     return (
-      <details>
+      <details className="relative z-20">
         <summary className={`flex h-9 list-none cursor-pointer items-center rounded-lg px-3 text-xs font-black ${isAnonymous ? 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>
-          Show ▾
+          Display ▾
         </summary>
-        <div className="mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
           <button type="button" onClick={(event) => chooseDisplay(event, false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
           <button type="button" onClick={(event) => chooseDisplay(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
         </div>
@@ -99,32 +98,30 @@ export default function AudienceQnaTeacher({
     const queuePosition = queuePositions[Number(question.id)];
     const isLive = mode === 'published';
     return (
-      <article className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex items-start gap-3">
-          {mode === 'pending' && queuePosition && (
-            <span className="grid h-8 min-w-8 shrink-0 place-items-center rounded-full bg-fuchsia-600 px-1 text-sm font-black text-white" title={`Question ${queuePosition} in the queue`}>
-              {queuePosition}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">{question.studentName}</span>
-              {isLive && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-800">{question.publishedAnonymous ? 'Anon live' : 'Live'}</span>}
-              {mode !== 'pending' && Number(question.votes) > 0 && <span className="text-[10px] font-bold text-slate-400">▲ {question.votes}</span>}
-            </div>
-            <p className="mt-1 text-base font-bold leading-snug text-slate-950 dark:text-white">{question.text}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {(mode === 'pending' || mode === 'published') && <DisplayMenu question={question} />}
-              {mode !== 'dismissed' && mode !== 'answered' && (
-                <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'Replaces the current response prompt' : 'Ask every participant'} className={`${ACTION_CLASS} bg-emerald-500 text-emerald-950`}>
-                  Ask class
-                </button>
-              )}
-              {mode === 'pending' && <button type="button" onClick={() => update(question, 'dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>}
-              {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>}
-              {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className={`${ACTION_CLASS} bg-violet-100 text-violet-800`}>Reopen</button>}
-              {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Return</button>}
-            </div>
+      <article className="relative overflow-visible rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">{question.studentName}</span>
+            {mode === 'pending' && queuePosition && (
+              <span className="text-[10px] font-black uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-300" title={`Question ${queuePosition} in the waiting queue`}>
+                Q{queuePosition}
+              </span>
+            )}
+            {isLive && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-800">{question.publishedAnonymous ? 'Anon live' : 'Live'}</span>}
+            {mode !== 'pending' && Number(question.votes) > 0 && <span className="text-[10px] font-bold text-slate-400">▲ {question.votes}</span>}
+          </div>
+          <p className="mt-1 text-base font-bold leading-snug text-slate-950 dark:text-white">{question.text}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {(mode === 'pending' || mode === 'published') && <DisplayMenu question={question} />}
+            {mode !== 'dismissed' && mode !== 'answered' && (
+              <button type="button" onClick={() => askRoom(question)} title={hasLiveActivity ? 'Replaces the current response prompt' : 'Ask every participant'} className={`${ACTION_CLASS} bg-emerald-500 text-emerald-950`}>
+                Ask class
+              </button>
+            )}
+            {mode === 'pending' && <button type="button" onClick={() => update(question, 'dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>}
+            {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>}
+            {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className={`${ACTION_CLASS} bg-violet-100 text-violet-800`}>Reopen</button>}
+            {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Return</button>}
           </div>
         </div>
       </article>
@@ -136,7 +133,7 @@ export default function AudienceQnaTeacher({
       <section id="audience-qna-teacher" className="scroll-mt-4 p-4">
         <div className="flex items-center gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
           <h3 className="min-w-0 flex-1 font-display text-lg font-black text-slate-950 dark:text-white">
-            Questions{activeCount ? ` · ${activeCount}` : ''}
+            From students{pending.length ? ` · ${pending.length} waiting` : ''}
           </h3>
           {!focusedStudentId && presentable.length > 0 && (
             <button type="button" onClick={() => setPresenting(true)} className={`${ACTION_CLASS} bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200`}>Present</button>
