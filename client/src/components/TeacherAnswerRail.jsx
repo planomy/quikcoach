@@ -29,22 +29,125 @@ function ChoiceBars({ activity, responses, display = false }) {
       {activity.options.map((option, index) => {
         const count = counts[option] || 0;
         return (
-          <div key={option} className={`grid items-center gap-3 ${display ? 'grid-cols-[minmax(5rem,10rem)_1fr_2.5rem]' : 'grid-cols-[minmax(3rem,5.5rem)_1fr_1.5rem]'}`}>
-            <p className={`truncate font-bold ${display ? 'text-xl text-white' : 'text-xs text-slate-700 dark:text-slate-200'}`}>
+          <div
+            key={option}
+            className={`grid items-center gap-3 ${
+              display
+                ? 'grid-cols-[minmax(5rem,10rem)_1fr_2.5rem]'
+                : 'grid-cols-[minmax(3rem,5.5rem)_1fr_1.5rem]'
+            }`}
+          >
+            <p
+              className={`truncate font-bold ${
+                display ? 'text-xl text-white' : 'text-xs text-slate-700 dark:text-slate-200'
+              }`}
+            >
               <span className="mr-1 opacity-40">{String.fromCharCode(65 + index)}</span>
               {option}
             </p>
-            <div className={`${display ? 'h-10 bg-white/15' : 'h-5 bg-slate-100 dark:bg-slate-800'} overflow-hidden rounded-full`}>
+            <div
+              className={`${
+                display ? 'h-10 bg-white/15' : 'h-5 bg-slate-100 dark:bg-slate-800'
+              } overflow-hidden rounded-full`}
+            >
               <div
                 className="h-full min-w-1 rounded-full bg-indigo-500 transition-all duration-500"
                 style={{ width: `${(count / max) * 100}%` }}
               />
             </div>
-            <span className={`text-right font-black ${display ? 'text-2xl text-white' : 'text-xs text-slate-700 dark:text-slate-200'}`}>{count}</span>
+            <span
+              className={`text-right font-black ${
+                display ? 'text-2xl text-white' : 'text-xs text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              {count}
+            </span>
           </div>
         );
       })}
     </div>
+  );
+}
+
+function ControlIcon({ children, label, onClick, active = false, primary = false }) {
+  const classes = primary
+    ? 'border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700 dark:border-indigo-500 dark:bg-indigo-600 dark:hover:bg-indigo-500'
+    : active
+      ? 'border-indigo-300 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200 dark:hover:bg-indigo-900'
+      : 'border-indigo-200 bg-white text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border shadow-sm transition ${classes}`}
+      title={label}
+      aria-label={label}
+    >
+      {children}
+    </button>
+  );
+}
+
+function RepeatIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 7h-5V2" />
+      <path d="M20 7a8 8 0 1 0 1.3 8" />
+    </svg>
+  );
+}
+
+function PresentIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8" />
+      <path d="M12 16v4" />
+    </svg>
+  );
+}
+
+function AskIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.8 9a2.35 2.35 0 0 1 4.55.8c0 1.8-2.35 2.1-2.35 3.7" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
+function PauseIcon({ paused }) {
+  if (paused) {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m8 5 11 7-11 7Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 5v14" />
+      <path d="M15 5v14" />
+    </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+      <path d="M10 21h4" />
+    </svg>
+  );
+}
+
+function DoneIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m5 12 4 4L19 6" />
+    </svg>
   );
 }
 
@@ -65,15 +168,15 @@ export default function TeacherAnswerRail({
   const isShort = activity?.type === 'short';
   const responded = (responses || []).length;
   const sorted = useMemo(() => {
-    return [...(responses || [])].sort((a, b) => Number(b.submittedAt || 0) - Number(a.submittedAt || 0));
+    return [...(responses || [])].sort(
+      (a, b) => Number(b.submittedAt || 0) - Number(a.submittedAt || 0)
+    );
   }, [responses]);
 
   useEffect(() => {
     if (!open || highlightStudentId == null) return undefined;
     const node = listRef.current?.querySelector(`[data-rail-student="${highlightStudentId}"]`);
-    if (node) {
-      node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (node) node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     const timer = window.setTimeout(() => onClearHighlight?.(), 2200);
     return () => window.clearTimeout(timer);
   }, [open, highlightStudentId, onClearHighlight, sorted.length]);
@@ -156,64 +259,72 @@ export default function TeacherAnswerRail({
         aria-hidden={!open}
         aria-label="Live answers"
       >
-        <div className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Live answers</p>
-            <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">{activity.prompt}</p>
-            <p className="mt-1 text-[11px] font-semibold text-slate-500">{responded} response{responded === 1 ? '' : 's'}</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={repeatQuestion}
-              className="grid h-8 w-8 place-items-center rounded-lg text-base font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950"
-              title="Repeat this question"
-              aria-label="Repeat this question"
-            >
-              ↻
-            </button>
-            <button
-              type="button"
-              onClick={() => setPresenting(true)}
-              className="rounded-lg px-2 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950"
-            >
-              Present
-            </button>
-            {typeof onOpenAsk === 'function' && (
-              <button
-                type="button"
-                onClick={onOpenAsk}
-                className="rounded-lg px-2 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950"
-              >
-                Ask another
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={finishQuestion}
-              className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              title="End this question and clear live answers"
-            >
-              Done
-            </button>
-            <details className="relative">
-              <summary className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-lg text-lg font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="More live question controls">⋯</summary>
-              <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); remindUnanswered(); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Remind unanswered</button>
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); liveControl(activity.locked ? 'unlock' : 'lock'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">{activity.locked ? 'Reopen answers' : 'Pause answers'}</button>
-                {activity.correctAnswer && !activity.revealed && (
-                  <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); liveControl('reveal'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">Reveal answer</button>
-                )}
-              </div>
-            </details>
+        <div className="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Live answers</p>
+              <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">{activity.prompt}</p>
+              <p className="mt-1 text-[11px] font-semibold text-slate-500">{responded} response{responded === 1 ? '' : 's'}</p>
+            </div>
             <button
               type="button"
               onClick={onClose}
-              className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               aria-label="Hide answers"
+              title="Close"
             >
               ×
             </button>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Live question controls">
+            <ControlIcon label="Repeat this question" onClick={repeatQuestion}>
+              <RepeatIcon />
+            </ControlIcon>
+            <ControlIcon label="Present answers" onClick={() => setPresenting(true)}>
+              <PresentIcon />
+            </ControlIcon>
+            {typeof onOpenAsk === 'function' && (
+              <ControlIcon label="Ask another question" onClick={onOpenAsk}>
+                <AskIcon />
+              </ControlIcon>
+            )}
+            <ControlIcon
+              label={activity.locked ? 'Reopen answers' : 'Pause answers'}
+              onClick={() => liveControl(activity.locked ? 'unlock' : 'lock')}
+              active={!!activity.locked}
+            >
+              <PauseIcon paused={!!activity.locked} />
+            </ControlIcon>
+            <ControlIcon label="Remind unanswered" onClick={remindUnanswered}>
+              <BellIcon />
+            </ControlIcon>
+            <ControlIcon label="Done" onClick={finishQuestion} primary>
+              <DoneIcon />
+            </ControlIcon>
+            {activity.correctAnswer && !activity.revealed && (
+              <details className="relative">
+                <summary
+                  className="grid h-9 w-9 cursor-pointer list-none place-items-center rounded-xl border border-indigo-200 bg-white text-lg font-black text-indigo-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950 [&::-webkit-details-marker]:hidden"
+                  aria-label="More live question controls"
+                  title="More"
+                >
+                  ⋯
+                </summary>
+                <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.closest('details')?.removeAttribute('open');
+                      liveControl('reveal');
+                    }}
+                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Reveal answer
+                  </button>
+                </div>
+              </details>
+            )}
           </div>
         </div>
 
@@ -296,7 +407,13 @@ export default function TeacherAnswerRail({
 
       {presenting && (
         <div className="fixed inset-0 z-[95] overflow-auto bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 p-6 text-white sm:p-10">
-          <button type="button" onClick={() => setPresenting(false)} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl">Back</button>
+          <button
+            type="button"
+            onClick={() => setPresenting(false)}
+            className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl"
+          >
+            Back
+          </button>
           <div className="mx-auto max-w-5xl py-14">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Live answers</p>
             <h2 className="mt-2 font-display text-3xl font-black sm:text-5xl">{activity.prompt}</h2>
@@ -305,9 +422,16 @@ export default function TeacherAnswerRail({
               {isShort ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   {sorted.map((response) => (
-                    <article key={`${response.studentId}-${response.submittedAt || response.value}`} className="rounded-2xl bg-white/10 p-5 ring-1 ring-white/15">
+                    <article
+                      key={`${response.studentId}-${response.submittedAt || response.value}`}
+                      className="rounded-2xl bg-white/10 p-5 ring-1 ring-white/15"
+                    >
                       <p className="text-xl leading-relaxed">“{response.value}”</p>
-                      {!activity.anonymous && <p className="mt-3 text-sm font-black text-indigo-300">{response.name || 'Student'}</p>}
+                      {!activity.anonymous && (
+                        <p className="mt-3 text-sm font-black text-indigo-300">
+                          {response.name || 'Student'}
+                        </p>
+                      )}
                     </article>
                   ))}
                   {!sorted.length && <p className="text-lg text-indigo-200">Waiting for answers…</p>}
