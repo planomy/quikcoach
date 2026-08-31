@@ -153,10 +153,9 @@ function DoneIcon() {
   );
 }
 
-/** Right-edge answer rail: the teacher's live monitoring and control surface. */
+/** Right-edge responses rail: the teacher's live monitoring and control surface. */
 export default function TeacherAnswerRail({
   open,
-  onOpen,
   onClose,
   activity,
   responses = [],
@@ -234,38 +233,18 @@ export default function TeacherAnswerRail({
 
   return (
     <>
-      {!open && (
-        <HintWrap hint="Show answers">
-          <button
-            type="button"
-            onClick={onOpen}
-            className="fixed right-0 top-1/2 z-40 flex -translate-y-1/2 flex-col items-center gap-1 rounded-l-xl border border-r-0 border-indigo-200 bg-indigo-600 px-2 py-4 text-white shadow-lg hover:bg-indigo-700 dark:border-indigo-800"
-            aria-label={`Show answers · ${responded} so far`}
-          >
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 20V10" />
-            <path d="M12 20V4" />
-            <path d="M20 20v-7" />
-          </svg>
-          <span className="text-[10px] font-black uppercase tracking-wide" style={{ writingMode: 'vertical-rl' }}>
-            Answers · {responded}
-          </span>
-          </button>
-        </HintWrap>
-      )}
-
       <aside
         ref={panelRef}
         className={`fixed bottom-0 right-0 top-0 z-40 flex w-[min(24rem,92vw)] flex-col border-l border-indigo-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-indigo-900 dark:bg-slate-900 ${
           open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
         }`}
         aria-hidden={!open}
-        aria-label="Live answers"
+        aria-label="Responses"
       >
         <div className="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Live answers</p>
+              <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Responses</p>
               <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">{activity.prompt}</p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">{responded} response{responded === 1 ? '' : 's'}</p>
             </div>
@@ -274,7 +253,7 @@ export default function TeacherAnswerRail({
                 type="button"
                 onClick={onClose}
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                aria-label="Hide answers"
+                aria-label="Hide responses"
               >
                 ×
               </button>
@@ -421,7 +400,7 @@ export default function TeacherAnswerRail({
             Back
           </button>
           <div className="mx-auto max-w-5xl py-14">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Live answers</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Responses</p>
             <h2 className="mt-2 font-display text-3xl font-black sm:text-5xl">{activity.prompt}</h2>
             <p className="mt-3 text-sm font-bold text-indigo-200">{responded} response{responded === 1 ? '' : 's'}</p>
             <div className="mt-10">

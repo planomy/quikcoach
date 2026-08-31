@@ -113,7 +113,7 @@ export default function UiInteractionController() {
           }
         }
 
-        const answerRail = document.querySelector('aside[aria-label="Live answers"]');
+        const answerRail = document.querySelector('aside[aria-label="Responses"]');
         const railOpen = answerRail?.className?.includes('translate-x-0');
         if (railOpen && !railWasOpen) {
           const closeAsk = document.querySelector('button[aria-label="Close Ask overlay"]');
