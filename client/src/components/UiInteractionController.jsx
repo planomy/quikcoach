@@ -49,6 +49,15 @@ function styleAttentionBadge(button, label) {
   const display = Number.isFinite(numeric) && numeric > 9 ? '9+' : raw;
   if (!display) return;
 
+  const ariaLabel = `${label}, ${display} new`;
+  if (
+    badge.dataset.iboardAttentionBadge === 'true'
+    && badge.textContent === display
+    && button.getAttribute('aria-label') === ariaLabel
+  ) {
+    return;
+  }
+
   badge.textContent = display;
   badge.dataset.iboardAttentionBadge = 'true';
   button.style.position = 'relative';
@@ -70,7 +79,7 @@ function styleAttentionBadge(button, label) {
     lineHeight: '1',
     zIndex: '4',
   });
-  button.setAttribute('aria-label', `${label}, ${display} new`);
+  button.setAttribute('aria-label', ariaLabel);
 }
 
 export default function UiInteractionController() {
