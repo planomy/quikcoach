@@ -213,12 +213,6 @@ function DockedPulse({ socket, ...props }) {
       if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
       collapseTimerRef.current = null;
     };
-    const expandSoon = () => {
-      clearExpand();
-      clearCollapse();
-      setExpanded(false);
-      expandTimerRef.current = setTimeout(() => setExpanded(true), 180);
-    };
     const collapseSoon = () => {
       clearCollapse();
       collapseTimerRef.current = setTimeout(() => setExpanded(false), 1400);
