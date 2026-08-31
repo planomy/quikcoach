@@ -143,7 +143,7 @@ export default function TeacherCardEditController() {
         socket.emit('teacher:broadcast', { studentIds: [], postIds: [editing.id] }, (broadcastAck) => {
           setBusy(false);
           if (!broadcastAck?.ok) {
-            setError(broadcastAck?.error || 'Card saved, but rebroadcast failed.');
+            setError(broadcastAck?.error || 'Card saved, but sending to Inbox failed.');
             return;
           }
           setEditing(null);
@@ -187,7 +187,7 @@ export default function TeacherCardEditController() {
             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
           {editing.kind === 'image' ? (
-            <p className="rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-500 dark:bg-slate-950 dark:text-slate-400">Image stays as it is. Edit the title, then save or rebroadcast.</p>
+            <p className="rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-500 dark:bg-slate-950 dark:text-slate-400">Image stays as it is. Edit the title, then save or send to Inbox.</p>
           ) : (
             <>
               <label className="block text-xs font-black uppercase tracking-wide text-slate-500">Text</label>
@@ -204,7 +204,7 @@ export default function TeacherCardEditController() {
         <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-950">
           <button type="button" disabled={busy} onClick={closeEditor} className="rounded-xl px-3 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800">Cancel</button>
           <button type="submit" disabled={busy} className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm font-black text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950/40">{busy ? 'Saving…' : 'Save'}</button>
-          <button type="button" disabled={busy} onClick={() => save(true)} className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-black text-white hover:bg-indigo-700 disabled:opacity-40">{busy ? 'Saving…' : 'Save & rebroadcast'}</button>
+          <button type="button" disabled={busy} onClick={() => save(true)} className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-black text-white hover:bg-indigo-700 disabled:opacity-40">{busy ? 'Saving…' : 'Save & send to Inbox'}</button>
         </div>
       </form>
     </div>
