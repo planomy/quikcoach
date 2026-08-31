@@ -12,6 +12,7 @@ import TeacherLiveQuestionIndicators from './components/TeacherLiveQuestionIndic
 import TeacherCardEditController from './components/TeacherCardEditController.jsx';
 import UiInteractionController from './components/UiInteractionController.jsx';
 import ConnectionStatusController from './components/ConnectionStatusController.jsx';
+import ClassResetController from './components/ClassResetController.jsx';
 import './styles/teacherCleanUi.css';
 import './styles/studentCleanUi.css';
 
@@ -26,6 +27,7 @@ function TeacherConsole() {
       <TeacherCardEditController />
       <UiInteractionController />
       <ConnectionStatusController />
+      <ClassResetController role="teacher" />
     </>
   );
 }
@@ -36,6 +38,7 @@ function StudentConsole() {
       <StudentView />
       <UiInteractionController />
       <ConnectionStatusController />
+      <ClassResetController role="student" />
     </>
   );
 }

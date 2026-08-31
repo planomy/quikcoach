@@ -159,7 +159,53 @@ function updateTeacherCard(io, socket, payload = {}, cb) {
   }
 }
 
-// Add two ownership-oriented socket actions without disturbing the core server.
+function startNewClass(io, socket, cb) {
+  try {
+    const code = normalizeRoomCode(socket.data.roomCode);
+    if (socket.data.role !== 'teacher' || code.length !== 4) {
+      cb?.({ ok: false, error: 'Open the room as teacher first' });
+      return;
+    }
+
+    const clearHandler = socket.listeners('teacher:clear-cards')[0];
+    if (typeof clearHandler !== 'function') {
+      cb?.({ ok: false, error: 'Class reset is not available' });
+      return;
+    }
+
+    clearHandler({}, (ack) => {
+      if (!ack?.ok) {
+        cb?.(ack || { ok: false, error: 'Could not start a new class' });
+        return;
+      }
+
+      io.to(roomSocketName(code)).emit('class:reset', {
+        code,
+        at: Date.now(),
+      });
+
+      // Give browsers a moment to clear their saved student session, then sever the
+      // old student sockets so no deleted student id can keep writing into the room.
+      setTimeout(() => {
+        for (const client of io.sockets.sockets.values()) {
+          if (
+            client.data?.role === 'student' &&
+            normalizeRoomCode(client.data?.roomCode) === code
+          ) {
+            client.disconnect(true);
+          }
+        }
+      }, 150);
+
+      cb?.({ ok: true });
+    });
+  } catch (error) {
+    console.error('Could not start new class', error);
+    cb?.({ ok: false, error: 'Could not start a new class' });
+  }
+}
+
+// Add ownership/session-oriented socket actions without disturbing the core server.
 // This follows the same preload pattern as feedbackPatch.js and richTextPatch.js.
 const baseServerOn = Server.prototype.on;
 Server.prototype.on = function patchedOwnershipServerOn(eventName, listener) {
@@ -169,6 +215,7 @@ Server.prototype.on = function patchedOwnershipServerOn(eventName, listener) {
   return baseServerOn.call(this, eventName, (socket) => {
     socket.on('student:qna-delete', (payload, cb) => deleteOwnQuestion(io, socket, payload, cb));
     socket.on('teacher:board-post-update', (payload, cb) => updateTeacherCard(io, socket, payload, cb));
+    socket.on('teacher:start-new-class', (_payload, cb) => startNewClass(io, socket, cb));
     return listener(socket);
   });
 };
