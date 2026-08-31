@@ -76,6 +76,12 @@ export default function TeacherAnswerRail({
     return () => window.clearTimeout(timer);
   }, [open, highlightStudentId, onClearHighlight, sorted.length]);
 
+  function finishQuestion() {
+    const socket = window.__iboardTeacherSocket;
+    if (!socket?.connected) return;
+    socket.emit('teacher:live-control', { action: 'clear' });
+  }
+
   if (!activity) return null;
 
   return (
@@ -122,6 +128,14 @@ export default function TeacherAnswerRail({
                 Ask
               </button>
             )}
+            <button
+              type="button"
+              onClick={finishQuestion}
+              className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              title="End this question and clear live answers"
+            >
+              Done
+            </button>
             <button
               type="button"
               onClick={onClose}
