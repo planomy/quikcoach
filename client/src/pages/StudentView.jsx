@@ -928,7 +928,10 @@ export default function StudentView() {
               Tip: paste a screenshot into the box (Ctrl+V / Cmd+V) to add an image to your board card.
             </p>
             {student?.image_url && (
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900">
+              <div
+                data-student-image-preview
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900"
+              >
                 {student.teacher_markup_url && (
                   <p className="mb-2 inline-flex rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-black text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
                     Teacher correction

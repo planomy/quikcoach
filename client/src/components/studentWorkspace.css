@@ -59,9 +59,9 @@ html.dark.iboard-student-workspace header details a[href*='supacoach'] {
   z-index: 35;
 }
 
-/* Draw mode replaces the main work surface. Hide the live attachment preview while
-   the student is actively drawing so their own autosaved sketch does not stack above it. */
-html.iboard-student-workspace.iboard-student-draw-mode main section > div:has(> img[alt='Your uploaded image']) {
+/* Draw mode replaces the main work surface. Keep the live card preview hidden until
+   the student taps Done — teacher still receives incremental autosaves. */
+html.iboard-student-workspace.iboard-student-draw-mode [data-student-image-preview] {
   display: none !important;
 }
 

@@ -275,7 +275,7 @@ export default function StudentDrawPad({ disabled = false, onSave, onClear, onDo
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2 text-xs dark:border-slate-700">
-        <span className="text-slate-500 dark:text-slate-400">Your drawing becomes the card image · autosaves while you work</span>
+        <span className="text-slate-500 dark:text-slate-400">Teacher sees updates live · your preview appears when you tap Done</span>
         <span className={`font-semibold ${saveFailed ? 'text-red-600' : 'text-indigo-600 dark:text-indigo-300'}`} aria-live="polite">
           {disabled ? 'Class is frozen' : status}
         </span>
