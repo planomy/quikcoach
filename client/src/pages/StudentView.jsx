@@ -944,12 +944,11 @@ export default function StudentView() {
                 }}
               />
             </div>
-            <div className="xl:hidden">{renderProgressPanel()}</div>
             </div>
           </aside>
 
           <section className="order-2 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
-            <div className="hidden xl:block">{renderProgressPanel()}</div>
+            {renderProgressPanel()}
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Tip: paste a screenshot into the box (Ctrl+V / Cmd+V) to add an image to your board card.
             </p>
