@@ -202,6 +202,8 @@ function TeacherDashboardInner() {
   const [toolsPanelOpen, setToolsPanelOpen] = useState(false);
   const [toolsTab, setToolsTab] = useState('ask');
   const [toolsHighlightStudentId, setToolsHighlightStudentId] = useState(null);
+  const teacherToolsNavRef = useRef(null);
+  const teacherToolsPanelRef = useRef(null);
   const [lessonReportOpen, setLessonReportOpen] = useState(false);
   const prevPendingQuestionCountRef = useRef(0);
   const [libraryPanel, setLibraryPanel] = useState(null);
@@ -690,6 +692,31 @@ function TeacherDashboardInner() {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [joined]);
+
+  useEffect(() => {
+    if (!toolsPanelOpen) return undefined;
+
+    function closeTeacherToolsIfOutside(event) {
+      const target = event.target;
+      if (teacherToolsNavRef.current?.contains(target)) return;
+      if (teacherToolsPanelRef.current?.contains(target)) return;
+      setToolsPanelOpen(false);
+      setToolsHighlightStudentId(null);
+    }
+
+    function closeTeacherToolsOnEscape(event) {
+      if (event.key !== 'Escape') return;
+      setToolsPanelOpen(false);
+      setToolsHighlightStudentId(null);
+    }
+
+    document.addEventListener('pointerdown', closeTeacherToolsIfOutside);
+    document.addEventListener('keydown', closeTeacherToolsOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeTeacherToolsIfOutside);
+      document.removeEventListener('keydown', closeTeacherToolsOnEscape);
+    };
+  }, [toolsPanelOpen]);
 
   const pendingQuestionCount = useMemo(
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
@@ -1423,7 +1450,7 @@ function TeacherDashboardInner() {
               </span>
             )}
           </div>
-          <nav aria-label="Teacher tools" className="ml-auto flex items-end gap-1 overflow-visible">
+          <nav ref={teacherToolsNavRef} aria-label="Teacher tools" className="ml-auto flex items-end gap-1 overflow-visible">
             {TEACHER_TOOLS_TABS.map((tab) => {
               const active = toolsPanelOpen && toolsTab === tab.id;
               const badge = tab.id === 'respond'
@@ -1435,7 +1462,10 @@ function TeacherDashboardInner() {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => openTeacherTools(tab.id)}
+                  onClick={() => {
+                    if (toolsPanelOpen && toolsTab === tab.id) closeTeacherTools();
+                    else openTeacherTools(tab.id);
+                  }}
                   aria-current={active ? 'page' : undefined}
                   className={`relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
                     active
@@ -1658,6 +1688,26 @@ function TeacherDashboardInner() {
             </details>
           </div>
         </div>
+        {toolsPanelOpen && (
+          <div
+            ref={teacherToolsPanelRef}
+            className="absolute right-4 top-full z-[60] w-[min(29rem,calc(100vw-2rem))] overflow-hidden rounded-b-2xl rounded-tl-2xl border border-t-0 border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:right-6"
+            role="dialog"
+            aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
+          >
+            <LiveResponseTeacher
+              socket={socket}
+              overlay
+              panelTab={toolsTab}
+              onPanelTabChange={setToolsTab}
+              onClose={closeTeacherTools}
+              onQuestionLaunched={() => setToolsTab('responses')}
+              highlightStudentId={toolsHighlightStudentId}
+              onClearHighlight={() => setToolsHighlightStudentId(null)}
+              onCopyStudentLink={copyStudentJoinLink}
+            />
+          </div>
+        )}
       </header>
       </div>
 
@@ -1939,30 +1989,6 @@ function TeacherDashboardInner() {
               </div>
       </main>
       </div>
-
-      {toolsPanelOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[4.5rem] sm:p-6 sm:pt-[5rem]">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px]"
-            aria-label="Close teacher tools"
-            onClick={closeTeacherTools}
-          />
-          <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-            <LiveResponseTeacher
-              socket={socket}
-              overlay
-              panelTab={toolsTab}
-              onPanelTabChange={setToolsTab}
-              onClose={closeTeacherTools}
-              onQuestionLaunched={() => setToolsTab('responses')}
-              highlightStudentId={toolsHighlightStudentId}
-              onClearHighlight={() => setToolsHighlightStudentId(null)}
-              onCopyStudentLink={copyStudentJoinLink}
-            />
-          </div>
-        </div>
-      )}
 
       {lessonReportOpen && (
         <LessonReportPanel roomCode={codeInput} onClose={() => setLessonReportOpen(false)} />
