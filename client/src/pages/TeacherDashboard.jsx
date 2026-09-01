@@ -2031,7 +2031,7 @@ function TeacherDashboardInner() {
                       className={`rounded-xl px-3 py-2 text-xs font-black transition ${
                         reportMergeMode
                           ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
-                          : 'bg-violet-100 text-violet-800 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-200'
+                          : 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200'
                       }`}
                     >
                       {reportMergeMode ? 'Cancel combining' : 'Combine names'}
@@ -2050,7 +2050,7 @@ function TeacherDashboardInner() {
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                         />
                         {reportMergeMode && (
-                          <p className="mt-2 text-[11px] font-semibold leading-relaxed text-violet-700 dark:text-violet-300">
+                          <p className="mt-2 text-[11px] font-semibold leading-relaxed text-indigo-700 dark:text-indigo-300">
                             Tick every name used by the same student.
                           </p>
                         )}
@@ -2066,7 +2066,7 @@ function TeacherDashboardInner() {
                               key={profile.key}
                               className={`mb-1 flex cursor-pointer items-start gap-2 rounded-xl border px-3 py-2.5 transition ${
                                 reportMergeKeys.includes(profile.key)
-                                  ? 'border-violet-300 bg-violet-50 dark:border-violet-700 dark:bg-violet-950/50'
+                                  ? 'border-indigo-300 bg-indigo-50 dark:border-indigo-700 dark:bg-indigo-950/50'
                                   : 'border-transparent bg-white hover:border-indigo-200 dark:bg-slate-900 dark:hover:border-indigo-800'
                               }`}
                             >
@@ -2074,7 +2074,7 @@ function TeacherDashboardInner() {
                                 type="checkbox"
                                 checked={reportMergeKeys.includes(profile.key)}
                                 onChange={() => toggleReportMergeProfile(profile.key)}
-                                className="mt-0.5 h-4 w-4 shrink-0 accent-violet-600"
+                                className="mt-0.5 h-4 w-4 shrink-0 accent-indigo-600"
                               />
                               <span className="min-w-0">
                                 <span className="block truncate text-sm font-black text-slate-900 dark:text-white">{profile.name}</span>
@@ -2099,7 +2099,7 @@ function TeacherDashboardInner() {
                               <span className="min-w-0">
                                 <span className="block truncate text-sm font-black">{profile.name}</span>
                                 {profile.combined && (
-                                  <span className={`block truncate text-[10px] font-semibold ${selectedEvidenceStudentKey === profile.key ? 'text-indigo-100' : 'text-violet-600 dark:text-violet-300'}`}>
+                                  <span className={`block truncate text-[10px] font-semibold ${selectedEvidenceStudentKey === profile.key ? 'text-indigo-100' : 'text-indigo-600 dark:text-indigo-300'}`}>
                                     Combined profile
                                   </span>
                                 )}
@@ -2133,7 +2133,7 @@ function TeacherDashboardInner() {
                                 id="report-canonical-name"
                                 value={reportMergeCanonicalKey}
                                 onChange={(event) => setReportMergeCanonicalKey(event.target.value)}
-                                className="mt-1 w-full rounded-lg border border-violet-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-900 dark:border-violet-800 dark:bg-slate-950 dark:text-white"
+                                className="mt-1 w-full rounded-lg border border-indigo-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-900 dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
                               >
                                 {reportMergeProfiles.map((profile) => (
                                   <option key={profile.key} value={profile.key}>{profile.name}</option>
@@ -2143,7 +2143,7 @@ function TeacherDashboardInner() {
                                 type="button"
                                 disabled={reportMergeBusy || !reportMergeCanonicalKey}
                                 onClick={combineReportProfiles}
-                                className="mt-2 w-full rounded-lg bg-violet-600 px-3 py-2 text-xs font-black text-white hover:bg-violet-700 disabled:opacity-50"
+                                className="mt-2 w-full rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50"
                               >
                                 {reportMergeBusy ? 'Combining…' : 'Combine selected names'}
                               </button>
@@ -2163,7 +2163,7 @@ function TeacherDashboardInner() {
                                 {selectedEvidenceStudent.entries.length} {selectedEvidenceStudent.entries.length === 1 ? 'submission' : 'submissions'} · {selectedEvidenceStudent.entries.reduce((total, entry) => total + wordCount(entry.text), 0)} words
                               </p>
                               {(selectedEvidenceStudent.aliases || []).length > 1 && (
-                                <p className="mt-1 text-[11px] text-violet-700 dark:text-violet-300">
+                                <p className="mt-1 text-[11px] text-indigo-700 dark:text-indigo-300">
                                   Joined as: {selectedEvidenceStudent.aliases.join(', ')}
                                 </p>
                               )}
@@ -2174,7 +2174,7 @@ function TeacherDashboardInner() {
                                   type="button"
                                   disabled={reportMergeBusy}
                                   onClick={separateReportProfile}
-                                  className="rounded-lg border border-violet-200 px-3 py-2 text-xs font-black text-violet-700 hover:bg-violet-50 disabled:opacity-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950/40"
+                                  className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
                                 >
                                   Separate names
                                 </button>
@@ -2343,7 +2343,7 @@ function TeacherDashboardInner() {
 
       {joinScreenOpen && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center overflow-auto bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 p-5 text-white sm:p-10"
+          className="fixed inset-0 z-[80] flex items-center justify-center overflow-auto bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 p-5 text-white sm:p-10"
           role="dialog"
           aria-modal="true"
           aria-labelledby="join-screen-title"

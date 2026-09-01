@@ -156,8 +156,8 @@ const DOCK_CSS = `
   }
   .iboard-presenter-head-button:hover { background: rgba(255,255,255,.22); }
   .iboard-presenter-head-button.is-question {
-    border-color: #f0abfc;
-    background: #c026d3;
+    border-color: #c7d2fe;
+    background: #4f46e5;
   }
   .iboard-presenter-body { padding: 10px; }
   .iboard-presenter-status-row {
@@ -278,7 +278,7 @@ const DOCK_CSS = `
     height: 24px;
     place-items: center;
     border-radius: 999px;
-    background: #c026d3;
+    background: #4f46e5;
     color: #ffffff;
     font-size: 10px;
     font-weight: 950;
@@ -289,7 +289,7 @@ const DOCK_CSS = `
     font-weight: 950;
     text-transform: uppercase;
     letter-spacing: .08em;
-    color: #a21caf;
+    color: #4338ca;
   }
   .iboard-presenter-qtext {
     margin: 0;

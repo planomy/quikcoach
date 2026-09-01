@@ -84,12 +84,12 @@ export default function AudienceQnaTeacher({
     };
     return (
       <details className="relative z-20">
-        <summary className={`flex h-9 list-none cursor-pointer items-center rounded-lg px-3 text-xs font-black ${isAnonymous ? 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-200' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>
+        <summary className={`flex h-9 list-none cursor-pointer items-center rounded-lg px-3 text-xs font-black ${isAnonymous ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'}`}>
           Show ▾
         </summary>
         <div className="absolute left-0 top-full z-50 mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
           <button type="button" onClick={(event) => chooseDisplay(event, false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
-          <button type="button" onClick={(event) => chooseDisplay(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
+          <button type="button" onClick={(event) => chooseDisplay(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Anonymous</button>
         </div>
       </details>
     );
@@ -104,7 +104,7 @@ export default function AudienceQnaTeacher({
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">{question.studentName}</span>
             {mode === 'pending' && queuePosition && (
-              <span className="text-[10px] font-black uppercase tracking-wide text-fuchsia-600 dark:text-fuchsia-300" title={`Question ${queuePosition} in the waiting queue`}>
+              <span className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300" title={`Question ${queuePosition} in the waiting queue`}>
                 Q{queuePosition}
               </span>
             )}
@@ -121,7 +121,7 @@ export default function AudienceQnaTeacher({
             )}
             {mode === 'pending' && <button type="button" onClick={() => update(question, 'dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Mark handled</button>}
             {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Mark answered</button>}
-            {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className={`${ACTION_CLASS} bg-violet-100 text-violet-800`}>Reopen</button>}
+            {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className={`${ACTION_CLASS} bg-indigo-100 text-indigo-800`}>Reopen</button>}
             {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Return to queue</button>}
           </div>
           <QuestionInboxReply
@@ -144,7 +144,7 @@ export default function AudienceQnaTeacher({
             From students{pending.length ? ` · ${pending.length} waiting` : ''}
           </h3>
           {!focusedStudentId && presentable.length > 0 && (
-            <button type="button" onClick={() => setPresenting(true)} className={`${ACTION_CLASS} bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200`}>Present</button>
+            <button type="button" onClick={() => setPresenting(true)} className={`${ACTION_CLASS} bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200`}>Present</button>
           )}
           <button type="button" onClick={onClose} title={hasLiveActivity ? 'Back to live response' : 'Close questions panel'} aria-label={hasLiveActivity ? 'Back to live response' : 'Close questions panel'} className={`${ACTION_CLASS} bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200`}>
             Close
@@ -174,18 +174,18 @@ export default function AudienceQnaTeacher({
       </section>
 
       {presenting && (
-        <div className="fixed inset-0 z-[90] overflow-auto bg-gradient-to-br from-fuchsia-950 via-violet-950 to-slate-950 p-6 text-white sm:p-10">
-          <button type="button" onClick={() => setPresenting(false)} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-violet-950 shadow-xl">Back</button>
+        <div className="fixed inset-0 z-[90] overflow-auto bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 p-6 text-white sm:p-10">
+          <button type="button" onClick={() => setPresenting(false)} className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl">Back</button>
           <div className="mx-auto max-w-6xl py-14">
             <h2 className="font-display text-4xl font-black sm:text-6xl">Questions</h2>
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               {presentable.map((question) => (
                 <article key={question.id} className="rounded-3xl bg-white/10 p-6 ring-1 ring-white/20">
                   <div className="flex items-start gap-4">
-                    <span className="grid min-w-14 place-items-center rounded-2xl bg-fuchsia-400 px-3 py-2 font-black text-fuchsia-950">▲ {question.votes}</span>
+                    <span className="grid min-w-14 place-items-center rounded-2xl bg-indigo-400 px-3 py-2 font-black text-indigo-950">▲ {question.votes}</span>
                     <div>
                       <p className="text-2xl font-bold leading-snug">{question.text}</p>
-                      <p className="mt-3 text-sm font-black uppercase tracking-wide text-fuchsia-300">{question.publishedAnonymous ? 'Anonymous' : question.studentName}{question.status === 'answered' ? ' · answered' : ''}</p>
+                      <p className="mt-3 text-sm font-black uppercase tracking-wide text-indigo-300">{question.publishedAnonymous ? 'Anonymous' : question.studentName}{question.status === 'answered' ? ' · answered' : ''}</p>
                     </div>
                   </div>
                 </article>

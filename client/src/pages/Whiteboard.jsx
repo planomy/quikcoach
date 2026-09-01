@@ -67,8 +67,8 @@ const BoardCard = memo(function BoardCard({ s, displayName, picked, selectMode, 
         if (selectMode) onToggle(s.id);
       }}
       className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-slate-900/80 shadow-xl transition ${
-        picked ? 'border-violet-400 ring-2 ring-violet-400/60' : 'border-white/10'
-      } ${selectMode ? 'cursor-pointer hover:border-violet-300/50' : ''}`}
+        picked ? 'border-indigo-400 ring-2 ring-indigo-400/60' : 'border-white/10'
+      } ${selectMode ? 'cursor-pointer hover:border-indigo-300/50' : ''}`}
     >
       <header className="flex shrink-0 items-start justify-between gap-1 border-b border-white/5 px-2.5 py-2">
         <div className="min-w-0">
@@ -89,7 +89,7 @@ const BoardCard = memo(function BoardCard({ s, displayName, picked, selectMode, 
             {selectMode && (
               <span
                 className={`inline-block rounded px-1 py-0.5 text-[9px] font-bold uppercase ${
-                  picked ? 'bg-violet-500 text-white' : 'bg-slate-800 text-slate-400'
+                  picked ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400'
                 }`}
               >
                 {picked ? 'On air' : 'Tap'}
@@ -166,9 +166,9 @@ const TeacherPostCard = memo(function TeacherPostCard({
       }}
       className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-slate-900/90 shadow-xl transition ${POST_SIZE_CLASS[size]} ${
         picked
-          ? 'border-violet-400 ring-2 ring-violet-400/60'
+          ? 'border-indigo-400 ring-2 ring-indigo-400/60'
           : 'border-slate-500/50 ring-1 ring-slate-500/25'
-      } ${selectMode ? 'cursor-pointer hover:border-violet-300/50' : ''}`}
+      } ${selectMode ? 'cursor-pointer hover:border-indigo-300/50' : ''}`}
     >
       <header className="flex shrink-0 items-start justify-between gap-1 border-b border-slate-500/25 px-2.5 py-2">
         <div className="min-w-0">
@@ -186,7 +186,7 @@ const TeacherPostCard = memo(function TeacherPostCard({
             {selectMode && (
               <span
                 className={`inline-block rounded px-1 py-0.5 text-[9px] font-bold uppercase ${
-                  picked ? 'bg-violet-500 text-white' : 'bg-slate-800 text-slate-400'
+                  picked ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400'
                 }`}
               >
                 {picked ? 'On air' : 'Tap'}
@@ -821,8 +821,8 @@ function WhiteboardInner() {
             }}
             className={`rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
               selectMode
-                ? 'bg-violet-500 text-white'
-                : 'bg-slate-800 text-violet-200 hover:bg-violet-600 hover:text-white'
+                ? 'bg-indigo-500 text-white'
+                : 'bg-slate-800 text-indigo-200 hover:bg-indigo-600 hover:text-white'
             }`}
           >
             {selectMode ? 'Selecting…' : 'Select'}
@@ -831,7 +831,7 @@ function WhiteboardInner() {
             type="button"
             onClick={sendBroadcast}
             disabled={pickedCount === 0}
-            className="rounded-lg bg-violet-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
             title={`Send up to ${MAX_BROADCAST} anonymised exemplars to student screens`}
           >
             Broadcast{pickedCount ? ` (${pickedCount})` : ''}

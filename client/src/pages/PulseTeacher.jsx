@@ -77,7 +77,7 @@ function PulseTeacherInner() {
       <div className="flex min-h-screen flex-col bg-gradient-to-b from-indigo-50 to-white dark:from-slate-950 dark:to-indigo-950">
         <main className="grid flex-1 place-items-center px-4 py-10">
           <section className="w-full max-w-md rounded-3xl border border-indigo-200 bg-white p-7 shadow-card dark:border-indigo-900 dark:bg-slate-900">
-            <div className="flex items-start justify-between gap-3"><div><IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" /><p className="mt-1 text-xs font-black uppercase tracking-[0.22em] text-violet-600">Pulse teacher</p></div><ThemeToggle /></div>
+            <div className="flex items-start justify-between gap-3"><div><IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" /><p className="mt-1 text-xs font-black uppercase tracking-[0.22em] text-indigo-600">Pulse teacher</p></div><ThemeToggle /></div>
             <h1 className="mt-7 font-display text-2xl font-black text-slate-950 dark:text-white">Ask the room — live</h1>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               Share a link, launch a question, see who answers. Ideal while people keep working in another app.

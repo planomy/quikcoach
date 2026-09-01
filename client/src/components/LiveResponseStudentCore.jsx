@@ -16,7 +16,7 @@ const QUESTION_THEMES = [
   {
     panel: 'border-indigo-400 ring-indigo-100 dark:border-indigo-600 dark:ring-indigo-950',
     label: 'text-indigo-700 dark:text-indigo-300',
-    splash: 'from-indigo-600 to-violet-700',
+    splash: 'from-indigo-600 to-indigo-700',
   },
   {
     panel: 'border-teal-400 ring-teal-100 dark:border-teal-600 dark:ring-teal-950',
@@ -24,9 +24,9 @@ const QUESTION_THEMES = [
     splash: 'from-teal-500 to-cyan-700',
   },
   {
-    panel: 'border-fuchsia-400 ring-fuchsia-100 dark:border-fuchsia-600 dark:ring-fuchsia-950',
-    label: 'text-fuchsia-700 dark:text-fuchsia-300',
-    splash: 'from-fuchsia-600 to-pink-700',
+    panel: 'border-indigo-400 ring-indigo-100 dark:border-indigo-600 dark:ring-indigo-950',
+    label: 'text-indigo-700 dark:text-indigo-300',
+    splash: 'from-indigo-600 to-indigo-700',
   },
   {
     panel: 'border-orange-400 ring-orange-100 dark:border-orange-600 dark:ring-orange-950',
@@ -296,7 +296,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     const needsAnswer = !!activity && !response && !activity.locked && secondsLeft !== 0;
     let label = 'Pulse ready';
     let detail = 'Waiting for a question';
-    let colour = 'from-indigo-600 to-violet-700 text-white ring-indigo-300';
+    let colour = 'from-indigo-600 to-indigo-700 text-white ring-indigo-300';
 
     if (nudge) {
       label = 'Teacher check-in';
@@ -311,7 +311,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       detail = 'Tap to answer';
       colour = quietAlerts
         ? 'border border-indigo-200 bg-white text-slate-900 ring-indigo-100 dark:border-indigo-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-indigo-950'
-        : 'from-fuchsia-600 to-violet-700 text-white ring-fuchsia-300';
+        : 'from-indigo-600 to-indigo-700 text-white ring-indigo-300';
     } else if (activity && response) {
       label = `Answered · Q${activity.questionNumber || 1}`;
       detail = 'Tap to review';
@@ -502,9 +502,9 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             <div className={`border-t border-slate-100 dark:border-slate-800 ${compact ? 'mt-2 pt-2' : 'mt-4 pt-3'}`}>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Featured by your teacher</p>
               {featured.map((item, index) => (
-                <blockquote key={index} className={`mt-2 rounded-xl border p-3 text-sm ${quietAlerts ? 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300' : 'bg-violet-50 text-violet-950 dark:bg-violet-950 dark:text-violet-100'}`}>
+                <blockquote key={index} className={`mt-2 rounded-xl border p-3 text-sm ${quietAlerts ? 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300' : 'bg-indigo-50 text-indigo-950 dark:bg-indigo-950 dark:text-indigo-100'}`}>
                   {item.label && (
-                    <span className={`mb-1 block text-[10px] font-bold uppercase tracking-wide ${quietAlerts ? 'text-indigo-600 dark:text-indigo-300' : 'text-violet-700 dark:text-violet-300'}`}>
+                    <span className={`mb-1 block text-[10px] font-bold uppercase tracking-wide ${quietAlerts ? 'text-indigo-600 dark:text-indigo-300' : 'text-indigo-700 dark:text-indigo-300'}`}>
                       Why it was featured: {item.label}
                     </span>
                   )}

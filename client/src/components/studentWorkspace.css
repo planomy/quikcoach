@@ -109,9 +109,9 @@ html.iboard-student-workspace .iboard-featured-splash {
   background-color: #fbbf24 !important;
 }
 
-.iboard-student-pulse-dock.is-collapsed > button[class*='from-fuchsia-600'] {
-  border-color: #86198f;
-  background-color: #c026d3 !important;
+.iboard-student-pulse-dock.is-collapsed > button[class*='from-indigo-600'] {
+  border-color: #3730a3;
+  background-color: #4f46e5 !important;
 }
 
 .iboard-student-pulse-dock.is-collapsed > button[class*='from-emerald-500'] {

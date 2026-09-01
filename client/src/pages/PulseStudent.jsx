@@ -223,7 +223,7 @@ export default function PulseStudent() {
         <main className="grid flex-1 place-items-center px-4 py-10">
           <section className="w-full max-w-md rounded-3xl border border-indigo-200 bg-white p-7 shadow-card dark:border-indigo-900 dark:bg-slate-900">
             <div className="flex items-start justify-between gap-3">
-              <div><IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" /><p className="mt-1 text-xs font-black uppercase tracking-[0.22em] text-violet-600">Pulse</p></div>
+              <div><IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" /><p className="mt-1 text-xs font-black uppercase tracking-[0.22em] text-indigo-600">Pulse</p></div>
               <ThemeToggle />
             </div>
             <h1 className="mt-7 font-display text-2xl font-black text-slate-950 dark:text-white">Join live questions</h1>
@@ -257,7 +257,7 @@ export default function PulseStudent() {
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 py-6">
-        <section className="rounded-3xl bg-gradient-to-br from-indigo-700 to-violet-700 p-5 text-white shadow-xl">
+        <section className="rounded-3xl bg-gradient-to-br from-indigo-700 to-indigo-700 p-5 text-white shadow-xl">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-200">You’re in · optional next step</p>
           <h1 className="mt-2 font-display text-2xl font-black">Need OneNote open too?</h1>
           <p className="mt-2 text-sm font-medium text-indigo-100">Float a small answer panel, then go back to your work. Questions still appear here if you skip this. Collapse it to a pill when you need more space.</p>

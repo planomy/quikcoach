@@ -392,7 +392,7 @@ export default function TeacherAnswerRail({
       </aside>
 
       {presenting && (
-        <div className="fixed inset-0 z-[95] overflow-auto bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 p-6 text-white sm:p-10">
+        <div className="fixed inset-0 z-[95] overflow-auto bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 p-6 text-white sm:p-10">
           <button
             type="button"
             onClick={() => setPresenting(false)}

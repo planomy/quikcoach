@@ -297,7 +297,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           className={`fixed z-[50] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-lg transition ${
             marker.annotation.status === 'fixed'
               ? 'bg-emerald-500/80 hover:bg-emerald-600'
-              : 'bg-violet-600 hover:bg-violet-700'
+              : 'bg-indigo-600 hover:bg-indigo-700'
           }`}
           style={{ top: marker.top, left: marker.left }}
           title={marker.annotation.status === 'fixed' ? 'Marked fixed — waiting for teacher' : 'Teacher comment'}
@@ -309,7 +309,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       {openMarker && openPopupPosition && (
         <div
           data-teacher-annotation-ui
-          className="fixed z-[70] flex w-[290px] flex-col overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-2xl dark:border-violet-800 dark:bg-slate-900"
+          className="fixed z-[70] flex w-[290px] flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{
             top: openPopupPosition.top,
             left: openPopupPosition.left,
@@ -329,7 +329,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${
               openMarker.annotation.status === 'fixed'
                 ? 'text-emerald-600 dark:text-emerald-300'
-                : 'text-violet-600 dark:text-violet-300'
+                : 'text-indigo-600 dark:text-indigo-300'
             }`}>
               {openMarker.annotation.status === 'fixed' ? 'Marked as fixed' : 'Teacher comment'}
             </p>
@@ -342,7 +342,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             )}
             {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
           </div>
-          <div className="shrink-0 border-t border-violet-100 bg-white p-3 dark:border-violet-900 dark:bg-slate-900">
+          <div className="shrink-0 border-t border-indigo-100 bg-white p-3 dark:border-indigo-900 dark:bg-slate-900">
             {openMarker.annotation.status === 'fixed' ? (
               <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
                 Your teacher can now check the change.
