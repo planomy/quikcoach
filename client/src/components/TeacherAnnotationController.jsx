@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   plainTextFromElement,
   rangeForPlainOffsets,
@@ -94,6 +95,49 @@ function cardForStudent(studentId) {
   return article && textPane ? { article, textPane, studentId: id } : null;
 }
 
+function contentRootForPane(textPane) {
+  return (
+    textPane?.querySelector?.('[data-iboard-writing-content]') ||
+    textPane?.querySelector?.('.whitespace-pre-wrap') ||
+    textPane
+  );
+}
+
+function primaryRangeClientRect(range) {
+  if (!range) return null;
+  const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
+  if (rects.length) return rects[rects.length - 1];
+  const fallback = range.getBoundingClientRect();
+  return fallback.width || fallback.height ? fallback : null;
+}
+
+function markerViewportBox(marker) {
+  if (!marker) return null;
+  if (marker.position === 'fixed') {
+    return {
+      top: marker.top,
+      left: marker.left,
+      right: marker.left + MARKER_SIZE,
+      bottom: marker.top + MARKER_SIZE,
+      width: MARKER_SIZE,
+      height: MARKER_SIZE,
+    };
+  }
+  const card = cardForStudent(marker.studentId);
+  const root = card && contentRootForPane(card.textPane);
+  if (!root) return null;
+  const rootRect = root.getBoundingClientRect();
+  const top = rootRect.top + marker.top;
+  const left = rootRect.left + marker.left;
+  return {
+    top,
+    left,
+    right: left + MARKER_SIZE,
+    bottom: top + MARKER_SIZE,
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
+  };
+}
 function isRangeVisibleInPane(rangeRect, paneRect) {
   const margin = 2;
   return (
@@ -104,46 +148,49 @@ function isRangeVisibleInPane(rangeRect, paneRect) {
   );
 }
 
-function markerPosition(rangeRect, card) {
+function markerPosition(range, card) {
   if (typeof window === 'undefined' || !card?.textPane) return null;
 
-  const paneRect = card.textPane.getBoundingClientRect();
+  const rangeRect = primaryRangeClientRect(range);
+  if (!rangeRect) return null;
+
+  const pane = card.textPane;
+  const paneRect = pane.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
   if (!isRangeVisibleInPane(rangeRect, paneRect)) return null;
 
-  const minLeft = paneRect.left + MARKER_MARGIN;
-  const maxLeft = paneRect.right - MARKER_SIZE - MARKER_MARGIN;
-  const minTop = paneRect.top + MARKER_MARGIN;
-  const maxTop = paneRect.bottom - MARKER_SIZE - MARKER_MARGIN;
+  const root = contentRootForPane(pane);
+  const rootRect = root.getBoundingClientRect();
+
+  const paneLeftInRoot = paneRect.left - rootRect.left;
+  const paneRightInRoot = paneRect.right - rootRect.left;
+  const paneTopInRoot = paneRect.top - rootRect.top;
+  const paneBottomInRoot = paneRect.bottom - rootRect.top;
+
+  const minLeft = paneLeftInRoot + MARKER_MARGIN;
+  const maxLeft = paneRightInRoot - MARKER_SIZE - MARKER_MARGIN;
+  const minTop = paneTopInRoot + MARKER_MARGIN;
+  const maxTop = paneBottomInRoot - MARKER_SIZE - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
-  let left = rangeRect.right + MARKER_GAP;
+  let left = rangeRect.right - rootRect.left + MARKER_GAP;
   if (left > maxLeft) {
-    left = rangeRect.left - MARKER_SIZE - MARKER_GAP;
+    left = rangeRect.left - rootRect.left - MARKER_SIZE - MARKER_GAP;
   }
   left = Math.max(minLeft, Math.min(maxLeft, left));
 
-  const idealTop = rangeRect.top + rangeRect.height / 2 - MARKER_SIZE / 2;
-  const top = Math.max(minTop, Math.min(maxTop, idealTop));
+  const top = Math.max(minTop, Math.min(maxTop, rangeRect.top - rootRect.top - 2));
 
-  return clampFixedBox({
-    top,
-    left,
-    width: MARKER_SIZE,
-    height: MARKER_SIZE,
-    padding: MARKER_MARGIN,
-  });
+  return { top, left, position: 'absolute', root };
 }
 
 function detachedMarkerPosition(paneRect, index) {
   if (!paneRect.width || !paneRect.height) return null;
-  return clampFixedBox({
+  return {
     top: paneRect.top + MARKER_MARGIN + index * (MARKER_SIZE + 4),
     left: paneRect.right - MARKER_SIZE - MARKER_MARGIN,
-    width: MARKER_SIZE,
-    height: MARKER_SIZE,
-    padding: MARKER_MARGIN,
-  });
+    position: 'fixed',
+  };
 }
 
 function paneIsOnScreen(paneRect) {
@@ -224,6 +271,7 @@ export default function TeacherAnnotationController() {
                 detached: true,
                 top: position.top,
                 left: position.left,
+                position: 'fixed',
               });
               detachedCount += 1;
             }
@@ -231,17 +279,16 @@ export default function TeacherAnnotationController() {
           continue;
         }
         (fixed ? fixedRanges : ranges).push(range);
-        const rect = range.getBoundingClientRect();
-        if (rect.width || rect.height) {
-          const position = markerPosition(rect, card);
-          if (!position) continue;
-          nextMarkers.push({
-            studentId,
-            annotation,
-            detached: false,
-            ...position,
-          });
-        }
+        const position = markerPosition(range, card);
+        if (!position) continue;
+        nextMarkers.push({
+          studentId,
+          annotation,
+          detached: false,
+          top: position.top,
+          left: position.left,
+          position: position.position,
+        });
       }
     }
 
@@ -553,22 +600,47 @@ export default function TeacherAnnotationController() {
     return () => window.removeEventListener('iboard:clear-fixed-comments', onClear);
   }, [bulkConfirmFixed]);
 
-  const openMarkerPos = openMarker
+  const openMarkerAnchor = openMarker ? markerViewportBox(openMarker) : null;
+  const openMarkerPos = openMarkerAnchor
     ? placementNearAnchor({
-        anchor: {
-          top: openMarker.top,
-          left: openMarker.left,
-          right: openMarker.left + MARKER_SIZE,
-          bottom: openMarker.top + MARKER_SIZE,
-          width: MARKER_SIZE,
-          height: MARKER_SIZE,
-        },
+        anchor: openMarkerAnchor,
         width: OPEN_WIDTH,
         height: OPEN_HEIGHT,
         gap: 10,
         prefer: 'below',
       })
     : null;
+
+  function renderMarkerButton(marker) {
+    const button = (
+      <button
+        key={`${marker.studentId}-${marker.annotation.id}`}
+        data-teacher-annotation-ui
+        type="button"
+        onClick={() => {
+          setReviewError('');
+          setOpenMarker(marker);
+        }}
+        className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[45] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-lg transition ${
+          marker.annotation.status === 'fixed'
+            ? 'bg-emerald-500/75 hover:bg-emerald-600'
+            : 'bg-violet-600 hover:bg-violet-700'
+        }`}
+        style={{ top: marker.top, left: marker.left }}
+        title={marker.annotation.status === 'fixed' ? `Student marked fixed: ${marker.annotation.note}` : marker.annotation.note}
+        aria-label={marker.annotation.status === 'fixed' ? 'Review student fix' : 'Open inline teacher comment'}
+      >
+        {marker.annotation.status === 'fixed' ? '✓' : '💬'}
+      </button>
+    );
+
+    if (marker.position === 'fixed') return button;
+
+    const card = cardForStudent(marker.studentId);
+    const root = card && contentRootForPane(card.textPane);
+    if (!root) return null;
+    return createPortal(button, root);
+  }
 
   return (
     <>
@@ -577,27 +649,7 @@ export default function TeacherAnnotationController() {
         ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
       `}</style>
 
-      {markers.map((marker) => (
-        <button
-          key={`${marker.studentId}-${marker.annotation.id}`}
-          data-teacher-annotation-ui
-          type="button"
-          onClick={() => {
-            setReviewError('');
-            setOpenMarker(marker);
-          }}
-          className={`fixed z-[45] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-lg transition ${
-            marker.annotation.status === 'fixed'
-              ? 'bg-emerald-500/75 hover:bg-emerald-600'
-              : 'bg-violet-600 hover:bg-violet-700'
-          }`}
-          style={{ top: marker.top, left: marker.left }}
-          title={marker.annotation.status === 'fixed' ? `Student marked fixed: ${marker.annotation.note}` : marker.annotation.note}
-          aria-label={marker.annotation.status === 'fixed' ? 'Review student fix' : 'Open inline teacher comment'}
-        >
-          {marker.annotation.status === 'fixed' ? '✓' : '💬'}
-        </button>
-      ))}
+      {markers.map((marker) => renderMarkerButton(marker))}
 
       {pending && (
         <div

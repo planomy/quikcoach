@@ -1350,9 +1350,9 @@ function TeacherDashboardInner() {
         : 'lg:grid-cols-2';
   const writingPaneClass =
     cardView === 'overview'
-      ? 'max-h-52 overflow-auto'
+      ? 'max-h-52 overflow-y-auto overflow-x-visible'
       : cardView === 'reading'
-        ? 'min-h-[22rem] max-h-[32rem] overflow-auto'
+        ? 'min-h-[22rem] max-h-[32rem] overflow-y-auto overflow-x-visible'
         : 'overflow-visible';
 
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
@@ -1878,7 +1878,7 @@ function TeacherDashboardInner() {
                 </div>
                 <div
                   data-student-writing-pane
-                  className={`mt-2 rounded-xl bg-slate-50 p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
+                  className={`relative mt-2 rounded-xl bg-slate-50 p-2.5 pr-9 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
@@ -1898,7 +1898,9 @@ function TeacherDashboardInner() {
                     </div>
                   )}
                   {displayText ? (
-                    <RichTextDisplay html={s.rich_text_html} text={displayText} />
+                    <div data-iboard-writing-content className="relative">
+                      <RichTextDisplay html={s.rich_text_html} text={displayText} />
+                    </div>
                   ) : !s.image_url ? (
                     <span className="italic text-slate-400 dark:text-slate-500">No text yet</span>
                   ) : null}
@@ -2529,7 +2531,7 @@ function TeacherDashboardInner() {
                 </button>
               </div>
             </div>
-            <div data-student-writing-pane className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap px-6 py-5 text-base leading-7 text-slate-800 scrollbar-thin dark:text-slate-200">
+            <div data-student-writing-pane className="relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-12 text-base leading-7 text-slate-800 scrollbar-thin dark:text-slate-200">
               {focusedStudent.image_url && (
                 <AnnotatedStudentImage
                   imageUrl={focusedStudent.image_url}
@@ -2540,7 +2542,9 @@ function TeacherDashboardInner() {
                 />
               )}
               {focusedStudent.text ? (
-                <RichTextDisplay html={focusedStudent.rich_text_html} text={focusedStudent.text} />
+                <div data-iboard-writing-content className="relative">
+                  <RichTextDisplay html={focusedStudent.rich_text_html} text={focusedStudent.text} />
+                </div>
               ) : !focusedStudent.image_url ? (
                 <span className="italic text-slate-400 dark:text-slate-500">No text yet</span>
               ) : null}
