@@ -141,12 +141,12 @@ export default function AudienceQnaTeacher({
       <section id="audience-qna-teacher" className="scroll-mt-4 p-4">
         <div className="flex items-center gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
           <h3 className="min-w-0 flex-1 font-display text-lg font-black text-slate-950 dark:text-white">
-            From students{pending.length ? ` · ${pending.length} waiting` : ''}
+            Student questions{pending.length ? ` · ${pending.length} waiting` : ''}
           </h3>
           {!focusedStudentId && presentable.length > 0 && (
             <button type="button" onClick={() => setPresenting(true)} className={`${ACTION_CLASS} bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200`}>Present</button>
           )}
-          <button type="button" onClick={onClose} title={hasLiveActivity ? 'Back to live response' : 'Close questions panel'} aria-label={hasLiveActivity ? 'Back to live response' : 'Close questions panel'} className={`${ACTION_CLASS} bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200`}>
+          <button type="button" onClick={onClose} title={hasLiveActivity ? 'Back to live response' : 'Close questions panel'} aria-label={hasLiveActivity ? 'Back to live response' : 'Close questions panel'} className={`${ACTION_CLASS} bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 ${typeof onClose !== 'function' ? 'hidden' : ''}`}>
             Close
           </button>
         </div>

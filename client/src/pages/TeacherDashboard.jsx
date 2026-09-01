@@ -17,7 +17,6 @@ import { gradeShortLabel } from '../components/StudentGradeSelect.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
-import TeacherAnswerRail from '../components/TeacherAnswerRail.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
@@ -48,6 +47,12 @@ const CARD_VIEWS = [
   { id: 'overview', label: 'Overview' },
   { id: 'reading', label: 'Reading' },
   { id: 'full', label: 'Full drafts' },
+];
+
+const TEACHER_TOOLS_TABS = [
+  { id: 'ask', label: 'Ask' },
+  { id: 'respond', label: 'Respond' },
+  { id: 'responses', label: 'Responses' },
 ];
 
 function csvCell(value) {
@@ -192,9 +197,10 @@ function TeacherDashboardInner() {
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
   const [evidenceBusy, setEvidenceBusy] = useState(false);
-  const [askOverlayOpen, setAskOverlayOpen] = useState(false);
-  const [answerRailOpen, setAnswerRailOpen] = useState(false);
-  const [answerRailHighlightId, setAnswerRailHighlightId] = useState(null);
+  const [toolsPanelOpen, setToolsPanelOpen] = useState(false);
+  const [toolsTab, setToolsTab] = useState('ask');
+  const [toolsHighlightStudentId, setToolsHighlightStudentId] = useState(null);
+  const prevPendingQuestionCountRef = useRef(0);
   const [libraryPanel, setLibraryPanel] = useState(null);
   const [fixedCommentCount, setFixedCommentCount] = useState(0);
   const [clearFixedBusy, setClearFixedBusy] = useState(false);
@@ -687,6 +693,16 @@ function TeacherDashboardInner() {
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
     [audienceQuestions]
   );
+
+  useEffect(() => {
+    if (!joined) return;
+    const prev = prevPendingQuestionCountRef.current;
+    if (pendingQuestionCount > prev && pendingQuestionCount > 0) {
+      setToolsTab('respond');
+      setToolsPanelOpen(true);
+    }
+    prevPendingQuestionCountRef.current = pendingQuestionCount;
+  }, [pendingQuestionCount, joined]);
 
   const liveStudentById = useMemo(() => {
     const map = new Map();
@@ -1184,7 +1200,7 @@ function TeacherDashboardInner() {
       setStudents([]);
       setPosts([]);
       setBroadcastPick({});
-      setAskOverlayOpen(false);
+      setToolsPanelOpen(false);
       setLibraryPanel(null);
       setNewClassConfirmOpen(false);
       setCopyToast('Board cleared — ready for a new class');
@@ -1315,14 +1331,24 @@ function TeacherDashboardInner() {
     setClearFixedArmed(false);
   }
 
-  function openAnswerInRail(studentId) {
-    if (!livePulse.activity) return;
-    setAnswerRailOpen(true);
-    if (studentId != null) setAnswerRailHighlightId(Number(studentId));
+  function openTeacherTools(tab = 'ask', { highlightStudentId = null } = {}) {
+    closeRoomMenu();
+    setToolsTab(tab);
+    setToolsPanelOpen(true);
+    setToolsHighlightStudentId(highlightStudentId != null ? Number(highlightStudentId) : null);
   }
 
-  function dismissAnswerRail() {
-    setAnswerRailOpen(false);
+  function closeTeacherTools() {
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+  }
+
+  function openAnswerInRail(studentId) {
+    if (!livePulse.activity) {
+      openTeacherTools('ask');
+      return;
+    }
+    openTeacherTools('responses', { highlightStudentId: studentId });
   }
 
 
@@ -1348,20 +1374,6 @@ function TeacherDashboardInner() {
 
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
   const liveResponseCount = (livePulse.responses || []).length;
-
-  function openResponsesRail() {
-    closeRoomMenu();
-    setAnswerRailOpen(true);
-  }
-
-  function toggleResponsesRail() {
-    closeRoomMenu();
-    if (answerRailOpen) {
-      dismissAnswerRail();
-    } else {
-      openResponsesRail();
-    }
-  }
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
@@ -1390,41 +1402,41 @@ function TeacherDashboardInner() {
               </span>
             )}
           </div>
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                closeRoomMenu();
-                setAskOverlayOpen(true);
-              }}
-              aria-label="Ask the room"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-indigo-700 sm:px-3.5"
-            >
-              Ask the room
-              {pendingQuestionCount > 0 && (
-                <span className="rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none">
-                  {pendingQuestionCount}
-                </span>
-              )}
-            </button>
-            {livePulse.activity && (
-              <button
-                type="button"
-                onClick={toggleResponsesRail}
-                aria-label={`Responses · ${liveResponseCount}`}
-                aria-pressed={answerRailOpen}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black shadow-sm transition sm:px-3.5 ${
-                  answerRailOpen
-                    ? 'bg-indigo-100 text-indigo-800 ring-2 ring-indigo-300 dark:bg-indigo-950 dark:text-indigo-200 dark:ring-indigo-700'
-                    : 'border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950'
-                }`}
-              >
-                Responses
-                <span className="rounded-full bg-indigo-600/15 px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none text-indigo-700 dark:bg-indigo-400/20 dark:text-indigo-200">
-                  {liveResponseCount}
-                </span>
-              </button>
-            )}
+          <nav aria-label="Teacher tools" className="ml-auto flex items-end gap-1 overflow-visible">
+            {TEACHER_TOOLS_TABS.map((tab) => {
+              const active = toolsPanelOpen && toolsTab === tab.id;
+              const badge = tab.id === 'respond'
+                ? pendingQuestionCount
+                : tab.id === 'responses' && livePulse.activity
+                  ? liveResponseCount
+                  : 0;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => openTeacherTools(tab.id)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
+                    active
+                      ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+                      : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                  {badge ? (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${
+                        active ? 'bg-white/25' : 'bg-amber-500 text-amber-950'
+                      }`}
+                    >
+                      {badge}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="flex items-center gap-1.5 border-l border-slate-200 pl-1.5 dark:border-slate-700">
             <HintWrap hint="Add card" prefer="below">
               <button
                 type="button"
@@ -1899,34 +1911,26 @@ function TeacherDashboardInner() {
         </div>
               </div>
       </main>
-
-
-      <TeacherAnswerRail
-        open={answerRailOpen}
-        onClose={dismissAnswerRail}
-        activity={livePulse.activity}
-        responses={livePulse.responses || []}
-        highlightStudentId={answerRailHighlightId}
-        onClearHighlight={() => setAnswerRailHighlightId(null)}
-        onOpenAsk={() => {
-          setAskOverlayOpen(true);
-        }}
-      />
       </div>
 
-      {askOverlayOpen && (
+      {toolsPanelOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[4.5rem] sm:p-6 sm:pt-[5rem]">
           <button
             type="button"
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px]"
-            aria-label="Close Ask overlay"
-            onClick={() => setAskOverlayOpen(false)}
+            aria-label="Close teacher tools"
+            onClick={closeTeacherTools}
           />
           <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
             <LiveResponseTeacher
               socket={socket}
               overlay
-              onClose={() => setAskOverlayOpen(false)}
+              panelTab={toolsTab}
+              onPanelTabChange={setToolsTab}
+              onClose={closeTeacherTools}
+              onQuestionLaunched={() => setToolsTab('responses')}
+              highlightStudentId={toolsHighlightStudentId}
+              onClearHighlight={() => setToolsHighlightStudentId(null)}
               onCopyStudentLink={copyStudentJoinLink}
             />
           </div>

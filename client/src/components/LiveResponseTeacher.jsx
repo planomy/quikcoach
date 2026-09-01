@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import EngagementRing from './EngagementRing.jsx';
 import AudienceQnaTeacher from './AudienceQnaTeacher.jsx';
 import QuikPulsePanel, { isQuikPulseActivity } from './QuikPulsePanel.jsx';
+import TeacherAnswerRail from './TeacherAnswerRail.jsx';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { studentTileMeta, LIVE_STATUS_LABELS as STATUS_LABELS } from '../lib/liveResponseMeta.js';
@@ -24,6 +25,37 @@ function firstName(name) {
   const trimmed = String(name || '').trim();
   if (!trimmed) return 'Student';
   return trimmed.split(/\s+/)[0];
+}
+
+const PANEL_TAB_LABELS = {
+  ask: { title: 'Ask', hint: 'Send a question to your class' },
+  respond: { title: 'Respond', hint: 'Questions waiting from students' },
+  responses: { title: 'Responses', hint: 'Answers coming back from your live question' },
+};
+
+function PanelTabButton({ active, label, badge, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
+        active
+          ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+          : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+      }`}
+    >
+      {label}
+      {badge ? (
+        <span
+          className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${
+            active ? 'bg-white/25' : 'bg-amber-500 text-amber-950'
+          }`}
+        >
+          {badge}
+        </span>
+      ) : null}
+    </button>
+  );
 }
 
 function Results({ activity, responses, display = false, onPublish }) {
@@ -95,7 +127,16 @@ export default function LiveResponseTeacher({
   onExpand,
   onClose,
   onLiveSummary,
+  panelTab = null,
+  panelTabs = false,
+  onPanelTabChange,
+  onQuestionLaunched,
+  highlightStudentId = null,
+  onClearHighlight,
 }) {
+  const [internalPanelTab, setInternalPanelTab] = useState('ask');
+  const effectivePanelTab = panelTab ?? (panelTabs ? internalPanelTab : null);
+  const usingPanelTabs = effectivePanelTab != null;
   const [live, setLive] = useState({ activity: null, responses: [], students: [] });
   const [type, setType] = useState('choice');
   const [prompt, setPrompt] = useState('');
@@ -216,6 +257,23 @@ export default function LiveResponseTeacher({
     .filter((question) => question.status === 'pending')
     .sort((a, b) => Number(a.id) - Number(b.id));
 
+  function switchPanelTab(nextTab) {
+    if (panelTab && typeof onPanelTabChange === 'function') onPanelTabChange(nextTab);
+    else if (panelTabs) setInternalPanelTab(nextTab);
+    if (nextTab === 'respond') setActiveView('qna');
+    else if (nextTab === 'ask' && (activeView === 'qna' || activeView === 'student')) setActiveView('quik');
+  }
+
+  const prevPendingCountRef = useRef(0);
+  useEffect(() => {
+    const count = pendingQuestions.length;
+    if (count > prevPendingCountRef.current && count > 0) {
+      switchPanelTab('respond');
+      setActiveView('qna');
+    }
+    prevPendingCountRef.current = count;
+  }, [pendingQuestions.length]);
+
   useEffect(() => {
     onLiveSummary?.({
       hasActivity: !!activity,
@@ -251,7 +309,12 @@ export default function LiveResponseTeacher({
     socket.emit('teacher:live-launch', question, (ack) => {
       setMessage(ack?.ok ? successMessage : ack?.error || 'Could not launch');
       if (ack?.ok) {
-        setActiveView('live');
+        if (usingPanelTabs) {
+          onQuestionLaunched?.();
+          switchPanelTab('responses');
+        } else {
+          setActiveView('live');
+        }
         if (queueId) setQueue((items) => items.filter((item) => item.id !== queueId));
       }
     });
@@ -381,6 +444,11 @@ export default function LiveResponseTeacher({
 
   function openStudent(student) {
     setSelectedStudentId(student.id);
+    if (usingPanelTabs) {
+      switchPanelTab('respond');
+      setActiveView('student');
+      return;
+    }
     setActiveView(pendingByStudent[Number(student.id)] ? 'qna' : 'student');
   }
 
@@ -425,10 +493,10 @@ export default function LiveResponseTeacher({
         </div>
         <button
           type="button"
-          onClick={onExpand}
+          onClick={() => onExpand?.(pendingQuestions.length && !activity ? 'respond' : 'ask')}
           className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
         >
-          Open Ask
+          {pendingQuestions.length && !activity ? 'Open Respond' : 'Open Ask'}
         </button>
       </div>
     );
@@ -440,13 +508,114 @@ export default function LiveResponseTeacher({
       ? 'mb-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900'
       : 'mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900';
 
+  const panelMeta = effectivePanelTab ? PANEL_TAB_LABELS[effectivePanelTab] : null;
+
+  const awarenessStrip = (
+    <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-black text-slate-900 dark:text-white">Class awareness</h3>
+          <p className="text-[10px] text-slate-500">
+            {connectedCount} online
+            {attention.length ? ` · ${attention.length} need attention` : ''}
+            {pendingQuestions.length ? ` · ${pendingQuestions.length} question${pendingQuestions.length === 1 ? '' : 's'} waiting` : ''}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {students.map((student) => {
+          const tile = studentTileMeta(student);
+          const questionCount = pendingByStudent[Number(student.id)] || 0;
+          const queuePosition = firstPendingPositionByStudent[Number(student.id)] || 0;
+          const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
+          return (
+            <div key={student.id} className="relative w-[70px] shrink-0">
+              <button type="button" onClick={() => openStudent(student)} title={`${student.name} · ${tile.title}`} className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] bg-white px-1 pb-1.5 pt-2 dark:bg-slate-900 ${tile.className}`}>
+                <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
+                <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
+              </button>
+              {needsAttention && <span title={STATUS_LABELS[student.engagement_status] || student.engagement_status} className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>}
+              {questionCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedStudentId(student.id); switchPanelTab('respond'); setActiveView('qna'); }}
+                  aria-label={`Question ${queuePosition} from ${student.name}`}
+                  className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-indigo-600 px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900"
+                >
+                  {queuePosition}
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {!students.length && <p className="py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
+      </div>
+    </div>
+  );
+
+  const askSubNav = (
+    <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
+      {[
+        ['quik', 'Quick Question'],
+        ['build', 'Send Question'],
+        ['prepared', `Saved · ${queue.length + templates.length}`],
+      ].map(([view, label]) => (
+        <button
+          key={view}
+          type="button"
+          onClick={() => setActiveView(view)}
+          className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
+            activeView === view
+              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+      {featuredWall.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setActiveView('featured')}
+          className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
+            activeView === 'featured'
+              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300'
+          }`}
+        >
+          Featured · {featuredWall.length}
+        </button>
+      )}
+    </nav>
+  );
+
+  const panelTabNav = usingPanelTabs && panelTabs && !panelTab ? (
+    <nav aria-label="Teacher tools" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
+      <PanelTabButton active={effectivePanelTab === 'ask'} label="Ask" onClick={() => switchPanelTab('ask')} />
+      <PanelTabButton
+        active={effectivePanelTab === 'respond'}
+        label="Respond"
+        badge={pendingQuestions.length || 0}
+        onClick={() => switchPanelTab('respond')}
+      />
+      <PanelTabButton
+        active={effectivePanelTab === 'responses'}
+        label="Responses"
+        badge={activity ? responses.length : 0}
+        onClick={() => switchPanelTab('responses')}
+      />
+    </nav>
+  ) : null;
+
   return (
     <section className={sectionClass}>
       {overlay && (
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
           <div>
-            <p className="text-xs font-black text-slate-900 dark:text-white">Ask the room</p>
-            {activity && <p className="text-[11px] text-slate-500">{responseSummary}</p>}
+            <p className="text-xs font-black text-slate-900 dark:text-white">{panelMeta?.title || 'Ask the room'}</p>
+            <p className="text-[11px] text-slate-500">
+              {effectivePanelTab === 'responses' && activity ? responseSummary : panelMeta?.hint || (activity ? responseSummary : 'Send questions and review student answers')}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {message && <span aria-live="polite" className="max-w-[12rem] truncate rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">{message}</span>}
@@ -501,7 +670,7 @@ export default function LiveResponseTeacher({
         </div>
       )}
 
-      {!overlay && (
+      {!overlay && !usingPanelTabs && (
       <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div><h3 className="text-sm font-black text-slate-900 dark:text-white">Class awareness</h3><p className="text-[10px] text-slate-500">{connectedCount} online{attention.length ? ` · ${attention.length} need attention` : ''}{pendingQuestions.length ? ` · ${pendingQuestions.length} question${pendingQuestions.length === 1 ? '' : 's'} waiting` : ''}</p></div>
@@ -528,6 +697,11 @@ export default function LiveResponseTeacher({
       </div>
       )}
 
+      {panelTabNav}
+      {usingPanelTabs && effectivePanelTab === 'respond' && awarenessStrip}
+      {usingPanelTabs && effectivePanelTab === 'ask' && askSubNav}
+
+      {!usingPanelTabs && (
       <nav aria-label="Ask pages" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
         <button
           type="button"
@@ -603,18 +777,41 @@ export default function LiveResponseTeacher({
           </div>
         </details>
       </nav>
+      )}
 
       <div className={`min-h-0 flex-1 overflow-y-auto ${overlay ? '' : 'min-h-[260px]'}`}>
 
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'quik' && <QuikPulsePanel onLaunch={launchQuikPulse} />}
 
+        {(!usingPanelTabs || effectivePanelTab === 'respond') && activeView === 'student' && selectedStudent && <div className="p-4"><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Student check-in</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{selectedStudent.name}</h3><p className="mt-1 text-xs text-slate-500">{studentTileMeta(selectedStudent).title}</p></div><button type="button" onClick={returnToPrimaryView} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={!selectedStudent.connected} onClick={() => nudge(selectedStudent.id)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Send private check-in</button>{selectedStudent.engagement_status && selectedStudent.engagement_status !== 'ready' && <button type="button" onClick={() => acknowledge(selectedStudent.id)} className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-black text-amber-950">Mark request seen</button>}{pendingByStudent[Number(selectedStudent.id)] > 0 && <button type="button" onClick={() => setActiveView('qna')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Review questions</button>}</div></div>}
 
-        {activeView === 'quik' && <QuikPulsePanel onLaunch={launchQuikPulse} />}
+        {((!usingPanelTabs && activeView === 'qna') || (usingPanelTabs && effectivePanelTab === 'respond' && activeView !== 'student')) && (
+          <AudienceQnaTeacher
+            socket={socket}
+            questions={qnaQuestions}
+            focusedStudentId={selectedStudentId}
+            hasLiveActivity={!!activity}
+            onClose={usingPanelTabs ? undefined : returnToPrimaryView}
+            onQuestionLaunched={() => {
+              onQuestionLaunched?.();
+              switchPanelTab('responses');
+            }}
+          />
+        )}
 
-        {activeView === 'student' && selectedStudent && <div className="p-4"><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Student check-in</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{selectedStudent.name}</h3><p className="mt-1 text-xs text-slate-500">{studentTileMeta(selectedStudent).title}</p></div><button type="button" onClick={returnToPrimaryView} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={!selectedStudent.connected} onClick={() => nudge(selectedStudent.id)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Send private check-in</button>{selectedStudent.engagement_status && selectedStudent.engagement_status !== 'ready' && <button type="button" onClick={() => acknowledge(selectedStudent.id)} className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-black text-amber-950">Mark request seen</button>}{pendingByStudent[Number(selectedStudent.id)] > 0 && <button type="button" onClick={() => setActiveView('qna')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Review questions</button>}</div></div>}
+        {usingPanelTabs && effectivePanelTab === 'responses' && (
+          <TeacherAnswerRail
+            embedded
+            open
+            activity={activity}
+            responses={responses}
+            highlightStudentId={highlightStudentId}
+            onClearHighlight={onClearHighlight}
+            onOpenAsk={() => switchPanelTab('ask')}
+          />
+        )}
 
-        {activeView === 'qna' && <AudienceQnaTeacher socket={socket} questions={qnaQuestions} focusedStudentId={selectedStudentId} hasLiveActivity={!!activity} onClose={returnToPrimaryView} onQuestionLaunched={() => setActiveView('live')} />}
-
-        {activeView === 'live' && activity && (
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'live' && activity && (
           <div className="p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 max-w-2xl">
@@ -661,7 +858,7 @@ export default function LiveResponseTeacher({
           </div>
         )}
 
-        {activeView === 'build' && (
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'build' && (
           <div
             className="p-4"
             onPaste={(event) => {
@@ -771,9 +968,9 @@ export default function LiveResponseTeacher({
           </div>
         )}
 
-        {activeView === 'prepared' && <div className="grid gap-5 p-4 lg:grid-cols-2"><section><div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Prepared</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Question queue · {queue.length}</h3></div>{queue.length > 0 && <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>}</div><div className="mt-3 space-y-2">{queue.map((item, index) => <div key={item.id} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-indigo-600 text-[10px] font-black text-white">{index + 1}</span><div className="flex flex-col"><button type="button" disabled={index === 0} onClick={() => moveQueued(index, -1)} className="text-[10px] font-black disabled:opacity-20">▲</button><button type="button" disabled={index === queue.length - 1} onClick={() => moveQueued(index, 1)} className="text-[10px] font-black disabled:opacity-20">▼</button></div><p className="min-w-0 flex-1 truncate text-xs font-bold text-slate-900 dark:text-white">{item.prompt}</p><button type="button" onClick={() => launch(item, item.id)} className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-900">Launch</button><button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="text-sm font-black text-red-500">×</button></div>)}{!queue.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No questions queued.</p>}</div></section><section><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Reusable</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Templates · {templates.length}</h3></div><div className="mt-3 space-y-2">{templates.map((template) => <div key={template.id} className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700"><button type="button" onClick={() => loadTemplate(template)} className="min-w-0 flex-1 truncate px-3 py-2 text-left text-xs font-bold text-slate-900 hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800">{template.prompt}</button><button type="button" onClick={() => setTemplates((items) => items.filter((item) => item.id !== template.id))} aria-label={`Delete template: ${template.prompt}`} className="border-l border-slate-200 px-3 py-2 text-sm font-black text-red-500 dark:border-slate-700">×</button></div>)}{!templates.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No templates saved on this browser.</p>}</div></section></div>}
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'prepared' && <div className="grid gap-5 p-4 lg:grid-cols-2"><section><div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Prepared</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Question queue · {queue.length}</h3></div>{queue.length > 0 && <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>}</div><div className="mt-3 space-y-2">{queue.map((item, index) => <div key={item.id} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-indigo-600 text-[10px] font-black text-white">{index + 1}</span><div className="flex flex-col"><button type="button" disabled={index === 0} onClick={() => moveQueued(index, -1)} className="text-[10px] font-black disabled:opacity-20">▲</button><button type="button" disabled={index === queue.length - 1} onClick={() => moveQueued(index, 1)} className="text-[10px] font-black disabled:opacity-20">▼</button></div><p className="min-w-0 flex-1 truncate text-xs font-bold text-slate-900 dark:text-white">{item.prompt}</p><button type="button" onClick={() => launch(item, item.id)} className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-900">Launch</button><button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="text-sm font-black text-red-500">×</button></div>)}{!queue.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No questions queued.</p>}</div></section><section><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Reusable</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Templates · {templates.length}</h3></div><div className="mt-3 space-y-2">{templates.map((template) => <div key={template.id} className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700"><button type="button" onClick={() => loadTemplate(template)} className="min-w-0 flex-1 truncate px-3 py-2 text-left text-xs font-bold text-slate-900 hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800">{template.prompt}</button><button type="button" onClick={() => setTemplates((items) => items.filter((item) => item.id !== template.id))} aria-label={`Delete template: ${template.prompt}`} className="border-l border-slate-200 px-3 py-2 text-sm font-black text-red-500 dark:border-slate-700">×</button></div>)}{!templates.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No templates saved on this browser.</p>}</div></section></div>}
 
-        {activeView === 'featured' && <section className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Featured Wall</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Highlights · {featuredWall.length}</h3></div><div className="flex gap-1.5"><button type="button" onClick={compareFeatured} className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white">Compare</button><button type="button" onClick={() => { setSlideIndex(0); setWallMode('slides'); }} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-black text-amber-950">Present</button><button type="button" onClick={downloadWall} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-800">Save</button><button type="button" onClick={clearFeaturedWall} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-black text-red-700">Clear wall</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{featuredWall.map((item) => <article key={item.id} className={`rounded-xl border-2 bg-white p-3 dark:bg-slate-900 ${wallSelected.includes(item.id) ? 'border-indigo-500' : 'border-amber-200 dark:border-amber-800'}`}><div className="flex items-start gap-2"><input type="checkbox" checked={wallSelected.includes(item.id)} onChange={(event) => setWallSelected((ids) => event.target.checked ? [...ids.filter((id) => id !== item.id), item.id].slice(-2) : ids.filter((id) => id !== item.id))} className="mt-0.5 h-4 w-4 accent-indigo-600" /><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase text-amber-700">Q{item.questionNumber} · {item.name}</p><p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">“{item.value}”</p><select value={item.label} onChange={(event) => labelFeatured(item.id, event.target.value)} className="mt-2 w-full rounded-md border border-amber-200 px-2 py-1 text-[11px] font-bold dark:border-amber-800 dark:bg-slate-950">{FEATURE_LABELS.map((label) => <option key={label} value={label}>{label || 'Why is this featured?'}</option>)}</select><div className="mt-2 flex gap-1.5"><button type="button" onClick={() => improveFeatured(item)} className="rounded-md bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-800">Improve</button><button type="button" onClick={() => removeFeatured(item.id)} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600">Remove</button></div></div></div></article>)}</div></section>}
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'featured' && <section className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Featured Wall</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Highlights · {featuredWall.length}</h3></div><div className="flex gap-1.5"><button type="button" onClick={compareFeatured} className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white">Compare</button><button type="button" onClick={() => { setSlideIndex(0); setWallMode('slides'); }} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-black text-amber-950">Present</button><button type="button" onClick={downloadWall} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-800">Save</button><button type="button" onClick={clearFeaturedWall} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-black text-red-700">Clear wall</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{featuredWall.map((item) => <article key={item.id} className={`rounded-xl border-2 bg-white p-3 dark:bg-slate-900 ${wallSelected.includes(item.id) ? 'border-indigo-500' : 'border-amber-200 dark:border-amber-800'}`}><div className="flex items-start gap-2"><input type="checkbox" checked={wallSelected.includes(item.id)} onChange={(event) => setWallSelected((ids) => event.target.checked ? [...ids.filter((id) => id !== item.id), item.id].slice(-2) : ids.filter((id) => id !== item.id))} className="mt-0.5 h-4 w-4 accent-indigo-600" /><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase text-amber-700">Q{item.questionNumber} · {item.name}</p><p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">“{item.value}”</p><select value={item.label} onChange={(event) => labelFeatured(item.id, event.target.value)} className="mt-2 w-full rounded-md border border-amber-200 px-2 py-1 text-[11px] font-bold dark:border-amber-800 dark:bg-slate-950">{FEATURE_LABELS.map((label) => <option key={label} value={label}>{label || 'Why is this featured?'}</option>)}</select><div className="mt-2 flex gap-1.5"><button type="button" onClick={() => improveFeatured(item)} className="rounded-md bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-800">Improve</button><button type="button" onClick={() => removeFeatured(item.id)} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600">Remove</button></div></div></div></article>)}</div></section>}
       </div>
 
       {displayMode && activity && (

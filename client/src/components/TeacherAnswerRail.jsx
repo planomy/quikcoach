@@ -154,9 +154,10 @@ function DoneIcon() {
   );
 }
 
-/** Right-edge responses rail: the teacher's live monitoring and control surface. */
+/** Live pulse answers — side rail on the board, or embedded inside the Responses panel. */
 export default function TeacherAnswerRail({
   open,
+  embedded = false,
   onClose,
   activity,
   responses = [],
@@ -184,14 +185,14 @@ export default function TeacherAnswerRail({
   }, [open, highlightStudentId, onClearHighlight, sorted.length]);
 
   useEffect(() => {
-    if (!open || presenting) return undefined;
+    if (embedded || !open || presenting) return undefined;
     function closeOnOutsidePointer(event) {
       if (panelRef.current?.contains(event.target)) return;
       onClose?.();
     }
     document.addEventListener('pointerdown', closeOnOutsidePointer);
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
-  }, [open, presenting, onClose]);
+  }, [embedded, open, presenting, onClose]);
 
   function teacherSocket() {
     return window.__iboardTeacherSocket;
@@ -230,16 +231,43 @@ export default function TeacherAnswerRail({
     socket.emit('teacher:live-realert', {});
   }
 
-  if (!activity) return null;
+  if (!activity) {
+    if (embedded) {
+      return (
+        <div className="grid min-h-[280px] place-items-center p-8 text-center">
+          <div>
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">No live question right now</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Use Ask to send a quick question to the class.</p>
+            {typeof onOpenAsk === 'function' && (
+              <button
+                type="button"
+                onClick={onOpenAsk}
+                className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-700"
+              >
+                Go to Ask
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  const panelClass = embedded
+    ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-white dark:bg-slate-900'
+    : `absolute inset-y-0 right-0 z-40 flex w-[min(24rem,92vw)] flex-col border-l border-indigo-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-indigo-900 dark:bg-slate-900 ${
+        open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
+      }`;
+
+  const PanelTag = embedded ? 'div' : 'aside';
 
   return (
     <>
-      <aside
+      <PanelTag
         ref={panelRef}
-        className={`absolute inset-y-0 right-0 z-40 flex w-[min(24rem,92vw)] flex-col border-l border-indigo-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-indigo-900 dark:bg-slate-900 ${
-          open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
-        }`}
-        aria-hidden={!open}
+        className={panelClass}
+        aria-hidden={embedded ? undefined : !open}
         aria-label="Responses"
       >
         <div className="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
@@ -249,16 +277,18 @@ export default function TeacherAnswerRail({
               <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">{activity.prompt}</p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">{responded} response{responded === 1 ? '' : 's'}</p>
             </div>
-            <HintWrap hint="Hide">
-              <button
-                type="button"
-                onClick={onClose}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                aria-label="Hide responses"
-              >
-                ×
-              </button>
-            </HintWrap>
+            {!embedded && (
+              <HintWrap hint="Hide">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  aria-label="Hide responses"
+                >
+                  ×
+                </button>
+              </HintWrap>
+            )}
           </div>
 
           <div className="relative z-[60] mt-3 flex flex-wrap items-center gap-2 overflow-visible" aria-label="Live question controls">
@@ -389,7 +419,7 @@ export default function TeacherAnswerRail({
             </div>
           )}
         </div>
-      </aside>
+      </PanelTag>
 
       {presenting && (
         <div className="fixed inset-0 z-[95] overflow-auto bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 p-6 text-white sm:p-10">

@@ -110,7 +110,7 @@ function PulseTeacherInner() {
         </div>
         {copyMessage && <p className="mx-auto mt-2 max-w-5xl text-right text-xs font-bold text-emerald-700 dark:text-emerald-300">{copyMessage}</p>}
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-4"><LiveResponseTeacher socket={socket} onCopyStudentLink={copyStudentLink} /></main>
+      <main className="mx-auto max-w-5xl px-4 py-4"><LiveResponseTeacher socket={socket} panelTabs onCopyStudentLink={copyStudentLink} /></main>
     </div>
   );
 }

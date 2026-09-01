@@ -101,55 +101,14 @@ export default function UiInteractionController() {
     document.addEventListener('pointerdown', closeFloatingMenus, true);
     document.addEventListener('keydown', onKeyDown);
 
-    if (window.location.pathname === '/teacher') {
-      let teacherFrame = 0;
-      let railWasOpen = false;
-      const applyTeacherLiveFlow = () => {
-        for (const nav of document.querySelectorAll('nav[aria-label="Ask pages"]')) {
-          for (const button of nav.querySelectorAll(':scope > button')) {
-            if (button.textContent?.trim().startsWith('Live Questions')) {
-              button.style.display = 'none';
-              button.setAttribute('aria-hidden', 'true');
-              button.tabIndex = -1;
-            }
-          }
-        }
+    return () => {
+      document.removeEventListener('pointerdown', closeFloatingMenus, true);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
 
-        const answerRail = document.querySelector('aside[aria-label="Responses"]');
-        const railOpen = answerRail?.className?.includes('translate-x-0');
-        if (railOpen && !railWasOpen) {
-          const closeAsk = document.querySelector('button[aria-label="Close Ask overlay"]');
-          if (closeAsk) closeAsk.click();
-        }
-        railWasOpen = !!railOpen;
-      };
-
-      const scheduleTeacherLiveFlow = () => {
-        if (teacherFrame) return;
-        teacherFrame = window.requestAnimationFrame(() => {
-          teacherFrame = 0;
-          applyTeacherLiveFlow();
-        });
-      };
-
-      const teacherObserver = new MutationObserver(scheduleTeacherLiveFlow);
-      teacherObserver.observe(document.body, { childList: true, subtree: true, attributes: true });
-      applyTeacherLiveFlow();
-
-      return () => {
-        teacherObserver.disconnect();
-        if (teacherFrame) window.cancelAnimationFrame(teacherFrame);
-        document.removeEventListener('pointerdown', closeFloatingMenus, true);
-        document.removeEventListener('keydown', onKeyDown);
-      };
-    }
-
-    if (window.location.pathname !== '/student') {
-      return () => {
-        document.removeEventListener('pointerdown', closeFloatingMenus, true);
-        document.removeEventListener('keydown', onKeyDown);
-      };
-    }
+  useEffect(() => {
+    if (window.location.pathname !== '/student') return undefined;
 
     let initialised = false;
     let restoreQueued = false;
