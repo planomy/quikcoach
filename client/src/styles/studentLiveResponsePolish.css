@@ -1,0 +1,101 @@
+/* Refine the student live-response panel: calmer palette, lighter hierarchy,
+   and tighter proportions while preserving readable half-screen use. */
+
+/* The live question card is the only student support card carrying Tailwind's
+   ring-4 treatment. Neutralise the rotating colour border/ring in the workspace. */
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] {
+  border-width: 1px !important;
+  border-color: #e2e8f0 !important;
+  border-radius: 1rem !important;
+  padding: 1rem !important;
+  box-shadow: 0 10px 28px rgb(15 23 42 / 0.06) !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+html.dark.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] {
+  border-color: #334155 !important;
+  box-shadow: none !important;
+}
+
+/* One restrained accent language: active Respond remains purple/indigo;
+   question metadata follows it instead of cycling through cyan/fuchsia/orange. */
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] > div:first-child > p {
+  color: #4338ca !important;
+}
+
+html.dark.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] > div:first-child > p {
+  color: #c7d2fe !important;
+}
+
+/* "Answer now" is a state cue, not another competing brand colour. */
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] span[class*='bg-emerald-100'] {
+  background: #eef2ff !important;
+  color: #4338ca !important;
+}
+
+/* Tighten the live card without shrinking the actual task into toy UI. */
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] > h2 {
+  margin-top: 0.65rem !important;
+  font-size: clamp(1.2rem, 1.45vw, 1.5rem) !important;
+  line-height: 1.25 !important;
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] div:has(> textarea) {
+  margin-top: 0.9rem !important;
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea {
+  min-height: 5.75rem !important;
+  padding: 0.8rem !important;
+  border-width: 1px !important;
+  border-radius: 0.9rem !important;
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea + div {
+  margin-top: 0.45rem !important;
+  padding-top: 0.25rem !important;
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea + div > div {
+  margin-top: 0.4rem !important;
+  gap: 0.45rem !important;
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea + div button {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] div:has(> textarea) > button.w-full {
+  margin-top: 0.65rem !important;
+  padding-top: 0.65rem !important;
+  padding-bottom: 0.65rem !important;
+  border-radius: 0.9rem !important;
+}
+
+/* A teacher re-alert already triggers the panel pulse. During that attention
+   window, turn the status line into an unmistakable amber reminder strip rather
+   than leaving it as polite footer text. */
+html.iboard-student-workspace .iboard-student-support-scroll section.iboard-question-pulse > p.text-center {
+  margin-top: 0.7rem !important;
+  padding: 0.55rem 0.75rem !important;
+  border: 1px solid #f59e0b !important;
+  border-radius: 0.75rem !important;
+  background: #fffbeb !important;
+  color: #92400e !important;
+}
+
+html.dark.iboard-student-workspace .iboard-student-support-scroll section.iboard-question-pulse > p.text-center {
+  border-color: #d97706 !important;
+  background: rgb(120 53 15 / 0.22) !important;
+  color: #fde68a !important;
+}
+
+/* On full desktop screens, give the writing surface a little more visual weight.
+   Tablet/half-screen layouts keep the existing 3:2 split for usability. */
+@media (min-width: 1280px) {
+  html.iboard-student-workspace main > div {
+    grid-template-columns: minmax(0, 5fr) minmax(21rem, 3fr) !important;
+  }
+}
