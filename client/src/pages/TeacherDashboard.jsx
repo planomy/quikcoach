@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import { activityStatus, wordCount } from '../lib/text.js';
@@ -202,8 +202,10 @@ function TeacherDashboardInner() {
   const [toolsPanelOpen, setToolsPanelOpen] = useState(false);
   const [toolsTab, setToolsTab] = useState('ask');
   const [toolsHighlightStudentId, setToolsHighlightStudentId] = useState(null);
+  const teacherHeaderRef = useRef(null);
   const teacherToolsNavRef = useRef(null);
   const teacherToolsPanelRef = useRef(null);
+  const [teacherToolsTop, setTeacherToolsTop] = useState(0);
   const [lessonReportOpen, setLessonReportOpen] = useState(false);
   const prevPendingQuestionCountRef = useRef(0);
   const [libraryPanel, setLibraryPanel] = useState(null);
@@ -715,6 +717,26 @@ function TeacherDashboardInner() {
     return () => {
       document.removeEventListener('pointerdown', closeTeacherToolsIfOutside);
       document.removeEventListener('keydown', closeTeacherToolsOnEscape);
+    };
+  }, [toolsPanelOpen]);
+
+  useLayoutEffect(() => {
+    if (!toolsPanelOpen || !teacherHeaderRef.current) return undefined;
+
+    function alignTeacherToolsToHeader() {
+      const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
+      if (Number.isFinite(headerBottom)) setTeacherToolsTop(Math.max(0, Math.round(headerBottom)));
+    }
+
+    alignTeacherToolsToHeader();
+    const resizeObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(alignTeacherToolsToHeader)
+      : null;
+    resizeObserver?.observe(teacherHeaderRef.current);
+    window.addEventListener('resize', alignTeacherToolsToHeader);
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', alignTeacherToolsToHeader);
     };
   }, [toolsPanelOpen]);
 
@@ -1434,7 +1456,7 @@ function TeacherDashboardInner() {
           Connection lost — reconnecting…
         </div>
       )}
-      <header className="relative z-50 shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+      <header ref={teacherHeaderRef} className="relative z-50 shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
         <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
@@ -1688,28 +1710,30 @@ function TeacherDashboardInner() {
             </details>
           </div>
         </div>
-        {toolsPanelOpen && (
-          <div
-            ref={teacherToolsPanelRef}
-            className="absolute right-4 top-full z-[60] w-[min(29rem,calc(100vw-2rem))] overflow-hidden rounded-b-2xl rounded-tl-2xl border border-t-0 border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:right-6"
-            role="dialog"
-            aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
-          >
-            <LiveResponseTeacher
-              socket={socket}
-              overlay
-              panelTab={toolsTab}
-              onPanelTabChange={setToolsTab}
-              onClose={closeTeacherTools}
-              onQuestionLaunched={() => setToolsTab('responses')}
-              highlightStudentId={toolsHighlightStudentId}
-              onClearHighlight={() => setToolsHighlightStudentId(null)}
-              onCopyStudentLink={copyStudentJoinLink}
-            />
-          </div>
-        )}
       </header>
       </div>
+
+      {toolsPanelOpen && (
+        <div
+          ref={teacherToolsPanelRef}
+          className="fixed bottom-0 right-0 z-[60] w-[min(29rem,100vw)] overflow-hidden border-l border-t border-slate-200 bg-white shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900"
+          style={{ top: teacherToolsTop }}
+          role="dialog"
+          aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
+        >
+          <LiveResponseTeacher
+            socket={socket}
+            overlay
+            panelTab={toolsTab}
+            onPanelTabChange={setToolsTab}
+            onClose={closeTeacherTools}
+            onQuestionLaunched={() => setToolsTab('responses')}
+            highlightStudentId={toolsHighlightStudentId}
+            onClearHighlight={() => setToolsHighlightStudentId(null)}
+            onCopyStudentLink={copyStudentJoinLink}
+          />
+        </div>
+      )}
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <main className="mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3 sm:px-6">
