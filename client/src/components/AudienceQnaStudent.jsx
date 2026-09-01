@@ -98,7 +98,8 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
   }
 
   return (
-    <section className={`overflow-hidden rounded-2xl border border-fuchsia-200 bg-white shadow-card dark:border-fuchsia-900 dark:bg-slate-900 ${compact ? 'text-xs' : ''}`}>
+    <section className={`relative overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-900 ${embedded ? 'border-slate-200 dark:border-slate-700' : 'border-slate-200 shadow-card dark:border-slate-700'} ${compact ? 'text-xs' : ''}`}>
+      {embedded ? <span aria-hidden="true" className="absolute bottom-0 left-0 top-0 w-1 bg-indigo-500" /> : null}
       {!embedded && (
         <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-indigo-600 px-4 py-3 text-left text-white">
           <span className="font-display text-sm font-black">Ask a question</span>
@@ -107,15 +108,15 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
       )}
 
       {showBody && (
-        <div className="space-y-4 p-4">
+        <div className={`space-y-4 p-4 ${embedded ? 'pl-5' : ''}`}>
           <form onSubmit={submit}>
-            <label className="block text-[10px] font-black uppercase tracking-wide text-slate-500">Your question</label>
+            <label className="block text-[10px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Your question</label>
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value.slice(0, 500))}
               rows={compact ? 2 : 3}
               placeholder="What would you like the facilitator to explain or ask the room?"
-              className="mt-1 w-full resize-y rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-fuchsia-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="mt-1 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300">
@@ -158,19 +159,19 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
           {publicQuestions.length > 0 && (
             <div className="space-y-2">
               {publicQuestions.map((question) => (
-                <article key={question.id} className="relative flex gap-3 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 p-3 dark:border-fuchsia-900 dark:bg-fuchsia-950/20">
+                <article key={question.id} className="relative flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
                   <button
                     type="button"
                     disabled={question.mine || question.status === 'answered'}
                     onClick={() => vote(question)}
                     title={question.status === 'answered' ? 'This question is finished' : question.mine ? 'You cannot vote for your own question' : question.voted ? 'Remove your vote' : 'Vote for this question'}
-                    className={`flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-lg text-[11px] font-black ${question.voted ? 'bg-fuchsia-600 text-white' : 'bg-white text-fuchsia-700 shadow-sm dark:bg-slate-900 dark:text-fuchsia-300'} disabled:opacity-50`}
+                    className={`flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-lg text-[11px] font-black ${question.voted ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700 shadow-sm dark:bg-slate-900 dark:text-indigo-300'} disabled:opacity-50`}
                   >
                     <span>▲</span><span>{question.votes}</span>
                   </button>
                   <div className={`min-w-0 flex-1 ${question.mine ? 'pr-8' : ''}`}>
                     <p className="text-sm font-semibold text-slate-950 dark:text-white">{question.text}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-fuchsia-700 dark:text-fuchsia-300">{question.author} · {STATUS_LABELS[question.status] || question.status}</p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{question.author} · {STATUS_LABELS[question.status] || question.status}</p>
                   </div>
                   {question.mine && (
                     <button
