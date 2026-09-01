@@ -227,6 +227,35 @@ export function migrate(db) {
       FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
     )
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lesson_pulse_questions (
+      room_code TEXT NOT NULL,
+      activity_id TEXT NOT NULL PRIMARY KEY,
+      question_number INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      options_json TEXT NOT NULL DEFAULT '[]',
+      anonymous INTEGER NOT NULL DEFAULT 0,
+      optional INTEGER NOT NULL DEFAULT 0,
+      launched_at TEXT NOT NULL,
+      ended_at TEXT
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_pulse_q_room ON lesson_pulse_questions(room_code, question_number)`);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lesson_pulse_cells (
+      room_code TEXT NOT NULL,
+      activity_id TEXT NOT NULL,
+      question_number INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      student_name TEXT NOT NULL DEFAULT '',
+      value TEXT NOT NULL DEFAULT '',
+      confidence TEXT NOT NULL DEFAULT '',
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (activity_id, student_id)
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_pulse_cells_room ON lesson_pulse_cells(room_code)`);
 }
 
 /** @param {DatabaseSync} db */
@@ -545,7 +574,161 @@ export const queries = {
     return get(db, `SELECT * FROM students WHERE id = ?`, [studentId]);
   },
 
+  endLessonPulseQuestion(db, activityId) {
+    if (!activityId) return;
+    run(db, `UPDATE lesson_pulse_questions SET ended_at = datetime('now') WHERE activity_id = ? AND ended_at IS NULL`, [String(activityId)]);
+  },
+
+  recordLessonPulseQuestion(db, roomCode, activityRow) {
+    const activity = rowToLiveActivity(activityRow);
+    if (!activity) return null;
+    run(
+      db,
+      `INSERT INTO lesson_pulse_questions
+       (room_code, activity_id, question_number, type, prompt, options_json, anonymous, optional, launched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(activity_id) DO UPDATE SET
+         prompt = excluded.prompt,
+         options_json = excluded.options_json`,
+      [
+        roomCode,
+        activity.id,
+        activity.questionNumber,
+        activity.type,
+        activity.prompt,
+        JSON.stringify(activity.options || []),
+        activity.anonymous ? 1 : 0,
+        activity.optional ? 1 : 0,
+        activity.launchedAt || new Date().toISOString(),
+      ]
+    );
+    return activity;
+  },
+
+  upsertLessonPulseCell(db, { roomCode, activityId, questionNumber, studentId, studentName, value, confidence = undefined }) {
+    const existing = get(
+      db,
+      `SELECT confidence FROM lesson_pulse_cells WHERE activity_id = ? AND student_id = ?`,
+      [activityId, studentId]
+    );
+    const conf = confidence !== undefined ? confidence : (existing?.confidence || '');
+    run(
+      db,
+      `INSERT INTO lesson_pulse_cells
+       (room_code, activity_id, question_number, student_id, student_name, value, confidence, submitted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+       ON CONFLICT(activity_id, student_id) DO UPDATE SET
+         student_name = excluded.student_name,
+         value = excluded.value,
+         confidence = CASE WHEN excluded.confidence != '' THEN excluded.confidence ELSE lesson_pulse_cells.confidence END,
+         submitted_at = datetime('now')`,
+      [roomCode, activityId, questionNumber, studentId, String(studentName || ''), String(value || ''), String(conf || '')]
+    );
+  },
+
+  clearLessonPulseLog(db, roomCode) {
+    run(db, `DELETE FROM lesson_pulse_cells WHERE room_code = ?`, [roomCode]);
+    run(db, `DELETE FROM lesson_pulse_questions WHERE room_code = ?`, [roomCode]);
+  },
+
+  buildLessonReport(db, roomCode) {
+    const studentRows = queries.listStudents(db, roomCode);
+    const students = studentRows.map((row) => queries.rowToStudent(row));
+    const questions = all(
+      db,
+      `SELECT * FROM lesson_pulse_questions WHERE room_code = ? ORDER BY question_number ASC, launched_at ASC`,
+      [roomCode]
+    ).map((row) => ({
+      activityId: row.activity_id,
+      questionNumber: Number(row.question_number) || 1,
+      type: row.type,
+      prompt: row.prompt,
+      anonymous: !!row.anonymous,
+      optional: !!row.optional,
+      launchedAt: row.launched_at,
+      endedAt: row.ended_at || null,
+    }));
+    const cells = all(
+      db,
+      `SELECT * FROM lesson_pulse_cells WHERE room_code = ?`,
+      [roomCode]
+    ).map((row) => ({
+      activityId: row.activity_id,
+      questionNumber: Number(row.question_number) || 1,
+      studentId: Number(row.student_id),
+      studentName: row.student_name || '',
+      value: row.value || '',
+      confidence: row.confidence || '',
+      submittedAt: row.submitted_at,
+    }));
+    const qnaRows = queries.listAudienceQuestions(db, roomCode).map((row) => ({
+      id: Number(row.id),
+      studentId: Number(row.student_id),
+      studentName: row.student_name || '',
+      text: row.text || '',
+      status: row.status || 'pending',
+      votes: Number(row.vote_count) || 0,
+      anonymous: !!row.anonymous_requested,
+      createdAt: row.created_at,
+    }));
+    const questionStats = questions.map((question) => {
+      const responses = cells.filter((cell) => cell.activityId === question.activityId);
+      const responded = responses.length;
+      const confident = responses.filter((r) => r.confidence === 'confident').length;
+      const unsure = responses.filter((r) => r.confidence === 'unsure').length;
+      const guessed = responses.filter((r) => r.confidence === 'guessed').length;
+      const roster = students.length;
+      return {
+        ...question,
+        responded,
+        roster,
+        responseRate: roster ? Math.round((responded / roster) * 100) : 0,
+        confident,
+        unsure,
+        guessed,
+      };
+    });
+    const studentStats = students.map((student) => {
+      const mine = cells.filter((cell) => cell.studentId === student.id);
+      const nonOptional = questions.filter((q) => !q.optional);
+      const opportunities = nonOptional.length;
+      const answered = mine.filter((cell) => nonOptional.some((q) => q.activityId === cell.activityId)).length;
+      const questionsAsked = qnaRows.filter((q) => q.studentId === student.id);
+      return {
+        id: student.id,
+        name: student.name,
+        classGroup: student.class_group || '',
+        yearLevel: student.year_level || '',
+        engagementStatus: student.engagement_status || '',
+        engagementScore: student.engagement?.score ?? 100,
+        pulseAnswered: answered,
+        pulseOpportunities: opportunities,
+        pulseParticipation: opportunities ? Math.round((answered / opportunities) * 100) : (answered ? 100 : 0),
+        questionsAsked: questionsAsked.length,
+        cells: mine.map((cell) => ({
+          questionNumber: cell.questionNumber,
+          activityId: cell.activityId,
+          value: cell.value,
+          confidence: cell.confidence,
+        })),
+        qna: questionsAsked.map((q) => ({ id: q.id, text: q.text, status: q.status })),
+      };
+    });
+    return {
+      roomCode,
+      generatedAt: new Date().toISOString(),
+      studentCount: students.length,
+      questionCount: questions.length,
+      questions: questionStats,
+      cells,
+      students: studentStats,
+      qna: qnaRows,
+    };
+  },
+
   launchLiveActivity(db, roomCode, activity) {
+    const previous = queries.getLiveActivity(db, roomCode);
+    if (previous?.id) queries.endLessonPulseQuestion(db, previous.id);
     run(db, `DELETE FROM live_responses WHERE room_code = ?`, [roomCode]);
     run(
       db,
@@ -589,6 +772,8 @@ export const queries = {
         launchedAt,
       ]
     );
+    const liveRow = get(db, `SELECT * FROM live_activities WHERE room_code = ?`, [roomCode]);
+    queries.recordLessonPulseQuestion(db, roomCode, liveRow);
     return queries.getLiveActivity(db, roomCode);
   },
 
@@ -621,6 +806,8 @@ export const queries = {
   },
 
   clearLiveActivity(db, roomCode) {
+    const current = queries.getLiveActivity(db, roomCode);
+    if (current?.id) queries.endLessonPulseQuestion(db, current.id);
     run(db, `DELETE FROM live_responses WHERE room_code = ?`, [roomCode]);
     run(db, `DELETE FROM live_activities WHERE room_code = ?`, [roomCode]);
   },
@@ -639,17 +826,39 @@ export const queries = {
          submitted_at = datetime('now')`,
       [activityId, roomCode, studentId, value]
     );
-    return get(
+    const row = get(
       db,
       `SELECT * FROM live_responses WHERE activity_id = ? AND student_id = ?`,
       [activityId, studentId]
     );
+    const activity = queries.getLiveActivityById(activityId) || queries.getLiveActivity(db, roomCode);
+    const student = queries.getStudent(db, studentId);
+    if (activity && student) {
+      queries.upsertLessonPulseCell(db, {
+        roomCode,
+        activityId: activity.id,
+        questionNumber: activity.questionNumber,
+        studentId,
+        studentName: student.name,
+        value,
+        confidence: row?.confidence || '',
+      });
+    }
+    return row;
   },
 
   setLiveResponseConfidence(db, activityId, studentId, confidence) {
     const allowed = new Set(['confident', 'unsure', 'guessed']);
     const value = allowed.has(String(confidence || '')) ? String(confidence) : '';
     run(db, `UPDATE live_responses SET confidence = ? WHERE activity_id = ? AND student_id = ?`, [value, activityId, studentId]);
+    const liveRow = get(db, `SELECT * FROM live_responses WHERE activity_id = ? AND student_id = ?`, [activityId, studentId]);
+    if (liveRow) {
+      run(
+        db,
+        `UPDATE lesson_pulse_cells SET confidence = ? WHERE activity_id = ? AND student_id = ?`,
+        [value, activityId, studentId]
+      );
+    }
   },
 
   listLiveResponses(db, roomCode) {

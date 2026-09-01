@@ -178,6 +178,21 @@ app.get('/api/rooms/:code', (req, res) => {
   }
 });
 
+app.get('/api/rooms/:code/lesson-report', (req, res) => {
+  try {
+    const code = String(req.params.code || '')
+      .replace(/\D/g, '')
+      .slice(0, 4)
+      .padStart(4, '0');
+    if (code.length !== 4) return res.status(400).json({ error: 'Invalid room' });
+    queries.ensureRoom(db, code);
+    res.json(queries.buildLessonReport(db, code));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/rooms/:code/snapshots', (req, res) => {
   try {
     const code = String(req.params.code || '')
@@ -1741,6 +1756,7 @@ io.on('connection', (socket) => {
       });
       queries.clearLiveActivity(db, code);
       queries.clearFeaturedWall(db, code);
+      queries.clearLessonPulseLog(db, code);
       queries.resetLiveQuestionNumber(db, code);
       broadcastRoom(code);
       emitLiveState(code);

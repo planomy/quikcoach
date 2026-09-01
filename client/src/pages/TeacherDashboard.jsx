@@ -33,6 +33,8 @@ import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { studentTileMeta } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
+import LessonReportPanel from '../components/LessonReportPanel.jsx';
+import { downloadLessonReportHtml } from '../lib/lessonReport.js';
 
 const MODE_LABELS = {
   writing: 'Writing',
@@ -200,6 +202,7 @@ function TeacherDashboardInner() {
   const [toolsPanelOpen, setToolsPanelOpen] = useState(false);
   const [toolsTab, setToolsTab] = useState('ask');
   const [toolsHighlightStudentId, setToolsHighlightStudentId] = useState(null);
+  const [lessonReportOpen, setLessonReportOpen] = useState(false);
   const prevPendingQuestionCountRef = useRef(0);
   const [libraryPanel, setLibraryPanel] = useState(null);
   const [fixedCommentCount, setFixedCommentCount] = useState(0);
@@ -1343,6 +1346,25 @@ function TeacherDashboardInner() {
     setToolsHighlightStudentId(null);
   }
 
+  function openLessonReport() {
+    closeRoomMenu();
+    setLessonReportOpen(true);
+  }
+
+  async function downloadLessonReportQuick() {
+    closeRoomMenu();
+    try {
+      const res = await fetch(`/api/rooms/${encodeURIComponent(codeInput)}/lesson-report`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not build report');
+      downloadLessonReportHtml(data);
+      setCopyToast('Lesson report downloaded');
+      setTimeout(() => setCopyToast(''), 2500);
+    } catch (e) {
+      setError(e.message || 'Could not download lesson report');
+    }
+  }
+
   function openAnswerInRail(studentId) {
     if (!livePulse.activity) {
       openTeacherTools('ask');
@@ -1619,6 +1641,12 @@ function TeacherDashboardInner() {
                 </button>
                 <button type="button" onClick={() => { closeRoomMenu(); downloadParticipantList(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                   Download participant list
+                </button>
+                <button type="button" onClick={openLessonReport} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  View lesson report
+                </button>
+                <button type="button" onClick={downloadLessonReportQuick} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  Download lesson report
                 </button>
                 <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
                   Open Ask-only window ↗
@@ -1935,6 +1963,10 @@ function TeacherDashboardInner() {
             />
           </div>
         </div>
+      )}
+
+      {lessonReportOpen && (
+        <LessonReportPanel roomCode={codeInput} onClose={() => setLessonReportOpen(false)} />
       )}
 
       {libraryPanel && (
@@ -2407,7 +2439,7 @@ function TeacherDashboardInner() {
                   Start a new class?
                 </h2>
                 <p id="new-class-confirm-description" className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  This removes every student card and teacher card from Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again.
+                  This removes every student card and teacher card from Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again. Download the lesson report first if you want to keep participation data.
                 </p>
               </div>
             </div>
@@ -2416,6 +2448,16 @@ function TeacherDashboardInner() {
                 {error}
               </p>
             )}
+            <div className="border-b border-slate-200 px-5 py-3 dark:border-slate-700">
+              <button
+                type="button"
+                disabled={newClassBusy}
+                onClick={downloadLessonReportQuick}
+                className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200"
+              >
+                Download lesson report first
+              </button>
+            </div>
             <div className="flex flex-col-reverse gap-2 bg-slate-50 px-5 py-4 dark:bg-slate-950 sm:flex-row sm:justify-end">
               <button
                 type="button"
