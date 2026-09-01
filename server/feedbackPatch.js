@@ -24,13 +24,25 @@ function normaliseRoomCode(code) {
     .padStart(4, '0');
 }
 
+function parseSqliteUtcMs(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return 0;
+  const iso = raw.includes('T') ? raw : raw.replace(' ', 'T');
+  const withZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
+  const ms = Date.parse(withZone);
+  return Number.isFinite(ms) ? ms : 0;
+}
+
 function feedbackForClient(row) {
   if (!row) return null;
+  const createdAt = row.created_at || '';
+  const at = parseSqliteUtcMs(createdAt);
   return {
     feedbackId: Number(row.id),
     studentId: Number(row.student_id),
     text: String(row.text || ''),
-    createdAt: row.created_at || '',
+    createdAt,
+    at: at || Date.now(),
   };
 }
 

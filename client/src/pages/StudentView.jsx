@@ -26,22 +26,13 @@ import {
   saveStudentSession,
 } from '../lib/studentSession.js';
 import { dismissInboxItem as persistInboxDismiss, readDismissedInboxIds } from '../lib/inboxDismiss.js';
+import { parseInboxAt } from '../lib/inboxTime.js';
 
-function parseFeedbackAt(item) {
-  const createdAt = String(item?.createdAt || '').trim();
-  if (createdAt) {
-    const ms = Date.parse(createdAt.includes('T') ? createdAt : `${createdAt.replace(' ', 'T')}`);
-    if (Number.isFinite(ms)) return ms;
-  }
-  const feedbackId = Number(item?.feedbackId) || 0;
-  return feedbackId > 0 ? feedbackId : 0;
-}
-
-function feedbackInboxItem(item) {
+function feedbackInboxItem(item, { fallbackAt = 0 } = {}) {
   const feedbackId = Number(item?.feedbackId) || 0;
   const text = String(item?.text || '');
   const createdAt = String(item?.createdAt || '');
-  const at = parseFeedbackAt(item);
+  const at = parseInboxAt(item) || fallbackAt;
   return {
     id: feedbackId
       ? `feedback-${feedbackId}`
@@ -52,13 +43,13 @@ function feedbackInboxItem(item) {
   };
 }
 
-function mergeFeedbackInbox(previous, incoming) {
+function mergeFeedbackInbox(previous, incoming, { liveFallbackAt = 0 } = {}) {
   const byId = new Map();
   for (const item of previous) {
     if (item?.id) byId.set(item.id, item);
   }
   for (const raw of incoming) {
-    const item = feedbackInboxItem(raw);
+    const item = feedbackInboxItem(raw, { fallbackAt: liveFallbackAt });
     if (item.text) byId.set(item.id, item);
   }
   return [...byId.values()].sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
@@ -288,8 +279,9 @@ export default function StudentView() {
       if (!sid || !Array.isArray(items)) return;
       const mine = items.filter((i) => Number(i?.studentId) === Number(sid));
       if (!mine.length) return;
-      const mapped = mine.map(feedbackInboxItem).filter((item) => item.text);
-      setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine));
+      const liveFallbackAt = replay ? 0 : Date.now();
+      const mapped = mine.map((item) => feedbackInboxItem(item, { fallbackAt: liveFallbackAt })).filter((item) => item.text);
+      setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine, { liveFallbackAt }));
       if (replay) return;
       const newest = mapped.reduce(
         (best, item) => (!best || Number(item.at) > Number(best.at) ? item : best),

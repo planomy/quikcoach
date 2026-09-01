@@ -1,9 +1,5 @@
 import RichTextDisplay from './RichTextDisplay.jsx';
-
-function formatTime(at) {
-  if (!Number.isFinite(Number(at)) || Number(at) <= 0) return '';
-  return new Date(Number(at)).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-}
+import { formatInboxTime } from '../lib/inboxTime.js';
 
 export default function StudentInbox({ items, expandedId, onToggle, onDismiss }) {
   if (!items.length) {
@@ -15,9 +11,13 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss })
       {items.map((item) => {
         const open = expandedId === item.id;
         const isBroadcast = item.type === 'broadcast';
+        const timeLabel = formatInboxTime(item.at);
         const preview = isBroadcast
-          ? `${item.exemplars?.length || 0} exemplar${(item.exemplars?.length || 0) === 1 ? '' : 's'}${formatTime(item.at) ? ` · ${formatTime(item.at)}` : ''}`
-          : (item.text || 'Teacher note').replace(/\s+/g, ' ').trim().slice(0, 96);
+          ? `${item.exemplars?.length || 0} exemplar${(item.exemplars?.length || 0) === 1 ? '' : 's'}${timeLabel ? ` · ${timeLabel}` : ''}`
+          : (() => {
+              const text = (item.text || 'Teacher note').replace(/\s+/g, ' ').trim().slice(0, 72);
+              return timeLabel ? `${text}${text ? ' · ' : ''}${timeLabel}` : text;
+            })();
 
         return (
           <section
