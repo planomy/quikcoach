@@ -22,3 +22,7 @@ Thumbs.db
 *.log
 npm-debug.log*
 client/.vite/
+
+# Local Docker tooling / POC export (not for git)
+.tools/
+nuc-handoff/*.tar
