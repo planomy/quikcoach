@@ -18,26 +18,6 @@ const QUESTION_THEMES = [
     label: 'text-indigo-700 dark:text-indigo-300',
     splash: 'from-indigo-600 to-indigo-700',
   },
-  {
-    panel: 'border-teal-400 ring-teal-100 dark:border-teal-600 dark:ring-teal-950',
-    label: 'text-teal-700 dark:text-teal-300',
-    splash: 'from-teal-500 to-cyan-700',
-  },
-  {
-    panel: 'border-indigo-400 ring-indigo-100 dark:border-indigo-600 dark:ring-indigo-950',
-    label: 'text-indigo-700 dark:text-indigo-300',
-    splash: 'from-indigo-600 to-indigo-700',
-  },
-  {
-    panel: 'border-orange-400 ring-orange-100 dark:border-orange-600 dark:ring-orange-950',
-    label: 'text-orange-700 dark:text-orange-300',
-    splash: 'from-orange-500 to-rose-600',
-  },
-  {
-    panel: 'border-sky-400 ring-sky-100 dark:border-sky-600 dark:ring-sky-950',
-    label: 'text-sky-700 dark:text-sky-300',
-    splash: 'from-sky-500 to-blue-700',
-  },
 ];
 
 function playQuestionChime() {
@@ -333,7 +313,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
       >
         <span className="min-w-0 truncate text-sm font-black leading-none">{label}</span>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black leading-none ${quietAlerts ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-800 shadow-sm'}`}>Open</span>
+        <span className={`shrink-0 text-[11px] font-semibold leading-none ${quietAlerts ? 'text-indigo-600 dark:text-indigo-400' : 'text-white/95'}`}>Open</span>
       </button>
     );
   }
@@ -342,10 +322,10 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     <button
       type="button"
       onClick={onCollapse}
-      className="mb-2 flex w-full items-center justify-center gap-1 rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-[11px] font-black text-indigo-700 shadow-sm hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-slate-800"
-      aria-label="Collapse Pulse to a small pill"
+      className="mb-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400"
+      aria-label="Close Pulse panel"
     >
-      <span aria-hidden="true">—</span> Collapse Pulse
+      Close
     </button>
   ) : null;
 

@@ -7,6 +7,9 @@ const STATUS_LABELS = {
   dismissed: 'Handled',
 };
 
+const REMOVE_BTN =
+  'text-[11px] font-semibold text-slate-500 transition hover:text-red-600 disabled:opacity-40 dark:text-slate-400 dark:hover:text-red-300';
+
 export default function AudienceQnaStudent({ socket, compact = false, collapsed = false, onRequestExpand, embedded = false }) {
   const [questions, setQuestions] = useState([]);
   const [open, setOpen] = useState(!!embedded);
@@ -118,29 +121,42 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
       )}
 
       {showEmbeddedSummary && (
-        <button
-          type="button"
-          onClick={() => {
-            setComposerExpanded(true);
-            setMessage('');
-          }}
-          className="flex w-full items-center gap-3 px-4 py-3 pl-5 text-left"
-          aria-expanded={false}
-        >
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-sm font-bold text-slate-900 dark:text-slate-100">
-              {latestPendingQuestion ? 'Question sent' : 'Ask a question'}
-            </p>
-            <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
-              {latestPendingQuestion
-                ? `${latestPendingQuestion.text.replace(/\s+/g, ' ').trim()} · ${STATUS_LABELS[latestPendingQuestion.status] || 'Waiting for facilitator'}`
-                : 'Tap to write another question'}
-            </p>
-          </div>
-          <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
-            Open
-          </span>
-        </button>
+        <div className="flex w-full items-stretch">
+          <button
+            type="button"
+            onClick={() => {
+              setComposerExpanded(true);
+              setMessage('');
+            }}
+            className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 pl-5 text-left"
+            aria-expanded={false}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-sm font-bold text-slate-900 dark:text-slate-100">
+                {latestPendingQuestion ? 'Question sent' : 'Ask a question'}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+                {latestPendingQuestion
+                  ? `${latestPendingQuestion.text.replace(/\s+/g, ' ').trim()} · ${STATUS_LABELS[latestPendingQuestion.status] || 'Waiting for facilitator'}`
+                  : 'Tap to write another question'}
+              </p>
+            </div>
+            <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+              Open
+            </span>
+          </button>
+          {latestPendingQuestion ? (
+            <button
+              type="button"
+              disabled={deletingId === latestPendingQuestion.id}
+              onClick={() => withdraw(latestPendingQuestion)}
+              className={`shrink-0 self-center px-3 ${REMOVE_BTN}`}
+              aria-label="Remove this question"
+            >
+              Remove
+            </button>
+          ) : null}
+        </div>
       )}
 
       {showEmbeddedSummary && publicQuestions.length > 0 && (
@@ -156,22 +172,21 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
               >
                 <span>▲</span><span>{question.votes}</span>
               </button>
-              <div className={`min-w-0 flex-1 ${question.mine ? 'pr-8' : ''}`}>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-950 dark:text-white">{question.text}</p>
                 <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{question.author} · {STATUS_LABELS[question.status] || question.status}</p>
+                {question.mine ? (
+                  <button
+                    type="button"
+                    disabled={deletingId === question.id}
+                    onClick={() => withdraw(question)}
+                    className={`mt-2 ${REMOVE_BTN}`}
+                    aria-label="Remove this question"
+                  >
+                    Remove
+                  </button>
+                ) : null}
               </div>
-              {question.mine && (
-                <button
-                  type="button"
-                  disabled={deletingId === question.id}
-                  onClick={() => withdraw(question)}
-                  className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg text-base font-bold text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/40 dark:hover:text-red-300"
-                  title="Remove this question"
-                  aria-label="Remove this question"
-                >
-                  ×
-                </button>
-              )}
             </article>
           ))}
         </div>
@@ -179,6 +194,20 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
 
       {showBody && (showEmbeddedComposer || !embedded) && (
         <div className={`space-y-4 p-4 ${embedded ? 'pl-5' : ''}`}>
+          {showEmbeddedComposer ? (
+            <div className="-mt-1 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setComposerExpanded(false);
+                  setMessage('');
+                }}
+                className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400"
+              >
+                Close
+              </button>
+            </div>
+          ) : null}
           <form onSubmit={submit}>
             <label className="block text-[10px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Your question</label>
             <textarea
@@ -217,19 +246,18 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
               <h3 className="text-[10px] font-black uppercase tracking-wide text-slate-500">My questions</h3>
               <div className="mt-2 space-y-2">
                 {myPrivateQuestions.map((question) => (
-                  <article key={question.id} className="relative rounded-xl border border-slate-200 bg-slate-50 p-3 pr-10 dark:border-slate-700 dark:bg-slate-950/60">
+                  <article key={question.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{question.text}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-slate-500">{STATUS_LABELS[question.status] || question.status}{question.anonymous ? ' · anonymous if shown' : ''}</p>
                     <button
                       type="button"
                       disabled={deletingId === question.id}
                       onClick={() => withdraw(question)}
-                      className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg text-base font-bold text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/40 dark:hover:text-red-300"
-                      title="Remove this question"
+                      className={`mt-2 ${REMOVE_BTN}`}
                       aria-label="Remove this question"
                     >
-                      ×
+                      Remove
                     </button>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{question.text}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-slate-500">{STATUS_LABELS[question.status] || question.status}{question.anonymous ? ' · anonymous if shown' : ''}</p>
                   </article>
                 ))}
               </div>
@@ -249,22 +277,21 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
                   >
                     <span>▲</span><span>{question.votes}</span>
                   </button>
-                  <div className={`min-w-0 flex-1 ${question.mine ? 'pr-8' : ''}`}>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-950 dark:text-white">{question.text}</p>
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{question.author} · {STATUS_LABELS[question.status] || question.status}</p>
+                    {question.mine ? (
+                      <button
+                        type="button"
+                        disabled={deletingId === question.id}
+                        onClick={() => withdraw(question)}
+                        className={`mt-2 ${REMOVE_BTN}`}
+                        aria-label="Remove this question"
+                      >
+                        Remove
+                      </button>
+                    ) : null}
                   </div>
-                  {question.mine && (
-                    <button
-                      type="button"
-                      disabled={deletingId === question.id}
-                      onClick={() => withdraw(question)}
-                      className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg text-base font-bold text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/40 dark:hover:text-red-300"
-                      title="Remove this question"
-                      aria-label="Remove this question"
-                    >
-                      ×
-                    </button>
-                  )}
                 </article>
               ))}
             </div>

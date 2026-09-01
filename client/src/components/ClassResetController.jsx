@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { clearStudentSession, forgetRecentStudentSession } from '../lib/studentSession.js';
+import { clearDismissedInboxIds } from '../lib/inboxDismiss.js';
 
 function teacherSocket() {
   return typeof window !== 'undefined' ? window.__iboardTeacherSocket || null : null;
@@ -40,6 +41,8 @@ export default function ClassResetController({ role }) {
         const code = String(payload.code || window.__iboardStudentRoomCode || '')
           .replace(/\D/g, '')
           .slice(0, 4);
+        const studentId = window.__iboardStudentId;
+        if (code.length === 4 && studentId) clearDismissedInboxIds(code, studentId);
         clearStudentSession();
         if (code.length === 4) forgetRecentStudentSession(code);
         window.__iboardStudentId = 0;

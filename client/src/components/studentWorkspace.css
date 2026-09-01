@@ -79,9 +79,13 @@ html.iboard-student-workspace .iboard-featured-splash {
 /* Pulse should read as a crisp control, not a glowing card. Tailwind rings are
    implemented as box-shadows, so clear both the ring and the large panel shadow
    inside the embedded student workspace. */
+.iboard-student-pulse-dock.is-expanded {
+  position: relative;
+}
+
 .iboard-student-pulse-dock.is-collapsed > button,
 .iboard-student-pulse-dock.is-expanded > section,
-.iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
+.iboard-student-pulse-dock.is-expanded > button[aria-label='Close Pulse panel'] {
   box-shadow: none !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
   --tw-ring-shadow: 0 0 #0000 !important;
@@ -137,33 +141,34 @@ html.iboard-student-workspace .iboard-featured-splash {
   box-shadow: none !important;
 }
 
-/* Keep the same Open pill language as Ask a question — do not replace with a caret. */
+/* Match Ask / Respond / Inbox: Open text link, not a pill. */
 .iboard-student-pulse-dock.is-collapsed > button > span:last-child {
-  display: inline-flex;
-  height: auto;
-  width: auto;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem 0.625rem;
+  display: inline;
+  padding: 0;
   border: 0;
-  border-radius: 9999px;
-  background: white;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none !important;
-  color: rgb(55 48 163);
+  color: rgba(255, 255, 255, 0.92);
   font-size: 0.6875rem;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1rem;
+}
+
+.iboard-student-pulse-dock.is-collapsed > button[class*='text-amber-950'] > span:last-child,
+.iboard-student-pulse-dock.is-collapsed > button[class*='from-amber-400'] > span:last-child {
+  color: rgb(120 53 15);
 }
 
 .iboard-student-pulse-dock.is-collapsed > button > span:last-child::before {
   content: none;
 }
 
-/* Match Ask a question: a simple Close pill instead of a second disclosure metaphor. */
-.iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
+/* Match Ask a question: Close text link in the header corner. */
+.iboard-student-pulse-dock.is-expanded > button[aria-label='Close Pulse panel'] {
   position: absolute;
   top: 1rem;
-  right: 0.5rem;
+  right: 0.75rem;
   z-index: 10;
   display: inline-flex;
   width: auto;
@@ -171,35 +176,23 @@ html.iboard-student-workspace .iboard-featured-splash {
   align-items: center;
   justify-content: center;
   margin: 0;
-  padding: 0.25rem 0.625rem;
-  border: 1px solid #c7d2fe;
-  border-radius: 9999px;
-  background: white;
-  color: #3730a3;
-  font-size: 0;
-  font-weight: 900;
-  line-height: 1rem;
-}
-
-.iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill']::before {
-  content: 'Close';
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #4f46e5;
   font-size: 0.6875rem;
+  font-weight: 600;
   line-height: 1rem;
 }
 
-.iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] > span {
-  display: none;
+.dark .iboard-student-pulse-dock.is-expanded > button[aria-label='Close Pulse panel'] {
+  color: #818cf8;
 }
 
-.dark .iboard-student-pulse-dock.is-expanded > button[aria-label='Collapse Pulse to a small pill'] {
-  border-color: #818cf8;
-  background: white;
-  color: #3730a3;
-}
-
-/* Reserve the close pill's corner so it never sits on top of Pulse timer/sound controls. */
+/* Reserve the close link's corner so it never sits on top of Pulse timer/sound controls. */
 .iboard-student-pulse-dock.is-expanded > section > div:first-child {
-  padding-right: 3.75rem;
+  padding-right: 2.75rem;
 }
 
 /* Phones and genuinely narrow windows keep the single-column workspace and

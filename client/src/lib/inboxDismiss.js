@@ -30,3 +30,14 @@ export function dismissInboxItem(code, studentId, itemId) {
     /* storage blocked */
   }
 }
+
+/** Clear locally dismissed inbox items when the teacher starts a new class. */
+export function clearDismissedInboxIds(code, studentId) {
+  const key = keyFor(code, studentId);
+  if (!key) return;
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* storage blocked */
+  }
+}
