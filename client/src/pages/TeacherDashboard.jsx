@@ -216,8 +216,6 @@ function TeacherDashboardInner() {
   const joinedRef = useRef(false);
   const autoJoinTriedRef = useRef(false);
   const savedClearRef = useRef(null);
-  const teacherTopChromeRef = useRef(null);
-  const [teacherTopChromePx, setTeacherTopChromePx] = useState(0);
 
   const markSaved = useCallback(() => {
     setSaveStatus('saved');
@@ -243,20 +241,6 @@ function TeacherDashboardInner() {
   useEffect(() => () => {
     if (savedClearRef.current) clearTimeout(savedClearRef.current);
   }, []);
-
-  useEffect(() => {
-    const node = teacherTopChromeRef.current;
-    if (!node) return undefined;
-    const update = () => setTeacherTopChromePx(Math.round(node.getBoundingClientRect().height));
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    window.addEventListener('resize', update);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', update);
-    };
-  }, [socketConnected]);
 
   useEffect(() => {
     const onStatus = (event) => {
@@ -1391,7 +1375,7 @@ function TeacherDashboardInner() {
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
-      <div ref={teacherTopChromeRef} className="shrink-0">
+      <div className="shrink-0">
       {!socketConnected && (
         <div
           role="status"
@@ -1648,7 +1632,8 @@ function TeacherDashboardInner() {
       </header>
       </div>
 
-      <main className="mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col px-4 py-3 sm:px-6">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <main className="mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3 sm:px-6">
           {copyToast && (
             <div className="mb-2 inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               {copyToast}
@@ -1938,11 +1923,11 @@ function TeacherDashboardInner() {
         responses={livePulse.responses || []}
         highlightStudentId={answerRailHighlightId}
         onClearHighlight={() => setAnswerRailHighlightId(null)}
-        topOffset={teacherTopChromePx}
         onOpenAsk={() => {
           setAskOverlayOpen(true);
         }}
       />
+      </div>
 
       {askOverlayOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[4.5rem] sm:p-6 sm:pt-[5rem]">
