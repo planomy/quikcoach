@@ -159,11 +159,10 @@ function TabbedStudentResponse({ socket, ...props }) {
     <button
       type="button"
       onClick={closeReopenedAnswer}
-      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-lg font-bold leading-none text-slate-400 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200"
-      title="Close answer"
+      className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400"
       aria-label="Close answer"
     >
-      ×
+      Close
     </button>
   ) : null;
 
