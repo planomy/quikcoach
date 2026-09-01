@@ -1946,7 +1946,7 @@ function TeacherDashboardInner() {
                 {libraryPanel === 'feedback' ? 'AI feedback' : libraryPanel === 'evidence' ? 'Saved evidence' : 'Student reports'}
               </h2>
               <button type="button" onClick={() => setLibraryPanel(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close">
-                ✕
+                ×
               </button>
             </div>
             <div className="overflow-y-auto p-5 scrollbar-thin">
@@ -2702,7 +2702,7 @@ function TeacherDashboardInner() {
                 className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
                 aria-label="Close"
               >
-                ✕
+                ×
               </button>
             </div>
             <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5 text-sm scrollbar-thin">
@@ -2738,7 +2738,7 @@ function TeacherDashboardInner() {
                 className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
                 aria-label="Close"
               >
-                ✕
+                ×
               </button>
             </div>
             <div className="max-h-[60vh] space-y-5 overflow-y-auto p-5 scrollbar-thin">
