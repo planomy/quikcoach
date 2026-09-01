@@ -174,8 +174,6 @@ export default function UiInteractionController() {
       observer.disconnect();
       if (studentFrame) window.cancelAnimationFrame(studentFrame);
       document.removeEventListener('pointerdown', onStudentTabPointerDown, true);
-      document.removeEventListener('pointerdown', closeFloatingMenus, true);
-      document.removeEventListener('keydown', onKeyDown);
     };
   }, []);
 
