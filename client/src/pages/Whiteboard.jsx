@@ -167,10 +167,10 @@ const TeacherPostCard = memo(function TeacherPostCard({
       className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-slate-900/90 shadow-xl transition ${POST_SIZE_CLASS[size]} ${
         picked
           ? 'border-violet-400 ring-2 ring-violet-400/60'
-          : 'border-amber-400/40 ring-1 ring-amber-400/20'
+          : 'border-slate-500/50 ring-1 ring-slate-500/25'
       } ${selectMode ? 'cursor-pointer hover:border-violet-300/50' : ''}`}
     >
-      <header className="flex shrink-0 items-start justify-between gap-1 border-b border-amber-400/20 px-2.5 py-2">
+      <header className="flex shrink-0 items-start justify-between gap-1 border-b border-slate-500/25 px-2.5 py-2">
         <div className="min-w-0">
           <h2
             className={`truncate font-bold tracking-tight text-white ${
@@ -180,7 +180,7 @@ const TeacherPostCard = memo(function TeacherPostCard({
             {post.title || 'Teacher'}
           </h2>
           <div className="mt-0.5 flex flex-wrap items-center gap-1">
-            <span className="inline-block rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-200">
+            <span className="inline-block rounded bg-slate-500/25 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-300">
               Teacher
             </span>
             {selectMode && (
@@ -208,7 +208,7 @@ const TeacherPostCard = memo(function TeacherPostCard({
             >
               −
             </button>
-            <span className="min-w-[1.25rem] text-center text-[10px] font-bold uppercase text-amber-200">
+            <span className="min-w-[1.25rem] text-center text-[10px] font-bold uppercase text-slate-400">
               {['S', 'M', 'L', 'XL'][size - 1]}
             </span>
             <button

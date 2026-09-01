@@ -1665,7 +1665,7 @@ function TeacherDashboardInner() {
             </div>
           )}
           {posts.map((post) => (
-            <article key={`post-${post.id}`} className="flex flex-col rounded-2xl border border-amber-200 bg-amber-50/60 p-3 shadow-card dark:border-amber-900 dark:bg-amber-950/20">
+            <article key={`post-${post.id}`} className="flex flex-col rounded-2xl border border-slate-300 bg-slate-100/80 p-3 shadow-card dark:border-slate-600 dark:bg-slate-800/50">
               <div className="flex items-center gap-1.5">
                 <HintWrap hint="Send to Inbox">
                   <label className="flex shrink-0 cursor-pointer items-center">
@@ -1679,7 +1679,7 @@ function TeacherDashboardInner() {
                   </label>
                 </HintWrap>
                 <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-ink-900 dark:text-slate-100">{post.title || 'Teacher'}</h2>
-                <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-900 dark:bg-amber-900 dark:text-amber-100">Teacher</span>
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-700 dark:bg-slate-700 dark:text-slate-200">Teacher</span>
                 <HintWrap hint="Remove card">
                   <button
                     type="button"
@@ -2453,7 +2453,7 @@ function TeacherDashboardInner() {
       {addCardOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center">
           <form
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-2xl dark:border-amber-900 dark:bg-slate-900"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-teacher-card-title"
@@ -2473,7 +2473,7 @@ function TeacherDashboardInner() {
                 value={addCardTitle}
                 onChange={(event) => setAddCardTitle(event.target.value)}
                 maxLength={80}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-amber-400 focus:border-amber-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 placeholder="Teacher"
               />
               <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Text or pasted image</label>
@@ -2483,20 +2483,20 @@ function TeacherDashboardInner() {
                 onPaste={handleAddCardPaste}
                 rows={6}
                 disabled={!!addCardImage}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-amber-400 focus:border-amber-400 focus:ring-2 disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 placeholder="Write here, or paste a screenshot…"
               />
               {addCardImage && (
-                <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950/30">
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/30">
                   <img src={addCardImage} alt="Pasted card preview" className="max-h-48 w-full object-contain" />
-                  <button type="button" onClick={() => setAddCardImage('')} className="mt-2 text-xs font-bold text-amber-800 hover:text-amber-950 dark:text-amber-200 dark:hover:text-white">Clear image and use text</button>
+                  <button type="button" onClick={() => setAddCardImage('')} className="mt-2 text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">Clear image and use text</button>
                 </div>
               )}
               {addCardError && <p className="text-sm font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-950">
               <button type="button" disabled={addCardBusy} onClick={() => setAddCardOpen(false)} className="rounded-xl px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800">Cancel</button>
-              <button type="submit" disabled={addCardBusy || (!addCardImage && !addCardText.trim())} className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-amber-300 disabled:opacity-50">
+              <button type="submit" disabled={addCardBusy || (!addCardImage && !addCardText.trim())} className="rounded-xl bg-slate-700 px-4 py-2 text-sm font-black text-white hover:bg-slate-600 disabled:opacity-50">
                 {addCardBusy ? 'Adding…' : 'Add card'}
               </button>
             </div>
