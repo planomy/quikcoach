@@ -7,9 +7,9 @@ const STATUS_OPTIONS = [
   ['tech', 'Tech problem'],
 ];
 const CONFIDENCE_OPTIONS = [
-  ['confident', 'Confident', '🟢'],
-  ['unsure', 'Not sure', '🟡'],
-  ['guessed', 'Guessed', '🔴'],
+  ['confident', 'Confident'],
+  ['unsure', 'Not sure'],
+  ['guessed', 'I guessed'],
 ];
 
 const QUESTION_THEMES = [
@@ -109,7 +109,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     const number = Math.max(1, Number(nextActivity.questionNumber) || 1);
     setThemeIndex((number - 1) % QUESTION_THEMES.length);
     setPulse(true);
-    setMessage(force ? 'Your teacher has re-alerted this question.' : 'New question — answer now');
+    if (!quietAlerts) {
+      setMessage(force ? 'Your teacher has re-alerted this question.' : 'New question — answer now');
+    } else {
+      setMessage('');
+    }
     if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
     if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
     if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
@@ -255,19 +259,32 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   }
 
   function renderConfidenceControls(withDivider = false) {
+    const labelClass = quietAlerts
+      ? `font-semibold text-slate-500 dark:text-slate-400 ${compact ? 'text-[10px]' : 'text-xs'}`
+      : `text-center font-black uppercase tracking-wide text-slate-500 ${compact ? 'text-[10px]' : 'text-xs'}`;
+    const buttonClass = quietAlerts
+      ? 'rounded-xl border font-semibold transition disabled:cursor-not-allowed disabled:opacity-50'
+      : 'font-black disabled:cursor-not-allowed disabled:opacity-50';
+    const selectedClass = quietAlerts
+      ? 'border-indigo-600 bg-indigo-600 text-white'
+      : 'bg-indigo-600 text-white';
+    const idleClass = quietAlerts
+      ? 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
+      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+
     return (
-      <div className={`${withDivider ? 'border-t border-slate-200 dark:border-slate-700' : ''} ${compact ? 'mt-2 pt-2' : 'mt-3 pt-2'}`}>
-        <p className={`text-center font-black uppercase tracking-wide text-slate-500 ${compact ? 'text-[10px]' : 'text-xs'}`}>How sure?</p>
+      <div className={`${withDivider ? 'border-t border-slate-100 dark:border-slate-800' : ''} ${compact ? 'mt-2 pt-2' : quietAlerts ? 'mt-3 pt-3' : 'mt-3 pt-2'}`}>
+        <p className={labelClass}>How sure?</p>
         <div className={`grid grid-cols-3 ${compact ? 'mt-1 gap-1' : 'mt-2 gap-2'}`}>
-          {CONFIDENCE_OPTIONS.map(([value, label, icon]) => (
+          {CONFIDENCE_OPTIONS.map(([value, label]) => (
             <button
               key={value}
               type="button"
               disabled={answersClosed}
               onClick={() => setConfidence(value)}
-              className={`font-black disabled:cursor-not-allowed disabled:opacity-50 ${compact ? 'rounded-lg px-1 py-1.5 text-[10px] leading-tight' : 'rounded-xl px-2 py-2 text-xs'} ${confidenceChoice === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}
+              className={`${buttonClass} ${compact ? 'rounded-lg px-1 py-1.5 text-[10px] leading-tight' : 'rounded-xl px-2 py-2 text-xs'} ${confidenceChoice === value ? selectedClass : idleClass}`}
             >
-              {compact ? `${icon} ${label}` : `${icon} ${label === 'Guessed' ? 'I guessed' : label}`}
+              {label}
             </button>
           ))}
         </div>
@@ -290,13 +307,17 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       detail = 'Tap to see it';
       colour = 'from-amber-400 to-yellow-300 text-amber-950 ring-amber-200';
     } else if (needsAnswer) {
-      label = `New question · Q${activity.questionNumber || 1}`;
-      detail = 'Tap to answer now';
-      colour = 'from-fuchsia-600 to-violet-700 text-white ring-fuchsia-300';
+      label = `Question · Q${activity.questionNumber || 1}`;
+      detail = 'Tap to answer';
+      colour = quietAlerts
+        ? 'border border-indigo-200 bg-white text-slate-900 ring-indigo-100 dark:border-indigo-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-indigo-950'
+        : 'from-fuchsia-600 to-violet-700 text-white ring-fuchsia-300';
     } else if (activity && response) {
-      label = `Answer sent · Q${activity.questionNumber || 1}`;
+      label = `Answered · Q${activity.questionNumber || 1}`;
       detail = 'Tap to review';
-      colour = 'from-emerald-500 to-teal-600 text-white ring-emerald-300';
+      colour = quietAlerts
+        ? 'border border-slate-200 bg-white text-slate-800 ring-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+        : 'from-emerald-500 to-teal-600 text-white ring-emerald-300';
     } else if (activity) {
       label = `Question closed · Q${activity.questionNumber || 1}`;
       detail = 'Tap to review';
@@ -307,12 +328,12 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       <button
         type="button"
         onClick={onExpand}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl bg-gradient-to-r px-4 py-3 text-left transition hover:brightness-110 ${colour} ${(pulse || nudge) ? 'iboard-question-pulse' : ''}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? colour : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(pulse || nudge) ? 'iboard-question-pulse' : ''}`}
         aria-label={`${label}. ${detail}. Open Pulse panel.`}
         aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
       >
         <span className="min-w-0 truncate text-sm font-black leading-none">{label}</span>
-        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-black leading-none text-indigo-800 shadow-sm">Open</span>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black leading-none ${quietAlerts ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-800 shadow-sm'}`}>Open</span>
       </button>
     );
   }
@@ -344,6 +365,17 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
   const theme = QUESTION_THEMES[themeIndex];
   const answersClosed = activity?.locked || secondsLeft === 0;
+  const statusMessage = quietAlerts && message && !/^(Sending|Answer sent|Could not)/.test(message) ? '' : message;
+  const optionButtonClass = (selected, correct) => {
+    if (quietAlerts) {
+      if (selected) return 'border-indigo-600 bg-indigo-600 text-white';
+      if (correct) return 'border-emerald-500 bg-emerald-50 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-100';
+      return 'border-slate-200 bg-white text-slate-900 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white';
+    }
+    if (selected) return 'border-indigo-600 bg-indigo-600 text-white';
+    if (correct) return 'border-emerald-500 bg-emerald-100 text-emerald-950';
+    return 'border-slate-200 bg-slate-50 text-slate-900 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white';
+  };
 
   return (
     <>
@@ -386,9 +418,23 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         </div>
       )}
       {activity && (
-        <section ref={panelRef} className={`scroll-mt-4 border-2 bg-white shadow-xl ring-4 dark:bg-slate-900 ${compact ? 'mt-2 rounded-2xl p-2.5 ring-2' : 'rounded-3xl p-4 sm:p-6'} ${theme.panel} ${pulse ? 'iboard-question-pulse' : ''}`} aria-live="polite">
+        <section
+          ref={panelRef}
+          className={
+            quietAlerts
+              ? `relative overflow-hidden scroll-mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 ${compact ? 'mt-2 p-3' : 'p-4'} ${pulse ? 'iboard-question-pulse' : ''}`
+              : `scroll-mt-4 border-2 bg-white shadow-xl ring-4 dark:bg-slate-900 ${compact ? 'mt-2 rounded-2xl p-2.5 ring-2' : 'rounded-3xl p-4 sm:p-6'} ${theme.panel} ${pulse ? 'iboard-question-pulse' : ''}`
+          }
+          aria-live="polite"
+        >
+          {quietAlerts ? (
+            <span aria-hidden="true" className="absolute bottom-0 left-0 top-0 w-1 bg-indigo-500" />
+          ) : null}
+          <div className={quietAlerts ? 'pl-2' : undefined}>
           <div className={`flex flex-wrap items-center justify-between ${compact ? 'gap-1' : 'gap-2'}`}>
-            <p className={`font-black uppercase tracking-[0.18em] ${theme.label} ${compact ? 'text-[10px]' : 'text-xs tracking-[0.22em]'}`}>Q{activity.questionNumber || 1} · Live</p>
+            <p className={`font-black uppercase tracking-wide ${quietAlerts ? 'text-[10px] text-indigo-600 dark:text-indigo-300' : `${theme.label} ${compact ? 'text-[10px]' : 'text-xs tracking-[0.22em]'}`}`}>
+              Q{activity.questionNumber || 1}{quietAlerts ? '' : ' · Live'}
+            </p>
             <div className={`flex flex-wrap items-center ${compact ? 'gap-1' : 'gap-2'}`}>
               {secondsLeft !== null && (
                 <span
@@ -404,24 +450,30 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                   {secondsLeft > 0 ? `${secondsLeft}s` : '0s'}
                 </span>
               )}
-              <button type="button" onClick={toggleSound} className={`rounded-full bg-slate-100 font-bold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'}`} title="Turn new-question sound on or off">
-                {soundOn ? '🔔' : '🔕'}
+              <button
+                type="button"
+                onClick={toggleSound}
+                className={`rounded-lg font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]'}`}
+                title="Turn new-question sound on or off"
+                aria-label={soundOn ? 'Turn question sound off' : 'Turn question sound on'}
+              >
+                {soundOn ? 'Sound on' : 'Sound off'}
               </button>
-              {!compact && (
+              {!quietAlerts && !compact && (
                 <span className={`rounded-full px-3 py-1 text-xs font-bold ${answersClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                   {answersClosed ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
                 </span>
               )}
             </div>
           </div>
-          <h2 className={`font-display font-black leading-snug text-slate-950 dark:text-white ${compact ? 'mt-1.5 text-base' : 'mt-3 text-xl sm:text-2xl'}`}>{activity.prompt}</h2>
+          <h2 className={`font-display font-bold leading-snug text-slate-950 dark:text-white ${compact ? 'mt-1.5 text-base' : quietAlerts ? 'mt-2 text-lg' : 'mt-3 text-xl sm:text-2xl'}`}>{activity.prompt}</h2>
           {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className={`w-full rounded-2xl bg-white object-contain ${compact ? 'mt-2 max-h-28' : 'mt-4 max-h-72'}`} />}
 
           {activity.type === 'short' ? (
-            <div className={compact ? 'mt-2' : 'mt-5'}>
-              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed} placeholder="Type a short answer…" className={`w-full rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
+            <div className={compact ? 'mt-2' : quietAlerts ? 'mt-3' : 'mt-5'}>
+              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed} placeholder="Type a short answer…" className={`w-full rounded-xl border bg-white text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${quietAlerts ? 'border-slate-200' : 'border-2 border-slate-200 bg-slate-50 focus:border-indigo-500'} ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
               {renderConfidenceControls(false)}
-              <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className={`w-full rounded-2xl bg-indigo-600 font-black text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'mt-2 px-3 py-2 text-sm' : 'mt-3 px-5 py-3 text-base'}`}>Send answer</button>
+              <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className={`rounded-xl bg-indigo-600 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${quietAlerts ? 'mt-3 w-full px-4 py-2.5 text-sm' : `w-full rounded-2xl font-black ${compact ? 'mt-2 px-3 py-2 text-sm' : 'mt-3 px-5 py-3 text-base'}`}`}>Send answer</button>
               {activity.revealed && activity.correctAnswer && (
                 <p className={`rounded-xl bg-emerald-50 font-bold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100 ${compact ? 'mt-2 px-2.5 py-1.5 text-xs' : 'mt-3 px-3 py-2 text-sm'}`}>
                   Expected answer: {activity.correctAnswer}
@@ -429,29 +481,29 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               )}
             </div>
           ) : (
-            <div className={`grid ${compact ? 'mt-2 gap-1.5' : `mt-5 gap-3 ${activity.options.length > 3 ? 'sm:grid-cols-2' : ''}`}`}>
+            <div className={`grid ${compact ? 'mt-2 gap-1.5' : quietAlerts ? 'mt-3 gap-2' : `mt-5 gap-3 ${activity.options.length > 3 ? 'sm:grid-cols-2' : ''}`}`}>
               {activity.options.map((option, index) => {
                 const selected = response?.value === option;
                 const correct = activity.correctAnswer && option === activity.correctAnswer;
                 const optionsAreLetters = activity.type === 'choice'
                   && activity.options.every((item, itemIndex) => item === String.fromCharCode(65 + itemIndex));
                 return (
-                  <button key={option} type="button" disabled={answersClosed} onClick={() => submit(option)} className={`rounded-2xl border-2 text-left font-black transition ${compact ? 'min-h-10 px-3 py-2 text-sm' : 'min-h-14 px-4 py-3 text-base'} ${selected ? 'border-indigo-600 bg-indigo-600 text-white' : correct ? 'border-emerald-500 bg-emerald-100 text-emerald-950' : 'border-slate-200 bg-slate-50 text-slate-900 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white'}`}>
+                  <button key={option} type="button" disabled={answersClosed} onClick={() => submit(option)} className={`rounded-xl border text-left font-semibold transition ${compact ? 'min-h-10 px-3 py-2 text-sm' : quietAlerts ? 'min-h-12 px-4 py-3 text-base' : 'min-h-14 border-2 px-4 py-3 text-base font-black'} ${optionButtonClass(selected, correct)}`}>
                     <span className="mr-2 opacity-60">{activity.type === 'choice' && !optionsAreLetters ? String.fromCharCode(65 + index) : ''}</span>{option}
                   </button>
                 );
               })}
             </div>
           )}
-          {message && <p className={`text-center font-bold text-indigo-700 dark:text-indigo-300 ${compact ? 'mt-1.5 text-xs' : 'mt-3 text-sm'}`}>{message}</p>}
+          {statusMessage && <p className={`font-semibold text-slate-500 dark:text-slate-400 ${compact ? 'mt-1.5 text-xs' : 'mt-2 text-sm'} ${/Could not|error/i.test(statusMessage) ? 'text-red-600 dark:text-red-300' : ''}`}>{statusMessage}</p>}
           {response && activity.type !== 'short' && renderConfidenceControls(true)}
           {activity.type === 'short' && featured.length > 0 && (
-            <div className={`border-t border-slate-200 dark:border-slate-700 ${compact ? 'mt-2 pt-2' : 'mt-5 pt-4'}`}>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">Featured by your teacher</p>
+            <div className={`border-t border-slate-100 dark:border-slate-800 ${compact ? 'mt-2 pt-2' : 'mt-4 pt-3'}`}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Featured by your teacher</p>
               {featured.map((item, index) => (
-                <blockquote key={index} className="mt-2 rounded-xl bg-violet-50 p-3 text-sm text-violet-950 dark:bg-violet-950 dark:text-violet-100">
+                <blockquote key={index} className={`mt-2 rounded-xl border p-3 text-sm ${quietAlerts ? 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300' : 'bg-violet-50 text-violet-950 dark:bg-violet-950 dark:text-violet-100'}`}>
                   {item.label && (
-                    <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-violet-700 dark:text-violet-300">
+                    <span className={`mb-1 block text-[10px] font-bold uppercase tracking-wide ${quietAlerts ? 'text-indigo-600 dark:text-indigo-300' : 'text-violet-700 dark:text-violet-300'}`}>
                       Why it was featured: {item.label}
                     </span>
                   )}
@@ -460,6 +512,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               ))}
             </div>
           )}
+          </div>
         </section>
       )}
     </>
