@@ -17,6 +17,7 @@ import AskTabLabelController from './components/AskTabLabelController.jsx';
 import AddTeacherCardSendController from './components/AddTeacherCardSendController.jsx';
 import './styles/teacherCleanUi.css';
 import './styles/studentCleanUi.css';
+import './styles/studentLiveResponsePolish.css';
 
 function TeacherConsole() {
   return (
