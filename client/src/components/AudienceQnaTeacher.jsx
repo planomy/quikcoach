@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import QuestionInboxReply from './QuestionInboxReply.jsx';
 
 function sortQuestions(items) {
   return [...items].sort((a, b) => Number(b.votes) - Number(a.votes) || Number(a.id) - Number(b.id));
@@ -123,6 +124,13 @@ export default function AudienceQnaTeacher({
             {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className={`${ACTION_CLASS} bg-violet-100 text-violet-800`}>Reopen</button>}
             {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Return</button>}
           </div>
+          <QuestionInboxReply
+            socket={socket}
+            studentId={question.studentId}
+            studentName={question.studentName}
+            questionText={question.text}
+            className="mt-3"
+          />
         </div>
       </article>
     );

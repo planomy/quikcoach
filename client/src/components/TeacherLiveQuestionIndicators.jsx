@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import QuestionInboxReply from './QuestionInboxReply.jsx';
 
 function currentTeacherConnection() {
   if (typeof window === 'undefined') return { socket: null, code: '' };
@@ -213,6 +214,14 @@ export default function TeacherLiveQuestionIndicators() {
             <button type="button" onClick={askClass} className={`${ACTION_CLASS} bg-emerald-500 text-emerald-950`}>Ask class</button>
             <button type="button" onClick={() => updateQuestion('dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>
           </div>
+
+          <QuestionInboxReply
+            socket={connection.socket}
+            studentId={selectedQuestion.studentId}
+            studentName={selectedQuestion.studentName}
+            questionText={selectedQuestion.text}
+            className="mt-3"
+          />
         </aside>
       )}
     </>
