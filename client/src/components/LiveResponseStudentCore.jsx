@@ -422,6 +422,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed} placeholder="Type a short answer…" className={`w-full rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
               {renderConfidenceControls(false)}
               <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className={`w-full rounded-2xl bg-indigo-600 font-black text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${compact ? 'mt-2 px-3 py-2 text-sm' : 'mt-3 px-5 py-3 text-base'}`}>Send answer</button>
+              {activity.revealed && activity.correctAnswer && (
+                <p className={`rounded-xl bg-emerald-50 font-bold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100 ${compact ? 'mt-2 px-2.5 py-1.5 text-xs' : 'mt-3 px-3 py-2 text-sm'}`}>
+                  Expected answer: {activity.correctAnswer}
+                </p>
+              )}
             </div>
           ) : (
             <div className={`grid ${compact ? 'mt-2 gap-1.5' : `mt-5 gap-3 ${activity.options.length > 3 ? 'sm:grid-cols-2' : ''}`}`}>

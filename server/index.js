@@ -843,9 +843,12 @@ io.on('connection', (socket) => {
         return;
       }
       const requestedCorrectAnswer = String(raw?.correctAnswer || '').trim().slice(0, 120);
-      const correctAnswer = type !== 'short' && options.includes(requestedCorrectAnswer)
-        ? requestedCorrectAnswer
-        : '';
+      let correctAnswer = '';
+      if (type === 'short') {
+        correctAnswer = requestedCorrectAnswer;
+      } else if (type !== 'rating' && options.includes(requestedCorrectAnswer)) {
+        correctAnswer = requestedCorrectAnswer;
+      }
       const imageUrl = String(raw?.imageUrl || '');
       if (imageUrl && (!imageUrl.startsWith('data:image/jpeg;base64,') || imageUrl.length > 1.5e6)) {
         cb?.({ ok: false, error: 'That image is too large' });

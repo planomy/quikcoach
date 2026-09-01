@@ -40,22 +40,29 @@ function Results({ activity, responses, display = false, onPublish }) {
   if (activity.type === 'short') {
     const visible = display ? responses.filter((response) => response.published) : responses;
     return (
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {visible.map((response) => (
-          <article key={response.studentId} className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-violet-950 shadow-sm dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
-            <p className={`${display ? 'text-xl' : 'text-sm'} leading-relaxed`}>“{response.value}”</p>
-            {!display && (
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <span className="truncate text-xs font-bold">{activity.anonymous ? 'Anonymous to class' : response.name}</span>
-                <button type="button" onClick={() => onPublish?.(response)} className={`rounded-lg px-2.5 py-1 text-xs font-black ${response.published ? 'bg-violet-700 text-white' : 'bg-white text-violet-800 dark:bg-slate-900 dark:text-violet-200'}`}>
-                  {response.published ? 'Featured ✓' : 'Feature'}
-                </button>
-              </div>
-            )}
-            {display && !activity.anonymous && <p className="mt-2 text-sm font-bold">— {response.name}</p>}
-          </article>
-        ))}
-        {!visible.length && <p className="text-sm font-medium text-slate-500">{display ? 'No answers have been featured yet.' : 'Waiting for answers…'}</p>}
+      <div className="space-y-3">
+        {activity.correctAnswer && (!display || activity.revealed) && (
+          <p className={`rounded-xl px-3 py-2 text-sm font-bold ${display ? 'bg-emerald-400/20 text-emerald-100' : 'bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100'}`}>
+            Expected: {activity.correctAnswer}
+          </p>
+        )}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {visible.map((response) => (
+            <article key={response.studentId} className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-violet-950 shadow-sm dark:border-violet-800 dark:bg-violet-950 dark:text-violet-100">
+              <p className={`${display ? 'text-xl' : 'text-sm'} leading-relaxed`}>“{response.value}”</p>
+              {!display && (
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="truncate text-xs font-bold">{activity.anonymous ? 'Anonymous to class' : response.name}</span>
+                  <button type="button" onClick={() => onPublish?.(response)} className={`rounded-lg px-2.5 py-1 text-xs font-black ${response.published ? 'bg-violet-700 text-white' : 'bg-white text-violet-800 dark:bg-slate-900 dark:text-violet-200'}`}>
+                    {response.published ? 'Featured ✓' : 'Feature'}
+                  </button>
+                </div>
+              )}
+              {display && !activity.anonymous && <p className="mt-2 text-sm font-bold">— {response.name}</p>}
+            </article>
+          ))}
+          {!visible.length && <p className="text-sm font-medium text-slate-500">{display ? 'No answers have been featured yet.' : 'Waiting for answers…'}</p>}
+        </div>
       </div>
     );
   }
@@ -672,7 +679,17 @@ export default function LiveResponseTeacher({
             {type === 'choice' && (
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {options.map((option, index) => (
-                  <input key={index} value={option} onChange={(event) => setOptions((current) => current.map((value, i) => (i === index ? event.target.value.slice(0, 120) : value)))} placeholder={`Choice ${String.fromCharCode(65 + index)}`} className="rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+                  <input
+                    key={index}
+                    value={option}
+                    onChange={(event) => {
+                      const next = event.target.value.slice(0, 120);
+                      setOptions((current) => current.map((value, i) => (i === index ? next : value)));
+                      setCorrectAnswer((current) => (current && current === option.trim() ? next.trim() : current));
+                    }}
+                    placeholder={`Choice ${String.fromCharCode(65 + index)}`}
+                    className="rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  />
                 ))}
               </div>
             )}
@@ -711,15 +728,35 @@ export default function LiveResponseTeacher({
                     </label>
                   )}
                 </div>
-                {type !== 'short' && (
+                {type === 'short' ? (
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+                    Expected answer (optional)
+                    <input
+                      value={correctAnswer}
+                      onChange={(event) => setCorrectAnswer(event.target.value.slice(0, 120))}
+                      placeholder="Shown when you reveal the answer"
+                      className="mt-1 block w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    />
+                  </label>
+                ) : type === 'rating' ? null : (
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
                     Correct answer (optional)
                     <select value={correctAnswer} onChange={(event) => setCorrectAnswer(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
                       <option value="">No correct answer / opinion poll</option>
-                      {(type === 'choice' ? options.filter(Boolean) : type === 'truefalse' ? ['True', 'False'] : ['1', '2', '3', '4', '5']).map((value) => (
-                        <option key={value} value={value}>{value}</option>
-                      ))}
+                      {type === 'choice'
+                        ? options.map((option, index) => {
+                            const text = option.trim();
+                            if (!text) return null;
+                            const letter = String.fromCharCode(65 + index);
+                            return <option key={`${letter}-${text}`} value={text}>{letter}: {text}</option>;
+                          })
+                        : (type === 'truefalse' ? ['True', 'False'] : []).map((value) => (
+                            <option key={value} value={value}>{value}</option>
+                          ))}
                     </select>
+                    {type === 'choice' && !options.some((option) => option.trim()) && (
+                      <span className="mt-1 block text-[11px] font-semibold text-slate-400">Fill in choices above to pick a correct answer.</span>
+                    )}
                   </label>
                 )}
                 <div className="flex flex-wrap gap-2">
