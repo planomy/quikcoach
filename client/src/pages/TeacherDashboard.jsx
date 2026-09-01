@@ -216,6 +216,8 @@ function TeacherDashboardInner() {
   const joinedRef = useRef(false);
   const autoJoinTriedRef = useRef(false);
   const savedClearRef = useRef(null);
+  const teacherTopChromeRef = useRef(null);
+  const [teacherTopChromePx, setTeacherTopChromePx] = useState(0);
 
   const markSaved = useCallback(() => {
     setSaveStatus('saved');
@@ -241,6 +243,20 @@ function TeacherDashboardInner() {
   useEffect(() => () => {
     if (savedClearRef.current) clearTimeout(savedClearRef.current);
   }, []);
+
+  useEffect(() => {
+    const node = teacherTopChromeRef.current;
+    if (!node) return undefined;
+    const update = () => setTeacherTopChromePx(Math.round(node.getBoundingClientRect().height));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [socketConnected]);
 
   useEffect(() => {
     const onStatus = (event) => {
@@ -1375,6 +1391,7 @@ function TeacherDashboardInner() {
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
+      <div ref={teacherTopChromeRef} className="shrink-0">
       {!socketConnected && (
         <div
           role="status"
@@ -1629,6 +1646,7 @@ function TeacherDashboardInner() {
           </div>
         </div>
       </header>
+      </div>
 
       <main className="mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col px-4 py-3 sm:px-6">
           {copyToast && (
@@ -1920,6 +1938,7 @@ function TeacherDashboardInner() {
         responses={livePulse.responses || []}
         highlightStudentId={answerRailHighlightId}
         onClearHighlight={() => setAnswerRailHighlightId(null)}
+        topOffset={teacherTopChromePx}
         onOpenAsk={() => {
           setAskOverlayOpen(true);
         }}

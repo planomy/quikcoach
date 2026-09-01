@@ -163,6 +163,7 @@ export default function TeacherAnswerRail({
   highlightStudentId = null,
   onClearHighlight,
   onOpenAsk,
+  topOffset = 0,
 }) {
   const listRef = useRef(null);
   const panelRef = useRef(null);
@@ -236,7 +237,8 @@ export default function TeacherAnswerRail({
     <>
       <aside
         ref={panelRef}
-        className={`fixed bottom-0 right-0 top-0 z-40 flex w-[min(24rem,92vw)] flex-col border-l border-indigo-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-indigo-900 dark:bg-slate-900 ${
+        style={{ top: topOffset }}
+        className={`fixed bottom-0 right-0 z-40 flex w-[min(24rem,92vw)] flex-col border-l border-indigo-200 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-indigo-900 dark:bg-slate-900 ${
           open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
         }`}
         aria-hidden={!open}
