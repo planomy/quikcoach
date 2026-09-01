@@ -193,7 +193,7 @@ export default function UiInteractionController() {
       const button = event.target.closest('button');
       if (!button || !nav.contains(button)) return;
       const label = buttonLabel(button);
-      if (!['Ask a Question', 'Respond', 'Inbox'].includes(label)) return;
+      if (!['Ask', 'Respond', 'Inbox'].includes(label)) return;
       preferredTab = label;
       recentUserTabChoiceUntil = Date.now() + 500;
     };

@@ -51,7 +51,7 @@ function mergeFeedbackInbox(previous, incoming) {
 }
 
 const SUPPORT_TABS = [
-  { id: 'ask', label: 'Ask a Question' },
+  { id: 'ask', label: 'Ask' },
   { id: 'respond', label: 'Respond' },
   { id: 'inbox', label: 'Inbox' },
 ];
@@ -87,7 +87,7 @@ export default function StudentView() {
   const [error, setError] = useState('');
   const [feedbackInbox, setFeedbackInbox] = useState([]);
   const [broadcastHistory, setBroadcastHistory] = useState([]);
-  const [supportTab, setSupportTab] = useState('ask');
+  const [supportTab, setSupportTab] = useState('inbox');
   const [inboxExpandedId, setInboxExpandedId] = useState(null);
   const [inboxUnreadIds, setInboxUnreadIds] = useState(() => new Set());
   const [respondLive, setRespondLive] = useState(false);
