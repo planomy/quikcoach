@@ -155,39 +155,49 @@ function TabbedStudentResponse({ socket, ...props }) {
     setCollapsed(true);
   };
 
+  const closeAnswerButton = activity?.id && response && !collapsed ? (
+    <button
+      type="button"
+      onClick={closeReopenedAnswer}
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-lg font-bold leading-none text-slate-400 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200"
+      title="Close answer"
+      aria-label="Close answer"
+    >
+      ×
+    </button>
+  ) : null;
+
   return (
     <>
-      <div className={`relative ${collapsed && activity?.id && response ? 'hidden' : ''}`}>
-        {activity?.id && response && !collapsed && (
-          <button
-            type="button"
-            onClick={closeReopenedAnswer}
-            className="absolute right-2 top-2 z-20 grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white/95 text-lg font-bold leading-none text-slate-400 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200"
-            title="Close answer"
-            aria-label="Close answer"
-          >
-            ×
-          </button>
-        )}
-        <LiveResponseStudentCore {...props} socket={socket} standalone />
+      <div className={collapsed && activity?.id && response ? 'hidden' : undefined}>
+        <LiveResponseStudentCore {...props} socket={socket} standalone headerTrailing={closeAnswerButton} />
       </div>
       {collapsed && activity?.id && response && (
-        <button
-          type="button"
-          onClick={() => {
-            if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-            collapseTimerRef.current = null;
-            setCollapsed(false);
-          }}
-          className="flex w-full items-center justify-between gap-3 rounded-xl border border-indigo-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:hover:bg-indigo-950/40"
-        >
-          <span className="min-w-0 truncate text-sm font-black text-slate-800 dark:text-slate-100">
-            Answered ✓ · Q{activity.questionNumber || 1}
-          </span>
-          <span className="shrink-0 rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-black leading-none text-white">
-            Open
-          </span>
-        </button>
+        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <span aria-hidden="true" className="absolute bottom-0 left-0 top-0 w-1 bg-indigo-500" />
+          <button
+            type="button"
+            onClick={() => {
+              if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+              collapseTimerRef.current = null;
+              setCollapsed(false);
+            }}
+            className="flex w-full items-center gap-3 px-4 py-3 pl-5 text-left"
+            aria-expanded={false}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-sm font-bold text-slate-900 dark:text-slate-100">
+                Answered · Q{activity.questionNumber || 1}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+                {String(response.value || '').replace(/\s+/g, ' ').trim() || 'Your answer'}
+              </p>
+            </div>
+            <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+              Open
+            </span>
+          </button>
+        </section>
       )}
     </>
   );

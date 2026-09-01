@@ -63,7 +63,7 @@ function playQuestionChime() {
   }
 }
 
-export default function LiveResponseStudent({ socket, standalone = false, compact = false, collapsed = false, onCollapse, onExpand }) {
+export default function LiveResponseStudent({ socket, standalone = false, compact = false, collapsed = false, onCollapse, onExpand, headerTrailing = null }) {
   const [activity, setActivity] = useState(null);
   const [response, setResponse] = useState(null);
   const [featured, setFeatured] = useState([]);
@@ -459,6 +459,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               >
                 {soundOn ? 'Sound on' : 'Sound off'}
               </button>
+              {headerTrailing}
               {!quietAlerts && !compact && (
                 <span className={`rounded-full px-3 py-1 text-xs font-bold ${answersClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                   {answersClosed ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
