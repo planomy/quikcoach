@@ -62,16 +62,58 @@ html.iboard-student-workspace .iboard-student-support-scroll section[class*='rin
   gap: 0.45rem !important;
 }
 
+/* Students only need the confidence labels. Hide the traffic-light emoji and use
+   the existing indigo selected state to show the choice. */
 html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea + div button {
   padding-top: 0.45rem !important;
   padding-bottom: 0.45rem !important;
+  font-size: 0 !important;
 }
 
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea + div button::after {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea + div button:nth-child(1)::after {
+  content: 'Confident';
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea + div button:nth-child(2)::after {
+  content: 'Not sure';
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] textarea + div button:nth-child(3)::after {
+  content: 'I guessed';
+}
+
+/* The primary action should be obvious without becoming a full-width purple slab. */
 html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] div:has(> textarea) > button.w-full {
-  margin-top: 0.65rem !important;
+  display: block !important;
+  width: min(52%, 18rem) !important;
+  min-width: 10rem;
+  margin: 0.65rem auto 0 !important;
   padding-top: 0.65rem !important;
   padding-bottom: 0.65rem !important;
   border-radius: 0.9rem !important;
+}
+
+/* Keep the sound control monochrome. The native colour emoji is hidden and
+   replaced with text-presentation bell symbols that inherit the interface colour. */
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] > div:first-child button[title='Turn new-question sound on or off'] {
+  font-size: 0 !important;
+  color: #475569 !important;
+}
+
+html.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] > div:first-child button[title='Turn new-question sound on or off']::before {
+  content: '\1F514\FE0E';
+  font-size: 0.8rem;
+  line-height: 1;
+  font-family: Arial, sans-serif;
+}
+
+html.dark.iboard-student-workspace .iboard-student-support-scroll section[class*='ring-4'] > div:first-child button[title='Turn new-question sound on or off'] {
+  color: #cbd5e1 !important;
 }
 
 /* A teacher re-alert already triggers the panel pulse. During that attention
