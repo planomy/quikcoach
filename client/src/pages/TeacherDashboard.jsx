@@ -195,7 +195,6 @@ function TeacherDashboardInner() {
   const [askOverlayOpen, setAskOverlayOpen] = useState(false);
   const [answerRailOpen, setAnswerRailOpen] = useState(false);
   const [answerRailHighlightId, setAnswerRailHighlightId] = useState(null);
-  const [answerRailDismissedId, setAnswerRailDismissedId] = useState(null);
   const [libraryPanel, setLibraryPanel] = useState(null);
   const [fixedCommentCount, setFixedCommentCount] = useState(0);
   const [clearFixedBusy, setClearFixedBusy] = useState(false);
@@ -660,17 +659,11 @@ function TeacherDashboardInner() {
   }, [socket, joined]);
 
   useEffect(() => {
-    const activityId = livePulse.activity?.id || null;
-    if (!activityId) {
+    if (!livePulse.activity?.id) {
       setAnswerRailOpen(false);
       setAnswerRailHighlightId(null);
-      setAnswerRailDismissedId(null);
-      return;
     }
-    if (answerRailDismissedId !== activityId) {
-      setAnswerRailOpen(true);
-    }
-  }, [livePulse.activity?.id, answerRailDismissedId]);
+  }, [livePulse.activity?.id]);
 
   useEffect(() => {
     if (!joined) return undefined;
@@ -1325,13 +1318,11 @@ function TeacherDashboardInner() {
   function openAnswerInRail(studentId) {
     if (!livePulse.activity) return;
     setAnswerRailOpen(true);
-    setAnswerRailDismissedId(null);
     if (studentId != null) setAnswerRailHighlightId(Number(studentId));
   }
 
   function dismissAnswerRail() {
     setAnswerRailOpen(false);
-    if (livePulse.activity?.id) setAnswerRailDismissedId(livePulse.activity.id);
   }
 
 
@@ -1361,7 +1352,6 @@ function TeacherDashboardInner() {
   function openResponsesRail() {
     closeRoomMenu();
     setAnswerRailOpen(true);
-    setAnswerRailDismissedId(null);
   }
 
   function toggleResponsesRail() {
