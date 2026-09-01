@@ -25,12 +25,23 @@ import {
   recentStudentSessionForRoom,
   saveStudentSession,
 } from '../lib/studentSession.js';
+import { dismissInboxItem as persistInboxDismiss, readDismissedInboxIds } from '../lib/inboxDismiss.js';
+
+function parseFeedbackAt(item) {
+  const createdAt = String(item?.createdAt || '').trim();
+  if (createdAt) {
+    const ms = Date.parse(createdAt.includes('T') ? createdAt : `${createdAt.replace(' ', 'T')}`);
+    if (Number.isFinite(ms)) return ms;
+  }
+  const feedbackId = Number(item?.feedbackId) || 0;
+  return feedbackId > 0 ? feedbackId : 0;
+}
 
 function feedbackInboxItem(item) {
   const feedbackId = Number(item?.feedbackId) || 0;
   const text = String(item?.text || '');
   const createdAt = String(item?.createdAt || '');
-  const at = Date.parse(createdAt) || Date.now();
+  const at = parseFeedbackAt(item);
   return {
     id: feedbackId
       ? `feedback-${feedbackId}`
@@ -42,12 +53,15 @@ function feedbackInboxItem(item) {
 }
 
 function mergeFeedbackInbox(previous, incoming) {
-  const existingIds = new Set(previous.map((item) => item.id));
-  const fresh = [...incoming]
-    .reverse()
-    .map(feedbackInboxItem)
-    .filter((item) => item.text && !existingIds.has(item.id));
-  return fresh.length ? [...fresh, ...previous] : previous;
+  const byId = new Map();
+  for (const item of previous) {
+    if (item?.id) byId.set(item.id, item);
+  }
+  for (const raw of incoming) {
+    const item = feedbackInboxItem(raw);
+    if (item.text) byId.set(item.id, item);
+  }
+  return [...byId.values()].sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
 }
 
 const SUPPORT_TABS = [
@@ -90,6 +104,7 @@ export default function StudentView() {
   const [supportTab, setSupportTab] = useState('inbox');
   const [inboxExpandedId, setInboxExpandedId] = useState(null);
   const [inboxUnreadIds, setInboxUnreadIds] = useState(() => new Set());
+  const [dismissedInboxIds, setDismissedInboxIds] = useState(() => new Set());
   const [respondLive, setRespondLive] = useState(false);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
@@ -135,6 +150,35 @@ export default function StudentView() {
       return next;
     });
   }
+
+  function dismissInboxItem(itemId) {
+    const code = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
+    const sid = Number(student?.id);
+    if (code.length !== 4 || !sid) return;
+    persistInboxDismiss(code, sid, itemId);
+    setDismissedInboxIds((current) => {
+      const next = new Set(current);
+      next.add(String(itemId));
+      return next;
+    });
+    setInboxExpandedId((current) => (current === itemId ? null : current));
+    setInboxUnreadIds((current) => {
+      if (!current.has(itemId)) return current;
+      const next = new Set(current);
+      next.delete(itemId);
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    const sid = Number(student?.id);
+    const code = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
+    if (!joined || !sid || code.length !== 4) {
+      setDismissedInboxIds(new Set());
+      return;
+    }
+    setDismissedInboxIds(readDismissedInboxIds(code, sid));
+  }, [joined, student?.id, room?.code, codeInput]);
 
   function selectSupportTab(tabId) {
     setSupportTab(tabId);
@@ -236,7 +280,7 @@ export default function StudentView() {
       if (!sid || !s?.id || Number(s.id) !== Number(sid)) return;
       setStudent((prev) => ({ ...(prev || {}), ...s }));
     };
-    const onBatch = ({ items }) => {
+    const onBatch = ({ items, replay }) => {
       const sid =
         studentRef.current?.id ??
         hydrateStudentIdRef.current ??
@@ -246,7 +290,11 @@ export default function StudentView() {
       if (!mine.length) return;
       const mapped = mine.map(feedbackInboxItem).filter((item) => item.text);
       setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine));
-      const newest = mapped[mapped.length - 1] || mapped[0];
+      if (replay) return;
+      const newest = mapped.reduce(
+        (best, item) => (!best || Number(item.at) > Number(best.at) ? item : best),
+        null
+      );
       if (newest) activateInbox(newest.id);
     };
     const onBroadcast = (payload = {}) => {
@@ -653,8 +701,10 @@ export default function StudentView() {
           unread: inboxUnreadIds.has(id),
         };
       });
-    return [...notes, ...broadcasts].sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
-  }, [feedbackInbox, broadcastHistory, inboxUnreadIds]);
+    return [...notes, ...broadcasts]
+      .filter((item) => !dismissedInboxIds.has(item.id))
+      .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
+  }, [feedbackInbox, broadcastHistory, inboxUnreadIds, dismissedInboxIds]);
   const inboxTabCount = inboxUnreadIds.size;
 
   if (!joined) {
@@ -900,6 +950,7 @@ export default function StudentView() {
                     return next;
                   });
                 }}
+                onDismiss={dismissInboxItem}
               />
             </div>
             </div>

@@ -5,7 +5,7 @@ function formatTime(at) {
   return new Date(Number(at)).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
-export default function StudentInbox({ items, expandedId, onToggle }) {
+export default function StudentInbox({ items, expandedId, onToggle, onDismiss }) {
   if (!items.length) {
     return <div className="h-4" aria-hidden="true" />;
   }
@@ -28,29 +28,42 @@ export default function StudentInbox({ items, expandedId, onToggle }) {
               aria-hidden="true"
               className={`absolute bottom-0 left-0 top-0 w-1 ${isBroadcast ? 'bg-slate-300 dark:bg-slate-600' : 'bg-indigo-500'}`}
             />
-            <button
-              type="button"
-              onClick={() => onToggle(item.id)}
-              className="flex w-full items-center gap-3 px-4 py-3 pl-5 text-left"
-              aria-expanded={open}
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-display text-sm font-bold text-slate-900 dark:text-slate-100">
-                    {isBroadcast ? 'Broadcast' : 'Teacher note'}
+            <div className="flex items-stretch pl-1">
+              <button
+                type="button"
+                onClick={() => onToggle(item.id)}
+                className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 pl-4 text-left"
+                aria-expanded={open}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-display text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {isBroadcast ? 'Broadcast' : 'Teacher note'}
+                    </p>
+                    {item.unread ? (
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500" aria-label="New" />
+                    ) : null}
+                  </div>
+                  <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+                    {preview}
                   </p>
-                  {item.unread ? (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500" aria-label="New" />
-                  ) : null}
                 </div>
-                <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
-                  {preview}
-                </p>
-              </div>
-              <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
-                {open ? 'Close' : 'Open'}
-              </span>
-            </button>
+                <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                  {open ? 'Close' : 'Open'}
+                </span>
+              </button>
+              {!open && typeof onDismiss === 'function' ? (
+                <button
+                  type="button"
+                  onClick={() => onDismiss(item.id)}
+                  className="shrink-0 px-3 text-lg font-bold leading-none text-slate-300 transition hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300"
+                  aria-label="Dismiss"
+                  title="Dismiss"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
             {open && (
               <div className="space-y-3 border-t border-slate-100 px-4 py-3 pl-5 dark:border-slate-800">
                 {isBroadcast ? (
@@ -86,6 +99,15 @@ export default function StudentInbox({ items, expandedId, onToggle }) {
                     {item.text}
                   </div>
                 )}
+                {typeof onDismiss === 'function' ? (
+                  <button
+                    type="button"
+                    onClick={() => onDismiss(item.id)}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                  >
+                    Dismiss
+                  </button>
+                ) : null}
               </div>
             )}
           </section>

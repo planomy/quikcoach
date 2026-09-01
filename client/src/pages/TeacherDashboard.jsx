@@ -2522,7 +2522,7 @@ function TeacherDashboardInner() {
                 <p className="text-xs text-slate-500 dark:text-slate-400">{wordCount(focusedStudent.text)} words · select text to add an inline comment</p>
               </div>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => { setFocusedStudentId(null); openNoteForStudent(focusedStudent); }} className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-bold text-violet-700 hover:bg-violet-50 dark:border-violet-900 dark:text-violet-300 dark:hover:bg-violet-950/40">
+                <button type="button" onClick={() => { setFocusedStudentId(null); openNoteForStudent(focusedStudent); }} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
                   Send note
                 </button>
                 {focusedStudent.image_url && (
@@ -2568,7 +2568,7 @@ function TeacherDashboardInner() {
       {noteTarget && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <form
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-2xl dark:border-violet-800 dark:bg-slate-900"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             role="dialog"
             aria-modal="true"
             aria-labelledby="private-note-title"
@@ -2579,14 +2579,14 @@ function TeacherDashboardInner() {
           >
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-violet-600 dark:text-violet-300">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 dark:text-indigo-300">
                   Private feedback
                 </p>
                 <h2 id="private-note-title" className="mt-1 font-display text-lg font-bold text-ink-900 dark:text-slate-100">
                   Note for {noteTarget.name}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  This will appear in the student&apos;s feedback inbox.
+                  This will appear in the student&apos;s Inbox tab.
                 </p>
               </div>
               <button
@@ -2618,7 +2618,7 @@ function TeacherDashboardInner() {
                   if (event.key === 'Escape') closeNoteComposer();
                 }}
                 placeholder="Write a private note…"
-                className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-relaxed text-slate-900 outline-none ring-violet-500 focus:border-violet-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
               <div className="mt-2 flex items-start justify-between gap-3">
                 <p className="text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p>
@@ -2637,7 +2637,7 @@ function TeacherDashboardInner() {
               <button
                 type="submit"
                 disabled={noteSending || !noteDraft.trim()}
-                className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-violet-700 disabled:opacity-40"
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
               >
                 {noteSending ? 'Sending…' : 'Send note'}
               </button>
