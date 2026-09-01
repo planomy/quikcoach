@@ -116,22 +116,34 @@ html.dark.iboard-student-workspace .iboard-student-support-scroll section[class*
   color: #cbd5e1 !important;
 }
 
-/* A teacher re-alert already triggers the panel pulse. During that attention
-   window, turn the status line into an unmistakable amber reminder strip rather
-   than leaving it as polite footer text. */
-html.iboard-student-workspace .iboard-student-support-scroll section.iboard-question-pulse > p.text-center {
-  margin-top: 0.7rem !important;
-  padding: 0.55rem 0.75rem !important;
-  border: 1px solid #f59e0b !important;
-  border-radius: 0.75rem !important;
-  background: #fffbeb !important;
-  color: #92400e !important;
+/* Re-alerts need to be visible even when the student is on Ask or Inbox.
+   The existing live panel receives iboard-question-pulse on re-alert, so use that
+   state to animate the Respond badge rather than styling a message inside a hidden tab. */
+@keyframes iboard-respond-badge-realert {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(220 38 38 / 0);
+  }
+  45% {
+    transform: scale(1.22);
+    box-shadow: 0 0 0 6px rgb(220 38 38 / 0.18);
+  }
 }
 
-html.dark.iboard-student-workspace .iboard-student-support-scroll section.iboard-question-pulse > p.text-center {
-  border-color: #d97706 !important;
-  background: rgb(120 53 15 / 0.22) !important;
-  color: #fde68a !important;
+html.iboard-student-workspace aside:has(.iboard-student-support-scroll section.iboard-question-pulse)
+  nav[aria-label='Student tools'] > button:nth-child(2) [data-iboard-tab-badge] {
+  background: #dc2626 !important;
+  color: #fff !important;
+  transform-origin: center;
+  animation: iboard-respond-badge-realert 0.8s ease-in-out 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.iboard-student-workspace aside:has(.iboard-student-support-scroll section.iboard-question-pulse)
+    nav[aria-label='Student tools'] > button:nth-child(2) [data-iboard-tab-badge] {
+    animation: none;
+    box-shadow: 0 0 0 3px rgb(220 38 38 / 0.16);
+  }
 }
 
 /* On full desktop screens, give the writing surface a little more visual weight.
