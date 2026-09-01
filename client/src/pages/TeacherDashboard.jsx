@@ -669,8 +669,7 @@ function TeacherDashboardInner() {
 
   useEffect(() => {
     if (!livePulse.activity?.id) {
-      setAnswerRailOpen(false);
-      setAnswerRailHighlightId(null);
+      setToolsHighlightStudentId(null);
     }
   }, [livePulse.activity?.id]);
 
