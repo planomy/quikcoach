@@ -6,7 +6,7 @@ import {
   selectionOffsetsWithin,
 } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
-import { subscribeViewportChanges } from '../lib/viewport.js';
+import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
@@ -72,47 +72,88 @@ function findCardFromNode(node) {
 }
 
 function cardForStudent(studentId) {
+  const id = Number(studentId);
+  if (!id) return null;
+
+  const modalArticle = document.querySelector(
+    `[role="dialog"][aria-modal="true"] article[data-student-id="${id}"]`
+  );
+  if (modalArticle) {
+    const modalPane =
+      modalArticle.querySelector('[data-student-writing-pane]') ||
+      modalArticle.querySelector('div.max-h-52');
+    if (modalPane) return { article: modalArticle, textPane: modalPane, studentId: id };
+  }
+
   const article =
-    document.querySelector(`article[data-student-id="${Number(studentId)}"]`) ||
-    document.querySelector(`h2[title="ID #${Number(studentId)}"]`)?.closest('article');
+    document.querySelector(`main article[data-student-id="${id}"]`) ||
+    document.querySelector(`article[data-student-id="${id}"]`) ||
+    document.querySelector(`h2[title="ID #${id}"]`)?.closest('article');
   const textPane =
     article?.querySelector('[data-student-writing-pane]') || article?.querySelector('div.max-h-52');
-  return article && textPane ? { article, textPane } : null;
+  return article && textPane ? { article, textPane, studentId: id } : null;
+}
+
+function isRangeVisibleInPane(rangeRect, paneRect) {
+  const margin = 2;
+  return (
+    rangeRect.bottom > paneRect.top + margin &&
+    rangeRect.top < paneRect.bottom - margin &&
+    rangeRect.right > paneRect.left + margin &&
+    rangeRect.left < paneRect.right - margin
+  );
 }
 
 function markerPosition(rangeRect, card) {
-  if (typeof window === 'undefined' || !card?.article || !card?.textPane) return null;
+  if (typeof window === 'undefined' || !card?.textPane) return null;
 
   const paneRect = card.textPane.getBoundingClientRect();
-  const cardRect = card.article.getBoundingClientRect();
-  const visible = {
-    top: Math.max(0, paneRect.top, cardRect.top),
-    bottom: Math.min(window.innerHeight, paneRect.bottom, cardRect.bottom),
-    left: Math.max(0, paneRect.left, cardRect.left),
-    right: Math.min(window.innerWidth, paneRect.right, cardRect.right),
-  };
+  if (!paneRect.width || !paneRect.height) return null;
+  if (!isRangeVisibleInPane(rangeRect, paneRect)) return null;
 
-  if (
-    visible.bottom - visible.top < MARKER_SIZE ||
-    visible.right <= visible.left ||
-    rangeRect.bottom < visible.top ||
-    rangeRect.top > visible.bottom ||
-    rangeRect.right < visible.left ||
-    rangeRect.left > visible.right
-  ) {
-    return null;
+  const minLeft = paneRect.left + MARKER_MARGIN;
+  const maxLeft = paneRect.right - MARKER_SIZE - MARKER_MARGIN;
+  const minTop = paneRect.top + MARKER_MARGIN;
+  const maxTop = paneRect.bottom - MARKER_SIZE - MARKER_MARGIN;
+  if (maxLeft < minLeft || maxTop < minTop) return null;
+
+  let left = rangeRect.right + MARKER_GAP;
+  if (left > maxLeft) {
+    left = rangeRect.left - MARKER_SIZE - MARKER_GAP;
   }
+  left = Math.max(minLeft, Math.min(maxLeft, left));
 
-  return {
-    top: Math.min(
-      Math.max(rangeRect.top - 3, visible.top + 2),
-      visible.bottom - MARKER_SIZE - 2
-    ),
-    left: Math.min(
-      window.innerWidth - MARKER_SIZE - MARKER_MARGIN,
-      Math.max(MARKER_MARGIN, rangeRect.right + MARKER_GAP)
-    ),
-  };
+  const idealTop = rangeRect.top + rangeRect.height / 2 - MARKER_SIZE / 2;
+  const top = Math.max(minTop, Math.min(maxTop, idealTop));
+
+  return clampFixedBox({
+    top,
+    left,
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
+    padding: MARKER_MARGIN,
+  });
+}
+
+function detachedMarkerPosition(paneRect, index) {
+  if (!paneRect.width || !paneRect.height) return null;
+  return clampFixedBox({
+    top: paneRect.top + MARKER_MARGIN + index * (MARKER_SIZE + 4),
+    left: paneRect.right - MARKER_SIZE - MARKER_MARGIN,
+    width: MARKER_SIZE,
+    height: MARKER_SIZE,
+    padding: MARKER_MARGIN,
+  });
+}
+
+function paneIsOnScreen(paneRect) {
+  const vp = viewportBox();
+  return (
+    paneRect.bottom > vp.top &&
+    paneRect.top < vp.top + vp.height &&
+    paneRect.right > vp.left &&
+    paneRect.left < vp.left + vp.width
+  );
 }
 
 function annotationMap(raw) {
@@ -174,15 +215,18 @@ export default function TeacherAnnotationController() {
         const resolved = resolveAnnotation(annotation, fullText);
         const range = resolved.detached ? null : rangeForPlainOffsets(card.textPane, resolved.start, resolved.end);
         if (!range) {
-          if (paneRect.bottom > 0 && paneRect.top < window.innerHeight) {
-            nextMarkers.push({
-              studentId,
-              annotation,
-              detached: true,
-              top: Math.max(6, Math.min(window.innerHeight - MARKER_SIZE - 6, paneRect.top + 8 + detachedCount * (MARKER_SIZE + 4))),
-              left: Math.max(6, Math.min(window.innerWidth - MARKER_SIZE - 6, paneRect.right - MARKER_SIZE - 6)),
-            });
-            detachedCount += 1;
+          if (paneIsOnScreen(paneRect)) {
+            const position = detachedMarkerPosition(paneRect, detachedCount);
+            if (position) {
+              nextMarkers.push({
+                studentId,
+                annotation,
+                detached: true,
+                top: position.top,
+                left: position.left,
+              });
+              detachedCount += 1;
+            }
           }
           continue;
         }
@@ -261,9 +305,48 @@ export default function TeacherAnnotationController() {
         refreshHighlights();
       });
     };
+
+    const scrollOptions = { capture: true, passive: true };
+    const observedScrollers = new Set();
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(onMove)
+        : null;
+
+    const attachLayoutWatchers = () => {
+      for (const pane of document.querySelectorAll('[data-student-writing-pane]')) {
+        if (!observedScrollers.has(pane)) {
+          observedScrollers.add(pane);
+          pane.addEventListener('scroll', onMove, scrollOptions);
+          resizeObserver?.observe(pane);
+        }
+      }
+      for (const scroller of document.querySelectorAll('main .overflow-y-auto, main .overflow-auto')) {
+        if (!observedScrollers.has(scroller)) {
+          observedScrollers.add(scroller);
+          scroller.addEventListener('scroll', onMove, scrollOptions);
+          resizeObserver?.observe(scroller);
+        }
+      }
+    };
+
+    const layoutObserver = new MutationObserver(() => {
+      attachLayoutWatchers();
+      onMove();
+    });
+    layoutObserver.observe(document.body, { childList: true, subtree: true });
+    attachLayoutWatchers();
+
     const unsubscribe = subscribeViewportChanges(onMove);
     window.addEventListener('iboard:teacher-layout', onMove);
+    onMove();
     return () => {
+      layoutObserver.disconnect();
+      resizeObserver?.disconnect();
+      for (const scroller of observedScrollers) {
+        scroller.removeEventListener('scroll', onMove, scrollOptions);
+      }
+      observedScrollers.clear();
       unsubscribe();
       window.removeEventListener('iboard:teacher-layout', onMove);
       if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
