@@ -10,6 +10,7 @@ const STATUS_LABELS = {
 export default function AudienceQnaStudent({ socket, compact = false, collapsed = false, onRequestExpand, embedded = false }) {
   const [questions, setQuestions] = useState([]);
   const [open, setOpen] = useState(!!embedded);
+  const [composerExpanded, setComposerExpanded] = useState(true);
   const [draft, setDraft] = useState('');
   const [anonymous, setAnonymous] = useState(false);
   const [sending, setSending] = useState(false);
@@ -43,6 +44,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
   function showPanel() {
     if (collapsed) onRequestExpand?.();
     setOpen(true);
+    if (embedded) setComposerExpanded(true);
     setMessage('');
   }
 
@@ -60,7 +62,12 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
       }
       setDraft('');
       setAnonymous(false);
-      setMessage('Sent.');
+      if (embedded) {
+        setComposerExpanded(false);
+        setMessage('');
+      } else {
+        setMessage('Sent.');
+      }
     });
   }
 
@@ -87,6 +94,9 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
 
   const statusLabel = liveQuestions.length ? `${liveQuestions.length} live` : open ? 'Close' : 'Open';
   const showBody = embedded || open;
+  const latestPendingQuestion = myPrivateQuestions[0] || null;
+  const showEmbeddedComposer = embedded && composerExpanded;
+  const showEmbeddedSummary = embedded && !composerExpanded;
 
   if (collapsed) {
     return (
@@ -107,7 +117,67 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
         </button>
       )}
 
-      {showBody && (
+      {showEmbeddedSummary && (
+        <button
+          type="button"
+          onClick={() => {
+            setComposerExpanded(true);
+            setMessage('');
+          }}
+          className="flex w-full items-center gap-3 px-4 py-3 pl-5 text-left"
+          aria-expanded={false}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-sm font-bold text-slate-900 dark:text-slate-100">
+              {latestPendingQuestion ? 'Question sent' : 'Ask a question'}
+            </p>
+            <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+              {latestPendingQuestion
+                ? `${latestPendingQuestion.text.replace(/\s+/g, ' ').trim()} · ${STATUS_LABELS[latestPendingQuestion.status] || 'Waiting for facilitator'}`
+                : 'Tap to write another question'}
+            </p>
+          </div>
+          <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+            Open
+          </span>
+        </button>
+      )}
+
+      {showEmbeddedSummary && publicQuestions.length > 0 && (
+        <div className="space-y-2 border-t border-slate-100 px-4 pb-4 pl-5 pt-3 dark:border-slate-800">
+          {publicQuestions.map((question) => (
+            <article key={question.id} className="relative flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
+              <button
+                type="button"
+                disabled={question.mine || question.status === 'answered'}
+                onClick={() => vote(question)}
+                title={question.status === 'answered' ? 'This question is finished' : question.mine ? 'You cannot vote for your own question' : question.voted ? 'Remove your vote' : 'Vote for this question'}
+                className={`flex h-12 w-11 shrink-0 flex-col items-center justify-center rounded-lg text-[11px] font-black ${question.voted ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700 shadow-sm dark:bg-slate-900 dark:text-indigo-300'} disabled:opacity-50`}
+              >
+                <span>▲</span><span>{question.votes}</span>
+              </button>
+              <div className={`min-w-0 flex-1 ${question.mine ? 'pr-8' : ''}`}>
+                <p className="text-sm font-semibold text-slate-950 dark:text-white">{question.text}</p>
+                <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{question.author} · {STATUS_LABELS[question.status] || question.status}</p>
+              </div>
+              {question.mine && (
+                <button
+                  type="button"
+                  disabled={deletingId === question.id}
+                  onClick={() => withdraw(question)}
+                  className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-lg text-base font-bold text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                  title="Remove this question"
+                  aria-label="Remove this question"
+                >
+                  ×
+                </button>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {showBody && (showEmbeddedComposer || !embedded) && (
         <div className={`space-y-4 p-4 ${embedded ? 'pl-5' : ''}`}>
           <form onSubmit={submit}>
             <label className="block text-[10px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Your question</label>
@@ -130,9 +200,19 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
             <div className="mt-1 text-right text-[10px] font-semibold text-slate-400">{draft.length}/500</div>
           </form>
 
-          {message && <p className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">{message}</p>}
+          {message && (
+            <p
+              className={`rounded-lg px-3 py-2 text-xs font-bold ${
+                /could not/i.test(message)
+                  ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-200'
+                  : 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200'
+              }`}
+            >
+              {message}
+            </p>
+          )}
 
-          {myPrivateQuestions.length > 0 && (
+          {!embedded && myPrivateQuestions.length > 0 && (
             <div>
               <h3 className="text-[10px] font-black uppercase tracking-wide text-slate-500">My questions</h3>
               <div className="mt-2 space-y-2">
@@ -156,7 +236,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
             </div>
           )}
 
-          {publicQuestions.length > 0 && (
+          {(showEmbeddedComposer || !embedded) && publicQuestions.length > 0 && (
             <div className="space-y-2">
               {publicQuestions.map((question) => (
                 <article key={question.id} className="relative flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
