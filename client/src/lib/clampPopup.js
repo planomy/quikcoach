@@ -52,15 +52,19 @@ export function placementNearAnchor({
   candidates.push({ top: anchor.top - height / 2, left: rightLeft });
   candidates.push({ top: belowTop, left: leftLeft });
 
+  const fitsUnclamped = (candidate) => (
+    candidate.top >= vp.top + padding
+    && candidate.top + height <= vp.top + vp.height - padding
+    && candidate.left >= vp.left + padding
+    && candidate.left + width <= vp.left + vp.width - padding
+  );
+
+  // Prefer a placement that already fits without sliding away from the anchor.
   for (const candidate of candidates) {
-    const clamped = clampFixedBox({ ...candidate, width, height, padding });
-    const fitsVert =
-      clamped.top >= vp.top + padding && clamped.top + height <= vp.top + vp.height - padding;
-    const fitsHoriz =
-      clamped.left >= vp.left + padding && clamped.left + width <= vp.left + vp.width - padding;
-    if (fitsVert && fitsHoriz) return clamped;
+    if (fitsUnclamped(candidate)) return candidate;
   }
 
+  // Fall back to the nearest in-viewport clamp (usually below the anchor).
   return clampFixedBox({
     top: anchor.bottom + gap,
     left: centerX,

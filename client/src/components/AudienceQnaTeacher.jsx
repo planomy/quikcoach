@@ -119,10 +119,10 @@ export default function AudienceQnaTeacher({
                 Ask class
               </button>
             )}
-            {mode === 'pending' && <button type="button" onClick={() => update(question, 'dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>}
-            {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>}
+            {mode === 'pending' && <button type="button" onClick={() => update(question, 'dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Mark handled</button>}
+            {mode === 'published' && <button type="button" onClick={() => update(question, 'answer')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Mark answered</button>}
             {mode === 'answered' && <button type="button" onClick={() => update(question, 'reopen')} className={`${ACTION_CLASS} bg-violet-100 text-violet-800`}>Reopen</button>}
-            {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Return</button>}
+            {mode === 'dismissed' && <button type="button" onClick={() => update(question, 'pending')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Return to queue</button>}
           </div>
           <QuestionInboxReply
             socket={socket}
@@ -146,8 +146,8 @@ export default function AudienceQnaTeacher({
           {!focusedStudentId && presentable.length > 0 && (
             <button type="button" onClick={() => setPresenting(true)} className={`${ACTION_CLASS} bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200`}>Present</button>
           )}
-          <button type="button" onClick={onClose} title={hasLiveActivity ? 'Back to live response' : 'Close questions'} aria-label={hasLiveActivity ? 'Back to live response' : 'Close questions'} className="grid h-9 w-9 place-items-center rounded-lg bg-slate-100 text-lg font-black text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">
-            ×
+          <button type="button" onClick={onClose} title={hasLiveActivity ? 'Back to live response' : 'Close questions panel'} aria-label={hasLiveActivity ? 'Back to live response' : 'Close questions panel'} className={`${ACTION_CLASS} bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200`}>
+            Close
           </button>
         </div>
 
@@ -165,7 +165,7 @@ export default function AudienceQnaTeacher({
           )}
           {dismissed.length > 0 && (
             <details>
-              <summary className="cursor-pointer py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Done · {dismissed.length}</summary>
+              <summary className="cursor-pointer py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Handled privately · {dismissed.length}</summary>
               <div className="mt-2 space-y-2">{dismissed.map((question) => <QuestionCard key={question.id} question={question} mode="dismissed" />)}</div>
             </details>
           )}

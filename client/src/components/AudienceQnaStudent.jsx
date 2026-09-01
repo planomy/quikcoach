@@ -4,7 +4,7 @@ const STATUS_LABELS = {
   pending: 'Waiting for facilitator',
   published: 'Shown',
   answered: 'Answered',
-  dismissed: 'Done',
+  dismissed: 'Handled',
 };
 
 export default function AudienceQnaStudent({ socket, compact = false, collapsed = false, onRequestExpand, embedded = false }) {

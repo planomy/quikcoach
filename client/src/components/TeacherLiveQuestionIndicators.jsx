@@ -195,7 +195,7 @@ export default function TeacherLiveQuestionIndicators() {
             <div className="min-w-0 flex-1">
               <div className="flex items-start gap-2">
                 <p className="min-w-0 flex-1 truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{selectedQuestion.studentName}</p>
-                <button type="button" onClick={() => { setSelectedQuestionId(null); setMessage(''); }} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-lg font-black text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-label="Close question" title="Close">×</button>
+                <button type="button" onClick={() => { setSelectedQuestionId(null); setMessage(''); }} className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wide text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-label="Close popup" title="Close popup — question stays in queue">Close</button>
               </div>
               <p className="mt-1 text-base font-bold leading-snug text-slate-950 dark:text-white">{selectedQuestion.text}</p>
             </div>
@@ -212,7 +212,7 @@ export default function TeacherLiveQuestionIndicators() {
               </div>
             </details>
             <button type="button" onClick={askClass} className={`${ACTION_CLASS} bg-emerald-500 text-emerald-950`}>Ask class</button>
-            <button type="button" onClick={() => updateQuestion('dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Done</button>
+            <button type="button" onClick={() => updateQuestion('dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Mark handled</button>
           </div>
 
           <QuestionInboxReply

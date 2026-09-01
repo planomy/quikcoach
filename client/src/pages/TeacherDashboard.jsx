@@ -1434,7 +1434,7 @@ function TeacherDashboardInner() {
                 </span>
               </button>
             )}
-            <HintWrap hint="Add card">
+            <HintWrap hint="Add card" prefer="below">
               <button
                 type="button"
                 onClick={() => {
@@ -1450,7 +1450,7 @@ function TeacherDashboardInner() {
               </button>
             </HintWrap>
             {broadcastPickCount > 0 && (
-              <HintWrap hint="Send to Inbox">
+              <HintWrap hint="Send to Inbox" prefer="below">
                 <button
                   type="button"
                   onClick={() => {
