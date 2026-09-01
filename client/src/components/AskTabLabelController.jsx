@@ -12,6 +12,9 @@ export default function AskTabLabelController() {
 
       const more = nav.querySelector('details');
       const menu = more?.querySelector('div');
+      const pendingTab = [...nav.children].find(
+        (node) => node.tagName === 'BUTTON' && node.textContent?.trim().startsWith('From students ·')
+      );
 
       for (const button of nav.querySelectorAll('button')) {
         const text = button.textContent?.trim() || '';
@@ -34,13 +37,27 @@ export default function AskTabLabelController() {
         }
         if (text === 'From students') {
           button.textContent = 'Student Questions';
-          continue;
         }
-        if (text.startsWith('From students ·') && menu) {
-          button.textContent = text.replace('From students ·', 'Student Questions ·');
-          button.className = MENU_BUTTON_CLASS;
-          menu.appendChild(button);
+      }
+
+      const existingProxy = menu?.querySelector('[data-iboard-student-questions-menu="true"]');
+      if (pendingTab && menu) {
+        pendingTab.style.display = 'none';
+        let proxy = existingProxy;
+        if (!proxy) {
+          proxy = document.createElement('button');
+          proxy.type = 'button';
+          proxy.dataset.iboardStudentQuestionsMenu = 'true';
+          proxy.className = MENU_BUTTON_CLASS;
+          menu.appendChild(proxy);
         }
+        proxy.textContent = pendingTab.textContent.replace('From students ·', 'Student Questions ·');
+        proxy.onclick = () => {
+          if (more) more.open = false;
+          pendingTab.click();
+        };
+      } else if (existingProxy) {
+        existingProxy.remove();
       }
     };
 
