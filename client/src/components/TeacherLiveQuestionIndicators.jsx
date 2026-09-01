@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
+import { activeTeacherRoomCode, ensureTeacherRoom } from '../lib/teacherRoom.js';
 
 function currentTeacherConnection() {
   if (typeof window === 'undefined') return { socket: null, code: '' };
@@ -37,13 +38,25 @@ export default function TeacherLiveQuestionIndicators() {
       return undefined;
     }
     const onQna = (payload) => setQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
-    const sync = () => socket.emit('teacher:qna-sync', {});
+    const sync = () => {
+      const code = activeTeacherRoomCode();
+      if (code.length !== 4) return;
+      socket.emit('teacher:join', { code }, (ack) => {
+        if (ack?.ok) socket.emit('teacher:qna-sync', {});
+      });
+    };
+    const onDisconnect = () => {
+      setSelectedQuestionId(null);
+      setMessage('');
+    };
     socket.on('qna:teacher', onQna);
     socket.on('connect', sync);
+    socket.on('disconnect', onDisconnect);
     if (socket.connected) sync();
     return () => {
       socket.off('qna:teacher', onQna);
       socket.off('connect', sync);
+      socket.off('disconnect', onDisconnect);
     };
   }, [connection.socket, connection.code]);
 
@@ -144,25 +157,37 @@ export default function TeacherLiveQuestionIndicators() {
   function updateQuestion(action, anonymous) {
     if (!selectedQuestion || !connection.socket) return;
     setMessage('');
-    connection.socket.emit('teacher:qna-status', { questionId: selectedQuestion.id, action, anonymous }, (ack) => {
-      if (!ack?.ok) setMessage(ack?.error || 'Could not update the question.');
+    ensureTeacherRoom(connection.socket, (joinAck) => {
+      if (!joinAck?.ok) {
+        setMessage(joinAck?.error || 'Open the room as teacher first');
+        return;
+      }
+      connection.socket.emit('teacher:qna-status', { questionId: selectedQuestion.id, action, anonymous }, (ack) => {
+        if (!ack?.ok) setMessage(ack?.error || 'Could not update the question.');
+      });
     });
   }
 
   function askClass() {
     if (!selectedQuestion || !connection.socket) return;
     setMessage('');
-    connection.socket.emit(
-      'teacher:qna-ask-room',
-      { questionId: selectedQuestion.id, anonymous: !!selectedQuestion.anonymousRequested },
-      (ack) => {
-        if (!ack?.ok) {
-          setMessage(ack?.error || 'Could not ask the class.');
-          return;
-        }
-        setSelectedQuestionId(null);
+    ensureTeacherRoom(connection.socket, (joinAck) => {
+      if (!joinAck?.ok) {
+        setMessage(joinAck?.error || 'Open the room as teacher first');
+        return;
       }
-    );
+      connection.socket.emit(
+        'teacher:qna-ask-room',
+        { questionId: selectedQuestion.id, anonymous: !!selectedQuestion.anonymousRequested },
+        (ack) => {
+          if (!ack?.ok) {
+            setMessage(ack?.error || 'Could not ask the class.');
+            return;
+          }
+          setSelectedQuestionId(null);
+        }
+      );
+    });
   }
 
   const selectedPosition = selectedQuestion ? queuePositionById.get(Number(selectedQuestion.id)) : null;
@@ -173,25 +198,25 @@ export default function TeacherLiveQuestionIndicators() {
         main article[data-student-id][data-live-question-waiting='true'] { position: relative; }
         main button[data-live-question-badge='true'] {
           position:absolute;top:0.45rem;right:0.45rem;z-index:3;display:grid;min-width:1.45rem;height:1.45rem;
-          place-items:center;border:0;border-radius:9999px;padding:0 0.3rem;background:rgb(192 38 211);color:white;
+          place-items:center;border:0;border-radius:9999px;padding:0 0.3rem;background:rgb(79 70 229);color:white;
           cursor:pointer;font-size:0.625rem;font-weight:900;line-height:1;letter-spacing:-0.01em;
           box-shadow:0 0 0 2px white,0 2px 7px rgb(15 23 42 / 0.18);transition:transform 120ms ease,background 120ms ease;
         }
         main button[data-live-question-badge='true']:hover,main button[data-live-question-badge='true']:focus-visible {
-          background:rgb(162 28 175);transform:scale(1.08);outline:none;
+          background:rgb(67 56 202);transform:scale(1.08);outline:none;
         }
         html.dark main button[data-live-question-badge='true'] { box-shadow:0 0 0 2px rgb(15 23 42),0 2px 7px rgb(0 0 0 / 0.35); }
       `}</style>
 
       {selectedQuestion && selectedPosition && (
         <aside
-          className="fixed right-4 top-24 z-[65] w-[min(24rem,calc(100vw-2rem))] overflow-visible rounded-2xl border border-fuchsia-200 bg-white p-4 shadow-2xl dark:border-fuchsia-900 dark:bg-slate-900"
+          className="fixed right-4 top-24 z-[65] w-[min(24rem,calc(100vw-2rem))] overflow-visible rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
           role="dialog"
           aria-modal="false"
           aria-label={`Question ${selectedPosition} from ${selectedQuestion.studentName}`}
         >
           <div className="flex items-start gap-3">
-            <span className="grid h-9 min-w-9 shrink-0 place-items-center rounded-full bg-fuchsia-600 px-1 text-sm font-black text-white">{selectedPosition}</span>
+            <span className="grid h-9 min-w-9 shrink-0 place-items-center rounded-full bg-indigo-600 px-1 text-sm font-black text-white">{selectedPosition}</span>
             <div className="min-w-0 flex-1">
               <div className="flex items-start gap-2">
                 <p className="min-w-0 flex-1 truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{selectedQuestion.studentName}</p>
@@ -208,7 +233,7 @@ export default function TeacherLiveQuestionIndicators() {
               <summary className={`flex ${ACTION_CLASS} list-none cursor-pointer items-center bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200 [&::-webkit-details-marker]:hidden`}>Show ▾</summary>
               <div className="absolute left-0 top-full z-50 mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                 <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', false); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', true); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-fuchsia-700 hover:bg-fuchsia-50 dark:text-fuchsia-200 dark:hover:bg-fuchsia-950">Anonymous</button>
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', true); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Anonymous</button>
               </div>
             </details>
             <button type="button" onClick={askClass} className={`${ACTION_CLASS} bg-emerald-500 text-emerald-950`}>Ask class</button>

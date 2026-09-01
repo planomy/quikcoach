@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ensureTeacherRoom } from '../lib/teacherRoom.js';
 
 export default function QuestionInboxReply({
   socket,
@@ -25,25 +26,32 @@ export default function QuestionInboxReply({
     const quote = String(questionText || '').trim().slice(0, 200);
     const text = quote ? `Re: “${quote}”\n\n${answer}` : answer;
 
-    socket.emit('teacher:distribute', { items: [{ studentId: sid, text }] }, (ack) => {
-      setBusy(false);
-      if (!ack?.ok) {
-        setError(ack?.error || 'Could not send this reply');
+    ensureTeacherRoom(socket, (joinAck) => {
+      if (!joinAck?.ok) {
+        setBusy(false);
+        setError(joinAck?.error || 'Open the room as teacher first');
         return;
       }
-      setDraft('');
-      setSent(true);
-      onSent?.();
-      setTimeout(() => setSent(false), 2800);
+      socket.emit('teacher:distribute', { items: [{ studentId: sid, text }] }, (ack) => {
+        setBusy(false);
+        if (!ack?.ok) {
+          setError(ack?.error || 'Could not send this reply');
+          return;
+        }
+        setDraft('');
+        setSent(true);
+        onSent?.();
+        setTimeout(() => setSent(false), 2800);
+      });
     });
   }
 
   const label = String(studentName || 'Student').trim() || 'Student';
 
   return (
-    <div className={`rounded-xl border border-violet-200 bg-violet-50/70 p-3 dark:border-violet-900 dark:bg-violet-950/30 ${className}`}>
-      <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-violet-700 dark:text-violet-300">
-        Reply to {label}&apos;s inbox
+    <div className={`rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60 ${className}`}>
+      <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-indigo-600 dark:text-indigo-300">
+        Reply to {label}
       </label>
       <textarea
         rows={3}
@@ -57,7 +65,7 @@ export default function QuestionInboxReply({
           }
         }}
         placeholder={`Write a private answer for ${label}…`}
-        className="mt-2 w-full resize-y rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none ring-violet-500 focus:border-violet-400 focus:ring-2 dark:border-violet-800 dark:bg-slate-900 dark:text-slate-100"
+        className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
       />
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-slate-500 dark:text-slate-400">Appears in their Inbox tab</p>
@@ -65,9 +73,9 @@ export default function QuestionInboxReply({
           type="button"
           disabled={busy || !draft.trim()}
           onClick={sendReply}
-          className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-black text-white hover:bg-violet-700 disabled:opacity-50"
+          className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
         >
-          {busy ? 'Sending…' : 'Send to inbox'}
+          {busy ? 'Sending…' : 'Send note'}
         </button>
       </div>
       {error && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{error}</p>}
