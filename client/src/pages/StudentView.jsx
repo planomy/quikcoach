@@ -907,7 +907,7 @@ export default function StudentView() {
 
           <section className="order-2 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Tip: paste a screenshot into the box (Ctrl+V / Cmd+V) to add an image to your board card.
+              Tip: paste a screenshot into the box to add an image to your board card.
             </p>
             {student?.image_url && (
               <div
@@ -952,7 +952,7 @@ export default function StudentView() {
               onPaste={onDraftPaste}
               disabled={frozen}
               maxWords={enforce && wt > 0 ? wt : 0}
-              placeholder="Write here… or paste an image (Ctrl+V / Cmd+V)"
+              placeholder="Write here… or paste an image"
             />
           </section>
         </div>
