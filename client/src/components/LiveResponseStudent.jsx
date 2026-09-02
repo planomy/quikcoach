@@ -173,7 +173,6 @@ function TabbedStudentResponse({ socket, ...props }) {
       </div>
       {collapsed && activity?.id && response && (
         <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <span aria-hidden="true" className="absolute bottom-0 left-0 top-0 w-1 bg-indigo-500" />
           <button
             type="button"
             onClick={() => {
@@ -181,7 +180,7 @@ function TabbedStudentResponse({ socket, ...props }) {
               collapseTimerRef.current = null;
               setCollapsed(false);
             }}
-            className="flex w-full items-center gap-3 px-4 py-3 pl-5 text-left"
+            className="flex w-full items-center gap-3 px-4 py-3 text-left"
             aria-expanded={false}
           >
             <div className="min-w-0 flex-1">

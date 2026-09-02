@@ -112,7 +112,6 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
 
   return (
     <section className={`relative overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-900 ${embedded ? 'border-slate-200 dark:border-slate-700' : 'border-slate-200 shadow-card dark:border-slate-700'} ${compact ? 'text-xs' : ''}`}>
-      {embedded ? <span aria-hidden="true" className="absolute bottom-0 left-0 top-0 w-1 bg-indigo-500" /> : null}
       {!embedded && (
         <button type="button" onClick={() => setOpen((value) => !value)} className="flex w-full items-center justify-between gap-3 bg-indigo-600 px-4 py-3 text-left text-white">
           <span className="font-display text-sm font-black">Ask a question</span>
@@ -128,7 +127,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
               setComposerExpanded(true);
               setMessage('');
             }}
-            className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 pl-5 text-left"
+            className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left"
             aria-expanded={false}
           >
             <div className="min-w-0 flex-1">
@@ -160,7 +159,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
       )}
 
       {showEmbeddedSummary && publicQuestions.length > 0 && (
-        <div className="space-y-2 border-t border-slate-100 px-4 pb-4 pl-5 pt-3 dark:border-slate-800">
+        <div className="space-y-2 border-t border-slate-100 px-4 pb-4 pt-3 dark:border-slate-800">
           {publicQuestions.map((question) => (
             <article key={question.id} className="relative flex gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
               <button
@@ -193,7 +192,7 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
       )}
 
       {showBody && (showEmbeddedComposer || !embedded) && (
-        <div className={`space-y-4 p-4 ${embedded ? 'pl-5' : ''}`}>
+        <div className="space-y-4 p-4">
           {showEmbeddedComposer ? (
             <div className="-mt-1 flex justify-end">
               <button

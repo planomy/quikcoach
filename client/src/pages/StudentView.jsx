@@ -96,7 +96,7 @@ export default function StudentView() {
   const [inboxExpandedId, setInboxExpandedId] = useState(null);
   const [inboxUnreadIds, setInboxUnreadIds] = useState(() => new Set());
   const [dismissedInboxIds, setDismissedInboxIds] = useState(() => new Set());
-  const [respondLive, setRespondLive] = useState(false);
+  const [respondQuestionNumber, setRespondQuestionNumber] = useState(null);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [imageBusy, setImageBusy] = useState(false);
@@ -177,7 +177,7 @@ export default function StudentView() {
       setInboxUnreadIds(new Set());
     }
     if (tabId === 'respond') {
-      setRespondLive(false);
+      setRespondQuestionNumber(null);
     }
   }
 
@@ -319,16 +319,27 @@ export default function StudentView() {
         return nextHistory;
       });
     };
-    const onLiveActivity = (payload) => {
-      if (payload?.activity?.id) {
-        setRespondLive(true);
-      } else {
-        setRespondLive(false);
+    const showRespondBadge = (activity) => {
+      if (!activity?.id) {
+        setRespondQuestionNumber(null);
+        return;
       }
+      if (supportTabRef.current === 'respond') {
+        setRespondQuestionNumber(null);
+        return;
+      }
+      setRespondQuestionNumber(Math.max(1, Number(activity.questionNumber) || 1));
+    };
+    const onLiveActivity = (payload) => {
+      if (payload?.activity?.id) showRespondBadge(payload.activity);
+      else setRespondQuestionNumber(null);
     };
     const onLiveRealert = (payload) => {
-      if (payload?.activity?.id) {
-        setRespondLive(true);
+      if (payload?.activity?.id) showRespondBadge(payload.activity);
+    };
+    const onLiveStudent = (payload) => {
+      if (payload?.response?.value && payload?.activity?.id) {
+        setRespondQuestionNumber(null);
       }
     };
     const onTimesUp = () => setTimesUp(true);
@@ -338,6 +349,7 @@ export default function StudentView() {
     socket.on('broadcast:exemplars', onBroadcast);
     socket.on('live:activity', onLiveActivity);
     socket.on('live:realert', onLiveRealert);
+    socket.on('live:student', onLiveStudent);
     socket.on('timer:times-up', onTimesUp);
     return () => {
       socket.off('room:state', onState);
@@ -346,6 +358,7 @@ export default function StudentView() {
       socket.off('broadcast:exemplars', onBroadcast);
       socket.off('live:activity', onLiveActivity);
       socket.off('live:realert', onLiveRealert);
+      socket.off('live:student', onLiveStudent);
       socket.off('timer:times-up', onTimesUp);
     };
   }, [socket]);
@@ -894,8 +907,8 @@ export default function StudentView() {
                 const active = supportTab === tab.id;
                 const badge = tab.id === 'inbox'
                   ? inboxTabCount
-                  : tab.id === 'respond' && respondLive
-                    ? '●'
+                  : tab.id === 'respond' && respondQuestionNumber
+                    ? respondQuestionNumber
                     : 0;
                 return (
                   <button
@@ -912,7 +925,13 @@ export default function StudentView() {
                     {badge ? (
                       <span
                         data-iboard-tab-badge=""
-                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${active ? 'bg-white/25' : 'bg-amber-500 text-amber-950'}`}
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${
+                          active
+                            ? 'bg-white/25'
+                            : tab.id === 'respond' && respondQuestionNumber
+                              ? 'bg-rose-600 text-white'
+                              : 'bg-amber-500 text-amber-950'
+                        }`}
                       >
                         {badge}
                       </span>

@@ -11,7 +11,7 @@
   }
 }
 
-html.iboard-student-workspace aside:has(.iboard-student-support-scroll section.iboard-question-pulse)
+html.iboard-student-workspace.iboard-student-respond-alert
   nav[aria-label='Student tools'] > button:nth-child(2) [data-iboard-tab-badge] {
   background: #e11d48 !important;
   color: #fff !important;
@@ -20,7 +20,7 @@ html.iboard-student-workspace aside:has(.iboard-student-support-scroll section.i
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.iboard-student-workspace aside:has(.iboard-student-support-scroll section.iboard-question-pulse)
+  html.iboard-student-workspace.iboard-student-respond-alert
     nav[aria-label='Student tools'] > button:nth-child(2) [data-iboard-tab-badge] {
     animation: none;
     box-shadow: 0 0 0 3px rgb(225 29 72 / 0.16);

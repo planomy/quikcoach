@@ -24,15 +24,11 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss })
             key={item.id}
             className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
           >
-            <span
-              aria-hidden="true"
-              className={`absolute bottom-0 left-0 top-0 w-1 ${isBroadcast ? 'bg-slate-300 dark:bg-slate-600' : 'bg-indigo-500'}`}
-            />
-            <div className="flex items-stretch pl-1">
+            <div className="flex items-stretch">
               <button
                 type="button"
                 onClick={() => onToggle(item.id)}
-                className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 pl-4 text-left"
+                className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left"
                 aria-expanded={open}
               >
                 <div className="min-w-0 flex-1">
@@ -65,7 +61,7 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss })
               ) : null}
             </div>
             {open && (
-              <div className="space-y-3 border-t border-slate-100 px-4 py-3 pl-5 dark:border-slate-800">
+              <div className="space-y-3 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
                 {isBroadcast ? (
                   <>
                     <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">

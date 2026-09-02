@@ -88,16 +88,22 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     activityIdRef.current = nextActivity.id;
     const number = Math.max(1, Number(nextActivity.questionNumber) || 1);
     setThemeIndex((number - 1) % QUESTION_THEMES.length);
-    setPulse(true);
     if (!quietAlerts) {
+      setPulse(true);
       setMessage(force ? 'Your teacher has re-alerted this question.' : 'New question — answer now');
     } else {
+      setPulse(false);
       setMessage('');
+      document.documentElement.classList.remove('iboard-student-respond-alert');
+      document.documentElement.classList.add('iboard-student-respond-alert');
     }
     if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
     if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
     if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
-    pulseTimerRef.current = setTimeout(() => setPulse(false), 2600);
+    pulseTimerRef.current = setTimeout(() => {
+      setPulse(false);
+      document.documentElement.classList.remove('iboard-student-respond-alert');
+    }, 2600);
 
     if (!quietAlerts) {
       setArrival(nextActivity);
@@ -179,6 +185,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
       if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
       if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+      document.documentElement.classList.remove('iboard-student-respond-alert');
       document.title = originalTitleRef.current;
     };
   }, [drawAttention, quietAlerts, socket]);
@@ -308,7 +315,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       <button
         type="button"
         onClick={onExpand}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? colour : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(pulse || nudge) ? 'iboard-question-pulse' : ''}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? colour : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(!quietAlerts && (pulse || nudge)) ? 'iboard-question-pulse' : ''}`}
         aria-label={`${label}. ${detail}. Open Pulse panel.`}
         aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
       >
@@ -402,15 +409,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
           ref={panelRef}
           className={
             quietAlerts
-              ? `relative overflow-hidden scroll-mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 ${compact ? 'mt-2 p-3' : 'p-4'} ${pulse ? 'iboard-question-pulse' : ''}`
+              ? `scroll-mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 ${compact ? 'mt-2 p-3' : 'p-4'}`
               : `scroll-mt-4 border-2 bg-white shadow-xl ring-4 dark:bg-slate-900 ${compact ? 'mt-2 rounded-2xl p-2.5 ring-2' : 'rounded-3xl p-4 sm:p-6'} ${theme.panel} ${pulse ? 'iboard-question-pulse' : ''}`
           }
           aria-live="polite"
         >
-          {quietAlerts ? (
-            <span aria-hidden="true" className="absolute bottom-0 left-0 top-0 w-1 bg-indigo-500" />
-          ) : null}
-          <div className={quietAlerts ? 'pl-2' : undefined}>
           <div className={`flex flex-wrap items-center justify-between ${compact ? 'gap-1' : 'gap-2'}`}>
             <p className={`font-black uppercase tracking-wide ${quietAlerts ? 'text-[10px] text-indigo-600 dark:text-indigo-300' : `${theme.label} ${compact ? 'text-[10px]' : 'text-xs tracking-[0.22em]'}`}`}>
               Q{activity.questionNumber || 1}{quietAlerts ? '' : ' · Live'}
@@ -493,7 +496,6 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               ))}
             </div>
           )}
-          </div>
         </section>
       )}
     </>

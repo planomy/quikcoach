@@ -71,6 +71,13 @@ html.iboard-student-workspace .iboard-featured-splash {
   display: none !important;
 }
 
+/* New questions alert via the Respond tab badge only — never pulse the panel chrome. */
+html.iboard-student-workspace .iboard-question-pulse {
+  animation: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
 /* Legacy dock selector kept for older embeds. */
 .iboard-student-pulse-dock .iboard-question-arrival {
   display: none !important;
