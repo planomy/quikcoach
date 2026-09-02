@@ -35,6 +35,11 @@ import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
+import { placementNearAnchor } from '../lib/clampPopup.js';
+import { subscribeViewportChanges } from '../lib/viewport.js';
+
+const NOTE_COMPOSER_WIDTH = 384;
+const NOTE_COMPOSER_EST_HEIGHT = 360;
 
 const MODE_LABELS = {
   writing: 'Writing',
@@ -183,6 +188,9 @@ function TeacherDashboardInner() {
   const [noteDraft, setNoteDraft] = useState('');
   const [noteError, setNoteError] = useState('');
   const [noteSending, setNoteSending] = useState(false);
+  const [noteAnchorRect, setNoteAnchorRect] = useState(null);
+  const [noteBox, setNoteBox] = useState(null);
+  const noteComposerRef = useRef(null);
   const [broadcastPick, setBroadcastPick] = useState({});
   const [snapshots, setSnapshots] = useState([]);
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
@@ -684,6 +692,70 @@ function TeacherDashboardInner() {
   }, [livePulse.activity?.id]);
 
   useEffect(() => {
+    if (!noteTarget) {
+      setNoteBox(null);
+      return undefined;
+    }
+
+    const place = () => {
+      const height = noteComposerRef.current?.offsetHeight || NOTE_COMPOSER_EST_HEIGHT;
+      const width = noteComposerRef.current?.offsetWidth || NOTE_COMPOSER_WIDTH;
+      if (noteAnchorRect) {
+        setNoteBox(placementNearAnchor({
+          anchor: noteAnchorRect,
+          width,
+          height,
+          gap: 8,
+          padding: 12,
+          prefer: 'below-left',
+        }));
+        return;
+      }
+      const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+      const vw = vv?.width ?? window.innerWidth;
+      const vh = vv?.height ?? window.innerHeight;
+      const topOffset = vv?.offsetTop ?? 0;
+      const leftOffset = vv?.offsetLeft ?? 0;
+      setNoteBox({
+        top: topOffset + Math.max(12, (vh - height) / 2),
+        left: leftOffset + Math.max(12, (vw - width) / 2),
+      });
+    };
+
+    place();
+    const frame = requestAnimationFrame(place);
+    const unsubscribe = subscribeViewportChanges(place);
+    return () => {
+      cancelAnimationFrame(frame);
+      unsubscribe();
+    };
+  }, [noteTarget, noteAnchorRect, noteDraft, noteError]);
+
+  useEffect(() => {
+    if (!noteTarget) return undefined;
+
+    function onPointerDown(event) {
+      if (noteSending) return;
+      const target = event.target;
+      if (noteComposerRef.current?.contains(target)) return;
+      if (target?.closest?.('[aria-label^="Note "]')) return;
+      if (target?.closest?.('button')?.textContent?.trim() === 'Send note') return;
+      closeNoteComposer();
+    }
+
+    function onKeyDown(event) {
+      if (event.key === 'Escape') closeNoteComposer();
+    }
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [noteTarget, noteSending]);
+
+  useEffect(() => {
     if (!toolsPanelOpen && !addCardOpen && !settingsOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
@@ -816,7 +888,20 @@ function TeacherDashboardInner() {
     });
   }
 
-  function openNoteForStudent(student) {
+  function openNoteForStudent(student, event) {
+    const trigger = event?.currentTarget;
+    const rect = trigger?.getBoundingClientRect?.();
+    setNoteAnchorRect(rect
+      ? {
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        }
+      : null);
+    setNoteBox(null);
     setNoteTarget({ id: Number(student.id), name: String(student.name || 'Student') });
     setNoteDraft('');
     setNoteError('');
@@ -828,6 +913,8 @@ function TeacherDashboardInner() {
     setNoteTarget(null);
     setNoteDraft('');
     setNoteError('');
+    setNoteAnchorRect(null);
+    setNoteBox(null);
   }
 
   function sendNoteToStudent() {
@@ -850,6 +937,8 @@ function TeacherDashboardInner() {
       }
       setNoteTarget(null);
       setNoteDraft('');
+      setNoteAnchorRect(null);
+      setNoteBox(null);
       setCopyToast(`Note sent to ${target.name}`);
       setTimeout(() => setCopyToast(''), 2500);
     });
@@ -1852,7 +1941,7 @@ function TeacherDashboardInner() {
                     <HintWrap hint="Send note">
                       <button
                         type="button"
-                        onClick={() => openNoteForStudent(s)}
+                        onClick={(event) => openNoteForStudent(s, event)}
                         className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                         aria-label={`Note ${s.name}`}
                       >
@@ -2748,7 +2837,7 @@ function TeacherDashboardInner() {
                 <p className="text-xs text-slate-500 dark:text-slate-400">{wordCount(focusedStudent.text)} words · select text to add an inline comment</p>
               </div>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => { setFocusedStudentId(null); openNoteForStudent(focusedStudent); }} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
+                <button type="button" onClick={(event) => { const button = event.currentTarget; setFocusedStudentId(null); openNoteForStudent(focusedStudent, { currentTarget: button }); }} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
                   Send note
                 </button>
                 {focusedStudent.image_url && (
@@ -2792,84 +2881,88 @@ function TeacherDashboardInner() {
       )}
 
       {noteTarget && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
-          <form
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="private-note-title"
-            onSubmit={(event) => {
-              event.preventDefault();
-              sendNoteToStudent();
-            }}
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 dark:text-indigo-300">
-                  Private feedback
-                </p>
-                <h2 id="private-note-title" className="mt-1 font-display text-lg font-bold text-ink-900 dark:text-slate-100">
-                  Note for {noteTarget.name}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  This will appear in the student&apos;s Inbox tab.
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={noteSending}
-                onClick={closeNoteComposer}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                aria-label="Close private note"
-              >
-                ×
-              </button>
+        <form
+          ref={noteComposerRef}
+          className="fixed z-[70] w-[min(24rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+          style={{
+            top: noteBox ? noteBox.top : -9999,
+            left: noteBox ? noteBox.left : -9999,
+            visibility: noteBox ? 'visible' : 'hidden',
+          }}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="private-note-title"
+          onSubmit={(event) => {
+            event.preventDefault();
+            sendNoteToStudent();
+          }}
+        >
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 dark:text-indigo-300">
+                Private feedback
+              </p>
+              <h2 id="private-note-title" className="mt-0.5 truncate font-display text-base font-bold text-ink-900 dark:text-slate-100">
+                Note for {noteTarget.name}
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Goes to their Inbox.
+              </p>
             </div>
-            <div className="px-5 py-4">
-              <label htmlFor="private-note-text" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
-                Your note
-              </label>
-              <textarea
-                id="private-note-text"
-                autoFocus
-                rows={5}
-                maxLength={5000}
-                value={noteDraft}
-                onChange={(event) => setNoteDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-                    event.preventDefault();
-                    sendNoteToStudent();
-                  }
-                  if (event.key === 'Escape') closeNoteComposer();
-                }}
-                placeholder="Write a private note…"
-                className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
-              <div className="mt-2 flex items-start justify-between gap-3">
-                <p className="text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p>
-                <p className="shrink-0 text-[11px] text-slate-400">{noteDraft.length}/5000</p>
-              </div>
+            <button
+              type="button"
+              disabled={noteSending}
+              onClick={closeNoteComposer}
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              aria-label="Close private note"
+            >
+              ×
+            </button>
+          </div>
+          <div className="px-4 py-3">
+            <label htmlFor="private-note-text" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+              Your note
+            </label>
+            <textarea
+              id="private-note-text"
+              autoFocus
+              rows={4}
+              maxLength={5000}
+              value={noteDraft}
+              onChange={(event) => setNoteDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                  event.preventDefault();
+                  sendNoteToStudent();
+                }
+                if (event.key === 'Escape') closeNoteComposer();
+              }}
+              placeholder="Write a private note…"
+              className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            />
+            <div className="mt-1.5 flex items-start justify-between gap-3">
+              <p className="text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p>
+              <p className="shrink-0 text-[11px] text-slate-400">{noteDraft.length}/5000</p>
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-950">
-              <button
-                type="button"
-                disabled={noteSending}
-                onClick={closeNoteComposer}
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={noteSending || !noteDraft.trim()}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
-              >
-                {noteSending ? 'Sending…' : 'Send note'}
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+          <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-950">
+            <button
+              type="button"
+              disabled={noteSending}
+              onClick={closeNoteComposer}
+              className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={noteSending || !noteDraft.trim()}
+              className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
+            >
+              {noteSending ? 'Sending…' : 'Send note'}
+            </button>
+          </div>
+        </form>
       )}
 
       {evidenceModalOpen && (
