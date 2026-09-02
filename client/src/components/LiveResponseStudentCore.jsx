@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import { UNKNOWN_ANSWER, isUnknownAnswer } from '../lib/liveResponseUnknown.js';
 
@@ -394,8 +395,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
           <span className="mt-3 block text-xs font-bold uppercase tracking-wide text-white/80">Tap to answer now</span>
         </button>
       )}
-      {nudge && (
-        <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
+      {nudge && createPortal(
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl dark:bg-slate-900">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Private check-in</p>
             <h2 className="mt-2 font-display text-2xl font-black text-slate-900 dark:text-white">Are you still with us?</h2>
@@ -407,7 +408,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {activity && (
         <section

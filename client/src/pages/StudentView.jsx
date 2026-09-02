@@ -346,6 +346,9 @@ export default function StudentView() {
         setRespondQuestionNumber(null);
       }
     };
+    const onLiveNudge = () => {
+      setSupportTab('respond');
+    };
     const onTimesUp = () => setTimesUp(true);
     socket.on('room:state', onState);
     socket.on('student:live', onLive);
@@ -354,6 +357,7 @@ export default function StudentView() {
     socket.on('live:activity', onLiveActivity);
     socket.on('live:realert', onLiveRealert);
     socket.on('live:student', onLiveStudent);
+    socket.on('live:nudge', onLiveNudge);
     socket.on('timer:times-up', onTimesUp);
     return () => {
       socket.off('room:state', onState);
@@ -363,6 +367,7 @@ export default function StudentView() {
       socket.off('live:activity', onLiveActivity);
       socket.off('live:realert', onLiveRealert);
       socket.off('live:student', onLiveStudent);
+      socket.off('live:nudge', onLiveNudge);
       socket.off('timer:times-up', onTimesUp);
     };
   }, [socket]);
