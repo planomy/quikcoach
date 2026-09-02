@@ -826,7 +826,7 @@ export default function StudentView() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">{student?.name}</h1>
               {activeRoomCode && (
-                <span className="rounded-full border border-indigo-200/80 bg-indigo-100/90 px-2.5 py-1 text-xs font-black text-indigo-800 shadow-[0_1px_3px_rgba(79,70,229,0.08)] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                <span className="iboard-header-chip rounded-full border border-indigo-200/80 bg-indigo-100/90 px-2.5 py-1 text-xs font-black text-indigo-800 shadow-[0_1px_3px_rgba(79,70,229,0.08)] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
                   Room {activeRoomCode}
                 </span>
               )}
@@ -834,7 +834,7 @@ export default function StudentView() {
           </div>
           <details className="group relative shrink-0">
             <summary
-              className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 [&::-webkit-details-marker]:hidden"
+              className="iboard-header-icon-button grid h-10 w-10 cursor-pointer list-none place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 [&::-webkit-details-marker]:hidden"
               aria-label="Student tools"
               title="Student tools"
             >

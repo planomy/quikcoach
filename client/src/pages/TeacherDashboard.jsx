@@ -1460,10 +1460,10 @@ function TeacherDashboardInner() {
         <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
-              Room <span className="font-mono text-indigo-600">{codeInput}</span>
+              Room <span className="iboard-header-code font-mono text-indigo-600">{codeInput}</span>
             </h1>
             <SaveStatusChip status={saveStatus} />
-            <span className="hidden rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 sm:inline">
+            <span className="iboard-header-chip hidden rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 sm:inline">
               Participants: {orderedStudents.length}
             </span>
             {frozen && (
@@ -1489,7 +1489,8 @@ function TeacherDashboardInner() {
                     else openTeacherTools(tab.id);
                   }}
                   aria-current={active ? 'page' : undefined}
-                  className={`relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
+                  data-active={active ? 'true' : 'false'}
+                  className={`iboard-header-tab relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
                     active
                       ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
                       : 'border border-indigo-100/80 bg-indigo-100/75 text-indigo-950 hover:border-indigo-200 hover:bg-indigo-200/70 dark:border-transparent dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
@@ -1509,7 +1510,7 @@ function TeacherDashboardInner() {
               );
             })}
           </nav>
-          <div className="flex items-center gap-1.5 border-l border-slate-200 pl-1.5 dark:border-slate-700">
+          <div className="iboard-header-divider flex items-center gap-1.5 border-l border-slate-200 pl-1.5 dark:border-slate-700">
             <HintWrap hint="Add card" prefer="below">
               <button
                 type="button"
@@ -1517,7 +1518,7 @@ function TeacherDashboardInner() {
                   closeRoomMenu();
                   openAddCard();
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
                 aria-label="Add card"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -1548,7 +1549,7 @@ function TeacherDashboardInner() {
               className="relative z-[60]"
             >
               <summary
-                className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="iboard-header-icon-button flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                 title="Room settings"
                 aria-label="Room settings"
               >
