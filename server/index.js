@@ -464,34 +464,48 @@ function emitStudentLiveState(code, studentId) {
 
 function emitLiveState(code) {
   const c = normalizeRoomCode(code);
-  const teacherPayload = buildTeacherLivePayload(c);
-  io.to(teacherSocketName(c)).emit('live:teacher', teacherPayload);
-  const activity = teacherPayload.activity;
-  const responses = teacherPayload.responses || [];
-  const featuredLabels = new Map(
-    (teacherPayload.featuredWall || [])
-      .filter((item) => String(item.activityId) === String(activity?.id))
-      .map((item) => [Number(item.studentId), String(item.label || '')])
-  );
-  const featured = activity?.type === 'short'
-    ? responses.filter((response) => response.published).map((response) => ({
-        value: response.value,
-        name: activity.anonymous ? 'Anonymous' : response.name,
-        label: featuredLabels.get(Number(response.studentId)) || '',
-      }))
-    : [];
-  // Every roster student (not the name-deduped teacher view) so nobody misses updates.
+  let activity = null;
+  let responses = [];
+  let featured = [];
+  try {
+    const teacherPayload = buildTeacherLivePayload(c);
+    io.to(teacherSocketName(c)).emit('live:teacher', teacherPayload);
+    activity = teacherPayload.activity;
+    responses = teacherPayload.responses || [];
+    const featuredLabels = new Map(
+      (teacherPayload.featuredWall || [])
+        .filter((item) => String(item.activityId) === String(activity?.id))
+        .map((item) => [Number(item.studentId), String(item.label || '')])
+    );
+    featured = activity?.type === 'short'
+      ? responses.filter((response) => response.published).map((response) => ({
+          value: response.value,
+          name: activity.anonymous ? 'Anonymous' : response.name,
+          label: featuredLabels.get(Number(response.studentId)) || '',
+        }))
+      : [];
+  } catch (teacherLiveError) {
+    console.error(teacherLiveError);
+    activity = liveActivityForClients(queries.getLiveActivity(db, c));
+    responses = activity ? queries.listLiveResponses(db, c) : [];
+  }
+
+  // Every roster student gets a personalised payload (excludes Shared asker).
   for (const row of queries.listStudents(db, c)) {
     const sid = Number(row.id);
     if (!sid) continue;
-    const visible = activityForStudent(activity, sid);
-    io.to(studentSocketName(sid)).emit('live:activity', {
-      activity: publicLiveActivity(visible),
-      responseCount: responses.length,
-      featured: visible ? featured : [],
-      serverNow: Date.now(),
-    });
-    emitStudentLiveState(c, sid);
+    try {
+      const visible = activityForStudent(activity, sid);
+      io.to(studentSocketName(sid)).emit('live:activity', {
+        activity: publicLiveActivity(visible),
+        responseCount: responses.length,
+        featured: visible ? featured : [],
+        serverNow: Date.now(),
+      });
+      emitStudentLiveState(c, sid);
+    } catch (studentLiveError) {
+      console.error(studentLiveError);
+    }
   }
 }
 
@@ -661,10 +675,15 @@ io.on('connection', (socket) => {
       addStudentPresence(student.id, socket.id);
       const payload = buildRoomPayload(c);
       cb?.({ ok: true, student, room: payload.room, students: payload.students, resumed });
-      emitRoomState(c, payload);
-      emitBroadcastHistoryToSocket(socket, c);
-      emitLiveState(c);
-      emitAudienceQnaState(c);
+      try {
+        emitRoomState(c, payload);
+        emitBroadcastHistoryToSocket(socket, c);
+        emitLiveState(c);
+        emitAudienceQnaState(c);
+      } catch (postJoinError) {
+        // Never fail the join ack after success — live extras can recover on sync.
+        console.error(postJoinError);
+      }
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Server error' });
@@ -693,10 +712,14 @@ io.on('connection', (socket) => {
       addStudentPresence(student.id, socket.id);
       const payload = buildRoomPayload(c);
       cb?.({ ok: true, student, room: payload.room, students: payload.students });
-      emitRoomState(c, payload);
-      emitBroadcastHistoryToSocket(socket, c);
-      emitLiveState(c);
-      emitAudienceQnaState(c);
+      try {
+        emitRoomState(c, payload);
+        emitBroadcastHistoryToSocket(socket, c);
+        emitLiveState(c);
+        emitAudienceQnaState(c);
+      } catch (postJoinError) {
+        console.error(postJoinError);
+      }
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Server error' });
