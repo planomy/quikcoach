@@ -147,6 +147,7 @@ export default function LiveResponseTeacher({
   const [displayMode, setDisplayMode] = useState(false);
   const [activeView, setActiveView] = useState('quik');
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [engagementFocusId, setEngagementFocusId] = useState(null);
   const [qnaQuestions, setQnaQuestions] = useState([]);
   const [message, setMessage] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -301,6 +302,7 @@ export default function LiveResponseTeacher({
     return positions;
   }, {});
   const selectedStudent = students.find((student) => Number(student.id) === Number(selectedStudentId)) || null;
+  const engagementFocusStudent = students.find((student) => Number(student.id) === Number(engagementFocusId)) || null;
 
   function currentDraft() {
     return { type, prompt: prompt.trim(), options: options.map((value) => value.trim()).filter(Boolean), correctAnswer, anonymous, optional, imageUrl, timerSeconds };
@@ -396,7 +398,9 @@ export default function LiveResponseTeacher({
     socket.emit('teacher:live-acknowledge', { studentId }, (ack) => {
       if (ack?.ok) {
         setMessage('Alert cleared.');
-        returnToPrimaryView();
+        setEngagementFocusId(null);
+        setSelectedStudentId(null);
+        if (activeView === 'student') returnToPrimaryView();
       } else {
         setMessage('Could not clear alert.');
       }
@@ -463,6 +467,11 @@ export default function LiveResponseTeacher({
       return;
     }
     setActiveView(pendingByStudent[Number(student.id)] ? 'qna' : 'student');
+  }
+
+  function selectEngagementStudent(student) {
+    setSelectedStudentId(student.id);
+    setEngagementFocusId(student.id);
   }
 
   function launchQuikPulse(question) {
@@ -541,9 +550,15 @@ export default function LiveResponseTeacher({
           const questionCount = pendingByStudent[Number(student.id)] || 0;
           const queuePosition = firstPendingPositionByStudent[Number(student.id)] || 0;
           const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
+          const focused = Number(engagementFocusId) === Number(student.id);
           return (
             <div key={student.id} className="relative w-[70px] shrink-0">
-              <button type="button" onClick={() => openStudent(student)} title={`${student.name} · ${tile.title}`} className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] bg-white px-1 pb-1.5 pt-2 dark:bg-slate-900 ${tile.className}`}>
+              <button
+                type="button"
+                onClick={() => selectEngagementStudent(student)}
+                title={`${student.name} · ${tile.title}`}
+                className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] bg-white px-1 pb-1.5 pt-2 dark:bg-slate-900 ${tile.className} ${focused ? 'ring-2 ring-indigo-500' : ''}`}
+              >
                 <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
                 <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
               </button>
@@ -563,6 +578,38 @@ export default function LiveResponseTeacher({
         })}
         {!students.length && <p className="py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
       </div>
+      {engagementFocusStudent && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-black text-slate-900 dark:text-white">{engagementFocusStudent.name}</p>
+            <p className="text-[10px] text-slate-500">{studentTileMeta(engagementFocusStudent).title}</p>
+          </div>
+          <button
+            type="button"
+            disabled={!engagementFocusStudent.connected}
+            onClick={() => nudge(engagementFocusStudent.id)}
+            className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white disabled:opacity-40"
+          >
+            Send private check-in
+          </button>
+          {engagementFocusStudent.engagement_status && engagementFocusStudent.engagement_status !== 'ready' && (
+            <button
+              type="button"
+              onClick={() => acknowledge(engagementFocusStudent.id)}
+              className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-black text-amber-950"
+            >
+              Clear alert
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => { setEngagementFocusId(null); setSelectedStudentId(null); }}
+            className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            Done
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -815,8 +862,11 @@ export default function LiveResponseTeacher({
             open
             activity={activity}
             responses={responses}
-            highlightStudentId={highlightStudentId}
-            onClearHighlight={onClearHighlight}
+            highlightStudentId={highlightStudentId ?? engagementFocusId}
+            onClearHighlight={() => {
+              setEngagementFocusId(null);
+              onClearHighlight?.();
+            }}
             onOpenAsk={() => switchPanelTab('ask')}
             onClose={onClose}
           />

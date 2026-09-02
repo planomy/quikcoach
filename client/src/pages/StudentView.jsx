@@ -838,7 +838,7 @@ export default function StudentView() {
           role="status"
           className="fixed inset-x-4 top-4 z-[75] mx-auto max-w-md rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-center shadow-lg dark:border-indigo-800 dark:bg-slate-900"
         >
-          <p className="text-sm font-black text-indigo-900 dark:text-indigo-100">Teacher has seen your request</p>
+          <p className="text-sm font-black text-indigo-900 dark:text-indigo-100">Response seen</p>
         </div>
       )}
       {connBanner === 'lost' && (
