@@ -699,7 +699,7 @@ export default function LiveResponseTeacher({
       )}
 
       {panelTabNav}
-      {usingPanelTabs && effectivePanelTab === 'respond' && awarenessStrip}
+      {usingPanelTabs && effectivePanelTab === 'responses' && awarenessStrip}
       {usingPanelTabs && effectivePanelTab === 'ask' && askSubNav}
 
       {!usingPanelTabs && (
