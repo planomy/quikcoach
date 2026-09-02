@@ -181,9 +181,13 @@ export default function TeacherAnswerRail({
     if (!open || highlightStudentId == null) return undefined;
     const node = listRef.current?.querySelector(`[data-rail-student="${highlightStudentId}"]`);
     if (node) node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Parent-owned highlight only (e.g. from board card). Do not auto-clear
+    // local engagement selection — that lives outside this timer.
     const timer = window.setTimeout(() => onClearHighlight?.(), 2200);
     return () => window.clearTimeout(timer);
-  }, [open, highlightStudentId, onClearHighlight, sorted.length]);
+    // Intentionally omit onClearHighlight identity — avoid restarting the timer on every parent render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- highlightStudentId + open drive this effect
+  }, [open, highlightStudentId, sorted.length]);
 
   useEffect(() => {
     if (embedded || !open || presenting) return undefined;

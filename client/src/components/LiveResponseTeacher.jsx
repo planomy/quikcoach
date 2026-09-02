@@ -147,8 +147,7 @@ export default function LiveResponseTeacher({
   const [displayMode, setDisplayMode] = useState(false);
   const [activeView, setActiveView] = useState('quik');
   const [selectedStudentId, setSelectedStudentId] = useState(null);
-  const [engagementFocusId, setEngagementFocusId] = useState(null);
-  const [railFocusId, setRailFocusId] = useState(null);
+  const [engagementFocus, setEngagementFocus] = useState(null);
   const [qnaQuestions, setQnaQuestions] = useState([]);
   const [message, setMessage] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -303,7 +302,10 @@ export default function LiveResponseTeacher({
     return positions;
   }, {});
   const selectedStudent = students.find((student) => Number(student.id) === Number(selectedStudentId)) || null;
-  const engagementFocusStudent = students.find((student) => Number(student.id) === Number(engagementFocusId)) || null;
+  const liveEngagementMatch = engagementFocus
+    ? students.find((student) => Number(student.id) === Number(engagementFocus.id)) || null
+    : null;
+  const engagementFocusStudent = liveEngagementMatch || engagementFocus;
 
   function currentDraft() {
     return { type, prompt: prompt.trim(), options: options.map((value) => value.trim()).filter(Boolean), correctAnswer, anonymous, optional, imageUrl, timerSeconds };
@@ -399,7 +401,7 @@ export default function LiveResponseTeacher({
     socket.emit('teacher:live-acknowledge', { studentId }, (ack) => {
       if (ack?.ok) {
         setMessage('Alert cleared.');
-        setEngagementFocusId(null);
+        setEngagementFocus(null);
         setSelectedStudentId(null);
         if (activeView === 'student') returnToPrimaryView();
       } else {
@@ -472,8 +474,21 @@ export default function LiveResponseTeacher({
 
   function selectEngagementStudent(student) {
     setSelectedStudentId(student.id);
-    setEngagementFocusId(student.id);
-    if (student.hasResponded) setRailFocusId(student.id);
+    // Snapshot so the action bar stays open even if live roster briefly reorders.
+    setEngagementFocus({
+      id: student.id,
+      name: student.name,
+      connected: student.connected,
+      engagement_status: student.engagement_status,
+      hasResponded: student.hasResponded,
+      engagement: student.engagement,
+      response: student.response,
+    });
+  }
+
+  function clearEngagementFocus() {
+    setEngagementFocus(null);
+    setSelectedStudentId(null);
   }
 
   function launchQuikPulse(question) {
@@ -552,7 +567,7 @@ export default function LiveResponseTeacher({
           const questionCount = pendingByStudent[Number(student.id)] || 0;
           const queuePosition = firstPendingPositionByStudent[Number(student.id)] || 0;
           const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
-          const focused = Number(engagementFocusId) === Number(student.id);
+          const focused = Number(engagementFocus?.id) === Number(student.id);
           return (
             <div key={student.id} className="relative w-[70px] shrink-0">
               <button
@@ -605,7 +620,7 @@ export default function LiveResponseTeacher({
           )}
           <button
             type="button"
-            onClick={() => { setEngagementFocusId(null); setSelectedStudentId(null); setRailFocusId(null); }}
+            onClick={clearEngagementFocus}
             className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
             Done
@@ -864,11 +879,8 @@ export default function LiveResponseTeacher({
             open
             activity={activity}
             responses={responses}
-            highlightStudentId={highlightStudentId ?? railFocusId}
-            onClearHighlight={() => {
-              setRailFocusId(null);
-              onClearHighlight?.();
-            }}
+            highlightStudentId={highlightStudentId}
+            onClearHighlight={onClearHighlight}
             onOpenAsk={() => switchPanelTab('ask')}
             onClose={onClose}
           />

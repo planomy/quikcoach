@@ -839,9 +839,9 @@ export default function StudentView() {
       {helpSeenToast && (
         <div
           role="status"
-          className="fixed inset-x-4 top-4 z-[75] mx-auto max-w-md rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-center shadow-lg dark:border-indigo-800 dark:bg-slate-900"
+          className="fixed inset-x-4 top-4 z-[75] mx-auto max-w-md rounded-2xl bg-indigo-600 px-4 py-3 text-center shadow-lg ring-2 ring-white/80"
         >
-          <p className="text-sm font-black text-indigo-900 dark:text-indigo-100">Response seen</p>
+          <p className="text-sm font-black text-white">Response seen</p>
         </div>
       )}
       {connBanner === 'lost' && (
