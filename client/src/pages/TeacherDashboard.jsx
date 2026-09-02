@@ -166,7 +166,6 @@ function TeacherDashboardInner() {
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
-  const roomActionsRef = useRef(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [feedbackMode, setFeedbackMode] = useState('writing');
@@ -207,6 +206,8 @@ function TeacherDashboardInner() {
   const teacherToolsPanelRef = useRef(null);
   const addCardButtonRef = useRef(null);
   const addCardPanelRef = useRef(null);
+  const settingsButtonRef = useRef(null);
+  const settingsPanelRef = useRef(null);
   const [teacherToolsTop, setTeacherToolsTop] = useState(0);
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
@@ -220,6 +221,7 @@ function TeacherDashboardInner() {
   const [cardView, setCardView] = useState(initialCardView);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [addCardOpen, setAddCardOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [addCardTitle, setAddCardTitle] = useState('Teacher');
   const [addCardText, setAddCardText] = useState('');
   const [addCardImage, setAddCardImage] = useState('');
@@ -682,25 +684,7 @@ function TeacherDashboardInner() {
   }, [livePulse.activity?.id]);
 
   useEffect(() => {
-    if (!joined) return undefined;
-    function closeIfOutside(event) {
-      const room = roomActionsRef.current;
-      if (room?.open && !room.contains(event.target)) room.open = false;
-    }
-    function onKeyDown(event) {
-      if (event.key !== 'Escape') return;
-      if (roomActionsRef.current) roomActionsRef.current.open = false;
-    }
-    document.addEventListener('pointerdown', closeIfOutside);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', closeIfOutside);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [joined]);
-
-  useEffect(() => {
-    if (!toolsPanelOpen && !addCardOpen) return undefined;
+    if (!toolsPanelOpen && !addCardOpen && !settingsOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
       const target = event.target;
@@ -712,11 +696,16 @@ function TeacherDashboardInner() {
         if (addCardButtonRef.current?.contains(target)) return;
         if (addCardPanelRef.current?.contains(target)) return;
       }
+      if (settingsOpen) {
+        if (settingsButtonRef.current?.contains(target)) return;
+        if (settingsPanelRef.current?.contains(target)) return;
+      }
       if (toolsPanelOpen) {
         setToolsPanelOpen(false);
         setToolsHighlightStudentId(null);
       }
       if (addCardOpen && !addCardBusy) setAddCardOpen(false);
+      if (settingsOpen) closeSettings();
     }
 
     function closeHeaderPanelsOnEscape(event) {
@@ -726,6 +715,7 @@ function TeacherDashboardInner() {
         setToolsHighlightStudentId(null);
       }
       if (addCardOpen && !addCardBusy) setAddCardOpen(false);
+      if (settingsOpen) closeSettings();
     }
 
     document.addEventListener('pointerdown', closeHeaderPanelsIfOutside);
@@ -734,10 +724,10 @@ function TeacherDashboardInner() {
       document.removeEventListener('pointerdown', closeHeaderPanelsIfOutside);
       document.removeEventListener('keydown', closeHeaderPanelsOnEscape);
     };
-  }, [toolsPanelOpen, addCardOpen, addCardBusy]);
+  }, [toolsPanelOpen, addCardOpen, settingsOpen, addCardBusy]);
 
   useLayoutEffect(() => {
-    if ((!toolsPanelOpen && !addCardOpen) || !teacherHeaderRef.current) return undefined;
+    if ((!toolsPanelOpen && !addCardOpen && !settingsOpen) || !teacherHeaderRef.current) return undefined;
 
     function alignHeaderDockToHeader() {
       const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
@@ -754,7 +744,7 @@ function TeacherDashboardInner() {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', alignHeaderDockToHeader);
     };
-  }, [toolsPanelOpen, addCardOpen]);
+  }, [toolsPanelOpen, addCardOpen, settingsOpen]);
 
   const pendingQuestionCount = useMemo(
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
@@ -908,8 +898,25 @@ function TeacherDashboardInner() {
     setAddCardError('');
   }
 
+  function closeSettings() {
+    setSettingsOpen(false);
+    setClearFixedArmed(false);
+  }
+
+  function toggleSettings() {
+    if (settingsOpen) {
+      closeSettings();
+      return;
+    }
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+    setAddCardOpen(false);
+    setClearFixedArmed(false);
+    setSettingsOpen(true);
+  }
+
   function openAddCard() {
-    closeRoomMenu();
+    closeSettings();
     if (addCardOpen) {
       closeAddCard();
       return;
@@ -1255,7 +1262,7 @@ function TeacherDashboardInner() {
   }
 
   function openNewClassConfirmation() {
-    closeRoomMenu();
+    closeSettings();
     setError('');
     setNewClassConfirmOpen(true);
   }
@@ -1281,12 +1288,12 @@ function TeacherDashboardInner() {
   }
 
   function openJoinScreen() {
-    closeRoomMenu();
+    closeSettings();
     setJoinScreenOpen(true);
   }
 
   function downloadParticipantList() {
-    closeRoomMenu();
+    closeSettings();
     const rows = [
       ['Name', 'Year level', 'Group', 'Words', 'Last updated'],
       ...orderedStudents.map((student) => [
@@ -1442,13 +1449,8 @@ function TeacherDashboardInner() {
   const enforceWords = !!room?.enforce_word_count;
   const frozen = !!room?.freeze_class;
 
-  function closeRoomMenu() {
-    if (roomActionsRef.current) roomActionsRef.current.open = false;
-    setClearFixedArmed(false);
-  }
-
   function openTeacherTools(tab = 'ask', { highlightStudentId = null } = {}) {
-    closeRoomMenu();
+    closeSettings();
     setAddCardOpen(false);
     setToolsTab(tab);
     setToolsPanelOpen(true);
@@ -1461,12 +1463,12 @@ function TeacherDashboardInner() {
   }
 
   function openLessonReport() {
-    closeRoomMenu();
+    closeSettings();
     setLessonReportOpen(true);
   }
 
   async function downloadLessonReportQuick() {
-    closeRoomMenu();
+    closeSettings();
     try {
       const res = await fetch(`/api/rooms/${encodeURIComponent(codeInput)}/lesson-report`);
       const data = await res.json();
@@ -1489,7 +1491,7 @@ function TeacherDashboardInner() {
 
 
   function openLibrary(panel) {
-    closeRoomMenu();
+    closeSettings();
     setLibraryPanel(panel);
     if (panel === 'evidence' || panel === 'reports') setSnapshotsOpen(true);
   }
@@ -1510,7 +1512,7 @@ function TeacherDashboardInner() {
 
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
   const liveResponseCount = (livePulse.responses || []).length;
-  const headerDockOpen = toolsPanelOpen || addCardOpen;
+  const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen;
 
   return (
     <div className="iboard-teacher-canvas flex h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -1601,7 +1603,7 @@ function TeacherDashboardInner() {
                 <button
                   type="button"
                   onClick={() => {
-                    closeRoomMenu();
+                    closeSettings();
                     sendBroadcastToClass();
                   }}
                   className="relative flex h-9 items-center gap-1 rounded-xl bg-amber-500 px-2.5 text-amber-950 shadow-sm hover:bg-amber-400"
@@ -1614,171 +1616,25 @@ function TeacherDashboardInner() {
                 </button>
               </HintWrap>
             )}
-            <details
-              ref={roomActionsRef}
-              className="relative z-[60]"
-            >
-              <summary
-                className="iboard-header-icon-button flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                title="Room settings"
+            <HintWrap hint="Room settings" prefer="below">
+              <button
+                ref={settingsButtonRef}
+                type="button"
+                onClick={toggleSettings}
+                aria-expanded={settingsOpen}
+                className={`iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white ${
+                  settingsOpen
+                    ? 'border-indigo-300 bg-indigo-600 text-white dark:border-indigo-500'
+                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400'
+                }`}
                 aria-label="Room settings"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
                   <path d="M2 14h4M10 8h4M18 16h4" />
                 </svg>
-              </summary>
-              <div className="absolute right-0 z-[60] mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
-                <div className="mb-1 flex gap-1 px-2">
-                  {CARD_VIEWS.map((view) => (
-                    <button
-                      key={view.id}
-                      type="button"
-                      onClick={() => setCardView(view.id)}
-                      className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition ${
-                        cardView === view.id
-                          ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                          : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      {view.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-                <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Lesson</p>
-                <div className="px-3 py-2">
-                  <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                    <span>Word target</span>
-                    <span className="font-mono text-indigo-600">{wt}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={500}
-                    value={wt}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      setRoom((r) => (r ? { ...r, word_target: v } : r));
-                      pushSettings({ word_target: v });
-                    }}
-                    className="mt-1 h-1.5 w-full cursor-pointer accent-indigo-600"
-                    aria-label="Word target"
-                  />
-                </div>
-                <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  <span>Enforce word count</span>
-                  <input
-                    type="checkbox"
-                    checked={enforceWords}
-                    onChange={(e) => {
-                      const v = e.target.checked;
-                      setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
-                      pushSettings({ enforce_word_count: v });
-                    }}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const v = !frozen;
-                    setRoom((r) => (r ? { ...r, freeze_class: v } : r));
-                    pushSettings({ freeze_class: v });
-                  }}
-                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  {frozen ? 'Unfreeze class' : 'Freeze class'}
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  {isDark ? 'Light mode' : 'Dark mode'}
-                </button>
-                {fixedCommentCount > 0 && (
-                  <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-950/40">
-                    {!clearFixedArmed ? (
-                      <button
-                        type="button"
-                        onClick={() => setClearFixedArmed(true)}
-                        className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
-                      >
-                        <span>Clear fixed comments</span>
-                        <span className="rounded-full bg-emerald-600 px-1.5 text-[10px] font-black text-white">
-                          {fixedCommentCount}
-                        </span>
-                      </button>
-                    ) : (
-                      <div className="space-y-2 px-1 py-0.5">
-                        <p className="text-[11px] font-semibold leading-snug text-emerald-900 dark:text-emerald-100">
-                          Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            disabled={clearFixedBusy}
-                            onClick={() => {
-                              window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
-                              setClearFixedArmed(false);
-                              closeRoomMenu();
-                            }}
-                            className="flex-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
-                          >
-                            {clearFixedBusy ? 'Clearing…' : 'Clear'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setClearFixedArmed(false)}
-                            className="rounded-lg px-2 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-                <button type="button" onClick={() => openLibrary('feedback')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  AI feedback
-                </button>
-                <button type="button" onClick={() => openLibrary('evidence')} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Saved evidence
-                  {snapshots.length > 0 && (
-                    <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">{snapshots.length}</span>
-                  )}
-                </button>
-                <button type="button" onClick={() => openLibrary('reports')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Student reports
-                </button>
-                <button type="button" onClick={() => { closeRoomMenu(); openEvidenceModal(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Save current evidence
-                </button>
-                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-                <button type="button" onClick={() => { closeRoomMenu(); openJoinScreen(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Present join screen
-                </button>
-                <button type="button" onClick={() => { closeRoomMenu(); downloadParticipantList(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Download participant list
-                </button>
-                <button type="button" onClick={openLessonReport} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  View lesson report
-                </button>
-                <button type="button" onClick={downloadLessonReportQuick} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Download lesson report
-                </button>
-                <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-                  Open Ask-only window ↗
-                </a>
-                <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-                <button type="button" onClick={() => { closeRoomMenu(); openNewClassConfirmation(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
-                  Start new class
-                </button>
-              </div>
-            </details>
+              </button>
+            </HintWrap>
           </div>
         </div>
       </header>
@@ -2657,6 +2513,177 @@ function TeacherDashboardInner() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div
+          ref={settingsPanelRef}
+          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)]"
+          style={headerDockStyle}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="room-settings-title"
+        >
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <div>
+              <h2 id="room-settings-title" className="font-display text-base font-black text-slate-950 dark:text-white">Room settings</h2>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Card view, lesson controls, and exports</p>
+            </div>
+            <button type="button" onClick={closeSettings} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400">
+              Close
+            </button>
+          </div>
+          <div className="overflow-y-auto px-2 py-2 scrollbar-thin">
+            <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
+            <div className="mb-1 flex gap-1 px-2">
+              {CARD_VIEWS.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  onClick={() => setCardView(view.id)}
+                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition ${
+                    cardView === view.id
+                      ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                      : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+            <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Lesson</p>
+            <div className="px-3 py-2">
+              <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                <span>Word target</span>
+                <span className="font-mono text-indigo-600">{wt}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={500}
+                value={wt}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setRoom((r) => (r ? { ...r, word_target: v } : r));
+                  pushSettings({ word_target: v });
+                }}
+                className="mt-1 h-1.5 w-full cursor-pointer accent-indigo-600"
+                aria-label="Word target"
+              />
+            </div>
+            <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              <span>Enforce word count</span>
+              <input
+                type="checkbox"
+                checked={enforceWords}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
+                  pushSettings({ enforce_word_count: v });
+                }}
+                className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                const v = !frozen;
+                setRoom((r) => (r ? { ...r, freeze_class: v } : r));
+                pushSettings({ freeze_class: v });
+              }}
+              className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {frozen ? 'Unfreeze class' : 'Freeze class'}
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {isDark ? 'Light mode' : 'Dark mode'}
+            </button>
+            {fixedCommentCount > 0 && (
+              <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-950/40">
+                {!clearFixedArmed ? (
+                  <button
+                    type="button"
+                    onClick={() => setClearFixedArmed(true)}
+                    className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
+                  >
+                    <span>Clear fixed comments</span>
+                    <span className="rounded-full bg-emerald-600 px-1.5 text-[10px] font-black text-white">
+                      {fixedCommentCount}
+                    </span>
+                  </button>
+                ) : (
+                  <div className="space-y-2 px-1 py-0.5">
+                    <p className="text-[11px] font-semibold leading-snug text-emerald-900 dark:text-emerald-100">
+                      Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={clearFixedBusy}
+                        onClick={() => {
+                          window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
+                          setClearFixedArmed(false);
+                          closeSettings();
+                        }}
+                        className="flex-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        {clearFixedBusy ? 'Clearing…' : 'Clear'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setClearFixedArmed(false)}
+                        className="rounded-lg px-2 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+            <button type="button" onClick={() => openLibrary('feedback')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              AI feedback
+            </button>
+            <button type="button" onClick={() => openLibrary('evidence')} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Saved evidence
+              {snapshots.length > 0 && (
+                <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">{snapshots.length}</span>
+              )}
+            </button>
+            <button type="button" onClick={() => openLibrary('reports')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Student reports
+            </button>
+            <button type="button" onClick={() => { closeSettings(); openEvidenceModal(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Save current evidence
+            </button>
+            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+            <button type="button" onClick={() => { closeSettings(); openJoinScreen(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Present join screen
+            </button>
+            <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Download participant list
+            </button>
+            <button type="button" onClick={openLessonReport} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              View lesson report
+            </button>
+            <button type="button" onClick={downloadLessonReportQuick} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Download lesson report
+            </button>
+            <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Open Ask-only window ↗
+            </a>
+            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+            <button type="button" onClick={() => { closeSettings(); openNewClassConfirmation(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
+              Start new class
+            </button>
+          </div>
         </div>
       )}
 
