@@ -1737,7 +1737,7 @@ function TeacherDashboardInner() {
       )}
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      <main className="mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3 sm:px-6">
+      <main className="mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-3 pt-6 sm:px-6">
           {copyToast && (
             <div className="mb-2 inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               {copyToast}
