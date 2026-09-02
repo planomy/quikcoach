@@ -6,7 +6,6 @@ import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-student-fixed-comments';
 const MARKER_SIZE = 28;
-const MARKER_GAP = 5;
 const MARKER_MARGIN = 6;
 const POPUP_WIDTH = 290;
 /** Placement budget — keep the action button visible on short iPad viewports. */
@@ -28,14 +27,16 @@ function editorElement() {
 }
 
 function markerPosition(rangeRect) {
-  const clamped = clampFixedBox({
-    top: rangeRect.top - 2,
-    left: rangeRect.right + MARKER_GAP,
+  let top = rangeRect.top - MARKER_SIZE + 10;
+  const left = rangeRect.right - MARKER_SIZE * 0.45;
+  if (top < viewportBox().top + MARKER_MARGIN) top = rangeRect.top - 4;
+  return clampFixedBox({
+    top,
+    left,
     width: MARKER_SIZE,
     height: MARKER_SIZE,
     padding: MARKER_MARGIN,
   });
-  return clamped;
 }
 
 function detachedMarkerPosition(editorRect, index) {

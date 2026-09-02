@@ -18,7 +18,6 @@ const PENDING_HEIGHT = 460;
 const OPEN_WIDTH = 280;
 const OPEN_HEIGHT = 220;
 const MARKER_SIZE = 28;
-const MARKER_GAP = 5;
 const MARKER_MARGIN = 6;
 const CORE_COMMENTS = [
   'Check GPS',
@@ -170,13 +169,12 @@ function markerPosition(range, card) {
   const maxTop = paneBottomInRoot - MARKER_SIZE - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
-  let left = rangeRect.right - rootRect.left + MARKER_GAP;
-  if (left > maxLeft) {
-    left = rangeRect.left - rootRect.left - MARKER_SIZE - MARKER_GAP;
-  }
+  // Sit on the top-right corner of the highlight so the bubble clears the next words.
+  let left = rangeRect.right - rootRect.left - MARKER_SIZE * 0.45;
+  let top = rangeRect.top - rootRect.top - MARKER_SIZE + 10;
+  if (top < minTop) top = rangeRect.top - rootRect.top - 4;
   left = Math.max(minLeft, Math.min(maxLeft, left));
-
-  const top = Math.max(minTop, Math.min(maxTop, rangeRect.top - rootRect.top - 2));
+  top = Math.max(minTop, Math.min(maxTop, top));
 
   return { top, left, position: 'absolute', root };
 }
