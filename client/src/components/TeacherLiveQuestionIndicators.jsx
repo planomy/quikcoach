@@ -218,26 +218,27 @@ export default function TeacherLiveQuestionIndicators() {
           <div className="flex items-start gap-3">
             <span className="grid h-9 min-w-9 shrink-0 place-items-center rounded-full bg-indigo-600 px-1 text-sm font-black text-white">{selectedPosition}</span>
             <div className="min-w-0 flex-1">
-              <div className="flex items-start gap-2">
-                <p className="min-w-0 flex-1 truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{selectedQuestion.studentName}</p>
-                <button type="button" onClick={() => { setSelectedQuestionId(null); setMessage(''); }} className="shrink-0 text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200" aria-label="Close popup" title="Close popup — question stays in queue">Close</button>
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-[10px] font-black tabular-nums text-indigo-600 dark:text-indigo-300">Q{selectedPosition}</span>
+                <p className="max-w-[55%] truncate text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{selectedQuestion.studentName}</p>
               </div>
-              <p className="mt-1 text-base font-bold leading-snug text-slate-950 dark:text-white">{selectedQuestion.text}</p>
+              <p className="mt-2 text-xl font-bold leading-snug text-slate-950 dark:text-white">{selectedQuestion.text}</p>
+              <button type="button" onClick={() => { setSelectedQuestionId(null); setMessage(''); }} className="mt-2 text-[11px] font-bold text-indigo-600 dark:text-indigo-400" aria-label="Close popup" title="Close popup — question stays in queue">Close</button>
             </div>
           </div>
 
           {message && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-200">{message}</p>}
 
-          <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2 overflow-visible border-t border-slate-100 pt-3 dark:border-slate-800">
+          <div className="relative z-10 mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 overflow-visible border-t border-slate-100 pt-3 dark:border-slate-800">
             <details className="relative">
-              <summary className={`flex ${ACTION_CLASS} list-none cursor-pointer items-center bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200 [&::-webkit-details-marker]:hidden`}>Show ▾</summary>
-              <div className="absolute left-0 top-full z-50 mt-1 min-w-36 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', false); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Named</button>
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', true); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-black text-indigo-700 hover:bg-indigo-50 dark:text-indigo-200 dark:hover:bg-indigo-950">Anonymous</button>
+              <summary className="list-none cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300 [&::-webkit-details-marker]:hidden">Show ▾</summary>
+              <div className="absolute left-0 top-full z-50 mt-1 min-w-32 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', false); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Named</button>
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', true); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Anonymous</button>
               </div>
             </details>
-            <button type="button" onClick={askClass} className={`${ACTION_CLASS} bg-emerald-500 text-emerald-950`}>Ask class</button>
-            <button type="button" onClick={() => updateQuestion('dismiss')} className={`${ACTION_CLASS} bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200`}>Mark handled</button>
+            <button type="button" onClick={askClass} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-black text-emerald-950 hover:bg-emerald-400">Ask class</button>
+            <button type="button" onClick={() => updateQuestion('dismiss')} className="text-xs font-bold text-slate-600 dark:text-slate-300">Handled</button>
           </div>
 
           <QuestionInboxReply
@@ -245,7 +246,7 @@ export default function TeacherLiveQuestionIndicators() {
             studentId={selectedQuestion.studentId}
             studentName={selectedQuestion.studentName}
             questionText={selectedQuestion.text}
-            className="mt-3"
+            className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800"
           />
         </aside>
       )}

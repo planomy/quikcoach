@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ensureTeacherRoom } from '../lib/teacherRoom.js';
 
+const TOGGLE_CLASS = 'text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300';
+
 export default function QuestionInboxReply({
   socket,
   studentId,
@@ -8,7 +10,14 @@ export default function QuestionInboxReply({
   questionText = '',
   onSent,
   className = '',
+  open: openProp,
+  onOpenChange,
+  showToggle = true,
 }) {
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = openProp ?? openInternal;
+  const setOpen = onOpenChange ?? setOpenInternal;
+
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -46,13 +55,23 @@ export default function QuestionInboxReply({
     });
   }
 
-  const label = String(studentName || 'Student').trim() || 'Student';
+  if (showToggle && !open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className={`${TOGGLE_CLASS} ${className}`}>
+        Reply · Open
+      </button>
+    );
+  }
 
   return (
-    <div className={`rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60 ${className}`}>
-      <label className="block text-[10px] font-black uppercase tracking-[0.12em] text-indigo-600 dark:text-indigo-300">
-        Reply to {label}
-      </label>
+    <div className={className}>
+      {showToggle ? (
+        <div className="mb-2 flex justify-end">
+          <button type="button" onClick={() => setOpen(false)} className={TOGGLE_CLASS}>
+            Close
+          </button>
+        </div>
+      ) : null}
       <textarea
         rows={3}
         maxLength={5000}
@@ -64,26 +83,23 @@ export default function QuestionInboxReply({
             sendReply();
           }
         }}
-        placeholder={`Write a private answer for ${label}…`}
-        className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+        placeholder="Private reply…"
+        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
       />
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">Appears in their Inbox tab</p>
+      <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+        {sent ? (
+          <p className="mr-auto text-xs font-semibold text-emerald-700 dark:text-emerald-300">Sent</p>
+        ) : null}
         <button
           type="button"
           disabled={busy || !draft.trim()}
           onClick={sendReply}
-          className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
+          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
         >
-          {busy ? 'Sending…' : 'Send note'}
+          {busy ? 'Sending…' : 'Send'}
         </button>
       </div>
-      {error && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{error}</p>}
-      {sent && (
-        <p className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-          Sent to {label}&apos;s inbox
-        </p>
-      )}
+      {error ? <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{error}</p> : null}
     </div>
   );
 }
