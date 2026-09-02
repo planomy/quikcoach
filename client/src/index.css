@@ -6,42 +6,43 @@
    as dark mode, while keeping white as the quiet working surface. */
 .iboard-app-header {
   background:
-    radial-gradient(circle at 8% -120%, rgba(79, 70, 229, 0.22), transparent 42%),
-    linear-gradient(105deg, #e7e9ff 0%, #eef2ff 58%, #f6f7ff 100%);
-  border-bottom-color: #c7d2fe;
-  box-shadow: 0 5px 18px rgba(49, 46, 129, 0.09);
+    radial-gradient(circle at 8% -120%, rgba(79, 70, 229, 0.13), transparent 42%),
+    linear-gradient(105deg, #eeedf7 0%, #f5f4f8 58%, #faf9f7 100%);
+  border-bottom-color: #d9d7e8;
+  box-shadow: 0 5px 18px rgba(55, 48, 80, 0.07);
 }
 
 html.iboard-student-workspace .iboard-app-header {
   background:
-    radial-gradient(circle at 8% -120%, rgba(99, 102, 241, 0.16), transparent 42%),
-    linear-gradient(105deg, #eceeff 0%, #f2f4ff 58%, #f8f9ff 100%);
+    radial-gradient(circle at 8% -120%, rgba(99, 102, 241, 0.1), transparent 42%),
+    linear-gradient(105deg, #f1f0f7 0%, #f7f6f8 58%, #fbfaf8 100%);
 }
 
 .iboard-app-header h1 {
   color: #312e81;
 }
 
-.iboard-teacher-canvas {
-  background: #eef2f7;
+.iboard-teacher-canvas,
+.iboard-student-canvas {
+  background: #f3f3f1;
 }
 
 .iboard-live-question {
-  border-color: #c7d2fe;
-  background: linear-gradient(100deg, #eef2ff 0%, #f8faff 100%);
-  box-shadow: 0 1px 3px rgba(49, 46, 129, 0.06);
+  border-color: #d3d4e6;
+  background: linear-gradient(100deg, #f1f1f8 0%, #faf9f8 100%);
+  box-shadow: 0 1px 3px rgba(55, 48, 80, 0.05);
 }
 
 .iboard-student-card {
-  border-color: #d7dfeb;
+  border-color: #dcddd9;
   box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.06),
-    0 8px 22px -18px rgba(49, 46, 129, 0.35);
+    0 1px 2px rgba(28, 25, 23, 0.06),
+    0 8px 22px -18px rgba(55, 48, 80, 0.18);
 }
 
 .iboard-writing-surface {
-  background: #f4f7fb;
-  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.72);
+  background: #f8f8f6;
+  box-shadow: inset 0 0 0 1px rgba(231, 229, 228, 0.78);
 }
 
 html.dark .iboard-app-header {
@@ -57,6 +58,7 @@ html.dark .iboard-app-header h1 {
 }
 
 html.dark .iboard-teacher-canvas,
+html.dark .iboard-student-canvas,
 html.dark .iboard-live-question,
 html.dark .iboard-student-card,
 html.dark .iboard-writing-surface {

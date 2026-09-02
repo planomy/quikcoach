@@ -787,7 +787,7 @@ export default function StudentView() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="iboard-student-canvas flex min-h-screen flex-col dark:bg-slate-950">
       {timesUp && (
         <button
           type="button"
