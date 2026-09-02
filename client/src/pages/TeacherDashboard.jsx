@@ -1446,7 +1446,7 @@ function TeacherDashboardInner() {
   const liveResponseCount = (livePulse.responses || []).length;
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="iboard-teacher-canvas flex h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
       <div className="shrink-0">
       {!socketConnected && (
         <div
@@ -1492,7 +1492,7 @@ function TeacherDashboardInner() {
                   className={`relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
                     active
                       ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-                      : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+                      : 'border border-indigo-100/80 bg-indigo-100/75 text-indigo-950 hover:border-indigo-200 hover:bg-indigo-200/70 dark:border-transparent dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
                   }`}
                 >
                   {tab.label}
@@ -1745,8 +1745,8 @@ function TeacherDashboardInner() {
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
 
               {livePulse.activity && (
-                <div className="mb-2 shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <div className="iboard-live-question mb-2 shrink-0 rounded-xl border px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-slate-400">
                     Question live
                   </p>
                   <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
@@ -1828,8 +1828,8 @@ function TeacherDashboardInner() {
                 key={s.id}
                 data-student-id={s.id}
                 title={showPulseState ? pulseMeta.title : undefined}
-                className={`relative flex flex-col overflow-visible rounded-2xl bg-white p-3 dark:bg-slate-900 ${
-                  showPulseState ? pulseMeta.className : 'border border-slate-200/80 dark:border-slate-700/80'
+                className={`iboard-student-card relative flex flex-col overflow-visible rounded-2xl bg-white p-3 dark:bg-slate-900 ${
+                  showPulseState ? pulseMeta.className : 'border dark:border-slate-700/80'
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-1.5">
@@ -1983,7 +1983,7 @@ function TeacherDashboardInner() {
                 </div>
                 <div
                   data-student-writing-pane
-                  className={`relative mt-2 rounded-xl bg-slate-50 p-2.5 pr-9 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl p-2.5 pr-9 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
