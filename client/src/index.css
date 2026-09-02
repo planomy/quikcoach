@@ -130,20 +130,16 @@ html.dark .iboard-confidence-ring {
   height: max-content;
   overflow-x: hidden;
   overflow-y: auto;
-  border-left: 3px solid #6366f1;
   border-top: 1px solid #e2e8f0;
   border-bottom-left-radius: 1rem;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 52%);
-  box-shadow:
-    -14px 0 36px -18px rgba(15, 23, 42, 0.3),
-    -4px 10px 28px -14px rgba(79, 70, 229, 0.14);
+  background: #ffffff;
+  box-shadow: -12px 0 32px -18px rgba(15, 23, 42, 0.22);
 }
 
 html.dark .iboard-header-dock {
-  border-left-color: #818cf8;
   border-top-color: #334155;
-  background: linear-gradient(180deg, #0f172a 0%, #111827 52%);
-  box-shadow: -14px 0 36px -18px rgba(0, 0, 0, 0.5);
+  background: #0f172a;
+  box-shadow: -12px 0 32px -18px rgba(0, 0, 0, 0.45);
 }
 
 .iboard-workspace-scrim {
@@ -152,11 +148,6 @@ html.dark .iboard-header-dock {
 
 html.dark .iboard-workspace-scrim {
   background: rgba(2, 6, 23, 0.42);
-}
-
-.iboard-workspace-cards-dimmed > article {
-  opacity: 0.92;
-  transition: opacity 160ms ease;
 }
 
 @keyframes iboardQuestionArrival {

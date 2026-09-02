@@ -1829,7 +1829,7 @@ function TeacherDashboardInner() {
                 </div>
               )}
 
-              <div className={`min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin ${headerDockOpen ? 'iboard-workspace-cards-dimmed' : ''}`}>
+              <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
         <div className={`grid gap-4 ${studentGridClass}`}>
           {orderedStudents.length === 0 && posts.length === 0 && (
             <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
