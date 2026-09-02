@@ -1510,6 +1510,7 @@ function TeacherDashboardInner() {
 
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
   const liveResponseCount = (livePulse.responses || []).length;
+  const headerDockOpen = toolsPanelOpen || addCardOpen;
 
   return (
     <div className="iboard-teacher-canvas flex h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -1786,7 +1787,7 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && (
         <div
           ref={teacherToolsPanelRef}
-          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)] border-l border-t border-slate-200 bg-white shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900"
+          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)]"
           style={headerDockStyle}
           role="dialog"
           aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
@@ -1806,7 +1807,10 @@ function TeacherDashboardInner() {
       )}
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      <main className="mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-3 pt-6 sm:px-6">
+      {headerDockOpen ? (
+        <div className="iboard-workspace-scrim pointer-events-none absolute inset-0 z-[55]" aria-hidden="true" />
+      ) : null}
+      <main className="relative z-[1] mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-3 pt-6 sm:px-6">
           {copyToast && (
             <div className="mb-2 inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               {copyToast}
@@ -1825,7 +1829,7 @@ function TeacherDashboardInner() {
                 </div>
               )}
 
-              <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
+              <div className={`min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin ${headerDockOpen ? 'iboard-workspace-cards-dimmed' : ''}`}>
         <div className={`grid gap-4 ${studentGridClass}`}>
           {orderedStudents.length === 0 && posts.length === 0 && (
             <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
@@ -2587,7 +2591,7 @@ function TeacherDashboardInner() {
         <div
           ref={addCardPanelRef}
           data-iboard-add-card-panel="true"
-          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)] border-l border-t border-slate-200 bg-white shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900"
+          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
