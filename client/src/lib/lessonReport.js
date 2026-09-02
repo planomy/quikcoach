@@ -43,7 +43,7 @@ function cellForStudent(report, studentId, questionNumber) {
 
 export function buildLessonReportHtml(report) {
   const when = report.generatedAt ? new Date(report.generatedAt).toLocaleString() : new Date().toLocaleString();
-  const questions = report.questions || [];
+  const questions = (report.questions || []).filter((q) => !q.optional);
   const students = report.students || [];
 
   const byQuestionRows = questions.map((question) => `
@@ -80,7 +80,7 @@ export function buildLessonReportHtml(report) {
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>iBOARD lesson report · Room ${escapeHtml(report.roomCode)}</title>
+  <title>iBOARD class engagement report · Room ${escapeHtml(report.roomCode)}</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 980px; margin: 2rem auto; padding: 0 1rem; color: #0f172a; }
     h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
@@ -93,7 +93,7 @@ export function buildLessonReportHtml(report) {
   </style>
 </head>
 <body>
-  <h1>Lesson report · Room ${escapeHtml(report.roomCode)}</h1>
+  <h1>Class engagement report · Room ${escapeHtml(report.roomCode)}</h1>
   <p class="meta">Generated ${escapeHtml(when)} · ${students.length} participant${students.length === 1 ? '' : 's'} · ${questions.length} pulse question${questions.length === 1 ? '' : 's'}</p>
 
   <section>
@@ -118,7 +118,7 @@ export function buildLessonReportHtml(report) {
 }
 
 export function buildLessonReportCsv(report) {
-  const questions = report.questions || [];
+  const questions = (report.questions || []).filter((q) => !q.optional);
   const students = report.students || [];
   const lines = [];
 
@@ -158,10 +158,10 @@ export function buildLessonReportCsv(report) {
 
 export function downloadLessonReportHtml(report) {
   const stamp = stampForFilename(new Date(report.generatedAt || Date.now()));
-  downloadTextFile(`iboard-lesson-${report.roomCode}-${stamp}.html`, buildLessonReportHtml(report), 'text/html;charset=utf-8');
+  downloadTextFile(`iboard-class-engagement-${report.roomCode}-${stamp}.html`, buildLessonReportHtml(report), 'text/html;charset=utf-8');
 }
 
 export function downloadLessonReportCsv(report) {
   const stamp = stampForFilename(new Date(report.generatedAt || Date.now()));
-  downloadTextFile(`iboard-lesson-${report.roomCode}-${stamp}.csv`, buildLessonReportCsv(report), 'text/csv;charset=utf-8');
+  downloadTextFile(`iboard-class-engagement-${report.roomCode}-${stamp}.csv`, buildLessonReportCsv(report), 'text/csv;charset=utf-8');
 }

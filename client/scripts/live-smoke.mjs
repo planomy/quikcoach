@@ -223,7 +223,7 @@ try {
   });
   assert.equal(shareLaunch.ok, true);
   assert.equal(shareLaunch.activity.type, 'short');
-  assert.equal(shareLaunch.activity.optional, true);
+  assert.equal(shareLaunch.activity.optional, false);
   assert.equal(shareLaunch.activity.prompt, 'Could we compare both methods?');
   assert.equal(Number(shareLaunch.activity.sourceQuestionId), Number(audienceQuestion.id));
 

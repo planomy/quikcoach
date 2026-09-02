@@ -856,10 +856,17 @@ io.on('connection', (socket) => {
         options: [],
         correctAnswer: '',
         anonymous: publishedAnonymous,
-        optional: true,
+        optional: false,
         imageUrl: '',
         timerSeconds: 0,
         sourceQuestionId: question.id,
+      });
+      const askerId = Number(question.student_id);
+      const shareTargets = connectedStudentsInRoom(code).filter((studentId) => Number(studentId) !== askerId);
+      queries.addLiveOpportunity(db, shareTargets, {
+        roomCode: code,
+        activityId: activity.id,
+        questionNumber: activity.questionNumber,
       });
       emitAudienceQnaState(code);
       emitLiveState(code);

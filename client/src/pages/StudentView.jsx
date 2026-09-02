@@ -99,6 +99,7 @@ export default function StudentView() {
   const [respondQuestionNumber, setRespondQuestionNumber] = useState(null);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
+  const [helpSeenToast, setHelpSeenToast] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageHint, setImageHint] = useState('');
   const [yearInput, setYearInput] = useState('');
@@ -114,6 +115,7 @@ export default function StudentView() {
   const hydrateStudentIdRef = useRef(null);
   const wasDisconnectedRef = useRef(false);
   const onlineBannerTimerRef = useRef(null);
+  const helpSeenTimerRef = useRef(null);
   const supportTabRef = useRef(supportTab);
   const broadcastBootstrappedRef = useRef(false);
   const lastBroadcastAtRef = useRef(null);
@@ -346,8 +348,10 @@ export default function StudentView() {
         setRespondQuestionNumber(null);
       }
     };
-    const onLiveNudge = () => {
-      setSupportTab('respond');
+    const onLiveHelpSeen = () => {
+      setHelpSeenToast(true);
+      if (helpSeenTimerRef.current) clearTimeout(helpSeenTimerRef.current);
+      helpSeenTimerRef.current = setTimeout(() => setHelpSeenToast(false), 4000);
     };
     const onTimesUp = () => setTimesUp(true);
     socket.on('room:state', onState);
@@ -358,6 +362,7 @@ export default function StudentView() {
     socket.on('live:realert', onLiveRealert);
     socket.on('live:student', onLiveStudent);
     socket.on('live:nudge', onLiveNudge);
+    socket.on('live:help-seen', onLiveHelpSeen);
     socket.on('timer:times-up', onTimesUp);
     return () => {
       socket.off('room:state', onState);
@@ -368,7 +373,9 @@ export default function StudentView() {
       socket.off('live:realert', onLiveRealert);
       socket.off('live:student', onLiveStudent);
       socket.off('live:nudge', onLiveNudge);
+      socket.off('live:help-seen', onLiveHelpSeen);
       socket.off('timer:times-up', onTimesUp);
+      if (helpSeenTimerRef.current) clearTimeout(helpSeenTimerRef.current);
     };
   }, [socket]);
 
@@ -825,6 +832,14 @@ export default function StudentView() {
             <p className="mt-3 text-sm font-semibold text-red-100">Tap to dismiss</p>
           </div>
         </button>
+      )}
+      {helpSeenToast && (
+        <div
+          role="status"
+          className="fixed inset-x-4 top-4 z-[75] mx-auto max-w-md rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-center shadow-lg dark:border-indigo-800 dark:bg-slate-900"
+        >
+          <p className="text-sm font-black text-indigo-900 dark:text-indigo-100">Teacher has seen your request</p>
+        </div>
       )}
       {connBanner === 'lost' && (
         <div

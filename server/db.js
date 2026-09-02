@@ -777,11 +777,12 @@ export const queries = {
         qna: questionsAsked.map((q) => ({ id: q.id, text: q.text, status: q.status })),
       };
     });
+    const engagementQuestions = questions.filter((q) => !q.optional);
     return {
       roomCode,
       generatedAt: new Date().toISOString(),
       studentCount: students.length,
-      questionCount: questions.length,
+      questionCount: engagementQuestions.length,
       questions: questionStats,
       cells,
       students: studentStats,

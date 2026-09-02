@@ -30,14 +30,14 @@ export default function LessonReportPanel({ roomCode, onClose }) {
       .then(({ ok, data }) => {
         if (cancelled) return;
         if (!ok) {
-          setError(data?.error || 'Could not load the lesson report.');
+          setError(data?.error || 'Could not load the class engagement report.');
           setReport(null);
           return;
         }
         setReport(data);
       })
       .catch(() => {
-        if (!cancelled) setError('Could not load the lesson report.');
+        if (!cancelled) setError('Could not load the class engagement report.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -47,7 +47,7 @@ export default function LessonReportPanel({ roomCode, onClose }) {
     };
   }, [roomCode]);
 
-  const questions = report?.questions || [];
+  const questions = (report?.questions || []).filter((q) => !q.optional);
   const students = report?.students || [];
 
   function cellFor(studentId, questionNumber) {
@@ -65,7 +65,7 @@ export default function LessonReportPanel({ roomCode, onClose }) {
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Lesson report</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Class engagement report</p>
             <h2 id="lesson-report-title" className="font-display text-xl font-black text-slate-950 dark:text-white">
               Room {roomCode}
             </h2>
