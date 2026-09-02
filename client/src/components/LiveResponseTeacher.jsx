@@ -791,12 +791,9 @@ export default function LiveResponseTeacher({
             socket={socket}
             questions={qnaQuestions}
             focusedStudentId={selectedStudentId}
-            hasLiveActivity={!!activity}
+            liveActivity={activity}
+            liveResponses={responses}
             onClose={usingPanelTabs ? undefined : returnToPrimaryView}
-            onQuestionLaunched={() => {
-              onQuestionLaunched?.();
-              switchPanelTab('responses');
-            }}
           />
         )}
 

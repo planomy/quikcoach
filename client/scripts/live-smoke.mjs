@@ -217,28 +217,22 @@ try {
   const privateQna = await privateQnaPromise;
   assert.equal(privateQna.questions.some((question) => question.id === audienceQuestion.id), false);
 
-  assert.equal((await emitAck(teacher, 'teacher:qna-status', {
-    questionId: audienceQuestion.id,
-    action: 'publish',
-    anonymous: true,
-  })).ok, true);
-  const publicQnaPromise = nextEvent(sam, 'qna:student');
-  await emitAck(sam, 'student:qna-sync', {});
-  const publicQna = await publicQnaPromise;
-  const sharedQuestion = publicQna.questions.find((question) => question.id === audienceQuestion.id);
-  assert.equal(sharedQuestion.author, 'Anonymous');
-  assert.equal(sharedQuestion.votes, 0);
-  assert.equal((await emitAck(alex, 'student:qna-vote', { questionId: audienceQuestion.id })).ok, false);
-  assert.equal((await emitAck(sam, 'student:qna-vote', { questionId: audienceQuestion.id })).ok, true);
-
-  const feedbackLaunch = await emitAck(teacher, 'teacher:qna-ask-room', {
+  const shareLaunch = await emitAck(teacher, 'teacher:qna-ask-room', {
     questionId: audienceQuestion.id,
     anonymous: true,
   });
-  assert.equal(feedbackLaunch.ok, true);
-  assert.equal(feedbackLaunch.activity.type, 'short');
-  assert.equal(feedbackLaunch.activity.optional, true);
-  assert.equal(feedbackLaunch.activity.prompt, 'Could we compare both methods?');
+  assert.equal(shareLaunch.ok, true);
+  assert.equal(shareLaunch.activity.type, 'short');
+  assert.equal(shareLaunch.activity.optional, true);
+  assert.equal(shareLaunch.activity.prompt, 'Could we compare both methods?');
+  assert.equal(Number(shareLaunch.activity.sourceQuestionId), Number(audienceQuestion.id));
+
+  const alexRespond = await emitAck(alex, 'student:live-response', {
+    activityId: shareLaunch.activity.id,
+    value: '__iboard_unknown__',
+  });
+  assert.equal(alexRespond.ok, true);
+
   assert.equal((await emitAck(teacher, 'teacher:qna-status', {
     questionId: audienceQuestion.id,
     action: 'answer',

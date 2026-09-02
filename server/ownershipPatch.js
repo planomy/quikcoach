@@ -49,25 +49,16 @@ function buildTeacherQnaPayload(code) {
 function buildStudentQnaPayload(code, studentId) {
   const c = normalizeRoomCode(code);
   const sid = Number(studentId);
-  const votesByQuestion = new Map();
-  for (const vote of queries.listAudienceQuestionVotes(ownershipDb, c)) {
-    const qid = Number(vote.question_id);
-    const ids = votesByQuestion.get(qid) || new Set();
-    ids.add(Number(vote.student_id));
-    votesByQuestion.set(qid, ids);
-  }
-
   const questions = queries.listAudienceQuestions(ownershipDb, c).flatMap((row) => {
     const mine = Number(row.student_id) === sid;
-    const isPublic = row.status === 'published' || row.status === 'answered';
-    if (!mine && !isPublic) return [];
-    const anonymous = isPublic ? !!row.published_anonymous : !!row.anonymous_requested;
+    if (!mine) return [];
+    const anonymous = !!row.anonymous_requested;
     return [{
       ...audienceQuestionBase(row),
-      mine,
+      mine: true,
       anonymous,
-      author: mine ? 'You' : anonymous ? 'Anonymous' : String(row.student_name || ''),
-      voted: votesByQuestion.get(Number(row.id))?.has(sid) || false,
+      author: 'You',
+      voted: false,
     }];
   });
   return { questions };

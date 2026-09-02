@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
 import { UNSURE_TEXT_CLASS } from '../lib/liveResponseMeta.js';
+import { formatLiveAnswer, isUnknownAnswer } from '../lib/liveResponseUnknown.js';
 
 function confidenceNameClass(confidence) {
   if (confidence === 'confident') return 'text-emerald-600 dark:text-emerald-400';
@@ -367,7 +368,7 @@ export default function TeacherAnswerRail({
                       </span>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800 dark:text-slate-200">
-                      {response.value}
+                      {formatLiveAnswer(response.value)}
                     </p>
                   </article>
                 );
@@ -394,11 +395,11 @@ export default function TeacherAnswerRail({
                           : ''
                       }`}
                     >
-                      <span className={`font-bold ${confidenceNameClass(response.confidence)}`}>
+                      <span className={`font-bold ${isUnknownAnswer(response.value) ? 'text-slate-500 dark:text-slate-400' : confidenceNameClass(response.confidence)}`}>
                         {response.name || 'Student'}
                       </span>
                       <span className="truncate text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        {response.value}
+                        {formatLiveAnswer(response.value)}
                       </span>
                     </div>
                   ))}

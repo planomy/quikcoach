@@ -58,7 +58,7 @@ export default function QuestionInboxReply({
   if (showToggle && !open) {
     return (
       <button type="button" onClick={() => setOpen(true)} className={`${TOGGLE_CLASS} ${className}`}>
-        Reply · Open
+        Reply
       </button>
     );
   }

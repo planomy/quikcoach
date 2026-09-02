@@ -1,20 +1,20 @@
 import { useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
+import { isUnknownAnswer } from '../lib/liveResponseUnknown.js';
 
 function sortQuestions(items) {
   return [...items].sort((a, b) => Number(b.votes) - Number(a.votes) || Number(a.id) - Number(b.id));
 }
 
 const TEXT_ACTION = 'text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white';
-const PRIMARY_ACTION = 'rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-black text-emerald-950 hover:bg-emerald-400';
 
 export default function AudienceQnaTeacher({
   socket,
   questions = [],
   focusedStudentId = null,
-  hasLiveActivity = false,
+  liveActivity = null,
+  liveResponses = [],
   onClose,
-  onQuestionLaunched,
 }) {
   const [presenting, setPresenting] = useState(false);
   const [message, setMessage] = useState('');
@@ -62,33 +62,59 @@ export default function AudienceQnaTeacher({
     });
   }
 
-  function askRoom(question) {
+  function shareToClass(question, anonymous) {
     setMessage('');
-    const anonymous = question.status === 'published' || question.status === 'answered'
+    const fallbackAnonymous = question.status === 'published' || question.status === 'answered'
       ? question.publishedAnonymous
       : question.anonymousRequested;
-    socket.emit('teacher:qna-ask-room', { questionId: question.id, anonymous }, (ack) => {
-      if (!ack?.ok) {
-        setMessage(ack?.error || 'Could not ask the class.');
-        return;
-      }
-      onQuestionLaunched?.();
+    socket.emit('teacher:qna-ask-room', {
+      questionId: question.id,
+      anonymous: anonymous ?? fallbackAnonymous,
+    }, (ack) => {
+      if (!ack?.ok) setMessage(ack?.error || 'Could not share with the class.');
     });
   }
 
-  function DisplayMenu({ question }) {
-    const chooseDisplay = (event, anonymous) => {
+  function finishQuestion(question, mode) {
+    if (mode === 'pending') {
+      update(question, 'dismiss');
+      return;
+    }
+    update(question, 'answer');
+    if (Number(liveActivity?.sourceQuestionId) === Number(question.id)) {
+      socket.emit('teacher:live-control', { action: 'clear' });
+    }
+  }
+
+  function linkedResponses(question) {
+    if (Number(liveActivity?.sourceQuestionId) !== Number(question.id)) return [];
+    return liveResponses || [];
+  }
+
+  function responseSummary(question) {
+    const linked = linkedResponses(question);
+    if (!linked.length) return null;
+    const unknownCount = linked.filter((response) => isUnknownAnswer(response.value)).length;
+    const answerCount = linked.length - unknownCount;
+    const parts = [];
+    if (answerCount) parts.push(`${answerCount} answer${answerCount === 1 ? '' : 's'}`);
+    if (unknownCount) parts.push(`${unknownCount} don't know`);
+    return parts.join(' · ');
+  }
+
+  function ShareMenu({ question, disabled = false }) {
+    const chooseShare = (event, anonymous) => {
       event.currentTarget.closest('details')?.removeAttribute('open');
-      update(question, 'publish', anonymous);
+      shareToClass(question, anonymous);
     };
     return (
       <details className="relative z-20">
-        <summary className={`${TEXT_ACTION} list-none cursor-pointer [&::-webkit-details-marker]:hidden`}>
-          Show ▾
+        <summary className={`${TEXT_ACTION} list-none cursor-pointer [&::-webkit-details-marker]:hidden ${disabled ? 'pointer-events-none opacity-40' : ''}`}>
+          Share ▾
         </summary>
         <div className="absolute left-0 top-full z-50 mt-1 min-w-32 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-          <button type="button" onClick={(event) => chooseDisplay(event, false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Named</button>
-          <button type="button" onClick={(event) => chooseDisplay(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Anonymous</button>
+          <button type="button" onClick={(event) => chooseShare(event, false)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Named</button>
+          <button type="button" onClick={(event) => chooseShare(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Anonymous</button>
         </div>
       </details>
     );
@@ -96,25 +122,23 @@ export default function AudienceQnaTeacher({
 
   function QuestionCard({ question, mode }) {
     const queuePosition = queuePositions[Number(question.id)];
-    const isLive = mode === 'published';
+    const isShared = mode === 'published';
     const replyOpen = replyOpenId === question.id;
+    const summary = responseSummary(question);
 
     return (
       <article className="relative overflow-visible rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
             {mode === 'pending' && queuePosition ? (
-              <span className="text-[10px] font-black tabular-nums text-indigo-600 dark:text-indigo-300" title={`Question ${queuePosition} in queue`}>
+              <span className="text-[10px] font-black tabular-nums text-indigo-600 dark:text-indigo-300">
                 Q{queuePosition}
               </span>
             ) : null}
-            {isLive ? (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                {question.publishedAnonymous ? 'Anon' : 'Live'}
+            {isShared ? (
+              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[9px] font-black uppercase text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                Shared
               </span>
-            ) : null}
-            {mode !== 'pending' && Number(question.votes) > 0 ? (
-              <span className="text-[10px] font-bold text-slate-400">▲ {question.votes}</span>
             ) : null}
           </div>
           <span className="max-w-[55%] truncate text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -123,26 +147,25 @@ export default function AudienceQnaTeacher({
         </div>
 
         <p className="mt-2 text-xl font-bold leading-snug text-slate-950 dark:text-white">{question.text}</p>
+        {summary ? (
+          <p className="mt-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-300">{summary}</p>
+        ) : null}
 
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-          {(mode === 'pending' || mode === 'published') && <DisplayMenu question={question} />}
-          {mode !== 'dismissed' && mode !== 'answered' && (
-            <button
-              type="button"
-              onClick={() => askRoom(question)}
-              title={hasLiveActivity ? 'Replaces the current response prompt' : 'Ask every participant'}
-              className={PRIMARY_ACTION}
-            >
-              Ask class
-            </button>
-          )}
-          {mode === 'pending' && (
-            <button type="button" onClick={() => update(question, 'dismiss')} className={TEXT_ACTION}>
-              Handled
-            </button>
-          )}
-          {mode === 'published' && (
-            <button type="button" onClick={() => update(question, 'answer')} className={TEXT_ACTION}>
+          {(mode === 'pending' || mode === 'published') && <ShareMenu question={question} />}
+          {mode !== 'dismissed' && !replyOpen ? (
+            <QuestionInboxReply
+              socket={socket}
+              studentId={question.studentId}
+              studentName={question.studentName}
+              questionText={question.text}
+              open={false}
+              onOpenChange={(next) => setReplyOpenId(next ? question.id : null)}
+              showToggle
+            />
+          ) : null}
+          {(mode === 'pending' || mode === 'published') && (
+            <button type="button" onClick={() => finishQuestion(question, mode)} className={TEXT_ACTION}>
               Done
             </button>
           )}
@@ -156,17 +179,6 @@ export default function AudienceQnaTeacher({
               Return
             </button>
           )}
-          {mode !== 'dismissed' && !replyOpen ? (
-            <QuestionInboxReply
-              socket={socket}
-              studentId={question.studentId}
-              studentName={question.studentName}
-              questionText={question.text}
-              open={false}
-              onOpenChange={(next) => setReplyOpenId(next ? question.id : null)}
-              showToggle
-            />
-          ) : null}
         </div>
 
         {replyOpen && mode !== 'dismissed' ? (
@@ -189,30 +201,22 @@ export default function AudienceQnaTeacher({
     <>
       <section id="audience-qna-teacher" className="scroll-mt-4 p-4">
         <div className="flex items-center gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
-          {pending.length > 0 ? (
-            <p className="min-w-0 flex-1 text-sm font-bold text-slate-700 dark:text-slate-200">
-              {pending.length} waiting
-            </p>
-          ) : (
-            <p className="min-w-0 flex-1 text-sm text-slate-500 dark:text-slate-400">Nothing waiting</p>
-          )}
+          <p className="min-w-0 flex-1 text-sm font-bold text-slate-700 dark:text-slate-200">
+            {pending.length ? `${pending.length} waiting` : 'Nothing waiting'}
+          </p>
           {!focusedStudentId && presentable.length > 0 && (
             <button type="button" onClick={() => setPresenting(true)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
               Present
             </button>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            title={hasLiveActivity ? 'Back to live response' : 'Close questions panel'}
-            aria-label={hasLiveActivity ? 'Back to live response' : 'Close questions panel'}
-            className={`text-xs font-bold text-indigo-600 dark:text-indigo-400 ${typeof onClose !== 'function' ? 'hidden' : ''}`}
-          >
-            Close
-          </button>
+          {typeof onClose === 'function' ? (
+            <button type="button" onClick={onClose} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              Close
+            </button>
+          ) : null}
         </div>
 
-        {message && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-200">{message}</p>}
+        {message ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-200">{message}</p> : null}
 
         <div className="mt-3 space-y-3">
           {pending.map((question) => <QuestionCard key={question.id} question={question} mode="pending" />)}
@@ -220,7 +224,7 @@ export default function AudienceQnaTeacher({
 
           {answered.length > 0 && (
             <details>
-              <summary className="cursor-pointer py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Answered · {answered.length}</summary>
+              <summary className="cursor-pointer py-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Done · {answered.length}</summary>
               <div className="mt-2 space-y-2">{answered.map((question) => <QuestionCard key={question.id} question={question} mode="answered" />)}</div>
             </details>
           )}
@@ -230,7 +234,7 @@ export default function AudienceQnaTeacher({
               <div className="mt-2 space-y-2">{dismissed.map((question) => <QuestionCard key={question.id} question={question} mode="dismissed" />)}</div>
             </details>
           )}
-          {!scopedQuestions.length && <div className="h-4" aria-hidden="true" />}
+          {!scopedQuestions.length ? <div className="h-4" aria-hidden="true" /> : null}
         </div>
       </section>
 
@@ -246,9 +250,6 @@ export default function AudienceQnaTeacher({
                     <p className="min-w-0 flex-1 text-2xl font-bold leading-snug">{question.text}</p>
                     <span className="shrink-0 text-sm font-semibold text-indigo-300">{question.publishedAnonymous ? 'Anonymous' : question.studentName}</span>
                   </div>
-                  {Number(question.votes) > 0 ? (
-                    <p className="mt-3 text-sm font-black text-indigo-300">▲ {question.votes}</p>
-                  ) : null}
                 </article>
               ))}
             </div>

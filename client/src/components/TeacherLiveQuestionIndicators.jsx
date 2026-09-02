@@ -168,7 +168,7 @@ export default function TeacherLiveQuestionIndicators() {
     });
   }
 
-  function askClass() {
+  function shareToClass(anonymous) {
     if (!selectedQuestion || !connection.socket) return;
     setMessage('');
     ensureTeacherRoom(connection.socket, (joinAck) => {
@@ -178,16 +178,17 @@ export default function TeacherLiveQuestionIndicators() {
       }
       connection.socket.emit(
         'teacher:qna-ask-room',
-        { questionId: selectedQuestion.id, anonymous: !!selectedQuestion.anonymousRequested },
+        { questionId: selectedQuestion.id, anonymous: !!anonymous },
         (ack) => {
-          if (!ack?.ok) {
-            setMessage(ack?.error || 'Could not ask the class.');
-            return;
-          }
-          setSelectedQuestionId(null);
+          if (!ack?.ok) setMessage(ack?.error || 'Could not share with the class.');
         }
       );
     });
+  }
+
+  function finishQuestion() {
+    updateQuestion('dismiss');
+    setSelectedQuestionId(null);
   }
 
   const selectedPosition = selectedQuestion ? queuePositionById.get(Number(selectedQuestion.id)) : null;
@@ -231,14 +232,13 @@ export default function TeacherLiveQuestionIndicators() {
 
           <div className="relative z-10 mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 overflow-visible border-t border-slate-100 pt-3 dark:border-slate-800">
             <details className="relative">
-              <summary className="list-none cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300 [&::-webkit-details-marker]:hidden">Show ▾</summary>
+              <summary className="list-none cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300 [&::-webkit-details-marker]:hidden">Share ▾</summary>
               <div className="absolute left-0 top-full z-50 mt-1 min-w-32 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', false); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Named</button>
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); updateQuestion('publish', true); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Anonymous</button>
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); shareToClass(false); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Named</button>
+                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); shareToClass(true); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Anonymous</button>
               </div>
             </details>
-            <button type="button" onClick={askClass} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-black text-emerald-950 hover:bg-emerald-400">Ask class</button>
-            <button type="button" onClick={() => updateQuestion('dismiss')} className="text-xs font-bold text-slate-600 dark:text-slate-300">Handled</button>
+            <button type="button" onClick={finishQuestion} className="text-xs font-bold text-slate-600 dark:text-slate-300">Done</button>
           </div>
 
           <QuestionInboxReply

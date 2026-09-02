@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
+import { UNKNOWN_ANSWER, isUnknownAnswer } from '../lib/liveResponseUnknown.js';
 
 const STATUS_OPTIONS = [
   ['ready', 'Yep, ready'],
@@ -210,15 +211,15 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     }, 900);
   }
 
-  function submit(value) {
+  function submit(value, { skipConfidence = false } = {}) {
     if (!activity || activity.locked) return;
-    const selectedConfidence = confidenceChoice;
+    const selectedConfidence = skipConfidence ? '' : confidenceChoice;
     setMessage('Sending…');
     socket.emit('student:live-response', { activityId: activity.id, value }, (ack) => {
-      setMessage(ack?.ok ? 'Answer sent ✓' : ack?.error || 'Could not send');
+      setMessage(ack?.ok ? (isUnknownAnswer(value) ? 'Sent ✓' : 'Answer sent ✓') : ack?.error || 'Could not send');
       if (ack?.ok) {
         setResponse({ value, confidence: selectedConfidence });
-        setDraft(value);
+        setDraft(isUnknownAnswer(value) ? '' : value);
         if (selectedConfidence) {
           socket.emit('student:live-confidence', { activityId: activity.id, confidence: selectedConfidence }, (confidenceAck) => {
             if (confidenceAck?.ok) {
@@ -229,6 +230,10 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         scheduleCollapse();
       }
     });
+  }
+
+  function submitUnknown() {
+    submit(UNKNOWN_ANSWER, { skipConfidence: true });
   }
 
   function answerNudge(status) {
@@ -455,9 +460,14 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
           {activity.type === 'short' ? (
             <div className={compact ? 'mt-2' : quietAlerts ? 'mt-3' : 'mt-5'}>
-              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed} placeholder="Type a short answer…" className={`w-full rounded-xl border bg-white text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${quietAlerts ? 'border-slate-200' : 'border-2 border-slate-200 bg-slate-50 focus:border-indigo-500'} ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
-              {renderConfidenceControls(false)}
-              <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className={`rounded-xl bg-indigo-600 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${quietAlerts ? 'mt-3 w-full px-4 py-2.5 text-sm' : `w-full rounded-2xl font-black ${compact ? 'mt-2 px-3 py-2 text-sm' : 'mt-3 px-5 py-3 text-base'}`}`}>Send answer</button>
+              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed || isUnknownAnswer(response?.value)} placeholder="Type a short answer…" className={`w-full rounded-xl border bg-white text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${quietAlerts ? 'border-slate-200' : 'border-2 border-slate-200 bg-slate-50 focus:border-indigo-500'} ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
+              {!isUnknownAnswer(response?.value) && renderConfidenceControls(false)}
+              <div className={`flex flex-col gap-2 ${quietAlerts ? 'mt-3' : 'mt-3'}`}>
+                <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className={`rounded-xl bg-indigo-600 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${quietAlerts ? 'w-full px-4 py-2.5 text-sm' : `w-full rounded-2xl font-black ${compact ? 'px-3 py-2 text-sm' : 'px-5 py-3 text-base'}`}`}>Send answer</button>
+                <button type="button" disabled={answersClosed || !!response} onClick={submitUnknown} className={`rounded-xl border border-slate-200 bg-white font-bold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 ${quietAlerts ? 'w-full px-4 py-2.5 text-sm' : 'w-full px-5 py-2.5 text-sm'}`}>
+                  I don't know
+                </button>
+              </div>
               {activity.revealed && activity.correctAnswer && (
                 <p className={`rounded-xl bg-emerald-50 font-bold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100 ${compact ? 'mt-2 px-2.5 py-1.5 text-xs' : 'mt-3 px-3 py-2 text-sm'}`}>
                   Expected answer: {activity.correctAnswer}

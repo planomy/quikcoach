@@ -174,6 +174,7 @@ export function migrate(db) {
   for (const sql of [
     `ALTER TABLE live_activities ADD COLUMN image_url TEXT NOT NULL DEFAULT ''`,
     `ALTER TABLE live_activities ADD COLUMN timer_seconds INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE live_activities ADD COLUMN source_question_id INTEGER NOT NULL DEFAULT 0`,
   ]) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
@@ -803,8 +804,8 @@ export const queries = {
     run(
       db,
       `INSERT INTO live_activities
-       (room_code, activity_id, question_number, type, prompt, options_json, correct_answer, anonymous, optional, image_url, timer_seconds, locked, revealed, launched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+       (room_code, activity_id, question_number, type, prompt, options_json, correct_answer, anonymous, optional, image_url, timer_seconds, source_question_id, locked, revealed, launched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
        ON CONFLICT(room_code) DO UPDATE SET
          activity_id = excluded.activity_id,
          question_number = excluded.question_number,
@@ -816,6 +817,7 @@ export const queries = {
          optional = excluded.optional,
          image_url = excluded.image_url,
          timer_seconds = excluded.timer_seconds,
+         source_question_id = excluded.source_question_id,
          locked = 0,
          revealed = 0,
          launched_at = excluded.launched_at`,
@@ -831,6 +833,7 @@ export const queries = {
         activity.optional ? 1 : 0,
         activity.imageUrl || '',
         Math.max(0, Number(activity.timerSeconds) || 0),
+        Math.max(0, Number(activity.sourceQuestionId) || 0),
         launchedAt,
       ]
     );
@@ -1394,5 +1397,6 @@ function rowToLiveActivity(row) {
     revealed: !!row.revealed,
     launchedAt: new Date(launchedMs).toISOString(),
     endsAt: timerSeconds > 0 ? new Date(launchedMs + timerSeconds * 1000).toISOString() : '',
+    sourceQuestionId: Math.max(0, Number(row.source_question_id) || 0),
   };
 }
