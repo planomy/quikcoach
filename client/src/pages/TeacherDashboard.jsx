@@ -1746,7 +1746,7 @@ function TeacherDashboardInner() {
 
               {livePulse.activity && (
                 <div className="iboard-live-question mb-2 shrink-0 rounded-xl border px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
                     Question live
                   </p>
                   <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
