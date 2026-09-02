@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Shared application chrome: a quiet indigo glow gives both workspaces a
+   recognisable top edge without competing with the teaching surface. */
+.iboard-app-header {
+  background:
+    radial-gradient(circle at 9% -100%, rgba(99, 102, 241, 0.18), transparent 38%),
+    linear-gradient(105deg, rgba(249, 250, 255, 0.98) 0%, rgba(244, 246, 255, 0.98) 58%, rgba(248, 251, 255, 0.98) 100%);
+  border-bottom-color: #dbe3f0;
+  box-shadow: 0 4px 16px rgba(30, 41, 59, 0.045);
+}
+
+html.dark .iboard-app-header {
+  background:
+    radial-gradient(circle at 9% -100%, rgba(99, 102, 241, 0.24), transparent 40%),
+    linear-gradient(105deg, rgba(15, 23, 42, 0.98) 0%, rgba(17, 24, 48, 0.98) 58%, rgba(15, 23, 42, 0.98) 100%);
+  border-bottom-color: #334155;
+  box-shadow: 0 4px 18px rgba(2, 6, 23, 0.28);
+}
+
 @keyframes iboardQuestionArrival {
   0% {
     opacity: 0;

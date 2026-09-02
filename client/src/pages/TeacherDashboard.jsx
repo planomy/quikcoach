@@ -1456,14 +1456,14 @@ function TeacherDashboardInner() {
           Connection lost — reconnecting…
         </div>
       )}
-      <header ref={teacherHeaderRef} className="relative z-50 shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-2.5 sm:px-6">
+      <header ref={teacherHeaderRef} className="iboard-app-header relative z-50 shrink-0 border-b backdrop-blur">
+        <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
               Room <span className="font-mono text-indigo-600">{codeInput}</span>
             </h1>
             <SaveStatusChip status={saveStatus} />
-            <span className="hidden rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300 sm:inline">
+            <span className="hidden rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 sm:inline">
               Participants: {orderedStudents.length}
             </span>
             {frozen && (

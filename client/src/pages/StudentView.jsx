@@ -820,13 +820,13 @@ export default function StudentView() {
           Back online
         </div>
       )}
-      <header className="border-b border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/90 px-4 py-4 backdrop-blur sm:px-6">
+      <header className="iboard-app-header border-b px-4 py-3 backdrop-blur sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 xl:max-w-7xl">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">{student?.name}</h1>
               {activeRoomCode && (
-                <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-black text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                <span className="rounded-full border border-indigo-200/80 bg-indigo-100/90 px-2.5 py-1 text-xs font-black text-indigo-800 shadow-[0_1px_3px_rgba(79,70,229,0.08)] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
                   Room {activeRoomCode}
                 </span>
               )}
