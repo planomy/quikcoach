@@ -88,6 +88,8 @@ function mappedPlainTokens(root) {
       return;
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return;
+    // Marker/popups are portaled into the writing pane; never count them as text.
+    if (node.hasAttribute?.('data-teacher-annotation-ui')) return;
     const tag = String(node.tagName || '').toLowerCase();
     if (tag === 'br') {
       pushVirtualNewline(node);
@@ -234,4 +236,14 @@ export function plainTextFromElement(element) {
   const clone = element.cloneNode(true);
   clone.querySelectorAll?.('[data-teacher-annotation-ui]').forEach((node) => node.remove());
   return richHtmlToPlainText(clone.innerHTML);
+}
+
+/** Prefer the writing-content root so chrome (images, mark-up buttons) is excluded. */
+export function writingRootForPane(textPane) {
+  if (!textPane) return null;
+  return (
+    textPane.querySelector?.('[data-iboard-writing-content]') ||
+    textPane.querySelector?.('.whitespace-pre-wrap') ||
+    textPane
+  );
 }

@@ -5,6 +5,7 @@ import {
   rangeForPlainOffsets,
   resolveAnnotation,
   selectionOffsetsWithin,
+  writingRootForPane,
 } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
@@ -96,11 +97,7 @@ function cardForStudent(studentId) {
 }
 
 function contentRootForPane(textPane) {
-  return (
-    textPane?.querySelector?.('[data-iboard-writing-content]') ||
-    textPane?.querySelector?.('.whitespace-pre-wrap') ||
-    textPane
-  );
+  return writingRootForPane(textPane);
 }
 
 function primaryRangeClientRect(range) {
@@ -255,13 +252,14 @@ export default function TeacherAnnotationController() {
       const studentId = Number(studentKey);
       const card = cardForStudent(studentId);
       if (!card) continue;
-      const fullText = plainTextFromElement(card.textPane);
+      const writingRoot = contentRootForPane(card.textPane) || card.textPane;
+      const fullText = plainTextFromElement(writingRoot);
       const paneRect = card.textPane.getBoundingClientRect();
       let detachedCount = 0;
       for (const annotation of annotations || []) {
         const fixed = annotation.status === 'fixed';
         const resolved = resolveAnnotation(annotation, fullText);
-        const range = resolved.detached ? null : rangeForPlainOffsets(card.textPane, resolved.start, resolved.end);
+        const range = resolved.detached ? null : rangeForPlainOffsets(writingRoot, resolved.start, resolved.end);
         if (!range) {
           if (paneIsOnScreen(paneRect)) {
             const position = detachedMarkerPosition(paneRect, detachedCount);
@@ -419,8 +417,10 @@ export default function TeacherAnnotationController() {
       const range = selection.getRangeAt(0);
       const card = findCardFromNode(range.startContainer);
       if (!card || !card.textPane.contains(range.endContainer)) return;
-      const fullText = plainTextFromElement(card.textPane);
-      const offsets = selectionOffsetsWithin(card.textPane, fullText);
+      const writingRoot = contentRootForPane(card.textPane) || card.textPane;
+      if (!writingRoot.contains(range.startContainer) || !writingRoot.contains(range.endContainer)) return;
+      const fullText = plainTextFromElement(writingRoot);
+      const offsets = selectionOffsetsWithin(writingRoot, fullText);
       if (!offsets || offsets.quote.length > 1200) return;
       const rect = range.getBoundingClientRect();
       setDraftNote('');
