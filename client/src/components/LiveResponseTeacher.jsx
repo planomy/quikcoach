@@ -503,7 +503,7 @@ export default function LiveResponseTeacher({
   }
 
   const sectionClass = overlay
-    ? 'flex h-full min-h-0 flex-col overflow-hidden bg-white dark:bg-slate-900'
+    ? 'flex w-full flex-col overflow-hidden bg-white dark:bg-slate-900'
     : embedded
       ? 'mb-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900'
       : 'mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900';

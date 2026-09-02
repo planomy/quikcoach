@@ -779,6 +779,14 @@ function TeacherDashboardInner() {
     return map;
   }, [livePulse.students]);
 
+  const headerDockStyle = useMemo(
+    () => ({
+      top: teacherToolsTop,
+      maxHeight: `calc(100dvh - ${teacherToolsTop}px)`,
+    }),
+    [teacherToolsTop]
+  );
+
   async function copyForAi() {
     try {
       await navigator.clipboard.writeText(aiPrompt);
@@ -1778,8 +1786,8 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && (
         <div
           ref={teacherToolsPanelRef}
-          className="fixed bottom-0 right-0 z-[60] w-[min(29rem,100vw)] overflow-hidden border-l border-t border-slate-200 bg-white shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900"
-          style={{ top: teacherToolsTop }}
+          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)] border-l border-t border-slate-200 bg-white shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900"
+          style={headerDockStyle}
           role="dialog"
           aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
         >
@@ -2579,14 +2587,14 @@ function TeacherDashboardInner() {
         <div
           ref={addCardPanelRef}
           data-iboard-add-card-panel="true"
-          className="fixed bottom-0 right-0 z-[60] flex w-[min(29rem,100vw)] flex-col overflow-hidden border-l border-t border-slate-200 bg-white shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900"
-          style={{ top: teacherToolsTop }}
+          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)] border-l border-t border-slate-200 bg-white shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900"
+          style={headerDockStyle}
           role="dialog"
           aria-modal="false"
           aria-labelledby="add-teacher-card-title"
         >
           <form
-            className="flex min-h-0 flex-1 flex-col"
+            className="flex flex-col"
             onSubmit={(event) => {
               event.preventDefault();
               submitTeacherCard();
@@ -2601,7 +2609,7 @@ function TeacherDashboardInner() {
                 Close
               </button>
             </div>
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3 scrollbar-thin">
+            <div className="space-y-3 px-4 py-3">
               <input
                 autoFocus
                 value={addCardTitle}
@@ -2615,7 +2623,7 @@ function TeacherDashboardInner() {
                 value={addCardText}
                 onChange={(event) => setAddCardText(event.target.value)}
                 onPaste={handleAddCardPaste}
-                rows={8}
+                rows={5}
                 disabled={!!addCardImage}
                 aria-label="Card text"
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-white"

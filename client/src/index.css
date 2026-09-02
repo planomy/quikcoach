@@ -124,6 +124,14 @@ html.dark .iboard-confidence-ring {
   --iboard-ring-unanswered: #475569;
   --iboard-ring-empty: #1e293b;
 }
+
+/* Header docks hug their content, then scroll once they hit the viewport floor. */
+.iboard-header-dock {
+  height: max-content;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 @keyframes iboardQuestionArrival {
   0% {
     opacity: 0;
