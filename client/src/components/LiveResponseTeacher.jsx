@@ -375,7 +375,8 @@ export default function LiveResponseTeacher({
       if (!ack?.ok) setMessage(ack?.error || 'Could not update question');
       if (action === 'clear' && ack?.ok) {
         setActiveView('quik');
-        setMessage('Question ended. Ready for the next one.');
+        if (usingPanelTabs) onClose?.();
+        else setMessage('Question ended. Ready for the next one.');
       }
     });
   }
@@ -808,6 +809,7 @@ export default function LiveResponseTeacher({
             highlightStudentId={highlightStudentId}
             onClearHighlight={onClearHighlight}
             onOpenAsk={() => switchPanelTab('ask')}
+            onClose={onClose}
           />
         )}
 

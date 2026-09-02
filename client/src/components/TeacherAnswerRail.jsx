@@ -201,7 +201,9 @@ export default function TeacherAnswerRail({
   function finishQuestion() {
     const socket = teacherSocket();
     if (!socket?.connected) return;
-    socket.emit('teacher:live-control', { action: 'clear' });
+    socket.emit('teacher:live-control', { action: 'clear' }, (ack) => {
+      if (ack?.ok) onClose?.();
+    });
   }
 
   function repeatQuestion() {
@@ -235,19 +237,8 @@ export default function TeacherAnswerRail({
     if (embedded) {
       return (
         <div className="grid min-h-[280px] place-items-center p-8 text-center">
-          <div>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">No live question right now</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Use Ask to send a quick question to the class.</p>
-            {typeof onOpenAsk === 'function' && (
-              <button
-                type="button"
-                onClick={onOpenAsk}
-                className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-700"
-              >
-                Go to Ask
-              </button>
-            )}
-          </div>
+          <p className="text-sm font-bold text-slate-800 dark:text-slate-100">No live question right now</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Use Ask to send a quick question to the class.</p>
         </div>
       );
     }
