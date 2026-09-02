@@ -1852,24 +1852,20 @@ function TeacherDashboardInner() {
                     {s.name}
                   </h2>
                   <span title={showPulseState ? pulseMeta.title : 'Writing activity'} className={`h-2 w-2 shrink-0 rounded-full ${light}`} />
-                  {showPulseState && inQuestion ? (
+                  {showPulseState && inQuestion && pulseStudent?.hasResponded ? (
                     <button
                       type="button"
                       onClick={() => openAnswerInRail(s.id)}
-                      className={`max-w-[6rem] shrink-0 truncate rounded-full px-1.5 py-0.5 text-left text-[10px] font-semibold ${
-                        pulseStudent?.hasResponded
-                          ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900'
-                          : 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:bg-amber-900'
-                      }`}
+                      className="max-w-[6rem] shrink-0 truncate rounded-full bg-indigo-50 px-1.5 py-0.5 text-left text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900"
                       title={liveResponse?.value || pulseMeta.title}
                     >
-                      {pulseStudent?.hasResponded ? (liveResponse?.value || 'Answered') : 'Waiting'}
+                      {liveResponse?.value || 'Answered'}
                     </button>
-                  ) : (
+                  ) : !showPulseState || !inQuestion ? (
                     <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
                       {wc}w
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
                   {gradeShortLabel(s.year_level) && (
