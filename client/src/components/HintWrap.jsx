@@ -22,7 +22,7 @@ function measureAndPlace(wrapEl, tipEl, hint, prefer) {
 }
 
 /** Fast hover/focus hint chip — flips below when there isn’t room above. */
-export default function HintWrap({ hint, children, className = '', prefer = 'above' }) {
+export default function HintWrap({ hint, children, className = '', prefer = 'above', multiline = false, tone = 'neutral' }) {
   const wrapRef = useRef(null);
   const tipRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -65,7 +65,13 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
         <span
           ref={tipRef}
           role="tooltip"
-          className="pointer-events-none fixed z-[200] whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-black leading-none text-white shadow-lg dark:bg-slate-100 dark:text-slate-900"
+          className={`pointer-events-none fixed z-[200] rounded-lg px-2 py-1 text-[10px] font-black text-white shadow-lg ${
+            multiline ? 'max-w-[min(22rem,calc(100vw-1rem))] whitespace-normal text-left leading-relaxed' : 'whitespace-nowrap leading-none'
+          } ${
+            tone === 'brand'
+              ? 'bg-indigo-700 ring-1 ring-indigo-400/50 dark:bg-indigo-200 dark:text-indigo-950 dark:ring-indigo-400/40'
+              : 'bg-slate-900 dark:bg-slate-100 dark:text-slate-900'
+          }`}
           style={{
             top: box ? box.top : -9999,
             left: box ? box.left : -9999,
