@@ -820,17 +820,17 @@ export default function StudentView() {
           Back online
         </div>
       )}
-      <header className="iboard-app-header border-b px-4 py-3 backdrop-blur sm:px-6">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 xl:max-w-7xl">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">{student?.name}</h1>
-              {activeRoomCode && (
-                <span className="iboard-header-chip rounded-full border border-indigo-200/80 bg-indigo-100/90 px-2.5 py-1 text-xs font-black text-indigo-800 shadow-[0_1px_3px_rgba(79,70,229,0.08)] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
-                  Room {activeRoomCode}
-                </span>
-              )}
-            </div>
+      <header className="iboard-app-header border-b backdrop-blur">
+        <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {activeRoomCode && (
+              <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
+                Room <span className="iboard-header-code font-mono text-indigo-600">{activeRoomCode}</span>
+              </h1>
+            )}
+            <span className="iboard-header-chip truncate rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+              {student?.name}
+            </span>
           </div>
           <details className="group relative shrink-0">
             <summary
