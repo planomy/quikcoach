@@ -148,6 +148,7 @@ export default function LiveResponseTeacher({
   const [activeView, setActiveView] = useState('quik');
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [engagementFocusId, setEngagementFocusId] = useState(null);
+  const [railFocusId, setRailFocusId] = useState(null);
   const [qnaQuestions, setQnaQuestions] = useState([]);
   const [message, setMessage] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -472,6 +473,7 @@ export default function LiveResponseTeacher({
   function selectEngagementStudent(student) {
     setSelectedStudentId(student.id);
     setEngagementFocusId(student.id);
+    if (student.hasResponded) setRailFocusId(student.id);
   }
 
   function launchQuikPulse(question) {
@@ -603,7 +605,7 @@ export default function LiveResponseTeacher({
           )}
           <button
             type="button"
-            onClick={() => { setEngagementFocusId(null); setSelectedStudentId(null); }}
+            onClick={() => { setEngagementFocusId(null); setSelectedStudentId(null); setRailFocusId(null); }}
             className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
             Done
@@ -862,9 +864,9 @@ export default function LiveResponseTeacher({
             open
             activity={activity}
             responses={responses}
-            highlightStudentId={highlightStudentId ?? engagementFocusId}
+            highlightStudentId={highlightStudentId ?? railFocusId}
             onClearHighlight={() => {
-              setEngagementFocusId(null);
+              setRailFocusId(null);
               onClearHighlight?.();
             }}
             onOpenAsk={() => switchPanelTab('ask')}

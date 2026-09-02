@@ -480,9 +480,10 @@ function emitLiveState(code) {
         label: featuredLabels.get(Number(response.studentId)) || '',
       }))
     : [];
-  // Per-student so the original asker never receives their own Shared question.
-  for (const student of teacherPayload.students) {
-    const sid = Number(student.id);
+  // Every roster student (not the name-deduped teacher view) so nobody misses updates.
+  for (const row of queries.listStudents(db, c)) {
+    const sid = Number(row.id);
+    if (!sid) continue;
     const visible = activityForStudent(activity, sid);
     io.to(studentSocketName(sid)).emit('live:activity', {
       activity: publicLiveActivity(visible),
@@ -591,8 +592,16 @@ io.on('connection', (socket) => {
       socket.data.role = 'teacher';
       socket.data.roomCode = c;
       broadcastRoom(c);
-      socket.emit('live:teacher', buildTeacherLivePayload(c));
-      socket.emit('qna:teacher', buildTeacherQnaPayload(c));
+      try {
+        socket.emit('live:teacher', buildTeacherLivePayload(c));
+      } catch (liveError) {
+        console.error(liveError);
+      }
+      try {
+        socket.emit('qna:teacher', buildTeacherQnaPayload(c));
+      } catch (qnaError) {
+        console.error(qnaError);
+      }
       cb?.({ ok: true });
     } catch (e) {
       console.error(e);
