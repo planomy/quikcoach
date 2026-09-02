@@ -6,6 +6,7 @@ import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { createSocket } from '../lib/socket.js';
+import { lastTeacherRoomCode, rememberTeacherRoomCode } from '../lib/teacherRoom.js';
 
 function cleanCode(value) {
   return String(value || '').replace(/\D/g, '').slice(0, 4);
@@ -18,7 +19,9 @@ function randomRoomCode() {
 function PulseTeacherInner() {
   const [searchParams] = useSearchParams();
   const codeFromLink = cleanCode(searchParams.get('code'));
-  const [codeInput, setCodeInput] = useState(codeFromLink);
+  const rememberedRoomRef = useRef(codeFromLink.length === 4 ? '' : lastTeacherRoomCode());
+  const [codeInput, setCodeInput] = useState(codeFromLink || rememberedRoomRef.current);
+  const clearPrefilledCodeOnFocusRef = useRef(Boolean(rememberedRoomRef.current));
   const [joined, setJoined] = useState(false);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState('');
@@ -39,6 +42,9 @@ function PulseTeacherInner() {
         return;
       }
       roomCodeRef.current = code;
+      rememberTeacherRoomCode(code);
+      rememberedRoomRef.current = code;
+      clearPrefilledCodeOnFocusRef.current = false;
       setCodeInput(code);
       setJoined(true);
     });
@@ -89,7 +95,7 @@ function PulseTeacherInner() {
             </ol>
             <div className="mt-6 space-y-3">
               <label className="block text-xs font-black uppercase tracking-wide text-slate-500">Room code</label>
-              <div className="flex gap-2"><input value={codeInput} onChange={(event) => setCodeInput(cleanCode(event.target.value))} inputMode="numeric" maxLength={4} placeholder="0000" className="min-w-0 flex-1 rounded-xl border-2 border-slate-200 px-4 py-3 font-mono text-xl tracking-widest outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /><button type="button" onClick={() => setCodeInput(randomRoomCode())} className="rounded-xl bg-slate-100 px-4 text-sm font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">Random</button></div>
+              <div className="flex gap-2"><input value={codeInput} onFocus={() => { if (clearPrefilledCodeOnFocusRef.current) { clearPrefilledCodeOnFocusRef.current = false; setCodeInput(''); setError(''); } }} onChange={(event) => { clearPrefilledCodeOnFocusRef.current = false; setCodeInput(cleanCode(event.target.value)); }} inputMode="numeric" maxLength={4} placeholder="0000" className="min-w-0 flex-1 rounded-xl border-2 border-slate-200 px-4 py-3 font-mono text-xl tracking-widest outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /><button type="button" onClick={() => { clearPrefilledCodeOnFocusRef.current = true; setCodeInput(randomRoomCode()); }} className="rounded-xl bg-slate-100 px-4 text-sm font-black text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200">Random</button></div>
               {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
               <button type="button" onClick={() => openRoom()} className="w-full rounded-xl bg-indigo-600 px-5 py-3 font-black text-white shadow-lift hover:bg-indigo-700">Open room</button>
               <Link to="/teacher" className="block text-center text-sm font-bold text-indigo-600 hover:text-indigo-800">Need live writing too? Open full iBOARD</Link>

@@ -38,6 +38,7 @@ import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges } from '../lib/viewport.js';
+import { lastTeacherRoomCode, rememberTeacherRoomCode } from '../lib/teacherRoom.js';
 
 const NOTE_COMPOSER_WIDTH = 384;
 const NOTE_COMPOSER_EST_HEIGHT = 360;
@@ -158,9 +159,11 @@ function TeacherDashboardInner() {
   const codeFromLink = String(searchParams.get('code') || '')
     .replace(/\D/g, '')
     .slice(0, 4);
+  const rememberedRoomRef = useRef(codeFromLink.length === 4 ? '' : lastTeacherRoomCode());
   const [codeInput, setCodeInput] = useState(() =>
-    codeFromLink.length === 4 ? codeFromLink : randomRoomCode()
+    codeFromLink.length === 4 ? codeFromLink : rememberedRoomRef.current || randomRoomCode()
   );
+  const clearPrefilledCodeOnFocusRef = useRef(codeFromLink.length !== 4);
   const [joined, setJoined] = useState(false);
   const [room, setRoom] = useState(null);
   const [students, setStudents] = useState([]);
@@ -485,6 +488,9 @@ function TeacherDashboardInner() {
           return;
         }
         joinedRef.current = true;
+        rememberTeacherRoomCode(code);
+        rememberedRoomRef.current = code;
+        clearPrefilledCodeOnFocusRef.current = false;
         setJoined(true);
         setCodeInput(code);
         try {
@@ -1470,7 +1476,16 @@ function TeacherDashboardInner() {
             <div className="mt-10 flex items-center gap-2">
               <input
                 value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                onFocus={() => {
+                  if (!clearPrefilledCodeOnFocusRef.current) return;
+                  clearPrefilledCodeOnFocusRef.current = false;
+                  setCodeInput('');
+                  setError('');
+                }}
+                onChange={(e) => {
+                  clearPrefilledCodeOnFocusRef.current = false;
+                  setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4));
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && codeInput.length === 4) createOrJoin();
                 }}
@@ -1482,7 +1497,10 @@ function TeacherDashboardInner() {
               />
               <button
                 type="button"
-                onClick={() => setCodeInput(randomRoomCode())}
+                onClick={() => {
+                  clearPrefilledCodeOnFocusRef.current = true;
+                  setCodeInput(randomRoomCode());
+                }}
                 aria-label="Generate new room code"
                 className="shrink-0 rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               >
