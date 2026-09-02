@@ -610,9 +610,9 @@ export default function LiveResponseTeacher({
   return (
     <section className={sectionClass}>
       {overlay && (
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-indigo-100 bg-indigo-50/80 px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/35">
           <div>
-            <p className="text-xs font-black text-slate-900 dark:text-white">{panelMeta?.title || 'Ask the room'}</p>
+            <p className="text-xs font-black text-indigo-950 dark:text-indigo-100">{panelMeta?.title || 'Ask the room'}</p>
             <p className="text-[11px] text-slate-500">
               {effectivePanelTab === 'responses' && activity ? responseSummary : panelMeta?.hint || (activity ? responseSummary : 'Send questions and review student answers')}
             </p>

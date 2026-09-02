@@ -787,7 +787,7 @@ export default function StudentView() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-indigo-50/40 dark:from-slate-950 dark:to-indigo-950/40">
+    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
       {timesUp && (
         <button
           type="button"
@@ -807,7 +807,7 @@ export default function StudentView() {
       {connBanner === 'lost' && (
         <div
           role="status"
-          className="sticky top-0 z-40 border-b border-amber-300 bg-amber-500 px-4 py-2.5 text-center text-sm font-semibold text-amber-950 shadow-sm"
+          className="sticky top-0 z-40 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-sm font-semibold text-amber-800 shadow-sm dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
         >
           Connection lost — reconnecting…
         </div>
@@ -815,7 +815,7 @@ export default function StudentView() {
       {connBanner === 'online' && (
         <div
           role="status"
-          className="sticky top-0 z-40 border-b border-emerald-300 bg-emerald-500 px-4 py-2.5 text-center text-sm font-semibold text-emerald-950 shadow-sm"
+          className="sticky top-0 z-40 border-b border-emerald-200 bg-emerald-50 px-4 py-2.5 text-center text-sm font-semibold text-emerald-800 shadow-sm dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
         >
           Back online
         </div>

@@ -3,17 +3,17 @@
 @keyframes iboard-respond-badge-realert {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgb(220 38 38 / 0);
+    box-shadow: 0 0 0 0 rgb(225 29 72 / 0);
   }
   45% {
     transform: scale(1.22);
-    box-shadow: 0 0 0 6px rgb(220 38 38 / 0.18);
+    box-shadow: 0 0 0 6px rgb(225 29 72 / 0.18);
   }
 }
 
 html.iboard-student-workspace aside:has(.iboard-student-support-scroll section.iboard-question-pulse)
   nav[aria-label='Student tools'] > button:nth-child(2) [data-iboard-tab-badge] {
-  background: #dc2626 !important;
+  background: #e11d48 !important;
   color: #fff !important;
   transform-origin: center;
   animation: iboard-respond-badge-realert 0.8s ease-in-out 3;
@@ -23,7 +23,7 @@ html.iboard-student-workspace aside:has(.iboard-student-support-scroll section.i
   html.iboard-student-workspace aside:has(.iboard-student-support-scroll section.iboard-question-pulse)
     nav[aria-label='Student tools'] > button:nth-child(2) [data-iboard-tab-badge] {
     animation: none;
-    box-shadow: 0 0 0 3px rgb(220 38 38 / 0.16);
+    box-shadow: 0 0 0 3px rgb(225 29 72 / 0.16);
   }
 }
 

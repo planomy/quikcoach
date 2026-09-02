@@ -1446,12 +1446,12 @@ function TeacherDashboardInner() {
   const liveResponseCount = (livePulse.responses || []).length;
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
       <div className="shrink-0">
       {!socketConnected && (
         <div
           role="status"
-          className="sticky top-0 z-40 border-b border-amber-300 bg-amber-500 px-4 py-2.5 text-center text-sm font-semibold text-amber-950 shadow-sm"
+          className="sticky top-0 z-40 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-sm font-semibold text-amber-800 shadow-sm dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
         >
           Connection lost — reconnecting…
         </div>
@@ -1816,7 +1816,7 @@ function TeacherDashboardInner() {
                 ? pulseStudent?.hasResponded
                   ? 'bg-indigo-500'
                   : pulseStudent?.connected
-                    ? 'bg-slate-300'
+                    ? 'bg-amber-500'
                     : 'bg-slate-200'
                 : st === 'live'
                   ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]'
@@ -1856,7 +1856,11 @@ function TeacherDashboardInner() {
                     <button
                       type="button"
                       onClick={() => openAnswerInRail(s.id)}
-                      className="max-w-[6rem] shrink-0 truncate rounded-full bg-indigo-50 px-1.5 py-0.5 text-left text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900"
+                      className={`max-w-[6rem] shrink-0 truncate rounded-full px-1.5 py-0.5 text-left text-[10px] font-semibold ${
+                        pulseStudent?.hasResponded
+                          ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900'
+                          : 'bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:bg-amber-900'
+                      }`}
                       title={liveResponse?.value || pulseMeta.title}
                     >
                       {pulseStudent?.hasResponded ? (liveResponse?.value || 'Answered') : 'Waiting'}
