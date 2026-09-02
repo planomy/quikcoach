@@ -12,7 +12,7 @@ function confidenceNameClass(confidence) {
 
 function confidenceLabel(confidence) {
   if (confidence === 'confident') return 'Confident';
-  if (confidence === 'unsure') return 'Not sure';
+  if (confidence === 'unsure') return 'Not confident';
   if (confidence === 'guessed') return 'Guessed';
   return 'Answered';
 }
@@ -339,7 +339,7 @@ export default function TeacherAnswerRail({
         {isShort && (
           <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-2 text-[10px] font-bold dark:border-slate-800">
             <span className="text-emerald-600">● Confident</span>
-            <span className={UNSURE_TEXT_CLASS}>● Not sure</span>
+            <span className={UNSURE_TEXT_CLASS}>● Not confident</span>
             <span className="text-red-600">● Guessed</span>
           </div>
         )}

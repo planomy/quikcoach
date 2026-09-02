@@ -9,7 +9,7 @@ const STATUS_OPTIONS = [
 ];
 const CONFIDENCE_OPTIONS = [
   ['confident', 'Confident'],
-  ['unsure', 'Not sure'],
+  ['unsure', 'Not confident'],
   ['guessed', 'I guessed'],
 ];
 

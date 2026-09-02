@@ -131,7 +131,7 @@ export default function LessonReportPanel({ roomCode, onClose }) {
                     </div>
                     <div className="mt-3 flex flex-wrap gap-3 text-[11px] font-semibold text-slate-500">
                       <span className="text-emerald-700 dark:text-emerald-300">{question.confident} confident</span>
-                      <span className="text-amber-700 dark:text-amber-300">{question.unsure} not sure</span>
+                      <span className="text-amber-700 dark:text-amber-300">{question.unsure} not confident</span>
                       <span className="text-red-700 dark:text-red-300">{question.guessed} guessed</span>
                     </div>
                   </article>
@@ -180,7 +180,7 @@ export default function LessonReportPanel({ roomCode, onClose }) {
                                   <span className="block truncate">{truncate(cell.value, 28)}</span>
                                   {cell.confidence ? (
                                     <span className={`text-[10px] font-semibold ${confidenceBadge(cell.confidence)}`}>
-                                      {cell.confidence === 'confident' ? 'Confident' : cell.confidence === 'unsure' ? 'Not sure' : 'Guessed'}
+                                      {cell.confidence === 'confident' ? 'Confident' : cell.confidence === 'unsure' ? 'Not confident' : 'Guessed'}
                                     </span>
                                   ) : null}
                                 </>

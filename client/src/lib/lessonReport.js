@@ -22,7 +22,7 @@ function truncate(text, max = 48) {
 
 function confidenceLabel(confidence) {
   if (confidence === 'confident') return 'Confident';
-  if (confidence === 'unsure') return 'Not sure';
+  if (confidence === 'unsure') return 'Not confident';
   if (confidence === 'guessed') return 'Guessed';
   return '';
 }
@@ -99,7 +99,7 @@ export function buildLessonReportHtml(report) {
   <section>
     <h2>By question — did the prompts work?</h2>
     <table>
-      <thead><tr><th>Q</th><th>Prompt</th><th>Answered</th><th>Rate</th><th>Confident</th><th>Not sure</th><th>Guessed</th></tr></thead>
+      <thead><tr><th>Q</th><th>Prompt</th><th>Answered</th><th>Rate</th><th>Confident</th><th>Not confident</th><th>Guessed</th></tr></thead>
       <tbody>${byQuestionRows || '<tr><td colspan="7">No pulse questions yet.</td></tr>'}</tbody>
     </table>
   </section>
@@ -122,7 +122,7 @@ export function buildLessonReportCsv(report) {
   const students = report.students || [];
   const lines = [];
 
-  lines.push(['Section', 'Question', 'Prompt', 'Answered', 'Roster', 'Rate %', 'Confident', 'Not sure', 'Guessed'].map(csvCell).join(','));
+  lines.push(['Section', 'Question', 'Prompt', 'Answered', 'Roster', 'Rate %', 'Confident', 'Not confident', 'Guessed'].map(csvCell).join(','));
   for (const question of questions) {
     lines.push([
       'By question',

@@ -16,7 +16,7 @@ function segmentLabel(segment, index) {
   const question = Number(segment?.questionNumber) || index + 1;
   if (!segment?.answered) return `Question ${question}: unanswered`;
   if (segment.confidence === 'confident') return `Question ${question}: confident`;
-  if (segment.confidence === 'unsure') return `Question ${question}: not sure`;
+  if (segment.confidence === 'unsure') return `Question ${question}: not confident`;
   if (segment.confidence === 'guessed') return `Question ${question}: guessed`;
   return `Question ${question}: answered`;
 }
@@ -61,7 +61,7 @@ export default function EngagementRing({ engagement, connected = true, size = 48
     { confident: 0, unsure: 0, guessed: 0, answered: 0 }
   );
   const summary = total
-    ? `${responded} of ${total} questions answered; ${confidenceCounts.confident} confident, ${confidenceCounts.unsure} not sure, ${confidenceCounts.guessed} guessed`
+    ? `${responded} of ${total} questions answered; ${confidenceCounts.confident} confident, ${confidenceCounts.unsure} not confident, ${confidenceCounts.guessed} guessed`
     : 'online; no engagement opportunities yet';
   const label = connected ? summary : `offline; ${summary}`;
   const detail = segments.length

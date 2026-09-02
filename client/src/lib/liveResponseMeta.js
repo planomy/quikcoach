@@ -9,7 +9,7 @@ export const LIVE_STATUS_LABELS = {
 };
 
 /**
- * Shared “Not sure” colour — gold-amber between neon yellow and orange,
+ * Shared “Not confident” colour — gold-amber between neon yellow and orange,
  * clearly distinct from red “Guessed”.
  */
 export const UNSURE_COLOR = '#f0a818';
@@ -32,7 +32,7 @@ export function studentTileMeta(student) {
       return { title: student.connected ? 'Answered · confident' : 'Offline · answered · confident', className: 'border-2 border-emerald-500' };
     }
     if (confidence === 'unsure') {
-      return { title: student.connected ? 'Answered · not sure' : 'Offline · answered · not sure', className: UNSURE_BORDER_CLASS };
+      return { title: student.connected ? 'Answered · not confident' : 'Offline · answered · not confident', className: UNSURE_BORDER_CLASS };
     }
     if (confidence === 'guessed') {
       return { title: student.connected ? 'Answered · guessed' : 'Offline · answered · guessed', className: 'border-2 border-red-500' };
