@@ -360,11 +360,27 @@ function publicLiveActivity(activity) {
   };
 }
 
+/** Original asker is excluded when a student question is Shared to the room. */
+function sourceStudentIdForActivity(activity) {
+  const sourceQuestionId = Number(activity?.sourceQuestionId) || 0;
+  if (!sourceQuestionId) return 0;
+  const question = queries.getAudienceQuestion(db, sourceQuestionId);
+  return question ? Number(question.student_id) || 0 : 0;
+}
+
+function activityForStudent(activity, studentId) {
+  if (!activity) return null;
+  const excludedId = sourceStudentIdForActivity(activity);
+  if (excludedId && Number(studentId) === excludedId) return null;
+  return activity;
+}
+
 function buildTeacherLivePayload(code) {
   const c = normalizeRoomCode(code);
   const activity = liveActivityForClients(queries.getLiveActivity(db, c));
   const responses = activity ? queries.listLiveResponses(db, c) : [];
   const responseByStudent = new Map(responses.map((response) => [response.studentId, response]));
+  const excludedStudentId = sourceStudentIdForActivity(activity);
   const awareness = queries.getLessonPulseAwareness(db, c);
   const questionByActivity = new Map(awareness.questions.map((question) => [question.activityId, question]));
   const cellByStudentAndActivity = new Map(
@@ -397,6 +413,7 @@ function buildTeacherLivePayload(code) {
         confidence: cell?.confidence || '',
       };
     });
+    const promptExcluded = excludedStudentId > 0 && Number(student.id) === excludedStudentId;
     return {
       id: student.id,
       name: student.name,
@@ -405,6 +422,7 @@ function buildTeacherLivePayload(code) {
       engagement_status: student.engagement_status,
       engagement: { ...student.engagement, segments },
       hasResponded: responseByStudent.has(student.id),
+      promptExcluded,
       response: responseByStudent.get(student.id) || null,
     };
   });
@@ -434,7 +452,7 @@ function buildTeacherLivePayload(code) {
 
 function emitStudentLiveState(code, studentId) {
   const c = normalizeRoomCode(code);
-  const activity = queries.getLiveActivity(db, c);
+  const activity = activityForStudent(queries.getLiveActivity(db, c), studentId);
   const responses = activity ? queries.listLiveResponses(db, c) : [];
   const own = responses.find((response) => response.studentId === Number(studentId)) || null;
   io.to(studentSocketName(studentId)).emit('live:student', {
@@ -462,13 +480,18 @@ function emitLiveState(code) {
         label: featuredLabels.get(Number(response.studentId)) || '',
       }))
     : [];
-  io.to(roomSocketName(c)).emit('live:activity', {
-    activity: publicLiveActivity(activity),
-    responseCount: responses.length,
-    featured,
-    serverNow: Date.now(),
-  });
-  for (const student of teacherPayload.students) emitStudentLiveState(c, student.id);
+  // Per-student so the original asker never receives their own Shared question.
+  for (const student of teacherPayload.students) {
+    const sid = Number(student.id);
+    const visible = activityForStudent(activity, sid);
+    io.to(studentSocketName(sid)).emit('live:activity', {
+      activity: publicLiveActivity(visible),
+      responseCount: responses.length,
+      featured: visible ? featured : [],
+      serverNow: Date.now(),
+    });
+    emitStudentLiveState(c, sid);
+  }
 }
 
 const UNKNOWN_ANSWER = '__iboard_unknown__';
@@ -956,6 +979,10 @@ io.on('connection', (socket) => {
         cb?.({ ok: false, error: 'Answers are locked' });
         return;
       }
+      if (!activityForStudent(activity, sid)) {
+        cb?.({ ok: false, error: 'This is your question — no need to answer it' });
+        return;
+      }
       if (
         activity.timerSeconds > 0 &&
         Date.now() >=
@@ -1137,7 +1164,10 @@ io.on('connection', (socket) => {
       const answered = new Set(
         queries.listLiveResponses(db, code).map((response) => Number(response.studentId))
       );
-      const targets = connectedStudentsInRoom(code).filter((studentId) => !answered.has(studentId));
+      const excludedId = sourceStudentIdForActivity(activity);
+      const targets = connectedStudentsInRoom(code).filter(
+        (studentId) => !answered.has(studentId) && Number(studentId) !== excludedId
+      );
       for (const studentId of targets) {
         io.to(studentSocketName(studentId)).emit('live:realert', {
           activity: publicLiveActivity(activity),

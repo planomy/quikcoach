@@ -18,6 +18,12 @@ export const UNSURE_TEXT_CLASS = 'text-[#f0a818] dark:text-[#fbbf24]';
 
 /** Border colour encodes answer / engagement state for participant cards. */
 export function studentTileMeta(student) {
+  if (student.promptExcluded) {
+    return {
+      title: student.connected ? 'Their question · not asked to answer' : 'Offline · their question',
+      className: 'border-2 border-slate-200 opacity-70 dark:border-slate-700',
+    };
+  }
   if (student.engagement_status && student.engagement_status !== 'ready') {
     return {
       title: student.connected

@@ -243,10 +243,11 @@ export default function LiveResponseTeacher({
     return (a.engagement?.score ?? 100) - (b.engagement?.score ?? 100);
   });
   const unansweredCount = students.filter(
-    (student) => student.connected && !student.hasResponded
+    (student) => student.connected && !student.hasResponded && !student.promptExcluded
   ).length;
   const connectedCount = students.filter((student) => student.connected).length;
-  const participantCount = Math.max(students.length, responses.length);
+  const eligibleCount = students.filter((student) => !student.promptExcluded).length;
+  const participantCount = Math.max(eligibleCount, responses.length);
   const responseSummary = participantCount
     ? `${responses.length} of ${participantCount} responded`
     : `${responses.length} responded`;

@@ -227,11 +227,17 @@ try {
   assert.equal(shareLaunch.activity.prompt, 'Could we compare both methods?');
   assert.equal(Number(shareLaunch.activity.sourceQuestionId), Number(audienceQuestion.id));
 
-  const alexRespond = await emitAck(alex, 'student:live-response', {
+  const alexExcluded = await emitAck(alex, 'student:live-response', {
     activityId: shareLaunch.activity.id,
     value: '__iboard_unknown__',
   });
-  assert.equal(alexRespond.ok, true);
+  assert.equal(alexExcluded.ok, false);
+
+  const samRespond = await emitAck(sam, 'student:live-response', {
+    activityId: shareLaunch.activity.id,
+    value: '__iboard_unknown__',
+  });
+  assert.equal(samRespond.ok, true);
 
   assert.equal((await emitAck(teacher, 'teacher:qna-status', {
     questionId: audienceQuestion.id,

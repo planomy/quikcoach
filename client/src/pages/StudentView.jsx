@@ -338,7 +338,11 @@ export default function StudentView() {
       if (payload?.activity?.id) showRespondBadge(payload.activity);
     };
     const onLiveStudent = (payload) => {
-      if (payload?.response?.value && payload?.activity?.id) {
+      if (!payload?.activity?.id) {
+        setRespondQuestionNumber(null);
+        return;
+      }
+      if (payload?.response?.value) {
         setRespondQuestionNumber(null);
       }
     };
