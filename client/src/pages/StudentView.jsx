@@ -348,6 +348,9 @@ export default function StudentView() {
         setRespondQuestionNumber(null);
       }
     };
+    const onLiveNudge = () => {
+      setSupportTab('respond');
+    };
     const onLiveHelpSeen = () => {
       setHelpSeenToast(true);
       if (helpSeenTimerRef.current) clearTimeout(helpSeenTimerRef.current);
