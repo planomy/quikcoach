@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
-import { UNSURE_TEXT_CLASS } from '../lib/liveResponseMeta.js';
-import { formatLiveAnswer, isUnknownAnswer } from '../lib/liveResponseUnknown.js';
+import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 
-function confidenceNameClass(confidence) {
-  if (confidence === 'confident') return 'text-emerald-600 dark:text-emerald-400';
-  if (confidence === 'unsure') return UNSURE_TEXT_CLASS;
-  if (confidence === 'guessed') return 'text-red-600 dark:text-red-400';
-  return 'text-indigo-700 dark:text-indigo-300';
+function confidenceDotClass(confidence) {
+  if (confidence === 'confident') return 'bg-emerald-500';
+  if (confidence === 'unsure') return 'bg-[#f0a818]';
+  if (confidence === 'guessed') return 'bg-red-500';
+  return 'bg-slate-400 dark:bg-slate-500';
 }
 
 function confidenceLabel(confidence) {
@@ -341,10 +340,10 @@ export default function TeacherAnswerRail({
         </div>
 
         {isShort && (
-          <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-2 text-[10px] font-bold dark:border-slate-800">
-            <span className="text-emerald-600">● Confident</span>
-            <span className={UNSURE_TEXT_CLASS}>● Not confident</span>
-            <span className="text-red-600">● Guessed</span>
+          <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-2 text-[10px] font-semibold text-slate-500 dark:border-slate-800 dark:text-slate-400">
+            <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />Confident</span>
+            <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#f0a818]" aria-hidden="true" />Not confident</span>
+            <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden="true" />Guessed</span>
           </div>
         )}
 
@@ -363,13 +362,15 @@ export default function TeacherAnswerRail({
                         : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/60'
                     }`}
                   >
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className={`truncate text-sm font-black ${confidenceNameClass(response.confidence)}`}>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${confidenceDotClass(response.confidence)}`}
+                        title={confidenceLabel(response.confidence)}
+                        aria-label={confidenceLabel(response.confidence)}
+                      />
+                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">
                         {response.name || 'Student'}
                       </p>
-                      <span className="shrink-0 text-[10px] font-semibold text-slate-400">
-                        {confidenceLabel(response.confidence)}
-                      </span>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800 dark:text-slate-200">
                       {formatLiveAnswer(response.value)}
@@ -399,7 +400,7 @@ export default function TeacherAnswerRail({
                           : ''
                       }`}
                     >
-                      <span className={`font-bold ${isUnknownAnswer(response.value) ? 'text-slate-500 dark:text-slate-400' : confidenceNameClass(response.confidence)}`}>
+                      <span className="font-bold text-slate-900 dark:text-white">
                         {response.name || 'Student'}
                       </span>
                       <span className="truncate text-xs font-semibold text-slate-600 dark:text-slate-300">

@@ -574,7 +574,7 @@ export default function LiveResponseTeacher({
                 type="button"
                 onClick={() => selectEngagementStudent(student)}
                 title={`${student.name} · ${tile.title}`}
-                className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] bg-white px-1 pb-1.5 pt-2 dark:bg-slate-900 ${tile.className} ${focused ? 'ring-2 ring-indigo-500' : ''}`}
+                className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900 ${focused ? 'ring-2 ring-indigo-500' : ''}`}
               >
                 <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
                 <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
@@ -760,7 +760,7 @@ export default function LiveResponseTeacher({
             const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
             return (
               <div key={student.id} className="relative w-[70px] shrink-0">
-                <button type="button" onClick={() => openStudent(student)} title={`${student.name} · ${tile.title}`} className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] bg-white px-1 pb-1.5 pt-2 dark:bg-slate-900 ${tile.className}`}>
+                <button type="button" onClick={() => openStudent(student)} title={`${student.name} · ${tile.title}`} className="flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900">
                   <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
                   <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
                 </button>
