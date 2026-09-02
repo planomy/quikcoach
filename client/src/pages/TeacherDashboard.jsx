@@ -205,7 +205,11 @@ function TeacherDashboardInner() {
   const teacherHeaderRef = useRef(null);
   const teacherToolsNavRef = useRef(null);
   const teacherToolsPanelRef = useRef(null);
+  const addCardButtonRef = useRef(null);
+  const addCardPanelRef = useRef(null);
   const [teacherToolsTop, setTeacherToolsTop] = useState(0);
+  const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
+  const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
   const [lessonReportOpen, setLessonReportOpen] = useState(false);
   const prevPendingQuestionCountRef = useRef(0);
   const [libraryPanel, setLibraryPanel] = useState(null);
@@ -696,49 +700,61 @@ function TeacherDashboardInner() {
   }, [joined]);
 
   useEffect(() => {
-    if (!toolsPanelOpen) return undefined;
+    if (!toolsPanelOpen && !addCardOpen) return undefined;
 
-    function closeTeacherToolsIfOutside(event) {
+    function closeHeaderPanelsIfOutside(event) {
       const target = event.target;
-      if (teacherToolsNavRef.current?.contains(target)) return;
-      if (teacherToolsPanelRef.current?.contains(target)) return;
-      setToolsPanelOpen(false);
-      setToolsHighlightStudentId(null);
+      if (toolsPanelOpen) {
+        if (teacherToolsNavRef.current?.contains(target)) return;
+        if (teacherToolsPanelRef.current?.contains(target)) return;
+      }
+      if (addCardOpen) {
+        if (addCardButtonRef.current?.contains(target)) return;
+        if (addCardPanelRef.current?.contains(target)) return;
+      }
+      if (toolsPanelOpen) {
+        setToolsPanelOpen(false);
+        setToolsHighlightStudentId(null);
+      }
+      if (addCardOpen && !addCardBusy) setAddCardOpen(false);
     }
 
-    function closeTeacherToolsOnEscape(event) {
+    function closeHeaderPanelsOnEscape(event) {
       if (event.key !== 'Escape') return;
-      setToolsPanelOpen(false);
-      setToolsHighlightStudentId(null);
+      if (toolsPanelOpen) {
+        setToolsPanelOpen(false);
+        setToolsHighlightStudentId(null);
+      }
+      if (addCardOpen && !addCardBusy) setAddCardOpen(false);
     }
 
-    document.addEventListener('pointerdown', closeTeacherToolsIfOutside);
-    document.addEventListener('keydown', closeTeacherToolsOnEscape);
+    document.addEventListener('pointerdown', closeHeaderPanelsIfOutside);
+    document.addEventListener('keydown', closeHeaderPanelsOnEscape);
     return () => {
-      document.removeEventListener('pointerdown', closeTeacherToolsIfOutside);
-      document.removeEventListener('keydown', closeTeacherToolsOnEscape);
+      document.removeEventListener('pointerdown', closeHeaderPanelsIfOutside);
+      document.removeEventListener('keydown', closeHeaderPanelsOnEscape);
     };
-  }, [toolsPanelOpen]);
+  }, [toolsPanelOpen, addCardOpen, addCardBusy]);
 
   useLayoutEffect(() => {
-    if (!toolsPanelOpen || !teacherHeaderRef.current) return undefined;
+    if ((!toolsPanelOpen && !addCardOpen) || !teacherHeaderRef.current) return undefined;
 
-    function alignTeacherToolsToHeader() {
+    function alignHeaderDockToHeader() {
       const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
       if (Number.isFinite(headerBottom)) setTeacherToolsTop(Math.max(0, Math.round(headerBottom)));
     }
 
-    alignTeacherToolsToHeader();
+    alignHeaderDockToHeader();
     const resizeObserver = typeof ResizeObserver === 'function'
-      ? new ResizeObserver(alignTeacherToolsToHeader)
+      ? new ResizeObserver(alignHeaderDockToHeader)
       : null;
     resizeObserver?.observe(teacherHeaderRef.current);
-    window.addEventListener('resize', alignTeacherToolsToHeader);
+    window.addEventListener('resize', alignHeaderDockToHeader);
     return () => {
       resizeObserver?.disconnect();
-      window.removeEventListener('resize', alignTeacherToolsToHeader);
+      window.removeEventListener('resize', alignHeaderDockToHeader);
     };
-  }, [toolsPanelOpen]);
+  }, [toolsPanelOpen, addCardOpen]);
 
   const pendingQuestionCount = useMemo(
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
@@ -878,12 +894,53 @@ function TeacherDashboardInner() {
     });
   }
 
+  function closeAddCard() {
+    if (addCardBusy) return;
+    setAddCardOpen(false);
+    setAddCardError('');
+  }
+
   function openAddCard() {
+    closeRoomMenu();
+    if (addCardOpen) {
+      closeAddCard();
+      return;
+    }
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
     setAddCardTitle('Teacher');
     setAddCardText('');
     setAddCardImage('');
     setAddCardError('');
     setAddCardOpen(true);
+  }
+
+  function requestRemoveStudent(student) {
+    setRemoveStudentTarget({ id: Number(student.id), name: String(student.name || 'Student') });
+  }
+
+  function closeRemoveStudentConfirm() {
+    if (removeStudentBusy) return;
+    setRemoveStudentTarget(null);
+  }
+
+  function confirmRemoveStudent() {
+    if (!removeStudentTarget || removeStudentBusy) return;
+    setRemoveStudentBusy(true);
+    socket.emit('teacher:student-remove', { studentId: removeStudentTarget.id }, (ack) => {
+      setRemoveStudentBusy(false);
+      if (!ack?.ok) {
+        setError(ack?.error || 'Could not remove student');
+        return;
+      }
+      setStudents((prev) => prev.filter((x) => x.id !== removeStudentTarget.id));
+      setBroadcastPick((p) => {
+        const next = { ...p };
+        delete next[removeStudentTarget.id];
+        return next;
+      });
+      setRemoveStudentTarget(null);
+    });
   }
 
   async function handleAddCardPaste(event) {
@@ -1384,6 +1441,7 @@ function TeacherDashboardInner() {
 
   function openTeacherTools(tab = 'ask', { highlightStudentId = null } = {}) {
     closeRoomMenu();
+    setAddCardOpen(false);
     setToolsTab(tab);
     setToolsPanelOpen(true);
     setToolsHighlightStudentId(highlightStudentId != null ? Number(highlightStudentId) : null);
@@ -1513,12 +1571,15 @@ function TeacherDashboardInner() {
           <div className="iboard-header-divider flex items-center gap-1.5 border-l border-slate-200 pl-1.5 dark:border-slate-700">
             <HintWrap hint="Add card" prefer="below">
               <button
+                ref={addCardButtonRef}
                 type="button"
-                onClick={() => {
-                  closeRoomMenu();
-                  openAddCard();
-                }}
-                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                onClick={openAddCard}
+                aria-expanded={addCardOpen}
+                className={`iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white ${
+                  addCardOpen
+                    ? 'border-indigo-300 bg-indigo-600 text-white dark:border-indigo-500'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700'
+                }`}
                 aria-label="Add card"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -1949,24 +2010,7 @@ function TeacherDashboardInner() {
                     <HintWrap hint="Remove card">
                       <button
                         type="button"
-                        onClick={() => {
-                          const ok = window.confirm(
-                            `Remove "${s.name}" from the room?\n\nTheir card will disappear. They can join again with a new card.`
-                          );
-                          if (!ok) return;
-                          socket.emit('teacher:student-remove', { studentId: s.id }, (ack) => {
-                            if (!ack?.ok) {
-                              setError(ack?.error || 'Could not remove student');
-                              return;
-                            }
-                            setStudents((prev) => prev.filter((x) => x.id !== s.id));
-                            setBroadcastPick((p) => {
-                              const next = { ...p };
-                              delete next[s.id];
-                              return next;
-                            });
-                          });
-                        }}
+                        onClick={() => requestRemoveStudent(s)}
                         className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-600 dark:text-slate-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"
                         aria-label={`Remove ${s.name} from the room`}
                       >
@@ -2532,56 +2576,118 @@ function TeacherDashboardInner() {
       )}
 
       {addCardOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center">
+        <div
+          ref={addCardPanelRef}
+          data-iboard-add-card-panel="true"
+          className="fixed bottom-0 right-0 z-[60] flex w-[min(29rem,100vw)] flex-col overflow-hidden border-l border-t border-slate-200 bg-white shadow-[-8px_0_24px_-18px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900"
+          style={{ top: teacherToolsTop }}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="add-teacher-card-title"
+        >
           <form
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-teacher-card-title"
+            className="flex min-h-0 flex-1 flex-col"
             onSubmit={(event) => {
               event.preventDefault();
               submitTeacherCard();
             }}
           >
-            <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-              <h2 id="add-teacher-card-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Add teacher card</h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Type text, or click the writing box and paste a screenshot.</p>
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+              <div>
+                <h2 id="add-teacher-card-title" className="font-display text-base font-black text-slate-950 dark:text-white">Add card</h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Text or paste a screenshot</p>
+              </div>
+              <button type="button" onClick={closeAddCard} disabled={addCardBusy} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 dark:text-indigo-400">
+                Close
+              </button>
             </div>
-            <div className="space-y-3 px-5 py-4">
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Title</label>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3 scrollbar-thin">
               <input
                 autoFocus
                 value={addCardTitle}
                 onChange={(event) => setAddCardTitle(event.target.value)}
                 maxLength={80}
+                aria-label="Card title"
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                placeholder="Teacher"
+                placeholder="Title"
               />
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Text or pasted image</label>
               <textarea
                 value={addCardText}
                 onChange={(event) => setAddCardText(event.target.value)}
                 onPaste={handleAddCardPaste}
-                rows={6}
+                rows={8}
                 disabled={!!addCardImage}
+                aria-label="Card text"
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 placeholder="Write here, or paste a screenshot…"
               />
               {addCardImage && (
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/30">
                   <img src={addCardImage} alt="Pasted card preview" className="max-h-48 w-full object-contain" />
-                  <button type="button" onClick={() => setAddCardImage('')} className="mt-2 text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">Clear image and use text</button>
+                  <button type="button" onClick={() => setAddCardImage('')} className="mt-2 text-xs font-bold text-indigo-600 dark:text-indigo-400">Clear image</button>
                 </div>
               )}
               {addCardError && <p className="text-sm font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-950">
-              <button type="button" disabled={addCardBusy} onClick={() => setAddCardOpen(false)} className="rounded-xl px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800">Cancel</button>
-              <button type="submit" disabled={addCardBusy || (!addCardImage && !addCardText.trim())} className="rounded-xl bg-slate-700 px-4 py-2 text-sm font-black text-white hover:bg-slate-600 disabled:opacity-50">
+            <label
+              data-iboard-add-card-send-option="true"
+              className="flex shrink-0 cursor-pointer items-center gap-2 border-t border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200"
+            >
+              <input type="checkbox" data-iboard-send-inbox="true" defaultChecked className="h-4 w-4 accent-indigo-600" />
+              <span>Send to Inbox</span>
+            </label>
+            <div className="flex shrink-0 justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+              <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
+                Cancel
+              </button>
+              <button type="submit" disabled={addCardBusy || (!addCardImage && !addCardText.trim())} className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50">
                 {addCardBusy ? 'Adding…' : 'Add card'}
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {removeStudentTarget && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/50 p-4 backdrop-blur-[1px] sm:items-center">
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-student-title"
+            aria-describedby="remove-student-description"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') closeRemoveStudentConfirm();
+            }}
+          >
+            <div className="px-5 py-5">
+              <h2 id="remove-student-title" className="font-display text-lg font-black text-slate-950 dark:text-white">
+                Remove {removeStudentTarget.name}?
+              </h2>
+              <p id="remove-student-description" className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Their card disappears from the board. They can join again with a new card.
+              </p>
+            </div>
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-700 dark:bg-slate-950 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                autoFocus
+                disabled={removeStudentBusy}
+                onClick={closeRemoveStudentConfirm}
+                className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={removeStudentBusy}
+                onClick={confirmRemoveStudent}
+                className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
+              >
+                {removeStudentBusy ? 'Removing…' : 'Remove card'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

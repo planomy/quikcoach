@@ -5,9 +5,14 @@ function currentSocket() {
 }
 
 function findAddCardDialog() {
-  return [...document.querySelectorAll('[role="dialog"], form, .fixed')].find((node) =>
-    [...node.querySelectorAll('h1,h2,h3')].some((heading) => heading.textContent?.trim() === 'Add teacher card')
-  ) || null;
+  return document.querySelector('[data-iboard-add-card-panel="true"]')
+    || [...document.querySelectorAll('[role="dialog"], form, .fixed')].find((node) =>
+      [...node.querySelectorAll('h1,h2,h3')].some((heading) => {
+        const text = heading.textContent?.trim() || '';
+        return text === 'Add card' || text === 'Add teacher card';
+      })
+    )
+    || null;
 }
 
 function findAddButton(dialog) {
