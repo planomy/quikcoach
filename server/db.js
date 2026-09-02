@@ -256,6 +256,17 @@ export function migrate(db) {
     )
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_pulse_cells_room ON lesson_pulse_cells(room_code)`);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lesson_pulse_opportunities (
+      room_code TEXT NOT NULL,
+      activity_id TEXT NOT NULL,
+      question_number INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (activity_id, student_id)
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_lesson_pulse_opportunities_room ON lesson_pulse_opportunities(room_code)`);
 }
 
 /** @param {DatabaseSync} db */
@@ -539,15 +550,27 @@ export const queries = {
     return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
   },
 
-  addLiveOpportunity(db, studentIds) {
+  addLiveOpportunity(db, studentIds, opportunity = {}) {
     const ids = Array.from(new Set((studentIds || []).map(Number).filter(Boolean)));
     const update = db.prepare(`UPDATE students SET engagement_recent = ? WHERE id = ?`);
     const select = db.prepare(`SELECT engagement_recent FROM students WHERE id = ?`);
+    const activityId = String(opportunity.activityId || '');
+    const roomCode = String(opportunity.roomCode || '');
+    const questionNumber = Number(opportunity.questionNumber) || 1;
+    const recordOpportunity = activityId && roomCode
+      ? db.prepare(`
+          INSERT INTO lesson_pulse_opportunities
+            (room_code, activity_id, question_number, student_id)
+          VALUES (?, ?, ?, ?)
+          ON CONFLICT(activity_id, student_id) DO NOTHING
+        `)
+      : null;
     for (const id of ids) {
       const row = select.get(id);
       if (!row) continue;
       const recent = parseRecent(row.engagement_recent);
-      update.run(JSON.stringify([...recent, 0].slice(-5)), id);
+      update.run(JSON.stringify([...recent, 0]), id);
+      recordOpportunity?.run(roomCode, activityId, questionNumber, id);
     }
   },
 
@@ -562,7 +585,7 @@ export const queries = {
       `UPDATE students
        SET engagement_recent = ?, engagement_status = '', last_engaged_at = datetime('now')
        WHERE id = ?`,
-      [JSON.stringify(recent.slice(-5)), studentId]
+      [JSON.stringify(recent), studentId]
     );
     return get(db, `SELECT * FROM students WHERE id = ?`, [studentId]);
   },
@@ -627,8 +650,47 @@ export const queries = {
   },
 
   clearLessonPulseLog(db, roomCode) {
+    run(db, `DELETE FROM lesson_pulse_opportunities WHERE room_code = ?`, [roomCode]);
     run(db, `DELETE FROM lesson_pulse_cells WHERE room_code = ?`, [roomCode]);
     run(db, `DELETE FROM lesson_pulse_questions WHERE room_code = ?`, [roomCode]);
+  },
+
+  getLessonPulseAwareness(db, roomCode) {
+    const questions = all(
+      db,
+      `SELECT activity_id, question_number, launched_at
+       FROM lesson_pulse_questions
+       WHERE room_code = ? AND optional = 0
+       ORDER BY question_number ASC, launched_at ASC`,
+      [roomCode]
+    ).map((row, index) => ({
+      activityId: String(row.activity_id),
+      questionNumber: Number(row.question_number) || index + 1,
+      order: index,
+    }));
+    const cells = all(
+      db,
+      `SELECT activity_id, student_id, confidence
+       FROM lesson_pulse_cells
+       WHERE room_code = ?`,
+      [roomCode]
+    ).map((row) => ({
+      activityId: String(row.activity_id),
+      studentId: Number(row.student_id),
+      confidence: String(row.confidence || ''),
+    }));
+    const opportunities = all(
+      db,
+      `SELECT activity_id, question_number, student_id
+       FROM lesson_pulse_opportunities
+       WHERE room_code = ?`,
+      [roomCode]
+    ).map((row) => ({
+      activityId: String(row.activity_id),
+      questionNumber: Number(row.question_number) || 1,
+      studentId: Number(row.student_id),
+    }));
+    return { questions, cells, opportunities };
   },
 
   buildLessonReport(db, roomCode) {
@@ -1288,7 +1350,7 @@ export const queries = {
 function parseRecent(raw) {
   try {
     const parsed = JSON.parse(String(raw || '[]'));
-    return Array.isArray(parsed) ? parsed.slice(-5).map((x) => (x ? 1 : 0)) : [];
+    return Array.isArray(parsed) ? parsed.map((x) => (x ? 1 : 0)) : [];
   } catch {
     return [];
   }

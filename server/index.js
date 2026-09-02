@@ -365,15 +365,45 @@ function buildTeacherLivePayload(code) {
   const activity = liveActivityForClients(queries.getLiveActivity(db, c));
   const responses = activity ? queries.listLiveResponses(db, c) : [];
   const responseByStudent = new Map(responses.map((response) => [response.studentId, response]));
+  const awareness = queries.getLessonPulseAwareness(db, c);
+  const questionByActivity = new Map(awareness.questions.map((question) => [question.activityId, question]));
+  const cellByStudentAndActivity = new Map(
+    awareness.cells.map((cell) => [`${cell.studentId}:${cell.activityId}`, cell])
+  );
+  const opportunitiesByStudent = new Map();
+  for (const opportunity of awareness.opportunities) {
+    opportunitiesByStudent.set(
+      opportunity.studentId,
+      [...(opportunitiesByStudent.get(opportunity.studentId) || []), opportunity]
+    );
+  }
   const allStudents = queries.listStudents(db, c).map((row) => {
     const student = queries.rowToStudent(row);
+    const opportunityCount = Number(student.engagement?.opportunities || 0);
+    const exactOpportunities = opportunitiesByStudent.get(Number(student.id)) || [];
+    const exactHistoryComplete = opportunityCount > 0 && exactOpportunities.length === opportunityCount;
+    const relevantQuestions = opportunityCount <= 0
+      ? []
+      : exactHistoryComplete
+        ? exactOpportunities
+            .map((opportunity) => questionByActivity.get(opportunity.activityId) || opportunity)
+            .sort((a, b) => (a.order ?? a.questionNumber) - (b.order ?? b.questionNumber))
+        : awareness.questions.slice(-opportunityCount);
+    const segments = relevantQuestions.map((question) => {
+      const cell = cellByStudentAndActivity.get(`${student.id}:${question.activityId}`);
+      return {
+        questionNumber: Number(question.questionNumber) || 1,
+        answered: !!cell,
+        confidence: cell?.confidence || '',
+      };
+    });
     return {
       id: student.id,
       name: student.name,
       year_level: student.year_level,
       connected: isStudentConnected(student.id),
       engagement_status: student.engagement_status,
-      engagement: student.engagement,
+      engagement: { ...student.engagement, segments },
       hasResponded: responseByStudent.has(student.id),
       response: responseByStudent.get(student.id) || null,
     };
@@ -883,7 +913,13 @@ io.on('connection', (socket) => {
         imageUrl,
         timerSeconds,
       });
-      if (!activity.optional) queries.addLiveOpportunity(db, connectedStudentsInRoom(code));
+      if (!activity.optional) {
+        queries.addLiveOpportunity(db, connectedStudentsInRoom(code), {
+          roomCode: code,
+          activityId: activity.id,
+          questionNumber: activity.questionNumber,
+        });
+      }
       emitLiveState(code);
       if (activity.timerSeconds > 0) {
         const endMs = activity.endsAt

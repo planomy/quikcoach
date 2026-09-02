@@ -112,6 +112,18 @@ html.dark .iboard-live-question {
   border-color: #334155;
   background: linear-gradient(100deg, #111827 0%, #172033 100%);
 }
+
+.iboard-confidence-ring {
+  --iboard-ring-gap: #ffffff;
+  --iboard-ring-unanswered: #cbd5e1;
+  --iboard-ring-empty: #f1f5f9;
+}
+
+html.dark .iboard-confidence-ring {
+  --iboard-ring-gap: #0f172a;
+  --iboard-ring-unanswered: #475569;
+  --iboard-ring-empty: #1e293b;
+}
 @keyframes iboardQuestionArrival {
   0% {
     opacity: 0;
