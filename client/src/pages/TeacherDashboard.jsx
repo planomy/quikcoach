@@ -31,6 +31,7 @@ import {
 } from '../lib/exportRoom.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { studentTileMeta } from '../lib/liveResponseMeta.js';
+import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
@@ -1876,9 +1877,9 @@ function TeacherDashboardInner() {
                       type="button"
                       onClick={() => openAnswerInRail(s.id)}
                       className="max-w-[6rem] shrink-0 truncate rounded-full bg-indigo-50 px-1.5 py-0.5 text-left text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900"
-                      title={liveResponse?.value || pulseMeta.title}
+                      title={liveResponse ? formatLiveAnswer(liveResponse.value) : pulseMeta.title}
                     >
-                      {liveResponse?.value || 'Answered'}
+                      {liveResponse ? formatLiveAnswer(liveResponse.value) : 'Answered'}
                     </button>
                   ) : !showPulseState || !inQuestion ? (
                     <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">

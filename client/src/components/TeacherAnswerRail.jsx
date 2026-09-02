@@ -439,7 +439,7 @@ export default function TeacherAnswerRail({
                       key={`${response.studentId}-${response.submittedAt || response.value}`}
                       className="rounded-2xl bg-white/10 p-5 ring-1 ring-white/15"
                     >
-                      <p className="text-xl leading-relaxed">“{response.value}”</p>
+                      <p className="text-xl leading-relaxed">“{formatLiveAnswer(response.value)}”</p>
                       {!activity.anonymous && (
                         <p className="mt-3 text-sm font-black text-indigo-300">
                           {response.name || 'Student'}

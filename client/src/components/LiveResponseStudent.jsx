@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import LiveResponseStudentCore from './LiveResponseStudentCore.jsx';
+import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import './studentWorkspace.css';
 
 function isEmbeddedStudentWorkspace(props) {
@@ -188,7 +189,7 @@ function TabbedStudentResponse({ socket, ...props }) {
                 Answered · Q{activity.questionNumber || 1}
               </p>
               <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
-                {String(response.value || '').replace(/\s+/g, ' ').trim() || 'Your answer'}
+                {formatLiveAnswer(response.value).replace(/\s+/g, ' ').trim() || 'Your answer'}
               </p>
             </div>
             <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">

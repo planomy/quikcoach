@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
-import { UNKNOWN_ANSWER, isUnknownAnswer } from '../lib/liveResponseUnknown.js';
+import { UNKNOWN_ANSWER, formatLiveAnswer, isUnknownAnswer } from '../lib/liveResponseUnknown.js';
 
 const STATUS_OPTIONS = [
   ['ready', 'Yep, ready'],
@@ -503,7 +503,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                       Why it was featured: {item.label}
                     </span>
                   )}
-                  “{item.value}” <span className="font-bold">— {item.name}</span>
+                  “{formatLiveAnswer(item.value)}” <span className="font-bold">— {item.name}</span>
                 </blockquote>
               ))}
             </div>
