@@ -1,29 +1,72 @@
-/* Sets library: keep the dock fixed and let only the Set list scroll. */
+/* Ask dock: Quick stays topmost, navigation stays fixed, and only the active work area scrolls. */
 
-.iboard-header-dock--start:has(#sets-subject-filter) {
+.iboard-header-dock--start:has(nav[aria-label="Ask options"]) {
   bottom: 0;
   height: auto;
   max-height: none !important;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
-.iboard-header-dock--start:has(#sets-subject-filter) > section {
+.iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section {
+  position: relative;
+  display: flex;
   height: 100%;
   min-height: 0;
-}
-
-div.min-h-0.flex-1.overflow-y-auto:has(> div.p-4 #sets-subject-filter) {
-  display: flex;
-  min-height: 0;
   flex-direction: column;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
-div.min-h-0.flex-1.overflow-y-auto:has(> div.p-4 #sets-subject-filter) > :not(div.p-4:has(#sets-subject-filter)) {
+/* The teacher already clicked Ask. Keep only the close control, without spending a row on a redundant header. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > div:first-child {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 40;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > div:first-child > div:first-child {
+  display: none;
+}
+
+/* Let the children of the old scrolling wrapper participate directly in the dock layout. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > div.min-h-0.flex-1.overflow-y-auto {
+  display: contents;
+}
+
+/* Quick is the permanent first action. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"])
+  > section
+  > div.min-h-0.flex-1.overflow-y-auto
+  > section:has(> p + div.grid) {
+  order: 1;
   flex-shrink: 0;
 }
 
-div.p-4:has(#sets-subject-filter) {
+/* Write one / Sets stays immediately below Quick and never scrolls away. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > nav[aria-label="Ask options"] {
+  order: 2;
+  flex-shrink: 0;
+}
+
+/* The selected Write one / Sets workspace owns the remaining height and its own scrolling. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"])
+  > section
+  > div.min-h-0.flex-1.overflow-y-auto
+  > :not(section:has(> p + div.grid)) {
+  order: 3;
+  min-height: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
+}
+
+/* Sets keeps its heading and filters fixed; only the card list scrolls. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"])
+  > section
+  > div.min-h-0.flex-1.overflow-y-auto
+  > div.p-4:has(#sets-subject-filter) {
   display: flex;
   min-height: 0;
   flex: 1 1 0%;
@@ -45,6 +88,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin {
   overflow-y: auto;
 }
 
+/* Subject + year filters narrow the catalogue, so one readable column is the right density. */
 div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   grid-template-columns: minmax(0, 1fr);
 }
