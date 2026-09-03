@@ -9,7 +9,7 @@ import { studentTileMeta, LIVE_STATUS_LABELS as STATUS_LABELS } from '../lib/liv
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { downloadTextFile } from '../lib/exportRoom.js';
 import {
-  formatSetAnswerLines,
+  getSetAnswerPairs,
   newId,
   normalizeSetQuestion,
   normalizeSetQuestions,
@@ -79,15 +79,18 @@ function Results({ activity, responses, display = false, onPublish }) {
     return (
       <div className="space-y-3">
         {(responses || []).map((response) => {
-          const lines = formatSetAnswerLines(response.value, questions);
+          const pairs = getSetAnswerPairs(response.value, questions);
           return (
             <article key={response.studentId} className={`rounded-2xl border p-4 shadow-sm ${display ? 'border-white/20 bg-white/10 text-white' : 'border-indigo-200 bg-indigo-50 text-indigo-950 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-100'}`}>
               <p className={`font-black ${display ? 'text-base text-indigo-200' : 'text-xs text-indigo-700 dark:text-indigo-300'}`}>
                 {activity.anonymous && !display ? 'Anonymous to class' : response.name}
               </p>
-              <div className={`mt-2 space-y-2 ${display ? 'text-lg' : 'text-sm'}`}>
-                {lines.map((line, index) => (
-                  <p key={`${response.studentId}-${index}`} className="leading-snug">{line}</p>
+              <div className={`mt-2 space-y-2.5 ${display ? 'text-lg' : 'text-sm'}`}>
+                {pairs.map((pair) => (
+                  <div key={`${response.studentId}-${pair.id}`}>
+                    <p className={`font-semibold leading-snug ${display ? 'text-sm text-indigo-200/80' : 'text-[11px] text-indigo-700/80 dark:text-indigo-300/80'}`}>{pair.prompt}</p>
+                    <p className={`mt-0.5 font-bold leading-snug ${display ? 'text-white' : 'text-indigo-950 dark:text-indigo-50'}`}>{pair.answer}</p>
+                  </div>
                 ))}
               </div>
             </article>

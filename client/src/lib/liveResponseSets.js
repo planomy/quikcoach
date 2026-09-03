@@ -45,6 +45,16 @@ export function parseSetAnswers(value) {
   }
 }
 
+export function looksLikeSetAnswers(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.keys(value).length > 0;
+  }
+  const raw = String(value || '').trim();
+  if (!raw.startsWith('{')) return false;
+  const parsed = parseSetAnswers(raw);
+  return Object.keys(parsed).length > 0;
+}
+
 export function encodeSetAnswers(answers) {
   return JSON.stringify(answers || {});
 }
@@ -59,24 +69,38 @@ export function setAnswersComplete(questions, answers) {
   });
 }
 
-export function formatSetAnswerLines(value, questions = []) {
+/** Structured prompt/answer pairs for teacher UI (no "?: " glue). */
+export function getSetAnswerPairs(value, questions = []) {
   const map = parseSetAnswers(value);
   const list = normalizeSetQuestions(questions);
-  if (!list.length) {
-    return Object.values(map).map((answer) => formatLiveAnswer(answer)).filter(Boolean);
+  if (list.length) {
+    return list.map((question) => ({
+      id: question.id,
+      prompt: question.prompt,
+      answer: formatLiveAnswer(map[question.id] || '') || '—',
+    }));
   }
-  return list.map((question) => {
-    const answer = map[question.id];
-    if (!answer) return `${question.prompt}: —`;
-    return `${question.prompt}: ${formatLiveAnswer(answer)}`;
-  });
+  return Object.entries(map).map(([id, answer], index) => ({
+    id,
+    prompt: `Question ${index + 1}`,
+    answer: formatLiveAnswer(answer) || '—',
+  }));
 }
 
-export function formatSetAnswerPreview(value, questions = []) {
-  const lines = formatSetAnswerLines(value, questions);
-  if (!lines.length) return isUnknownAnswer(value) ? formatLiveAnswer(value) : '';
-  return lines.join('\n');
+/** @deprecated Prefer getSetAnswerPairs for UI. Plain-text fallback only. */
+export function formatSetAnswerLines(value, questions = []) {
+  return getSetAnswerPairs(value, questions).map((pair) => `${pair.prompt}\n${pair.answer}`);
 }
+
+/** Compact human text for chips/tooltips — never raw JSON. */
+export function formatSetAnswerPreview(value, questions = []) {
+  const pairs = getSetAnswerPairs(value, questions);
+  if (!pairs.length) return isUnknownAnswer(value) ? formatLiveAnswer(value) : '';
+  const answers = pairs.map((pair) => pair.answer).filter((answer) => answer && answer !== '—');
+  if (answers.length) return answers.join(' · ');
+  return pairs.map((pair) => pair.prompt).join(' · ');
+}
+
 
 /** Split pasted AI / list text into short-answer prompts. */
 export function parsePastedQuestions(text) {

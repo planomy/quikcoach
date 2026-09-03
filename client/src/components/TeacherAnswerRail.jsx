@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
-import { formatSetAnswerLines, normalizeSetQuestions } from '../lib/liveResponseSets.js';
+import { getSetAnswerPairs, normalizeSetQuestions } from '../lib/liveResponseSets.js';
 
 function confidenceDotClass(confidence) {
   if (confidence === 'confident') return 'bg-emerald-500';
@@ -356,7 +356,7 @@ export default function TeacherAnswerRail({
             <div className="space-y-2.5">
               {sorted.map((response) => {
                 const highlighted = Number(highlightStudentId) === Number(response.studentId);
-                const lines = formatSetAnswerLines(response.value, setQuestions);
+                const pairs = getSetAnswerPairs(response.value, setQuestions);
                 return (
                   <article
                     key={`${response.studentId}-${response.submittedAt || response.value}`}
@@ -377,11 +377,12 @@ export default function TeacherAnswerRail({
                         {response.name || 'Student'}
                       </p>
                     </div>
-                    <div className="mt-2 space-y-1.5">
-                      {lines.map((line) => (
-                        <p key={line} className="whitespace-pre-wrap break-words text-sm leading-snug text-slate-800 dark:text-slate-200">
-                          {line}
-                        </p>
+                    <div className="mt-2 space-y-2">
+                      {pairs.map((pair) => (
+                        <div key={pair.id}>
+                          <p className="text-[11px] font-semibold leading-snug text-slate-500 dark:text-slate-400">{pair.prompt}</p>
+                          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm font-bold leading-snug text-slate-900 dark:text-white">{pair.answer}</p>
+                        </div>
                       ))}
                     </div>
                   </article>
@@ -489,9 +490,12 @@ export default function TeacherAnswerRail({
                           {response.name || 'Student'}
                         </p>
                       )}
-                      <div className="space-y-2">
-                        {formatSetAnswerLines(response.value, setQuestions).map((line) => (
-                          <p key={line} className="text-lg leading-snug">{line}</p>
+                      <div className="space-y-3">
+                        {getSetAnswerPairs(response.value, setQuestions).map((pair) => (
+                          <div key={pair.id}>
+                            <p className="text-sm font-semibold text-indigo-200/80">{pair.prompt}</p>
+                            <p className="mt-1 text-lg font-bold leading-snug text-white">{pair.answer}</p>
+                          </div>
                         ))}
                       </div>
                     </article>
