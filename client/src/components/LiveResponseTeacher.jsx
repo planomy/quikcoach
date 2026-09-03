@@ -1210,7 +1210,7 @@ export default function LiveResponseTeacher({
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Reusable</p>
                 <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Saved sets · {sets.length}</h3>
-                <p className="mt-1 text-[11px] font-semibold text-slate-500">Fire a whole set in one student box, or drip questions into the queue.</p>
+                <p className="mt-1 text-[11px] font-semibold text-slate-500">Launch a whole set in one student box, or drip questions into the queue.</p>
               </div>
               <div className="mt-3 space-y-2">
                 {sets.map((set) => {
