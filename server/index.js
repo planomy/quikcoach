@@ -149,10 +149,6 @@ const materialHistoryByRoom = new Map();
 
 const MATERIAL_TYPES = {
   'application/pdf': 'pdf',
-  'application/msword': 'doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-  'application/vnd.ms-powerpoint': 'ppt',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
   'image/jpeg': 'jpg',
   'image/jpg': 'jpg',
   'image/png': 'png',
@@ -167,10 +163,6 @@ function extFromName(name) {
 function mimeFromExt(ext) {
   const map = {
     pdf: 'application/pdf',
-    doc: 'application/msword',
-    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ppt: 'application/vnd.ms-powerpoint',
-    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     jpg: 'image/jpeg',
     jpeg: 'image/jpeg',
     png: 'image/png',
@@ -196,11 +188,11 @@ function decodeMaterialBase64(fileBase64, mimeType, originalName) {
   let ext = MATERIAL_TYPES[mime] || '';
   if (!ext) {
     const fromName = extFromName(originalName);
-    if (['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp'].includes(fromName)) {
+    if (['pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(fromName)) {
       ext = fromName === 'jpeg' ? 'jpg' : fromName;
     }
   }
-  if (!ext) return { error: 'Use a PDF, Word, PowerPoint, or image file' };
+  if (!ext) return { error: 'Use a PDF or image — Word and PowerPoint can’t be previewed in class' };
   return { buf, ext, mime: mimeFromExt(ext) };
 }
 

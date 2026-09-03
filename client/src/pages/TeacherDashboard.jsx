@@ -1095,10 +1095,10 @@ function TeacherDashboardInner() {
       return;
     }
     const name = String(file.name || '').toLowerCase();
-    const okExt = /\.(pdf|doc|docx|ppt|pptx|jpe?g|png|webp)$/.test(name);
-    const okMime = /^(application\/(pdf|msword|vnd\.(ms-powerpoint|openxmlformats))|image\/)/i.test(file.type || '');
+    const okExt = /\.(pdf|jpe?g|png|webp)$/.test(name);
+    const okMime = /^(application\/pdf|image\/(jpeg|jpg|png|webp))$/i.test(file.type || '');
     if (!okExt && !okMime) {
-      setAddCardError('Use a PDF, Word, PowerPoint, or image file');
+      setAddCardError('Use a PDF or image — Word/PowerPoint can’t preview in class');
       return;
     }
     setAddCardImage('');
@@ -1753,15 +1753,13 @@ function TeacherDashboardInner() {
                     }}
                     aria-current={active ? 'page' : undefined}
                     data-active={active ? 'true' : 'false'}
-                    className={`iboard-header-tab relative inline-flex items-center overflow-visible px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white ${
-                      badge ? 'pr-6 sm:pr-7' : ''
-                    }`}
+                    className={`iboard-header-tab relative inline-flex items-center overflow-visible px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white`}
                   >
                     {tab.label}
                     {badge ? (
                       <span
-                        className={`absolute -top-1.5 right-2 z-[2] grid min-w-[1.15rem] place-items-center rounded-full px-1 py-0.5 text-[10px] font-black tabular-nums leading-none ${
-                          active ? 'bg-white/25 text-white' : 'bg-amber-500 text-amber-950'
+                        className={`absolute left-1/2 top-0 z-[2] grid min-w-[1.15rem] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full px-1 py-0.5 text-[10px] font-black tabular-nums leading-none shadow-sm ring-2 ring-[#1e3a5f] ${
+                          active ? 'bg-rose-600 text-white' : 'bg-rose-600 text-white'
                         }`}
                       >
                         {badge}
@@ -2674,7 +2672,7 @@ function TeacherDashboardInner() {
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
               <div>
                 <h2 id="add-teacher-card-title" className="font-display text-base font-black text-slate-950 dark:text-white">Add card or handout</h2>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">PDF/DOC to Inbox, or a text/image card</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">PDF or image to Inbox for this lesson</p>
               </div>
               <button type="button" onClick={closeAddCard} disabled={addCardBusy} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 dark:text-indigo-400">
                 Close
@@ -2691,11 +2689,11 @@ function TeacherDashboardInner() {
                 placeholder="Title"
               />
               <label className="flex cursor-pointer flex-col gap-1 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/60 px-3 py-3 text-sm dark:border-indigo-800 dark:bg-indigo-950/30">
-                <span className="font-bold text-indigo-900 dark:text-indigo-200">Attach PDF, Word, PowerPoint, or image</span>
-                <span className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">Up to 5 MB · sends straight to student Inbox</span>
+                <span className="font-bold text-indigo-900 dark:text-indigo-200">Attach PDF or image</span>
+                <span className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">Up to 5 MB · previews in student Inbox (Word/PPT not supported)</span>
                 <input
                   type="file"
-                  accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.webp,application/pdf,image/*"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                   className="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white dark:text-slate-300"
                   onChange={handleAddCardFileChange}
                   disabled={addCardBusy}
