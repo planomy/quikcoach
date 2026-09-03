@@ -146,7 +146,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   display: none;
 }
 
-/* Two compact rows, up to eight students across before horizontal overflow. */
+/* Fill left-to-right first: students 1–8 occupy row one, then 9–16 start row two. */
 .iboard-header-dock--start
   > section
   > div:has(> div.flex.gap-2.overflow-x-auto)
@@ -154,8 +154,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   display: grid;
   grid-template-columns: repeat(8, minmax(46px, 1fr));
   grid-template-rows: repeat(2, auto);
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(46px, 1fr);
+  grid-auto-flow: row;
   gap: 0.4rem;
   overflow-x: auto;
   padding-bottom: 0.15rem;
