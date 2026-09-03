@@ -129,7 +129,12 @@ function MaterialBody({ item, large, onToggleLarge }) {
         {image ? (
           <img src={item.url} alt={item.title || 'Handout'} className="h-full w-full object-contain" />
         ) : pdf ? (
-          <iframe title={item.title || 'PDF handout'} src={item.url} className="h-full w-full border-0 bg-white" />
+          <iframe
+            title={item.title || 'PDF handout'}
+            src={item.url}
+            className="h-full w-full border-0 bg-white outline-none focus:outline-none"
+            tabIndex={-1}
+          />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Preview not available for this file type</p>
@@ -194,9 +199,7 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
         return (
           <section
             key={item.id}
-            className={`relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 ${
-              large ? 'ring-2 ring-indigo-400' : ''
-            }`}
+            className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
           >
             <div className="flex items-stretch">
               <button
