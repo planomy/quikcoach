@@ -174,7 +174,14 @@ export default function LiveResponseTeacher({
   const [anonymous, setAnonymous] = useState(false);
   const [optional, setOptional] = useState(false);
   const [displayMode, setDisplayMode] = useState(false);
-  const [activeView, setActiveView] = useState('quik');
+  const [activeView, setActiveView] = useState(() => {
+    try {
+      const saved = localStorage.getItem('iboard-ask-tab');
+      return saved === 'prepared' ? 'prepared' : 'build';
+    } catch {
+      return 'build';
+    }
+  });
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [engagementFocus, setEngagementFocus] = useState(null);
   const [qnaQuestions, setQnaQuestions] = useState([]);
@@ -241,8 +248,14 @@ export default function LiveResponseTeacher({
   const currentActivityIsQuikPulse = isQuikPulseActivity(activity);
 
   useEffect(() => {
-    if (!activity && activeView === 'live') setActiveView('quik');
+    if (!activity && activeView === 'live') setActiveView('build');
   }, [activity, activeView]);
+
+  useEffect(() => {
+    if (activeView === 'build' || activeView === 'prepared') {
+      try { localStorage.setItem('iboard-ask-tab', activeView); } catch { /* ignore */ }
+    }
+  }, [activeView]);
 
   useEffect(() => {
     if (!message) return undefined;
@@ -280,7 +293,14 @@ export default function LiveResponseTeacher({
     if (panelTab && typeof onPanelTabChange === 'function') onPanelTabChange(nextTab);
     else if (panelTabs) setInternalPanelTab(nextTab);
     if (nextTab === 'respond') setActiveView('qna');
-    else if (nextTab === 'ask' && (activeView === 'qna' || activeView === 'student')) setActiveView('quik');
+    else if (nextTab === 'ask' && (activeView === 'qna' || activeView === 'student')) {
+      try {
+        const saved = localStorage.getItem('iboard-ask-tab');
+        setActiveView(saved === 'prepared' ? 'prepared' : 'build');
+      } catch {
+        setActiveView('build');
+      }
+    }
   }
 
   const prevPendingCountRef = useRef(0);
@@ -432,7 +452,7 @@ export default function LiveResponseTeacher({
     socket.emit('teacher:live-control', { action }, (ack) => {
       if (!ack?.ok) setMessage(ack?.error || 'Could not update question');
       if (action === 'clear' && ack?.ok) {
-        setActiveView('quik');
+        setActiveView('build');
         if (usingPanelTabs) onClose?.();
         else setMessage('Question ended. Ready for the next one.');
       }
@@ -509,7 +529,7 @@ export default function LiveResponseTeacher({
     if (usingPanelTabs && effectivePanelTab === 'respond') {
       setActiveView('qna');
     } else {
-      setActiveView(activity ? 'live' : 'quik');
+      setActiveView(activity ? 'live' : 'build');
     }
     setSelectedStudentId(null);
   }
@@ -685,9 +705,8 @@ export default function LiveResponseTeacher({
   const askSubNav = (
     <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
       {[
-        ['quik', 'Quick Question'],
-        ['build', 'Send Question'],
-        ['prepared', `Saved · ${queue.length}`],
+        ['build', queue.length ? `Write one · ${queue.length}` : 'Write one'],
+        ['prepared', 'Sets'],
       ].map(([view, label]) => (
         <button
           key={view}
@@ -788,7 +807,7 @@ export default function LiveResponseTeacher({
       {!embedded && !overlay && !activity && (
         <div className="border-b border-indigo-100 bg-indigo-50/80 px-4 py-2.5 dark:border-indigo-900 dark:bg-indigo-950/40">
           <p className="text-sm font-semibold text-indigo-950 dark:text-indigo-100">
-            Pick Quick Question or Custom Question — then watch answers come in.
+            Use a Quick check, write one question, or launch a Set.
             {typeof onCopyStudentLink === 'function' && (
               <button type="button" onClick={onCopyStudentLink} className="ml-2 rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-black text-white hover:bg-indigo-700">
                 Copy student link
@@ -834,25 +853,25 @@ export default function LiveResponseTeacher({
       <nav aria-label="Ask pages" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
         <button
           type="button"
-          onClick={() => setActiveView('quik')}
+          onClick={() => setActiveView('build')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
-            activeView === 'quik'
+            activeView === 'build' || activeView === 'quik'
               ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
               : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
           }`}
         >
-          Quick Question
+          {queue.length ? `Write one · ${queue.length}` : 'Write one'}
         </button>
         <button
           type="button"
-          onClick={() => setActiveView('build')}
+          onClick={() => setActiveView('prepared')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
-            activeView === 'build'
+            activeView === 'prepared'
               ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
               : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
           }`}
         >
-          Custom Question
+          Sets
         </button>
         <button
           type="button"
@@ -891,7 +910,7 @@ export default function LiveResponseTeacher({
           <summary className="cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-white/80 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200">More</summary>
           <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <button type="button" onClick={() => { if (moreMenuRef.current) moreMenuRef.current.open = false; setActiveView('prepared'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Saved · {queue.length}
+              Sets
             </button>
             {featuredWall.length > 0 && (
               <button type="button" onClick={() => { if (moreMenuRef.current) moreMenuRef.current.open = false; setActiveView('featured'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
@@ -910,7 +929,9 @@ export default function LiveResponseTeacher({
 
       <div className={`min-h-0 flex-1 overflow-y-auto ${overlay ? '' : 'min-h-[260px]'}`}>
 
-        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'quik' && <QuikPulsePanel onLaunch={launchQuikPulse} />}
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && (activeView === 'build' || activeView === 'prepared' || activeView === 'quik') && (
+          <QuikPulsePanel compact onLaunch={launchQuikPulse} />
+        )}
 
         {(!usingPanelTabs || effectivePanelTab === 'respond') && activeView === 'student' && selectedStudent && <div className="p-4"><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Student check-in</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{selectedStudent.name}</h3><p className="mt-1 text-xs text-slate-500">{studentTileMeta(selectedStudent).title}</p></div><button type="button" onClick={returnToPrimaryView} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">Close</button></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={!selectedStudent.connected} onClick={() => nudge(selectedStudent.id)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Send private check-in</button>{selectedStudent.engagement_status && selectedStudent.engagement_status !== 'ready' && <button type="button" onClick={() => acknowledge(selectedStudent.id)} className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-black text-amber-950">Clear alert</button>}{pendingByStudent[Number(selectedStudent.id)] > 0 && <button type="button" onClick={() => setActiveView('qna')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Review questions</button>}</div></div>}
 
@@ -959,7 +980,7 @@ export default function LiveResponseTeacher({
                 {currentActivityIsQuikPulse && (
                   <>
                     <button type="button" onClick={repeatQuikPulse} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Repeat</button>
-                    <button type="button" onClick={() => setActiveView('quik')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask another</button>
+                    <button type="button" onClick={() => setActiveView('build')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask another</button>
                   </>
                 )}
                 <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white dark:bg-white dark:text-slate-900">Done</button>
@@ -1085,18 +1106,30 @@ export default function LiveResponseTeacher({
                 )}
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={saveDraftAsSet} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Save as set</button>
-                  <button type="button" onClick={addToQueue} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
                 </div>
               </div>
             </details>
-            <div className="mt-4 flex justify-end border-t border-slate-200 pt-3 dark:border-slate-700">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+              <button type="button" onClick={addToQueue} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
               <button type="button" onClick={() => launch()} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-md hover:bg-indigo-700">Launch</button>
             </div>
+            <SavedSetsPanel
+              panel="queue"
+              queue={queue}
+              setQueue={setQueue}
+              onLaunchQuestion={(item, id) => launch(item, id)}
+              onLaunchSet={launchSet}
+              onEnqueueSet={enqueueSet}
+              onMessage={setMessage}
+            />
           </div>
         )}
 
+        
+
         {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'prepared' && (
           <SavedSetsPanel
+            panel="sets"
             queue={queue}
             setQueue={setQueue}
             onLaunchQuestion={(item, id) => launch(item, id)}

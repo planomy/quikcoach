@@ -157,23 +157,7 @@ function QuikPulseIcon({ name }) {
   );
 }
 
-function PulseCard({ card, onLaunch }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onLaunch(card.question)}
-      className="group flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-100 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50"
-    >
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950">
-        <QuikPulseIcon name={card.icon} />
-      </span>
-      <span className="mt-1.5 text-[11px] font-black leading-tight text-slate-950 dark:text-white">{card.label}</span>
-      <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">{card.hint}</span>
-    </button>
-  );
-}
-
-export default function QuikPulsePanel({ onLaunch }) {
+export default function QuikPulsePanel({ onLaunch, compact = false }) {
   const launchChoice = (count) => onLaunch({
     ...baseQuestion,
     type: 'choice',
@@ -181,27 +165,62 @@ export default function QuikPulsePanel({ onLaunch }) {
     options: ['A', 'B', 'C', 'D'].slice(0, count),
   });
 
-  return (
-    <section className="flex h-full flex-col p-3 sm:p-4">
-      <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-2 sm:grid-cols-3">
-        {pulseCards.slice(0, 3).map((card) => <PulseCard key={card.id} card={card} onLaunch={onLaunch} />)}
+  const cardClass = compact
+    ? 'group flex min-h-[3.75rem] flex-col items-center justify-center rounded-lg border border-indigo-100 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50'
+    : 'group flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-100 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50';
 
-        <div className="flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-100 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950">
+  return (
+    <section className={compact ? 'border-b border-slate-200 bg-slate-50/80 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40' : 'flex h-full flex-col p-3 sm:p-4'}>
+      {compact && (
+        <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Quick</p>
+      )}
+      <div className={`grid grid-cols-3 content-start gap-1.5 ${compact ? '' : 'min-h-0 flex-1 gap-2 sm:grid-cols-3'}`}>
+        {pulseCards.slice(0, 3).map((card) => (
+          <button
+            key={card.id}
+            type="button"
+            onClick={() => onLaunch(card.question)}
+            className={cardClass}
+            title={card.hint}
+          >
+            <span className={`grid place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
+              <QuikPulseIcon name={card.icon} />
+            </span>
+            <span className={`font-black leading-tight text-slate-950 dark:text-white ${compact ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>{card.label}</span>
+            {!compact && <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">{card.hint}</span>}
+          </button>
+        ))}
+
+        <div className={cardClass}>
+          <span className={`grid place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
             <QuikPulseIcon name="choice" />
           </span>
-          <span className="mt-1.5 text-[11px] font-black leading-tight text-slate-950 dark:text-white">A–D Choice</span>
-          <span className="mt-0.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400">How many choices?</span>
-          <div className="mt-1.5 flex gap-1" aria-label="Choose number of answer options">
+          <span className={`font-black leading-tight text-slate-950 dark:text-white ${compact ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>A–D Choice</span>
+          {!compact && <span className="mt-0.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400">How many choices?</span>}
+          <div className={`flex gap-1 ${compact ? 'mt-1' : 'mt-1.5'}`} aria-label="Choose number of answer options">
             {[2, 3, 4].map((count) => (
-              <button key={count} type="button" onClick={() => launchChoice(count)} className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-800 hover:bg-indigo-600 hover:text-white dark:bg-indigo-950 dark:text-indigo-200">
+              <button key={count} type="button" onClick={() => launchChoice(count)} className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-black text-indigo-800 hover:bg-indigo-600 hover:text-white dark:bg-indigo-950 dark:text-indigo-200">
                 {count}
               </button>
             ))}
           </div>
         </div>
 
-        {pulseCards.slice(3).map((card) => <PulseCard key={card.id} card={card} onLaunch={onLaunch} />)}
+        {pulseCards.slice(3).map((card) => (
+          <button
+            key={card.id}
+            type="button"
+            onClick={() => onLaunch(card.question)}
+            className={cardClass}
+            title={card.hint}
+          >
+            <span className={`grid place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
+              <QuikPulseIcon name={card.icon} />
+            </span>
+            <span className={`font-black leading-tight text-slate-950 dark:text-white ${compact ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>{card.label}</span>
+            {!compact && <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">{card.hint}</span>}
+          </button>
+        ))}
       </div>
     </section>
   );

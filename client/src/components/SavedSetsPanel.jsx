@@ -96,6 +96,7 @@ function Chip({ active, children, onClick }) {
 }
 
 export default function SavedSetsPanel({
+  panel = 'sets', // 'queue' | 'sets'
   queue,
   setQueue,
   onLaunchQuestion,
@@ -103,8 +104,10 @@ export default function SavedSetsPanel({
   onEnqueueSet,
   onMessage,
 }) {
+  const showQueue = panel === 'queue';
+  const showSets = panel === 'sets';
+
   const [customSets, setCustomSets] = useState(() => loadCustomSets());
-  const [libraryOpen, setLibraryOpen] = useState(false);
   const [subject, setSubject] = useState('All');
   const [yearBand, setYearBand] = useState('All');
   const [activeSet, setActiveSet] = useState(null);
@@ -113,6 +116,7 @@ export default function SavedSetsPanel({
   const [draftPaste, setDraftPaste] = useState('');
   const [draftQuestions, setDraftQuestions] = useState([]);
   const [setNameDraft, setSetNameDraft] = useState('');
+  const [queueOpen, setQueueOpen] = useState(true);
 
   useEffect(() => {
     try {
@@ -121,6 +125,10 @@ export default function SavedSetsPanel({
       /* ignore */
     }
   }, [customSets]);
+
+  useEffect(() => {
+    if (showQueue && queue.length > 0) setQueueOpen(true);
+  }, [showQueue, queue.length]);
 
   const library = useMemo(() => {
     const custom = customSets.map((set) => ({ ...set, bank: false }));
@@ -157,7 +165,6 @@ export default function SavedSetsPanel({
     setDraftPaste('');
     setDraftQuestions([]);
     setMode('create');
-    setLibraryOpen(true);
   }
 
   function saveEditedSet() {
@@ -266,91 +273,92 @@ export default function SavedSetsPanel({
   const sheetOpen = mode === 'preview' || mode === 'edit' || mode === 'create';
 
   return (
-    <div className="p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Queue · {queue.length}</h3>
-          <p className="mt-0.5 text-[11px] font-semibold text-slate-500">This lesson — launch any question when you’re ready.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {queue.length > 0 && (
-            <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>
-          )}
-          <button
-            type="button"
-            onClick={() => setLibraryOpen((open) => !open)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${
-              libraryOpen
-                ? 'bg-indigo-600 text-white'
-                : 'border border-slate-200 bg-white text-slate-700 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-            }`}
-          >
-            Sets{libraryOpen ? ' ▴' : ' ▾'}
-          </button>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
-          >
-            + New set
-          </button>
-        </div>
-      </div>
+    <div className={showQueue ? 'border-t border-slate-200 px-4 py-3 dark:border-slate-700' : 'p-4'}>
+      {showQueue && (
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button type="button" onClick={() => setQueueOpen((open) => !open)} className="text-left">
+              <h3 className="text-sm font-black text-slate-950 dark:text-white">
+                Queue · {queue.length}
+                <span className="ml-1 text-[10px] font-bold text-slate-400">{queueOpen ? '▴' : '▾'}</span>
+              </h3>
+              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">This lesson — launch any when ready.</p>
+            </button>
+            {queue.length > 0 && (
+              <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>
+            )}
+          </div>
 
-      {queue.length >= 2 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/50">
-          <input
-            value={setNameDraft}
-            onChange={(event) => setSetNameDraft(event.target.value.slice(0, 80))}
-            placeholder="Name this set…"
-            className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-          />
-          <button type="button" onClick={saveQueueAsSet} className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black text-white">
-            Save queue as set
-          </button>
-        </div>
+          {queueOpen && (
+            <>
+              {queue.length >= 2 && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/50">
+                  <input
+                    value={setNameDraft}
+                    onChange={(event) => setSetNameDraft(event.target.value.slice(0, 80))}
+                    placeholder="Name this set…"
+                    className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  />
+                  <button type="button" onClick={saveQueueAsSet} className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black text-white">
+                    Save queue as set
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-3 space-y-2">
+                {queue.map((item, index) => (
+                  <div key={item.id} className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 w-4 shrink-0 text-[10px] font-black tabular-nums text-slate-400">{index + 1}</span>
+                      <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-slate-900 dark:text-white">{item.prompt}</p>
+                    </div>
+                    <div className="mt-2 flex items-center justify-end gap-2 pl-6">
+                      <button
+                        type="button"
+                        onClick={() => onLaunchQuestion(item, item.id)}
+                        className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-900"
+                      >
+                        Launch
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))}
+                        className="text-xs font-black text-red-500"
+                        aria-label="Remove from queue"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {!queue.length && (
+                  <p className="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-center text-xs text-slate-500 dark:border-slate-700">
+                    Nothing queued yet. Add from Write one, or open Sets.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </section>
       )}
 
-      <div className="mt-3 space-y-2">
-        {queue.map((item, index) => (
-          <div key={item.id} className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700">
-            <div className="flex items-start gap-2">
-              <span className="mt-0.5 w-4 shrink-0 text-[10px] font-black tabular-nums text-slate-400">{index + 1}</span>
-              <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-slate-900 dark:text-white">{item.prompt}</p>
-            </div>
-            <div className="mt-2 flex items-center justify-end gap-2 pl-6">
-              <button
-                type="button"
-                onClick={() => onLaunchQuestion(item, item.id)}
-                className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-900"
-              >
-                Launch
-              </button>
-              <button
-                type="button"
-                onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))}
-                className="text-xs font-black text-red-500"
-                aria-label="Remove from queue"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        ))}
-        {!queue.length && (
-          <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">
-            No questions queued. Open Sets when you need a ready routine.
-          </p>
-        )}
-      </div>
-
-      {libraryOpen && (
-        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+      {showSets && (
+        <section>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-black text-slate-800 dark:text-slate-100">Sets · {filtered.length}</p>
-            <button type="button" onClick={() => setLibraryOpen(false)} className="text-[11px] font-bold text-slate-500">Hide</button>
+            <div>
+              <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Sets · {filtered.length}</h3>
+              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Preview, edit, or launch a whole routine.</p>
+            </div>
+            <button
+              type="button"
+              onClick={openCreate}
+              className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+            >
+              + New set
+            </button>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
             <Chip active={subject === 'All'} onClick={() => setSubject('All')}>All subjects</Chip>
             {SUBJECTS.map((item) => (
               <Chip key={item} active={subject === item} onClick={() => setSubject(item)}>{item}</Chip>
@@ -363,7 +371,7 @@ export default function SavedSetsPanel({
             ))}
           </div>
 
-          <div className="mt-3 max-h-[22rem] space-y-2 overflow-y-auto pr-1 scrollbar-thin">
+          <div className="mt-3 max-h-[28rem] space-y-2 overflow-y-auto pr-1 scrollbar-thin">
             {filtered.map((set) => (
               <article key={set.id} className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700">
                 <div className="flex items-start justify-between gap-3">
