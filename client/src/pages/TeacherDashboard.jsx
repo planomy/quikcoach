@@ -1758,7 +1758,7 @@ function TeacherDashboardInner() {
                     {tab.label}
                     {badge ? (
                       <span
-                        className={`absolute left-1/2 top-0 z-[2] grid min-w-[1.15rem] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full px-1 py-0.5 text-[10px] font-black tabular-nums leading-none shadow-sm ring-2 ring-[#1e3a5f] ${
+                        className={`absolute left-1/2 top-0 z-[2] grid h-5 w-5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-black tabular-nums leading-none shadow-sm ring-2 ring-[#1e3a5f] ${
                           active ? 'bg-rose-600 text-white' : 'bg-rose-600 text-white'
                         }`}
                       >
