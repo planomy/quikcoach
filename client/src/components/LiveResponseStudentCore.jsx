@@ -518,7 +518,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                         onChange={(event) => updateSetDraft(question.id, event.target.value.slice(0, 500))}
                         disabled={answersClosed}
                         placeholder="Type your answer…"
-                        className={`mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${compact ? 'min-h-12 p-2 text-sm' : 'min-h-16 p-2.5 text-sm'}`}
+                        rows={quietAlerts ? 2 : 3}
+                        className={`mt-2 w-full resize-y rounded-lg border border-slate-200 bg-slate-50 text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${compact ? 'min-h-10 p-2 text-sm' : quietAlerts ? 'min-h-10 p-2 text-sm' : 'min-h-16 p-2.5 text-sm'}`}
                       />
                     ) : (
                       <div className={`mt-2 grid gap-1.5 ${question.options.length > 3 ? 'sm:grid-cols-2' : ''}`}>
