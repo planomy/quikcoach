@@ -5,6 +5,13 @@ import { subscribeViewportChanges } from '../lib/viewport.js';
 
 const HINT_PAD = 8;
 const EST_HEIGHT = 22;
+const FIRST_HOVER_DELAY = 350;
+const FOLLOW_ON_HOVER_DELAY = 75;
+const FOLLOW_ON_GRACE_PERIOD = 700;
+
+// Keep hover intent shared across HintWrap instances so moving along a toolbar
+// feels quick after the user has deliberately opened one tooltip.
+let fastHoverUntil = 0;
 
 function measureAndPlace(wrapEl, tipEl, hint, prefer) {
   const anchor = wrapEl?.getBoundingClientRect();
@@ -25,8 +32,42 @@ function measureAndPlace(wrapEl, tipEl, hint, prefer) {
 export default function HintWrap({ hint, children, className = '', prefer = 'above', multiline = false, tone = 'neutral' }) {
   const wrapRef = useRef(null);
   const tipRef = useRef(null);
+  const hoverTimerRef = useRef(null);
+  const openedByHoverRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState(null);
+
+  const clearHoverTimer = () => {
+    if (hoverTimerRef.current !== null) {
+      window.clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  };
+
+  const openFromHover = () => {
+    clearHoverTimer();
+    const delay = Date.now() < fastHoverUntil ? FOLLOW_ON_HOVER_DELAY : FIRST_HOVER_DELAY;
+    hoverTimerRef.current = window.setTimeout(() => {
+      hoverTimerRef.current = null;
+      openedByHoverRef.current = true;
+      setOpen(true);
+    }, delay);
+  };
+
+  const closeFromHover = () => {
+    clearHoverTimer();
+    if (openedByHoverRef.current) fastHoverUntil = Date.now() + FOLLOW_ON_GRACE_PERIOD;
+    openedByHoverRef.current = false;
+    setOpen(false);
+  };
+
+  const openFromFocus = () => {
+    clearHoverTimer();
+    openedByHoverRef.current = false;
+    setOpen(true);
+  };
+
+  useEffect(() => () => clearHoverTimer(), []);
 
   useEffect(() => {
     if (!open || !hint) {
@@ -53,9 +94,9 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
     <span
       ref={wrapRef}
       className={`relative inline-flex ${className}`}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocusCapture={() => setOpen(true)}
+      onMouseEnter={openFromHover}
+      onMouseLeave={closeFromHover}
+      onFocusCapture={openFromFocus}
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
       }}
