@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
+import { formatSetAnswerLines, normalizeSetQuestions } from '../lib/liveResponseSets.js';
 
 function confidenceDotClass(confidence) {
   if (confidence === 'confident') return 'bg-emerald-500';
@@ -169,6 +170,8 @@ export default function TeacherAnswerRail({
   const panelRef = useRef(null);
   const [presenting, setPresenting] = useState(false);
   const isShort = activity?.type === 'short';
+  const isSet = activity?.type === 'set';
+  const setQuestions = isSet ? normalizeSetQuestions(activity?.questions) : [];
   const responded = (responses || []).length;
   const sorted = useMemo(() => {
     return [...(responses || [])].sort(
@@ -217,6 +220,7 @@ export default function TeacherAnswerRail({
       type: activity.type,
       prompt: activity.prompt,
       options: Array.isArray(activity.options) ? activity.options : [],
+      questions: Array.isArray(activity.questions) ? activity.questions : [],
       correctAnswer: activity.correctAnswer || '',
       anonymous: !!activity.anonymous,
       optional: !!activity.optional,
@@ -339,7 +343,7 @@ export default function TeacherAnswerRail({
           </div>
         </div>
 
-        {isShort && (
+        {(isShort || isSet) && (
           <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-2 text-[10px] font-semibold text-slate-500 dark:border-slate-800 dark:text-slate-400">
             <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />Confident</span>
             <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#f0a818]" aria-hidden="true" />Not confident</span>
@@ -348,7 +352,48 @@ export default function TeacherAnswerRail({
         )}
 
         <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3 scrollbar-thin">
-          {isShort ? (
+          {isSet ? (
+            <div className="space-y-2.5">
+              {sorted.map((response) => {
+                const highlighted = Number(highlightStudentId) === Number(response.studentId);
+                const lines = formatSetAnswerLines(response.value, setQuestions);
+                return (
+                  <article
+                    key={`${response.studentId}-${response.submittedAt || response.value}`}
+                    data-rail-student={response.studentId}
+                    className={`rounded-xl border px-3 py-2.5 transition ${
+                      highlighted
+                        ? 'border-indigo-400 bg-indigo-50 ring-2 ring-indigo-300 dark:border-indigo-500 dark:bg-indigo-950/50'
+                        : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${confidenceDotClass(response.confidence)}`}
+                        title={confidenceLabel(response.confidence)}
+                        aria-label={confidenceLabel(response.confidence)}
+                      />
+                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                        {response.name || 'Student'}
+                      </p>
+                    </div>
+                    <div className="mt-2 space-y-1.5">
+                      {lines.map((line) => (
+                        <p key={line} className="whitespace-pre-wrap break-words text-sm leading-snug text-slate-800 dark:text-slate-200">
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+                  </article>
+                );
+              })}
+              {!sorted.length && (
+                <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700">
+                  Waiting for answers…
+                </p>
+              )}
+            </div>
+          ) : isShort ? (
             <div className="space-y-2.5">
               {sorted.map((response) => {
                 const highlighted = Number(highlightStudentId) === Number(response.studentId);
@@ -432,7 +477,28 @@ export default function TeacherAnswerRail({
             <h2 className="mt-2 font-display text-3xl font-black sm:text-5xl">{activity.prompt}</h2>
             <p className="mt-3 text-sm font-bold text-indigo-200">{responded} response{responded === 1 ? '' : 's'}</p>
             <div className="mt-10">
-              {isShort ? (
+              {isSet ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {sorted.map((response) => (
+                    <article
+                      key={`${response.studentId}-${response.submittedAt || response.value}`}
+                      className="rounded-2xl bg-white/10 p-5 ring-1 ring-white/15"
+                    >
+                      {!activity.anonymous && (
+                        <p className="mb-3 text-sm font-black text-indigo-300">
+                          {response.name || 'Student'}
+                        </p>
+                      )}
+                      <div className="space-y-2">
+                        {formatSetAnswerLines(response.value, setQuestions).map((line) => (
+                          <p key={line} className="text-lg leading-snug">{line}</p>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                  {!sorted.length && <p className="text-lg text-indigo-200">Waiting for answers…</p>}
+                </div>
+              ) : isShort ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   {sorted.map((response) => (
                     <article

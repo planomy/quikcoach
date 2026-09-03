@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import { UNKNOWN_ANSWER, formatLiveAnswer, isUnknownAnswer } from '../lib/liveResponseUnknown.js';
+import {
+  encodeSetAnswers,
+  normalizeSetQuestions,
+  parseSetAnswers,
+  setAnswersComplete,
+} from '../lib/liveResponseSets.js';
 
 const STATUS_OPTIONS = [
   ['ready', 'Yep, ready'],
@@ -50,6 +56,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const [response, setResponse] = useState(null);
   const [featured, setFeatured] = useState([]);
   const [draft, setDraft] = useState('');
+  const [setDrafts, setSetDrafts] = useState({});
   const [confidenceChoice, setConfidenceChoice] = useState('');
   const [nudge, setNudge] = useState(false);
   const [message, setMessage] = useState('');
@@ -139,6 +146,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
         setResponse(null);
         setDraft('');
+        setSetDrafts({});
         setConfidenceChoice('');
         drawAttention(nextActivity);
       }
@@ -147,6 +155,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         activityIdRef.current = '';
         setResponse(null);
         setDraft('');
+        setSetDrafts({});
         setConfidenceChoice('');
       }
     };
@@ -156,7 +165,13 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       setActivity(nextActivity);
       if (nextActivity?.id && nextActivity.id !== activityIdRef.current) drawAttention(nextActivity);
       setResponse(payload?.response || null);
-      setDraft(payload?.response?.value || '');
+      if (nextActivity?.type === 'set') {
+        setSetDrafts(parseSetAnswers(payload?.response?.value));
+        setDraft('');
+      } else {
+        setDraft(payload?.response?.value || '');
+        setSetDrafts({});
+      }
       setConfidenceChoice(payload?.response?.confidence || '');
     };
     const onNudge = () => setNudge(true);
@@ -215,22 +230,41 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   function submit(value, { skipConfidence = false } = {}) {
     if (!activity || activity.locked) return;
     const selectedConfidence = skipConfidence ? '' : confidenceChoice;
+    const payloadValue = activity.type === 'set' && value && typeof value === 'object'
+      ? encodeSetAnswers(value)
+      : value;
     setMessage('Sending…');
-    socket.emit('student:live-response', { activityId: activity.id, value }, (ack) => {
-      setMessage(ack?.ok ? (isUnknownAnswer(value) ? 'Sent ✓' : 'Answer sent ✓') : ack?.error || 'Could not send');
+    socket.emit('student:live-response', { activityId: activity.id, value: payloadValue }, (ack) => {
+      setMessage(ack?.ok ? (isUnknownAnswer(payloadValue) ? 'Sent ✓' : 'Answer sent ✓') : ack?.error || 'Could not send');
       if (ack?.ok) {
-        setResponse({ value, confidence: selectedConfidence });
-        setDraft(isUnknownAnswer(value) ? '' : value);
+        setResponse({ value: payloadValue, confidence: selectedConfidence });
+        if (activity.type === 'set') {
+          setSetDrafts(parseSetAnswers(payloadValue));
+        } else {
+          setDraft(isUnknownAnswer(payloadValue) ? '' : payloadValue);
+        }
         if (selectedConfidence) {
           socket.emit('student:live-confidence', { activityId: activity.id, confidence: selectedConfidence }, (confidenceAck) => {
             if (confidenceAck?.ok) {
-              setResponse((current) => ({ ...(current || { value }), confidence: selectedConfidence }));
+              setResponse((current) => ({ ...(current || { value: payloadValue }), confidence: selectedConfidence }));
             }
           });
         }
         scheduleCollapse();
       }
     });
+  }
+
+  function submitSet() {
+    if (!setAnswersComplete(activity?.questions, setDrafts)) {
+      setMessage('Answer each question before sending.');
+      return;
+    }
+    submit(setDrafts);
+  }
+
+  function updateSetDraft(questionId, nextValue) {
+    setSetDrafts((current) => ({ ...current, [questionId]: nextValue }));
   }
 
   function submitUnknown() {
@@ -460,7 +494,57 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
           <h2 className={`font-display font-bold leading-snug text-slate-950 dark:text-white ${compact ? 'mt-1.5 text-base' : quietAlerts ? 'mt-2 text-lg' : 'mt-3 text-xl sm:text-2xl'}`}>{activity.prompt}</h2>
           {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className={`w-full rounded-2xl bg-white object-contain ${compact ? 'mt-2 max-h-28' : 'mt-4 max-h-72'}`} />}
 
-          {activity.type === 'short' ? (
+          {activity.type === 'set' ? (
+            <div className={compact ? 'mt-2 space-y-2' : quietAlerts ? 'mt-3 space-y-3' : 'mt-5 space-y-4'}>
+              {normalizeSetQuestions(activity.questions).map((question, index) => {
+                const value = setDrafts[question.id] || '';
+                return (
+                  <label key={question.id} className={`block rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 ${compact ? 'p-2.5' : ''}`}>
+                    <span className={`block font-bold text-slate-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
+                      <span className="mr-1.5 text-slate-400">{index + 1}.</span>
+                      {question.prompt}
+                    </span>
+                    {question.type === 'short' ? (
+                      <textarea
+                        value={value}
+                        onChange={(event) => updateSetDraft(question.id, event.target.value.slice(0, 500))}
+                        disabled={answersClosed}
+                        placeholder="Type your answer…"
+                        className={`mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${compact ? 'min-h-12 p-2 text-sm' : 'min-h-16 p-2.5 text-sm'}`}
+                      />
+                    ) : (
+                      <div className={`mt-2 grid gap-1.5 ${question.options.length > 3 ? 'sm:grid-cols-2' : ''}`}>
+                        {question.options.map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            disabled={answersClosed}
+                            onClick={() => updateSetDraft(question.id, option)}
+                            className={`rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
+                              value === option
+                                ? 'border-indigo-600 bg-indigo-600 text-white'
+                                : 'border-slate-200 bg-white text-slate-800 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </label>
+                );
+              })}
+              {renderConfidenceControls(false)}
+              <button
+                type="button"
+                disabled={answersClosed || !setAnswersComplete(activity.questions, setDrafts)}
+                onClick={submitSet}
+                className={`rounded-xl bg-indigo-600 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${quietAlerts ? 'w-full px-4 py-2.5 text-sm' : `w-full rounded-2xl font-black ${compact ? 'px-3 py-2 text-sm' : 'px-5 py-3 text-base'}`}`}
+              >
+                Send answers
+              </button>
+            </div>
+          ) : activity.type === 'short' ? (
             <div className={compact ? 'mt-2' : quietAlerts ? 'mt-3' : 'mt-5'}>
               <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed || isUnknownAnswer(response?.value)} placeholder="Type a short answer…" className={`w-full rounded-xl border bg-white text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${quietAlerts ? 'border-slate-200' : 'border-2 border-slate-200 bg-slate-50 focus:border-indigo-500'} ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
               {!isUnknownAnswer(response?.value) && renderConfidenceControls(false)}
@@ -492,7 +576,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             </div>
           )}
           {statusMessage && <p className={`font-semibold text-slate-500 dark:text-slate-400 ${compact ? 'mt-1.5 text-xs' : 'mt-2 text-sm'} ${/Could not|error/i.test(statusMessage) ? 'text-red-600 dark:text-red-300' : ''}`}>{statusMessage}</p>}
-          {response && activity.type !== 'short' && renderConfidenceControls(true)}
+          {response && activity.type !== 'short' && activity.type !== 'set' && renderConfidenceControls(true)}
           {activity.type === 'short' && featured.length > 0 && (
             <div className={`border-t border-slate-100 dark:border-slate-800 ${compact ? 'mt-2 pt-2' : 'mt-4 pt-3'}`}>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Featured by your teacher</p>

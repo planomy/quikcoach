@@ -175,6 +175,7 @@ export function migrate(db) {
     `ALTER TABLE live_activities ADD COLUMN image_url TEXT NOT NULL DEFAULT ''`,
     `ALTER TABLE live_activities ADD COLUMN timer_seconds INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE live_activities ADD COLUMN source_question_id INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE live_activities ADD COLUMN questions_json TEXT NOT NULL DEFAULT '[]'`,
   ]) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
@@ -805,14 +806,15 @@ export const queries = {
     run(
       db,
       `INSERT INTO live_activities
-       (room_code, activity_id, question_number, type, prompt, options_json, correct_answer, anonymous, optional, image_url, timer_seconds, source_question_id, locked, revealed, launched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+       (room_code, activity_id, question_number, type, prompt, options_json, questions_json, correct_answer, anonymous, optional, image_url, timer_seconds, source_question_id, locked, revealed, launched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
        ON CONFLICT(room_code) DO UPDATE SET
          activity_id = excluded.activity_id,
          question_number = excluded.question_number,
          type = excluded.type,
          prompt = excluded.prompt,
          options_json = excluded.options_json,
+         questions_json = excluded.questions_json,
          correct_answer = excluded.correct_answer,
          anonymous = excluded.anonymous,
          optional = excluded.optional,
@@ -829,6 +831,7 @@ export const queries = {
         activity.type,
         activity.prompt,
         JSON.stringify(activity.options || []),
+        JSON.stringify(activity.questions || []),
         activity.correctAnswer || '',
         activity.anonymous ? 1 : 0,
         activity.optional ? 1 : 0,
@@ -1391,6 +1394,13 @@ function rowToLiveActivity(row) {
   } catch {
     options = [];
   }
+  let questions = [];
+  try {
+    const parsed = JSON.parse(row.questions_json || '[]');
+    if (Array.isArray(parsed)) questions = parsed;
+  } catch {
+    questions = [];
+  }
   const timerSeconds = Math.max(0, Number(row.timer_seconds) || 0);
   const launchedMs = sqliteUtcToMs(row.launched_at);
   return {
@@ -1399,6 +1409,7 @@ function rowToLiveActivity(row) {
     type: row.type,
     prompt: row.prompt,
     options,
+    questions,
     correctAnswer: row.correct_answer || '',
     anonymous: !!row.anonymous,
     optional: !!row.optional,

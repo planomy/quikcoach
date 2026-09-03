@@ -8,12 +8,93 @@ import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { studentTileMeta, LIVE_STATUS_LABELS as STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { downloadTextFile } from '../lib/exportRoom.js';
+import {
+  formatSetAnswerLines,
+  newId,
+  normalizeSetQuestion,
+  normalizeSetQuestions,
+} from '../lib/liveResponseSets.js';
 
 const FEATURE_LABELS = ['', 'Strong evidence', 'Clear explanation', 'Excellent vocabulary', 'Interesting idea', 'Common misconception', 'Nearly there'];
 const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
 const QUEUE_KEY = 'iboard-pulse-question-queue';
+const SETS_KEY = 'iboard-pulse-question-sets';
 const TEMPLATE_KEY = 'iboard-pulse-question-templates';
+
+const STARTER_SETS = [
+  {
+    id: 'starter-source-analysis',
+    name: 'Source analysis',
+    questions: [
+      { id: 'src-1', type: 'short', prompt: 'What information does the source reveal?', options: [], correctAnswer: '' },
+      { id: 'src-2', type: 'short', prompt: "What is the source's origin?", options: [], correctAnswer: '' },
+      { id: 'src-3', type: 'short', prompt: 'From whose perspective was this source created?', options: [], correctAnswer: '' },
+      { id: 'src-4', type: 'short', prompt: 'What major events were occurring when it was made?', options: [], correctAnswer: '' },
+      { id: 'src-5', type: 'short', prompt: 'Who was the original audience of this source?', options: [], correctAnswer: '' },
+      { id: 'src-6', type: 'short', prompt: 'Why was it made?', options: [], correctAnswer: '' },
+    ],
+  },
+  {
+    id: 'starter-narrative',
+    name: 'Narrative writing',
+    questions: [
+      { id: 'nar-1', type: 'short', prompt: 'Who is the narrator, and what do they want?', options: [], correctAnswer: '' },
+      { id: 'nar-2', type: 'short', prompt: 'Where and when is this story set?', options: [], correctAnswer: '' },
+      { id: 'nar-3', type: 'short', prompt: 'What is the main conflict or problem?', options: [], correctAnswer: '' },
+      { id: 'nar-4', type: 'short', prompt: 'What detail will hook the reader in the opening?', options: [], correctAnswer: '' },
+      { id: 'nar-5', type: 'short', prompt: 'How might this story end?', options: [], correctAnswer: '' },
+    ],
+  },
+];
+
+function loadSavedSets() {
+  let loaded = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETS_KEY) || 'null');
+    if (Array.isArray(saved)) {
+      loaded = saved
+        .map((set) => {
+          const questions = normalizeSetQuestions(set?.questions);
+          const name = String(set?.name || '').trim().slice(0, 80);
+          if (!name || questions.length < 1) return null;
+          return { id: String(set.id || newId('set')), name, questions };
+        })
+        .filter(Boolean)
+        .slice(0, 30);
+    }
+  } catch {
+    /* ignore */
+  }
+  if (!loaded.length) {
+    try {
+      const legacy = JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]');
+      if (Array.isArray(legacy) && legacy.length) {
+        loaded = legacy
+          .map((template) => {
+            const question = normalizeSetQuestion(template);
+            if (!question) return null;
+            return {
+              id: String(template.id || newId('set')),
+              name: question.prompt.slice(0, 48),
+              questions: [question],
+            };
+          })
+          .filter(Boolean)
+          .slice(0, 30);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  const byId = new Set(loaded.map((set) => set.id));
+  for (const starter of STARTER_SETS) {
+    if (!byId.has(starter.id)) {
+      loaded.push({ ...starter, questions: normalizeSetQuestions(starter.questions) });
+    }
+  }
+  return loaded.slice(0, 30);
+}
 
 const TYPES = [
   ['choice', 'Multiple choice'],
@@ -68,6 +149,31 @@ function Results({ activity, responses, display = false, onPublish }) {
     && activity.options.every((option, index) => option === String.fromCharCode(65 + index));
 
   if (!activity) return null;
+
+  if (activity.type === 'set') {
+    const questions = normalizeSetQuestions(activity.questions);
+    return (
+      <div className="space-y-3">
+        {(responses || []).map((response) => {
+          const lines = formatSetAnswerLines(response.value, questions);
+          return (
+            <article key={response.studentId} className={`rounded-2xl border p-4 shadow-sm ${display ? 'border-white/20 bg-white/10 text-white' : 'border-indigo-200 bg-indigo-50 text-indigo-950 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-100'}`}>
+              <p className={`font-black ${display ? 'text-base text-indigo-200' : 'text-xs text-indigo-700 dark:text-indigo-300'}`}>
+                {activity.anonymous && !display ? 'Anonymous to class' : response.name}
+              </p>
+              <div className={`mt-2 space-y-2 ${display ? 'text-lg' : 'text-sm'}`}>
+                {lines.map((line, index) => (
+                  <p key={`${response.studentId}-${index}`} className="leading-snug">{line}</p>
+                ))}
+              </div>
+            </article>
+          );
+        })}
+        {!responses?.length && <p className="text-sm font-medium text-slate-500">{display ? 'No answers yet.' : 'Waiting for answers…'}</p>}
+      </div>
+    );
+  }
+
   if (activity.type === 'short') {
     const visible = display ? responses.filter((response) => response.published) : responses;
     return (
@@ -155,14 +261,9 @@ export default function LiveResponseTeacher({
   const [queue, setQueue] = useState(() => {
     try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
   });
-  const [templates, setTemplates] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]');
-      return Array.isArray(saved) ? saved.slice(0, 20) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [sets, setSets] = useState(() => loadSavedSets());
+  const [expandedSetId, setExpandedSetId] = useState('');
+  const [setNameDraft, setSetNameDraft] = useState('');
   const [wallSelected, setWallSelected] = useState([]);
   const [wallMode, setWallMode] = useState('');
   const [slideIndex, setSlideIndex] = useState(0);
@@ -216,8 +317,8 @@ export default function LiveResponseTeacher({
   }, [queue]);
 
   useEffect(() => {
-    try { localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates.slice(0, 20))); } catch { /* storage may be unavailable */ }
-  }, [templates]);
+    try { localStorage.setItem(SETS_KEY, JSON.stringify(sets.slice(0, 30))); } catch { /* storage may be unavailable */ }
+  }, [sets]);
 
   const activity = live.activity;
   const currentActivityIsQuikPulse = isQuikPulseActivity(activity);
@@ -334,37 +435,67 @@ export default function LiveResponseTeacher({
     setPrompt(''); setOptions(['', '', '', '']); setCorrectAnswer(''); setImageUrl('');
   }
 
-  function saveTemplate() {
-    const question = currentDraft();
-    if (!question.prompt) { setMessage('Add a question first.'); return; }
-    if (question.type === 'choice' && question.options.length < 2) { setMessage('Add at least two choices.'); return; }
-    const id = globalThis.crypto?.randomUUID?.() || `template-${Date.now()}`;
-    setTemplates((items) => [{ ...question, imageUrl: '', id }, ...items].slice(0, 20));
-    setMessage(question.imageUrl ? 'Template saved on this browser without the image.' : 'Template saved on this browser.');
+  function saveDraftAsSet() {
+    const question = normalizeSetQuestion(currentDraft());
+    if (!question) {
+      setMessage(type === 'choice' ? 'Add a question and at least two choices.' : 'Add a question first.');
+      return;
+    }
+    const id = newId('set');
+    setSets((items) => [{ id, name: question.prompt.slice(0, 48), questions: [question] }, ...items].slice(0, 30));
+    setMessage('Saved as a one-question set on this browser. Add more via the queue, or open Saved sets.');
+    setActiveView('prepared');
+    setExpandedSetId(id);
   }
 
-  function loadTemplate(template) {
-    setType(template.type || 'choice');
-    setPrompt(String(template.prompt || '').slice(0, 500));
-    const savedOptions = Array.isArray(template.options) ? template.options.map(String).slice(0, 6) : [];
-    setOptions([...savedOptions, '', '', '', ''].slice(0, 4));
-    setCorrectAnswer(String(template.correctAnswer || ''));
-    setAnonymous(!!template.anonymous);
-    setOptional(!!template.optional);
-    setTimerSeconds(Number(template.timerSeconds) || 0);
-    setImageUrl('');
-    setActiveView('build');
-    setMessage('Template loaded — edit it or launch when ready.');
+  function saveQueueAsSet() {
+    const questions = normalizeSetQuestions(queue);
+    if (questions.length < 2) {
+      setMessage('Queue at least two questions, then save them as a set.');
+      return;
+    }
+    const name = String(setNameDraft || '').trim().slice(0, 80) || `Set · ${questions.length} questions`;
+    const id = newId('set');
+    setSets((items) => [{ id, name, questions }, ...items].slice(0, 30));
+    setSetNameDraft('');
+    setExpandedSetId(id);
+    setMessage(`Saved set “${name}”.`);
   }
 
-  function moveQueued(index, direction) {
-    setQueue((items) => {
-      const target = index + direction;
-      if (target < 0 || target >= items.length) return items;
-      const next = [...items];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
+  function launchSet(set) {
+    const questions = normalizeSetQuestions(set?.questions);
+    if (!questions.length) {
+      setMessage('That set is empty.');
+      return;
+    }
+    if (questions.length === 1) {
+      launch({ ...questions[0], imageUrl: '', timerSeconds: 0 }, '', 'Question is live.');
+      return;
+    }
+    launch({
+      type: 'set',
+      prompt: String(set.name || 'Question set').trim().slice(0, 500),
+      questions,
+      options: [],
+      correctAnswer: '',
+      anonymous: false,
+      optional: false,
+      imageUrl: '',
+      timerSeconds: 0,
+    }, '', `“${set.name}” is live.`);
+  }
+
+  function enqueueSet(set) {
+    const questions = normalizeSetQuestions(set?.questions);
+    if (!questions.length) {
+      setMessage('That set is empty.');
+      return;
+    }
+    setQueue((items) => [
+      ...items,
+      ...questions.map((question) => ({ ...question, id: newId('q') })),
+    ].slice(0, 30));
+    setMessage(`Added ${questions.length} question${questions.length === 1 ? '' : 's'} to your queue.`);
   }
 
   async function loadImage(file) {
@@ -634,7 +765,7 @@ export default function LiveResponseTeacher({
       {[
         ['quik', 'Quick Question'],
         ['build', 'Send Question'],
-        ['prepared', `Saved · ${queue.length + templates.length}`],
+        ['prepared', `Saved · ${queue.length + sets.length}`],
       ].map(([view, label]) => (
         <button
           key={view}
@@ -838,7 +969,7 @@ export default function LiveResponseTeacher({
           <summary className="cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-white/80 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200">More</summary>
           <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
             <button type="button" onClick={() => { if (moreMenuRef.current) moreMenuRef.current.open = false; setActiveView('prepared'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Saved · {queue.length + templates.length}
+              Saved · {queue.length + sets.length}
             </button>
             {featuredWall.length > 0 && (
               <button type="button" onClick={() => { if (moreMenuRef.current) moreMenuRef.current.open = false; setActiveView('featured'); }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
@@ -1031,7 +1162,7 @@ export default function LiveResponseTeacher({
                   </label>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={saveTemplate} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Save for later</button>
+                  <button type="button" onClick={saveDraftAsSet} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Save as set</button>
                   <button type="button" onClick={addToQueue} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
                 </div>
               </div>
@@ -1042,7 +1173,86 @@ export default function LiveResponseTeacher({
           </div>
         )}
 
-        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'prepared' && <div className="grid gap-5 p-4 lg:grid-cols-2"><section><div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Prepared</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Question queue · {queue.length}</h3></div>{queue.length > 0 && <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>}</div><div className="mt-3 space-y-2">{queue.map((item, index) => <div key={item.id} className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-indigo-600 text-[10px] font-black text-white">{index + 1}</span><div className="flex flex-col"><button type="button" disabled={index === 0} onClick={() => moveQueued(index, -1)} className="text-[10px] font-black disabled:opacity-20">▲</button><button type="button" disabled={index === queue.length - 1} onClick={() => moveQueued(index, 1)} className="text-[10px] font-black disabled:opacity-20">▼</button></div><p className="min-w-0 flex-1 truncate text-xs font-bold text-slate-900 dark:text-white">{item.prompt}</p><button type="button" onClick={() => launch(item, item.id)} className="rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-900">Launch</button><button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="text-sm font-black text-red-500">×</button></div>)}{!queue.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No questions queued.</p>}</div></section><section><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Reusable</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Templates · {templates.length}</h3></div><div className="mt-3 space-y-2">{templates.map((template) => <div key={template.id} className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700"><button type="button" onClick={() => loadTemplate(template)} className="min-w-0 flex-1 truncate px-3 py-2 text-left text-xs font-bold text-slate-900 hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800">{template.prompt}</button><button type="button" onClick={() => setTemplates((items) => items.filter((item) => item.id !== template.id))} aria-label={`Delete template: ${template.prompt}`} className="border-l border-slate-200 px-3 py-2 text-sm font-black text-red-500 dark:border-slate-700">×</button></div>)}{!templates.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No templates saved on this browser.</p>}</div></section></div>}
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'prepared' && (
+          <div className="grid gap-5 p-4 lg:grid-cols-2">
+            <section>
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Prepared</p>
+                  <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Question queue · {queue.length}</h3>
+                </div>
+                {queue.length > 0 && <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>}
+              </div>
+              {queue.length >= 2 && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50/70 p-2 dark:border-indigo-900 dark:bg-indigo-950/40">
+                  <input
+                    value={setNameDraft}
+                    onChange={(event) => setSetNameDraft(event.target.value.slice(0, 80))}
+                    placeholder="Name this set…"
+                    className="min-w-[10rem] flex-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-indigo-400 dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
+                  />
+                  <button type="button" onClick={saveQueueAsSet} className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black text-white">Save queue as set</button>
+                </div>
+              )}
+              <div className="mt-3 space-y-2">
+                {queue.map((item, index) => (
+                  <div key={item.id} className="flex items-start gap-2 rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                    <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-indigo-600 text-[8px] font-black text-white">{index + 1}</span>
+                    <p className="min-w-0 flex-1 text-sm font-bold leading-snug text-slate-900 line-clamp-2 dark:text-white">{item.prompt}</p>
+                    <button type="button" onClick={() => launch(item, item.id)} className="mt-0.5 shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-black leading-none text-emerald-900">Launch</button>
+                    <button type="button" onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} className="mt-0.5 shrink-0 text-xs font-black text-red-500" aria-label="Remove from queue">×</button>
+                  </div>
+                ))}
+                {!queue.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No questions queued.</p>}
+              </div>
+            </section>
+            <section>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Reusable</p>
+                <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Saved sets · {sets.length}</h3>
+                <p className="mt-1 text-[11px] font-semibold text-slate-500">Fire a whole set in one student box, or drip questions into the queue.</p>
+              </div>
+              <div className="mt-3 space-y-2">
+                {sets.map((set) => {
+                  const open = expandedSetId === set.id;
+                  const count = set.questions?.length || 0;
+                  return (
+                    <div key={set.id} className="rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-start gap-2 px-3 py-2.5">
+                        <button type="button" onClick={() => setExpandedSetId(open ? '' : set.id)} className="min-w-0 flex-1 text-left">
+                          <p className="text-sm font-black text-slate-900 dark:text-white">{set.name}</p>
+                          <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">{count} question{count === 1 ? '' : 's'}</p>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!count}
+                          onClick={() => launchSet(set)}
+                          className="mt-0.5 shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-black leading-none text-emerald-900 disabled:cursor-not-allowed disabled:opacity-40"
+                          title={count >= 2 ? 'Send all questions in one box' : 'Launch this question'}
+                        >
+                          Launch
+                        </button>
+                        <button type="button" onClick={() => enqueueSet(set)} className="mt-0.5 shrink-0 rounded bg-indigo-100 px-1.5 py-0.5 text-[9px] font-black leading-none text-indigo-900" title="Add each question to the queue">Queue</button>
+                        <button type="button" onClick={() => setSets((items) => items.filter((item) => item.id !== set.id))} aria-label={`Delete set: ${set.name}`} className="mt-0.5 shrink-0 text-xs font-black text-red-500">×</button>
+                      </div>
+                      {open && (
+                        <ol className="space-y-1.5 border-t border-slate-100 px-3 py-2 dark:border-slate-800">
+                          {(set.questions || []).map((question, index) => (
+                            <li key={question.id} className="text-xs font-semibold leading-snug text-slate-700 dark:text-slate-200">
+                              <span className="mr-1.5 text-[10px] font-black text-slate-400">{index + 1}.</span>
+                              {question.prompt}
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </div>
+                  );
+                })}
+                {!sets.length && <p className="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-xs text-slate-500 dark:border-slate-700">No saved sets on this browser.</p>}
+              </div>
+            </section>
+          </div>
+        )}
 
         {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'featured' && <section className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Featured Wall</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Highlights · {featuredWall.length}</h3></div><div className="flex gap-1.5"><button type="button" onClick={compareFeatured} className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white">Compare</button><button type="button" onClick={() => { setSlideIndex(0); setWallMode('slides'); }} className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-black text-amber-950">Present</button><button type="button" onClick={downloadWall} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-800">Save</button><button type="button" onClick={clearFeaturedWall} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-black text-red-700">Clear wall</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{featuredWall.map((item) => <article key={item.id} className={`rounded-xl border-2 bg-white p-3 dark:bg-slate-900 ${wallSelected.includes(item.id) ? 'border-indigo-500' : 'border-amber-200 dark:border-amber-800'}`}><div className="flex items-start gap-2"><input type="checkbox" checked={wallSelected.includes(item.id)} onChange={(event) => setWallSelected((ids) => event.target.checked ? [...ids.filter((id) => id !== item.id), item.id].slice(-2) : ids.filter((id) => id !== item.id))} className="mt-0.5 h-4 w-4 accent-indigo-600" /><div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase text-amber-700">Q{item.questionNumber} · {item.name}</p><p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">“{formatLiveAnswer(item.value)}”</p><select value={item.label} onChange={(event) => labelFeatured(item.id, event.target.value)} className="mt-2 w-full rounded-md border border-amber-200 px-2 py-1 text-[11px] font-bold dark:border-amber-800 dark:bg-slate-950">{FEATURE_LABELS.map((label) => <option key={label} value={label}>{label || 'Why is this featured?'}</option>)}</select><div className="mt-2 flex gap-1.5"><button type="button" onClick={() => improveFeatured(item)} className="rounded-md bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-800">Improve</button><button type="button" onClick={() => removeFeatured(item.id)} className="rounded-md bg-red-50 px-2 py-1 text-[10px] font-black text-red-600">Remove</button></div></div></div></article>)}</div></section>}
       </div>

@@ -1011,18 +1011,55 @@ io.on('connection', (socket) => {
         cb?.({ ok: false, error: 'Open the room as teacher first' });
         return;
       }
-      const allowedTypes = new Set(['choice', 'truefalse', 'rating', 'short']);
+      const allowedTypes = new Set(['choice', 'truefalse', 'rating', 'short', 'set']);
       const type = allowedTypes.has(raw?.type) ? raw.type : 'choice';
       const prompt = String(raw?.prompt || '').trim().slice(0, 500);
       if (!prompt) {
-        cb?.({ ok: false, error: 'Add a question first' });
+        cb?.({ ok: false, error: type === 'set' ? 'Name this set first' : 'Add a question first' });
         return;
       }
+
+      let questions = [];
+      if (type === 'set') {
+        const allowedQuestionTypes = new Set(['choice', 'truefalse', 'rating', 'short']);
+        const rawQuestions = Array.isArray(raw?.questions) ? raw.questions : [];
+        questions = rawQuestions
+          .map((item, index) => {
+            const questionType = allowedQuestionTypes.has(item?.type) ? item.type : 'short';
+            const questionPrompt = String(item?.prompt || '').trim().slice(0, 500);
+            if (!questionPrompt) return null;
+            let questionOptions = Array.isArray(item?.options)
+              ? item.options.map((value) => String(value || '').trim().slice(0, 120)).filter(Boolean).slice(0, 6)
+              : [];
+            if (questionType === 'truefalse') questionOptions = ['True', 'False'];
+            if (questionType === 'rating') questionOptions = ['1', '2', '3', '4', '5'];
+            if (questionType === 'choice' && questionOptions.length < 2) return null;
+            const requested = String(item?.correctAnswer || '').trim().slice(0, questionType === 'short' ? 500 : 120);
+            let correctAnswer = '';
+            if (questionType === 'short') correctAnswer = requested;
+            else if (questionType !== 'rating' && questionOptions.includes(requested)) correctAnswer = requested;
+            return {
+              id: String(item?.id || `sq-${index + 1}`).slice(0, 80),
+              type: questionType,
+              prompt: questionPrompt,
+              options: questionType === 'short' ? [] : questionOptions,
+              correctAnswer,
+            };
+          })
+          .filter(Boolean)
+          .slice(0, 12);
+        if (questions.length < 2) {
+          cb?.({ ok: false, error: 'A set needs at least two questions' });
+          return;
+        }
+      }
+
       let options = Array.isArray(raw?.options)
         ? raw.options.map((value) => String(value || '').trim().slice(0, 120)).filter(Boolean).slice(0, 6)
         : [];
       if (type === 'truefalse') options = ['True', 'False'];
       if (type === 'rating') options = ['1', '2', '3', '4', '5'];
+      if (type === 'set') options = [];
       if (type === 'choice' && options.length < 2) {
         cb?.({ ok: false, error: 'Add at least two answer choices' });
         return;
@@ -1031,7 +1068,7 @@ io.on('connection', (socket) => {
       let correctAnswer = '';
       if (type === 'short') {
         correctAnswer = requestedCorrectAnswer;
-      } else if (type !== 'rating' && options.includes(requestedCorrectAnswer)) {
+      } else if (type !== 'rating' && type !== 'set' && options.includes(requestedCorrectAnswer)) {
         correctAnswer = requestedCorrectAnswer;
       }
       const imageUrl = String(raw?.imageUrl || '');
@@ -1047,6 +1084,7 @@ io.on('connection', (socket) => {
         type,
         prompt,
         options,
+        questions,
         correctAnswer,
         anonymous: !!raw?.anonymous,
         optional: !!raw?.optional,
@@ -1113,6 +1151,49 @@ io.on('connection', (socket) => {
         cb?.({ ok: false, error: 'Time is up' });
         return;
       }
+      if (activity.type === 'set') {
+        const questions = Array.isArray(activity.questions) ? activity.questions : [];
+        if (questions.length < 2) {
+          cb?.({ ok: false, error: 'That set is incomplete' });
+          return;
+        }
+        let rawAnswers = value;
+        if (typeof rawAnswers === 'string') {
+          try {
+            rawAnswers = JSON.parse(rawAnswers);
+          } catch {
+            rawAnswers = null;
+          }
+        }
+        if (!rawAnswers || typeof rawAnswers !== 'object' || Array.isArray(rawAnswers)) {
+          cb?.({ ok: false, error: 'Answer each question in the set' });
+          return;
+        }
+        const answers = {};
+        for (const question of questions) {
+          const questionId = String(question.id || '');
+          const questionType = question.type || 'short';
+          const options = Array.isArray(question.options) ? question.options.map(String) : [];
+          let answer = String(rawAnswers[questionId] ?? '').trim();
+          answer = answer.slice(0, questionType === 'short' ? 500 : 120);
+          if (!answer) {
+            cb?.({ ok: false, error: 'Answer each question in the set' });
+            return;
+          }
+          if (questionType !== 'short' && !options.includes(answer)) {
+            cb?.({ ok: false, error: 'Choose one of the available answers' });
+            return;
+          }
+          answers[questionId] = answer;
+        }
+        const encoded = JSON.stringify(answers).slice(0, 8000);
+        queries.upsertLiveResponse(db, { activityId: activity.id, roomCode: code, studentId: sid, value: encoded });
+        if (!activity.optional) queries.markLiveResponse(db, sid);
+        emitLiveState(code);
+        cb?.({ ok: true });
+        return;
+      }
+
       const answer = String(value ?? '').trim().slice(0, activity.type === 'short' ? 500 : 120);
       if (!answer) {
         cb?.({ ok: false, error: 'Choose or enter an answer' });
