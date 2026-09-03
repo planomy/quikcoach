@@ -39,7 +39,9 @@ function PanelTabButton({ active, label, badge, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
+      className={`relative inline-flex items-center overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
+        badge ? 'pr-6 sm:pr-7' : ''
+      } ${
         active
           ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
           : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
@@ -48,7 +50,7 @@ function PanelTabButton({ active, label, badge, onClick }) {
       {label}
       {badge ? (
         <span
-          className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${
+          className={`absolute -top-1.5 right-2 z-[2] grid min-w-[1.15rem] place-items-center rounded-full px-1 py-0.5 text-[10px] font-black tabular-nums leading-none ${
             active ? 'bg-white/25' : 'bg-amber-500 text-amber-950'
           }`}
         >

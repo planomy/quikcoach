@@ -1658,12 +1658,14 @@ function TeacherDashboardInner() {
                     }}
                     aria-current={active ? 'page' : undefined}
                     data-active={active ? 'true' : 'false'}
-                    className="iboard-header-tab relative inline-flex items-center gap-1.5 overflow-visible px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                    className={`iboard-header-tab relative inline-flex items-center overflow-visible px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white ${
+                      badge ? 'pr-6 sm:pr-7' : ''
+                    }`}
                   >
                     {tab.label}
                     {badge ? (
                       <span
-                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${
+                        className={`absolute -top-1.5 right-2 z-[2] grid min-w-[1.15rem] place-items-center rounded-full px-1 py-0.5 text-[10px] font-black tabular-nums leading-none ${
                           active ? 'bg-white/25 text-white' : 'bg-amber-500 text-amber-950'
                         }`}
                       >
