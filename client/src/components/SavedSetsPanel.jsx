@@ -393,7 +393,7 @@ export default function SavedSetsPanel({
                 <button
                   type="button"
                   onClick={() => onLaunchSet(set)}
-                  className="shrink-0 rounded-md bg-indigo-600 px-2 py-1 text-[10px] font-black text-white transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:ring-offset-slate-900"
+                  className="shrink-0 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
                 >
                   Launch
                 </button>
