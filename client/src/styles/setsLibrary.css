@@ -46,5 +46,5 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin {
 }
 
 div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
