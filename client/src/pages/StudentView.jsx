@@ -98,7 +98,7 @@ export default function StudentView() {
   const [inboxUnreadIds, setInboxUnreadIds] = useState(() => new Set());
   const [dismissedInboxIds, setDismissedInboxIds] = useState(() => new Set());
   const [largeMaterialId, setLargeMaterialId] = useState(null);
-  const [respondQuestionNumber, setRespondQuestionNumber] = useState(null);
+  const [respondPendingCount, setRespondPendingCount] = useState(0);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [helpSeenToast, setHelpSeenToast] = useState(false);
@@ -184,7 +184,7 @@ export default function StudentView() {
       setInboxUnreadIds(new Set());
     }
     if (tabId === 'respond') {
-      setRespondQuestionNumber(null);
+      setRespondPendingCount(0);
     }
   }
 
@@ -359,29 +359,30 @@ export default function StudentView() {
     };
     const showRespondBadge = (activity) => {
       if (!activity?.id) {
-        setRespondQuestionNumber(null);
+        setRespondPendingCount(0);
         return;
       }
       if (supportTabRef.current === 'respond') {
-        setRespondQuestionNumber(null);
+        setRespondPendingCount(0);
         return;
       }
-      setRespondQuestionNumber(Math.max(1, Number(activity.questionNumber) || 1));
+      // Count of live questions still waiting for this student — not the Q number.
+      setRespondPendingCount(1);
     };
     const onLiveActivity = (payload) => {
       if (payload?.activity?.id) showRespondBadge(payload.activity);
-      else setRespondQuestionNumber(null);
+      else setRespondPendingCount(0);
     };
     const onLiveRealert = (payload) => {
       if (payload?.activity?.id) showRespondBadge(payload.activity);
     };
     const onLiveStudent = (payload) => {
       if (!payload?.activity?.id) {
-        setRespondQuestionNumber(null);
+        setRespondPendingCount(0);
         return;
       }
       if (payload?.response?.value) {
-        setRespondQuestionNumber(null);
+        setRespondPendingCount(0);
       }
     };
     const onLiveNudge = () => {
@@ -977,8 +978,8 @@ export default function StudentView() {
                 const active = supportTab === tab.id;
                 const badge = tab.id === 'inbox'
                   ? inboxTabCount
-                  : tab.id === 'respond' && respondQuestionNumber
-                    ? respondQuestionNumber
+                  : tab.id === 'respond' && respondPendingCount > 0
+                    ? respondPendingCount
                     : 0;
                 return (
                   <button
@@ -998,9 +999,7 @@ export default function StudentView() {
                         className={`absolute left-1/2 top-0 z-[2] grid h-5 w-5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10px] font-black tabular-nums leading-none shadow-sm ring-2 ${
                           active
                             ? 'bg-rose-600 text-white ring-indigo-600'
-                            : tab.id === 'respond' && respondQuestionNumber
-                              ? 'bg-rose-600 text-white ring-white dark:ring-slate-900'
-                              : 'bg-rose-600 text-white ring-white dark:ring-slate-900'
+                            : 'bg-rose-600 text-white ring-white dark:ring-slate-900'
                         }`}
                       >
                         {badge}

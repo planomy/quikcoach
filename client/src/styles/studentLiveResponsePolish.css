@@ -2,11 +2,11 @@
    Animate the Respond tab badge when the live panel pulses on re-alert. */
 @keyframes iboard-respond-badge-realert {
   0%, 100% {
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(1);
     box-shadow: 0 0 0 0 rgb(225 29 72 / 0);
   }
   45% {
-    transform: scale(1.22);
+    transform: translate(-50%, -50%) scale(1.22);
     box-shadow: 0 0 0 6px rgb(225 29 72 / 0.18);
   }
 }

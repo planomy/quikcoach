@@ -45,6 +45,21 @@ function styleAttentionBadge(button, label) {
 
   let raw = badge.textContent?.trim() || '';
   if (label === 'Respond' && raw === '●') raw = '1';
+  if (!raw) return;
+
+  // React owns layout for student tool-tab badges — don't shove them to top-right
+  // or rewrite counts (that turned Q10 into "9+" and made the pulse jump).
+  if (badge.hasAttribute('data-iboard-tab-badge')) {
+    const ariaLabel = label === 'Respond'
+      ? `${label}, ${raw} waiting`
+      : `${label}, ${raw} new`;
+    if (button.getAttribute('aria-label') !== ariaLabel) {
+      button.setAttribute('aria-label', ariaLabel);
+    }
+    badge.style.cssText = '';
+    return;
+  }
+
   const numeric = Number.parseInt(raw, 10);
   const display = Number.isFinite(numeric) && numeric > 9 ? '9+' : raw;
   if (!display) return;
