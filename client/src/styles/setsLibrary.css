@@ -103,3 +103,69 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin {
 div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* Responses dock: remove the redundant title row but keep the close control. */
+.iboard-header-dock--start
+  > section:has(> div:nth-child(2) > div.flex.gap-2.overflow-x-auto)
+  > div:first-child {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 40;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.iboard-header-dock--start
+  > section:has(> div:nth-child(2) > div.flex.gap-2.overflow-x-auto)
+  > div:first-child
+  > div:first-child {
+  display: none;
+}
+
+/* The awareness strip is just status + student chits now. */
+.iboard-header-dock--start
+  > section
+  > div:has(> div.flex.gap-2.overflow-x-auto) {
+  padding: 0.5rem 0.55rem 0.6rem;
+}
+
+.iboard-header-dock--start
+  > section
+  > div:has(> div.flex.gap-2.overflow-x-auto)
+  > div:first-child {
+  margin-bottom: 0.35rem;
+  padding-right: 2rem;
+}
+
+.iboard-header-dock--start
+  > section
+  > div:has(> div.flex.gap-2.overflow-x-auto)
+  > div:first-child h3 {
+  display: none;
+}
+
+/* Two compact rows, up to eight students across before horizontal overflow. */
+.iboard-header-dock--start
+  > section
+  > div:has(> div.flex.gap-2.overflow-x-auto)
+  > div.flex.gap-2.overflow-x-auto {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(46px, 1fr));
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(46px, 1fr);
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.iboard-header-dock--start
+  > section
+  > div:has(> div.flex.gap-2.overflow-x-auto)
+  > div.flex.gap-2.overflow-x-auto
+  > div.relative {
+  width: auto;
+  min-width: 0;
+}
