@@ -77,3 +77,47 @@ export function formatSetAnswerPreview(value, questions = []) {
   if (!lines.length) return isUnknownAnswer(value) ? formatLiveAnswer(value) : '';
   return lines.join('\n');
 }
+
+/** Split pasted AI / list text into short-answer prompts. */
+export function parsePastedQuestions(text) {
+  const raw = String(text || '').replace(/\r/g, '\n');
+  const chunks = raw
+    .split(/\n+/)
+    .flatMap((line) => line.split(/\s*[•·]\s+/))
+    .map((line) => line
+      .replace(/^\s*[-*–—]\s+/, '')
+      .replace(/^\s*\d+[.)]\s+/, '')
+      .replace(/^\s*[A-Za-z][.)]\s+/, '')
+      .trim())
+    .filter(Boolean);
+
+  const seen = new Set();
+  const prompts = [];
+  for (const prompt of chunks) {
+    const key = prompt.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    prompts.push(prompt.slice(0, 500));
+    if (prompts.length >= 12) break;
+  }
+  return normalizeSetQuestions(prompts.map((prompt, index) => ({ id: newId(`paste${index}`), type: 'short', prompt })));
+}
+
+export function cloneSetForEdit(source) {
+  const questions = normalizeSetQuestions(source?.questions).map((question, index) => ({
+    ...question,
+    id: newId(`edit${index}`),
+  }));
+  return {
+    id: newId('set'),
+    name: String(source?.name || 'Untitled set').trim().slice(0, 80),
+    subject: source?.subject || 'General',
+    years: source?.years || 'All',
+    skill: source?.skill || '',
+    minutes: Number(source?.minutes) || 0,
+    note: source?.note || '',
+    bank: false,
+    questions,
+  };
+}
+
