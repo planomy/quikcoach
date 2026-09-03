@@ -62,6 +62,17 @@
   overflow-y: auto;
 }
 
+/* A single Write one question is not a Set. Sets are created deliberately or from a multi-question queue. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"])
+  > section
+  > div.min-h-0.flex-1.overflow-y-auto
+  > div.p-4
+  > details.mt-4
+  > div.space-y-3
+  > div.flex.flex-wrap.gap-2:last-child {
+  display: none;
+}
+
 /* Sets keeps its heading and filters fixed; only the card list scrolls. */
 .iboard-header-dock--start:has(nav[aria-label="Ask options"])
   > section
