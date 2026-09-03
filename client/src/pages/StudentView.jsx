@@ -336,6 +336,7 @@ export default function StudentView() {
         materialBootstrappedRef.current = true;
         return;
       }
+      const isReplay = !!payload?.replay;
       setMaterialHistory((previous) => {
         let nextHistory;
         if (serverHistory) nextHistory = serverHistory.slice(-20);
@@ -347,12 +348,24 @@ export default function StudentView() {
         }
         const latest = nextHistory[nextHistory.length - 1];
         const latestAt = latest ? Number(latest.at) || 0 : 0;
-        const hadBootstrap = materialBootstrappedRef.current;
-        const isNew = hadBootstrap && !payload?.replay && latestAt && latestAt !== Number(lastMaterialAtRef.current || 0);
-        lastMaterialAtRef.current = latestAt || null;
+        const prevAt = Number(lastMaterialAtRef.current || 0);
+        // Notify on any live send newer than what we've seen — including the first
+        // handout after join (empty history never bootstrapped the old gate).
+        const shouldNotify = !isReplay && !!latest?.id && latestAt > prevAt;
+        lastMaterialAtRef.current = latestAt > prevAt ? latestAt : prevAt || null;
         materialBootstrappedRef.current = true;
-        if (isNew && latest?.id) {
-          queueMicrotask(() => activateInbox(latest.id));
+        if (shouldNotify) {
+          queueMicrotask(() => {
+            setInboxUnreadIds((current) => {
+              const next = new Set(current);
+              next.add(latest.id);
+              return next;
+            });
+            // Keep writing focus: only open Inbox if they're already there.
+            if (supportTabRef.current === 'inbox') {
+              setInboxExpandedId(latest.id);
+            }
+          });
         }
         return nextHistory;
       });
