@@ -1751,7 +1751,7 @@ function TeacherDashboardInner() {
         </div>
       )}
       <header ref={teacherHeaderRef} className="iboard-app-header relative z-50 shrink-0 border-b backdrop-blur">
-        <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-3.5 sm:px-6">
+        <div className="relative mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <nav
               ref={teacherToolsNavRef}
@@ -1826,22 +1826,24 @@ function TeacherDashboardInner() {
             )}
           </div>
 
-          <div className="flex min-w-0 flex-1 items-center justify-start gap-2.5 sm:justify-center">
-            <h1 className="font-display truncate text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
+          <div className="pointer-events-none absolute left-1/2 top-1/2 flex max-w-[min(100%,28rem)] -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-2.5 px-2">
+            <h1 className="pointer-events-auto font-display truncate text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
               Room <span className="iboard-header-code font-mono text-indigo-600">{codeInput}</span>
             </h1>
-            <SaveStatusChip status={saveStatus} />
-            <span className="iboard-header-chip hidden rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 sm:inline">
+            <span className="pointer-events-auto">
+              <SaveStatusChip status={saveStatus} />
+            </span>
+            <span className="iboard-header-chip pointer-events-auto hidden rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 sm:inline">
               Participants: {orderedStudents.length}
             </span>
             {frozen && (
-              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              <span className="pointer-events-auto rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
                 Frozen
               </span>
             )}
           </div>
 
-          <div className="flex shrink-0 items-center justify-end">
+          <div className="ml-auto flex shrink-0 items-center justify-end">
             <HintWrap hint="Room settings" prefer="below">
               <button
                 ref={settingsButtonRef}
