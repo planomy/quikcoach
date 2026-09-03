@@ -241,6 +241,7 @@ function TeacherDashboardInner() {
   const [addCardBusy, setAddCardBusy] = useState(false);
   const [addCardError, setAddCardError] = useState('');
   const [addCardSendInbox, setAddCardSendInbox] = useState(true);
+  const [addCardPlaceOnBoard, setAddCardPlaceOnBoard] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle');
 
   const socket = useMemo(() => createSocket(), []);
@@ -1025,8 +1026,10 @@ function TeacherDashboardInner() {
     setAddCardText('');
     setAddCardImage('');
     setAddCardFile(null);
-    setAddCardError('');
     setAddCardSendInbox(true);
+    setAddCardError('');
+    setAddCardPlaceOnBoard(true);
+    setAddCardPlaceOnBoard(true);
     setAddCardOpen(true);
   }
 
@@ -1105,6 +1108,7 @@ function TeacherDashboardInner() {
     setAddCardText('');
     setAddCardFile(file);
     setAddCardSendInbox(true);
+    setAddCardPlaceOnBoard(true);
     if (!addCardTitle.trim() || addCardTitle.trim() === 'Teacher') {
       setAddCardTitle(String(file.name || 'Handout').replace(/\.[^.]+$/, '').slice(0, 80) || 'Handout');
     }
@@ -1128,6 +1132,10 @@ function TeacherDashboardInner() {
     };
 
     if (addCardFile) {
+      if (!addCardSendInbox && !addCardPlaceOnBoard) {
+        setAddCardError('Choose Send to Inbox and/or Place on this board');
+        return;
+      }
       setAddCardBusy(true);
       fileToBase64(addCardFile)
         .then((fileBase64) => {
@@ -1138,8 +1146,15 @@ function TeacherDashboardInner() {
               fileBase64,
               mimeType: addCardFile.type || '',
               originalName: addCardFile.name || 'handout',
+              sendToInbox: addCardSendInbox,
+              placeOnBoard: addCardPlaceOnBoard,
             },
-            (ack) => finish(ack, 'Handout sent to Inbox')
+            (ack) => {
+              const bits = [];
+              if (addCardSendInbox) bits.push('Inbox');
+              if (addCardPlaceOnBoard) bits.push('board');
+              finish(ack, `Handout sent to ${bits.join(' · ')}`);
+            }
           );
         })
         .catch(() => {
@@ -1151,7 +1166,7 @@ function TeacherDashboardInner() {
 
     if (addCardImage) {
       setAddCardBusy(true);
-      if (addCardSendInbox) {
+      if (addCardSendInbox || addCardPlaceOnBoard) {
         socket.emit(
           'teacher:material-send',
           {
@@ -1159,8 +1174,15 @@ function TeacherDashboardInner() {
             fileBase64: addCardImage,
             mimeType: 'image/jpeg',
             originalName: `${title.replace(/\s+/g, '-').slice(0, 40) || 'handout'}.jpg`,
+            sendToInbox: addCardSendInbox,
+            placeOnBoard: addCardPlaceOnBoard || !addCardSendInbox,
           },
-          (ack) => finish(ack, 'Image sent to Inbox')
+          (ack) => {
+            const bits = [];
+            if (addCardSendInbox) bits.push('Inbox');
+            if (addCardPlaceOnBoard || !addCardSendInbox) bits.push('board');
+            finish(ack, `Image sent to ${bits.join(' · ')}`);
+          }
         );
         return;
       }
@@ -1923,6 +1945,24 @@ function TeacherDashboardInner() {
               <div className={`mt-2 rounded-xl bg-white p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}>
                 {post.kind === 'image' && post.image_url ? (
                   <img src={post.image_url} alt={post.title || 'Teacher card'} className="mx-auto max-h-80 w-full object-contain" />
+                ) : post.kind === 'file' && post.file_url ? (
+                  <div className="space-y-2">
+                    {String(post.mime_type || '').includes('pdf') || /\.pdf$/i.test(post.text || '') ? (
+                      <iframe
+                        title={post.title || 'Handout'}
+                        src={post.file_url}
+                        className="h-64 w-full rounded-lg border-0 bg-slate-50 outline-none dark:bg-slate-900"
+                        tabIndex={-1}
+                      />
+                    ) : null}
+                    <a
+                      href={`${post.file_url}${post.file_url.includes('?') ? '&' : '?'}download=1&name=${encodeURIComponent(post.text || 'handout')}`}
+                      className="inline-flex text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                      download={post.text || 'handout'}
+                    >
+                      {post.text || 'Download handout'}
+                    </a>
+                  </div>
                 ) : post.text?.trim() ? (
                   <p className="whitespace-pre-wrap break-words">{post.text}</p>
                 ) : (
@@ -2723,20 +2763,32 @@ function TeacherDashboardInner() {
               )}
               {addCardError && <p className="text-sm font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
             </div>
-            <label
-              data-iboard-add-card-send-option="true"
-              className="flex shrink-0 cursor-pointer items-center gap-2 border-t border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200"
-            >
-              <input
-                type="checkbox"
-                data-iboard-send-inbox="true"
-                checked={!!addCardFile || addCardSendInbox}
-                disabled={!!addCardFile}
-                onChange={(event) => setAddCardSendInbox(event.target.checked)}
-                className="h-4 w-4 accent-indigo-600"
-              />
-              <span>{addCardFile ? 'Send to Inbox (required for files)' : 'Send to Inbox'}</span>
-            </label>
+            <div className="flex shrink-0 flex-col gap-2 border-t border-slate-200 px-4 py-3 dark:border-slate-700">
+              <label
+                data-iboard-add-card-send-option="true"
+                className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200"
+              >
+                <input
+                  type="checkbox"
+                  data-iboard-send-inbox="true"
+                  checked={addCardSendInbox}
+                  onChange={(event) => setAddCardSendInbox(event.target.checked)}
+                  className="h-4 w-4 accent-indigo-600"
+                />
+                <span>Send to Inbox</span>
+              </label>
+              {(addCardFile || addCardImage) && (
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={addCardPlaceOnBoard}
+                    onChange={(event) => setAddCardPlaceOnBoard(event.target.checked)}
+                    className="h-4 w-4 accent-indigo-600"
+                  />
+                  <span>Place on this board</span>
+                </label>
+              )}
+            </div>
             <div className="flex shrink-0 justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
               <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
                 Cancel
@@ -2746,7 +2798,7 @@ function TeacherDashboardInner() {
                 disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
                 className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                {addCardBusy ? 'Sending…' : addCardFile || (addCardImage && addCardSendInbox) ? 'Send to Inbox' : 'Add card'}
+                {addCardBusy ? 'Sending…' : addCardFile || addCardImage ? 'Send' : 'Add card'}
               </button>
             </div>
           </form>

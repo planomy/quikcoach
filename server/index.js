@@ -1635,7 +1635,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('teacher:material-send', ({ title, fileBase64, mimeType, originalName }, cb) => {
+  socket.on('teacher:material-send', ({ title, fileBase64, mimeType, originalName, sendToInbox, placeOnBoard }, cb) => {
     try {
       const codeRaw = socket.data.roomCode;
       if (socket.data.role !== 'teacher' || !codeRaw) {
@@ -1643,6 +1643,12 @@ io.on('connection', (socket) => {
         return;
       }
       const code = normalizeRoomCode(codeRaw);
+      const toInbox = sendToInbox !== false;
+      const onBoard = placeOnBoard === true;
+      if (!toInbox && !onBoard) {
+        cb?.({ ok: false, error: 'Choose Send to Inbox and/or Place on this board' });
+        return;
+      }
       const decoded = decodeMaterialBase64(fileBase64, mimeType, originalName);
       if (decoded.error) {
         cb?.({ ok: false, error: decoded.error });
@@ -1655,19 +1661,39 @@ io.on('connection', (socket) => {
         .slice(0, 120) || `handout.${decoded.ext}`;
       const filename = `mat-${Date.now()}-${randomUUID().slice(0, 8)}.${decoded.ext}`;
       fs.writeFileSync(path.join(boardMediaDir(code), filename), decoded.buf);
-      const item = {
-        id: `material-${Date.now()}-${randomUUID().slice(0, 6)}`,
-        type: 'material',
-        title: String(title || '').trim().slice(0, 80) || cleanOriginal,
-        originalName: cleanOriginal,
-        filename,
-        mimeType: decoded.mime,
-        size: decoded.buf.length,
-        url: `/api/board-media/${encodeURIComponent(code)}/${encodeURIComponent(filename)}`,
-        at: Date.now(),
-      };
-      emitMaterialToRoom(code, item);
-      cb?.({ ok: true, item });
+      const handoutTitle = String(title || '').trim().slice(0, 80) || cleanOriginal;
+      let item = null;
+      if (toInbox) {
+        item = {
+          id: `material-${Date.now()}-${randomUUID().slice(0, 6)}`,
+          type: 'material',
+          title: handoutTitle,
+          originalName: cleanOriginal,
+          filename,
+          mimeType: decoded.mime,
+          size: decoded.buf.length,
+          url: `/api/board-media/${encodeURIComponent(code)}/${encodeURIComponent(filename)}`,
+          at: Date.now(),
+        };
+        emitMaterialToRoom(code, item);
+      }
+      let post = null;
+      if (onBoard) {
+        const isImage = decoded.mime.startsWith('image/');
+        post = queries.addBoardPost(db, code, {
+          kind: isImage ? 'image' : 'file',
+          title: handoutTitle,
+          text: cleanOriginal,
+          image_filename: filename,
+          size: isImage ? 2 : 3,
+        });
+        broadcastRoom(code);
+      }
+      cb?.({
+        ok: true,
+        item,
+        post: post ? queries.rowToBoardPost(post) : null,
+      });
     } catch (e) {
       console.error(e);
       cb?.({ ok: false, error: 'Could not send that file' });

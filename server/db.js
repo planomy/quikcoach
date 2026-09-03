@@ -1219,7 +1219,7 @@ export const queries = {
   },
 
   addBoardPost(db, roomCode, { kind, title, text, image_filename, size }) {
-    const k = kind === 'image' ? 'image' : 'text';
+    const k = kind === 'image' ? 'image' : kind === 'file' ? 'file' : 'text';
     const sz = Math.max(1, Math.min(4, Number(size) || 1));
     const r = run(
       db,
@@ -1264,9 +1264,20 @@ export const queries = {
 
   rowToBoardPost(row) {
     if (!row) return null;
-    const kind = row.kind === 'image' ? 'image' : 'text';
+    const kind = row.kind === 'image' ? 'image' : row.kind === 'file' ? 'file' : 'text';
     const filename = String(row.image_filename || '');
     const size = Math.max(1, Math.min(4, Number(row.size) || 1));
+    const mediaUrl = filename
+      ? `/api/board-media/${encodeURIComponent(row.room_code)}/${encodeURIComponent(filename)}`
+      : null;
+    const ext = filename.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || '';
+    const mimeFromExt = {
+      pdf: 'application/pdf',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+    };
     return {
       id: Number(row.id),
       room_code: row.room_code,
@@ -1274,10 +1285,9 @@ export const queries = {
       title: row.title || 'Teacher',
       text: row.text || '',
       size,
-      image_url:
-        kind === 'image' && filename
-          ? `/api/board-media/${encodeURIComponent(row.room_code)}/${encodeURIComponent(filename)}`
-          : null,
+      image_url: kind === 'image' ? mediaUrl : null,
+      file_url: kind === 'file' ? mediaUrl : null,
+      mime_type: kind === 'file' ? (mimeFromExt[ext] || 'application/octet-stream') : '',
       created_at: row.created_at,
     };
   },
