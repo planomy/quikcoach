@@ -9,6 +9,12 @@ import {
   setAnswersComplete,
 } from '../lib/liveResponseSets.js';
 
+function setQuestionsFromActivity(activity) {
+  const fromQuestions = normalizeSetQuestions(activity?.questions);
+  if (fromQuestions.length) return fromQuestions;
+  return normalizeSetQuestions(activity?.options);
+}
+
 const STATUS_OPTIONS = [
   ['ready', 'Yep, ready'],
   ['unsure', 'I’m unsure'],
@@ -256,7 +262,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   }
 
   function submitSet() {
-    if (!setAnswersComplete(activity?.questions, setDrafts)) {
+    const questions = setQuestionsFromActivity(activity);
+    if (!setAnswersComplete(questions, setDrafts)) {
       setMessage('Answer each question before sending.');
       return;
     }
@@ -496,7 +503,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
           {activity.type === 'set' ? (
             <div className={compact ? 'mt-2 space-y-2' : quietAlerts ? 'mt-3 space-y-3' : 'mt-5 space-y-4'}>
-              {normalizeSetQuestions(activity.questions).map((question, index) => {
+              {setQuestionsFromActivity(activity).length ? (
+                setQuestionsFromActivity(activity).map((question, index) => {
                 const value = setDrafts[question.id] || '';
                 return (
                   <label key={question.id} className={`block rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 ${compact ? 'p-2.5' : ''}`}>
@@ -533,16 +541,25 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                     )}
                   </label>
                 );
-              })}
+              })
+              ) : (
+                <p className="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-3 py-3 text-sm font-semibold text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+                  This set didn’t load its questions. Ask your teacher to launch it again.
+                </p>
+              )}
+              {setQuestionsFromActivity(activity).length > 0 && (
+                <>
               {renderConfidenceControls(false)}
               <button
                 type="button"
-                disabled={answersClosed || !setAnswersComplete(activity.questions, setDrafts)}
+                disabled={answersClosed || !setAnswersComplete(setQuestionsFromActivity(activity), setDrafts)}
                 onClick={submitSet}
                 className={`rounded-xl bg-indigo-600 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${quietAlerts ? 'w-full px-4 py-2.5 text-sm' : `w-full rounded-2xl font-black ${compact ? 'px-3 py-2 text-sm' : 'px-5 py-3 text-base'}`}`}
               >
                 Send answers
               </button>
+                </>
+              )}
             </div>
           ) : activity.type === 'short' ? (
             <div className={compact ? 'mt-2' : quietAlerts ? 'mt-3' : 'mt-5'}>

@@ -803,6 +803,10 @@ export const queries = {
     const room = get(db, `SELECT live_question_number FROM rooms WHERE code = ?`, [roomCode]);
     const questionNumber = Math.max(1, Number(room?.live_question_number) || 1);
     const launchedAt = new Date().toISOString();
+    const questions = Array.isArray(activity.questions) ? activity.questions : [];
+    // For set activities, also stash questions in options_json as a backup if questions_json
+    // is missing or unreadable on an older volume.
+    const optionsPayload = activity.type === 'set' ? questions : (activity.options || []);
     run(
       db,
       `INSERT INTO live_activities
@@ -830,8 +834,8 @@ export const queries = {
         questionNumber,
         activity.type,
         activity.prompt,
-        JSON.stringify(activity.options || []),
-        JSON.stringify(activity.questions || []),
+        JSON.stringify(optionsPayload),
+        JSON.stringify(questions),
         activity.correctAnswer || '',
         activity.anonymous ? 1 : 0,
         activity.optional ? 1 : 0,
@@ -1385,22 +1389,35 @@ function sqliteUtcToMs(value) {
   return Number.isFinite(ms) ? ms : Date.now();
 }
 
+function parseJsonArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null || value === '') return [];
+  try {
+    const parsed = JSON.parse(typeof value === 'string' ? value : String(value));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function rowToLiveActivity(row) {
   if (!row) return null;
   let options = [];
-  try {
-    const parsed = JSON.parse(row.options_json || '[]');
-    if (Array.isArray(parsed)) options = parsed.map(String);
-  } catch {
-    options = [];
-  }
   let questions = [];
-  try {
-    const parsed = JSON.parse(row.questions_json || '[]');
-    if (Array.isArray(parsed)) questions = parsed;
-  } catch {
-    questions = [];
+  const optionsParsed = parseJsonArray(row.options_json);
+  const questionsParsed = parseJsonArray(row.questions_json);
+
+  if (row.type === 'set') {
+    questions = questionsParsed;
+    if (!questions.length && optionsParsed.length && typeof optionsParsed[0] === 'object' && optionsParsed[0]) {
+      questions = optionsParsed;
+    }
+    options = [];
+  } else {
+    options = optionsParsed.map(String);
+    questions = questionsParsed;
   }
+
   const timerSeconds = Math.max(0, Number(row.timer_seconds) || 0);
   const launchedMs = sqliteUtcToMs(row.launched_at);
   return {

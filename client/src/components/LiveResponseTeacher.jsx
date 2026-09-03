@@ -380,7 +380,12 @@ export default function LiveResponseTeacher({
   }
 
   function launchSet(set) {
-    const questions = normalizeSetQuestions(set?.questions);
+    let questions = normalizeSetQuestions(set?.questions);
+    if (!questions.length && Array.isArray(set?.prompts)) {
+      questions = normalizeSetQuestions(
+        set.prompts.map((prompt, index) => ({ id: `p${index + 1}`, type: 'short', prompt }))
+      );
+    }
     if (!questions.length) {
       setMessage('That set is empty.');
       return;
@@ -399,7 +404,7 @@ export default function LiveResponseTeacher({
       optional: false,
       imageUrl: '',
       timerSeconds: 0,
-    }, '', `“${set.name}” is live.`);
+    }, '', `“${set.name}” is live · ${questions.length} questions.`);
   }
 
   function enqueueSet(set) {

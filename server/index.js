@@ -1022,9 +1022,22 @@ io.on('connection', (socket) => {
       let questions = [];
       if (type === 'set') {
         const allowedQuestionTypes = new Set(['choice', 'truefalse', 'rating', 'short']);
-        const rawQuestions = Array.isArray(raw?.questions) ? raw.questions : [];
+        const rawQuestions = Array.isArray(raw?.questions) && raw.questions.length
+          ? raw.questions
+          : (Array.isArray(raw?.options) ? raw.options : []);
         questions = rawQuestions
           .map((item, index) => {
+            if (typeof item === 'string') {
+              const questionPrompt = item.trim().slice(0, 500);
+              if (!questionPrompt) return null;
+              return {
+                id: `sq-${index + 1}`,
+                type: 'short',
+                prompt: questionPrompt,
+                options: [],
+                correctAnswer: '',
+              };
+            }
             const questionType = allowedQuestionTypes.has(item?.type) ? item.type : 'short';
             const questionPrompt = String(item?.prompt || '').trim().slice(0, 500);
             if (!questionPrompt) return null;
@@ -1091,6 +1104,10 @@ io.on('connection', (socket) => {
         imageUrl,
         timerSeconds,
       });
+      if (type === 'set' && (!Array.isArray(activity?.questions) || activity.questions.length < 2)) {
+        cb?.({ ok: false, error: 'Set questions failed to save — try Launch again' });
+        return;
+      }
       if (!activity.optional) {
         queries.addLiveOpportunity(db, connectedStudentsInRoom(code), {
           roomCode: code,
