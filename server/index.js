@@ -22,7 +22,7 @@ if (!fs.existsSync(dataDir)) {
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '3mb' }));
+app.use(express.json({ limit: '8mb' }));
 
 const db = openDatabase();
 const boardMediaRoot = path.join(dataDir, 'board-media');
@@ -142,6 +142,85 @@ function decodeImageBase64(imageBase64, mimeType) {
   return { buf, ext };
 }
 
+const MATERIAL_MAX_BYTES = 5 * 1024 * 1024;
+const MATERIAL_HISTORY_LIMIT = 20;
+/** Teacher handouts pushed to student Inbox for the current lesson. */
+const materialHistoryByRoom = new Map();
+
+const MATERIAL_TYPES = {
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+function extFromName(name) {
+  const match = String(name || '').toLowerCase().match(/\.([a-z0-9]{1,8})$/);
+  return match ? match[1] : '';
+}
+
+function mimeFromExt(ext) {
+  const map = {
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+  };
+  return map[String(ext || '').toLowerCase()] || 'application/octet-stream';
+}
+
+function decodeMaterialBase64(fileBase64, mimeType, originalName) {
+  const raw = String(fileBase64 || '');
+  const b64 = raw.includes(',') ? raw.split(',')[1] : raw;
+  if (!b64 || b64.length < 32) return { error: 'No file data' };
+  let buf;
+  try {
+    buf = Buffer.from(b64.replace(/\s/g, ''), 'base64');
+  } catch {
+    return { error: 'Could not read that file' };
+  }
+  if (!buf.length) return { error: 'Could not read that file' };
+  if (buf.length > MATERIAL_MAX_BYTES) return { error: 'File too large — keep under 5 MB' };
+
+  const mime = String(mimeType || '').toLowerCase().split(';')[0].trim();
+  let ext = MATERIAL_TYPES[mime] || '';
+  if (!ext) {
+    const fromName = extFromName(originalName);
+    if (['pdf', 'doc', 'docx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp'].includes(fromName)) {
+      ext = fromName === 'jpeg' ? 'jpg' : fromName;
+    }
+  }
+  if (!ext) return { error: 'Use a PDF, Word, PowerPoint, or image file' };
+  return { buf, ext, mime: mimeFromExt(ext) };
+}
+
+function materialHistoryForRoom(code) {
+  return materialHistoryByRoom.get(normalizeRoomCode(code)) || [];
+}
+
+function emitMaterialHistoryToSocket(socket, code) {
+  const history = materialHistoryForRoom(code);
+  if (!history.length) return;
+  socket.emit('inbox:material', { history, replay: true });
+}
+
+function emitMaterialToRoom(code, item) {
+  const c = normalizeRoomCode(code);
+  const history = [...materialHistoryForRoom(c), item].slice(-MATERIAL_HISTORY_LIMIT);
+  materialHistoryByRoom.set(c, history);
+  io.to(roomSocketName(c)).emit('inbox:material', { item, history });
+}
+
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -252,7 +331,13 @@ app.get('/api/board-media/:code/:filename', (req, res) => {
       return res.status(400).end();
     }
     if (!fs.existsSync(filePath)) return res.status(404).end();
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const ext = extFromName(filename);
+    res.type(mimeFromExt(ext));
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    if (String(req.query.download || '') === '1') {
+      const downloadName = safeMediaFilename(req.query.name) || filename;
+      res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
+    }
     res.sendFile(filePath);
   } catch (e) {
     console.error(e);
@@ -279,7 +364,7 @@ app.get('/api/live-activities/:id/image', (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: true, credentials: true },
-  maxHttpBufferSize: 3e6,
+  maxHttpBufferSize: 10e6,
 });
 
 function buildRoomPayload(code) {
@@ -678,6 +763,7 @@ io.on('connection', (socket) => {
       try {
         emitRoomState(c, payload);
         emitBroadcastHistoryToSocket(socket, c);
+        emitMaterialHistoryToSocket(socket, c);
         emitLiveState(c);
         emitAudienceQnaState(c);
       } catch (postJoinError) {
@@ -715,6 +801,7 @@ io.on('connection', (socket) => {
       try {
         emitRoomState(c, payload);
         emitBroadcastHistoryToSocket(socket, c);
+        emitMaterialHistoryToSocket(socket, c);
         emitLiveState(c);
         emitAudienceQnaState(c);
       } catch (postJoinError) {
@@ -1556,6 +1643,45 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('teacher:material-send', ({ title, fileBase64, mimeType, originalName }, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const decoded = decodeMaterialBase64(fileBase64, mimeType, originalName);
+      if (decoded.error) {
+        cb?.({ ok: false, error: decoded.error });
+        return;
+      }
+      const cleanOriginal = String(originalName || `handout.${decoded.ext}`)
+        .replace(/[^\w.\- ()[\]]+/g, '_')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 120) || `handout.${decoded.ext}`;
+      const filename = `mat-${Date.now()}-${randomUUID().slice(0, 8)}.${decoded.ext}`;
+      fs.writeFileSync(path.join(boardMediaDir(code), filename), decoded.buf);
+      const item = {
+        id: `material-${Date.now()}-${randomUUID().slice(0, 6)}`,
+        type: 'material',
+        title: String(title || '').trim().slice(0, 80) || cleanOriginal,
+        originalName: cleanOriginal,
+        filename,
+        mimeType: decoded.mime,
+        size: decoded.buf.length,
+        url: `/api/board-media/${encodeURIComponent(code)}/${encodeURIComponent(filename)}`,
+        at: Date.now(),
+      };
+      emitMaterialToRoom(code, item);
+      cb?.({ ok: true, item });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not send that file' });
+    }
+  });
+
   socket.on('teacher:broadcast', async ({ studentIds, postIds }, cb) => {
     try {
       const codeRaw = socket.data.roomCode;
@@ -1858,6 +1984,12 @@ io.on('connection', (socket) => {
         history: [],
         at: Date.now(),
       });
+      const materials = materialHistoryForRoom(code);
+      for (const item of materials) {
+        if (item?.filename) unlinkRoomMedia(code, item.filename);
+      }
+      materialHistoryByRoom.delete(code);
+      io.to(roomSocketName(code)).emit('inbox:material', { history: [], cleared: true });
       queries.clearLiveActivity(db, code);
       queries.clearFeaturedWall(db, code);
       queries.clearLessonPulseLog(db, code);

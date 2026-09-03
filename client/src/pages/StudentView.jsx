@@ -92,10 +92,12 @@ export default function StudentView() {
   const [error, setError] = useState('');
   const [feedbackInbox, setFeedbackInbox] = useState([]);
   const [broadcastHistory, setBroadcastHistory] = useState([]);
+  const [materialHistory, setMaterialHistory] = useState([]);
   const [supportTab, setSupportTab] = useState('inbox');
   const [inboxExpandedId, setInboxExpandedId] = useState(null);
   const [inboxUnreadIds, setInboxUnreadIds] = useState(() => new Set());
   const [dismissedInboxIds, setDismissedInboxIds] = useState(() => new Set());
+  const [largeMaterialId, setLargeMaterialId] = useState(null);
   const [respondQuestionNumber, setRespondQuestionNumber] = useState(null);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
@@ -119,6 +121,8 @@ export default function StudentView() {
   const supportTabRef = useRef(supportTab);
   const broadcastBootstrappedRef = useRef(false);
   const lastBroadcastAtRef = useRef(null);
+  const materialBootstrappedRef = useRef(false);
+  const lastMaterialAtRef = useRef(null);
 
   useEffect(() => {
     studentRef.current = student;
@@ -155,6 +159,7 @@ export default function StudentView() {
       return next;
     });
     setInboxExpandedId((current) => (current === itemId ? null : current));
+    setLargeMaterialId((current) => (current === itemId ? null : current));
     setInboxUnreadIds((current) => {
       if (!current.has(itemId)) return current;
       const next = new Set(current);
@@ -321,6 +326,37 @@ export default function StudentView() {
         return nextHistory;
       });
     };
+    const onMaterial = (payload) => {
+      const serverHistory = Array.isArray(payload?.history)
+        ? payload.history.filter((entry) => entry && entry.id && entry.url)
+        : null;
+      if (payload?.cleared) {
+        setMaterialHistory([]);
+        lastMaterialAtRef.current = null;
+        materialBootstrappedRef.current = true;
+        return;
+      }
+      setMaterialHistory((previous) => {
+        let nextHistory;
+        if (serverHistory) nextHistory = serverHistory.slice(-20);
+        else if (payload?.item?.id && payload.item.url) {
+          const deduped = previous.filter((old) => old.id !== payload.item.id);
+          nextHistory = [...deduped, payload.item].slice(-20);
+        } else {
+          nextHistory = previous;
+        }
+        const latest = nextHistory[nextHistory.length - 1];
+        const latestAt = latest ? Number(latest.at) || 0 : 0;
+        const hadBootstrap = materialBootstrappedRef.current;
+        const isNew = hadBootstrap && !payload?.replay && latestAt && latestAt !== Number(lastMaterialAtRef.current || 0);
+        lastMaterialAtRef.current = latestAt || null;
+        materialBootstrappedRef.current = true;
+        if (isNew && latest?.id) {
+          queueMicrotask(() => activateInbox(latest.id));
+        }
+        return nextHistory;
+      });
+    };
     const showRespondBadge = (activity) => {
       if (!activity?.id) {
         setRespondQuestionNumber(null);
@@ -361,6 +397,7 @@ export default function StudentView() {
     socket.on('student:live', onLive);
     socket.on('feedback:batch', onBatch);
     socket.on('broadcast:exemplars', onBroadcast);
+    socket.on('inbox:material', onMaterial);
     socket.on('live:activity', onLiveActivity);
     socket.on('live:realert', onLiveRealert);
     socket.on('live:student', onLiveStudent);
@@ -372,6 +409,7 @@ export default function StudentView() {
       socket.off('student:live', onLive);
       socket.off('feedback:batch', onBatch);
       socket.off('broadcast:exemplars', onBroadcast);
+      socket.off('inbox:material', onMaterial);
       socket.off('live:activity', onLiveActivity);
       socket.off('live:realert', onLiveRealert);
       socket.off('live:student', onLiveStudent);
@@ -725,10 +763,15 @@ export default function StudentView() {
           unread: inboxUnreadIds.has(id),
         };
       });
-    return [...notes, ...broadcasts]
-      .filter((item) => !dismissedInboxIds.has(item.id))
+    const materials = materialHistory.map((entry) => ({
+      ...entry,
+      type: 'material',
+      unread: inboxUnreadIds.has(entry.id),
+    }));
+    return [...notes, ...broadcasts, ...materials]
+      .filter((item) => !dismissedInboxIds.has(item.id) && !dismissedInboxIds.has(String(item.id)))
       .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
-  }, [feedbackInbox, broadcastHistory, inboxUnreadIds, dismissedInboxIds]);
+  }, [feedbackInbox, broadcastHistory, materialHistory, inboxUnreadIds, dismissedInboxIds]);
   const inboxTabCount = inboxUnreadIds.size;
 
   if (!joined) {
@@ -981,6 +1024,11 @@ export default function StudentView() {
               <StudentInbox
                 items={inboxItems}
                 expandedId={inboxExpandedId}
+                largeMaterialId={largeMaterialId}
+                onToggleMaterialLarge={(id) => {
+                  setLargeMaterialId((current) => (current === id ? null : id));
+                  setInboxExpandedId(id);
+                }}
                 onToggle={(id) => {
                   setInboxExpandedId((current) => (current === id ? null : id));
                   setInboxUnreadIds((current) => {

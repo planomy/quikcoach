@@ -237,8 +237,10 @@ function TeacherDashboardInner() {
   const [addCardTitle, setAddCardTitle] = useState('Teacher');
   const [addCardText, setAddCardText] = useState('');
   const [addCardImage, setAddCardImage] = useState('');
+  const [addCardFile, setAddCardFile] = useState(null);
   const [addCardBusy, setAddCardBusy] = useState(false);
   const [addCardError, setAddCardError] = useState('');
+  const [addCardSendInbox, setAddCardSendInbox] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle');
 
   const socket = useMemo(() => createSocket(), []);
@@ -1022,7 +1024,9 @@ function TeacherDashboardInner() {
     setAddCardTitle('Teacher');
     setAddCardText('');
     setAddCardImage('');
+    setAddCardFile(null);
     setAddCardError('');
+    setAddCardSendInbox(true);
     setAddCardOpen(true);
   }
 
@@ -1063,6 +1067,7 @@ function TeacherDashboardInner() {
       const file = item.getAsFile();
       if (!file) return;
       try {
+        setAddCardFile(null);
         setAddCardImage(await fileToCompressedJpegDataUrl(file));
         setAddCardError('');
       } catch {
@@ -1070,6 +1075,40 @@ function TeacherDashboardInner() {
       }
       return;
     }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('read failed'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleAddCardFileChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setAddCardError('File too large — keep under 5 MB');
+      return;
+    }
+    const name = String(file.name || '').toLowerCase();
+    const okExt = /\.(pdf|doc|docx|ppt|pptx|jpe?g|png|webp)$/.test(name);
+    const okMime = /^(application\/(pdf|msword|vnd\.(ms-powerpoint|openxmlformats))|image\/)/i.test(file.type || '');
+    if (!okExt && !okMime) {
+      setAddCardError('Use a PDF, Word, PowerPoint, or image file');
+      return;
+    }
+    setAddCardImage('');
+    setAddCardText('');
+    setAddCardFile(file);
+    setAddCardSendInbox(true);
+    if (!addCardTitle.trim() || addCardTitle.trim() === 'Teacher') {
+      setAddCardTitle(String(file.name || 'Handout').replace(/\.[^.]+$/, '').slice(0, 80) || 'Handout');
+    }
+    setAddCardError('');
   }
 
   function submitTeacherCard() {
@@ -1083,12 +1122,48 @@ function TeacherDashboardInner() {
       setAddCardOpen(false);
       setAddCardText('');
       setAddCardImage('');
+      setAddCardFile(null);
       setCopyToast(message);
       setTimeout(() => setCopyToast(''), 2500);
     };
 
+    if (addCardFile) {
+      setAddCardBusy(true);
+      fileToBase64(addCardFile)
+        .then((fileBase64) => {
+          socket.emit(
+            'teacher:material-send',
+            {
+              title,
+              fileBase64,
+              mimeType: addCardFile.type || '',
+              originalName: addCardFile.name || 'handout',
+            },
+            (ack) => finish(ack, 'Handout sent to Inbox')
+          );
+        })
+        .catch(() => {
+          setAddCardBusy(false);
+          setAddCardError('Could not read that file');
+        });
+      return;
+    }
+
     if (addCardImage) {
       setAddCardBusy(true);
+      if (addCardSendInbox) {
+        socket.emit(
+          'teacher:material-send',
+          {
+            title,
+            fileBase64: addCardImage,
+            mimeType: 'image/jpeg',
+            originalName: `${title.replace(/\s+/g, '-').slice(0, 40) || 'handout'}.jpg`,
+          },
+          (ack) => finish(ack, 'Image sent to Inbox')
+        );
+        return;
+      }
       socket.emit(
         'teacher:board-post',
         { kind: 'image', title, imageBase64: addCardImage, mimeType: 'image/jpeg' },
@@ -1099,11 +1174,31 @@ function TeacherDashboardInner() {
 
     const text = addCardText.trim();
     if (!text) {
-      setAddCardError('Type some text or paste an image');
+      setAddCardError('Attach a PDF/DOC, paste an image, or type some text');
       return;
     }
     setAddCardBusy(true);
-    socket.emit('teacher:board-post', { kind: 'text', title, text }, (ack) => finish(ack, 'Teacher card added'));
+    socket.emit('teacher:board-post', { kind: 'text', title, text }, (ack) => {
+      if (!ack?.ok || !addCardSendInbox) {
+        finish(ack, 'Teacher card added');
+        return;
+      }
+      // Also push the text note to every connected student inbox.
+      const recipients = orderedStudents.map((student) => ({
+        studentId: student.id,
+        text: `${title}: ${text}`.slice(0, 4000),
+      }));
+      if (!recipients.length) {
+        finish(ack, 'Teacher card added');
+        return;
+      }
+      socket.emit('teacher:distribute', { items: recipients }, (distAck) => {
+        finish(
+          distAck?.ok === false ? distAck : ack,
+          distAck?.ok === false ? distAck.error || 'Card added, but Inbox send failed' : 'Card added · sent to Inbox'
+        );
+      });
+    });
   }
 
   function deleteTeacherCard(postId) {
@@ -2578,8 +2673,8 @@ function TeacherDashboardInner() {
           >
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
               <div>
-                <h2 id="add-teacher-card-title" className="font-display text-base font-black text-slate-950 dark:text-white">Add card</h2>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Text or paste a screenshot</p>
+                <h2 id="add-teacher-card-title" className="font-display text-base font-black text-slate-950 dark:text-white">Add card or handout</h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">PDF/DOC to Inbox, or a text/image card</p>
               </div>
               <button type="button" onClick={closeAddCard} disabled={addCardBusy} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 dark:text-indigo-400">
                 Close
@@ -2595,15 +2690,32 @@ function TeacherDashboardInner() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 placeholder="Title"
               />
+              <label className="flex cursor-pointer flex-col gap-1 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/60 px-3 py-3 text-sm dark:border-indigo-800 dark:bg-indigo-950/30">
+                <span className="font-bold text-indigo-900 dark:text-indigo-200">Attach PDF, Word, PowerPoint, or image</span>
+                <span className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">Up to 5 MB · sends straight to student Inbox</span>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.webp,application/pdf,image/*"
+                  className="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white dark:text-slate-300"
+                  onChange={handleAddCardFileChange}
+                  disabled={addCardBusy}
+                />
+              </label>
+              {addCardFile && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950/40">
+                  <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">{addCardFile.name}</p>
+                  <button type="button" onClick={() => setAddCardFile(null)} className="shrink-0 text-xs font-bold text-indigo-600 dark:text-indigo-400">Clear</button>
+                </div>
+              )}
               <textarea
                 value={addCardText}
                 onChange={(event) => setAddCardText(event.target.value)}
                 onPaste={handleAddCardPaste}
-                rows={5}
-                disabled={!!addCardImage}
+                rows={4}
+                disabled={!!addCardImage || !!addCardFile}
                 aria-label="Card text"
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                placeholder="Write here, or paste a screenshot…"
+                placeholder="Or write text / paste a screenshot…"
               />
               {addCardImage && (
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/30">
@@ -2617,15 +2729,26 @@ function TeacherDashboardInner() {
               data-iboard-add-card-send-option="true"
               className="flex shrink-0 cursor-pointer items-center gap-2 border-t border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200"
             >
-              <input type="checkbox" data-iboard-send-inbox="true" defaultChecked className="h-4 w-4 accent-indigo-600" />
-              <span>Send to Inbox</span>
+              <input
+                type="checkbox"
+                data-iboard-send-inbox="true"
+                checked={!!addCardFile || addCardSendInbox}
+                disabled={!!addCardFile}
+                onChange={(event) => setAddCardSendInbox(event.target.checked)}
+                className="h-4 w-4 accent-indigo-600"
+              />
+              <span>{addCardFile ? 'Send to Inbox (required for files)' : 'Send to Inbox'}</span>
             </label>
             <div className="flex shrink-0 justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
               <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
                 Cancel
               </button>
-              <button type="submit" disabled={addCardBusy || (!addCardImage && !addCardText.trim())} className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50">
-                {addCardBusy ? 'Adding…' : 'Add card'}
+              <button
+                type="submit"
+                disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
+                className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {addCardBusy ? 'Sending…' : addCardFile || (addCardImage && addCardSendInbox) ? 'Send to Inbox' : 'Add card'}
               </button>
             </div>
           </form>
