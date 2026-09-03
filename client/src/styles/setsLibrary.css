@@ -168,3 +168,18 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   width: auto;
   min-width: 0;
 }
+
+/* Respond dock: the top tab already says Respond, so keep only the close control. */
+.iboard-header-dock--start > section:has(#audience-qna-teacher) > div:first-child {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 40;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.iboard-header-dock--start > section:has(#audience-qna-teacher) > div:first-child > div:first-child {
+  display: none;
+}
