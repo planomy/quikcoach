@@ -79,20 +79,10 @@ function loadCustomSets() {
   }
 }
 
-function Chip({ active, children, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full px-2.5 py-1 text-[10px] font-black transition ${
-        active
-          ? 'bg-indigo-600 text-white'
-          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-      }`}
-    >
-      {children}
-    </button>
-  );
+function formatSetCardMeta(set) {
+  const years = set.years === 'All' ? 'All years' : set.years;
+  const mins = set.minutes ? `${set.minutes} min` : '';
+  return [set.subject, years, set.skill, mins].filter(Boolean).join(' · ');
 }
 
 export default function SavedSetsPanel({
@@ -358,52 +348,73 @@ export default function SavedSetsPanel({
             </button>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <Chip active={subject === 'All'} onClick={() => setSubject('All')}>All subjects</Chip>
-            {SUBJECTS.map((item) => (
-              <Chip key={item} active={subject === item} onClick={() => setSubject(item)}>{item}</Chip>
-            ))}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <Chip active={yearBand === 'All'} onClick={() => setYearBand('All')}>All years</Chip>
-            {YEAR_BANDS.map((item) => (
-              <Chip key={item} active={yearBand === item} onClick={() => setYearBand(item)}>{item}</Chip>
-            ))}
+          <div className="mt-3 flex items-center gap-2">
+            <label htmlFor="sets-subject-filter" className="sr-only">Subject</label>
+            <select
+              id="sets-subject-filter"
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-indigo-950"
+            >
+              <option value="All">All subjects</option>
+              {SUBJECTS.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+
+            <label htmlFor="sets-year-filter" className="sr-only">Year level</label>
+            <select
+              id="sets-year-filter"
+              value={yearBand}
+              onChange={(event) => setYearBand(event.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-indigo-950"
+            >
+              <option value="All">All years</option>
+              {YEAR_BANDS.map((item) => (
+                <option key={item} value={item}>Years {item}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="mt-3 max-h-[28rem] space-y-2 overflow-y-auto pr-1 scrollbar-thin">
-            {filtered.map((set) => (
-              <article
-                key={set.id}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 transition hover:border-indigo-200 hover:bg-indigo-50/35 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
-              >
-                <button
-                  type="button"
-                  onClick={() => openPreview(set)}
-                  className="group min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                  aria-label={`Preview ${set.name}`}
+          <div className="mt-3 max-h-[28rem] overflow-y-auto pr-1 scrollbar-thin">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2">
+              {filtered.map((set) => (
+                <article
+                  key={set.id}
+                  className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 transition hover:border-indigo-200 hover:bg-indigo-50/35 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
                 >
-                  <p className="truncate text-sm font-black text-slate-900 group-hover:text-indigo-950 dark:text-white dark:group-hover:text-indigo-100">{set.name}</p>
-                  <p className="mt-0.5 truncate text-[10px] font-bold text-slate-400">
-                    <span className={set.bank ? '' : 'text-indigo-500'}>{set.bank ? 'Built-in' : 'Yours'}</span>
-                    <span aria-hidden="true"> · </span>
-                    {formatSetMeta(set)}
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onLaunchSet(set)}
-                  className="shrink-0 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
-                >
-                  Launch
-                </button>
-              </article>
-            ))}
-            {!filtered.length && (
-              <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-500 dark:border-slate-700">
-                No sets in this filter.
-              </p>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => openPreview(set)}
+                    className="group min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    aria-label={`Preview ${set.name}`}
+                  >
+                    <p className="truncate text-sm font-black text-slate-900 group-hover:text-indigo-950 dark:text-white dark:group-hover:text-indigo-100">{set.name}</p>
+                    <p className="mt-0.5 truncate text-[10px] font-bold text-slate-400">
+                      {!set.bank && (
+                        <>
+                          <span className="text-indigo-500">Yours</span>
+                          <span aria-hidden="true"> · </span>
+                        </>
+                      )}
+                      {formatSetCardMeta(set)}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onLaunchSet(set)}
+                    className="shrink-0 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
+                  >
+                    Launch
+                  </button>
+                </article>
+              ))}
+              {!filtered.length && (
+                <p className="col-span-full rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-500 dark:border-slate-700">
+                  No sets in this filter.
+                </p>
+              )}
+            </div>
           </div>
         </section>
       )}
