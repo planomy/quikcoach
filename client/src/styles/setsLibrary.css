@@ -1,13 +1,32 @@
-/* Sets library: keep filters fixed, use one internal scroller, and fit cards efficiently. */
+/* Sets library: keep the dock fixed and let only the Set list scroll. */
+
+.iboard-header-dock--start:has(#sets-subject-filter) {
+  bottom: 0;
+  height: auto;
+  max-height: none !important;
+  overflow-y: hidden;
+}
+
+.iboard-header-dock--start:has(#sets-subject-filter) > section {
+  height: 100%;
+  min-height: 0;
+}
 
 div.min-h-0.flex-1.overflow-y-auto:has(> div.p-4 #sets-subject-filter) {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   overflow-y: hidden;
+}
+
+div.min-h-0.flex-1.overflow-y-auto:has(> div.p-4 #sets-subject-filter) > :not(div.p-4:has(#sets-subject-filter)) {
+  flex-shrink: 0;
 }
 
 div.p-4:has(#sets-subject-filter) {
   display: flex;
-  height: 100%;
   min-height: 0;
+  flex: 1 1 0%;
   flex-direction: column;
   overflow: hidden;
 }
