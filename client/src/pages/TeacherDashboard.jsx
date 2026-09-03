@@ -1635,70 +1635,53 @@ function TeacherDashboardInner() {
       )}
       <header ref={teacherHeaderRef} className="iboard-app-header relative z-50 shrink-0 border-b backdrop-blur">
         <div className="mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-3.5 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
-              Room <span className="iboard-header-code font-mono text-indigo-600">{codeInput}</span>
-            </h1>
-            <SaveStatusChip status={saveStatus} />
-            <span className="iboard-header-chip hidden rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 sm:inline">
-              Participants: {orderedStudents.length}
-            </span>
-            {frozen && (
-              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                Frozen
-              </span>
-            )}
-          </div>
-          <nav ref={teacherToolsNavRef} aria-label="Teacher tools" className="ml-auto flex items-end gap-1 overflow-visible">
-            {TEACHER_TOOLS_TABS.map((tab) => {
-              const active = toolsPanelOpen && toolsTab === tab.id;
-              const badge = tab.id === 'respond'
-                ? pendingQuestionCount
-                : tab.id === 'responses' && livePulse.activity
-                  ? liveResponseCount
-                  : 0;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    if (toolsPanelOpen && toolsTab === tab.id) closeTeacherTools();
-                    else openTeacherTools(tab.id);
-                  }}
-                  aria-current={active ? 'page' : undefined}
-                  data-active={active ? 'true' : 'false'}
-                  className={`iboard-header-tab relative inline-flex items-center gap-1.5 overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
-                    active
-                      ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-                      : 'border border-indigo-100/80 bg-indigo-100/75 text-indigo-950 hover:border-indigo-200 hover:bg-indigo-200/70 dark:border-transparent dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
-                  }`}
-                >
-                  {tab.label}
-                  {badge ? (
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${
-                        active ? 'bg-white/25' : 'bg-amber-500 text-amber-950'
-                      }`}
-                    >
-                      {badge}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </nav>
-          <div className="iboard-header-divider flex items-center gap-1.5 border-l border-slate-200 pl-1.5 dark:border-slate-700">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+            <nav
+              ref={teacherToolsNavRef}
+              aria-label="Teacher tools"
+              className="iboard-header-tool-group flex items-center overflow-visible"
+            >
+              {TEACHER_TOOLS_TABS.map((tab) => {
+                const active = toolsPanelOpen && toolsTab === tab.id;
+                const badge = tab.id === 'respond'
+                  ? pendingQuestionCount
+                  : tab.id === 'responses' && livePulse.activity
+                    ? liveResponseCount
+                    : 0;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      if (toolsPanelOpen && toolsTab === tab.id) closeTeacherTools();
+                      else openTeacherTools(tab.id);
+                    }}
+                    aria-current={active ? 'page' : undefined}
+                    data-active={active ? 'true' : 'false'}
+                    className="iboard-header-tab relative inline-flex items-center gap-1.5 overflow-visible px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  >
+                    {tab.label}
+                    {badge ? (
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none ${
+                          active ? 'bg-white/25 text-white' : 'bg-amber-500 text-amber-950'
+                        }`}
+                      >
+                        {badge}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </nav>
             <HintWrap hint="Add card" prefer="below">
               <button
                 ref={addCardButtonRef}
                 type="button"
                 onClick={openAddCard}
                 aria-expanded={addCardOpen}
-                className={`iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white ${
-                  addCardOpen
-                    ? 'border-indigo-300 bg-indigo-600 text-white dark:border-indigo-500'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700'
-                }`}
+                data-active={addCardOpen ? 'true' : 'false'}
+                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
                 aria-label="Add card"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -1724,17 +1707,32 @@ function TeacherDashboardInner() {
                 </button>
               </HintWrap>
             )}
+          </div>
+
+          <div className="flex min-w-0 flex-1 items-center justify-start gap-2.5 sm:justify-center">
+            <h1 className="font-display truncate text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
+              Room <span className="iboard-header-code font-mono text-indigo-600">{codeInput}</span>
+            </h1>
+            <SaveStatusChip status={saveStatus} />
+            <span className="iboard-header-chip hidden rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 sm:inline">
+              Participants: {orderedStudents.length}
+            </span>
+            {frozen && (
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                Frozen
+              </span>
+            )}
+          </div>
+
+          <div className="flex shrink-0 items-center justify-end">
             <HintWrap hint="Room settings" prefer="below">
               <button
                 ref={settingsButtonRef}
                 type="button"
                 onClick={toggleSettings}
                 aria-expanded={settingsOpen}
-                className={`iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white ${
-                  settingsOpen
-                    ? 'border-indigo-300 bg-indigo-600 text-white dark:border-indigo-500'
-                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400'
-                }`}
+                data-active={settingsOpen ? 'true' : 'false'}
+                className="iboard-header-icon-button iboard-header-icon-button--quiet flex h-9 w-9 items-center justify-center rounded-xl border transition dark:border-transparent dark:bg-transparent dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
                 aria-label="Room settings"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1751,7 +1749,7 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && (
         <div
           ref={teacherToolsPanelRef}
-          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)]"
+          className="iboard-header-dock iboard-header-dock--start fixed left-0 z-[60] w-[min(29rem,100vw)]"
           style={headerDockStyle}
           role="dialog"
           aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
@@ -2563,7 +2561,7 @@ function TeacherDashboardInner() {
         <div
           ref={addCardPanelRef}
           data-iboard-add-card-panel="true"
-          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)]"
+          className="iboard-header-dock iboard-header-dock--start fixed left-0 z-[60] w-[min(29rem,100vw)]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
@@ -2635,7 +2633,7 @@ function TeacherDashboardInner() {
       {settingsOpen && (
         <div
           ref={settingsPanelRef}
-          className="iboard-header-dock fixed right-0 z-[60] w-[min(29rem,100vw)]"
+          className="iboard-header-dock iboard-header-dock--end fixed right-0 z-[60] w-[min(29rem,100vw)]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"

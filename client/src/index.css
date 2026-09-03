@@ -31,22 +31,27 @@ html:not(.dark) .iboard-app-header .iboard-header-chip {
   color: #dbeafe;
 }
 
+html:not(.dark) .iboard-app-header .iboard-header-tool-group {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(15, 23, 42, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 html:not(.dark) .iboard-app-header .iboard-header-tab {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
-  color: #e0e7ff;
+  border-color: transparent;
+  background: transparent;
+  color: #c7d2fe;
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-tab:hover {
-  border-color: rgba(147, 197, 253, 0.55);
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-tab[data-active='true'] {
-  border-color: #60a5fa;
   background: #2563eb;
   color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.28);
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-icon-button {
@@ -58,6 +63,31 @@ html:not(.dark) .iboard-app-header .iboard-header-icon-button {
 html:not(.dark) .iboard-app-header .iboard-header-icon-button:hover {
   border-color: rgba(147, 197, 253, 0.55);
   background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+html:not(.dark) .iboard-app-header .iboard-header-icon-button[data-active='true'] {
+  border-color: #60a5fa;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+html:not(.dark) .iboard-app-header .iboard-header-icon-button--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: #93c5fd;
+  box-shadow: none;
+}
+
+html:not(.dark) .iboard-app-header .iboard-header-icon-button--quiet:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+html:not(.dark) .iboard-app-header .iboard-header-icon-button--quiet[data-active='true'] {
+  border-color: rgba(147, 197, 253, 0.45);
+  background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }
 
@@ -125,20 +155,73 @@ html.dark .iboard-confidence-ring {
   --iboard-ring-empty: #1e293b;
 }
 
+/* Primary tool cluster: one control, quiet idle, loud active. */
+.iboard-header-tool-group {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 0.85rem;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.iboard-header-tool-group .iboard-header-tab {
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+}
+
+html.dark .iboard-app-header .iboard-header-tool-group {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(2, 6, 23, 0.45);
+}
+
+html.dark .iboard-app-header .iboard-header-tab[data-active='true'] {
+  background: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .iboard-app-header .iboard-header-icon-button[data-active='true'] {
+  border-color: #6366f1;
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true'] {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
 /* Header docks hug their content, then scroll once they hit the viewport floor. */
 .iboard-header-dock {
   height: max-content;
   overflow-x: hidden;
   overflow-y: auto;
   border-top: 1px solid #e2e8f0;
-  border-bottom-left-radius: 1rem;
   background: #ffffff;
+}
+
+.iboard-header-dock--start {
+  border-bottom-right-radius: 1rem;
+  box-shadow: 12px 0 32px -18px rgba(15, 23, 42, 0.22);
+}
+
+.iboard-header-dock--end {
+  border-bottom-left-radius: 1rem;
   box-shadow: -12px 0 32px -18px rgba(15, 23, 42, 0.22);
 }
 
 html.dark .iboard-header-dock {
   border-top-color: #334155;
   background: #0f172a;
+}
+
+html.dark .iboard-header-dock--start {
+  box-shadow: 12px 0 32px -18px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .iboard-header-dock--end {
   box-shadow: -12px 0 32px -18px rgba(0, 0, 0, 0.45);
 }
 
