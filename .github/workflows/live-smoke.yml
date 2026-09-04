@@ -1,0 +1,59 @@
+name: Live classroom smoke
+
+on:
+  pull_request:
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - '.github/workflows/live-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - '.github/workflows/live-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.5.1'
+
+      - name: Install server dependencies
+        run: npm ci --prefix server
+
+      - name: Install client dependencies
+        run: npm ci --prefix client
+
+      - name: Start test server
+        env:
+          PORT: '3211'
+          DATA_DIR: /tmp/iboard-smoke-data
+        run: |
+          npm start --prefix server > /tmp/iboard-server.log 2>&1 &
+          echo $! > /tmp/iboard-server.pid
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3211/api/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/iboard-server.log
+          exit 1
+
+      - name: Run live classroom smoke test
+        run: node client/scripts/live-smoke.mjs
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/iboard-server.log || true
