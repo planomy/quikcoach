@@ -5,12 +5,14 @@ on:
     paths:
       - 'client/**'
       - 'server/**'
+      - 'package.json'
       - '.github/workflows/live-smoke.yml'
   push:
     branches: [main]
     paths:
       - 'client/**'
       - 'server/**'
+      - 'package.json'
       - '.github/workflows/live-smoke.yml'
 
 permissions:
@@ -19,7 +21,7 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -27,13 +29,16 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.5.1'
+          node-version: '22.13.1'
 
       - name: Install server dependencies
         run: npm ci --prefix server
 
       - name: Install client dependencies
         run: npm ci --prefix client
+
+      - name: Build client
+        run: npm run build --prefix client
 
       - name: Start test server
         env:
@@ -53,6 +58,9 @@ jobs:
 
       - name: Run live classroom smoke test
         run: node client/scripts/live-smoke.mjs
+
+      - name: Run release regression smoke test
+        run: node client/scripts/release-regression.mjs
 
       - name: Show server log on failure
         if: failure()
