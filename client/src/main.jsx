@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { ThemeProvider } from './lib/theme.jsx';
+import './lib/wordTargetControl.js';
 import './index.css';
 import './styles/setsLibrary.css';
 
