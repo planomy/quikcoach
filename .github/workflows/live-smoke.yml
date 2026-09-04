@@ -36,10 +36,10 @@ jobs:
             client/package-lock.json
 
       - name: Install server dependencies
-        run: npm ci --prefix server
+        run: npm ci --no-audit --no-fund --prefix server
 
       - name: Install client dependencies
-        run: npm ci --prefix client
+        run: npm ci --no-audit --no-fund --prefix client
 
       - name: Build client
         run: npm run build --prefix client
