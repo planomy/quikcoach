@@ -46,6 +46,14 @@ try {
   assert.equal(joins.length, STUDENT_COUNT);
   assert.equal(new Set(students.map((student) => student.id)).size, STUDENT_COUNT);
 
+  // Join acknowledgements are intentionally sent before each room:state broadcast. Let
+  // those final roster broadcasts drain before measuring the typing path itself.
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  const settledRosterPromise = nextEvent(teacher, 'live:teacher');
+  await emitAck(teacher, 'teacher:live-sync');
+  const settledRoster = await settledRosterPromise;
+  assert.equal(settledRoster.students.filter((student) => student.connected).length, STUDENT_COUNT);
+
   // Once the roster is settled, live typing should be lightweight patches only.
   let roomStateCount = 0;
   let studentLiveCount = 0;
