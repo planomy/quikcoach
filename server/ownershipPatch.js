@@ -222,16 +222,12 @@ function startNewClass(io, socket, cb) {
         });
       }
 
-      // Student browsers now get a short grace period to create a fresh card and
-      // save its new id locally. Any stale socket still hanging around is severed.
+      // Only sever the sockets that belonged to the old class. A student's browser
+      // may already have reloaded and opened a fresh socket by this point; disconnecting
+      // every student in the room would kick that successfully restored connection too.
       setTimeout(() => {
-        for (const client of io.sockets.sockets.values()) {
-          if (
-            client.data?.role === 'student' &&
-            normalizeRoomCode(client.data?.roomCode) === code
-          ) {
-            client.disconnect(true);
-          }
+        for (const { client } of resetStudents) {
+          if (client.connected) client.disconnect(true);
         }
       }, 1200);
 
