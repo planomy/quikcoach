@@ -66,6 +66,9 @@ jobs:
       - name: Run release regression smoke test
         run: node client/scripts/release-regression.mjs
 
+      - name: Run set launch smoke test
+        run: node client/scripts/set-launch-smoke.mjs
+
       - name: Run classroom load smoke test
         run: node client/scripts/class-load-smoke.mjs
 
