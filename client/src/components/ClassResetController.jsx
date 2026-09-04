@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { clearStudentSession, forgetRecentStudentSession } from '../lib/studentSession.js';
+import {
+  clearStudentSession,
+  forgetRecentStudentSession,
+  readSavedStudentSession,
+  saveStudentSession,
+} from '../lib/studentSession.js';
 import { clearDismissedInboxIds } from '../lib/inboxDismiss.js';
 
 function teacherSocket() {
@@ -24,6 +29,11 @@ function closeConfirmationDialog() {
   keepButton?.click();
 }
 
+function cleanYear(value) {
+  const year = String(value || '').trim().toLowerCase();
+  return /^yr(?:[2-9]|1[0-2])$/.test(year) ? year : '';
+}
+
 export default function ClassResetController({ role }) {
   const [message, setMessage] = useState('');
 
@@ -42,13 +52,71 @@ export default function ClassResetController({ role }) {
           .replace(/\D/g, '')
           .slice(0, 4);
         const studentId = window.__iboardStudentId;
+        const saved = readSavedStudentSession();
+        const name = String(payload.name || saved?.name || '').trim().slice(0, 120);
+        const yearLevel = cleanYear(payload.yearLevel || saved?.year);
+
         if (code.length === 4 && studentId) clearDismissedInboxIds(code, studentId);
         clearStudentSession();
         if (code.length === 4) forgetRecentStudentSession(code);
         window.__iboardStudentId = 0;
         window.__iboardStudentRoomCode = '';
-        // A reload gives StudentView a genuinely clean state while preserving a room
-        // code already present in the URL, so the student lands back at Join.
+
+        // If this browser already belonged to a student in the room, create their
+        // fresh card immediately. StudentView will restore that new id after reload.
+        // Browsers with blocked storage or no remembered identity simply land at Join.
+        if (code.length === 4 && name && socket?.connected) {
+          let finished = false;
+          const reload = () => {
+            if (finished) return;
+            finished = true;
+            window.location.reload();
+          };
+          const fallback = setTimeout(reload, 900);
+
+          socket.emit('student:join', { code, name }, (ack) => {
+            if (finished) return;
+            if (!ack?.ok || !ack.student?.id) {
+              clearTimeout(fallback);
+              reload();
+              return;
+            }
+
+            const newStudentId = Number(ack.student.id);
+            const finishJoin = () => {
+              if (finished) return;
+              clearTimeout(fallback);
+              saveStudentSession({
+                code,
+                studentId: newStudentId,
+                name: ack.student?.name || name,
+                year: yearLevel,
+              });
+              window.__iboardStudentId = newStudentId;
+              window.__iboardStudentRoomCode = code;
+              reload();
+            };
+
+            if (!yearLevel) {
+              finishJoin();
+              return;
+            }
+
+            let yearFinished = false;
+            const finishYear = () => {
+              if (yearFinished) return;
+              yearFinished = true;
+              finishJoin();
+            };
+            const yearFallback = setTimeout(finishYear, 250);
+            socket.emit('student:year', { year_level: yearLevel }, () => {
+              clearTimeout(yearFallback);
+              finishYear();
+            });
+          });
+          return;
+        }
+
         window.location.reload();
       };
       socket.on('class:reset', onReset);
