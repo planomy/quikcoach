@@ -62,6 +62,9 @@ jobs:
       - name: Run release regression smoke test
         run: node client/scripts/release-regression.mjs
 
+      - name: Run classroom load smoke test
+        run: node client/scripts/class-load-smoke.mjs
+
       - name: Show server log on failure
         if: failure()
         run: cat /tmp/iboard-server.log || true
