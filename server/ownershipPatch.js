@@ -164,19 +164,42 @@ function startNewClass(io, socket, cb) {
       return;
     }
 
+    // Capture each connected learner before the reset deletes the old student rows.
+    // Their own browser can then create a fresh student card without asking them to
+    // type the same name/year again.
+    const resetStudents = [...io.sockets.sockets.values()]
+      .filter((client) => (
+        client.data?.role === 'student' &&
+        normalizeRoomCode(client.data?.roomCode) === code
+      ))
+      .map((client) => {
+        const row = queries.getStudent(ownershipDb, Number(client.data?.studentId));
+        return {
+          client,
+          name: String(row?.name || '').trim().slice(0, 120),
+          yearLevel: String(row?.year_level || '').trim().toLowerCase(),
+        };
+      });
+
     clearHandler({}, (ack) => {
       if (!ack?.ok) {
         cb?.(ack || { ok: false, error: 'Could not start a new class' });
         return;
       }
 
-      io.to(roomSocketName(code)).emit('class:reset', {
-        code,
-        at: Date.now(),
-      });
+      const at = Date.now();
+      for (const { client, name, yearLevel } of resetStudents) {
+        if (!client.connected) continue;
+        client.emit('class:reset', {
+          code,
+          at,
+          name,
+          yearLevel,
+        });
+      }
 
-      // Give browsers a moment to clear their saved student session, then sever the
-      // old student sockets so no deleted student id can keep writing into the room.
+      // Student browsers now get a short grace period to create a fresh card and
+      // save its new id locally. Any stale socket still hanging around is severed.
       setTimeout(() => {
         for (const client of io.sockets.sockets.values()) {
           if (
@@ -186,7 +209,7 @@ function startNewClass(io, socket, cb) {
             client.disconnect(true);
           }
         }
-      }, 150);
+      }, 1200);
 
       cb?.({ ok: true });
     });
