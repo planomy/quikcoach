@@ -1722,12 +1722,14 @@ function TeacherDashboardInner() {
   }
 
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
+  // Full-bleed board: pack from the left with a card max width so two students
+  // don't stretch into giant empty halves of a wide classroom display.
   const studentGridClass =
     cardView === 'overview'
-      ? 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 min-[1800px]:grid-cols-5'
+      ? 'grid-cols-[repeat(auto-fill,minmax(17.5rem,22rem))] justify-start'
       : cardView === 'reading'
-        ? 'md:grid-cols-2 xl:grid-cols-3'
-        : 'lg:grid-cols-2';
+        ? 'grid-cols-[repeat(auto-fill,minmax(22rem,28rem))] justify-start'
+        : 'grid-cols-[repeat(auto-fill,minmax(min(100%,36rem),42rem))] justify-start';
   const writingPaneClass =
     cardView === 'overview'
       ? 'max-h-52 overflow-y-auto overflow-x-visible'
@@ -1751,7 +1753,7 @@ function TeacherDashboardInner() {
         </div>
       )}
       <header ref={teacherHeaderRef} className="iboard-app-header relative z-50 shrink-0 border-b backdrop-blur">
-        <div className="relative mx-auto flex max-w-[1800px] items-center gap-3 px-4 py-3.5 sm:px-6">
+        <div className="relative flex w-full items-center gap-3 px-3 py-3.5 sm:px-3.5">
           <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <nav
               ref={teacherToolsNavRef}
@@ -1891,7 +1893,7 @@ function TeacherDashboardInner() {
       {headerDockOpen ? (
         <div className="iboard-workspace-scrim pointer-events-none absolute inset-0 z-[55]" aria-hidden="true" />
       ) : null}
-      <main className="relative z-[1] mx-auto flex w-full max-w-[1800px] min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-3 pt-6 sm:px-6">
+      <main className="iboard-teacher-board relative z-[1] flex w-full min-h-0 flex-1 flex-col overflow-y-auto px-2.5 pb-3 pt-3 sm:px-3">
           {copyToast && (
             <div className="mb-2 inline-flex shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
               {copyToast}

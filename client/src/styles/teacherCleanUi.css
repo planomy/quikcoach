@@ -1,6 +1,16 @@
 /* Teacher console: keep the live teaching surface visually quiet.
    Active controls already explain the workflow — avoid narrating empty states. */
 
+/* Classroom monitoring surface: chrome and board own the viewport.
+   Tiny safe inset only — no centered content column. */
+.iboard-teacher-canvas .iboard-app-header > div {
+  max-width: none;
+}
+
+.iboard-teacher-board {
+  max-width: none;
+}
+
 /* The Pulse workspace already has its own card header and toolbar. Remove the
    duplicate page heading/subtitle/link immediately above it. */
 main section > div.mb-4:has(+ section nav[aria-label='Pulse tools']) {
