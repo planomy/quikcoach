@@ -7,6 +7,11 @@ function cleanCode(value) {
   return String(value || '').replace(/\D/g, '').slice(0, 4);
 }
 
+function cleanYear(value) {
+  const year = String(value || '').trim().toLowerCase();
+  return /^yr(?:[2-9]|1[0-2])$/.test(year) ? year : '';
+}
+
 function normaliseSession(value) {
   if (!value || typeof value !== 'object') return null;
   const code = cleanCode(value.code);
@@ -16,6 +21,7 @@ function normaliseSession(value) {
     code,
     studentId,
     name: String(value.name || '').trim().slice(0, 120),
+    year: cleanYear(value.year || value.year_level),
     savedAt: Number(value.savedAt || 0),
   };
 }
@@ -78,6 +84,7 @@ export function saveStudentSession(value) {
   const session = {
     ...incoming,
     name: incoming.name || previous?.name || '',
+    year: incoming.year || previous?.year || '',
     savedAt: Date.now(),
   };
   const serialised = JSON.stringify(session);
