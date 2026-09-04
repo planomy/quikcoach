@@ -146,7 +146,8 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   display: none;
 }
 
-/* Fill left-to-right first: students 1–8 occupy row one, then 9–16 start row two. */
+/* Fill left-to-right first: 1–8 on row one, 9–16 on row two.
+   Further blocks continue horizontally rather than creating a third row. */
 .iboard-header-dock--start
   > section
   > div:has(> div.flex.gap-2.overflow-x-auto)
@@ -154,10 +155,28 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   display: grid;
   grid-template-columns: repeat(8, minmax(46px, 1fr));
   grid-template-rows: repeat(2, auto);
-  grid-auto-flow: row;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(46px, 1fr);
   gap: 0.4rem;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 0.15rem;
+}
+
+.iboard-header-dock--start
+  > section
+  > div:has(> div.flex.gap-2.overflow-x-auto)
+  > div.flex.gap-2.overflow-x-auto
+  > :is(:nth-child(16n + 1), :nth-child(16n + 2), :nth-child(16n + 3), :nth-child(16n + 4), :nth-child(16n + 5), :nth-child(16n + 6), :nth-child(16n + 7), :nth-child(16n + 8)) {
+  grid-row: 1;
+}
+
+.iboard-header-dock--start
+  > section
+  > div:has(> div.flex.gap-2.overflow-x-auto)
+  > div.flex.gap-2.overflow-x-auto
+  > :is(:nth-child(16n + 9), :nth-child(16n + 10), :nth-child(16n + 11), :nth-child(16n + 12), :nth-child(16n + 13), :nth-child(16n + 14), :nth-child(16n + 15), :nth-child(16n + 16)) {
+  grid-row: 2;
 }
 
 .iboard-header-dock--start
