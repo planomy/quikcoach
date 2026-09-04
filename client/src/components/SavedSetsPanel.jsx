@@ -106,7 +106,7 @@ export default function SavedSetsPanel({
   const [draftPaste, setDraftPaste] = useState('');
   const [draftQuestions, setDraftQuestions] = useState([]);
   const [setNameDraft, setSetNameDraft] = useState('');
-  const [queueOpen, setQueueOpen] = useState(true);
+  const [queueOpen, setQueueOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -117,7 +117,9 @@ export default function SavedSetsPanel({
   }, [customSets]);
 
   useEffect(() => {
-    if (showQueue && queue.length > 0) setQueueOpen(true);
+    if (!showQueue) return;
+    // Expand when something lands; stay quiet when empty.
+    setQueueOpen(queue.length > 0);
   }, [showQueue, queue.length]);
 
   const library = useMemo(() => {
@@ -263,23 +265,33 @@ export default function SavedSetsPanel({
   const sheetOpen = mode === 'preview' || mode === 'edit' || mode === 'create';
 
   return (
-    <div className={showQueue ? 'border-t border-slate-200 px-4 py-3 dark:border-slate-700' : 'p-4'}>
+    <div className={showQueue ? 'border-t border-slate-200 px-4 py-2.5 dark:border-slate-700' : 'p-4'}>
       {showQueue && (
         <section>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <button type="button" onClick={() => setQueueOpen((open) => !open)} className="text-left">
+            <button
+              type="button"
+              onClick={() => {
+                if (!queue.length) return;
+                setQueueOpen((open) => !open);
+              }}
+              className="text-left"
+              aria-expanded={queue.length > 0 ? queueOpen : undefined}
+              disabled={!queue.length}
+            >
               <h3 className="text-sm font-black text-slate-950 dark:text-white">
                 Queue · {queue.length}
-                <span className="ml-1 text-[10px] font-bold text-slate-400">{queueOpen ? '▴' : '▾'}</span>
+                {queue.length > 0 ? (
+                  <span className="ml-1 text-[10px] font-bold text-slate-400">{queueOpen ? '▴' : '▾'}</span>
+                ) : null}
               </h3>
-              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">This lesson — launch any when ready.</p>
             </button>
             {queue.length > 0 && (
               <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>
             )}
           </div>
 
-          {queueOpen && (
+          {queueOpen && queue.length > 0 && (
             <>
               {queue.length >= 2 && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/50">
@@ -321,11 +333,6 @@ export default function SavedSetsPanel({
                     </div>
                   </div>
                 ))}
-                {!queue.length && (
-                  <p className="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-center text-xs text-slate-500 dark:border-slate-700">
-                    Nothing queued yet. Add from Write one, or open Sets.
-                  </p>
-                )}
               </div>
             </>
           )}
