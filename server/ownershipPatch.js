@@ -15,6 +15,18 @@ queries.launchLiveActivity = (database, code, payload) => launchLiveActivityBase
   payload?.sourceQuestionId ? { ...payload, anonymous: false } : payload
 );
 
+// A learner's anonymity request is a promise, not a teacher override. Even if a
+// stale/custom client tries to publish the question as named, keep the asker hidden.
+const setAudienceQuestionStatusBase = queries.setAudienceQuestionStatus;
+queries.setAudienceQuestionStatus = (database, code, questionId, status, publishedAnonymous) => {
+  let nextAnonymous = !!publishedAnonymous;
+  if (String(status || '') === 'published') {
+    const question = queries.getAudienceQuestion(database, Number(questionId));
+    if (question?.anonymous_requested) nextAnonymous = true;
+  }
+  return setAudienceQuestionStatusBase(database, code, questionId, status, nextAnonymous);
+};
+
 function normalizeRoomCode(code) {
   return String(code ?? '')
     .replace(/\D/g, '')
