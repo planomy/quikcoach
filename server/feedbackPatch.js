@@ -46,17 +46,13 @@ function feedbackForClient(row) {
   };
 }
 
-const selectStudent = feedbackDb.prepare(`SELECT id, room_code FROM students WHERE id = ?`);
-const insertFeedback = feedbackDb.prepare(
-  `INSERT INTO teacher_feedback_messages (room_code, student_id, text) VALUES (?, ?, ?)`
-);
-const selectFeedback = feedbackDb.prepare(`SELECT * FROM teacher_feedback_messages WHERE id = ?`);
-const listStudentFeedback = feedbackDb.prepare(
-  `SELECT * FROM teacher_feedback_messages WHERE student_id = ? ORDER BY id DESC LIMIT 200`
-);
-
+// Prepare statements at the moment they are used rather than keeping long-lived
+// StatementSync objects across the other preload modules' database migrations.
+// Node's built-in sqlite can invalidate those older prepared statements after schema
+// work on another connection, which previously crashed joins with ERR_INVALID_STATE.
 function feedbackHistory(studentId) {
-  return listStudentFeedback
+  return feedbackDb
+    .prepare(`SELECT * FROM teacher_feedback_messages WHERE student_id = ? ORDER BY id DESC LIMIT 200`)
     .all(Number(studentId))
     .map(feedbackForClient)
     .reverse();
@@ -66,8 +62,13 @@ function emitHistoryAfterJoin(socket) {
   setImmediate(() => {
     const sid = Number(socket.data.studentId);
     if (socket.data.role !== 'student' || !sid) return;
-    const items = feedbackHistory(sid);
-    if (items.length) socket.emit('feedback:batch', { items, replay: true });
+    try {
+      const items = feedbackHistory(sid);
+      if (items.length) socket.emit('feedback:batch', { items, replay: true });
+    } catch (error) {
+      // Feedback replay should never be able to take down an otherwise valid join.
+      console.error('Could not replay teacher feedback', error);
+    }
   });
 }
 
@@ -88,11 +89,17 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       const text = String(raw?.text || '').trim().slice(0, 5000);
       if (!studentId || !text) continue;
 
-      const student = selectStudent.get(studentId);
+      const student = feedbackDb
+        .prepare(`SELECT id, room_code FROM students WHERE id = ?`)
+        .get(studentId);
       if (!student || normaliseRoomCode(student.room_code) !== roomCode) continue;
 
-      const result = insertFeedback.run(roomCode, studentId, text);
-      const row = selectFeedback.get(Number(result.lastInsertRowid));
+      const result = feedbackDb
+        .prepare(`INSERT INTO teacher_feedback_messages (room_code, student_id, text) VALUES (?, ?, ?)`)
+        .run(roomCode, studentId, text);
+      const row = feedbackDb
+        .prepare(`SELECT * FROM teacher_feedback_messages WHERE id = ?`)
+        .get(Number(result.lastInsertRowid));
       const item = feedbackForClient(row);
       if (!item) continue;
 
@@ -138,7 +145,12 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
         cb?.({ ok: false });
         return;
       }
-      cb?.({ ok: true, items: feedbackHistory(sid) });
+      try {
+        cb?.({ ok: true, items: feedbackHistory(sid) });
+      } catch (error) {
+        console.error('Could not sync teacher feedback', error);
+        cb?.({ ok: false, error: 'Could not load feedback' });
+      }
     });
 
     const originalSocketOn = socket.on;
