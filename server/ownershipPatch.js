@@ -3,6 +3,18 @@ import { openDatabase, queries } from './db.js';
 
 const ownershipDb = openDatabase();
 
+// A student may ask to stay anonymous when their question is shared with the class.
+// That protects the asker's identity only. It must not also anonymise every classmate
+// who answers the shared question. Teacher-created anonymous live questions are left
+// untouched; only live activities sourced from a student Q&A question are forced to
+// keep response identities visible to the teacher.
+const launchLiveActivityBase = queries.launchLiveActivity;
+queries.launchLiveActivity = (database, code, payload) => launchLiveActivityBase(
+  database,
+  code,
+  payload?.sourceQuestionId ? { ...payload, anonymous: false } : payload
+);
+
 function normalizeRoomCode(code) {
   return String(code ?? '')
     .replace(/\D/g, '')
