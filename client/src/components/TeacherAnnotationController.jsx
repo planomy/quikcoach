@@ -9,6 +9,7 @@ import {
 } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
+import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
@@ -622,9 +623,16 @@ export default function TeacherAnnotationController() {
     );
   }
 
-  function editComment(marker) {
+  async function editComment(marker) {
     if (!socket) return;
-    const next = window.prompt('Edit teacher comment:', marker.annotation.note || '');
+    const next = await promptDialog({
+      title: 'Edit teacher comment',
+      message: marker.annotation.quote ? `Selected: “${marker.annotation.quote}”` : '',
+      defaultValue: marker.annotation.note || '',
+      inputLabel: 'Comment',
+      confirmLabel: 'Save comment',
+      tone: 'brand',
+    });
     if (next == null) return;
     const note = String(next).trim();
     if (!note) return;
@@ -632,9 +640,15 @@ export default function TeacherAnnotationController() {
     setOpenMarker(null);
   }
 
-  function deleteComment(marker) {
+  async function deleteComment(marker) {
     if (!socket) return;
-    if (!window.confirm('Delete this inline teacher comment?')) return;
+    const ok = await confirmDialog({
+      title: 'Delete this inline comment?',
+      message: 'This removes the highlight and note from the student’s writing.',
+      confirmLabel: 'Delete comment',
+      tone: 'danger',
+    });
+    if (!ok) return;
     socket.emit('teacher:annotation-delete', { annotationId: marker.annotation.id });
     setOpenMarker(null);
   }

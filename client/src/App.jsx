@@ -14,6 +14,7 @@ import UiInteractionController from './components/UiInteractionController.jsx';
 import ConnectionStatusController from './components/ConnectionStatusController.jsx';
 import ClassResetController from './components/ClassResetController.jsx';
 import AddTeacherCardSendController from './components/AddTeacherCardSendController.jsx';
+import ConfirmDialogHost from './components/ConfirmDialogHost.jsx';
 import './styles/teacherCleanUi.css';
 import './styles/studentCleanUi.css';
 import './styles/studentLiveResponsePolish.css';
@@ -48,15 +49,18 @@ function StudentConsole() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/teacher" element={<TeacherConsole />} />
-      <Route path="/student" element={<StudentConsole />} />
-      <Route path="/pulse/teacher" element={<PulseTeacher />} />
-      <Route path="/pulse" element={<PulseStudent />} />
-      <Route path="/iboard" element={<Whiteboard />} />
-      <Route path="/board" element={<Whiteboard />} />
-      <Route path="/whiteboard" element={<Navigate to="/iboard" replace />} />
-    </Routes>
+    <>
+      <ConfirmDialogHost />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/teacher" element={<TeacherConsole />} />
+        <Route path="/student" element={<StudentConsole />} />
+        <Route path="/pulse/teacher" element={<PulseTeacher />} />
+        <Route path="/pulse" element={<PulseStudent />} />
+        <Route path="/iboard" element={<Whiteboard />} />
+        <Route path="/board" element={<Whiteboard />} />
+        <Route path="/whiteboard" element={<Navigate to="/iboard" replace />} />
+      </Routes>
+    </>
   );
 }

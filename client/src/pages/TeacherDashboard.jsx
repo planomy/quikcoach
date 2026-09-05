@@ -21,6 +21,8 @@ import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
 import SaveStatusChip from '../components/SaveStatusChip.jsx';
+import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
+import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
 import {
   downloadTextFile,
   buildEvidenceHtml,
@@ -34,7 +36,6 @@ import { studentTileMeta } from '../lib/liveResponseMeta.js';
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
-import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
@@ -1359,21 +1360,29 @@ function TeacherDashboardInner() {
     }
   }
 
-  function openSessionFilePicker() {
+  async function openSessionFilePicker() {
     closeSettings();
     if (!joinedRef.current || codeInput.length !== 4) {
       setError('Open a room before opening a session');
       return;
     }
     if (sessionDirtyRef.current) {
-      const ok = window.confirm(
-        'Opening a session replaces the live board in this room (cards, responses, Pulse, notes).\n\nUnsaved changes on the board will be lost. Continue?'
-      );
+      const ok = await confirmDialog({
+        title: 'Replace the live board?',
+        message:
+          'Opening a session replaces the live board in this room (cards, responses, Pulse, notes).\n\nUnsaved changes on the board will be lost.',
+        confirmLabel: 'Open session',
+        tone: 'danger',
+      });
       if (!ok) return;
     } else {
-      const ok = window.confirm(
-        'Open a saved .iboard session into this room?\n\nThis replaces the live board (cards, responses, Pulse, notes) with the file contents.'
-      );
+      const ok = await confirmDialog({
+        title: 'Open a saved session?',
+        message:
+          'This replaces the live board (cards, responses, Pulse, notes) with the file contents.',
+        confirmLabel: 'Open session',
+        tone: 'brand',
+      });
       if (!ok) return;
     }
     sessionFileInputRef.current?.click();
@@ -1602,12 +1611,15 @@ function TeacherDashboardInner() {
     );
   }
 
-  function separateReportProfile() {
+  async function separateReportProfile() {
     if (!selectedEvidenceStudent?.combined) return;
     const aliases = selectedEvidenceStudent.aliases || [];
-    const ok = window.confirm(
-      `Separate ${aliases.join(', ')} into individual reports again?\n\nThe saved evidence will not be changed.`
-    );
+    const ok = await confirmDialog({
+      title: 'Separate these names?',
+      message: `Separate ${aliases.join(', ')} into individual reports again?\n\nThe saved evidence will not be changed.`,
+      confirmLabel: 'Separate names',
+      tone: 'brand',
+    });
     if (!ok) return;
     setReportMergeBusy(true);
     setError('');

@@ -11,6 +11,7 @@ import ThemeToggle from '../components/ThemeToggle.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import FlipCountdown from '../components/FlipCountdown.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
+import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
 
 const TABLE_GROUP_LETTERS = ['A', 'B', 'C', 'D', 'E'];
 const MAX_BROADCAST = 6;
@@ -656,10 +657,13 @@ function WhiteboardInner() {
     bumpChrome();
   }
 
-  function clearAllCards() {
-    const ok = window.confirm(
-      'New class?\n\nThis clears the board — every student card and teacher card will be removed. Students will need to join again.'
-    );
+  async function clearAllCards() {
+    const ok = await confirmDialog({
+      title: 'Start a new class?',
+      message: 'This clears the board — every student card and teacher card will be removed. Students will need to join again.',
+      confirmLabel: 'Clear board',
+      tone: 'danger',
+    });
     if (!ok) return;
     socket.emit('teacher:clear-cards', {}, (ack) => {
       if (!ack?.ok) {
@@ -676,9 +680,14 @@ function WhiteboardInner() {
     });
   }
 
-  function removeStudentCard(studentId, name) {
+  async function removeStudentCard(studentId, name) {
     const label = name ? `"${name}"` : 'this student';
-    const ok = window.confirm(`Remove ${label} from the board?\n\nTheir card will disappear. They can join again with a new card.`);
+    const ok = await confirmDialog({
+      title: `Remove ${label}?`,
+      message: 'Their card will disappear. They can join again with a new card.',
+      confirmLabel: 'Remove card',
+      tone: 'danger',
+    });
     if (!ok) return;
     socket.emit('teacher:student-remove', { studentId }, (ack) => {
       if (!ack?.ok) {
