@@ -39,6 +39,11 @@ import { downloadLessonReportHtml } from '../lib/lessonReport.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges } from '../lib/viewport.js';
 import { lastTeacherRoomCode, rememberTeacherRoomCode } from '../lib/teacherRoom.js';
+import {
+  downloadSessionPack,
+  emitAck,
+  readSessionFile,
+} from '../lib/iboardSession.js';
 
 const NOTE_COMPOSER_WIDTH = 384;
 const NOTE_COMPOSER_EST_HEIGHT = 360;
@@ -273,17 +278,30 @@ function TeacherDashboardInner() {
   const [addCardSendInbox, setAddCardSendInbox] = useState(true);
   const [addCardPlaceOnBoard, setAddCardPlaceOnBoard] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle');
+  const [sessionBusy, setSessionBusy] = useState(false);
 
   const socket = useMemo(() => createSocket(), []);
   const teacherRoomRef = useRef('');
   const joinedRef = useRef(false);
   const autoJoinTriedRef = useRef(false);
   const savedClearRef = useRef(null);
+  const sessionDirtyRef = useRef(false);
+  const sessionHydratedRef = useRef(false);
+  const sessionFileInputRef = useRef(null);
 
   const markSaved = useCallback(() => {
     setSaveStatus('saved');
     if (savedClearRef.current) clearTimeout(savedClearRef.current);
     savedClearRef.current = setTimeout(() => setSaveStatus('idle'), 2200);
+  }, []);
+
+  const markSessionDirty = useCallback(() => {
+    if (!sessionHydratedRef.current) return;
+    sessionDirtyRef.current = true;
+  }, []);
+
+  const clearSessionDirty = useCallback(() => {
+    sessionDirtyRef.current = false;
   }, []);
 
   const pushSettings = useCallback(
@@ -439,6 +457,8 @@ function TeacherDashboardInner() {
       if (!modalOpen && r?.feedback_toggles) {
         hydrateFeedbackStateFromRoom(r);
       }
+      if (sessionHydratedRef.current) markSessionDirty();
+      else sessionHydratedRef.current = true;
     };
     const onLive = ({ student: s }) => {
       if (!s?.id) return;
@@ -446,6 +466,7 @@ function TeacherDashboardInner() {
       setStudents((prev) => {
         const i = prev.findIndex((x) => x.id === row.id);
         if (i === -1) {
+          markSessionDirty();
           return [...prev, row].sort((a, b) => a.id - b.id);
         }
         const cur = prev[i];
@@ -461,6 +482,7 @@ function TeacherDashboardInner() {
         ) {
           return prev;
         }
+        markSessionDirty();
         const next = [...prev];
         next[i] = { ...cur, ...row };
         return next;
@@ -472,15 +494,26 @@ function TeacherDashboardInner() {
       socket.off('room:state', onState);
       socket.off('student:live', onLive);
     };
-  }, [socket, modalOpen, hydrateFeedbackStateFromRoom]);
+  }, [socket, modalOpen, hydrateFeedbackStateFromRoom, markSessionDirty]);
 
   useEffect(() => {
     const onQna = (payload) => {
       setAudienceQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
+      markSessionDirty();
     };
     socket.on('qna:teacher', onQna);
     return () => socket.off('qna:teacher', onQna);
-  }, [socket]);
+  }, [socket, markSessionDirty]);
+
+  useEffect(() => {
+    function onBeforeUnload(event) {
+      if (!sessionDirtyRef.current || !joinedRef.current) return;
+      event.preventDefault();
+      event.returnValue = '';
+    }
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, []);
 
   const prevModalOpenRef = useRef(false);
   useEffect(() => {
@@ -1297,6 +1330,80 @@ function TeacherDashboardInner() {
     setEvidenceModalOpen(true);
   }
 
+  async function saveSessionFile() {
+    closeSettings();
+    if (!joinedRef.current || codeInput.length !== 4) {
+      setError('Open a room before saving a session');
+      return;
+    }
+    setSessionBusy(true);
+    setError('');
+    try {
+      const ack = await emitAck(socket, 'teacher:session-export');
+      if (!ack?.ok || !ack.pack) {
+        throw new Error(ack?.error || 'Could not save session');
+      }
+      const result = await downloadSessionPack(ack.pack, codeInput);
+      if (result.method === 'cancelled') {
+        setCopyToast('Save cancelled');
+      } else {
+        clearSessionDirty();
+        setCopyToast('Session saved — keep the .iboard file to reopen later');
+      }
+      setTimeout(() => setCopyToast(''), 3500);
+    } catch (e) {
+      setError(e?.message || 'Could not save session');
+    } finally {
+      setSessionBusy(false);
+    }
+  }
+
+  function openSessionFilePicker() {
+    closeSettings();
+    if (!joinedRef.current || codeInput.length !== 4) {
+      setError('Open a room before opening a session');
+      return;
+    }
+    if (sessionDirtyRef.current) {
+      const ok = window.confirm(
+        'Opening a session replaces the live board in this room (cards, responses, Pulse, notes).\n\nUnsaved changes on the board will be lost. Continue?'
+      );
+      if (!ok) return;
+    } else {
+      const ok = window.confirm(
+        'Open a saved .iboard session into this room?\n\nThis replaces the live board (cards, responses, Pulse, notes) with the file contents.'
+      );
+      if (!ok) return;
+    }
+    sessionFileInputRef.current?.click();
+  }
+
+  async function onSessionFileChosen(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setSessionBusy(true);
+    setError('');
+    try {
+      const pack = await readSessionFile(file);
+      const ack = await emitAck(socket, 'teacher:session-import', { pack });
+      if (!ack?.ok) {
+        throw new Error(ack?.error || 'Could not open session');
+      }
+      if (Array.isArray(ack.snapshots)) setSnapshots(ack.snapshots);
+      clearSessionDirty();
+      sessionHydratedRef.current = true;
+      setCopyToast(
+        `Session opened — ${ack.studentCount ?? 0} students · ${ack.postCount ?? 0} teacher cards`
+      );
+      setTimeout(() => setCopyToast(''), 3500);
+    } catch (e) {
+      setError(e?.message || 'Could not open session');
+    } finally {
+      setSessionBusy(false);
+    }
+  }
+
   function downloadEvidenceHtml({ label, students: packStudents }) {
     const names = evidenceFilenames(codeInput, label);
     const savedAt = new Date().toISOString();
@@ -1589,6 +1696,7 @@ function TeacherDashboardInner() {
       setToolsPanelOpen(false);
       setLibraryPanel(null);
       setNewClassConfirmOpen(false);
+      clearSessionDirty();
       setCopyToast('Board cleared — ready for a new class');
       setTimeout(() => setCopyToast(''), 3000);
       const code = String(codeInput || '').replace(/\D/g, '').slice(0, 4);
@@ -1802,6 +1910,13 @@ function TeacherDashboardInner() {
 
   return (
     <div className="iboard-teacher-canvas flex h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
+      <input
+        ref={sessionFileInputRef}
+        type="file"
+        accept=".iboard,application/json,text/json"
+        className="hidden"
+        onChange={onSessionFileChosen}
+      />
       <div className="shrink-0">
       {!socketConnected && (
         <div
@@ -2705,7 +2820,7 @@ function TeacherDashboardInner() {
                   Start a new class?
                 </h2>
                 <p id="new-class-confirm-description" className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  This removes every student card and teacher card from Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again. Download the class engagement report first if you want to keep participation data.
+                  This removes every student card and teacher card from Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again. Save a session (.iboard) or download the class engagement report first if you want to keep this lesson.
                 </p>
               </div>
             </div>
@@ -2714,14 +2829,22 @@ function TeacherDashboardInner() {
                 {error}
               </p>
             )}
-            <div className="border-b border-slate-200 px-5 py-3 dark:border-slate-700">
+            <div className="space-y-2 border-b border-slate-200 px-5 py-3 dark:border-slate-700">
+              <button
+                type="button"
+                disabled={newClassBusy || sessionBusy}
+                onClick={saveSessionFile}
+                className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-900 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+              >
+                Save session (.iboard) first
+              </button>
               <button
                 type="button"
                 disabled={newClassBusy}
                 onClick={downloadLessonReportQuick}
                 className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200"
               >
-                Download class engagement report first
+                Download class engagement report
               </button>
             </div>
             <div className="flex flex-col-reverse gap-2 bg-slate-50 px-5 py-4 dark:bg-slate-950 sm:flex-row sm:justify-end">
@@ -3012,6 +3135,22 @@ function TeacherDashboardInner() {
             </button>
             <button type="button" onClick={() => { closeSettings(); openEvidenceModal(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Save current evidence
+            </button>
+            <button
+              type="button"
+              disabled={sessionBusy}
+              onClick={saveSessionFile}
+              className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {sessionBusy ? 'Working…' : 'Save session (.iboard)'}
+            </button>
+            <button
+              type="button"
+              disabled={sessionBusy}
+              onClick={openSessionFilePicker}
+              className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Open session (.iboard)
             </button>
             <button type="button" onClick={openLessonReport} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Class engagement

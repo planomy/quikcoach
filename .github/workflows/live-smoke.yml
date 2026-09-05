@@ -72,6 +72,9 @@ jobs:
       - name: Run classroom load smoke test
         run: node client/scripts/class-load-smoke.mjs
 
+      - name: Run session save/open smoke test
+        run: node client/scripts/session-smoke.mjs
+
       - name: Show server log on failure
         if: failure()
         run: cat /tmp/iboard-server.log || true

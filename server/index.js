@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
+import { buildSessionPack, importSessionPack } from './sessionPack.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3001;
@@ -22,7 +23,8 @@ if (!fs.existsSync(dataDir)) {
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '8mb' }));
+/* Session packs embed classroom media as base64 — allow larger JSON bodies. */
+app.use(express.json({ limit: '48mb' }));
 
 const db = openDatabase();
 const boardMediaRoot = path.join(dataDir, 'board-media');
@@ -356,7 +358,7 @@ app.get('/api/live-activities/:id/image', (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: true, credentials: true },
-  maxHttpBufferSize: 10e6,
+  maxHttpBufferSize: 48e6,
 });
 
 function buildRoomPayload(code) {
@@ -640,6 +642,47 @@ function emitAudienceQnaState(code) {
   for (const row of queries.listStudents(db, c)) {
     io.to(studentSocketName(row.id)).emit('qna:student', buildStudentQnaPayload(c, row.id));
   }
+}
+
+function annotationsByStudentForRoom(code) {
+  const c = normalizeRoomCode(code);
+  try {
+    const rows = db
+      .prepare(
+        `SELECT * FROM teacher_annotations WHERE room_code = ? ORDER BY id ASC`
+      )
+      .all(c);
+    const grouped = {};
+    for (const row of rows) {
+      const sid = Number(row.student_id);
+      if (!grouped[sid]) grouped[sid] = [];
+      grouped[sid].push({
+        id: Number(row.id),
+        student_id: sid,
+        start_offset: Number(row.start_offset) || 0,
+        end_offset: Number(row.end_offset) || 0,
+        quote: String(row.quote || ''),
+        note: String(row.note || ''),
+        prefix_context: String(row.prefix_context || ''),
+        suffix_context: String(row.suffix_context || ''),
+        status: String(row.status || 'open'),
+        student_fixed_at: row.student_fixed_at || null,
+        resolved_at: row.resolved_at || null,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      });
+    }
+    return grouped;
+  } catch {
+    return {};
+  }
+}
+
+function emitTeacherAnnotationsRoom(code) {
+  const c = normalizeRoomCode(code);
+  io.to(teacherSocketName(c)).emit('teacher-annotations:room', {
+    byStudent: annotationsByStudentForRoom(c),
+  });
 }
 
 function connectedStudentsInRoom(code) {
@@ -1960,6 +2003,61 @@ io.on('connection', (socket) => {
     } catch (e) {
       console.error(e);
       cb?.({ ok: false });
+    }
+  });
+
+  socket.on('teacher:session-export', (_payload, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const pack = buildSessionPack(db, code, { boardMediaDir });
+      cb?.({ ok: true, pack });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: e?.message || 'Could not save session' });
+    }
+  });
+
+  socket.on('teacher:session-import', ({ pack } = {}, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const result = importSessionPack(db, code, pack, {
+        boardMediaDir,
+        unlinkRoomMedia,
+      });
+
+      broadcastHistoryByRoom.delete(code);
+      io.to(roomSocketName(code)).emit('broadcast:exemplars', {
+        items: [],
+        history: [],
+        at: Date.now(),
+      });
+      const materials = materialHistoryForRoom(code);
+      for (const item of materials) {
+        if (item?.filename) unlinkRoomMedia(code, item.filename);
+      }
+      materialHistoryByRoom.delete(code);
+      io.to(roomSocketName(code)).emit('inbox:material', { history: [], cleared: true });
+
+      broadcastRoom(code);
+      emitLiveState(code);
+      emitAudienceQnaState(code);
+      emitTeacherAnnotationsRoom(code);
+
+      const snapshots = queries.listSnapshotMeta(db, code);
+      cb?.({ ok: true, ...result, snapshots });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: e?.message || 'Could not open session' });
     }
   });
 
