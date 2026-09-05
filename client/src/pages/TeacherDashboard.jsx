@@ -226,6 +226,8 @@ function TeacherDashboardInner() {
   const [lessonReportOpen, setLessonReportOpen] = useState(false);
   const prevPendingQuestionCountRef = useRef(0);
   const [libraryPanel, setLibraryPanel] = useState(null);
+  const [evidenceHubTab, setEvidenceHubTab] = useState('lessons'); // lessons | students
+
   const [fixedCommentCount, setFixedCommentCount] = useState(0);
   const [clearFixedBusy, setClearFixedBusy] = useState(false);
   const [clearFixedArmed, setClearFixedArmed] = useState(false);
@@ -1715,10 +1717,19 @@ function TeacherDashboardInner() {
   }
 
 
-  function openLibrary(panel) {
+  function openLibrary(panel, evidenceTab = 'lessons') {
     closeSettings();
+    if (panel === 'reports') {
+      setLibraryPanel('evidence');
+      setEvidenceHubTab('students');
+      setSnapshotsOpen(true);
+      return;
+    }
     setLibraryPanel(panel);
-    if (panel === 'evidence' || panel === 'reports') setSnapshotsOpen(true);
+    if (panel === 'evidence') {
+      setEvidenceHubTab(evidenceTab === 'students' ? 'students' : 'lessons');
+      setSnapshotsOpen(true);
+    }
   }
 
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
@@ -2194,80 +2205,103 @@ function TeacherDashboardInner() {
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
               <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
-                {libraryPanel === 'feedback' ? 'AI feedback' : libraryPanel === 'evidence' ? 'Saved evidence' : 'Student reports'}
+                {libraryPanel === 'feedback' ? 'AI feedback' : 'Evidence'}
               </h2>
               <button type="button" onClick={() => setLibraryPanel(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close">
                 ×
               </button>
             </div>
             <div className="overflow-y-auto p-5 scrollbar-thin">
-        {libraryPanel === 'evidence' && snapshots.length === 0 && (
-          <section className="rounded-2xl border border-dashed border-emerald-300 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-slate-900">
-            <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Evidence</h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-              Save the current student drafts to create lesson evidence and unlock individual student reports.
-            </p>
-            <button type="button" onClick={openEvidenceModal} className="mt-5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
-              Save current evidence
-            </button>
-          </section>
-        )}
+        {libraryPanel === 'evidence' && (
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
+                Proof of learning for this room — save writing now, browse lesson packs or each student&apos;s portfolio.
+              </p>
+              <button type="button" onClick={openEvidenceModal} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
+                Save current evidence
+              </button>
+            </div>
 
-        {libraryPanel === 'reports' && snapshots.length === 0 && (
-          <section className="rounded-2xl border border-dashed border-indigo-300 bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
-            <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Student reports</h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-              Reports build automatically from saved evidence. Save at least one lesson first, then each student&apos;s work will appear here over time.
-            </p>
-            <button type="button" onClick={openEvidenceModal} className="mt-5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
-              Save current evidence
-            </button>
-          </section>
-        )}
+            {snapshots.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-emerald-300 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-slate-900">
+                <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">No saves yet</h3>
+                <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
+                  Save student drafts once to unlock lesson packs and individual portfolios.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-950" role="tablist" aria-label="Evidence views">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={evidenceHubTab === 'lessons'}
+                    onClick={() => setEvidenceHubTab('lessons')}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${
+                      evidenceHubTab === 'lessons'
+                        ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Lesson saves · {snapshots.length}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={evidenceHubTab === 'students'}
+                    onClick={() => setEvidenceHubTab('students')}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${
+                      evidenceHubTab === 'students'
+                        ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    By student · {evidenceStudents.length || '…'}
+                  </button>
+                </div>
 
-        {(libraryPanel === 'evidence' || libraryPanel === 'reports') && snapshots.length > 0 && (
-          <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/40 shadow-card dark:border-emerald-800 dark:bg-emerald-950/30">
-            <button
-              type="button"
-              onClick={() => setSnapshotsOpen((open) => !open)}
-              className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
-              aria-expanded={snapshotsOpen}
-              aria-controls="saved-evidence-list"
-            >
-              <span className="min-w-0">
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">
-                    {libraryPanel === 'reports' ? 'Student reports' : 'Saved evidence'}
-                  </span>
-                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-                    {snapshots.length} {snapshots.length === 1 ? 'save' : 'saves'}
-                  </span>
-                </span>
-                <span className="mt-1 block truncate text-sm text-slate-600 dark:text-slate-400">
-                  {libraryPanel === 'reports'
-                    ? 'Review one student’s contributions across saved lessons.'
-                    : snapshotsOpen
-                      ? 'Earlier saves from this room.'
-                      : `Latest: ${snapshots[0]?.label || `Evidence #${snapshots[0]?.id}`}`}
-                </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-800 shadow-sm dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200">
-                {snapshotsOpen ? 'Hide' : 'Show'}
-                <span aria-hidden="true" className={`text-base transition-transform ${snapshotsOpen ? 'rotate-180' : ''}`}>⌄</span>
-              </span>
-            </button>
-            {snapshotsOpen && (
-              <div id="saved-evidence-list" className="border-t border-emerald-200 px-5 pb-4 dark:border-emerald-800">
-                {libraryPanel === 'evidence' && (
-                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Download any earlier save again as HTML.</p>
+                {evidenceHubTab === 'lessons' && (
+                  <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm dark:border-emerald-800 dark:bg-slate-900">
+                    <div className="border-b border-emerald-100 px-4 py-3 dark:border-emerald-900">
+                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Lesson saves</h3>
+                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Whole-class packs from each Save. View or download HTML again.</p>
+                    </div>
+                    <ul className="max-h-96 divide-y divide-emerald-100/80 overflow-y-auto px-4 scrollbar-thin dark:divide-emerald-900/50">
+                      {snapshots.map((sn) => (
+                        <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                          <span className="text-slate-800 dark:text-slate-200">
+                            <span className="font-medium">{sn.label || `Evidence #${sn.id}`}</span>
+                            <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{sn.created_at}</span>
+                          </span>
+                          <span className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => loadSnapshotForView(sn.id)}
+                              className="rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:hover:text-indigo-300"
+                            >
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => redownloadEvidence(sn.id)}
+                              className="rounded-lg text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                            >
+                              Download HTML
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
-                {libraryPanel === 'reports' && (
-                <section className="mt-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+
+                {evidenceHubTab === 'students' && (
+                <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                   <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Student reports</p>
-                      <h4 className="mt-1 font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Browse saved work quickly</h4>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose a name on the left; their complete saved history appears on the right.</p>
+                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">By student</h3>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose a name; their saved writing across lessons appears on the right.</p>
                     </div>
                     <button
                       type="button"
@@ -2467,38 +2501,7 @@ function TeacherDashboardInner() {
                   </p>
                 </section>
                 )}
-                {libraryPanel === 'evidence' && (
-                  <>
-                <h4 className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-emerald-800 dark:text-emerald-300">All saved lessons</h4>
-                <ul className="mt-2 max-h-80 divide-y divide-emerald-100/80 overflow-y-auto pr-1 scrollbar-thin dark:divide-emerald-900/50">
-                  {snapshots.map((sn) => (
-                    <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                      <span className="text-slate-800 dark:text-slate-200">
-                        <span className="font-medium">{sn.label || `Evidence #${sn.id}`}</span>
-                        <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{sn.created_at}</span>
-                      </span>
-                      <span className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => loadSnapshotForView(sn.id)}
-                          className="rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:hover:text-indigo-300"
-                        >
-                          View
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => redownloadEvidence(sn.id)}
-                          className="rounded-lg text-xs font-semibold text-emerald-700 hover:text-emerald-900"
-                        >
-                          Download HTML
-                        </button>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                  </>
-                )}
-              </div>
+              </>
             )}
           </section>
         )}
@@ -2944,17 +2947,17 @@ function TeacherDashboardInner() {
             <button type="button" onClick={() => openLibrary('feedback')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               AI feedback
             </button>
-            <button type="button" onClick={() => openLibrary('evidence')} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Saved evidence
+            <button type="button" onClick={() => openLibrary('evidence', 'lessons')} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Evidence
               {snapshots.length > 0 && (
                 <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">{snapshots.length}</span>
               )}
             </button>
-            <button type="button" onClick={() => openLibrary('reports')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Student reports
-            </button>
             <button type="button" onClick={() => { closeSettings(); openEvidenceModal(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Save current evidence
+            </button>
+            <button type="button" onClick={openLessonReport} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Class engagement
             </button>
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
             <button type="button" onClick={() => { closeSettings(); openJoinScreen(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
@@ -2962,12 +2965,6 @@ function TeacherDashboardInner() {
             </button>
             <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Download participant list
-            </button>
-            <button type="button" onClick={openLessonReport} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              View class engagement report
-            </button>
-            <button type="button" onClick={downloadLessonReportQuick} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Download class engagement report
             </button>
             <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Open Ask-only window ↗

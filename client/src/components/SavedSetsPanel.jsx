@@ -35,11 +35,6 @@ function StarIcon({ filled }) {
   );
 }
 
-const CUSTOM_SETS_KEY = 'iboard-pulse-custom-sets';
-const LEGACY_SETS_KEY = 'iboard-pulse-question-sets';
-const LEGACY_TEMPLATE_KEY = 'iboard-pulse-question-templates';
-const LEGACY_STARTER_IDS = new Set(['starter-source-analysis', 'starter-narrative']);
-
 function loadCustomSets() {
   const fromKey = (key) => {
     try {
