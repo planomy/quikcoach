@@ -217,6 +217,7 @@ export default function TeacherAnnotationController() {
   const [byStudent, setByStudent] = useState({});
   const [pending, setPending] = useState(null);
   const [draftNote, setDraftNote] = useState('');
+  const [quickStack, setQuickStack] = useState([]);
   const [customComments, setCustomComments] = useState(loadCustomComments);
   const [customCommentDraft, setCustomCommentDraft] = useState('');
   const [addingCustomComment, setAddingCustomComment] = useState(false);
@@ -414,6 +415,7 @@ export default function TeacherAnnotationController() {
       const selection = window.getSelection?.();
       if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) {
         setPending(null);
+        setQuickStack([]);
         return;
       }
       const range = selection.getRangeAt(0);
@@ -426,6 +428,7 @@ export default function TeacherAnnotationController() {
       if (!offsets || offsets.quote.length > 1200) return;
       const rect = range.getBoundingClientRect();
       setDraftNote('');
+      setQuickStack([]);
       setCustomCommentDraft('');
       setAddingCustomComment(false);
       setCommentError('');
@@ -498,21 +501,71 @@ export default function TeacherAnnotationController() {
     );
   }
 
+  function closePending() {
+    setPending(null);
+    setDraftNote('');
+    setQuickStack([]);
+    setCommentError('');
+  }
+
+  function focusDraftEnd(text) {
+    requestAnimationFrame(() => {
+      const field = draftNoteRef.current;
+      if (!field) return;
+      field.focus();
+      const end = String(text || '').length;
+      field.setSelectionRange(end, end);
+    });
+  }
+
+  function syncQuickDraft(stack) {
+    const text = stack.join(' · ');
+    setDraftNote(text);
+    focusDraftEnd(text);
+  }
+
+  function applyQuickComment(comment) {
+    setQuickStack((prev) => {
+      const next = prev.includes(comment)
+        ? prev.filter((item) => item !== comment)
+        : [...prev, comment];
+      syncQuickDraft(next);
+      return next;
+    });
+  }
+
+  function undoQuickComment() {
+    setQuickStack((prev) => {
+      if (!prev.length) return prev;
+      const next = prev.slice(0, -1);
+      syncQuickDraft(next);
+      return next;
+    });
+  }
+
   function addCustomComment() {
     const comment = customCommentDraft.trim().slice(0, 500);
     if (!comment) return;
     const allComments = [...CORE_COMMENTS, ...customComments];
     const existing = allComments.find((item) => item.toLocaleLowerCase() === comment.toLocaleLowerCase());
     if (existing) {
-      setDraftNote(existing);
+      setQuickStack((prev) => {
+        const next = prev.includes(existing) ? prev : [...prev, existing];
+        syncQuickDraft(next);
+        return next;
+      });
       setCustomCommentDraft('');
       setAddingCustomComment(false);
       return;
     }
-    const next = [...customComments, comment].slice(0, 30);
-    setCustomComments(next);
-    saveCustomComments(next);
-    setDraftNote(comment);
+    const nextCustoms = [...customComments, comment].slice(0, 30);
+    setCustomComments(nextCustoms);
+    saveCustomComments(nextCustoms);
+    setQuickStack((prev) => {
+      const next = prev.includes(comment) ? prev : [...prev, comment];
+      syncQuickDraft(next);
+      return next;
+    });
     setCustomCommentDraft('');
     setAddingCustomComment(false);
   }
@@ -521,6 +574,12 @@ export default function TeacherAnnotationController() {
     const next = customComments.filter((item) => item !== comment);
     setCustomComments(next);
     saveCustomComments(next);
+    setQuickStack((prev) => {
+      if (!prev.includes(comment)) return prev;
+      const stack = prev.filter((item) => item !== comment);
+      syncQuickDraft(stack);
+      return stack;
+    });
   }
 
   function addComment() {
@@ -544,24 +603,11 @@ export default function TeacherAnnotationController() {
           setCommentError(ack?.error || 'Could not save this inline comment. Try selecting the passage again.');
           return;
         }
-        setPending(null);
-        setDraftNote('');
-        setCommentError('');
+        closePending();
         setSaveNotice(`Inline comment saved for “${quotedText}”`);
         window.getSelection?.()?.removeAllRanges?.();
       }
     );
-  }
-
-  function applyQuickComment(comment) {
-    setDraftNote(comment);
-    requestAnimationFrame(() => {
-      const field = draftNoteRef.current;
-      if (!field) return;
-      field.focus();
-      const end = comment.length;
-      field.setSelectionRange(end, end);
-    });
   }
 
   function editComment(marker) {
@@ -689,18 +735,33 @@ export default function TeacherAnnotationController() {
               <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
                 Quick comments
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setAddingCustomComment((open) => !open);
-                  setCustomCommentDraft('');
-                }}
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-sm font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
-                aria-label="Add a reusable comment"
-                title="Add your own quick comment"
-              >
-                +
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={undoQuickComment}
+                  disabled={!quickStack.length}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  aria-label="Undo last quick comment"
+                  title="Undo last quick comment"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 14 4 9l5-5" />
+                    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddingCustomComment((open) => !open);
+                    setCustomCommentDraft('');
+                  }}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-sm font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
+                  aria-label="Add a reusable comment"
+                  title="Add your own quick comment"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <div className="mt-2 grid grid-cols-2 gap-1">
               {CORE_COMMENTS.map((comment) => (
@@ -709,7 +770,7 @@ export default function TeacherAnnotationController() {
                   type="button"
                   onClick={() => applyQuickComment(comment)}
                   className={`rounded-md border px-1.5 py-1 text-left text-[10px] font-semibold leading-snug transition ${
-                    draftNote === comment
+                    quickStack.includes(comment)
                       ? 'border-indigo-600 bg-indigo-600 text-white'
                       : 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
                   }`}
@@ -721,7 +782,7 @@ export default function TeacherAnnotationController() {
                 <span
                   key={comment}
                   className={`inline-flex min-w-0 overflow-hidden rounded-md border text-[10px] font-semibold leading-snug transition ${
-                    draftNote === comment
+                    quickStack.includes(comment)
                       ? 'border-indigo-600 bg-indigo-600 text-white'
                       : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
                   }`}
@@ -779,13 +840,16 @@ export default function TeacherAnnotationController() {
             ref={draftNoteRef}
             autoFocus
             value={draftNote}
-            onChange={(event) => setDraftNote(event.target.value.slice(0, 500))}
+            onChange={(event) => {
+              setDraftNote(event.target.value.slice(0, 500));
+              setQuickStack([]);
+            }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 addComment();
               }
-              if (event.key === 'Escape') setPending(null);
+              if (event.key === 'Escape') closePending();
             }}
             placeholder="Type your comment… Return to add · Shift+Return for a new line"
             className="mt-3 min-h-20 w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
@@ -798,7 +862,7 @@ export default function TeacherAnnotationController() {
           <div className="mt-2 flex items-center justify-between gap-2">
             <p className="text-[10px] font-semibold text-slate-400">Return adds · Shift+Return new line</p>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setPending(null)} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+              <button type="button" onClick={closePending} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
               <button type="button" disabled={!draftNote.trim()} onClick={addComment} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>
             </div>
           </div>
