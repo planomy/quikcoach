@@ -702,13 +702,13 @@ export default function TeacherAnnotationController() {
                 +
               </button>
             </div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="mt-2 grid grid-cols-2 gap-1">
               {CORE_COMMENTS.map((comment) => (
                 <button
                   key={comment}
                   type="button"
                   onClick={() => applyQuickComment(comment)}
-                  className={`rounded-lg border px-2 py-1.5 text-left text-[11px] font-semibold leading-tight transition ${
+                  className={`rounded-md border px-1.5 py-1 text-left text-[10px] font-semibold leading-snug transition ${
                     draftNote === comment
                       ? 'border-indigo-600 bg-indigo-600 text-white'
                       : 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
@@ -720,19 +720,19 @@ export default function TeacherAnnotationController() {
               {customComments.map((comment) => (
                 <span
                   key={comment}
-                  className={`inline-flex overflow-hidden rounded-lg border text-[11px] font-semibold leading-tight transition ${
+                  className={`inline-flex min-w-0 overflow-hidden rounded-md border text-[10px] font-semibold leading-snug transition ${
                     draftNote === comment
                       ? 'border-indigo-600 bg-indigo-600 text-white'
                       : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
                   }`}
                 >
-                  <button type="button" onClick={() => applyQuickComment(comment)} className="px-2 py-1.5 text-left hover:bg-indigo-100/70 dark:hover:bg-indigo-950/70">
+                  <button type="button" onClick={() => applyQuickComment(comment)} className="min-w-0 flex-1 truncate px-1.5 py-1 text-left hover:bg-indigo-100/70 dark:hover:bg-indigo-950/70">
                     {comment}
                   </button>
                   <button
                     type="button"
                     onClick={() => removeCustomComment(comment)}
-                    className="border-l border-current/20 px-1.5 text-current/60 hover:text-red-600"
+                    className="shrink-0 border-l border-current/20 px-1.5 text-current/60 hover:text-red-600"
                     aria-label={`Remove reusable comment: ${comment}`}
                     title="Remove quick comment"
                   >
