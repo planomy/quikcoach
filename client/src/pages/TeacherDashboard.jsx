@@ -61,7 +61,7 @@ const CARD_VIEWS = [
 function CardViewIcon({ id }) {
   if (id === 'overview') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2.5" y="2.5" width="6" height="6" rx="1.2" />
         <rect x="11.5" y="2.5" width="6" height="6" rx="1.2" />
         <rect x="2.5" y="11.5" width="6" height="6" rx="1.2" />
@@ -71,7 +71,7 @@ function CardViewIcon({ id }) {
   }
   if (id === 'reading') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2.5" y="3" width="6.5" height="14" rx="1.2" />
         <rect x="11" y="3" width="6.5" height="14" rx="1.2" />
         <path d="M4.2 6.5h3M4.2 9.2h3M4.2 11.9h2.2M12.7 6.5h3M12.7 9.2h3M12.7 11.9h2.2" />
@@ -79,7 +79,7 @@ function CardViewIcon({ id }) {
     );
   }
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4.5" y="2.5" width="11" height="15" rx="1.4" />
       <path d="M7 6.5h6M7 9.5h6M7 12.5h4" />
     </svg>
@@ -2843,7 +2843,7 @@ function TeacherDashboardInner() {
       {settingsOpen && (
         <div
           ref={settingsPanelRef}
-          className="iboard-header-dock iboard-header-dock--end fixed right-0 z-[60] w-[min(29rem,100vw)]"
+          className="iboard-header-dock iboard-header-dock--end fixed right-0 z-[60] w-[min(22rem,100vw)]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
@@ -2852,7 +2852,6 @@ function TeacherDashboardInner() {
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
             <div>
               <h2 id="room-settings-title" className="font-display text-base font-black text-slate-950 dark:text-white">Room settings</h2>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Card view, lesson controls, and exports</p>
             </div>
             <button type="button" onClick={closeSettings} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400">
               Close
@@ -2860,24 +2859,30 @@ function TeacherDashboardInner() {
           </div>
           <div className="overflow-y-auto px-2 py-2 scrollbar-thin">
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
-            <div className="mb-1 flex gap-1 px-2" role="group" aria-label="Card view">
-              {CARD_VIEWS.map((view) => (
-                <button
-                  key={view.id}
-                  type="button"
-                  onClick={() => setCardView(view.id)}
-                  title={view.label}
-                  aria-label={view.label}
-                  aria-pressed={cardView === view.id}
-                  className={`grid h-9 flex-1 place-items-center rounded-lg transition ${
-                    cardView === view.id
-                      ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                      : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  <CardViewIcon id={view.id} />
-                </button>
-              ))}
+            <div className="mb-1 px-3">
+              <div
+                className="inline-flex rounded-xl bg-slate-200/80 p-0.5 dark:bg-slate-800"
+                role="group"
+                aria-label="Card view"
+              >
+                {CARD_VIEWS.map((view) => (
+                  <button
+                    key={view.id}
+                    type="button"
+                    onClick={() => setCardView(view.id)}
+                    title={view.label}
+                    aria-label={view.label}
+                    aria-pressed={cardView === view.id}
+                    className={`grid h-9 w-10 place-items-center rounded-[0.65rem] transition ${
+                      cardView === view.id
+                        ? 'bg-slate-600 text-white shadow-sm dark:bg-slate-500'
+                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <CardViewIcon id={view.id} />
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Lesson</p>
