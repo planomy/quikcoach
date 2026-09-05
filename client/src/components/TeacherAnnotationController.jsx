@@ -31,6 +31,7 @@ const CORE_COMMENTS = [
   'Increase sophistication',
   'Use a better start',
   'Split this sentence',
+  'Missing the point/weak idea',
 ];
 
 function loadCustomComments() {
