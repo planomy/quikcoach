@@ -20,13 +20,17 @@ const OPEN_HEIGHT = 220;
 const MARKER_SIZE = 28;
 const MARKER_MARGIN = 6;
 const CORE_COMMENTS = [
-  'Check GPS',
-  'This is an incomplete fragment sentence',
+  'Grammar',
+  'Spelling',
+  'Punctuation',
   'Repeated word or idea',
-  "I'm not following what you mean",
-  'Too many little words',
+  'Fragment sentence',
+  'Not following you',
   'Change this',
   'Love this',
+  'Increase sophistication',
+  'Use a better start',
+  'Split this sentence',
 ];
 
 function loadCustomComments() {

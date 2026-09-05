@@ -10,7 +10,7 @@ import {
   sendThinkingToInbox,
 } from '../lib/thinkingPrompts.js';
 
-const POPOVER_WIDTH = 420;
+const POPOVER_WIDTH = 525;
 const POPOVER_EST_HEIGHT = 340;
 
 function LightbulbIcon({ className = 'h-3.5 w-3.5' }) {
@@ -186,7 +186,7 @@ export function ThinkingPopover({
       ref={panelRef}
       role="dialog"
       aria-label="Thinking prompts"
-      className="fixed z-[120] w-[min(26rem,calc(100vw-1.25rem))] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
+      className="fixed z-[120] w-[min(32.5rem,calc(100vw-1.25rem))] rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
       style={{
         top: box?.top ?? -9999,
         left: box?.left ?? -9999,
