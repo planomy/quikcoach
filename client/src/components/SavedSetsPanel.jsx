@@ -12,6 +12,28 @@ import {
   formatSetMeta,
   setMatchesFilters,
 } from '../lib/questionSetBank.js';
+import {
+  applyBankOverride,
+  loadBankOverrides,
+  loadFavouriteIds,
+  saveBankOverrides,
+  saveFavouriteIds,
+  sortSetsByFavourite,
+  toggleFavouriteId,
+} from '../lib/questionSetPrefs.js';
+
+const CUSTOM_SETS_KEY = 'iboard-pulse-custom-sets';
+const LEGACY_SETS_KEY = 'iboard-pulse-question-sets';
+const LEGACY_TEMPLATE_KEY = 'iboard-pulse-question-templates';
+const LEGACY_STARTER_IDS = new Set(['starter-source-analysis', 'starter-narrative']);
+
+function StarIcon({ filled }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+      <path d="M12 3.6l2.4 4.86 5.36.78-3.88 3.78.92 5.34L12 15.9l-4.8 2.52.92-5.34-3.88-3.78 5.36-.78L12 3.6z" />
+    </svg>
+  );
+}
 
 const CUSTOM_SETS_KEY = 'iboard-pulse-custom-sets';
 const LEGACY_SETS_KEY = 'iboard-pulse-question-sets';
@@ -98,6 +120,8 @@ export default function SavedSetsPanel({
   const showSets = panel === 'sets';
 
   const [customSets, setCustomSets] = useState(() => loadCustomSets());
+  const [bankOverrides, setBankOverrides] = useState(() => loadBankOverrides());
+  const [favouriteIds, setFavouriteIds] = useState(() => loadFavouriteIds());
   const [subject, setSubject] = useState('All');
   const [yearBand, setYearBand] = useState('All');
   const [activeSet, setActiveSet] = useState(null);
@@ -117,20 +141,34 @@ export default function SavedSetsPanel({
   }, [customSets]);
 
   useEffect(() => {
+    saveBankOverrides(bankOverrides);
+  }, [bankOverrides]);
+
+  useEffect(() => {
+    saveFavouriteIds(favouriteIds);
+  }, [favouriteIds]);
+
+  useEffect(() => {
     if (!showQueue) return;
     // Expand when something lands; stay quiet when empty.
     setQueueOpen(queue.length > 0);
   }, [showQueue, queue.length]);
 
   const library = useMemo(() => {
-    const custom = customSets.map((set) => ({ ...set, bank: false }));
-    return [...custom, ...QUESTION_SET_BANK];
-  }, [customSets]);
+    const custom = customSets.map((set) => ({ ...set, bank: false, overridden: false }));
+    const bank = QUESTION_SET_BANK.map((set) => applyBankOverride(set, bankOverrides[set.id]));
+    return [...custom, ...bank];
+  }, [customSets, bankOverrides]);
 
   const filtered = useMemo(
-    () => library.filter((set) => setMatchesFilters(set, subject, yearBand)),
-    [library, subject, yearBand]
+    () => sortSetsByFavourite(
+      library.filter((set) => setMatchesFilters(set, subject, yearBand)),
+      favouriteIds
+    ),
+    [library, subject, yearBand, favouriteIds]
   );
+
+  const favouriteSet = useMemo(() => new Set(favouriteIds), [favouriteIds]);
 
   function openPreview(set) {
     setActiveSet(set);
@@ -138,13 +176,20 @@ export default function SavedSetsPanel({
   }
 
   function openEdit(set) {
-    const draft = set.bank ? cloneSetForEdit(set) : {
+    // Bank sets keep their id so Save writes a personal override, not a fork.
+    const draft = {
       ...set,
       questions: normalizeSetQuestions(set.questions),
     };
-    if (set.bank) {
-      draft.name = `${set.name} (edited)`;
-    }
+    setActiveSet(draft);
+    setDraftName(draft.name);
+    setDraftQuestions(draft.questions);
+    setMode('edit');
+  }
+
+  function duplicateSet(set) {
+    const draft = cloneSetForEdit(set);
+    draft.name = `${set.name} (copy)`.slice(0, 80);
     setActiveSet(draft);
     setDraftName(draft.name);
     setDraftQuestions(draft.questions);
@@ -159,6 +204,11 @@ export default function SavedSetsPanel({
     setMode('create');
   }
 
+  function toggleFavourite(setId, event) {
+    event?.stopPropagation?.();
+    setFavouriteIds((ids) => toggleFavouriteId(ids, setId));
+  }
+
   function saveEditedSet() {
     const questions = normalizeSetQuestions(draftQuestions);
     const name = String(draftName || '').trim().slice(0, 80);
@@ -170,9 +220,31 @@ export default function SavedSetsPanel({
       onMessage?.('Add at least one question.');
       return;
     }
+
+    const editingBank = !!(activeSet?.bank || String(activeSet?.id || '').startsWith('bank-'));
+    if (editingBank) {
+      const bankId = String(activeSet.id);
+      setBankOverrides((current) => ({
+        ...current,
+        [bankId]: {
+          name,
+          subject: activeSet.subject || 'General',
+          years: activeSet.years || 'All',
+          skill: activeSet.skill || '',
+          minutes: activeSet.minutes || Math.max(5, questions.length * 2),
+          note: activeSet.note || '',
+          questions,
+        },
+      }));
+      setMode('');
+      setActiveSet(null);
+      onMessage?.(`Saved changes to “${name}” on this device.`);
+      return;
+    }
+
     const next = {
       ...(activeSet || {}),
-      id: activeSet?.bank === false && activeSet?.id && !String(activeSet.id).startsWith('bank-')
+      id: activeSet?.id && !String(activeSet.id).startsWith('bank-')
         ? activeSet.id
         : newId('set'),
       name,
@@ -191,6 +263,22 @@ export default function SavedSetsPanel({
     setMode('');
     setActiveSet(null);
     onMessage?.(`Saved “${name}”.`);
+  }
+
+  function resetBankOverride(setId) {
+    const id = String(setId || '');
+    if (!id.startsWith('bank-')) return;
+    setBankOverrides((current) => {
+      if (!current[id]) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    const original = QUESTION_SET_BANK.find((set) => set.id === id);
+    if (activeSet?.id === id && original) {
+      setActiveSet(applyBankOverride(original, null));
+    }
+    onMessage?.('Restored the original set.');
   }
 
   function savePastedSet() {
@@ -385,15 +473,31 @@ export default function SavedSetsPanel({
 
           <div className="mt-3 max-h-[28rem] overflow-y-auto pr-1 scrollbar-thin">
             <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2">
-              {filtered.map((set) => (
+              {filtered.map((set) => {
+                const isFavourite = favouriteSet.has(set.id);
+                return (
                 <article
                   key={set.id}
-                  className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 transition hover:border-indigo-200 hover:bg-indigo-50/35 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
+                  className="flex min-w-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 transition hover:border-indigo-200 hover:bg-indigo-50/35 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
                 >
                   <button
                     type="button"
+                    onClick={(event) => toggleFavourite(set.id, event)}
+                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${
+                      isFavourite
+                        ? 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40'
+                        : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300'
+                    }`}
+                    aria-label={isFavourite ? `Unfavourite ${set.name}` : `Favourite ${set.name}`}
+                    aria-pressed={isFavourite}
+                    title={isFavourite ? 'Remove from favourites' : 'Favourite — keep at top'}
+                  >
+                    <StarIcon filled={isFavourite} />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => openPreview(set)}
-                    className="group min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="group min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     aria-label={`Preview ${set.name}`}
                   >
                     <p className="truncate text-sm font-black text-slate-900 group-hover:text-indigo-950 dark:text-white dark:group-hover:text-indigo-100">{set.name}</p>
@@ -401,6 +505,12 @@ export default function SavedSetsPanel({
                       {!set.bank && (
                         <>
                           <span className="text-indigo-500">Yours</span>
+                          <span aria-hidden="true"> · </span>
+                        </>
+                      )}
+                      {set.overridden && (
+                        <>
+                          <span className="text-indigo-500">Edited</span>
                           <span aria-hidden="true"> · </span>
                         </>
                       )}
@@ -415,7 +525,8 @@ export default function SavedSetsPanel({
                     Launch
                   </button>
                 </article>
-              ))}
+                );
+              })}
               {!filtered.length && (
                 <p className="col-span-full rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-500 dark:border-slate-700">
                   No sets in this filter.
@@ -468,8 +579,20 @@ export default function SavedSetsPanel({
                   <button type="button" onClick={() => onLaunchSet(activeSet)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Launch</button>
                   <button type="button" onClick={() => { onEnqueueSet(activeSet); setMode(''); }} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
                   <button type="button" onClick={() => openEdit(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-                    {activeSet?.bank ? 'Edit a copy' : 'Edit'}
+                    Edit
                   </button>
+                  <button type="button" onClick={() => duplicateSet(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                    Duplicate
+                  </button>
+                  {activeSet?.overridden && (
+                    <button
+                      type="button"
+                      onClick={() => resetBankOverride(activeSet.id)}
+                      className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      Reset to original
+                    </button>
+                  )}
                   {!activeSet?.bank && (
                     <button
                       type="button"
