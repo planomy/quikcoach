@@ -157,7 +157,9 @@ function studentYearLabel(yearLevel) {
  * @param {string} [params.customFocusText]
  * @param {Record<string, boolean>} [params.toggles]
  * @param {string[]} [params.extraFocusLabels] — enabled teacher-added focus lines (current mode)
- * @param {Array<{name: string, text?: string, year_level?: string}>} [params.students]
+ * @param {Array<{name?: string, text?: string, year_level?: string}>} [params.students]
+ *   Student `name` is intentionally ignored — prompts use ordinal labels only (Student 1, 2, …)
+ *   so real names are never sent to external AI tools.
  * @param {number} [params.wordTarget]
  * @param {string} [params.yearLevel] — id from YEAR_LEVEL_OPTIONS
  */
@@ -234,7 +236,8 @@ Students are listed below in the same order as the numbers you must use. Match t
       const excerpt = (s.text || '').trim() || '(empty draft)';
       const personal = studentYearLabel(s.year_level);
       const yearShown = personal || fallbackYear;
-      return `--- Student ${i + 1}: ${s.name} ---\nYear level: ${yearShown}${personal ? '' : ' (class default)'}\n${excerpt}`;
+      // De-identify: never include the student's real name in outbound AI prompts.
+      return `--- Student ${i + 1} ---\nYear level: ${yearShown}${personal ? '' : ' (class default)'}\n${excerpt}`;
     })
     .join('\n\n');
 

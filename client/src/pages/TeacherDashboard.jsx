@@ -2697,7 +2697,8 @@ function TeacherDashboardInner() {
             <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Copy for AI</h3>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Builds a structured prompt from feedback mode, subject, year level, toggles, custom focuses, and each
-              visible student&apos;s draft (respects <strong>Show group</strong> above).
+              visible student&apos;s draft (respects <strong>Show group</strong> above). Student names are not
+              included — only Student 1, 2, … in list order.
             </p>
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Payload: ~{aiPayloadStats.promptKb} KB · {aiPayloadStats.totalDraftWords} words of student drafts
