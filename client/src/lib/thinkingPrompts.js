@@ -21,67 +21,52 @@ export const THINKING_PROMPTS = [
   {
     id: 'clarify-clear-sentence',
     category: 'clarify',
-    text: 'Say that again in one clear sentence.',
+    text: 'Say your idea in one clear sentence.',
     bySubject: {
-      english: 'Restate your point in one clear sentence.',
-      maths: 'State your answer and what it means in one clear sentence.',
+      maths: 'State your answer in one clear sentence.',
       science: 'State your conclusion in one clear sentence.',
-      humanities: 'State your claim in one clear sentence.',
     },
     tags: ['understand', 'clarify'],
   },
   {
-    id: 'clarify-main-idea',
+    id: 'clarify-main-point',
     category: 'clarify',
-    text: 'What is the main idea you want me to take away?',
-    bySubject: {
-      english: 'What is the main idea in this part of your writing?',
-      science: 'What is the key scientific idea here?',
-      maths: 'What is the key idea in your method?',
-    },
+    text: 'What is the main point you are making?',
     tags: ['understand', 'identify'],
   },
   {
     id: 'clarify-example',
     category: 'clarify',
-    text: 'Add one concrete example so I can see what you mean.',
+    text: 'Give one example that shows what you mean.',
     bySubject: {
-      english: 'Add one detail from the text that shows what you mean.',
-      science: 'Add one observation or example that shows what you mean.',
+      english: 'Give one detail from the text that shows what you mean.',
       maths: 'Show one worked step that makes your method clear.',
-      humanities: 'Add one fact or example that shows what you mean.',
+      science: 'Give one observation that shows what you mean.',
     },
     tags: ['understand', 'apply'],
   },
 
   // —— Deepen ——
   {
-    id: 'deepen-how-know',
+    id: 'deepen-matter',
     category: 'deepen',
-    text: 'How do you know that?',
-    bySubject: {
-      english: 'How do you know that from the text?',
-      science: 'How do you know that from the evidence?',
-      maths: 'How do you know your method works here?',
-      humanities: 'How do you know that from the sources?',
-    },
-    tags: ['analyse', 'evidence'],
+    text: 'Why does this matter?',
+    tags: ['analyse', 'infer'],
   },
   {
     id: 'deepen-beneath',
     category: 'deepen',
-    text: 'What else is going on beneath the surface here?',
+    text: 'What is happening beneath the surface?',
     bySubject: {
       english: 'What else might this reveal about the character or idea?',
       science: 'What else could be affecting this result?',
-      humanities: 'What else might be shaping this situation?',
     },
     tags: ['analyse', 'infer'],
   },
   {
-    id: 'deepen-next',
+    id: 'deepen-stronger',
     category: 'deepen',
-    text: 'What would someone need to understand next?',
+    text: 'What could you add to make this idea stronger?',
     tags: ['analyse', 'generalise'],
   },
 
@@ -95,38 +80,31 @@ export const THINKING_PROMPTS = [
       science: 'What evidence supports this conclusion?',
       maths: 'Which step or result supports your answer?',
       humanities: 'Which source or fact best supports this claim?',
-      legal_studies: 'What evidence or rule supports this claim?',
-      business: 'What evidence supports this decision?',
     },
     tags: ['evaluate', 'evidence'],
   },
   {
-    id: 'justify-strongest',
+    id: 'justify-prove',
     category: 'justify',
-    text: 'Which part of your answer is strongest — and why?',
-    tags: ['evaluate', 'reasoning'],
-  },
-  {
-    id: 'justify-reasoning',
-    category: 'justify',
-    text: 'Walk me through the reasoning that got you here.',
+    text: 'How does your evidence prove your point?',
     bySubject: {
-      maths: 'Explain each step so someone else could follow your method.',
-      science: 'Explain the reasoning that links your evidence to your conclusion.',
+      maths: 'How do your steps prove your answer is correct?',
+      science: 'How does your evidence lead to this conclusion?',
     },
     tags: ['analyse', 'reasoning'],
+  },
+  {
+    id: 'justify-strongest',
+    category: 'justify',
+    text: 'Why is this your strongest answer?',
+    tags: ['evaluate', 'reasoning'],
   },
 
   // —— Challenge ——
   {
     id: 'challenge-disagree',
     category: 'challenge',
-    text: 'What might someone disagree with in your answer?',
-    bySubject: {
-      english: 'How might another reader interpret this differently?',
-      humanities: 'What perspective might disagree with this claim?',
-      legal_studies: 'What counter-argument could be made?',
-    },
+    text: 'What might someone disagree with?',
     tags: ['evaluate', 'challenge'],
   },
   {
@@ -136,13 +114,12 @@ export const THINKING_PROMPTS = [
     tags: ['evaluate', 'metacognition'],
   },
   {
-    id: 'challenge-exception',
+    id: 'challenge-wrong',
     category: 'challenge',
-    text: 'When might this not be true?',
+    text: 'What evidence could prove you wrong?',
     bySubject: {
-      science: 'What variable or condition could change this result?',
-      maths: 'Is there a case where this method would not work?',
-      humanities: 'What exception or counter-example weakens this idea?',
+      science: 'What result or variable could prove this wrong?',
+      maths: 'What case or counter-example could prove this wrong?',
     },
     tags: ['evaluate', 'challenge'],
   },
@@ -151,24 +128,19 @@ export const THINKING_PROMPTS = [
   {
     id: 'connect-earlier',
     category: 'connect',
-    text: 'What does this connect to from earlier in the lesson?',
+    text: 'What does this connect to from earlier?',
     tags: ['connect', 'retrieval'],
   },
   {
     id: 'connect-elsewhere',
     category: 'connect',
     text: 'Where else could this idea apply?',
-    bySubject: {
-      maths: 'Where else could you use this method?',
-      science: 'Where else does this idea show up in the real world?',
-      english: 'Where else in the text (or in life) does this idea appear?',
-    },
     tags: ['connect', 'transfer'],
   },
   {
     id: 'connect-similar',
     category: 'connect',
-    text: 'How is this similar to something you have seen before?',
+    text: 'How is this similar to something you already know?',
     tags: ['connect', 'transfer'],
   },
 
@@ -176,23 +148,19 @@ export const THINKING_PROMPTS = [
   {
     id: 'reflect-strategy',
     category: 'reflect',
-    text: 'What strategy did you use to work this out?',
-    bySubject: {
-      maths: 'What strategy did you use to solve this?',
-      english: 'What strategy did you use as you wrote this?',
-    },
+    text: 'What strategy did you use?',
     tags: ['metacognition', 'reflect'],
   },
   {
     id: 'reflect-stuck',
     category: 'reflect',
-    text: 'Where did you get stuck — and what helped?',
+    text: 'Where did you get stuck, and what helped?',
     tags: ['metacognition', 'reflect'],
   },
   {
     id: 'reflect-change',
     category: 'reflect',
-    text: 'If you had one more minute, what would you change?',
+    text: 'What would you change if you tried again?',
     tags: ['metacognition', 'create'],
   },
 ];
