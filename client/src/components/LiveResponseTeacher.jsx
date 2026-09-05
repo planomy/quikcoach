@@ -165,6 +165,8 @@ export default function LiveResponseTeacher({
   onQuestionLaunched,
   highlightStudentId = null,
   onClearHighlight,
+  subjectAssist = 'general',
+  onThinkingSent,
 }) {
   const [internalPanelTab, setInternalPanelTab] = useState('ask');
   const effectivePanelTab = panelTab ?? (panelTabs ? internalPanelTab : null);
@@ -955,10 +957,13 @@ export default function LiveResponseTeacher({
             open
             activity={activity}
             responses={responses}
+            classStudentIds={(live.students || []).map((student) => student.id)}
+            subjectAssist={subjectAssist}
             highlightStudentId={highlightStudentId}
             onClearHighlight={onClearHighlight}
             onOpenAsk={() => switchPanelTab('ask')}
             onClose={onClose}
+            onThinkingSent={onThinkingSent}
           />
         )}
 

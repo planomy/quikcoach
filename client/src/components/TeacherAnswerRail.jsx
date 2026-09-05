@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
+import ThinkingTrigger from './ThinkingTrigger.jsx';
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { getSetAnswerPairs, normalizeSetQuestions } from '../lib/liveResponseSets.js';
 
@@ -162,9 +163,12 @@ export default function TeacherAnswerRail({
   onClose,
   activity,
   responses = [],
+  classStudentIds = [],
+  subjectAssist = 'general',
   highlightStudentId = null,
   onClearHighlight,
   onOpenAsk,
+  onThinkingSent,
 }) {
   const listRef = useRef(null);
   const panelRef = useRef(null);
@@ -178,6 +182,11 @@ export default function TeacherAnswerRail({
       (a, b) => Number(b.submittedAt || 0) - Number(a.submittedAt || 0)
     );
   }, [responses]);
+  const thinkingClassIds = useMemo(() => {
+    const fromProp = (classStudentIds || []).map((id) => Number(id)).filter((id) => id > 0);
+    if (fromProp.length) return [...new Set(fromProp)];
+    return [...new Set((responses || []).map((r) => Number(r.studentId)).filter((id) => id > 0))];
+  }, [classStudentIds, responses]);
 
   useEffect(() => {
     if (!open || highlightStudentId == null) return undefined;
@@ -313,6 +322,14 @@ export default function TeacherAnswerRail({
             <ControlIcon label="Remind students who have not answered" hint="Remind" onClick={remindUnanswered}>
               <BellIcon />
             </ControlIcon>
+            <ThinkingTrigger
+              size="md"
+              hint="Thinking · class"
+              studentIds={thinkingClassIds}
+              targetLabel="the class"
+              subjectAssist={subjectAssist}
+              onSent={onThinkingSent}
+            />
             <ControlIcon label="Finish this question" hint="Done" onClick={finishQuestion} primary>
               <DoneIcon />
             </ControlIcon>
@@ -373,9 +390,15 @@ export default function TeacherAnswerRail({
                         title={confidenceLabel(response.confidence)}
                         aria-label={confidenceLabel(response.confidence)}
                       />
-                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                      <p className="min-w-0 flex-1 truncate text-sm font-black text-slate-900 dark:text-white">
                         {response.name || 'Student'}
                       </p>
+                      <ThinkingTrigger
+                        studentIds={[response.studentId]}
+                        targetLabel={response.name || 'Student'}
+                        subjectAssist={subjectAssist}
+                        onSent={onThinkingSent}
+                      />
                     </div>
                     <div className="mt-2 space-y-2">
                       {pairs.map((pair) => (
@@ -414,9 +437,15 @@ export default function TeacherAnswerRail({
                         title={confidenceLabel(response.confidence)}
                         aria-label={confidenceLabel(response.confidence)}
                       />
-                      <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                      <p className="min-w-0 flex-1 truncate text-sm font-black text-slate-900 dark:text-white">
                         {response.name || 'Student'}
                       </p>
+                      <ThinkingTrigger
+                        studentIds={[response.studentId]}
+                        targetLabel={response.name || 'Student'}
+                        subjectAssist={subjectAssist}
+                        onSent={onThinkingSent}
+                      />
                     </div>
                     <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800 dark:text-slate-200">
                       {formatLiveAnswer(response.value)}
@@ -446,12 +475,18 @@ export default function TeacherAnswerRail({
                           : ''
                       }`}
                     >
-                      <span className="font-bold text-slate-900 dark:text-white">
+                      <span className="min-w-0 truncate font-bold text-slate-900 dark:text-white">
                         {response.name || 'Student'}
                       </span>
-                      <span className="truncate text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      <span className="max-w-[40%] truncate text-xs font-semibold text-slate-600 dark:text-slate-300">
                         {formatLiveAnswer(response.value)}
                       </span>
+                      <ThinkingTrigger
+                        studentIds={[response.studentId]}
+                        targetLabel={response.name || 'Student'}
+                        subjectAssist={subjectAssist}
+                        onSent={onThinkingSent}
+                      />
                     </div>
                   ))}
                 </div>

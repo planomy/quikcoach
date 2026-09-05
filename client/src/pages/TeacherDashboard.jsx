@@ -34,6 +34,7 @@ import { studentTileMeta } from '../lib/liveResponseMeta.js';
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
+import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
@@ -2059,6 +2060,15 @@ function TeacherDashboardInner() {
             highlightStudentId={toolsHighlightStudentId}
             onClearHighlight={() => setToolsHighlightStudentId(null)}
             onCopyStudentLink={copyStudentJoinLink}
+            subjectAssist={promptSubjectAssist}
+            onThinkingSent={({ count, recipients }) => {
+              setCopyToast(
+                recipients > 1
+                  ? `Thinking: ${count} prompt${count === 1 ? '' : 's'} → ${recipients} students`
+                  : `Thinking prompt${count === 1 ? '' : 's'} sent`
+              );
+              setTimeout(() => setCopyToast(''), 2500);
+            }}
           />
         </div>
       )}
@@ -2194,12 +2204,17 @@ function TeacherDashboardInner() {
                     </label>
                   </HintWrap>
                   <h2
-                    className={`min-w-0 flex-1 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100 ${inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''}`}
+                    className={`min-w-0 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100 ${inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''}`}
                     title={inQuestion ? `Show ${s.name}'s answer` : `${s.name} · ID #${s.id}`}
                     onClick={inQuestion ? () => openAnswerInRail(s.id) : undefined}
                   >
                     {s.name}
                   </h2>
+                  {gradeShortLabel(s.year_level) && (
+                    <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      {gradeShortLabel(s.year_level)}
+                    </span>
+                  )}
                   <span title={showPulseState ? pulseMeta.title : 'Writing activity'} className={`h-2 w-2 shrink-0 rounded-full ${light}`} />
                   {showPulseState && inQuestion && pulseStudent?.hasResponded ? (
                     <HintWrap
@@ -2212,7 +2227,7 @@ function TeacherDashboardInner() {
                       <button
                         type="button"
                         onClick={() => openAnswerInRail(s.id)}
-                        className="max-w-[6rem] truncate rounded-full bg-indigo-50 px-1.5 py-0.5 text-left text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900"
+                        className="max-w-[5.5rem] truncate rounded-full bg-indigo-50 px-1.5 py-0.5 text-left text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300 dark:hover:bg-indigo-900"
                         aria-label={`Open ${s.name}'s answer: ${liveResponse ? formatLiveAnswer(liveResponse.value) : 'Answered'}`}
                       >
                         {liveResponse ? formatLiveAnswer(liveResponse.value) : 'Answered'}
@@ -2223,14 +2238,7 @@ function TeacherDashboardInner() {
                       {wc}w
                     </span>
                   ) : null}
-                </div>
-                <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
-                  {gradeShortLabel(s.year_level) && (
-                    <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      {gradeShortLabel(s.year_level)}
-                    </span>
-                  )}
-                  <div className="ml-auto flex items-center gap-0.5 opacity-70 transition hover:opacity-100">
+                  <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-70 transition hover:opacity-100">
                     <HintWrap hint={copiedStudentId === s.id ? 'Copied!' : 'Copy draft'}>
                       <button
                         type="button"
@@ -2288,6 +2296,16 @@ function TeacherDashboardInner() {
                         </svg>
                       </button>
                     </HintWrap>
+                    <ThinkingTrigger
+                      socket={socket}
+                      studentIds={[s.id]}
+                      targetLabel={s.name}
+                      subjectAssist={promptSubjectAssist}
+                      onSent={({ count }) => {
+                        setCopyToast(`Thinking prompt${count === 1 ? '' : 's'} sent to ${s.name}`);
+                        setTimeout(() => setCopyToast(''), 2500);
+                      }}
+                    />
                     <HintWrap hint="Open card">
                       <button
                         type="button"
