@@ -58,6 +58,34 @@ const CARD_VIEWS = [
   { id: 'full', label: 'Full drafts' },
 ];
 
+function CardViewIcon({ id }) {
+  if (id === 'overview') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2.5" y="2.5" width="6" height="6" rx="1.2" />
+        <rect x="11.5" y="2.5" width="6" height="6" rx="1.2" />
+        <rect x="2.5" y="11.5" width="6" height="6" rx="1.2" />
+        <rect x="11.5" y="11.5" width="6" height="6" rx="1.2" />
+      </svg>
+    );
+  }
+  if (id === 'reading') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2.5" y="3" width="6.5" height="14" rx="1.2" />
+        <rect x="11" y="3" width="6.5" height="14" rx="1.2" />
+        <path d="M4.2 6.5h3M4.2 9.2h3M4.2 11.9h2.2M12.7 6.5h3M12.7 9.2h3M12.7 11.9h2.2" />
+      </svg>
+    );
+  }
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4.5" y="2.5" width="11" height="15" rx="1.4" />
+      <path d="M7 6.5h6M7 9.5h6M7 12.5h4" />
+    </svg>
+  );
+}
+
 const TEACHER_TOOLS_TABS = [
   { id: 'ask', label: 'Ask' },
   { id: 'respond', label: 'Respond' },
@@ -2832,19 +2860,22 @@ function TeacherDashboardInner() {
           </div>
           <div className="overflow-y-auto px-2 py-2 scrollbar-thin">
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
-            <div className="mb-1 flex gap-1 px-2">
+            <div className="mb-1 flex gap-1 px-2" role="group" aria-label="Card view">
               {CARD_VIEWS.map((view) => (
                 <button
                   key={view.id}
                   type="button"
                   onClick={() => setCardView(view.id)}
-                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition ${
+                  title={view.label}
+                  aria-label={view.label}
+                  aria-pressed={cardView === view.id}
+                  className={`grid h-9 flex-1 place-items-center rounded-lg transition ${
                     cardView === view.id
                       ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                      : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                      : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
-                  {view.label}
+                  <CardViewIcon id={view.id} />
                 </button>
               ))}
             </div>
