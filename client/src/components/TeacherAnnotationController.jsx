@@ -231,6 +231,8 @@ export default function TeacherAnnotationController() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const moveFrameRef = useRef(null);
   const draftNoteRef = useRef(null);
+  const draftNoteLatestRef = useRef('');
+  const quickPrefixRef = useRef('');
 
   const annotationTotal = useMemo(
     () => Object.values(byStudent).reduce((n, list) => n + (Array.isArray(list) ? list.length : 0), 0),
@@ -417,6 +419,8 @@ export default function TeacherAnnotationController() {
       if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) {
         setPending(null);
         setQuickStack([]);
+        draftNoteLatestRef.current = '';
+        quickPrefixRef.current = '';
         return;
       }
       const range = selection.getRangeAt(0);
@@ -430,6 +434,8 @@ export default function TeacherAnnotationController() {
       const rect = range.getBoundingClientRect();
       setDraftNote('');
       setQuickStack([]);
+      draftNoteLatestRef.current = '';
+      quickPrefixRef.current = '';
       setCustomCommentDraft('');
       setAddingCustomComment(false);
       setCommentError('');
@@ -506,6 +512,8 @@ export default function TeacherAnnotationController() {
     setPending(null);
     setDraftNote('');
     setQuickStack([]);
+    draftNoteLatestRef.current = '';
+    quickPrefixRef.current = '';
     setCommentError('');
   }
 
@@ -519,18 +527,29 @@ export default function TeacherAnnotationController() {
     });
   }
 
-  function syncQuickDraft(stack) {
-    const text = stack.join(' · ');
-    setDraftNote(text);
-    focusDraftEnd(text);
+  function composeQuickDraft(prefix, stack) {
+    return [...(prefix ? [prefix] : []), ...stack].join(' · ');
   }
 
-  function applyQuickComment(comment) {
+  function writeQuickDraft(prefix, stack) {
+    const text = composeQuickDraft(prefix, stack);
+    draftNoteLatestRef.current = text;
+    setDraftNote(text);
+    focusDraftEnd(text);
+    return text;
+  }
+
+  function applyQuickComment(comment, { forceAdd = false } = {}) {
     setQuickStack((prev) => {
-      const next = prev.includes(comment)
-        ? prev.filter((item) => item !== comment)
-        : [...prev, comment];
-      syncQuickDraft(next);
+      if (prev.length === 0) {
+        quickPrefixRef.current = String(draftNoteLatestRef.current || '').trim();
+      }
+      const next = forceAdd
+        ? (prev.includes(comment) ? prev : [...prev, comment])
+        : prev.includes(comment)
+          ? prev.filter((item) => item !== comment)
+          : [...prev, comment];
+      writeQuickDraft(quickPrefixRef.current, next);
       return next;
     });
   }
@@ -539,7 +558,7 @@ export default function TeacherAnnotationController() {
     setQuickStack((prev) => {
       if (!prev.length) return prev;
       const next = prev.slice(0, -1);
-      syncQuickDraft(next);
+      writeQuickDraft(quickPrefixRef.current, next);
       return next;
     });
   }
@@ -550,11 +569,7 @@ export default function TeacherAnnotationController() {
     const allComments = [...CORE_COMMENTS, ...customComments];
     const existing = allComments.find((item) => item.toLocaleLowerCase() === comment.toLocaleLowerCase());
     if (existing) {
-      setQuickStack((prev) => {
-        const next = prev.includes(existing) ? prev : [...prev, existing];
-        syncQuickDraft(next);
-        return next;
-      });
+      applyQuickComment(existing, { forceAdd: true });
       setCustomCommentDraft('');
       setAddingCustomComment(false);
       return;
@@ -562,11 +577,7 @@ export default function TeacherAnnotationController() {
     const nextCustoms = [...customComments, comment].slice(0, 30);
     setCustomComments(nextCustoms);
     saveCustomComments(nextCustoms);
-    setQuickStack((prev) => {
-      const next = prev.includes(comment) ? prev : [...prev, comment];
-      syncQuickDraft(next);
-      return next;
-    });
+    applyQuickComment(comment, { forceAdd: true });
     setCustomCommentDraft('');
     setAddingCustomComment(false);
   }
@@ -578,7 +589,7 @@ export default function TeacherAnnotationController() {
     setQuickStack((prev) => {
       if (!prev.includes(comment)) return prev;
       const stack = prev.filter((item) => item !== comment);
-      syncQuickDraft(stack);
+      writeQuickDraft(quickPrefixRef.current, stack);
       return stack;
     });
   }
@@ -842,8 +853,11 @@ export default function TeacherAnnotationController() {
             autoFocus
             value={draftNote}
             onChange={(event) => {
-              setDraftNote(event.target.value.slice(0, 500));
+              const value = event.target.value.slice(0, 500);
+              setDraftNote(value);
+              draftNoteLatestRef.current = value;
               setQuickStack([]);
+              quickPrefixRef.current = value.trim();
             }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
