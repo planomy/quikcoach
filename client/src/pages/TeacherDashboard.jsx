@@ -287,19 +287,39 @@ function TeacherDashboardInner() {
   }, []);
 
   const pushSettings = useCallback(
-    (partial) => {
+    (partial, { quiet = false } = {}) => {
       if (!room) return;
-      setSaveStatus('saving');
+      if (!quiet) setSaveStatus('saving');
       socket.emit('teacher:settings', partial, (ack) => {
         if (ack && ack.ok === false) {
-          setSaveStatus('error');
+          if (!quiet) setSaveStatus('error');
           return;
         }
-        markSaved();
+        if (!quiet) markSaved();
       });
     },
     [room, socket, markSaved]
   );
+
+  const wordTargetPushRef = useRef(null);
+  const commitWordTarget = useCallback(
+    (value, { immediate = false } = {}) => {
+      const v = Math.max(0, Math.min(500, Number(value) || 0));
+      setRoom((r) => (r ? { ...r, word_target: v } : r));
+      if (wordTargetPushRef.current) {
+        clearTimeout(wordTargetPushRef.current);
+        wordTargetPushRef.current = null;
+      }
+      const send = () => pushSettings({ word_target: v }, { quiet: true });
+      if (immediate) send();
+      else wordTargetPushRef.current = setTimeout(send, 320);
+    },
+    [pushSettings]
+  );
+
+  useEffect(() => () => {
+    if (wordTargetPushRef.current) clearTimeout(wordTargetPushRef.current);
+  }, []);
 
   useEffect(() => () => {
     if (savedClearRef.current) clearTimeout(savedClearRef.current);
@@ -2873,10 +2893,10 @@ function TeacherDashboardInner() {
                     title={view.label}
                     aria-label={view.label}
                     aria-pressed={cardView === view.id}
-                    className={`grid h-9 w-10 place-items-center rounded-[0.65rem] transition ${
+                    className={`grid h-9 w-10 place-items-center rounded-[0.65rem] border transition ${
                       cardView === view.id
-                        ? 'bg-slate-600 text-white shadow-sm dark:bg-slate-500'
-                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                        ? 'border-indigo-400/90 bg-indigo-50/70 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-200'
+                        : 'border-transparent text-slate-500 hover:bg-slate-100/80 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
                     }`}
                   >
                     <CardViewIcon id={view.id} />
@@ -2886,38 +2906,39 @@ function TeacherDashboardInner() {
             </div>
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Lesson</p>
-            <div className="px-3 py-2">
-              <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                <span>Word target</span>
-                <span className="font-mono text-indigo-600">{wt}</span>
+            <div className="iboard-word-target-row px-3 py-1.5">
+              <div className="iboard-word-target-block min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Word target</span>
+                  <span className="font-mono text-[11px] font-bold tabular-nums text-indigo-600 dark:text-indigo-300">{wt}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={500}
+                  step={10}
+                  value={wt}
+                  onChange={(e) => commitWordTarget(e.target.value)}
+                  onPointerUp={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
+                  onBlur={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
+                  className="iboard-word-target-slider mt-0.5 h-1.5 w-full cursor-pointer accent-indigo-600"
+                  aria-label="Word target"
+                />
               </div>
-              <input
-                type="range"
-                min={0}
-                max={500}
-                value={wt}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  setRoom((r) => (r ? { ...r, word_target: v } : r));
-                  pushSettings({ word_target: v });
-                }}
-                className="mt-1 h-1.5 w-full cursor-pointer accent-indigo-600"
-                aria-label="Word target"
-              />
+              <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                <span>Enforce target</span>
+                <input
+                  type="checkbox"
+                  checked={enforceWords}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
+                    pushSettings({ enforce_word_count: v });
+                  }}
+                  className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
+                />
+              </label>
             </div>
-            <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              <span>Enforce word count</span>
-              <input
-                type="checkbox"
-                checked={enforceWords}
-                onChange={(e) => {
-                  const v = e.target.checked;
-                  setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
-                  pushSettings({ enforce_word_count: v });
-                }}
-                className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
-              />
-            </label>
             <button
               type="button"
               onClick={() => {

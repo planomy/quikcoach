@@ -3,7 +3,7 @@ function tuneWordTargetSlider(root = document) {
   if (!slider) return;
 
   slider.min = '0';
-  slider.max = '300';
+  slider.max = '500';
   slider.step = '10';
 }
 

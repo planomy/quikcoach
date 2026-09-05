@@ -203,54 +203,28 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   display: none;
 }
 
-/* Room settings: keep the lesson controls on one compact line. */
-.iboard-header-dock--end:has(input[aria-label="Word target"])
-  div:has(> input[aria-label="Word target"]) {
-  display: inline-flex;
-  width: 66%;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.35rem 0.25rem 0.35rem 0.75rem;
-  vertical-align: middle;
+/* Room settings: word target + enforce on one compact row; number sits on the label line above the track. */
+.iboard-header-dock--end .iboard-word-target-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
 }
 
-.iboard-header-dock--end:has(input[aria-label="Word target"])
-  div:has(> input[aria-label="Word target"]) > div {
-  display: contents;
+.iboard-header-dock--end .iboard-word-target-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 2.15rem;
 }
 
-.iboard-header-dock--end:has(input[aria-label="Word target"])
-  div:has(> input[aria-label="Word target"]) > div > span:first-child {
-  order: 1;
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.iboard-header-dock--end:has(input[aria-label="Word target"])
-  input[aria-label="Word target"] {
-  order: 2;
-  min-width: 5rem;
-  flex: 1 1 auto;
+.iboard-header-dock--end .iboard-word-target-slider {
+  width: 100%;
+  min-width: 9rem;
   margin: 0;
 }
 
-.iboard-header-dock--end:has(input[aria-label="Word target"])
-  div:has(> input[aria-label="Word target"]) > div > span:last-child {
-  order: 3;
-  flex: 0 0 2.4rem;
-  text-align: right;
-}
-
-.iboard-header-dock--end:has(input[aria-label="Word target"])
-  div:has(> input[aria-label="Word target"]) + label {
-  display: inline-flex;
-  width: 34%;
-  min-height: 2.25rem;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  padding: 0.35rem 0.75rem 0.35rem 0.35rem;
-  vertical-align: middle;
-  font-size: 0.72rem;
+.iboard-header-dock--end .iboard-word-target-enforce {
+  min-height: 2.15rem;
+  padding-bottom: 0.05rem;
   white-space: nowrap;
 }
