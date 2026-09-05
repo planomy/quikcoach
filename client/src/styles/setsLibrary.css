@@ -214,17 +214,21 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: 2.15rem;
+  min-height: 2.35rem;
+  gap: 0.2rem;
 }
 
 .iboard-header-dock--end .iboard-word-target-slider {
   width: 100%;
   min-width: 9rem;
-  margin: 0;
+  margin: 0.15rem 0 0;
 }
 
 .iboard-header-dock--end .iboard-word-target-enforce {
-  min-height: 2.15rem;
-  padding-bottom: 0.05rem;
+  display: inline-flex;
+  align-items: center;
+  height: 1.15rem;
+  margin-bottom: 0.05rem;
+  padding: 0;
   white-space: nowrap;
 }
