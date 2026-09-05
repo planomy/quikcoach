@@ -2907,11 +2907,11 @@ function TeacherDashboardInner() {
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Lesson</p>
             <div className="iboard-word-target-row px-3 py-1.5">
-              <div className="iboard-word-target-block min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Word target</span>
-                  <span className="font-mono text-[11px] font-bold tabular-nums text-indigo-600 dark:text-indigo-300">{wt}</span>
-                </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Word target</span>
+                <span className="font-mono text-[11px] font-bold tabular-nums text-indigo-600 dark:text-indigo-300">{wt}</span>
+              </div>
+              <div className="iboard-word-target-bar mt-1 flex items-center gap-2">
                 <input
                   type="range"
                   min={0}
@@ -2921,23 +2921,23 @@ function TeacherDashboardInner() {
                   onChange={(e) => commitWordTarget(e.target.value)}
                   onPointerUp={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
                   onBlur={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
-                  className="iboard-word-target-slider mt-0.5 h-1.5 w-full cursor-pointer accent-indigo-600"
+                  className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
                   aria-label="Word target"
                 />
+                <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                  <span>Enforce target</span>
+                  <input
+                    type="checkbox"
+                    checked={enforceWords}
+                    onChange={(e) => {
+                      const v = e.target.checked;
+                      setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
+                      pushSettings({ enforce_word_count: v });
+                    }}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
+                  />
+                </label>
               </div>
-              <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                <span>Enforce target</span>
-                <input
-                  type="checkbox"
-                  checked={enforceWords}
-                  onChange={(e) => {
-                    const v = e.target.checked;
-                    setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
-                    pushSettings({ enforce_word_count: v });
-                  }}
-                  className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
-                />
-              </label>
             </div>
             <button
               type="button"
