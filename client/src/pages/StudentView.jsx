@@ -28,6 +28,7 @@ import {
 } from '../lib/studentSession.js';
 import { dismissInboxItem as persistInboxDismiss, readDismissedInboxIds } from '../lib/inboxDismiss.js';
 import { parseInboxAt } from '../lib/inboxTime.js';
+import { scrollStudentSupportToNode } from '../lib/studentSupportScroll.js';
 
 function feedbackInboxItem(item, { fallbackAt = 0 } = {}) {
   const feedbackId = Number(item?.feedbackId) || 0;
@@ -157,13 +158,8 @@ export default function StudentView() {
     // Scroll only inside the Inbox rail — never the whole student dashboard.
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        const scroller = document.querySelector('.iboard-student-support-scroll');
         const node = document.querySelector(`[data-inbox-item="${CSS.escape(String(itemId))}"]`);
-        if (!scroller || !node || !scroller.contains(node)) return;
-        const scrollerRect = scroller.getBoundingClientRect();
-        const nodeRect = node.getBoundingClientRect();
-        const nextTop = scroller.scrollTop + (nodeRect.top - scrollerRect.top) - 8;
-        scroller.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+        scrollStudentSupportToNode(node);
       });
     });
   }

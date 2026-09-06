@@ -9,6 +9,7 @@ import {
   setAnswersComplete,
 } from '../lib/liveResponseSets.js';
 import StudentVerbalRespond, { isVerbalLiveActivity } from './StudentVerbalRespond.jsx';
+import { bringStudentPanelIntoView } from '../lib/studentSupportScroll.js';
 
 function setQuestionsFromActivity(activity) {
   const fromQuestions = normalizeSetQuestions(activity?.questions);
@@ -124,7 +125,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     if (!quietAlerts) {
       setArrival(nextActivity);
       arrivalTimerRef.current = setTimeout(() => setArrival(null), 2600);
-      setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+      setTimeout(() => bringStudentPanelIntoView(panelRef.current), 120);
       if (!document.title.startsWith('🔔')) originalTitleRef.current = document.title || 'iBOARD';
       document.title = `🔔 Question ${number} — iBOARD`;
       titleTimerRef.current = setTimeout(() => {
@@ -432,7 +433,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
           type="button"
           onClick={() => {
             setArrival(null);
-            panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            bringStudentPanelIntoView(panelRef.current);
           }}
           className={`iboard-question-arrival fixed inset-x-3 top-3 z-[65] mx-auto w-[calc(100%-1.5rem)] max-w-2xl rounded-3xl bg-gradient-to-br ${theme.splash} p-5 text-left text-white shadow-2xl ring-4 ring-white/60 sm:top-6 sm:p-7`}
           aria-live="assertive"
