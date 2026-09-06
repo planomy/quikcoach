@@ -85,6 +85,12 @@
   overflow: hidden;
 }
 
+/* Master-detail browse: widen the Ask dock so list stays left and preview sits right. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"]):has(.sets-browse--previewing) {
+  width: min(54rem, calc(100vw - 0.75rem)) !important;
+  transition: width 160ms ease;
+}
+
 div.p-4:has(#sets-subject-filter) > section {
   display: flex;
   min-height: 0;
@@ -99,20 +105,29 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin {
   overflow-y: auto;
 }
 
-/* Browse with preview open: list + preview share the dock height so teachers can hop sets. */
+/* Browse with preview open: list left, preview right. */
 div.p-4:has(#sets-subject-filter) .sets-browse--previewing {
   min-height: 0;
   flex: 1 1 auto;
 }
 
-div.p-4:has(#sets-subject-filter) .sets-browse--previewing > .scrollbar-thin {
-  flex: 1 1 42%;
-  max-height: none;
-}
+@media (min-width: 42rem) {
+  div.p-4:has(#sets-subject-filter) .sets-browse--previewing {
+    flex-direction: row;
+    align-items: stretch;
+  }
 
-div.p-4:has(#sets-subject-filter) .sets-browse-preview {
-  flex: 1 1 58%;
-  min-height: 12rem;
+  div.p-4:has(#sets-subject-filter) .sets-browse--previewing > .sets-browse-list {
+    flex: 0 0 17.5rem;
+    max-width: 17.5rem;
+    max-height: none;
+  }
+
+  div.p-4:has(#sets-subject-filter) .sets-browse--previewing .sets-browse-preview {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+  }
 }
 
 /* Subject + year filters narrow the catalogue, so one readable column is the right density. */

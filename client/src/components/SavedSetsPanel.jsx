@@ -479,8 +479,8 @@ export default function SavedSetsPanel({
             </p>
           )}
 
-          <div className={`mt-3 flex min-h-0 flex-1 flex-col gap-3 ${previewOpen ? 'sets-browse--previewing' : ''}`}>
-            <div className="min-h-0 max-h-[28rem] flex-1 overflow-y-auto pr-1 scrollbar-thin">
+          <div className={`mt-3 flex min-h-0 flex-1 gap-3 ${previewOpen ? 'sets-browse--previewing flex-col min-[42rem]:flex-row' : 'flex-col'}`}>
+            <div className={`sets-browse-list min-h-0 max-h-[28rem] flex-1 overflow-y-auto pr-1 scrollbar-thin ${previewOpen ? 'min-[42rem]:max-h-none min-[42rem]:basis-[17.5rem] min-[42rem]:flex-none' : ''}`}>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2">
                 {filtered.map((set) => {
                   const isFavourite = favouriteSet.has(set.id);
@@ -562,7 +562,7 @@ export default function SavedSetsPanel({
             </div>
 
             {previewOpen && (
-              <div className="sets-browse-preview flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+              <div className="sets-browse-preview flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                 <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
                   <div className="min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Preview</p>
