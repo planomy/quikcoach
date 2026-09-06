@@ -515,12 +515,19 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               {setQuestionsFromActivity(activity).length ? (
                 setQuestionsFromActivity(activity).map((question, index) => {
                 const value = setDrafts[question.id] || '';
+                const [promptTitle, ...promptHelpLines] = String(question.prompt || '').split('\n');
+                const promptHelp = promptHelpLines.join(' ').trim();
                 return (
                   <label key={question.id} className={`block rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 ${compact ? 'p-2.5' : ''}`}>
                     <span className={`block font-bold text-slate-900 dark:text-white ${compact ? 'text-xs' : 'text-sm'}`}>
                       <span className="mr-1.5 text-slate-400">{index + 1}.</span>
-                      {question.prompt}
+                      {promptTitle}
                     </span>
+                    {promptHelp && (
+                      <span className={`mt-1 block font-medium leading-snug text-slate-500 dark:text-slate-400 ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
+                        {promptHelp}
+                      </span>
+                    )}
                     {question.type === 'short' ? (
                       <textarea
                         value={value}
