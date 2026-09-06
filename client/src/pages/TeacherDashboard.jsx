@@ -2222,12 +2222,14 @@ function TeacherDashboardInner() {
                 key={s.id}
                 data-student-id={s.id}
                 title={showPulseState && !handUp ? pulseMeta.title : undefined}
-                className={`iboard-student-card relative flex flex-col overflow-visible rounded-2xl bg-white p-3 dark:bg-slate-900 ${
+                className={`iboard-student-card relative flex flex-col overflow-visible rounded-2xl p-3 ${
                   handUp
-                    ? 'border border-rose-200 ring-2 ring-rose-300/70 dark:border-rose-800 dark:ring-rose-500/40'
-                    : showPulseState
-                      ? pulseMeta.className
-                      : 'border dark:border-slate-700/80'
+                    ? 'border border-orange-500 bg-orange-200/90 shadow-[inset_4px_0_0_0_#ea580c] dark:border-orange-600 dark:bg-orange-950/55 dark:shadow-[inset_4px_0_0_0_#fb923c]'
+                    : `bg-white dark:bg-slate-900 ${
+                        showPulseState
+                          ? pulseMeta.className
+                          : 'border dark:border-slate-700/80'
+                      }`
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-1.5">
@@ -2243,12 +2245,11 @@ function TeacherDashboardInner() {
                     </label>
                   </HintWrap>
                   <h2
-                    className={`min-w-0 truncate font-display text-base font-semibold ${
-                      handUp
-                        ? 'cursor-pointer text-rose-600 dark:text-rose-400'
-                        : `text-ink-900 dark:text-slate-100 ${inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''}`
+                    className={`min-w-0 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100 ${
+                      handUp || inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''
                     }`}
                     aria-label={handUp ? `${s.name} has a question` : undefined}
+                    title={handUp ? 'Open question' : undefined}
                     onClick={() => {
                       if (handUp) {
                         setHandQuestionTarget({ student: s, questions: handQuestions });
@@ -2386,7 +2387,7 @@ function TeacherDashboardInner() {
                 </div>
                 <div
                   data-student-writing-pane
-                  className={`iboard-writing-surface relative mt-2 rounded-xl p-2.5 pr-9 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl bg-white p-2.5 pr-9 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">

@@ -20,6 +20,11 @@ function truncate(text, max = 48) {
   return `${clean.slice(0, max - 1)}…`;
 }
 
+function questionPromptLabel(prompt) {
+  if (prompt === 'Verbal question') return 'Verbal check';
+  return prompt || '';
+}
+
 function confidenceLabel(confidence) {
   if (confidence === 'confident') return 'Confident';
   if (confidence === 'unsure') return 'Not confident';
@@ -49,7 +54,7 @@ export function buildLessonReportHtml(report) {
   const byQuestionRows = questions.map((question) => `
     <tr>
       <td>Q${question.questionNumber}</td>
-      <td>${escapeHtml(truncate(question.prompt, 80))}</td>
+      <td>${escapeHtml(truncate(questionPromptLabel(question.prompt), 80))}</td>
       <td>${question.responded}/${question.roster}</td>
       <td>${question.responseRate}%</td>
       <td>${question.confident}</td>
@@ -127,7 +132,7 @@ export function buildLessonReportCsv(report) {
     lines.push([
       'By question',
       `Q${question.questionNumber}`,
-      question.prompt,
+      questionPromptLabel(question.prompt),
       question.responded,
       question.roster,
       question.responseRate,

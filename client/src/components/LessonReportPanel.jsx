@@ -8,6 +8,11 @@ function truncate(text, max = 56) {
   return `${clean.slice(0, max - 1)}…`;
 }
 
+function questionPromptLabel(prompt) {
+  if (prompt === 'Verbal question') return 'Verbal check';
+  return prompt || '';
+}
+
 function confidenceBadge(confidence) {
   if (confidence === 'confident') return 'text-emerald-700 dark:text-emerald-300';
   if (confidence === 'unsure') return 'text-amber-700 dark:text-amber-300';
@@ -123,7 +128,7 @@ export default function LessonReportPanel({ roomCode, onClose }) {
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600">Q{question.questionNumber}</p>
-                        <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{question.prompt}</p>
+                        <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{questionPromptLabel(question.prompt)}</p>
                       </div>
                       <p className="shrink-0 text-sm font-black text-slate-700 dark:text-slate-200">
                         {question.responded}/{question.roster} · {question.responseRate}%
