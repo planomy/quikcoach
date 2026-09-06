@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
+import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import { activityStatus, wordCount } from '../lib/text.js';
 import {
   buildAiPrompt,
@@ -274,6 +275,7 @@ function TeacherDashboardInner() {
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [draftTrailOpen, setDraftTrailOpen] = useState(false);
+  const [sessionPdfOpen, setSessionPdfOpen] = useState(false);
   const [draftTrailBusy, setDraftTrailBusy] = useState(false);
   const [addCardTitle, setAddCardTitle] = useState('Teacher');
   const [addCardText, setAddCardText] = useState('');
@@ -2098,6 +2100,7 @@ function TeacherDashboardInner() {
       </div>
       {room?.draftTrail?.reason && <p role="alert" className="bg-amber-100 px-4 py-2 text-sm text-amber-950">{room.draftTrail.reason}</p>}
       {draftTrailOpen && <DraftTrailPanel socket={socket} onClose={() => setDraftTrailOpen(false)} />}
+      {sessionPdfOpen && <SessionPdfExport socket={socket} onClose={() => setSessionPdfOpen(false)} />}
 
       {toolsPanelOpen && (
         <div
@@ -3252,6 +3255,7 @@ function TeacherDashboardInner() {
               Save current evidence
             </button>
             <button type="button" onClick={() => { closeSettings(); setDraftTrailOpen(true); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">View Draft Trail</button>
+            <button type="button" disabled={sessionBusy} onClick={() => { closeSettings(); setSessionPdfOpen(true); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800">Export session report (PDF)</button>
             <button
               type="button"
               disabled={sessionBusy}
