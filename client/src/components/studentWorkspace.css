@@ -259,7 +259,7 @@ html.iboard-student-workspace .iboard-question-pulse {
     position: sticky;
     top: 1rem;
     align-self: start;
-    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -276,7 +276,9 @@ html.iboard-student-workspace .iboard-question-pulse {
 
   .iboard-student-workspace .iboard-student-support-scroll {
     min-height: 0;
-    flex: 1 1 auto;
+    flex: 1 1 0%;
+    /* Explicit cap so large Inbox sets scroll here instead of growing the page. */
+    max-height: calc(100dvh - 2rem - 3.75rem);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;

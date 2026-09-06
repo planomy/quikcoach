@@ -154,14 +154,16 @@ export default function StudentView() {
       next.add(itemId);
       return next;
     });
-    // Bring the reply into view — students are often scrolled into writing.
+    // Scroll only inside the Inbox rail — never the whole student dashboard.
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
-        document
-          .querySelector('[data-iboard-student-support]')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const scroller = document.querySelector('.iboard-student-support-scroll');
         const node = document.querySelector(`[data-inbox-item="${CSS.escape(String(itemId))}"]`);
-        node?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (!scroller || !node || !scroller.contains(node)) return;
+        const scrollerRect = scroller.getBoundingClientRect();
+        const nodeRect = node.getBoundingClientRect();
+        const nextTop = scroller.scrollTop + (nodeRect.top - scrollerRect.top) - 8;
+        scroller.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
       });
     });
   }
