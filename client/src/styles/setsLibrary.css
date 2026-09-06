@@ -85,11 +85,7 @@
   overflow: hidden;
 }
 
-/* Master-detail browse: widen the Ask dock so list stays left and preview sits right. */
-.iboard-header-dock--start:has(nav[aria-label="Ask options"]):has(.sets-browse--previewing) {
-  width: min(54rem, calc(100vw - 0.75rem)) !important;
-  transition: width 160ms ease;
-}
+/* Master-detail was stretching Quick — preview is now a separate flyout beside the dock. */
 
 div.p-4:has(#sets-subject-filter) > section {
   display: flex;
@@ -105,34 +101,16 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin {
   overflow-y: auto;
 }
 
-/* Browse with preview open: list left, preview right. */
-div.p-4:has(#sets-subject-filter) .sets-browse--previewing {
-  min-height: 0;
-  flex: 1 1 auto;
-}
-
-@media (min-width: 42rem) {
-  div.p-4:has(#sets-subject-filter) .sets-browse--previewing {
-    flex-direction: row;
-    align-items: stretch;
-  }
-
-  div.p-4:has(#sets-subject-filter) .sets-browse--previewing > .sets-browse-list {
-    flex: 0 0 17.5rem;
-    max-width: 17.5rem;
-    max-height: none;
-  }
-
-  div.p-4:has(#sets-subject-filter) .sets-browse--previewing .sets-browse-preview {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 0;
-  }
-}
-
 /* Subject + year filters narrow the catalogue, so one readable column is the right density. */
 div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* Set preview sits beside the Ask dock as its own panel — does not stretch Quick. */
+.sets-preview-flyout {
+  position: fixed;
+  z-index: 61;
+  pointer-events: auto;
 }
 
 /* Responses dock: remove the redundant title row but keep the close control. */
