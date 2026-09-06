@@ -558,6 +558,24 @@ export const QUESTION_SET_BANK = [
       'Revise your analysis so it shows nuance rather than certainty where appropriate.',
     ],
   }),
+  set({
+    id: 'bank-eng-teacher-01',
+    name: 'TEACHER Analytical Paragraph',
+    subject: 'English',
+    years: '9–12',
+    skill: 'Analytical framework',
+    minutes: 15,
+    note: 'Exam-ready scaffold: Topic/Thesis → Evidence → Author + Audience → Culture → Human/Higher Insight → Extend → Return.',
+    prompts: [
+      'T — Topic / Thesis\nMake a clear argument that answers the question. State what the text suggests, not just what happens.',
+      'E — Evidence\nChoose a precise quote, example or moment that directly supports your point. Use only the part you will analyse.',
+      'A — Author + Audience\nIdentify the author’s deliberate aesthetic feature, literary device, language or structural choice. Explain how it shapes meaning and positions the audience to think, feel or respond.',
+      'C — Culture\nConsider the cultural assumptions, attitudes, values and beliefs the text represents, reinforces, questions or challenges.',
+      'H — Human / Higher Insight\nWhat bigger idea does this reveal? Think about people, society, culture, power, identity, values or the wider issue.',
+      'E — Extend\nAdd further evidence that develops, strengthens or complicates your interpretation. Do more than repeat the first point.',
+      'R — Return\nLink your deeper analysis back to the paragraph argument and the exact wording of the question.',
+    ],
+  }),
 
   // HASS — 8
   set({
