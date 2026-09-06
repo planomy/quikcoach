@@ -347,7 +347,8 @@ export default function SavedSetsPanel({
     setDraftQuestions((items) => items.filter((_, i) => i !== index));
   }
 
-  const sheetOpen = mode === 'preview' || mode === 'edit' || mode === 'create';
+  const sheetOpen = mode === 'edit' || mode === 'create';
+  const previewOpen = mode === 'preview' && !!activeSet;
 
   return (
     <div className={showQueue ? 'border-t border-slate-200 px-4 py-2.5 dark:border-slate-700' : 'p-4'}>
@@ -478,127 +479,125 @@ export default function SavedSetsPanel({
             </p>
           )}
 
-          <div className="mt-3 max-h-[28rem] overflow-y-auto pr-1 scrollbar-thin">
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2">
-              {filtered.map((set) => {
-                const isFavourite = favouriteSet.has(set.id);
-                return (
-                <article
-                  key={set.id}
-                  className="flex min-w-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 transition hover:border-indigo-200 hover:bg-indigo-50/35 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
-                >
-                  <button
-                    type="button"
-                    onClick={(event) => toggleFavourite(set.id, event)}
-                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${
-                      isFavourite
-                        ? 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40'
-                        : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300'
+          <div className={`mt-3 flex min-h-0 flex-1 flex-col gap-3 ${previewOpen ? 'sets-browse--previewing' : ''}`}>
+            <div className="min-h-0 max-h-[28rem] flex-1 overflow-y-auto pr-1 scrollbar-thin">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2">
+                {filtered.map((set) => {
+                  const isFavourite = favouriteSet.has(set.id);
+                  const isActive = previewOpen && activeSet?.id === set.id;
+                  return (
+                  <article
+                    key={set.id}
+                    className={`flex min-w-0 items-center gap-1.5 rounded-xl border p-1.5 transition ${
+                      isActive
+                        ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300 dark:border-indigo-500 dark:bg-indigo-950/40 dark:ring-indigo-700'
+                        : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/35 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20'
                     }`}
-                    aria-label={isFavourite ? `Unfavourite ${set.name}` : `Favourite ${set.name}`}
-                    aria-pressed={isFavourite}
-                    title={isFavourite ? 'Remove from favourites' : 'Favourite — keep at top'}
                   >
-                    <StarIcon filled={isFavourite} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openPreview(set)}
-                    className="group min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                    aria-label={`Preview ${set.name}`}
-                  >
-                    <p className="truncate text-sm font-black text-slate-900 group-hover:text-indigo-950 dark:text-white dark:group-hover:text-indigo-100">{set.name}</p>
-                    <p className="mt-0.5 truncate text-[10px] font-bold text-slate-400">
-                      {!set.bank && (
-                        <>
-                          <span className="text-indigo-500">Yours</span>
-                          <span aria-hidden="true"> · </span>
-                        </>
-                      )}
-                      {set.overridden && (
-                        <>
-                          <span className="text-indigo-500">Edited</span>
-                          <span aria-hidden="true"> · </span>
-                        </>
-                      )}
-                      {formatSetCardMeta(set)}
-                    </p>
-                  </button>
-                  <div className="flex shrink-0 flex-col gap-1">
                     <button
                       type="button"
-                      onClick={() => onLaunchSet(set)}
-                      title="Send to Respond — students answer now"
-                      className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
+                      onClick={(event) => toggleFavourite(set.id, event)}
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${
+                        isFavourite
+                          ? 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40'
+                          : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300'
+                      }`}
+                      aria-label={isFavourite ? `Unfavourite ${set.name}` : `Favourite ${set.name}`}
+                      aria-pressed={isFavourite}
+                      title={isFavourite ? 'Remove from favourites' : 'Favourite — keep at top'}
                     >
-                      Respond
+                      <StarIcon filled={isFavourite} />
                     </button>
                     <button
                       type="button"
-                      onClick={() => onSendSetToInbox?.(set)}
-                      title="Send to Inbox — keep as prompts while writing"
-                      className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-500 dark:ring-offset-slate-900"
+                      onClick={() => openPreview(set)}
+                      className="group min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      aria-label={`Preview ${set.name}`}
+                      aria-current={isActive ? 'true' : undefined}
                     >
-                      Inbox
+                      <p className="truncate text-sm font-black text-slate-900 group-hover:text-indigo-950 dark:text-white dark:group-hover:text-indigo-100">{set.name}</p>
+                      <p className="mt-0.5 truncate text-[10px] font-bold text-slate-400">
+                        {!set.bank && (
+                          <>
+                            <span className="text-indigo-500">Yours</span>
+                            <span aria-hidden="true"> · </span>
+                          </>
+                        )}
+                        {set.overridden && (
+                          <>
+                            <span className="text-indigo-500">Edited</span>
+                            <span aria-hidden="true"> · </span>
+                          </>
+                        )}
+                        {formatSetCardMeta(set)}
+                      </p>
                     </button>
-                  </div>
-                </article>
-                );
-              })}
-              {!filtered.length && (
-                <p className="col-span-full rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-500 dark:border-slate-700">
-                  No sets in this filter.
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {sheetOpen && (
-        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/40 p-3 sm:items-center">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">
-                  {mode === 'create' ? 'New set' : mode === 'edit' ? 'Edit set' : 'Preview'}
-                </p>
-                {mode === 'preview' ? (
-                  <>
-                    <h4 className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">{activeSet?.name}</h4>
-                    <p className="mt-1 text-[11px] font-bold text-slate-400">{formatSetMeta(activeSet || {})}</p>
-                  </>
-                ) : (
-                  <input
-                    value={draftName}
-                    onChange={(event) => setDraftName(event.target.value.slice(0, 80))}
-                    placeholder="Set name…"
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                  />
+                    <div className="flex shrink-0 flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onLaunchSet(set)}
+                        title="Send to Respond — students answer now"
+                        className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
+                      >
+                        Respond
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onSendSetToInbox?.(set)}
+                        title="Send to Inbox — keep as prompts while writing"
+                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-500 dark:ring-offset-slate-900"
+                      >
+                        Inbox
+                      </button>
+                    </div>
+                  </article>
+                  );
+                })}
+                {!filtered.length && (
+                  <p className="col-span-full rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-500 dark:border-slate-700">
+                    No sets in this filter.
+                  </p>
                 )}
               </div>
-              <button type="button" onClick={() => { setMode(''); setActiveSet(null); }} className="text-sm font-black text-slate-500">Close</button>
             </div>
 
-            {mode === 'preview' && (
-              <>
-                {activeSet?.note && (
-                  <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-100">{activeSet.note}</p>
-                )}
-                <ol className="mt-4 space-y-2">
-                  {(activeSet?.questions || []).map((question, index) => (
-                    <li key={question.id} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold leading-snug text-slate-800 dark:border-slate-700 dark:text-slate-100">
-                      <span className="mr-1.5 text-[10px] font-black text-slate-400">{index + 1}.</span>
-                      {question.prompt}
-                      {question.helper ? (
-                        <span className="mt-0.5 block text-[11px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-                          {question.helper}
-                        </span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ol>
-                <div className="mt-4 flex flex-wrap gap-2">
+            {previewOpen && (
+              <div className="sets-browse-preview flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Preview</p>
+                    <h4 className="mt-0.5 truncate font-display text-lg font-black text-slate-950 dark:text-white">{activeSet.name}</h4>
+                    <p className="mt-0.5 text-[11px] font-bold text-slate-400">{formatSetMeta(activeSet)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setMode(''); setActiveSet(null); }}
+                    className="shrink-0 text-sm font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 scrollbar-thin">
+                  {activeSet.note && (
+                    <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-100">{activeSet.note}</p>
+                  )}
+                  <ol className="space-y-2">
+                    {(activeSet.questions || []).map((question, index) => (
+                      <li key={question.id} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold leading-snug text-slate-800 dark:border-slate-700 dark:text-slate-100">
+                        <span className="mr-1.5 text-[10px] font-black text-slate-400">{index + 1}.</span>
+                        {question.prompt}
+                        {question.helper ? (
+                          <span className="mt-0.5 block text-[11px] font-medium leading-snug text-slate-500 dark:text-slate-400">
+                            {question.helper}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap gap-2 border-t border-slate-100 px-3 py-2.5 dark:border-slate-800">
                   <button type="button" onClick={() => onLaunchSet(activeSet)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">
                     Send to Respond
                   </button>
@@ -609,14 +608,14 @@ export default function SavedSetsPanel({
                   >
                     Send to Inbox
                   </button>
-                  <button type="button" onClick={() => { onEnqueueSet(activeSet); setMode(''); }} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
+                  <button type="button" onClick={() => { onEnqueueSet(activeSet); setMode(''); setActiveSet(null); }} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
                   <button type="button" onClick={() => openEdit(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                     Edit
                   </button>
                   <button type="button" onClick={() => duplicateSet(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                     Duplicate
                   </button>
-                  {activeSet?.overridden && (
+                  {activeSet.overridden && (
                     <button
                       type="button"
                       onClick={() => resetBankOverride(activeSet.id)}
@@ -625,7 +624,7 @@ export default function SavedSetsPanel({
                       Reset to original
                     </button>
                   )}
-                  {!activeSet?.bank && (
+                  {!activeSet.bank && (
                     <button
                       type="button"
                       onClick={() => deleteCustomSet(activeSet.id)}
@@ -635,8 +634,29 @@ export default function SavedSetsPanel({
                     </button>
                   )}
                 </div>
-              </>
+              </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {sheetOpen && (
+        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/40 p-3 sm:items-center">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">
+                  {mode === 'create' ? 'New set' : 'Edit set'}
+                </p>
+                <input
+                  value={draftName}
+                  onChange={(event) => setDraftName(event.target.value.slice(0, 80))}
+                  placeholder="Set name…"
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+              <button type="button" onClick={() => { setMode(''); setActiveSet(null); }} className="text-sm font-black text-slate-500">Close</button>
+            </div>
 
             {mode === 'edit' && (
               <>

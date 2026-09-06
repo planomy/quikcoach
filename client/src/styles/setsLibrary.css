@@ -99,6 +99,22 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin {
   overflow-y: auto;
 }
 
+/* Browse with preview open: list + preview share the dock height so teachers can hop sets. */
+div.p-4:has(#sets-subject-filter) .sets-browse--previewing {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+div.p-4:has(#sets-subject-filter) .sets-browse--previewing > .scrollbar-thin {
+  flex: 1 1 42%;
+  max-height: none;
+}
+
+div.p-4:has(#sets-subject-filter) .sets-browse-preview {
+  flex: 1 1 58%;
+  min-height: 12rem;
+}
+
 /* Subject + year filters narrow the catalogue, so one readable column is the right density. */
 div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   grid-template-columns: minmax(0, 1fr);
