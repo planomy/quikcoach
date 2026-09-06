@@ -8,7 +8,6 @@ const CONFIDENCE_OPTIONS = [
 
 /**
  * Always-on Respond control — answer a verbal whiteboard question without a teacher-typed prompt.
- * Stays available even while another Pulse question is open; submit starts or joins a Verbal check.
  */
 export default function StudentVerbalRespond({ socket, compact = false, className = '' }) {
   const [open, setOpen] = useState(false);
@@ -39,40 +38,32 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
 
   if (!open) {
     return (
-      <section className={`rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 dark:border-indigo-800 dark:bg-indigo-950/30 ${compact ? 'p-3' : 'p-3.5'} ${className}`}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              {message === 'Sent' ? 'Answer sent' : 'Quick answer'}
-            </p>
-            <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-              For questions the teacher asks aloud
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setMessage('');
-              setOpen(true);
-            }}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-indigo-200 bg-white text-lg font-black text-indigo-700 shadow-sm hover:bg-indigo-100 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200"
-            aria-label="Quick answer"
-            title="Quick answer"
-          >
-            +
-          </button>
-        </div>
-      </section>
+      <button
+        type="button"
+        onClick={() => {
+          setMessage('');
+          setOpen(true);
+        }}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 text-left transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/50 ${compact ? 'p-3' : 'p-3.5'} ${className}`}
+        aria-label="Quick answer"
+      >
+        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          {message === 'Sent' ? 'Answer sent' : 'Quick answer'}
+        </span>
+        <span
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-indigo-200 bg-white text-lg font-black text-indigo-700 shadow-sm dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200"
+          aria-hidden="true"
+        >
+          +
+        </span>
+      </button>
     );
   }
 
   return (
     <section className={`rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'p-3' : 'p-4'} ${className}`}>
       <div className="flex items-center justify-between gap-2">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Quick answer</p>
-          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Teacher asked aloud</p>
-        </div>
+        <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Quick answer</p>
         <button
           type="button"
           onClick={() => setOpen(false)}
