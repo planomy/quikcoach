@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 const CONFIDENCE_OPTIONS = [
   ['confident', 'Confident'],
@@ -7,34 +7,20 @@ const CONFIDENCE_OPTIONS = [
 ];
 
 /**
- * Idle Respond control — answer a verbal whiteboard question without a teacher-typed prompt.
+ * Always-on Respond control — answer a verbal whiteboard question without a teacher-typed prompt.
+ * Stays available even while another Pulse question is open; submit starts or joins a Verbal check.
  */
-export default function StudentVerbalRespond({ socket, compact = false }) {
+export default function StudentVerbalRespond({ socket, compact = false, className = '' }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [confidence, setConfidence] = useState('');
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState('');
-  const [blocked, setBlocked] = useState(false);
-
-  useEffect(() => {
-    if (!socket) return undefined;
-    const onLive = (payload) => {
-      const activity = payload?.activity;
-      const isVerbal = activity?.type === 'short' && activity?.prompt === 'Verbal question';
-      const formalLive = !!activity && !isVerbal;
-      setBlocked(formalLive);
-      if (formalLive) setOpen(false);
-    };
-    socket.on('live:student', onLive);
-    socket.emit('student:live-sync', {});
-    return () => socket.off('live:student', onLive);
-  }, [socket]);
 
   function submit(event) {
     event?.preventDefault?.();
     const text = draft.trim();
-    if (!text || sending || !socket || blocked) return;
+    if (!text || sending || !socket) return;
     setSending(true);
     setMessage('');
     socket.emit('student:verbal-response', { value: text, confidence }, (ack) => {
@@ -51,22 +37,25 @@ export default function StudentVerbalRespond({ socket, compact = false }) {
     });
   }
 
-  if (blocked) return null;
-
   if (!open) {
     return (
-      <section className={`rounded-2xl border border-dashed border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${compact ? 'p-3' : 'p-4'}`}>
+      <section className={`rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 dark:border-indigo-800 dark:bg-indigo-950/30 ${compact ? 'p-3' : 'p-3.5'} ${className}`}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-            {message === 'Sent' ? 'Answer sent' : 'No live question'}
-          </p>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              {message === 'Sent' ? 'Answer sent' : 'Quick answer'}
+            </p>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              For questions the teacher asks aloud
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => {
               setMessage('');
               setOpen(true);
             }}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-indigo-200 bg-indigo-50 text-lg font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-indigo-200 bg-white text-lg font-black text-indigo-700 shadow-sm hover:bg-indigo-100 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200"
             aria-label="Quick answer"
             title="Quick answer"
           >
@@ -78,9 +67,12 @@ export default function StudentVerbalRespond({ socket, compact = false }) {
   }
 
   return (
-    <section className={`rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'p-3' : 'p-4'}`}>
+    <section className={`rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'p-3' : 'p-4'} ${className}`}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Quick answer</p>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Quick answer</p>
+          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Teacher asked aloud</p>
+        </div>
         <button
           type="button"
           onClick={() => setOpen(false)}

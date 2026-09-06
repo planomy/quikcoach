@@ -1291,13 +1291,16 @@ io.on('connection', (socket) => {
         activity?.type === 'short' && activity?.prompt === 'Verbal question';
 
       let activity = queries.getLiveActivity(db, code);
-      if (activity && !isVerbal(activity)) {
-        cb?.({ ok: false, error: 'A live question is already open — answer that first' });
-        return;
-      }
-      if (activity && activity.locked) {
-        cb?.({ ok: false, error: 'Answers are locked' });
-        return;
+      const joinExistingVerbal = activity && isVerbal(activity) && !activity.locked;
+      if (joinExistingVerbal) {
+        const existing = queries.listLiveResponses(db, code)
+          .find((row) => Number(row.studentId) === sid && row.activityId === activity.id);
+        // Already answered this verbal round → start the next aloud check without teacher Clear.
+        if (existing) {
+          activity = null;
+        }
+      } else {
+        activity = null;
       }
 
       if (!activity) {

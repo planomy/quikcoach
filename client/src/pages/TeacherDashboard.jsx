@@ -2221,10 +2221,19 @@ function TeacherDashboardInner() {
               <article
                 key={s.id}
                 data-student-id={s.id}
-                title={showPulseState && !handUp ? pulseMeta.title : undefined}
+                title={handUp ? `${s.name} has a question — tap to open` : (showPulseState ? pulseMeta.title : undefined)}
+                role={handUp ? 'button' : undefined}
+                tabIndex={handUp ? 0 : undefined}
+                onClick={handUp ? () => setHandQuestionTarget({ student: s, questions: handQuestions }) : undefined}
+                onKeyDown={handUp ? (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setHandQuestionTarget({ student: s, questions: handQuestions });
+                  }
+                } : undefined}
                 className={`iboard-student-card relative flex flex-col overflow-visible rounded-2xl p-3 ${
                   handUp
-                    ? 'border border-orange-500 bg-orange-200/90 shadow-[inset_4px_0_0_0_#ea580c] dark:border-orange-600 dark:bg-orange-950/55 dark:shadow-[inset_4px_0_0_0_#fb923c]'
+                    ? 'cursor-pointer border border-orange-500 bg-orange-200/90 shadow-[inset_4px_0_0_0_#ea580c] dark:border-orange-400 dark:bg-orange-900/75 dark:shadow-[inset_4px_0_0_0_#fb923c] dark:ring-1 dark:ring-orange-500/40'
                     : `bg-white dark:bg-slate-900 ${
                         showPulseState
                           ? pulseMeta.className
@@ -2234,7 +2243,10 @@ function TeacherDashboardInner() {
               >
                 <div className="flex min-w-0 items-center gap-1.5">
                   <HintWrap hint="Send to Inbox">
-                    <label className="flex shrink-0 cursor-pointer items-center">
+                    <label
+                      className="flex shrink-0 cursor-pointer items-center"
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={!!broadcastPick[s.id]}
@@ -2250,8 +2262,9 @@ function TeacherDashboardInner() {
                     }`}
                     aria-label={handUp ? `${s.name} has a question` : undefined}
                     title={handUp ? 'Open question' : undefined}
-                    onClick={() => {
+                    onClick={(event) => {
                       if (handUp) {
+                        event.stopPropagation();
                         setHandQuestionTarget({ student: s, questions: handQuestions });
                         return;
                       }
@@ -2288,7 +2301,10 @@ function TeacherDashboardInner() {
                       {wc}w
                     </span>
                   ) : null}
-                  <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-70 transition hover:opacity-100">
+                  <div
+                    className="ml-auto flex shrink-0 items-center gap-0.5 opacity-70 transition hover:opacity-100"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <HintWrap hint={copiedStudentId === s.id ? 'Copied!' : 'Copy draft'}>
                       <button
                         type="button"
@@ -2399,7 +2415,10 @@ function TeacherDashboardInner() {
                       />
                       <button
                         type="button"
-                        onClick={() => setDrawingMarkupTarget(s)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setDrawingMarkupTarget(s);
+                        }}
                         className="absolute bottom-2 right-2 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white shadow-lg hover:bg-indigo-700"
                       >
                         ✎ Mark up

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import LiveResponseStudentCore from './LiveResponseStudentCore.jsx';
+import StudentVerbalRespond from './StudentVerbalRespond.jsx';
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import './studentWorkspace.css';
 
@@ -169,8 +170,9 @@ function TabbedStudentResponse({ socket, ...props }) {
 
   return (
     <>
+      <StudentVerbalRespond socket={socket} className="mb-3" />
       <div className={collapsed && activity?.id && response ? 'hidden' : undefined}>
-        <LiveResponseStudentCore {...props} socket={socket} standalone headerTrailing={closeAnswerButton} />
+        <LiveResponseStudentCore {...props} socket={socket} standalone headerTrailing={closeAnswerButton} hideQuickAnswer />
       </div>
       {collapsed && activity?.id && response && (
         <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">

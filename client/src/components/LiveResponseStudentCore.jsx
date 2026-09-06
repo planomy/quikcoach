@@ -58,7 +58,7 @@ function playQuestionChime() {
   }
 }
 
-export default function LiveResponseStudent({ socket, standalone = false, compact = false, collapsed = false, onCollapse, onExpand, headerTrailing = null }) {
+export default function LiveResponseStudent({ socket, standalone = false, compact = false, collapsed = false, onCollapse, onExpand, headerTrailing = null, hideQuickAnswer = false }) {
   const [activity, setActivity] = useState(null);
   const [response, setResponse] = useState(null);
   const [featured, setFeatured] = useState([]);
@@ -388,6 +388,9 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     // The embedded dock can be opened while idle; show its compact waiting state
     // instead of rendering nothing and making the Pulse control disappear.
     if (!standalone && !compact) return null;
+    if (hideQuickAnswer) {
+      return collapseButton;
+    }
     return (
       <>
         {collapseButton}
@@ -410,6 +413,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     return 'border-slate-200 bg-slate-50 text-slate-900 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white';
   };
 
+  const showPermanentQuickAnswer = !hideQuickAnswer && (standalone || compact);
+
   return (
     <>
       {featuredNotice && !quietAlerts && (
@@ -419,6 +424,9 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         </div>
       )}
       {collapseButton}
+      {showPermanentQuickAnswer ? (
+        <StudentVerbalRespond socket={socket} compact={compact} className={activity ? (compact ? 'mb-2' : 'mb-3') : ''} />
+      ) : null}
       {arrival && !quietAlerts && (
         <button
           type="button"
