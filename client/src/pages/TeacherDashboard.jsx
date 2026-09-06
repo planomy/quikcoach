@@ -1902,14 +1902,14 @@ function TeacherDashboardInner() {
   }
 
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
-  // Full-bleed board: pack from the left with a card max width so two students
-  // don't stretch into giant empty halves of a wide classroom display.
+  // Fill the board width on any device: auto-fit collapses unused tracks, and
+  // 1fr lets each visible column share the leftover space evenly (no right-hand gap).
   const studentGridClass =
     cardView === 'overview'
-      ? 'grid-cols-[repeat(auto-fill,minmax(17.5rem,22rem))] justify-start'
+      ? 'grid-cols-[repeat(auto-fit,minmax(min(100%,17.5rem),1fr))]'
       : cardView === 'reading'
-        ? 'grid-cols-[repeat(auto-fill,minmax(22rem,28rem))] justify-start'
-        : 'grid-cols-[repeat(auto-fill,minmax(min(100%,36rem),42rem))] justify-start';
+        ? 'grid-cols-[repeat(auto-fit,minmax(min(100%,22rem),1fr))]'
+        : 'grid-cols-[repeat(auto-fit,minmax(min(100%,28rem),1fr))]';
   const writingPaneClass =
     cardView === 'overview'
       ? 'max-h-52 overflow-y-auto overflow-x-visible'
