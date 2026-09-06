@@ -176,6 +176,7 @@ export function migrate(db) {
     `ALTER TABLE live_activities ADD COLUMN timer_seconds INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE live_activities ADD COLUMN source_question_id INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE live_activities ADD COLUMN questions_json TEXT NOT NULL DEFAULT '[]'`,
+    `ALTER TABLE live_activities ADD COLUMN target_ids_json TEXT NOT NULL DEFAULT '[]'`,
   ]) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
@@ -804,14 +805,17 @@ export const queries = {
     const questionNumber = Math.max(1, Number(room?.live_question_number) || 1);
     const launchedAt = new Date().toISOString();
     const questions = Array.isArray(activity.questions) ? activity.questions : [];
+    const targetStudentIds = Array.isArray(activity.targetStudentIds)
+      ? [...new Set(activity.targetStudentIds.map(Number).filter(Boolean))].slice(0, 80)
+      : [];
     // For set activities, also stash questions in options_json as a backup if questions_json
     // is missing or unreadable on an older volume.
     const optionsPayload = activity.type === 'set' ? questions : (activity.options || []);
     run(
       db,
       `INSERT INTO live_activities
-       (room_code, activity_id, question_number, type, prompt, options_json, questions_json, correct_answer, anonymous, optional, image_url, timer_seconds, source_question_id, locked, revealed, launched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+       (room_code, activity_id, question_number, type, prompt, options_json, questions_json, correct_answer, anonymous, optional, image_url, timer_seconds, source_question_id, target_ids_json, locked, revealed, launched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
        ON CONFLICT(room_code) DO UPDATE SET
          activity_id = excluded.activity_id,
          question_number = excluded.question_number,
@@ -825,6 +829,7 @@ export const queries = {
          image_url = excluded.image_url,
          timer_seconds = excluded.timer_seconds,
          source_question_id = excluded.source_question_id,
+         target_ids_json = excluded.target_ids_json,
          locked = 0,
          revealed = 0,
          launched_at = excluded.launched_at`,
@@ -842,6 +847,7 @@ export const queries = {
         activity.imageUrl || '',
         Math.max(0, Number(activity.timerSeconds) || 0),
         Math.max(0, Number(activity.sourceQuestionId) || 0),
+        JSON.stringify(targetStudentIds),
         launchedAt,
       ]
     );
@@ -1420,6 +1426,9 @@ function rowToLiveActivity(row) {
 
   const timerSeconds = Math.max(0, Number(row.timer_seconds) || 0);
   const launchedMs = sqliteUtcToMs(row.launched_at);
+  const targetStudentIds = parseJsonArray(row.target_ids_json)
+    .map(Number)
+    .filter(Boolean);
   return {
     id: row.activity_id,
     questionNumber: Math.max(1, Number(row.question_number) || 1),
@@ -1437,5 +1446,6 @@ function rowToLiveActivity(row) {
     launchedAt: new Date(launchedMs).toISOString(),
     endsAt: timerSeconds > 0 ? new Date(launchedMs + timerSeconds * 1000).toISOString() : '',
     sourceQuestionId: Math.max(0, Number(row.source_question_id) || 0),
+    targetStudentIds,
   };
 }

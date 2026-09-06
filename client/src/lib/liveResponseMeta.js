@@ -18,7 +18,7 @@ export const UNSURE_COLOR = '#f0a818';
 export function studentTileMeta(student) {
   if (student.promptExcluded) {
     return {
-      title: student.connected ? 'Their question · not asked to answer' : 'Offline · their question',
+      title: student.connected ? 'Not asked to answer this one' : 'Offline · not asked to answer',
     };
   }
   if (student.engagement_status && student.engagement_status !== 'ready') {

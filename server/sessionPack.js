@@ -490,8 +490,8 @@ export function importSessionPack(db, roomCode, pack, media) {
       `INSERT INTO live_activities
          (room_code, activity_id, question_number, type, prompt, options_json, questions_json,
           correct_answer, anonymous, optional, image_url, timer_seconds, source_question_id,
-          locked, revealed, launched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          target_ids_json, locked, revealed, launched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       code,
       String(activity.activity_id),
@@ -506,6 +506,7 @@ export function importSessionPack(db, roomCode, pack, media) {
       String(activity.image_url || ''),
       Math.max(0, Number(activity.timer_seconds) || 0),
       Math.max(0, Number(activity.source_question_id) || 0),
+      String(activity.target_ids_json || '[]'),
       activity.locked ? 1 : 0,
       activity.revealed ? 1 : 0,
       String(activity.launched_at || new Date().toISOString())

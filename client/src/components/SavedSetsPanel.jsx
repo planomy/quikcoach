@@ -110,6 +110,7 @@ export default function SavedSetsPanel({
   onLaunchSet,
   onEnqueueSet,
   onMessage,
+  selectedStudentCount = 0,
 }) {
   const showQueue = panel === 'queue';
   const showSets = panel === 'sets';
@@ -466,6 +467,12 @@ export default function SavedSetsPanel({
             </select>
           </div>
 
+          {selectedStudentCount > 0 ? (
+            <p className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-bold text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
+              Launch goes to {selectedStudentCount} selected student{selectedStudentCount === 1 ? '' : 's'} (checkboxes on cards). Clear selection for the whole class.
+            </p>
+          ) : null}
+
           <div className="mt-3 max-h-[28rem] overflow-y-auto pr-1 scrollbar-thin">
             <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2">
               {filtered.map((set) => {
@@ -517,7 +524,7 @@ export default function SavedSetsPanel({
                     onClick={() => onLaunchSet(set)}
                     className="shrink-0 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
                   >
-                    Launch
+                    {selectedStudentCount > 0 ? `Launch · ${selectedStudentCount}` : 'Launch'}
                   </button>
                 </article>
                 );
@@ -576,7 +583,9 @@ export default function SavedSetsPanel({
                   ))}
                 </ol>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => onLaunchSet(activeSet)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Launch</button>
+                  <button type="button" onClick={() => onLaunchSet(activeSet)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">
+                    {selectedStudentCount > 0 ? `Launch to ${selectedStudentCount}` : 'Launch'}
+                  </button>
                   <button type="button" onClick={() => { onEnqueueSet(activeSet); setMode(''); }} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
                   <button type="button" onClick={() => openEdit(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                     Edit

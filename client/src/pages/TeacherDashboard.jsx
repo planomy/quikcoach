@@ -2094,6 +2094,8 @@ function TeacherDashboardInner() {
             onClearHighlight={() => setToolsHighlightStudentId(null)}
             onCopyStudentLink={copyStudentJoinLink}
             subjectAssist={promptSubjectAssist}
+            selectedStudentIds={orderedStudents.filter((s) => broadcastPick[s.id]).map((s) => s.id)}
+            onClearStudentSelection={() => setBroadcastPick({})}
             onThinkingSent={({ count, recipients }) => {
               setCopyToast(
                 recipients > 1

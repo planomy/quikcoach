@@ -451,6 +451,10 @@ function activityForStudent(activity, studentId) {
   if (!activity) return null;
   const excludedId = sourceStudentIdForActivity(activity);
   if (excludedId && Number(studentId) === excludedId) return null;
+  const targets = Array.isArray(activity.targetStudentIds)
+    ? activity.targetStudentIds.map(Number).filter(Boolean)
+    : [];
+  if (targets.length && !targets.includes(Number(studentId))) return null;
   return activity;
 }
 
@@ -492,7 +496,12 @@ function buildTeacherLivePayload(code) {
         confidence: cell?.confidence || '',
       };
     });
-    const promptExcluded = excludedStudentId > 0 && Number(student.id) === excludedStudentId;
+    const targets = Array.isArray(activity?.targetStudentIds)
+      ? activity.targetStudentIds.map(Number).filter(Boolean)
+      : [];
+    const promptExcluded =
+      (excludedStudentId > 0 && Number(student.id) === excludedStudentId)
+      || (targets.length > 0 && !targets.includes(Number(student.id)));
     return {
       id: student.id,
       name: student.name,
@@ -1137,6 +1146,10 @@ io.on('connection', (socket) => {
       const timerSeconds = [15, 30, 60, 120].includes(Number(raw?.timerSeconds))
         ? Number(raw.timerSeconds)
         : 0;
+      const rosterIds = new Set(queries.listStudents(db, code).map((row) => Number(row.id)).filter(Boolean));
+      const targetStudentIds = Array.isArray(raw?.targetStudentIds)
+        ? [...new Set(raw.targetStudentIds.map(Number).filter((id) => rosterIds.has(id)))].slice(0, 80)
+        : [];
       const activity = queries.launchLiveActivity(db, code, {
         id: randomUUID(),
         type,
@@ -1148,13 +1161,17 @@ io.on('connection', (socket) => {
         optional: !!raw?.optional,
         imageUrl,
         timerSeconds,
+        targetStudentIds,
       });
       if (type === 'set' && (!Array.isArray(activity?.questions) || activity.questions.length < 2)) {
         cb?.({ ok: false, error: 'Set questions failed to save — try Launch again' });
         return;
       }
       if (!activity.optional) {
-        queries.addLiveOpportunity(db, connectedStudentsInRoom(code), {
+        const opportunityTargets = targetStudentIds.length
+          ? targetStudentIds.filter((id) => connectedStudentsInRoom(code).includes(id))
+          : connectedStudentsInRoom(code);
+        queries.addLiveOpportunity(db, opportunityTargets, {
           roomCode: code,
           activityId: activity.id,
           questionNumber: activity.questionNumber,

@@ -167,6 +167,8 @@ export default function LiveResponseTeacher({
   onClearHighlight,
   subjectAssist = 'general',
   onThinkingSent,
+  selectedStudentIds = [],
+  onClearStudentSelection,
 }) {
   const [internalPanelTab, setInternalPanelTab] = useState('ask');
   const effectivePanelTab = panelTab ?? (panelTabs ? internalPanelTab : null);
@@ -364,6 +366,8 @@ export default function LiveResponseTeacher({
           setActiveView('live');
         }
         if (queueId) setQueue((items) => items.filter((item) => item.id !== queueId));
+        const targets = Array.isArray(question?.targetStudentIds) ? question.targetStudentIds : [];
+        if (targets.length) onClearStudentSelection?.();
       }
     });
   }
@@ -415,8 +419,16 @@ export default function LiveResponseTeacher({
       setMessage('That set is empty.');
       return;
     }
+    const targetStudentIds = [...new Set((selectedStudentIds || []).map(Number).filter(Boolean))];
+    const targetNote = targetStudentIds.length
+      ? ` · ${targetStudentIds.length} selected student${targetStudentIds.length === 1 ? '' : 's'}`
+      : '';
     if (questions.length === 1) {
-      launch({ ...questions[0], imageUrl: '', timerSeconds: 0 }, '', 'Question is live.');
+      launch(
+        { ...questions[0], imageUrl: '', timerSeconds: 0, targetStudentIds },
+        '',
+        `Question is live${targetNote}.`
+      );
       return;
     }
     launch({
@@ -429,7 +441,8 @@ export default function LiveResponseTeacher({
       optional: false,
       imageUrl: '',
       timerSeconds: 0,
-    }, '', `“${set.name}” is live · ${questions.length} questions.`);
+      targetStudentIds,
+    }, '', `“${set.name}” is live · ${questions.length} questions${targetNote}.`);
   }
 
   function enqueueSet(set) {
@@ -1131,6 +1144,7 @@ export default function LiveResponseTeacher({
               onLaunchSet={launchSet}
               onEnqueueSet={enqueueSet}
               onMessage={setMessage}
+              selectedStudentCount={(selectedStudentIds || []).length}
             />
           </div>
         )}
@@ -1146,6 +1160,7 @@ export default function LiveResponseTeacher({
             onLaunchSet={launchSet}
             onEnqueueSet={enqueueSet}
             onMessage={setMessage}
+            selectedStudentCount={(selectedStudentIds || []).length}
           />
         )}
 
