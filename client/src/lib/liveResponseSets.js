@@ -162,6 +162,73 @@ export function buildSetInboxText(setName, questions) {
 }
 
 /**
+ * Recover title + questions for Inbox display when structured meta is missing
+ * or newlines were flattened in transit.
+ */
+export function parseSetPromptForDisplay(item) {
+  if (Array.isArray(item?.questions) && item.questions.length) {
+    return {
+      title: String(item.title || '').trim() || 'Prompt set',
+      questions: item.questions
+        .map((question, index) => {
+          const prompt = String(question?.prompt || '').trim();
+          if (!prompt) return null;
+          const helper = String(question?.helper || '').trim();
+          return {
+            id: String(question?.id || `q${index + 1}`),
+            prompt,
+            ...(helper ? { helper } : {}),
+          };
+        })
+        .filter(Boolean),
+    };
+  }
+
+  const text = String(item?.text || '').trim();
+  if (!text) return null;
+  const looksLikePromptSet = item?.type === 'set-prompt' || /^Prompt set\b/i.test(text);
+  if (!looksLikePromptSet) return null;
+
+  let title = String(item?.title || '').trim();
+  let body = text;
+  const header = text.match(/^Prompt set(?:\s*·\s*|\s*[-:]\s*|\s+)(.+?)(?:\n+|(?=\s*\d+\.\s)|$)/i);
+  if (header) {
+    if (!title) title = String(header[1] || '').trim();
+    body = text.slice(header[0].length).trim();
+  }
+  if (!title) title = 'Prompt set';
+
+  const questions = [];
+  if (body.includes('\n')) {
+    for (const line of body.split(/\n+/)) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (/^\d+\.\s*/.test(trimmed)) {
+        questions.push({
+          id: `q-${questions.length}`,
+          prompt: trimmed.replace(/^\d+\.\s*/, ''),
+        });
+      } else if (questions.length && /^\s/.test(line)) {
+        questions[questions.length - 1].helper = trimmed;
+      } else if (questions.length) {
+        questions[questions.length - 1].prompt += ` ${trimmed}`;
+      } else {
+        questions.push({ id: `q-${questions.length}`, prompt: trimmed });
+      }
+    }
+  } else {
+    for (const part of body.split(/(?=\d+\.\s)/)) {
+      const prompt = part.replace(/^\d+\.\s*/, '').trim();
+      if (!prompt) continue;
+      questions.push({ id: `q-${questions.length}`, prompt });
+    }
+  }
+
+  if (!questions.length) return { title, questions: [{ id: 'q-0', prompt: body || title }] };
+  return { title, questions };
+}
+
+/**
  * Build durable teacher:distribute items for a set prompt.
  * @returns {{ items: object[], error?: string }}
  */

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import RichTextDisplay from './RichTextDisplay.jsx';
 import { formatInboxTime } from '../lib/inboxTime.js';
+import { parseSetPromptForDisplay } from '../lib/liveResponseSets.js';
 
 function isImageMime(mime) {
   return String(mime || '').startsWith('image/');
@@ -175,7 +176,7 @@ function MaterialBody({ item, large, onToggleLarge }) {
 }
 
 function noteTitle(item) {
-  if (item?.type === 'set-prompt') return 'Prompt set';
+  if (item?.type === 'set-prompt' || parseSetPromptForDisplay(item)) return 'Prompt set';
   const text = String(item?.text || '');
   if (/^Re:\s*[“"']/.test(text)) return 'Reply to your question';
   return 'Teacher note';
@@ -192,7 +193,8 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
         const open = expandedId === item.id;
         const isBroadcast = item.type === 'broadcast';
         const isMaterial = item.type === 'material';
-        const isSetPrompt = item.type === 'set-prompt';
+        const setPrompt = !isBroadcast && !isMaterial ? parseSetPromptForDisplay(item) : null;
+        const isSetPrompt = !!setPrompt;
         const large = isMaterial && largeMaterialId === item.id;
         const timeLabel = formatInboxTime(item.at);
         const preview = isBroadcast
@@ -200,7 +202,7 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
           : isMaterial
             ? `${item.originalName || item.title || 'Handout'}${timeLabel ? ` · ${timeLabel}` : ''}`
             : isSetPrompt
-              ? `${item.title || 'Prompt set'}${Array.isArray(item.questions) && item.questions.length ? ` · ${item.questions.length} prompt${item.questions.length === 1 ? '' : 's'}` : ''}${timeLabel ? ` · ${timeLabel}` : ''}`
+              ? `${setPrompt.title}${setPrompt.questions.length ? ` · ${setPrompt.questions.length} prompt${setPrompt.questions.length === 1 ? '' : 's'}` : ''}${timeLabel ? ` · ${timeLabel}` : ''}`
             : (() => {
                 const text = (item.text || 'Teacher note').replace(/\s+/g, ' ').trim().slice(0, 72);
                 return timeLabel ? `${text}${text ? ' · ' : ''}${timeLabel}` : text;
@@ -233,7 +235,7 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
                     ) : null}
                   </div>
                   <p className="mt-0.5 truncate text-[11px] leading-snug text-slate-500 dark:text-slate-400">
-                    {isMaterial ? (item.title || preview) : isSetPrompt ? (item.title || preview) : preview}
+                    {isMaterial ? (item.title || preview) : isSetPrompt ? setPrompt.title : preview}
                   </p>
                 </div>
                 <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
@@ -298,14 +300,7 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
                       Use these prompts while you write — no answer required here.
                     </p>
                     <ol className="space-y-2">
-                      {(Array.isArray(item.questions) && item.questions.length
-                        ? item.questions
-                        : String(item.text || '')
-                            .split(/\n+/)
-                            .map((line) => line.replace(/^\d+\.\s*/, '').trim())
-                            .filter(Boolean)
-                            .map((prompt, index) => ({ id: `line-${index}`, prompt }))
-                      ).map((question, index) => (
+                      {setPrompt.questions.map((question, index) => (
                         <li
                           key={question.id || `${index}-${question.prompt}`}
                           className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold leading-snug text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
