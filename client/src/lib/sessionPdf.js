@@ -19,7 +19,7 @@ export function reconstructTrail(events = []) {
     return { ...event, before, after: text };
   });
 }
-const labels = { baseline: 'Recording baseline', resume: 'Recording resumed (unrecorded interval)', gap: 'Unrecorded / reconnect interval', stop: 'Recording stopped', feedback: 'Teacher feedback', paste: 'Browser-reported paste', change: 'Writing changed' };
+const labels = { baseline: 'Starting draft', resume: 'Recording resumed (new starting point)', gap: 'Unrecorded / reconnect interval', stop: 'Recording stopped', feedback: 'Teacher feedback', paste: 'Updated draft after browser-reported paste', change: 'Updated draft' };
 function when(value) {
   if (!value) return 'Time not recorded';
   const date = new Date(typeof value === 'string' && /^\d{4}-\d\d-\d\d \d\d:/.test(value) ? value.replace(' ', 'T') + 'Z' : value);
@@ -29,6 +29,21 @@ function extract(text, start = 0, length = 0) {
   const from = Math.max(0, start - 100);
   const to = Math.min(text.length, Math.max(start + length, start + 100), from + 600);
   return `${from ? '[Earlier text omitted] ' : ''}${text.slice(from, to)}${to < text.length ? ' [Later text omitted]' : ''}` || '(Empty draft)';
+}
+function yearLabel(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const match = raw.match(/(?:year|yr)?\s*(\d{1,2})/i);
+  return match ? `Year ${match[1]}` : raw;
+}
+function changeDescription(event) {
+  const removed = String(event.before || '').slice(event.start, event.start + event.removed);
+  const added = String(event.inserted || '');
+  if (event.type === 'paste') return added ? `Inserted text: “${extract(added, 0, 0)}”` : 'Inserted text was removed again.';
+  if (removed && added) return `Replaced: “${extract(removed, 0, 0)}” → “${extract(added, 0, 0)}”`;
+  if (removed) return `Removed: “${extract(removed, 0, 0)}”`;
+  if (added) return `Added: “${extract(added, 0, 0)}”`;
+  return 'No visible text change.';
 }
 
 /** Same renderer runs in the browser and the PDF layout check. No server upload. */
@@ -85,7 +100,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   for (const student of people) {
     newPage(); studentName = student.name;
     paragraph(student.name || 'Student', { size: 20, colour: [25, 59, 89], gap: 5 });
-    paragraph([student.class_group && `Group ${student.class_group}`, student.year_level && `Year ${student.year_level}`, student.archived && 'Archived trail - student card removed'].filter(Boolean).join(' | ') || 'Session writing and learning evidence', { size: 9, colour: [90, 102, 117] });
+    paragraph([student.class_group && `Group ${student.class_group}`, yearLabel(student.year_level), student.archived && 'Archived trail - student card removed'].filter(Boolean).join(' | ') || 'Session writing and learning evidence', { size: 9, colour: [90, 102, 117] });
     const events = reconstructTrail(student.trail?.events);
     heading(student.archived ? 'Last recorded writing' : 'Writing at export');
     paragraph(student.archived ? events.at(-1)?.after || '(No recorded writing)' : student.text || '(No writing received)');
@@ -125,24 +140,24 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
     const revisions = events.filter(e => ['change', 'paste'].includes(e.type));
     paragraph(`${events.length} recorded events | ${revisions.length} text-change checkpoints | ${events.filter(e => e.type === 'paste').length} browser-reported pastes | ${events.filter(e => ['gap', 'resume'].includes(e.type)).length} unrecorded intervals`);
     paragraph(`First record: ${when(events[0].at)}\nLatest record: ${when(events.at(-1).at)}`, { size: 9 });
-    const timeline = detailed ? events : events.filter(e => e.type !== 'change').slice(-12);
-    paragraph(detailed ? 'Complete event timeline' : 'Timeline: up to 12 most recent baseline, pause, paste and feedback events', { size: 11 });
-    for (const event of timeline) paragraph(`${when(event.at)} | ${labels[event.type] || event.type}`, { size: 9, gap: 1 });
-    const extracts = detailed ? events : [...new Set([revisions[0], revisions[Math.floor(revisions.length / 2)], revisions.at(-1)].filter(Boolean))];
-    heading(detailed ? 'Complete checkpoints' : 'Selected revision extracts');
-    if (!extracts.length) paragraph('No text revisions were recorded after the baseline.');
-    for (const event of extracts) {
+    const selectedRevisions = detailed
+      ? revisions
+      : [...new Set([revisions[0], revisions[Math.floor(revisions.length / 2)], revisions.at(-1)].filter(Boolean))];
+    const journeyEvents = detailed
+      ? events
+      : events.filter(event => event.type !== 'change' || selectedRevisions.includes(event));
+    heading(detailed ? 'Complete writing journey' : 'Writing journey');
+    paragraph(detailed ? 'Each recorded version appears once, in order. Added, removed and replaced text is described beneath the updated draft.' : 'Each selected version appears once, in order. The previous version is the context for the next one, so the report does not repeat a separate before/after copy.');
+    if (!journeyEvents.length) paragraph('No Draft Trail events were recorded after the baseline.');
+    for (const event of journeyEvents) {
       space(25);
       paragraph(`${when(event.at)} | ${labels[event.type]}`, { size: 10, colour: [29, 74, 116] });
       if (event.type === 'feedback') { paragraph(event.text); continue; }
       if (event.type === 'stop') { paragraph('Capture stopped. Later work is outside this recording segment.'); continue; }
-      const isChange = ['change', 'paste'].includes(event.type);
-      if (isChange) {
-        paragraph('Before', { size: 9, colour: [148, 45, 45], gap: 1 });
-        paragraph(detailed ? event.before || '(Empty draft)' : extract(event.before, event.start, event.removed));
+      if (['change', 'paste'].includes(event.type)) paragraph(changeDescription(event), { size: 9, colour: [28, 105, 83], gap: 1 });
+      if (['baseline', 'resume', 'gap', 'change', 'paste'].includes(event.type)) {
+        paragraph(detailed ? event.after || '(Empty draft)' : extract(event.after, event.start, event.inserted?.length), { colour: [35, 45, 62] });
       }
-      paragraph(isChange ? 'After' : 'Recorded baseline', { size: 9, colour: [28, 105, 83], gap: 1 });
-      paragraph(detailed ? event.after || '(Empty draft)' : extract(event.after, event.start, event.inserted?.length));
     }
   }
   if (escapedGlyphs) paragraph('Characters unsupported by the report font are shown as Unicode code points [U+...]. The original text remains in the .iboard file.', { size: 9 });

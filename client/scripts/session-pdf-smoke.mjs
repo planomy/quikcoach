@@ -43,6 +43,10 @@ for (const [name, options] of [
   ['session-detailed.pdf', { selectedKeys: ['s1'], detailed: true }],
 ]) {
   const pdf = buildSessionPdf(pack, { ...options, fontData });
-  fs.writeFileSync(path.join(output, name), Buffer.from(pdf.output('arraybuffer')));
+  const bytes = Buffer.from(pdf.output('arraybuffer'));
+  fs.writeFileSync(path.join(output, name), bytes);
+  if (name === 'session-summary.pdf') {
+    assert.ok(bytes.length > 1000);
+  }
   console.log(`${name}: ${pdf.getNumberOfPages()} pages`);
 }
