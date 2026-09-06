@@ -116,6 +116,7 @@ export default function StudentView() {
   const [recentDismissedCode, setRecentDismissedCode] = useState('');
 
   const socket = useMemo(() => createSocket(), []);
+  const draftTrailTokenRef = useRef('');
   const pendingRef = useRef({ text: '', richTextHtml: '' });
   const lastSentRef = useRef('');
   const saveBootstrappedRef = useRef(false);
@@ -466,7 +467,7 @@ export default function StudentView() {
   }, [joined, student?.id, socket]);
 
   useEffect(() => {
-    pendingRef.current = { text: draft, richTextHtml: draftHtml };
+    pendingRef.current = { text: draft, richTextHtml: draftHtml, draftTrail: { token: draftTrailTokenRef.current } };
   }, [draft, draftHtml]);
 
   useEffect(() => {
@@ -485,6 +486,7 @@ export default function StudentView() {
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
+      if (!socket.connected) return;
       const payload = pendingRef.current;
       const sentAt = `${payload.text}\n${payload.richTextHtml}`;
       socket.emit('student:text', payload, (ack) => {
@@ -498,6 +500,21 @@ export default function StudentView() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [joined, student?.id, draft, draftHtml, socket]);
+
+  // Continuous writers also sync: the idle debounce alone can wait indefinitely.
+  useEffect(() => {
+    if (!joined || !student?.id) return undefined;
+    const timer = setInterval(() => {
+      if (!socket.connected || !saveBootstrappedRef.current) return;
+      const payload = pendingRef.current;
+      const fingerprint = `${payload.text}\n${payload.richTextHtml}`;
+      if (fingerprint === lastSentRef.current) return;
+      socket.emit('student:text', payload, ack => {
+        if (ack?.ok && fingerprint === `${pendingRef.current.text}\n${pendingRef.current.richTextHtml}`) lastSentRef.current = fingerprint;
+      });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [socket, joined, student?.id]);
 
   useEffect(() => {
     if (!joined || !student?.id) return undefined;
@@ -1114,7 +1131,11 @@ export default function StudentView() {
             <RichTextEditor
               text={draft}
               html={draftHtml}
-              onChange={({ text, html }) => {
+              onChange={({ text, html, paste }) => {
+                draftTrailTokenRef.current = socket.connected ? room?.draftTrail?.token || '' : '';
+                if (paste && socket.connected && room?.draftTrail?.active) {
+                  socket.emit('student:text', { text, richTextHtml: html, draftTrail: { token: draftTrailTokenRef.current, paste: true } });
+                }
                 setDraft(text);
                 setDraftHtml(html);
               }}
@@ -1123,7 +1144,10 @@ export default function StudentView() {
               maxWords={enforce && wt > 0 ? wt : 0}
               placeholder="Write here… or paste an image"
               headerActions={
-                student?.id ? <StudentHandRaise socket={socket} compact /> : null
+                <>
+                  {student?.id ? <StudentHandRaise socket={socket} compact /> : null}
+                  {room?.draftTrail?.active && <span role="status" title="Your teacher is capturing changes to your iBoard writing, not screens, audio or video." className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-red-600" />Draft Trail on</span>}
+                </>
               }
             />
           </section>

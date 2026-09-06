@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { openDatabase, queries } from './db.js';
+import { recordTrailFeedback } from './draftTrail.js';
 
 // Rich formatting is deliberately stored beside the existing plain-text draft.
 // The existing text column remains the source of truth for word limits, AI, evidence and exports.
@@ -341,6 +342,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
         );
         const update = emitAnnotationUpdate(io, roomCode, studentId);
         const annotation = update.annotations.find((item) => item.id === Number(result.lastInsertRowid)) || null;
+        recordTrailFeedback(roomCode, student, `${quote}\nTeacher comment: ${note}`);
         cb?.({ ok: true, annotation });
       } catch (error) {
         console.error('Could not add teacher annotation', error);

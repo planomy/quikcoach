@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
 import { buildSessionPack, importSessionPack } from './sessionPack.js';
+import { trailStatus, setTrailRecording, recordTrailText, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail } from './draftTrail.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3001;
@@ -367,7 +368,7 @@ function buildRoomPayload(code) {
   const students = queries.listStudents(db, c);
   const posts = queries.listBoardPosts(db, c);
   return {
-    room: queries.rowToRoom(row),
+    room: { ...queries.rowToRoom(row), draftTrail: trailStatus(c) },
     students: students.map(queries.rowToStudent),
     posts: posts.map(queries.rowToBoardPost),
   };
@@ -722,6 +723,20 @@ function emitBroadcastToRoom(code, payload) {
 }
 
 io.on('connection', (socket) => {
+  socket.on('teacher:draft-trail-control', ({ active } = {}, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code || typeof active !== 'boolean') return cb?.({ ok: false });
+    try {
+      const status = setTrailRecording(code, active, queries.listStudents(db, code));
+      broadcastRoom(code);
+      cb?.({ ok: true, status });
+    } catch (e) { cb?.({ ok: false, error: e.message }); }
+  });
+  socket.on('teacher:draft-trail-view', ({ studentId } = {}, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) return cb?.({ ok: false });
+    cb?.({ ok: true, status: trailStatus(code), students: trailStudents(code), trail: studentId == null ? null : readTrail(code, studentId) });
+  });
   socket.on('teacher:join', ({ code }, cb) => {
     try {
       const c = String(code || '').replace(/\D/g, '').slice(0, 4).padStart(4, '0');
@@ -1534,15 +1549,20 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('student:text', ({ text }, cb) => {
+  socket.on('student:text', ({ text, draftTrail }, cb) => {
     try {
       const sid = socket.data.studentId;
       const code = socket.data.roomCode;
-      if (!sid || !code) {
+      if (!sid || !code || socket.data.role !== 'student') {
         cb?.({ ok: false });
         return;
       }
       const roomRow = queries.ensureRoom(db, code);
+      const beforeRow = queries.getStudent(db, sid);
+      if (!beforeRow || normalizeRoomCode(beforeRow.room_code) !== code || roomRow.freeze_class) {
+        cb?.({ ok: false });
+        return;
+      }
       let t = String(text ?? '');
       if (roomRow.enforce_word_count && roomRow.word_target > 0) {
         t = truncateToWordLimit(t, roomRow.word_target);
@@ -1550,6 +1570,9 @@ io.on('connection', (socket) => {
       // Cap payload size so one huge paste cannot stall every teacher/iBoard client
       if (t.length > 50_000) t = t.slice(0, 50_000);
       const row = queries.updateStudentText(db, sid, t);
+      const wasActive = trailStatus(code).active;
+      recordTrailText(code, beforeRow, t, draftTrail || {});
+      if (wasActive !== trailStatus(code).active) broadcastRoom(code);
       const student = queries.rowToStudent(row);
       // Live patch only — do NOT broadcastRoom() here. Full room:state on every
       // 2s sync × N students freezes teacher dashboard / iBoard with large classes.
@@ -2277,6 +2300,7 @@ io.on('connection', (socket) => {
       }
       const code = normalizeRoomCode(codeRaw);
       // Delete students entirely so reused room codes don't keep ghost cards
+      clearTrail(code);
       queries.clearAudienceQuestions(db, code);
       const studentRows = queries.deleteAllStudents(db, code);
       for (const s of studentRows) {
@@ -2321,9 +2345,22 @@ io.on('connection', (socket) => {
     const sid = Number(socket.data.studentId);
     const code = socket.data.roomCode;
     if (sid) removeStudentPresence(sid, socket.id);
+    if (sid && code) disconnectTrail(code, sid);
     if (code) io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
   });
 });
+
+const publishedTrailStatus = new Map();
+setInterval(() => {
+  const codes = new Set([...io.sockets.sockets.values()].map(s => s.data.roomCode).filter(Boolean));
+  trailTick();
+  for (const code of codes) {
+    const status = JSON.stringify(trailStatus(code));
+    if (publishedTrailStatus.get(code) !== status) broadcastRoom(code);
+    publishedTrailStatus.set(code, status);
+  }
+  for (const code of publishedTrailStatus.keys()) if (!codes.has(code)) publishedTrailStatus.delete(code);
+}, 1000).unref();
 
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));

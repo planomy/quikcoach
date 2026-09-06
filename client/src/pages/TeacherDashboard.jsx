@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
+import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import { activityStatus, wordCount } from '../lib/text.js';
 import {
   buildAiPrompt,
@@ -272,6 +273,8 @@ function TeacherDashboardInner() {
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [draftTrailOpen, setDraftTrailOpen] = useState(false);
+  const [draftTrailBusy, setDraftTrailBusy] = useState(false);
   const [addCardTitle, setAddCardTitle] = useState('Teacher');
   const [addCardText, setAddCardText] = useState('');
   const [addCardImage, setAddCardImage] = useState('');
@@ -1961,7 +1964,7 @@ function TeacherDashboardInner() {
         </div>
       )}
       <header ref={teacherHeaderRef} className="iboard-app-header relative z-50 shrink-0 border-b backdrop-blur">
-        <div className="relative flex w-full items-center gap-3 px-3 py-3.5 sm:px-3.5">
+        <div className="relative flex w-full flex-wrap items-center gap-3 px-3 py-3.5 sm:px-3.5">
           <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <nav
               ref={teacherToolsNavRef}
@@ -2036,7 +2039,7 @@ function TeacherDashboardInner() {
             )}
           </div>
 
-          <div className="pointer-events-none absolute left-1/2 top-1/2 flex max-w-[min(100%,28rem)] -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-2.5 px-2">
+          <div className="pointer-events-none mx-auto flex min-w-0 flex-wrap items-center justify-center gap-2.5 px-2">
             <h1 className="pointer-events-auto font-display truncate text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
               Room <span className="iboard-header-code font-mono text-indigo-600">{codeInput}</span>
             </h1>
@@ -2053,7 +2056,26 @@ function TeacherDashboardInner() {
             )}
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center justify-end">
+          <div className="ml-auto flex shrink-0 items-center justify-end gap-2">
+            <button
+              type="button"
+              disabled={draftTrailBusy || !socketConnected || !joined}
+              aria-pressed={!!room?.draftTrail?.active}
+              title={room?.draftTrail?.reason || 'Capture writing changes only — no screen, audio or video. Save session to keep the trail.'}
+              className={`relative z-10 inline-flex items-center gap-2 rounded-lg border px-2 py-2 text-xs font-semibold disabled:opacity-50 sm:text-sm ${room?.draftTrail?.active ? 'border-red-700 bg-red-700 text-white' : 'border-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}
+              onClick={() => {
+                setDraftTrailBusy(true);
+                socket.timeout(10000).emit('teacher:draft-trail-control', { active: !room?.draftTrail?.active }, (err, ack) => {
+                  setDraftTrailBusy(false);
+                  if (err || !ack?.ok) { setError(ack?.error || 'Recording status could not be confirmed. Reconnect before trying again.'); return; }
+                  setRoom(prev => ({ ...prev, draftTrail: ack.status }));
+                  markSessionDirty();
+                });
+              }}
+            >
+              <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${room?.draftTrail?.active ? 'bg-red-300' : 'bg-slate-400'}`} />
+              {draftTrailBusy ? 'Updating…' : room?.draftTrail?.active ? 'Recording draft trail' : 'Record draft trail'}
+            </button>
             <HintWrap hint="Room settings" prefer="below">
               <button
                 ref={settingsButtonRef}
@@ -2074,6 +2096,8 @@ function TeacherDashboardInner() {
         </div>
       </header>
       </div>
+      {room?.draftTrail?.reason && <p role="alert" className="bg-amber-100 px-4 py-2 text-sm text-amber-950">{room.draftTrail.reason}</p>}
+      {draftTrailOpen && <DraftTrailPanel socket={socket} onClose={() => setDraftTrailOpen(false)} />}
 
       {toolsPanelOpen && (
         <div
@@ -3227,6 +3251,7 @@ function TeacherDashboardInner() {
             <button type="button" onClick={() => { closeSettings(); openEvidenceModal(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Save current evidence
             </button>
+            <button type="button" onClick={() => { closeSettings(); setDraftTrailOpen(true); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">View Draft Trail</button>
             <button
               type="button"
               disabled={sessionBusy}

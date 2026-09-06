@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { openDatabase } from './db.js';
+import { recordTrailFeedback } from './draftTrail.js';
 
 const feedbackDb = openDatabase();
 
@@ -141,7 +142,7 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       if (!studentId || !text) continue;
 
       const student = feedbackDb
-        .prepare(`SELECT id, room_code FROM students WHERE id = ?`)
+        .prepare(`SELECT id, room_code, name, text FROM students WHERE id = ?`)
         .get(studentId);
       if (!student || normaliseRoomCode(student.room_code) !== roomCode) continue;
 
@@ -161,6 +162,7 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       if (!item) continue;
 
       saved.push(item);
+      recordTrailFeedback(roomCode, student, text);
       const targetRoom = `student:${studentId}`;
       const targetCount = io.sockets.adapter.rooms.get(targetRoom)?.size || 0;
       if (targetCount > 0) reachedStudents.add(studentId);

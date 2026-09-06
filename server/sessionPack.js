@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { queries } from './db.js';
+import { exportTrails, validateTrails, importTrails } from './draftTrail.js';
 
 const FORMAT = 'iboard';
 const VERSION = 1;
@@ -309,6 +310,7 @@ export function buildSessionPack(db, roomCode, media) {
       live_question_number: Number(roomRow?.live_question_number) || 0,
     },
     students: packedStudents,
+    draftTrail: exportTrails(code, idToExport),
     posts,
     annotationsByExportId,
     teacherNotesByExportId,
@@ -329,6 +331,7 @@ function validatePack(pack) {
   if (pack.format !== FORMAT) return 'Not an iBoard session file';
   if (Number(pack.version) !== 1) return 'Unsupported session file version';
   if (!Array.isArray(pack.students)) return 'Session file is missing students';
+  try { validateTrails(pack.draftTrail); } catch (e) { return e.message; }
   return null;
 }
 
@@ -673,6 +676,7 @@ export function importSessionPack(db, roomCode, pack, media) {
     }
   }
 
+  importTrails(code, pack.draftTrail, exportToId);
   return {
     ok: true,
     studentCount: exportToId.size,

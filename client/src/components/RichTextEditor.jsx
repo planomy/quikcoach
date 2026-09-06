@@ -181,7 +181,7 @@ export default function RichTextEditor({
     return editor.contains(range.commonAncestorContainer);
   }
 
-  function commitFromDom({ normaliseDom = false } = {}) {
+  function commitFromDom({ normaliseDom = false, paste = false } = {}) {
     const editor = editorRef.current;
     if (!editor) return;
 
@@ -198,7 +198,7 @@ export default function RichTextEditor({
     lastAcceptedHtmlRef.current = acceptedDomHtml;
     if (normaliseDom && editor.innerHTML !== acceptedDomHtml) editor.innerHTML = acceptedDomHtml;
     setEmpty(!plainText.trim());
-    onChange?.({ text: plainText, html: formattingEnabled ? safeHtml : '' });
+    onChange?.({ text: plainText, html: formattingEnabled ? safeHtml : '', paste });
   }
 
   function runCommand(command, value = null, requiresSelection = false) {
@@ -249,7 +249,7 @@ export default function RichTextEditor({
     event.preventDefault();
     const plain = event.clipboardData?.getData('text/plain') || '';
     insertPlainTextAtSelection(plain);
-    commitFromDom();
+    commitFromDom({ paste: true });
   }
 
   function handleKeyDown(event) {
