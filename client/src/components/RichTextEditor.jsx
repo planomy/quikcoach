@@ -89,6 +89,7 @@ export default function RichTextEditor({
   disabled = false,
   maxWords = 0,
   placeholder = 'Write here…',
+  headerActions = null,
 }) {
   const editorRef = useRef(null);
   const lastAcceptedHtmlRef = useRef('');
@@ -322,6 +323,7 @@ export default function RichTextEditor({
           ) : (
             <span className="text-[11px] font-medium text-slate-400">Writing mode</span>
           )}
+          {headerActions}
           <span
             className={`ml-auto shrink-0 text-[11px] font-bold tabular-nums ${
               atWordLimit

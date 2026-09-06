@@ -597,7 +597,9 @@ export default function LiveResponseTeacher({
           {activity ? (
             <>
               <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Question live</p>
-              <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{activity.prompt}</p>
+              <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                {activity.prompt === 'Verbal question' ? 'Verbal check' : activity.prompt}
+              </p>
               <p className="text-[11px] text-slate-500">{responseSummary}</p>
             </>
           ) : (

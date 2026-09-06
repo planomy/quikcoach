@@ -8,6 +8,7 @@ import {
   parseSetAnswers,
   setAnswersComplete,
 } from '../lib/liveResponseSets.js';
+import StudentVerbalRespond, { isVerbalLiveActivity } from './StudentVerbalRespond.jsx';
 
 function setQuestionsFromActivity(activity) {
   const fromQuestions = normalizeSetQuestions(activity?.questions);
@@ -390,9 +391,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     return (
       <>
         {collapseButton}
-        <section className={`grid place-items-center rounded-2xl border border-dashed border-slate-200 bg-white text-center dark:border-slate-700 dark:bg-slate-900 ${compact ? 'min-h-[72px] p-3' : 'min-h-[96px] p-4'}`}>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Waiting for a question</p>
-        </section>
+        <StudentVerbalRespond socket={socket} compact={compact} />
       </>
     );
   }
@@ -464,7 +463,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         >
           <div className={`flex flex-wrap items-center justify-between ${compact ? 'gap-1' : 'gap-2'}`}>
             <p className={`font-black uppercase tracking-wide ${quietAlerts ? 'text-[10px] text-indigo-600 dark:text-indigo-300' : `${theme.label} ${compact ? 'text-[10px]' : 'text-xs tracking-[0.22em]'}`}`}>
-              Q{activity.questionNumber || 1}{quietAlerts ? '' : ' · Live'}
+              {isVerbalLiveActivity(activity) ? 'Quick answer' : `Q${activity.questionNumber || 1}${quietAlerts ? '' : ' · Live'}`}
             </p>
             <div className={`flex flex-wrap items-center ${compact ? 'gap-1' : 'gap-2'}`}>
               {secondsLeft !== null && (
@@ -498,7 +497,9 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
               )}
             </div>
           </div>
-          <h2 className={`font-display font-bold leading-snug text-slate-950 dark:text-white ${compact ? 'mt-1.5 text-base' : quietAlerts ? 'mt-2 text-lg' : 'mt-3 text-xl sm:text-2xl'}`}>{activity.prompt}</h2>
+          <h2 className={`font-display font-bold leading-snug text-slate-950 dark:text-white ${compact ? 'mt-1.5 text-base' : quietAlerts ? 'mt-2 text-lg' : 'mt-3 text-xl sm:text-2xl'}`}>
+            {isVerbalLiveActivity(activity) ? 'Teacher asked aloud — type your answer' : activity.prompt}
+          </h2>
           {activity.imageUrl && <img src={activity.imageUrl} alt="Question" className={`w-full rounded-2xl bg-white object-contain ${compact ? 'mt-2 max-h-28' : 'mt-4 max-h-72'}`} />}
 
           {activity.type === 'set' ? (

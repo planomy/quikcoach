@@ -931,7 +931,6 @@ export default function StudentView() {
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {student?.id ? <StudentHandRaise socket={socket} /> : null}
             <details className="group relative shrink-0">
               <summary
                 className="iboard-header-icon-button grid h-10 w-10 cursor-pointer list-none place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 [&::-webkit-details-marker]:hidden"
@@ -1102,6 +1101,9 @@ export default function StudentView() {
               disabled={frozen}
               maxWords={enforce && wt > 0 ? wt : 0}
               placeholder="Write here… or paste an image"
+              headerActions={
+                student?.id ? <StudentHandRaise socket={socket} compact /> : null
+              }
             />
           </section>
         </div>

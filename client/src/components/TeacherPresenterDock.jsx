@@ -341,6 +341,7 @@ function activityLabel(activity) {
   const options = Array.isArray(activity.options) ? activity.options : [];
   if (activity.type === 'rating') return '1–5 Pulse';
   if (activity.type === 'short') {
+    if (activity.prompt === 'Verbal question') return 'Verbal check';
     return String(activity.prompt || '').toLowerCase().includes('one word') ? 'One Word Pulse' : 'Short Response';
   }
   if (options.join('|') === 'Yes|No|Unsure') return 'Yes / No / Unsure';

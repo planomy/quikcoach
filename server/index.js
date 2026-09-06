@@ -1273,6 +1273,79 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('student:verbal-response', ({ value, confidence }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const sid = Number(socket.data.studentId);
+      if (socket.data.role !== 'student' || !code || !sid) {
+        cb?.({ ok: false, error: 'Join the room first' });
+        return;
+      }
+      const answer = String(value ?? '').trim().slice(0, 500);
+      if (!answer) {
+        cb?.({ ok: false, error: 'Enter an answer' });
+        return;
+      }
+
+      const isVerbal = (activity) =>
+        activity?.type === 'short' && activity?.prompt === 'Verbal question';
+
+      let activity = queries.getLiveActivity(db, code);
+      if (activity && !isVerbal(activity)) {
+        cb?.({ ok: false, error: 'A live question is already open — answer that first' });
+        return;
+      }
+      if (activity && activity.locked) {
+        cb?.({ ok: false, error: 'Answers are locked' });
+        return;
+      }
+
+      if (!activity) {
+        activity = queries.launchLiveActivity(db, code, {
+          id: randomUUID(),
+          type: 'short',
+          prompt: 'Verbal question',
+          options: [],
+          questions: [],
+          correctAnswer: '',
+          anonymous: false,
+          optional: false,
+          imageUrl: '',
+          timerSeconds: 0,
+        });
+        queries.addLiveOpportunity(db, connectedStudentsInRoom(code), {
+          roomCode: code,
+          activityId: activity.id,
+          questionNumber: activity.questionNumber,
+        });
+      }
+
+      if (!activityForStudent(activity, sid)) {
+        cb?.({ ok: false, error: 'This is your question — no need to answer it' });
+        return;
+      }
+
+      queries.upsertLiveResponse(db, {
+        activityId: activity.id,
+        roomCode: code,
+        studentId: sid,
+        value: answer,
+      });
+      if (!activity.optional) queries.markLiveResponse(db, sid);
+
+      const allowedConfidence = new Set(['confident', 'unsure', 'guessed']);
+      if (allowedConfidence.has(String(confidence || ''))) {
+        queries.setLiveResponseConfidence(db, activity.id, sid, confidence);
+      }
+
+      emitLiveState(code);
+      cb?.({ ok: true, activity: liveActivityForClients(activity) });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not send the answer' });
+    }
+  });
+
   socket.on('student:live-status', ({ status }, cb) => {
     try {
       const code = socket.data.roomCode;

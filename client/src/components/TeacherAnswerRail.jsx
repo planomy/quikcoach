@@ -282,7 +282,9 @@ export default function TeacherAnswerRail({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Responses</p>
-              <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">{activity.prompt}</p>
+              <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">
+                {activity.prompt === 'Verbal question' ? 'Verbal check' : activity.prompt}
+              </p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">{responded} response{responded === 1 ? '' : 's'}</p>
             </div>
             {!embedded && (
@@ -510,7 +512,9 @@ export default function TeacherAnswerRail({
           </button>
           <div className="mx-auto max-w-5xl py-14">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-300">Responses</p>
-            <h2 className="mt-2 font-display text-3xl font-black sm:text-5xl">{activity.prompt}</h2>
+            <h2 className="mt-2 font-display text-3xl font-black sm:text-5xl">
+              {activity.prompt === 'Verbal question' ? 'Verbal check' : activity.prompt}
+            </h2>
             <p className="mt-3 text-sm font-bold text-indigo-200">{responded} response{responded === 1 ? '' : 's'}</p>
             <div className="mt-10">
               {isSet ? (
