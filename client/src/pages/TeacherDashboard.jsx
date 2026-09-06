@@ -23,6 +23,7 @@ import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
 import SaveStatusChip from '../components/SaveStatusChip.jsx';
 import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
+import QuestionInboxReply from '../components/QuestionInboxReply.jsx';
 import {
   downloadTextFile,
   buildEvidenceHtml,
@@ -210,6 +211,7 @@ function TeacherDashboardInner() {
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
+  const [handQuestionTarget, setHandQuestionTarget] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [feedbackMode, setFeedbackMode] = useState('writing');
@@ -259,7 +261,6 @@ function TeacherDashboardInner() {
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
   const [lessonReportOpen, setLessonReportOpen] = useState(false);
-  const prevPendingQuestionCountRef = useRef(0);
   const [libraryPanel, setLibraryPanel] = useState(null);
   const [evidenceHubTab, setEvidenceHubTab] = useState('lessons'); // lessons | students
 
@@ -504,6 +505,7 @@ function TeacherDashboardInner() {
       markSessionDirty();
     };
     socket.on('qna:teacher', onQna);
+    if (joinedRef.current) socket.emit('teacher:qna-sync', {});
     return () => socket.off('qna:teacher', onQna);
   }, [socket, markSessionDirty]);
 
@@ -917,16 +919,35 @@ function TeacherDashboardInner() {
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
     [audienceQuestions]
   );
+  const pendingHandByStudentId = useMemo(() => {
+    const map = new Map();
+    for (const question of audienceQuestions) {
+      if (question.status !== 'pending') continue;
+      const sid = Number(question.studentId);
+      if (!sid) continue;
+      const list = map.get(sid) || [];
+      list.push(question);
+      map.set(sid, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => Number(a.id) - Number(b.id));
+    }
+    return map;
+  }, [audienceQuestions]);
 
   useEffect(() => {
-    if (!joined) return;
-    const prev = prevPendingQuestionCountRef.current;
-    if (pendingQuestionCount > prev && pendingQuestionCount > 0) {
-      setToolsTab('respond');
-      setToolsPanelOpen(true);
+    if (!handQuestionTarget) return;
+    const sid = Number(handQuestionTarget.student?.id);
+    const next = pendingHandByStudentId.get(sid) || [];
+    if (!next.length) {
+      setHandQuestionTarget(null);
+      return;
     }
-    prevPendingQuestionCountRef.current = pendingQuestionCount;
-  }, [pendingQuestionCount, joined]);
+    setHandQuestionTarget((current) => {
+      if (!current || Number(current.student?.id) !== sid) return current;
+      return { ...current, questions: next };
+    });
+  }, [pendingHandByStudentId, handQuestionTarget?.student?.id]);
 
   const liveStudentById = useMemo(() => {
     const map = new Map();
@@ -2194,13 +2215,19 @@ function TeacherDashboardInner() {
                   : st === 'warm'
                     ? 'bg-amber-400'
                     : 'bg-slate-300';
+            const handQuestions = pendingHandByStudentId.get(Number(s.id)) || [];
+            const handUp = handQuestions.length > 0;
             return (
               <article
                 key={s.id}
                 data-student-id={s.id}
-                title={showPulseState ? pulseMeta.title : undefined}
+                title={showPulseState && !handUp ? pulseMeta.title : undefined}
                 className={`iboard-student-card relative flex flex-col overflow-visible rounded-2xl bg-white p-3 dark:bg-slate-900 ${
-                  showPulseState ? pulseMeta.className : 'border dark:border-slate-700/80'
+                  handUp
+                    ? 'border border-rose-200 ring-2 ring-rose-300/70 dark:border-rose-800 dark:ring-rose-500/40'
+                    : showPulseState
+                      ? pulseMeta.className
+                      : 'border dark:border-slate-700/80'
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-1.5">
@@ -2216,9 +2243,19 @@ function TeacherDashboardInner() {
                     </label>
                   </HintWrap>
                   <h2
-                    className={`min-w-0 truncate font-display text-base font-semibold text-ink-900 dark:text-slate-100 ${inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''}`}
-                    title={inQuestion ? `Show ${s.name}'s answer` : `${s.name} · ID #${s.id}`}
-                    onClick={inQuestion ? () => openAnswerInRail(s.id) : undefined}
+                    className={`min-w-0 truncate font-display text-base font-semibold ${
+                      handUp
+                        ? 'cursor-pointer text-rose-600 dark:text-rose-400'
+                        : `text-ink-900 dark:text-slate-100 ${inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''}`
+                    }`}
+                    aria-label={handUp ? `${s.name} has a question` : undefined}
+                    onClick={() => {
+                      if (handUp) {
+                        setHandQuestionTarget({ student: s, questions: handQuestions });
+                        return;
+                      }
+                      if (inQuestion) openAnswerInRail(s.id);
+                    }}
                   >
                     {s.name}
                   </h2>
@@ -3241,6 +3278,68 @@ function TeacherDashboardInner() {
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
               >
                 {removeStudentBusy ? 'Removing…' : 'Remove card'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {handQuestionTarget && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/50 p-4 backdrop-blur-[1px] sm:items-center">
+          <div
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-2xl dark:border-rose-900 dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hand-question-title"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setHandQuestionTarget(null);
+            }}
+          >
+            <div className="px-5 py-5">
+              <h2 id="hand-question-title" className="font-display text-lg font-black text-slate-950 dark:text-white">
+                {handQuestionTarget.student.name}
+              </h2>
+              <div className="mt-3 space-y-2.5">
+                {(handQuestionTarget.questions || []).map((question) => (
+                  <p
+                    key={question.id}
+                    className="rounded-xl border border-rose-100 bg-rose-50/80 px-3 py-2.5 text-sm leading-relaxed text-slate-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-slate-100"
+                  >
+                    {question.text}
+                  </p>
+                ))}
+              </div>
+              <div className="mt-4">
+                <QuestionInboxReply
+                  socket={socket}
+                  studentId={handQuestionTarget.student.id}
+                  studentName={handQuestionTarget.student.name}
+                  questionText={(handQuestionTarget.questions || []).map((q) => q.text).join(' · ')}
+                  showToggle={false}
+                  open
+                  onSent={() => {
+                    for (const question of handQuestionTarget.questions || []) {
+                      socket.emit('teacher:qna-status', { questionId: question.id, action: 'answer' });
+                    }
+                    setHandQuestionTarget(null);
+                    setCopyToast(`Reply sent to ${handQuestionTarget.student.name}`);
+                    setTimeout(() => setCopyToast(''), 2500);
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-950">
+              <button
+                type="button"
+                onClick={() => {
+                  for (const question of handQuestionTarget.questions || []) {
+                    socket.emit('teacher:qna-status', { questionId: question.id, action: 'dismiss' });
+                  }
+                  setHandQuestionTarget(null);
+                }}
+                className="rounded-xl px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Dismiss
               </button>
             </div>
           </div>
