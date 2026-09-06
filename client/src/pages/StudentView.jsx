@@ -140,12 +140,23 @@ export default function StudentView() {
   }, [joined]);
 
   function activateInbox(itemId) {
+    if (!itemId) return;
     setSupportTab('inbox');
     setInboxExpandedId(itemId);
     setInboxUnreadIds((current) => {
       const next = new Set(current);
       next.add(itemId);
       return next;
+    });
+    // Bring the reply into view — students are often scrolled into writing.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document
+          .querySelector('[data-iboard-student-support]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const node = document.querySelector(`[data-inbox-item="${CSS.escape(String(itemId))}"]`);
+        node?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
     });
   }
 
@@ -295,7 +306,10 @@ export default function StudentView() {
         (best, item) => (!best || Number(item.at) > Number(best.at) ? item : best),
         null
       );
-      if (newest) activateInbox(newest.id);
+      if (newest) {
+        // After state merge so the expanded item exists when Inbox paints.
+        queueMicrotask(() => activateInbox(newest.id));
+      }
     };
     const onBroadcast = (payload = {}) => {
       const serverHistory = Array.isArray(payload.history)
@@ -988,7 +1002,10 @@ export default function StudentView() {
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
-          <aside className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1">
+          <aside
+            data-iboard-student-support
+            className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1"
+          >
             <nav aria-label="Student tools" className="relative z-10 flex shrink-0 items-end gap-1 overflow-visible border-b border-slate-200 pt-3.5 dark:border-slate-700">
               {SUPPORT_TABS.map((tab) => {
                 const active = supportTab === tab.id;

@@ -174,6 +174,12 @@ function MaterialBody({ item, large, onToggleLarge }) {
   );
 }
 
+function noteTitle(item) {
+  const text = String(item?.text || '');
+  if (/^Re:\s*[“"']/.test(text)) return 'Reply to your question';
+  return 'Teacher note';
+}
+
 export default function StudentInbox({ items, expandedId, onToggle, onDismiss, largeMaterialId, onToggleMaterialLarge }) {
   if (!items.length) {
     return <div className="h-4" aria-hidden="true" />;
@@ -199,7 +205,12 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
         return (
           <section
             key={item.id}
-            className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
+            data-inbox-item={item.id}
+            className={`relative overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-900 ${
+              open && item.unread
+                ? 'border-indigo-400 ring-2 ring-indigo-300/70 dark:border-indigo-500 dark:ring-indigo-500/40'
+                : 'border-slate-200 dark:border-slate-700'
+            }`}
           >
             <div className="flex items-stretch">
               <button
@@ -211,7 +222,7 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="font-display text-sm font-bold text-slate-900 dark:text-slate-100">
-                      {isBroadcast ? 'Broadcast' : isMaterial ? 'Handout' : 'Teacher note'}
+                      {isBroadcast ? 'Broadcast' : isMaterial ? 'Handout' : noteTitle(item)}
                     </p>
                     {item.unread ? (
                       <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500" aria-label="New" />
@@ -278,7 +289,7 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
                     ))}
                   </>
                 ) : (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                     {item.text}
                   </div>
                 )}
