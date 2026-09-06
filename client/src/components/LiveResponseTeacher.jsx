@@ -9,6 +9,7 @@ import { studentTileMeta, LIVE_STATUS_LABELS as STATUS_LABELS } from '../lib/liv
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { downloadTextFile } from '../lib/exportRoom.js';
 import {
+  buildSetInboxDistributeItems,
   getSetAnswerPairs,
   newId,
   normalizeSetQuestion,
@@ -168,6 +169,7 @@ export default function LiveResponseTeacher({
   subjectAssist = 'general',
   onThinkingSent,
   selectedStudentIds = [],
+  rosterStudentIds = [],
   onClearStudentSelection,
 }) {
   const [internalPanelTab, setInternalPanelTab] = useState('ask');
@@ -427,7 +429,7 @@ export default function LiveResponseTeacher({
       launch(
         { ...questions[0], imageUrl: '', timerSeconds: 0, targetStudentIds },
         '',
-        `Question is live${targetNote}.`
+        `Question is live on Respond${targetNote}.`
       );
       return;
     }
@@ -442,7 +444,41 @@ export default function LiveResponseTeacher({
       imageUrl: '',
       timerSeconds: 0,
       targetStudentIds,
-    }, '', `“${set.name}” is live · ${questions.length} questions${targetNote}.`);
+    }, '', `“${set.name}” is live on Respond · ${questions.length} questions${targetNote}.`);
+  }
+
+  function sendSetToInbox(set) {
+    let questions = normalizeSetQuestions(set?.questions);
+    if (!questions.length && Array.isArray(set?.prompts)) {
+      questions = normalizeSetQuestions(
+        set.prompts.map((prompt, index) => ({ id: `p${index + 1}`, type: 'short', prompt }))
+      );
+    }
+    const selected = [...new Set((selectedStudentIds || []).map(Number).filter(Boolean))];
+    const roster = [...new Set((rosterStudentIds || []).map(Number).filter(Boolean))];
+    const fromLive = [...new Set((live?.students || []).map((student) => Number(student?.id)).filter(Boolean))];
+    const studentIds = selected.length ? selected : (roster.length ? roster : fromLive);
+    const { items, error } = buildSetInboxDistributeItems({
+      setName: set?.name,
+      questions,
+      studentIds,
+    });
+    if (error) {
+      setMessage(error);
+      return;
+    }
+    socket.emit('teacher:distribute', { items }, (ack) => {
+      if (!ack?.ok) {
+        setMessage(ack?.error || 'Could not send to Inbox');
+        return;
+      }
+      const count = Number(ack.count) || items.length;
+      const targetNote = selected.length
+        ? ` · ${selected.length} selected student${selected.length === 1 ? '' : 's'}`
+        : ` · ${count} student${count === 1 ? '' : 's'}`;
+      setMessage(`“${set?.name || 'Set'}” sent to Inbox${targetNote}.`);
+      if (selected.length) onClearStudentSelection?.();
+    });
   }
 
   function enqueueSet(set) {
@@ -1142,6 +1178,7 @@ export default function LiveResponseTeacher({
               setQueue={setQueue}
               onLaunchQuestion={(item, id) => launch(item, id)}
               onLaunchSet={launchSet}
+              onSendSetToInbox={sendSetToInbox}
               onEnqueueSet={enqueueSet}
               onMessage={setMessage}
               selectedStudentCount={(selectedStudentIds || []).length}
@@ -1158,6 +1195,7 @@ export default function LiveResponseTeacher({
             setQueue={setQueue}
             onLaunchQuestion={(item, id) => launch(item, id)}
             onLaunchSet={launchSet}
+            onSendSetToInbox={sendSetToInbox}
             onEnqueueSet={enqueueSet}
             onMessage={setMessage}
             selectedStudentCount={(selectedStudentIds || []).length}

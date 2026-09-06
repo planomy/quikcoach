@@ -147,3 +147,44 @@ export function cloneSetForEdit(source) {
   };
 }
 
+/** Plain-text fallback for Inbox / older clients when a set is sent as a prompt. */
+export function buildSetInboxText(setName, questions) {
+  const title = String(setName || 'Prompt set').trim().slice(0, 120) || 'Prompt set';
+  const list = normalizeSetQuestions(questions);
+  if (!list.length) return `Prompt set · ${title}`;
+  const body = list
+    .map((question, index) => {
+      const helper = question.helper ? `\n   ${question.helper}` : '';
+      return `${index + 1}. ${question.prompt}${helper}`;
+    })
+    .join('\n\n');
+  return `Prompt set · ${title}\n\n${body}`.slice(0, 5000);
+}
+
+/**
+ * Build durable teacher:distribute items for a set prompt.
+ * @returns {{ items: object[], error?: string }}
+ */
+export function buildSetInboxDistributeItems({ setName, questions, studentIds }) {
+  const list = normalizeSetQuestions(questions);
+  const ids = [...new Set((studentIds || []).map(Number).filter((id) => id > 0))];
+  if (!list.length) return { items: [], error: 'That set is empty.' };
+  if (!ids.length) return { items: [], error: 'No students in the room yet.' };
+  const title = String(setName || 'Prompt set').trim().slice(0, 120) || 'Prompt set';
+  const text = buildSetInboxText(title, list);
+  const promptQuestions = list.map((question) => ({
+    id: question.id,
+    prompt: question.prompt,
+    ...(question.helper ? { helper: question.helper } : {}),
+  }));
+  return {
+    items: ids.map((studentId) => ({
+      studentId,
+      text,
+      kind: 'set-prompt',
+      title,
+      questions: promptQuestions,
+    })),
+  };
+}
+

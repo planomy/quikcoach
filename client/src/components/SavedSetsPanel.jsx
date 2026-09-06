@@ -108,6 +108,7 @@ export default function SavedSetsPanel({
   setQueue,
   onLaunchQuestion,
   onLaunchSet,
+  onSendSetToInbox,
   onEnqueueSet,
   onMessage,
   selectedStudentCount = 0,
@@ -428,7 +429,7 @@ export default function SavedSetsPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Sets · {filtered.length}</h3>
-              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Preview, edit, or launch a whole routine.</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Preview, edit, or send a whole routine.</p>
             </div>
             <button
               type="button"
@@ -469,9 +470,13 @@ export default function SavedSetsPanel({
 
           {selectedStudentCount > 0 ? (
             <p className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-bold text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
-              Launch goes to {selectedStudentCount} selected student{selectedStudentCount === 1 ? '' : 's'} (checkboxes on cards). Clear selection for the whole class.
+              Sends go to {selectedStudentCount} selected student{selectedStudentCount === 1 ? '' : 's'} (checkboxes on cards). Clear selection for the whole class.
             </p>
-          ) : null}
+          ) : (
+            <p className="mt-2 text-[11px] font-semibold text-slate-500">
+              Respond = answer now · Inbox = keep as writing prompts.
+            </p>
+          )}
 
           <div className="mt-3 max-h-[28rem] overflow-y-auto pr-1 scrollbar-thin">
             <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2">
@@ -519,13 +524,24 @@ export default function SavedSetsPanel({
                       {formatSetCardMeta(set)}
                     </p>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => onLaunchSet(set)}
-                    className="shrink-0 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
-                  >
-                    {selectedStudentCount > 0 ? `Launch · ${selectedStudentCount}` : 'Launch'}
-                  </button>
+                  <div className="flex shrink-0 flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onLaunchSet(set)}
+                      title="Send to Respond — students answer now"
+                      className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
+                    >
+                      Respond
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onSendSetToInbox?.(set)}
+                      title="Send to Inbox — keep as prompts while writing"
+                      className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-500 dark:ring-offset-slate-900"
+                    >
+                      Inbox
+                    </button>
+                  </div>
                 </article>
                 );
               })}
@@ -584,7 +600,14 @@ export default function SavedSetsPanel({
                 </ol>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button type="button" onClick={() => onLaunchSet(activeSet)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">
-                    {selectedStudentCount > 0 ? `Launch to ${selectedStudentCount}` : 'Launch'}
+                    Send to Respond
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSendSetToInbox?.(activeSet)}
+                    className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                  >
+                    Send to Inbox
                   </button>
                   <button type="button" onClick={() => { onEnqueueSet(activeSet); setMode(''); }} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
                   <button type="button" onClick={() => openEdit(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">

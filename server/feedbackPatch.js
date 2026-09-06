@@ -16,6 +16,16 @@ feedbackDb.exec(`
 `);
 feedbackDb.exec(`CREATE INDEX IF NOT EXISTS idx_teacher_feedback_student ON teacher_feedback_messages(student_id)`);
 feedbackDb.exec(`CREATE INDEX IF NOT EXISTS idx_teacher_feedback_room ON teacher_feedback_messages(room_code)`);
+for (const sql of [
+  `ALTER TABLE teacher_feedback_messages ADD COLUMN kind TEXT NOT NULL DEFAULT 'note'`,
+  `ALTER TABLE teacher_feedback_messages ADD COLUMN meta_json TEXT NOT NULL DEFAULT '{}'`,
+]) {
+  try {
+    feedbackDb.exec(sql);
+  } catch {
+    /* column already exists */
+  }
+}
 
 function normaliseRoomCode(code) {
   return String(code ?? '')
@@ -33,17 +43,58 @@ function parseSqliteUtcMs(value) {
   return Number.isFinite(ms) ? ms : 0;
 }
 
+function parseMetaJson(raw) {
+  try {
+    const parsed = JSON.parse(String(raw || '{}'));
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function sanitizeSetPromptMeta(raw) {
+  const title = String(raw?.title || '').trim().slice(0, 120);
+  const questions = Array.isArray(raw?.questions)
+    ? raw.questions
+        .map((question, index) => {
+          const prompt = String(question?.prompt || '').trim().slice(0, 500);
+          if (!prompt) return null;
+          const helper = String(question?.helper || '').trim().slice(0, 240);
+          return {
+            id: String(question?.id || `q${index + 1}`).slice(0, 40),
+            prompt,
+            ...(helper ? { helper } : {}),
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 12)
+    : [];
+  if (!title && !questions.length) return null;
+  return {
+    title: title || 'Prompt set',
+    questions,
+  };
+}
+
 function feedbackForClient(row) {
   if (!row) return null;
   const createdAt = row.created_at || '';
   const at = parseSqliteUtcMs(createdAt);
-  return {
+  const kind = String(row.kind || 'note') === 'set-prompt' ? 'set-prompt' : 'note';
+  const meta = parseMetaJson(row.meta_json);
+  const item = {
     feedbackId: Number(row.id),
     studentId: Number(row.student_id),
     text: String(row.text || ''),
+    kind,
     createdAt,
     at: at || Date.now(),
   };
+  if (kind === 'set-prompt') {
+    item.title = String(meta.title || '').trim().slice(0, 120) || 'Prompt set';
+    item.questions = Array.isArray(meta.questions) ? meta.questions : [];
+  }
+  return item;
 }
 
 // Prepare statements at the moment they are used rather than keeping long-lived
@@ -94,9 +145,15 @@ function deliverFeedback(io, socket, payload = {}, cb) {
         .get(studentId);
       if (!student || normaliseRoomCode(student.room_code) !== roomCode) continue;
 
+      const kind = String(raw?.kind || '') === 'set-prompt' ? 'set-prompt' : 'note';
+      const setMeta = kind === 'set-prompt' ? sanitizeSetPromptMeta(raw) : null;
+      const metaJson = setMeta ? JSON.stringify(setMeta) : '{}';
+
       const result = feedbackDb
-        .prepare(`INSERT INTO teacher_feedback_messages (room_code, student_id, text) VALUES (?, ?, ?)`)
-        .run(roomCode, studentId, text);
+        .prepare(
+          `INSERT INTO teacher_feedback_messages (room_code, student_id, text, kind, meta_json) VALUES (?, ?, ?, ?, ?)`
+        )
+        .run(roomCode, studentId, text, kind, metaJson);
       const row = feedbackDb
         .prepare(`SELECT * FROM teacher_feedback_messages WHERE id = ?`)
         .get(Number(result.lastInsertRowid));

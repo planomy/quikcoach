@@ -34,14 +34,20 @@ function feedbackInboxItem(item, { fallbackAt = 0 } = {}) {
   const text = String(item?.text || '');
   const createdAt = String(item?.createdAt || '');
   const at = parseInboxAt(item) || fallbackAt;
-  return {
+  const kind = String(item?.kind || '') === 'set-prompt' ? 'set-prompt' : 'note';
+  const base = {
     id: feedbackId
       ? `feedback-${feedbackId}`
       : `feedback-${Number(item?.studentId) || 0}-${createdAt}-${text}`,
-    type: 'note',
+    type: kind,
     text,
     at,
   };
+  if (kind === 'set-prompt') {
+    base.title = String(item?.title || '').trim() || 'Prompt set';
+    base.questions = Array.isArray(item?.questions) ? item.questions : [];
+  }
+  return base;
 }
 
 function mergeFeedbackInbox(previous, incoming, { liveFallbackAt = 0 } = {}) {
@@ -51,7 +57,7 @@ function mergeFeedbackInbox(previous, incoming, { liveFallbackAt = 0 } = {}) {
   }
   for (const raw of incoming) {
     const item = feedbackInboxItem(raw, { fallbackAt: liveFallbackAt });
-    if (item.text) byId.set(item.id, item);
+    if (item.text || item.type === 'set-prompt') byId.set(item.id, item);
   }
   return [...byId.values()].sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
 }
@@ -299,7 +305,7 @@ export default function StudentView() {
       const mine = items.filter((i) => Number(i?.studentId) === Number(sid));
       if (!mine.length) return;
       const liveFallbackAt = replay ? 0 : Date.now();
-      const mapped = mine.map((item) => feedbackInboxItem(item, { fallbackAt: liveFallbackAt })).filter((item) => item.text);
+      const mapped = mine.map((item) => feedbackInboxItem(item, { fallbackAt: liveFallbackAt })).filter((item) => item.text || item.type === 'set-prompt');
       setFeedbackInbox((prev) => mergeFeedbackInbox(prev, mine, { liveFallbackAt }));
       if (replay) return;
       const newest = mapped.reduce(
