@@ -17,12 +17,14 @@ export function normalizeSetQuestion(raw, index = 0) {
   if (type === 'rating') options = ['1', '2', '3', '4', '5'];
   if (type === 'choice' && options.length < 2) return null;
   const correctAnswer = String(raw?.correctAnswer || '').trim().slice(0, type === 'short' ? 500 : 120);
+  const helper = String(raw?.helper || raw?.descriptor || '').trim().slice(0, 240);
   return {
     id: String(raw?.id || newId(`sq${index}`)),
     type,
     prompt,
     options: type === 'short' ? [] : options,
     correctAnswer: type === 'short' || options.includes(correctAnswer) ? correctAnswer : '',
+    ...(helper ? { helper } : {}),
   };
 }
 

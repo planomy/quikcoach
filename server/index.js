@@ -1094,12 +1094,14 @@ io.on('connection', (socket) => {
             let correctAnswer = '';
             if (questionType === 'short') correctAnswer = requested;
             else if (questionType !== 'rating' && questionOptions.includes(requested)) correctAnswer = requested;
+            const helper = String(item?.helper || item?.descriptor || '').trim().slice(0, 240);
             return {
               id: String(item?.id || `sq-${index + 1}`).slice(0, 80),
               type: questionType,
               prompt: questionPrompt,
               options: questionType === 'short' ? [] : questionOptions,
               correctAnswer,
+              ...(helper ? { helper } : {}),
             };
           })
           .filter(Boolean)

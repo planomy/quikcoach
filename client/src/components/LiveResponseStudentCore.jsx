@@ -521,6 +521,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                       <span className="mr-1.5 text-slate-400">{index + 1}.</span>
                       {question.prompt}
                     </span>
+                    {question.helper ? (
+                      <span className="mt-0.5 block text-[11px] font-medium leading-snug text-slate-500 dark:text-slate-400">
+                        {question.helper}
+                      </span>
+                    ) : null}
                     {question.type === 'short' ? (
                       <textarea
                         value={value}

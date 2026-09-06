@@ -567,6 +567,11 @@ export default function SavedSetsPanel({
                     <li key={question.id} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold leading-snug text-slate-800 dark:border-slate-700 dark:text-slate-100">
                       <span className="mr-1.5 text-[10px] font-black text-slate-400">{index + 1}.</span>
                       {question.prompt}
+                      {question.helper ? (
+                        <span className="mt-0.5 block text-[11px] font-medium leading-snug text-slate-500 dark:text-slate-400">
+                          {question.helper}
+                        </span>
+                      ) : null}
                     </li>
                   ))}
                 </ol>
