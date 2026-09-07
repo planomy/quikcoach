@@ -42,7 +42,7 @@ export default function SessionPdfExport({ socket, onClose }) {
   }
   return <dialog ref={dialog} onCancel={event => { if (busy) event.preventDefault(); else onClose(); }} aria-labelledby="session-pdf-title" className="m-auto max-h-[90dvh] w-[min(36rem,94vw)] overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
     <div className="flex items-center justify-between gap-3"><h2 id="session-pdf-title" className="text-lg font-bold">Export session report (PDF)</h2><button type="button" className={buttonClass} onClick={onClose}>Close</button></div>
-    <p className="my-3 text-sm text-slate-500 dark:text-slate-400">Includes writing, student images, teacher feedback, check-in responses and named Draft Trails.</p>
+    <p className="my-3 text-sm text-slate-500 dark:text-slate-400">Includes writing, student images and compact named Draft Trails, with inline feedback linked to subsequent passage revisions.</p>
     {pack && <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">Session captured {new Date(pack.exportedAt).toLocaleString()}. Reopen this window to capture later changes.</p>}
     {error && <div role="alert" className="my-3 text-sm text-red-600 dark:text-red-300">{error} {!pack && <button type="button" className={buttonClass} onClick={() => setReload(n => n + 1)}>Retry</button>}</div>}
     {busy && !pack && <p role="status">Capturing session…</p>}
@@ -51,7 +51,7 @@ export default function SessionPdfExport({ socket, onClose }) {
       <fieldset disabled={busy} className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-200 p-3 dark:border-slate-700"><legend className="px-1 text-sm font-semibold">Students</legend>
         {people.map(s => <label key={s.key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selected.includes(s.key)} onChange={e => setSelected(current => e.target.checked ? [...current, s.key] : current.filter(key => key !== s.key))} />{s.name}{s.archived ? ' (archived trail)' : ''}</label>)}
       </fieldset>
-      <label className="my-4 flex items-start gap-2 text-sm"><input type="checkbox" disabled={busy} checked={detailed} onChange={e => setDetailed(e.target.checked)} className="mt-1" /><span>More Draft Trail checkpoints<br /><span className="text-slate-500 dark:text-slate-400">Default: up to 3 revision extracts. Detailed samples up to 20 checkpoints with short passages — never reprints the whole draft each time.</span></span></label>
+      <label className="my-4 flex items-start gap-2 text-sm"><input type="checkbox" disabled={busy} checked={detailed} onChange={e => setDetailed(e.target.checked)} className="mt-1" /><span>More Draft Trail checkpoints<br /><span className="text-slate-500 dark:text-slate-400">Default: up to 3 meaningful revision extracts. Detailed selects up to 20 checkpoints with short passages — never reprints the whole draft each time.</span></span></label>
     </>}
     {!busy && pack && !people.length && <p className="my-5 text-sm">No students or archived Draft Trails in this session yet.</p>}
     <button type="button" disabled={busy || !pack || !selected.length} onClick={download} className="mt-2 rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 disabled:opacity-50">{busy && pack ? 'Creating PDF…' : 'Download PDF'}</button>

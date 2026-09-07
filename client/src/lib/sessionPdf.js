@@ -1,5 +1,4 @@
 import { jsPDF } from 'jspdf';
-import { formatLiveAnswer } from './liveResponseUnknown.js';
 
 export function reportStudents(pack) {
   const students = (pack.students || []).map(s => ({ ...s, key: s.exportId,
@@ -38,19 +37,54 @@ function truncateDraft(text, limit = 1200) {
   return `${raw.slice(0, limit)} [Writing continues — full text is in Writing at export / the .iboard file]`;
 }
 
-/** Keep PDFs readable: sample checkpoints instead of reprinting every keystroke draft. */
+/** Prefer evidence of revision while keeping each report compact. */
 function sampleRevisions(revisions, detailed) {
-  if (!revisions.length) return [];
-  if (!detailed) {
-    return [...new Set([revisions[0], revisions[Math.floor(revisions.length / 2)], revisions.at(-1)].filter(Boolean))];
+  const limit = detailed ? 20 : 3;
+  const score = e => (e.inlineComments?.length ? 100 : 0)
+    + (e.removed > 0 && e.inserted ? 30 : e.removed > 0 ? 20 : 0)
+    + Math.min(10, (e.removed + String(e.inserted || '').length) / 50);
+  const selected = new Set([...revisions].sort((a, b) => score(b) - score(a)).slice(0, limit));
+  return revisions.filter(e => selected.has(e));
+}
+
+function timestamp(value) {
+  const raw = typeof value === 'string' && /^\d{4}-\d\d-\d\d \d\d:/.test(value)
+    ? value.replace(' ', 'T') + 'Z' : value;
+  return new Date(raw).getTime();
+}
+
+/** Match only a unique quoted passage; never infer a link across a recording gap. */
+export function linkInlineRevisions(events, annotations = []) {
+  const result = events.map(e => ({ ...e, inlineComments: [] }));
+  for (const note of annotations) {
+    const at = timestamp(note.created_at);
+    const quote = String(note.quote || '');
+    if (!Number.isFinite(at) || !quote || !note.note) continue;
+    let start = null, end = null;
+    for (const event of result) {
+      if (event.at <= at) continue;
+      if (['baseline', 'gap', 'resume', 'stop'].includes(event.type)) break;
+      if (!['change', 'paste'].includes(event.type)) continue;
+      if (start === null) {
+        start = event.before.indexOf(quote);
+        if (start < 0 || event.before.indexOf(quote, start + 1) !== -1) break;
+        end = start + quote.length;
+      }
+      const editEnd = event.start + event.removed;
+      const touches = event.removed > 0
+        ? event.start < end && editEnd > start
+        : event.start > start && event.start < end;
+      if (touches) {
+        event.inlineComments.push(note);
+        break;
+      }
+      if (editEnd <= start) {
+        const shift = String(event.inserted || '').length - event.removed;
+        start += shift; end += shift;
+      }
+    }
   }
-  const max = 20;
-  if (revisions.length <= max) return revisions;
-  const step = Math.ceil(revisions.length / max);
-  const picked = [];
-  for (let i = 0; i < revisions.length; i += step) picked.push(revisions[i]);
-  if (picked.at(-1) !== revisions.at(-1)) picked.push(revisions.at(-1));
-  return picked;
+  return result;
 }
 function yearLabel(value) {
   const raw = String(value || '').trim();
@@ -71,7 +105,7 @@ function changeDescription(event) {
 function buildJourneyEvents(events, detailed) {
   const revisions = events.filter((e) => ['change', 'paste'].includes(e.type));
   const selected = new Set(sampleRevisions(revisions, detailed));
-  const milestones = new Set(['baseline', 'resume', 'gap', 'stop', 'feedback']);
+  const milestones = new Set(['baseline', 'resume', 'gap', 'stop']);
   return events.filter((event) => milestones.has(event.type) || selected.has(event));
 }
 
@@ -121,7 +155,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   paragraph(`${people.length} student${people.length === 1 ? '' : 's'} | ${detailed ? 'Sampled Draft Trail checkpoints (up to 20 text changes)' : 'Draft Trail summary (3 revision extracts)'}`, { size: 10 });
   paragraph(`Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Writing reflects the latest version received by iBoard when this report was captured; it may not be a final submission.`, { size: 9, colour: [90, 102, 117] });
   heading('Reading this report');
-  paragraph('Draft Trails provide evidence of writing development. They do not verify identity or prove independent authorship. Pasted text may be legitimate. Changes after feedback do not establish that the feedback was addressed.');
+  paragraph('Draft Trails provide evidence of writing development. They do not verify identity or prove independent authorship. Pasted text may be legitimate. Inline comments appear only when a later recorded edit overlaps their uniquely matched passage. This shows sequence, not proof that feedback caused or successfully guided the change.');
   paragraph('Recording begins at the baseline. Paused and disconnected intervals are not continuous observation. This PDF is a readable report; retain the .iboard session file to reopen the lesson and explore its trails.');
   if (pack.draftTrail?.reason) paragraph(pack.draftTrail.reason, { colour: [150, 60, 30] });
   heading('Included students');
@@ -130,7 +164,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
     newPage(); studentName = student.name;
     paragraph(student.name || 'Student', { size: 20, colour: [25, 59, 89], gap: 5 });
     paragraph([student.class_group && `Group ${student.class_group}`, yearLabel(student.year_level), student.archived && 'Archived trail - student card removed'].filter(Boolean).join(' | ') || 'Session writing and learning evidence', { size: 9, colour: [90, 102, 117] });
-    const events = reconstructTrail(student.trail?.events);
+    const events = linkInlineRevisions(reconstructTrail(student.trail?.events), pack.annotationsByExportId?.[student.exportId] || []);
     heading(student.archived ? 'Last recorded writing' : 'Writing at export');
     paragraph(student.archived ? events.at(-1)?.after || '(No recorded writing)' : student.text || '(No writing received)');
     if (student.image?.base64) {
@@ -144,26 +178,6 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
         pdf.addImage(url, props.fileType, 18, y, imageWidth, imageHeight); y += imageHeight + 5;
       } catch { paragraph('Image could not be included. It remains in the .iboard session file.'); }
     }
-    const notes = pack.teacherNotesByExportId?.[student.exportId] || [];
-    const annotations = pack.annotationsByExportId?.[student.exportId] || [];
-    if (notes.length || annotations.length) {
-      heading('Teacher feedback');
-      for (const note of notes) { paragraph(when(note.createdAt || note.created_at), { size: 9, gap: 1 }); paragraph(note.text); }
-      for (const note of annotations) {
-        paragraph(`${when(note.created_at)} | Inline comment`, { size: 9, gap: 1 });
-        paragraph(`Selected writing: ${note.quote}\nTeacher: ${note.note}`);
-      }
-    }
-    const responses = (pack.live?.lessonPulse?.cells || []).filter(r => r.exportStudentId === student.exportId && student.exportId);
-    if (responses.length) {
-      heading('Thinking and check-in responses');
-      for (const response of responses) {
-        const question = pack.live.lessonPulse.questions?.find(q => q.activity_id === response.activity_id);
-        paragraph(`Question ${response.question_number} | ${when(response.submitted_at)}`, { size: 9, gap: 1 });
-        if (question?.prompt) paragraph(question.prompt);
-        paragraph(formatLiveAnswer(response.value) || '(No answer text)');
-      }
-    }
     heading('Draft Trail');
     if (!events.length) { paragraph('No Draft Trail was captured for this student. This does not indicate misconduct.'); continue; }
     const revisions = events.filter(e => ['change', 'paste'].includes(e.type));
@@ -175,16 +189,21 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
     heading(detailed ? 'Writing journey (sampled)' : 'Writing journey');
     paragraph(
       detailed
-        ? `Showing ${shownRevisions} of ${revisions.length} text changes plus milestones. Each entry shows the edit, not a full reprint of the draft (full writing is above).`
-        : 'Three revision extracts plus milestones. Full writing is above; the .iboard file keeps the complete trail.'
+        ? `Showing ${shownRevisions} of ${revisions.length} text changes plus milestones. Meaningful revisions are prioritised. Each entry shows the edit, not a full reprint of the draft (full writing is above).`
+        : 'Up to three selected revision extracts plus recording milestones. Rewording, deletions and revisions following inline feedback are prioritised. Full writing is above; the .iboard file keeps the complete trail.'
     );
     if (!journeyEvents.length) paragraph('No Draft Trail events were recorded after the baseline.');
     for (const event of journeyEvents) {
       space(12);
       paragraph(`${when(event.at)} | ${labels[event.type]}`, { size: 9, colour: [29, 74, 116], gap: 1 });
-      if (event.type === 'feedback') { paragraph(event.text, { size: 9 }); continue; }
+
       if (event.type === 'stop') { paragraph('Capture stopped. Later work is outside this recording segment.', { size: 9 }); continue; }
       if (['change', 'paste'].includes(event.type)) {
+        for (const note of event.inlineComments) {
+          paragraph('Revision following feedback', { size: 9, colour: [29, 74, 116], gap: 1 });
+          paragraph(`${when(note.created_at)} | Inline comment: ${note.note}`, { size: 8 });
+          paragraph(`Commented passage: “${extract(note.quote)}”`, { size: 8 });
+        }
         paragraph(changeDescription(event), { size: 8, colour: [28, 105, 83], gap: 1 });
         paragraph(extract(event.after, event.start, event.inserted?.length), { size: 8, colour: [35, 45, 62], gap: 2 });
         continue;
