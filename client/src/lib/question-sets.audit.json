@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "generated": "2026-09-07",
-  "set_count": 74,
+  "set_count": 93,
   "field_notes": {
     "mode": "generate = works from nothing | revise = needs existing student work | either = both",
     "requires": "null, or a plain-English prerequisite the UI can warn on at send time",
@@ -2471,6 +2471,703 @@
           "text": "Write down anything at all you could put on the page right now."
         }
       ]
+    },
+    {
+      "id": "gen-11",
+      "legacy_id": null,
+      "title": "Unpack the Command Word",
+      "subject": "General",
+      "category": "Task literacy",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 6,
+      "mode": "generate",
+      "requires": "the question or task in front of them",
+      "teacher_note": "Fire before any extended response. Students lose marks for describing when the task said evaluate.",
+      "prompts": [
+        {
+          "text": "Copy out the command word in the question.",
+          "hint": "Explain, evaluate, analyse, compare, justify, discuss…"
+        },
+        {
+          "text": "In your own words, what is that word asking you to actually do?"
+        },
+        {
+          "text": "What would a weak answer do instead?",
+          "hint": "Usually: retell, describe, or list."
+        },
+        {
+          "text": "How many parts does this question have? List them."
+        },
+        {
+          "text": "Write the first sentence of your answer so it does what the command word asks."
+        }
+      ]
+    },
+    {
+      "id": "gen-12",
+      "legacy_id": null,
+      "title": "Read the Rubric",
+      "subject": "General",
+      "category": "Assessment",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "either",
+      "requires": "the marking rubric or criteria sheet",
+      "teacher_note": "Students are marked against criteria they have often never read.",
+      "prompts": [
+        {
+          "text": "Find the band you are aiming for. Copy the words that describe it."
+        },
+        {
+          "text": "Which word in that band is the hardest to prove?"
+        },
+        {
+          "text": "What would that look like in your work?"
+        },
+        {
+          "text": "Which of those words does your draft not yet earn?"
+        },
+        {
+          "text": "Name the one change that would move you up a band."
+        }
+      ]
+    },
+    {
+      "id": "gen-13",
+      "legacy_id": null,
+      "title": "Self-Check Before You Submit",
+      "subject": "General",
+      "category": "Assessment",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "revise",
+      "requires": "a finished or near-finished draft",
+      "teacher_note": "Last-look set. Catches the marks students throw away.",
+      "prompts": [
+        {
+          "text": "Reread the task. Quote the exact words of what it asked for."
+        },
+        {
+          "text": "Which sentence of yours answers that most directly?"
+        },
+        {
+          "text": "What has the task asked for that you have not done?"
+        },
+        {
+          "text": "Check the word count and format. What is off?"
+        },
+        {
+          "text": "Fix the biggest gap now. Paste what you changed."
+        }
+      ]
+    },
+    {
+      "id": "gen-14",
+      "legacy_id": null,
+      "title": "Catch Up — You Missed This",
+      "subject": "General",
+      "category": "Classroom routines",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 5,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "Send to a returning student while you teach the rest of the class. Tells you the size of the gap in 60 seconds.",
+      "prompts": [
+        {
+          "text": "What was the last lesson you were here for?"
+        },
+        {
+          "text": "What do you remember covering that day?"
+        },
+        {
+          "text": "Look at what the class is doing now. What part makes no sense to you?"
+        },
+        {
+          "text": "What do you think you need to catch up on first?"
+        },
+        {
+          "text": "What do you need from me to get moving in the next five minutes?"
+        }
+      ]
+    },
+    {
+      "id": "gen-15",
+      "legacy_id": null,
+      "title": "Cover Lesson Starter",
+      "subject": "General",
+      "category": "Classroom routines",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 6,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "For a relief teacher with an unfamiliar class. Gets thirty students typing in four minutes and tells you what the class thinks the plan is.",
+      "prompts": [
+        {
+          "text": "What are you supposed to be working on today?"
+        },
+        {
+          "text": "Where are you up to?"
+        },
+        {
+          "text": "What did your teacher tell you to do if you finish?"
+        },
+        {
+          "text": "What is the one thing you need help with this lesson?"
+        },
+        {
+          "text": "Write the first line of the work you are about to do."
+        }
+      ]
+    },
+    {
+      "id": "gen-16",
+      "legacy_id": null,
+      "title": "Group Work — Who's Doing What",
+      "subject": "General",
+      "category": "Collaboration",
+      "band_label": "5–12",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 6,
+      "mode": "generate",
+      "requires": "students in groups",
+      "teacher_note": "Every member answers separately. Mismatched answers show you which groups have a problem before it becomes one.",
+      "prompts": [
+        {
+          "text": "What is your group making or deciding?"
+        },
+        {
+          "text": "What are you personally responsible for?"
+        },
+        {
+          "text": "What is each other member doing?"
+        },
+        {
+          "text": "What needs to be finished by the end of this lesson?"
+        },
+        {
+          "text": "What is slowing your group down right now?"
+        }
+      ]
+    },
+    {
+      "id": "gen-17",
+      "legacy_id": null,
+      "title": "Group Work — Check the Progress",
+      "subject": "General",
+      "category": "Collaboration",
+      "band_label": "5–12",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 5,
+      "mode": "revise",
+      "requires": "group work already underway",
+      "teacher_note": "Mid-project. Send to every member individually.",
+      "prompts": [
+        {
+          "text": "What have you finished since last lesson?"
+        },
+        {
+          "text": "What is still not done?"
+        },
+        {
+          "text": "What has changed about the plan?"
+        },
+        {
+          "text": "What do you need from another group member?"
+        },
+        {
+          "text": "What is the next thing you will do, in the next ten minutes?"
+        }
+      ]
+    },
+    {
+      "id": "gen-18",
+      "legacy_id": null,
+      "title": "Exam Prep Audit",
+      "subject": "General",
+      "category": "Revision",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "Run a fortnight out. Tells you what to reteach.",
+      "prompts": [
+        {
+          "text": "List the topics on this exam."
+        },
+        {
+          "text": "Which topic would you least like to see on the paper?"
+        },
+        {
+          "text": "Why that one — is it the content, or the question type?"
+        },
+        {
+          "text": "Which topic could you teach to someone else right now?"
+        },
+        {
+          "text": "What will you revise first, and how?",
+          "hint": "Rereading notes is not a method."
+        },
+        {
+          "text": "What do you need from me before the exam?"
+        }
+      ]
+    },
+    {
+      "id": "gen-19",
+      "legacy_id": null,
+      "title": "Post-Assessment Reflection",
+      "subject": "General",
+      "category": "Assessment",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "revise",
+      "requires": "returned marked work",
+      "teacher_note": "Run when handing back. Moves students past the number.",
+      "prompts": [
+        {
+          "text": "Which question or section went best?"
+        },
+        {
+          "text": "Which mark surprised you, and why?"
+        },
+        {
+          "text": "Find one error. What kind was it — knowledge, misreading, or running out of time?"
+        },
+        {
+          "text": "Read the feedback. What is it asking you to change?"
+        },
+        {
+          "text": "What will you do differently next time? Be specific."
+        }
+      ]
+    },
+    {
+      "id": "gen-20",
+      "legacy_id": null,
+      "title": "Is This Source Any Good?",
+      "subject": "General",
+      "category": "Research",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": "a website or article students are using",
+      "teacher_note": "Online research, not historical sources. Different skill to IOPCAM.",
+      "prompts": [
+        {
+          "text": "Who published this? Copy the name."
+        },
+        {
+          "text": "When was it written or last updated?"
+        },
+        {
+          "text": "What are they trying to get you to think, buy or do?"
+        },
+        {
+          "text": "Where does their information come from?"
+        },
+        {
+          "text": "Find one claim you could check somewhere else. Quote it."
+        },
+        {
+          "text": "Would you use this in your work? Give the reason."
+        }
+      ]
+    },
+    {
+      "id": "gen-21",
+      "legacy_id": null,
+      "title": "Build a Research Question",
+      "subject": "General",
+      "category": "Research",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What topic are you interested in?"
+        },
+        {
+          "text": "What do you already know about it?"
+        },
+        {
+          "text": "Turn that topic into a question starting with how, why or to what extent."
+        },
+        {
+          "text": "Is your question too big to answer? Rewrite it narrower."
+        },
+        {
+          "text": "What kind of evidence would answer it?"
+        },
+        {
+          "text": "What would a surprising answer look like?"
+        }
+      ]
+    },
+    {
+      "id": "gen-22",
+      "legacy_id": null,
+      "title": "Notes from Video or Documentary",
+      "subject": "General",
+      "category": "Note-taking",
+      "band_label": "5–12",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": "a video playing or just finished",
+      "teacher_note": "Send before you press play. Pause at the halfway mark to collect.",
+      "prompts": [
+        {
+          "text": "What is this video about, in one sentence?"
+        },
+        {
+          "text": "Write down three facts you did not know."
+        },
+        {
+          "text": "What is the one moment or image you will remember?"
+        },
+        {
+          "text": "What point is the video trying to make?"
+        },
+        {
+          "text": "What question did it leave you with?"
+        }
+      ]
+    },
+    {
+      "id": "gen-23",
+      "legacy_id": null,
+      "title": "Oral Presentation Prep",
+      "subject": "English",
+      "category": "Speaking",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What is your one main message? One sentence."
+        },
+        {
+          "text": "How will you open so people look up?"
+        },
+        {
+          "text": "List your main points in order."
+        },
+        {
+          "text": "Which point needs an example, image or demonstration?"
+        },
+        {
+          "text": "What will you cut if you run out of time?"
+        },
+        {
+          "text": "Write your closing line."
+        },
+        {
+          "text": "What question will someone ask you afterwards?"
+        }
+      ]
+    },
+    {
+      "id": "gen-24",
+      "legacy_id": null,
+      "title": "Debate Prep",
+      "subject": "English",
+      "category": "Speaking",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a topic assigned",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "State your side in one sentence."
+        },
+        {
+          "text": "What is your strongest argument?"
+        },
+        {
+          "text": "What evidence backs it?"
+        },
+        {
+          "text": "What is the other side's best argument?"
+        },
+        {
+          "text": "How will you answer it?"
+        },
+        {
+          "text": "What is the one line you want the audience to remember?"
+        }
+      ]
+    },
+    {
+      "id": "gen-25",
+      "legacy_id": null,
+      "title": "Set a Goal That Sticks",
+      "subject": "General",
+      "category": "Reflection",
+      "band_label": "5–12",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "Start of term or after reports.",
+      "prompts": [
+        {
+          "text": "What went well for you last term?"
+        },
+        {
+          "text": "What is one thing you want to be better at by the end of this term?"
+        },
+        {
+          "text": "How would you know you had improved? What would be different?"
+        },
+        {
+          "text": "What is one thing you will do every week to get there?"
+        },
+        {
+          "text": "What usually stops you?"
+        },
+        {
+          "text": "What will you do when that happens?"
+        }
+      ]
+    },
+    {
+      "id": "gen-26",
+      "legacy_id": null,
+      "title": "Before Your Parent Interview",
+      "subject": "General",
+      "category": "Reporting",
+      "band_label": "5–12",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "Collects student voice before interviews. Gives you something specific to open with.",
+      "prompts": [
+        {
+          "text": "What is one piece of work this term you are proud of?"
+        },
+        {
+          "text": "Why that one?"
+        },
+        {
+          "text": "What has been hardest?"
+        },
+        {
+          "text": "What would you like your parents to know that they might not?"
+        },
+        {
+          "text": "What is one thing you want help with next term?"
+        }
+      ]
+    },
+    {
+      "id": "eng-fnd-03",
+      "legacy_id": null,
+      "title": "What Does It Show? (Junior Analysis)",
+      "subject": "English",
+      "category": "Text analysis",
+      "band_label": "5–6",
+      "year_min": 5,
+      "year_max": 6,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": "Fills the junior analytical gap. Gets Year 5–6 past retelling.",
+      "prompts": [
+        {
+          "text": "What happens in this part of the text?"
+        },
+        {
+          "text": "Now the harder question: what does it show us about the character or the story?"
+        },
+        {
+          "text": "Which words in the text made you think that? Copy them."
+        },
+        {
+          "text": "Why do you think the author put this bit in?"
+        },
+        {
+          "text": "Write one sentence starting: \"This shows that…\""
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-13",
+      "legacy_id": null,
+      "title": "Proofread & Fix",
+      "subject": "English",
+      "category": "Editing",
+      "band_label": "5–12",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "revise",
+      "requires": "a finished draft",
+      "teacher_note": "Error correction, not line editing. Pair with Sentence Craft for senior classes.",
+      "prompts": [
+        {
+          "text": "Read your work aloud in your head. Paste the sentence where you stumbled."
+        },
+        {
+          "text": "Find one sentence with no full stop or the wrong one. Fix it and paste it."
+        },
+        {
+          "text": "Find a word you are not sure you spelled right. Type it."
+        },
+        {
+          "text": "Check your capital letters — names, places, sentence starts. What did you miss?"
+        },
+        {
+          "text": "Find one sentence that runs on too long. Split it and paste both halves."
+        },
+        {
+          "text": "What mistake do you make most often?"
+        }
+      ]
+    },
+    {
+      "id": "eng-an-12",
+      "legacy_id": null,
+      "title": "Unseen Text Attack",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "an unseen text on screen or in hand",
+      "teacher_note": "Exam conditions. Every other analytical set assumes a studied text.",
+      "prompts": [
+        {
+          "text": "First read. What is this text about, in one sentence?"
+        },
+        {
+          "text": "What kind of text is it, and who is it for?"
+        },
+        {
+          "text": "Second read. Which line or image stands out most?"
+        },
+        {
+          "text": "Name one technique doing real work there."
+        },
+        {
+          "text": "What is the writer trying to make the reader think or feel?"
+        },
+        {
+          "text": "Write your claim: one sentence about what this text is doing."
+        }
+      ]
     }
-  ]
+  ],
+  "category_remaps": {
+    "Unpack the Command Word": {
+      "subject": "General",
+      "category": "Task literacy"
+    },
+    "Read the Rubric": {
+      "subject": "General",
+      "category": "Assessment"
+    },
+    "Self-Check Before You Submit": {
+      "subject": "General",
+      "category": "Assessment"
+    },
+    "Catch Up — You Missed This": {
+      "subject": "General",
+      "category": "Classroom routines"
+    },
+    "Cover Lesson Starter": {
+      "subject": "General",
+      "category": "Classroom routines"
+    },
+    "Group Work — Who's Doing What": {
+      "subject": "General",
+      "category": "Collaboration"
+    },
+    "Group Work — Check the Progress": {
+      "subject": "General",
+      "category": "Collaboration"
+    },
+    "Exam Prep Audit": {
+      "subject": "General",
+      "category": "Revision"
+    },
+    "Post-Assessment Reflection": {
+      "subject": "General",
+      "category": "Assessment"
+    },
+    "Is This Source Any Good?": {
+      "subject": "General",
+      "category": "Research"
+    },
+    "Build a Research Question": {
+      "subject": "General",
+      "category": "Research"
+    },
+    "Notes from Video or Documentary": {
+      "subject": "General",
+      "category": "Note-taking"
+    },
+    "Oral Presentation Prep": {
+      "subject": "English",
+      "category": "Speaking"
+    },
+    "Debate Prep": {
+      "subject": "English",
+      "category": "Speaking"
+    },
+    "Set a Goal That Sticks": {
+      "subject": "General",
+      "category": "Reflection"
+    },
+    "Before Your Parent Interview": {
+      "subject": "General",
+      "category": "Reporting"
+    },
+    "What Does It Show? (Junior Analysis)": {
+      "subject": "English",
+      "category": "Text analysis"
+    },
+    "Proofread & Fix": {
+      "subject": "English",
+      "category": "Editing"
+    },
+    "Unseen Text Attack": {
+      "subject": "English",
+      "category": "Analytical writing"
+    }
+  }
 }
