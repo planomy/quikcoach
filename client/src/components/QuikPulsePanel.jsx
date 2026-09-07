@@ -166,19 +166,20 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
   });
 
   if (compact) {
-    const labels = { 'yes-no': 'Yes/No', rating: '1–5', agreement: 'Agree', 'one-word': 'One word', short: 'Short' };
-    const buttonClass = 'min-h-9 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-center text-[11px] font-bold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-indigo-950';
+    const labels = { 'yes-no': 'Yes / No / Unsure', rating: '1–5 Rating', agreement: 'Agreement', 'one-word': 'One word', short: 'Short response' };
+    const buttonClass = 'flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-md border border-slate-200 bg-white px-1 py-1 text-center text-[10px] leading-tight font-bold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-indigo-950';
     const quickButton = (card) => (
       <button key={card.id} type="button" onClick={() => onLaunch(card.question)} title={`${card.label} — ${card.hint}`} aria-label={card.label} className={buttonClass}>
-        {labels[card.id]}
+        <span aria-hidden="true" className="h-5 w-5 shrink-0 text-indigo-500 dark:text-indigo-300"><QuikPulseIcon name={card.icon} /></span>
+        <span>{labels[card.id]}</span>
       </button>
     );
     return (
-      <section aria-label="Quick questions" className="relative z-10 shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950">
+      <section aria-label="Quick questions" className="relative z-10 shrink-0 border-b border-slate-200 bg-slate-50 pl-3 pr-6 py-2 dark:border-slate-700 dark:bg-slate-950">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(65px,1fr))] gap-1.5">
           {pulseCards.slice(0, 3).map(quickButton)}
           <details className="relative">
-            <summary title="Choose 2, 3 or 4 answer options" className={`${buttonClass} cursor-pointer list-none`}>A–D ▾</summary>
+            <summary title="Choose 2, 3 or 4 answer options" className={`${buttonClass} cursor-pointer list-none`}><span aria-hidden="true" className="h-5 w-5 shrink-0 text-indigo-500 dark:text-indigo-300"><QuikPulseIcon name="choice" /></span><span>A–D Choice ▾</span></summary>
             <div className="absolute left-0 top-full z-20 mt-1 flex gap-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900" aria-label="Number of choices">
               {[2, 3, 4].map((count) => <button key={count} type="button" aria-label={`${count} answer choices`} className={buttonClass} onClick={(event) => { event.currentTarget.closest('details').open = false; launchChoice(count); }}>{count}</button>)}
             </div>

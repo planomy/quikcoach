@@ -544,7 +544,6 @@ export default function SavedSetsPanel({
               <button type="button" disabled={!selectedSets.length || sending || questionCount > 60} onClick={() => sendSelected('ask')} title="Students answer the selected questions in Respond" className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Ask now</button>
               <button type="button" disabled={!selectedSets.length || sending} onClick={() => sendSelected('inbox')} title="Keep each set as writing prompts in student inboxes" className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
             </div>
-            <p className="mt-2 text-[11px] text-slate-500">Ask = answer now · Inbox = prompts while writing</p>
             {hiddenSelectionCount > 0 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">{hiddenSelectionCount} selected outside this filter</p>}
             {questionCount > 60 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">Ask up to 60 questions at once. Select fewer sets or send to inbox.</p>}
             {sendStatus && <p role="status" className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-200">{sendStatus}</p>}
