@@ -26,9 +26,31 @@ function when(value) {
   return Number.isNaN(date.valueOf()) ? 'Time not recorded' : date.toLocaleString('en-AU');
 }
 function extract(text, start = 0, length = 0) {
-  const from = Math.max(0, start - 100);
-  const to = Math.min(text.length, Math.max(start + length, start + 100), from + 600);
+  const from = Math.max(0, start - 80);
+  const to = Math.min(text.length, Math.max(start + length, start + 80), from + 360);
   return `${from ? '[Earlier text omitted] ' : ''}${text.slice(from, to)}${to < text.length ? ' [Later text omitted]' : ''}` || '(Empty draft)';
+}
+
+function truncateDraft(text, limit = 1200) {
+  const raw = String(text || '');
+  if (!raw) return '(Empty draft)';
+  if (raw.length <= limit) return raw;
+  return `${raw.slice(0, limit)} [Writing continues — full text is in Writing at export / the .iboard file]`;
+}
+
+/** Keep PDFs readable: sample checkpoints instead of reprinting every keystroke draft. */
+function sampleRevisions(revisions, detailed) {
+  if (!revisions.length) return [];
+  if (!detailed) {
+    return [...new Set([revisions[0], revisions[Math.floor(revisions.length / 2)], revisions.at(-1)].filter(Boolean))];
+  }
+  const max = 20;
+  if (revisions.length <= max) return revisions;
+  const step = Math.ceil(revisions.length / max);
+  const picked = [];
+  for (let i = 0; i < revisions.length; i += step) picked.push(revisions[i]);
+  if (picked.at(-1) !== revisions.at(-1)) picked.push(revisions.at(-1));
+  return picked;
 }
 function yearLabel(value) {
   const raw = String(value || '').trim();
@@ -44,6 +66,13 @@ function changeDescription(event) {
   if (removed) return `Removed: “${extract(removed, 0, 0)}”`;
   if (added) return `Added: “${extract(added, 0, 0)}”`;
   return 'No visible text change.';
+}
+
+function buildJourneyEvents(events, detailed) {
+  const revisions = events.filter((e) => ['change', 'paste'].includes(e.type));
+  const selected = new Set(sampleRevisions(revisions, detailed));
+  const milestones = new Set(['baseline', 'resume', 'gap', 'stop', 'feedback']);
+  return events.filter((event) => milestones.has(event.type) || selected.has(event));
 }
 
 /** Same renderer runs in the browser and the PDF layout check. No server upload. */
@@ -71,9 +100,9 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   const width = 174;
   function newPage() { pdf.addPage(); y = 24; }
   function space(height) { if (y + height > 278) newPage(); }
-  function paragraph(value, { size = 10, colour = [35, 45, 62], gap = 3 } = {}) {
+  function paragraph(value, { size = 10, colour = [35, 45, 62], gap = 2 } = {}) {
     pdf.setFontSize(size); pdf.setTextColor(...colour);
-    const lineHeight = size * 0.48;
+    const lineHeight = size * 0.42;
     for (const raw of safe(value).split('\n')) {
       const lines = pdf.splitTextToSize(raw || ' ', width);
       for (const line of lines) {
@@ -83,13 +112,13 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
     }
     y += gap;
   }
-  function heading(text) { space(19); y += 3; paragraph(text, { size: 13, colour: [29, 74, 116], gap: 3 }); }
+  function heading(text) { space(14); y += 2; paragraph(text, { size: 12, colour: [29, 74, 116], gap: 2 }); }
   const pageNames = new Map();
   const addPage = pdf.addPage.bind(pdf);
   pdf.addPage = (...args) => { pageNames.set(pdf.getNumberOfPages(), studentName); return addPage(...args); };
   paragraph('iBoard | Session report', { size: 22, colour: [25, 59, 89], gap: 5 });
   paragraph(`Room ${pack.sourceRoomCode || ''} | Captured ${when(pack.exportedAt)}`, { size: 10 });
-  paragraph(`${people.length} student${people.length === 1 ? '' : 's'} | ${detailed ? 'Full Draft Trail checkpoints' : 'Draft Trail summary and selected revision extracts'}`, { size: 10 });
+  paragraph(`${people.length} student${people.length === 1 ? '' : 's'} | ${detailed ? 'Sampled Draft Trail checkpoints (up to 20 text changes)' : 'Draft Trail summary (3 revision extracts)'}`, { size: 10 });
   paragraph(`Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Writing reflects the latest version received by iBoard when this report was captured; it may not be a final submission.`, { size: 9, colour: [90, 102, 117] });
   heading('Reading this report');
   paragraph('Draft Trails provide evidence of writing development. They do not verify identity or prove independent authorship. Pasted text may be legitimate. Changes after feedback do not establish that the feedback was addressed.');
@@ -138,25 +167,30 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
     heading('Draft Trail');
     if (!events.length) { paragraph('No Draft Trail was captured for this student. This does not indicate misconduct.'); continue; }
     const revisions = events.filter(e => ['change', 'paste'].includes(e.type));
-    paragraph(`${events.length} recorded events | ${revisions.length} text-change checkpoints | ${events.filter(e => e.type === 'paste').length} browser-reported pastes | ${events.filter(e => ['gap', 'resume'].includes(e.type)).length} unrecorded intervals`);
+    const pastes = events.filter(e => e.type === 'paste');
+    paragraph(`${events.length} recorded events | ${revisions.length} text-change checkpoints | ${pastes.length} browser-reported pastes | ${events.filter(e => ['gap', 'resume'].includes(e.type)).length} unrecorded intervals`);
     paragraph(`First record: ${when(events[0].at)}\nLatest record: ${when(events.at(-1).at)}`, { size: 9 });
-    const selectedRevisions = detailed
-      ? revisions
-      : [...new Set([revisions[0], revisions[Math.floor(revisions.length / 2)], revisions.at(-1)].filter(Boolean))];
-    const journeyEvents = detailed
-      ? events
-      : events.filter(event => event.type !== 'change' || selectedRevisions.includes(event));
-    heading(detailed ? 'Complete writing journey' : 'Writing journey');
-    paragraph(detailed ? 'Each recorded version appears once, in order. Added, removed and replaced text is described beneath the updated draft.' : 'Each selected version appears once, in order. The previous version is the context for the next one, so the report does not repeat a separate before/after copy.');
+    const journeyEvents = buildJourneyEvents(events, detailed);
+    const shownRevisions = journeyEvents.filter(e => ['change', 'paste'].includes(e.type)).length;
+    heading(detailed ? 'Writing journey (sampled)' : 'Writing journey');
+    paragraph(
+      detailed
+        ? `Showing ${shownRevisions} of ${revisions.length} text changes plus milestones. Each entry shows the edit, not a full reprint of the draft (full writing is above).`
+        : 'Three revision extracts plus milestones. Full writing is above; the .iboard file keeps the complete trail.'
+    );
     if (!journeyEvents.length) paragraph('No Draft Trail events were recorded after the baseline.');
     for (const event of journeyEvents) {
-      space(25);
-      paragraph(`${when(event.at)} | ${labels[event.type]}`, { size: 10, colour: [29, 74, 116] });
-      if (event.type === 'feedback') { paragraph(event.text); continue; }
-      if (event.type === 'stop') { paragraph('Capture stopped. Later work is outside this recording segment.'); continue; }
-      if (['change', 'paste'].includes(event.type)) paragraph(changeDescription(event), { size: 9, colour: [28, 105, 83], gap: 1 });
-      if (['baseline', 'resume', 'gap', 'change', 'paste'].includes(event.type)) {
-        paragraph(detailed ? event.after || '(Empty draft)' : extract(event.after, event.start, event.inserted?.length), { colour: [35, 45, 62] });
+      space(12);
+      paragraph(`${when(event.at)} | ${labels[event.type]}`, { size: 9, colour: [29, 74, 116], gap: 1 });
+      if (event.type === 'feedback') { paragraph(event.text, { size: 9 }); continue; }
+      if (event.type === 'stop') { paragraph('Capture stopped. Later work is outside this recording segment.', { size: 9 }); continue; }
+      if (['change', 'paste'].includes(event.type)) {
+        paragraph(changeDescription(event), { size: 8, colour: [28, 105, 83], gap: 1 });
+        paragraph(extract(event.after, event.start, event.inserted?.length), { size: 8, colour: [35, 45, 62], gap: 2 });
+        continue;
+      }
+      if (['baseline', 'resume', 'gap'].includes(event.type)) {
+        paragraph(truncateDraft(event.after || event.text || '', detailed ? 900 : 500), { size: 8, colour: [35, 45, 62], gap: 2 });
       }
     }
   }

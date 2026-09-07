@@ -16,8 +16,8 @@ const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
 const FAVOURITE_COMMENTS_KEY = 'iboard-teacher-favourite-inline-comments';
 const MAX_FAVOURITES = 8;
-const PENDING_WIDTH = 380;
-const PENDING_HEIGHT = 480;
+const PENDING_WIDTH = 420;
+const PENDING_HEIGHT = 520;
 const OPEN_WIDTH = 280;
 const OPEN_HEIGHT = 220;
 const MARKER_SIZE = 28;
@@ -280,6 +280,7 @@ export default function TeacherAnnotationController() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const moveFrameRef = useRef(null);
   const draftNoteRef = useRef(null);
+  const pendingPanelRef = useRef(null);
   const draftNoteLatestRef = useRef('');
   const quickPrefixRef = useRef('');
 
@@ -496,16 +497,23 @@ export default function TeacherAnnotationController() {
       setAddingCustomComment(false);
       setCommentError('');
       setSaveNotice('');
+      const vp = viewportBox();
+      const panelWidth = Math.min(PENDING_WIDTH, vp.width - 20);
+      const panelHeight = Math.min(PENDING_HEIGHT, vp.height - 20);
+      const placed = placementNearAnchor({
+        anchor: rect,
+        width: panelWidth,
+        height: panelHeight,
+        prefer: 'below',
+        padding: 8,
+      });
       setPending({
         studentId: card.studentId,
         ...offsets,
-        ...clampFixedBox({
-          top: rect.bottom + 8,
-          left: rect.left,
-          width: Math.min(PENDING_WIDTH, window.innerWidth - 20),
-          height: PENDING_HEIGHT,
-          padding: 10,
-        }),
+        top: placed.top,
+        left: placed.left,
+        width: panelWidth,
+        maxHeight: panelHeight,
       });
       setOpenMarker(null);
     }
@@ -518,6 +526,37 @@ export default function TeacherAnnotationController() {
     const timer = setTimeout(() => setSaveNotice(''), 3000);
     return () => clearTimeout(timer);
   }, [saveNotice]);
+
+  useEffect(() => {
+    if (!pending) return undefined;
+    const panel = pendingPanelRef.current;
+    if (!panel) return undefined;
+    const place = () => {
+      const vp = viewportBox();
+      const maxHeight = Math.min(PENDING_HEIGHT, vp.height - 16);
+      const width = pending.width || Math.min(PENDING_WIDTH, vp.width - 16);
+      const next = clampFixedBox({
+        top: pending.top,
+        left: pending.left,
+        width,
+        height: Math.min(panel.offsetHeight || maxHeight, maxHeight),
+        padding: 8,
+      });
+      setPending((prev) => {
+        if (!prev) return prev;
+        if (
+          Math.abs(next.top - prev.top) <= 1
+          && Math.abs(next.left - prev.left) <= 1
+          && Math.abs((prev.maxHeight || 0) - maxHeight) <= 1
+        ) {
+          return prev;
+        }
+        return { ...prev, top: next.top, left: next.left, width, maxHeight };
+      });
+    };
+    const frame = requestAnimationFrame(place);
+    return () => cancelAnimationFrame(frame);
+  }, [pending?.studentId, pending?.start, pending?.end, orderedQuickComments.length, addingCustomComment]);
 
   async function copyPendingSelection() {
     const text = String(pending?.quote || '');
@@ -814,43 +853,44 @@ export default function TeacherAnnotationController() {
 
       {pending && (
         <div
+          ref={pendingPanelRef}
           data-teacher-annotation-ui
-          className="fixed z-[70] max-h-[calc(100vh-20px)] max-w-[calc(100vw-20px)] overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
-          style={{ top: pending.top, left: pending.left, width: Math.min(PENDING_WIDTH, typeof window !== 'undefined' ? window.innerWidth - 20 : PENDING_WIDTH) }}
+          className="fixed z-[70] flex max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white p-2.5 shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          style={{
+            top: pending.top,
+            left: pending.left,
+            width: pending.width || Math.min(PENDING_WIDTH, typeof window !== 'undefined' ? window.innerWidth - 16 : PENDING_WIDTH),
+            maxHeight: pending.maxHeight || `min(${PENDING_HEIGHT}px, calc(100dvh - 16px))`,
+          }}
         >
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex shrink-0 items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.13em] text-indigo-600">Selected passage</p>
-              <p className="mt-1 line-clamp-3 text-xs italic text-slate-500 dark:text-slate-400">“{pending.quote}”</p>
+              <p className="mt-0.5 line-clamp-2 text-[11px] italic leading-snug text-slate-500 dark:text-slate-400">“{pending.quote}”</p>
             </div>
             <button
               type="button"
               onClick={copyPendingSelection}
-              className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+              className="shrink-0 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
             >
-              Copy selection
+              Copy
             </button>
           </div>
-          <div className="mt-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                  Quick comments
-                </p>
-                <p className="mt-0.5 text-[9px] font-semibold text-slate-400 dark:text-slate-500">
-                  ★ pins to top · max {MAX_FAVOURITES}
-                </p>
-              </div>
+          <div className="mt-2 flex min-h-0 flex-1 flex-col">
+            <div className="flex shrink-0 items-center justify-between gap-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                Quick comments <span className="font-semibold normal-case tracking-normal text-slate-400">· ★ pin · max {MAX_FAVOURITES}</span>
+              </p>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={undoQuickComment}
                   disabled={!quickStack.length}
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                   aria-label="Undo last quick comment"
                   title="Undo last quick comment"
                 >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 14 4 9l5-5" />
                     <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13" />
                   </svg>
@@ -861,7 +901,7 @@ export default function TeacherAnnotationController() {
                     setAddingCustomComment((open) => !open);
                     setCustomCommentDraft('');
                   }}
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-sm font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
                   aria-label="Add a reusable comment"
                   title="Add your own quick comment"
                 >
@@ -869,71 +909,75 @@ export default function TeacherAnnotationController() {
                 </button>
               </div>
             </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {orderedQuickComments.map((comment) => {
-                const selected = quickStack.includes(comment);
-                const pinned = favouriteSet.has(comment);
-                const isCustom = customSet.has(comment);
-                const pinBlocked = !pinned && favouriteComments.length >= MAX_FAVOURITES;
-                return (
-                  <span
-                    key={comment}
-                    className={`inline-flex max-w-full items-stretch overflow-hidden rounded-md border text-[10px] font-semibold leading-snug transition ${
-                      selected
-                        ? 'border-indigo-600 bg-indigo-600 text-white'
-                        : pinned
-                          ? 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
-                          : isCustom
-                            ? 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                            : 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => applyQuickComment(comment)}
-                      className="max-w-[17rem] px-1.5 py-1 text-left hover:brightness-95"
+            <div className="mt-1.5 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <div className="flex flex-wrap content-start gap-0.5">
+                {orderedQuickComments.map((comment) => {
+                  const selected = quickStack.includes(comment);
+                  const pinned = favouriteSet.has(comment);
+                  const isCustom = customSet.has(comment);
+                  const pinBlocked = !pinned && favouriteComments.length >= MAX_FAVOURITES;
+                  return (
+                    <span
+                      key={comment}
+                      className={`group inline-flex max-w-full items-stretch overflow-hidden rounded border text-[9px] font-semibold leading-tight transition ${
+                        selected
+                          ? 'border-indigo-600 bg-indigo-600 text-white'
+                          : pinned
+                            ? 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
+                            : isCustom
+                              ? 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                              : 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
+                      }`}
                     >
-                      {comment}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleFavouriteComment(comment)}
-                      disabled={pinBlocked}
-                      className={`shrink-0 border-l border-current/15 px-1.5 ${
-                        pinned ? 'text-amber-600 dark:text-amber-300' : 'text-current/45 hover:text-amber-600'
-                      } disabled:cursor-not-allowed disabled:opacity-30`}
-                      aria-label={pinned ? `Unpin ${comment}` : `Pin ${comment} to top`}
-                      title={
-                        pinned
-                          ? 'Unpin from top'
-                          : pinBlocked
-                            ? `Unpin one first (max ${MAX_FAVOURITES})`
-                            : 'Pin to top'
-                      }
-                    >
-                      {pinned ? '★' : '☆'}
-                    </button>
-                    {isCustom && (
                       <button
                         type="button"
-                        onClick={() => removeCustomComment(comment)}
-                        className="shrink-0 border-l border-current/15 px-1.5 text-current/55 hover:text-red-600"
-                        aria-label={`Remove reusable comment: ${comment}`}
-                        title="Remove quick comment"
+                        onClick={() => applyQuickComment(comment)}
+                        className="px-1.5 py-0.5 text-left hover:brightness-95"
                       >
-                        ×
+                        {comment}
                       </button>
-                    )}
-                  </span>
-                );
-              })}
+                      <button
+                        type="button"
+                        onClick={() => toggleFavouriteComment(comment)}
+                        disabled={pinBlocked}
+                        className={`shrink-0 border-l border-current/15 px-1 ${
+                          pinned
+                            ? 'text-amber-600 dark:text-amber-300'
+                            : 'text-current/40 opacity-0 hover:text-amber-600 group-hover:opacity-100 focus-visible:opacity-100'
+                        } disabled:cursor-not-allowed disabled:opacity-0`}
+                        aria-label={pinned ? `Unpin ${comment}` : `Pin ${comment} to top`}
+                        title={
+                          pinned
+                            ? 'Unpin from top'
+                            : pinBlocked
+                              ? `Unpin one first (max ${MAX_FAVOURITES})`
+                              : 'Pin to top'
+                        }
+                      >
+                        {pinned ? '★' : '☆'}
+                      </button>
+                      {isCustom && (
+                        <button
+                          type="button"
+                          onClick={() => removeCustomComment(comment)}
+                          className="shrink-0 border-l border-current/15 px-1 text-current/55 opacity-0 hover:text-red-600 group-hover:opacity-100 focus-visible:opacity-100"
+                          aria-label={`Remove reusable comment: ${comment}`}
+                          title="Remove quick comment"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
             {addingCustomComment && (
-              <div className="mt-2 rounded-xl border border-indigo-200 bg-indigo-50 p-2 dark:border-indigo-900 dark:bg-indigo-950/40">
-                <label htmlFor="custom-inline-comment" className="text-[10px] font-bold text-indigo-700 dark:text-indigo-200">
+              <div className="mt-1.5 shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 p-1.5 dark:border-indigo-900 dark:bg-indigo-950/40">
+                <label htmlFor="custom-inline-comment" className="text-[9px] font-bold text-indigo-700 dark:text-indigo-200">
                   New reusable comment
                 </label>
-                <div className="mt-1.5 flex gap-1.5">
+                <div className="mt-1 flex gap-1">
                   <input
                     id="custom-inline-comment"
                     autoFocus
@@ -948,13 +992,13 @@ export default function TeacherAnnotationController() {
                       if (event.key === 'Escape') setAddingCustomComment(false);
                     }}
                     placeholder="Type your comment…"
-                    className="min-w-0 flex-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none ring-indigo-500 focus:ring-2 dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
+                    className="min-w-0 flex-1 rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] text-slate-900 outline-none ring-indigo-500 focus:ring-2 dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
                   />
                   <button
                     type="button"
                     disabled={!customCommentDraft.trim()}
                     onClick={addCustomComment}
-                    className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
+                    className="rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
                   >
                     Add
                   </button>
@@ -980,19 +1024,19 @@ export default function TeacherAnnotationController() {
               }
               if (event.key === 'Escape') closePending();
             }}
-            placeholder="Type your comment… Return to add · Shift+Return for a new line"
-            className="mt-3 min-h-20 w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            placeholder="Type… Return to add"
+            className="mt-2 min-h-[3.25rem] w-full shrink-0 resize-none rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
           {commentError && (
-            <p className="mt-2 text-xs font-semibold leading-relaxed text-red-600 dark:text-red-300">
+            <p className="mt-1 shrink-0 text-[11px] font-semibold leading-relaxed text-red-600 dark:text-red-300">
               {commentError}
             </p>
           )}
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-[10px] font-semibold text-slate-400">Return adds · Shift+Return new line</p>
-            <div className="flex gap-2">
-              <button type="button" onClick={closePending} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-              <button type="button" disabled={!draftNote.trim()} onClick={addComment} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>
+          <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2">
+            <p className="text-[9px] font-semibold text-slate-400">Return adds</p>
+            <div className="flex gap-1.5">
+              <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+              <button type="button" disabled={!draftNote.trim()} onClick={addComment} className="rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>
             </div>
           </div>
         </div>
