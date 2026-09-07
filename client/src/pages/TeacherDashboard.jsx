@@ -865,6 +865,11 @@ function TeacherDashboardInner() {
       if (toolsPanelOpen) {
         if (teacherToolsNavRef.current?.contains(target)) return;
         if (teacherToolsPanelRef.current?.contains(target)) return;
+        // Saved-set previews are portalled to document.body so they can sit beside
+        // the Ask dock. Treat that flyout as part of the tools panel; otherwise this
+        // outside-click handler closes the dock on pointerdown before its buttons'
+        // click handlers get a chance to run.
+        if (target?.closest?.('[data-iboard-sets-preview="true"]')) return;
       }
       if (addCardOpen) {
         if (addCardButtonRef.current?.contains(target)) return;

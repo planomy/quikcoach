@@ -610,6 +610,7 @@ export default function SavedSetsPanel({
 
       {previewOpen && previewFlyout && typeof document !== 'undefined' && createPortal(
         <aside
+          data-iboard-sets-preview="true"
           className="sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{
             top: previewFlyout.top,

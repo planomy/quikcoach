@@ -235,6 +235,34 @@ export function buildStudentPortfolioHtml({ roomCode, studentName, entries }) {
 </html>`;
 }
 
+/** Word opens HTML directly, preserving the student's supported formatting. */
+export function buildStudentDraftHtml({ roomCode, studentName, html, text }) {
+  const body = String(html || '').trim() || escapeHtml(String(text || '')).replace(/\n/g, '<br>');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>iBOARD draft — ${escapeHtml(studentName || 'Student')}</title>
+<style>
+  body { margin: 0; padding: 36px; color: #17202a; font-family: Arial, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; }
+  .meta { margin: 0 0 24px; color: #68717c; font-size: 12px; }
+  .draft { font-size: 16px; line-height: 1.6; }
+  .draft div + div, .draft p + p { margin-top: 12px; }
+  .draft ul, .draft ol { padding-left: 24px; }
+  mark { background: #fde68a; }
+</style>
+</head>
+<body>
+<main>
+  <h1>${escapeHtml(studentName || 'Student')} — iBOARD draft</h1>
+  <p class="meta">Room ${escapeHtml(roomCode || '')} · Exported ${escapeHtml(new Date().toLocaleString())}</p>
+  <section class="draft">${body || '<p>(Empty draft)</p>'}</section>
+</main>
+</body>
+</html>`;
+}
+
 function extensionOf(filename) {
   const match = String(filename || '').match(/\.([a-z0-9]+)$/i);
   return match ? match[1].toLowerCase() : 'txt';

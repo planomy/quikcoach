@@ -17,7 +17,7 @@ import RichTextEditor from '../components/RichTextEditor.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import { plainTextToRichHtml } from '../lib/richText.js';
-import { downloadTextFile, safeFilePart, stampForFilename } from '../lib/exportRoom.js';
+import { buildStudentDraftHtml, downloadTextFile, safeFilePart, stampForFilename } from '../lib/exportRoom.js';
 import { readDraftBackup, saveDraftBackup } from '../lib/draftBackup.js';
 import {
   clearStudentSession,
@@ -69,9 +69,36 @@ const SUPPORT_TABS = [
   { id: 'inbox', label: 'Inbox' },
 ];
 
-function draftFromJoin({ raw, richHtml, code, studentId, limit }) {
+function parseServerUpdatedAt(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return 0;
+  const iso = raw.includes('T') ? raw : raw.replace(' ', 'T');
+  const withZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
+  const parsed = Date.parse(withZone);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function draftFromJoin({ raw, richHtml, serverUpdatedAt, code, studentId, limit }) {
   const next = limit > 0 ? truncateToWordLimit(raw, limit) : raw;
   const backup = readDraftBackup(code, studentId);
+  if (backup?.text != null) {
+    const localText = limit > 0 ? truncateToWordLimit(backup.text, limit) : String(backup.text || '');
+    const localHtml = String(backup.richHtml || '') || plainTextToRichHtml(localText);
+    const serverHtml = next === raw && richHtml ? richHtml : plainTextToRichHtml(next);
+    const localIsDifferent = localText !== next || localHtml !== serverHtml;
+    const localIsNewer = localIsDifferent && Number(backup.savedAt) > parseServerUpdatedAt(serverUpdatedAt) + 1000;
+    if (localIsNewer) {
+      return {
+        text: localText,
+        html: localHtml,
+        conflict: {
+          serverText: next,
+          serverHtml,
+          localSavedAt: Number(backup.savedAt) || 0,
+        },
+      };
+    }
+  }
   if (!next.trim() && backup?.text?.trim()) {
     const text = limit > 0 ? truncateToWordLimit(backup.text, limit) : backup.text;
     return {
@@ -114,6 +141,8 @@ export default function StudentView() {
   const [imageHint, setImageHint] = useState('');
   const [yearInput, setYearInput] = useState('');
   const [recentDismissedCode, setRecentDismissedCode] = useState('');
+  const [draftSaveState, setDraftSaveState] = useState('saved');
+  const [draftConflict, setDraftConflict] = useState(null);
 
   const socket = useMemo(() => createSocket(), []);
   const draftTrailTokenRef = useRef('');
@@ -205,6 +234,83 @@ export default function StudentView() {
     }
   }
 
+  function applyJoinedDraft(joinedDraft) {
+    setDraft(joinedDraft.text);
+    setDraftHtml(joinedDraft.html);
+    setDraftConflict(joinedDraft.conflict || null);
+    setDraftSaveState(joinedDraft.conflict ? 'local' : 'saved');
+  }
+
+  function keepServerDraft() {
+    if (!draftConflict) return;
+    setDraft(draftConflict.serverText);
+    setDraftHtml(draftConflict.serverHtml);
+    setDraftConflict(null);
+    setDraftSaveState('saving');
+  }
+
+  function copyFallback(text) {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const copied = document.execCommand('copy');
+    area.remove();
+    if (!copied) throw new Error('Copy failed');
+  }
+
+  async function copyPlainDraft() {
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(draft);
+      else copyFallback(draft);
+      setImageHint('Plain text copied');
+    } catch {
+      setImageHint('Copy failed — select the draft and copy it manually');
+    }
+    setTimeout(() => setImageHint(''), 2500);
+  }
+
+  async function copyFormattedDraft() {
+    const html = buildStudentDraftHtml({ roomCode: activeRoomCode, studentName: student?.name, html: draftHtml, text: draft });
+    try {
+      if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': new Blob([html], { type: 'text/html' }),
+            'text/plain': new Blob([draft], { type: 'text/plain' }),
+          }),
+        ]);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(draft);
+      } else {
+        copyFallback(draft);
+      }
+      setImageHint('Formatted draft copied — paste it into Word');
+    } catch {
+      try {
+        copyFallback(draft);
+        setImageHint('Plain text copied — formatted copy was unavailable');
+      } catch {
+        setImageHint('Copy failed — select the draft and copy it manually');
+      }
+    }
+    setTimeout(() => setImageHint(''), 3000);
+  }
+
+  async function downloadWordCopy() {
+    if (!student?.id || !activeRoomCode) return;
+    saveDraftBackup({ code: activeRoomCode, studentId: student.id, name: student.name, text: draft, richHtml: draftHtml });
+    const html = buildStudentDraftHtml({ roomCode: activeRoomCode, studentName: student.name, html: draftHtml, text: draft });
+    const filename = `iboard-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.html`;
+    const result = await downloadTextFile(filename, html, 'text/html;charset=utf-8');
+    if (result?.method === 'cancelled') return;
+    setImageHint(result?.method === 'picker' ? 'Word-friendly draft saved' : 'Word-friendly draft downloaded');
+    setTimeout(() => setImageHint(''), 3000);
+  }
+
   useEffect(() => {
     socket.connect();
     return () => socket.disconnect();
@@ -258,6 +364,17 @@ export default function StudentView() {
           });
           if (ack.student) setStudent(ack.student);
           if (ack.room) setRoom(ack.room);
+          if (ack.student && ack.room) {
+            const lim = ack.room.enforce_word_count && (ack.room.word_target ?? 0) > 0 ? Number(ack.room.word_target) : 0;
+            applyJoinedDraft(draftFromJoin({
+              raw: ack.student.text || '',
+              richHtml: ack.student.rich_text_html,
+              serverUpdatedAt: ack.student.updated_at,
+              code,
+              studentId: ack.student.id ?? sidNum,
+              limit: lim,
+            }));
+          }
           setJoined(true);
         });
       } catch {
@@ -283,11 +400,14 @@ export default function StudentView() {
         r?.enforce_word_count && (r?.word_target ?? 0) > 0 ? Number(r.word_target) : 0;
       const raw = me.text || '';
       if (!typing) {
-        const next = lim > 0 ? truncateToWordLimit(raw, lim) : raw;
-        setDraft(next);
-        setDraftHtml(
-          next === raw && me.rich_text_html ? me.rich_text_html : plainTextToRichHtml(next)
-        );
+        applyJoinedDraft(draftFromJoin({
+          raw,
+          richHtml: me.rich_text_html,
+          serverUpdatedAt: me.updated_at,
+          code: r?.code || codeInput,
+          studentId: sid,
+          limit: lim,
+        }));
       }
     };
     const onLive = ({ student: s }) => {
@@ -484,15 +604,23 @@ export default function StudentView() {
     }
     if (fingerprint === lastSentRef.current) return undefined;
 
+    setDraftSaveState(socket.connected ? 'saving' : 'offline');
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      if (!socket.connected) return;
+      if (!socket.connected) {
+        setDraftSaveState('offline');
+        return;
+      }
       const payload = pendingRef.current;
       const sentAt = `${payload.text}\n${payload.richTextHtml}`;
       socket.emit('student:text', payload, (ack) => {
         if (sentAt !== `${pendingRef.current.text}\n${pendingRef.current.richTextHtml}`) return;
-        if (ack && ack.ok === false) return;
+        if (ack && ack.ok === false) {
+          setDraftSaveState('error');
+          return;
+        }
         lastSentRef.current = sentAt;
+        setDraftSaveState('saved');
       });
     }, 700);
 
@@ -505,12 +633,23 @@ export default function StudentView() {
   useEffect(() => {
     if (!joined || !student?.id) return undefined;
     const timer = setInterval(() => {
-      if (!socket.connected || !saveBootstrappedRef.current) return;
+      if (!saveBootstrappedRef.current) return;
+      if (!socket.connected) {
+        setDraftSaveState('offline');
+        return;
+      }
       const payload = pendingRef.current;
       const fingerprint = `${payload.text}\n${payload.richTextHtml}`;
       if (fingerprint === lastSentRef.current) return;
+      setDraftSaveState('saving');
       socket.emit('student:text', payload, ack => {
-        if (ack?.ok && fingerprint === `${pendingRef.current.text}\n${pendingRef.current.richTextHtml}`) lastSentRef.current = fingerprint;
+        if (fingerprint !== `${pendingRef.current.text}\n${pendingRef.current.richTextHtml}`) return;
+        if (ack?.ok) {
+          lastSentRef.current = fingerprint;
+          setDraftSaveState('saved');
+        } else {
+          setDraftSaveState('error');
+        }
       });
     }, 5000);
     return () => clearInterval(timer);
@@ -588,12 +727,12 @@ export default function StudentView() {
         const joinedDraft = draftFromJoin({
           raw,
           richHtml: ack.student?.rich_text_html,
+          serverUpdatedAt: ack.student?.updated_at,
           code,
           studentId: ack.student?.id ?? sidNum,
           limit: lim,
         });
-        setDraft(joinedDraft.text);
-        setDraftHtml(joinedDraft.html);
+        applyJoinedDraft(joinedDraft);
         setJoined(true);
         const yl = String(ack.student?.year_level || '').trim().toLowerCase();
         if (yl) setYearInput(yl);
@@ -644,12 +783,12 @@ export default function StudentView() {
       const joinedDraft = draftFromJoin({
         raw,
         richHtml: ack.student?.rich_text_html,
+        serverUpdatedAt: ack.student?.updated_at,
         code: saved.code,
         studentId: ack.student.id,
         limit,
       });
-      setDraft(joinedDraft.text);
-      setDraftHtml(joinedDraft.html);
+      applyJoinedDraft(joinedDraft);
       const savedYear = String(ack.student.year_level || '').trim().toLowerCase();
       if (savedYear) setYearInput(savedYear);
       setJoined(true);
@@ -681,12 +820,12 @@ export default function StudentView() {
       const joinedDraft = draftFromJoin({
         raw,
         richHtml: ack.student?.rich_text_html,
+        serverUpdatedAt: ack.student?.updated_at,
         code: c,
         studentId: ack.student.id,
         limit: lim,
       });
-      setDraft(joinedDraft.text);
-      setDraftHtml(joinedDraft.html);
+      applyJoinedDraft(joinedDraft);
       setJoined(true);
       const fromServer = String(ack.student?.year_level || '').trim().toLowerCase();
       const chosen = String(yearInput || '').trim().toLowerCase();
@@ -1007,7 +1146,31 @@ export default function StudentView() {
                   disabled={!draft.trim()}
                   className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800 transition hover:border-indigo-300 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
                 >
-                  Save draft to device
+                  Download plain text (.txt)
+                </button>
+                <button
+                  type="button"
+                  onClick={copyPlainDraft}
+                  disabled={!draft.trim()}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  Copy plain text
+                </button>
+                <button
+                  type="button"
+                  onClick={copyFormattedDraft}
+                  disabled={!draft.trim()}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  Copy formatted draft
+                </button>
+                <button
+                  type="button"
+                  onClick={downloadWordCopy}
+                  disabled={!draft.trim()}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  Download Word copy (.html)
                 </button>
                 <button
                   type="button"
@@ -1127,6 +1290,14 @@ export default function StudentView() {
               </p>
             )}
             {error && joined && <p className="text-sm text-red-600">{error}</p>}
+            {draftConflict && (
+              <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
+                <p>A newer copy of this draft was recovered from this device while offline.</p>
+                <button type="button" onClick={keepServerDraft} className="mt-1.5 font-black underline decoration-amber-400 underline-offset-2 hover:text-amber-700 dark:hover:text-amber-200">
+                  Keep the teacher-board copy instead
+                </button>
+              </div>
+            )}
             <StudentAnnotationController socket={socket} studentId={student?.id} />
             <RichTextEditor
               text={draft}
@@ -1146,6 +1317,14 @@ export default function StudentView() {
               headerActions={
                 <>
                   {student?.id ? <StudentHandRaise socket={socket} compact /> : null}
+                  <span
+                    role="status"
+                    title={draftSaveState === 'offline' ? 'Your device has a local backup. iBOARD will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}
+                    className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-300'}`}
+                  >
+                    <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'saving' ? 'bg-indigo-500' : draftSaveState === 'error' ? 'bg-red-600' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                    {draftSaveState === 'saving' ? 'Saving…' : draftSaveState === 'error' ? 'Save failed · local copy kept' : draftSaveState === 'offline' ? 'Offline · local copy saved' : draftSaveState === 'local' ? 'Recovered local copy' : 'Saved'}
+                  </span>
                   {room?.draftTrail?.active && <span role="status" title="Your teacher is capturing changes to your iBoard writing, not screens, audio or video." className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-red-600" />Draft Trail on</span>}
                 </>
               }
