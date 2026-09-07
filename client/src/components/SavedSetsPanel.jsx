@@ -111,7 +111,8 @@ export default function SavedSetsPanel({
   onSendSetsToInbox,
   onEnqueueSet,
   onMessage,
-  selectedStudentCount = 0,
+  students = [],
+  selectedStudentIds = [],
 }) {
   const showQueue = panel === 'queue';
   const showSets = panel === 'sets';
@@ -123,6 +124,11 @@ export default function SavedSetsPanel({
   const [yearBand, setYearBand] = useState('All');
   const [activeSet, setActiveSet] = useState(null);
   const [selectedSetIds, setSelectedSetIds] = useState([]);
+  const [recipientSets, setRecipientSets] = useState([]);
+  const [recipientIds, setRecipientIds] = useState([]);
+  const recipientChoices = [...new Map(students.map(s => [Number(s.id), s])).values()].filter(s => Number(s.id) > 0);
+  const validRecipientIds = recipientIds.filter(id => recipientChoices.some(s => Number(s.id) === id));
+  const recipientQuestionCount = recipientSets.reduce((n, set) => n + (set.questions?.length || 0), 0);
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState('');
   const sendingRef = useRef(false);
@@ -157,7 +163,7 @@ export default function SavedSetsPanel({
     setQueueOpen(queue.length > 0);
   }, [showQueue, queue.length]);
 
-  const previewOpen = mode === 'preview' && !!activeSet;
+  const previewOpen = (mode === 'preview' && !!activeSet) || mode === 'recipients';
 
   useEffect(() => {
     if (!previewOpen) {
@@ -220,15 +226,28 @@ export default function SavedSetsPanel({
     setSelectedSetIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
     setSendStatus('');
   }
+  function chooseRecipients(sets) {
+    if (!sets.length || sendingRef.current) return;
+    setRecipientSets(sets);
+    const previous = recipientIds.filter(id => recipientChoices.some(s => Number(s.id) === id));
+    const checked = selectedStudentIds.map(Number).filter(id => recipientChoices.some(s => Number(s.id) === id));
+    setRecipientIds(previous.length ? previous : checked.length ? checked : recipientChoices.map(s => Number(s.id)));
+    setSendStatus('');
+    setMode('recipients');
+  }
   async function sendSelected(destination) {
-    if (!selectedSets.length || sendingRef.current) return;
+    if (!recipientSets.length || !validRecipientIds.length || sendingRef.current) return;
     sendingRef.current = true;
     setSending(true);
     setSendStatus('Sending…');
     try {
-      const result = await (destination === 'ask' ? onLaunchSets(selectedSets) : onSendSetsToInbox(selectedSets));
+      const result = await (destination === 'ask' ? onLaunchSets(recipientSets, validRecipientIds) : onSendSetsToInbox(recipientSets, validRecipientIds));
       setSendStatus(result.message);
-      if (result.ok) setSelectedSetIds([]);
+      if (result.ok) {
+        setSelectedSetIds(ids => ids.filter(id => !recipientSets.some(set => set.id === id)));
+        setMode('');
+        setActiveSet(null);
+      }
     } catch {
       setSendStatus('Could not confirm delivery. Check the class before retrying.');
     } finally {
@@ -240,6 +259,7 @@ export default function SavedSetsPanel({
   const favouriteSet = useMemo(() => new Set(favouriteIds), [favouriteIds]);
 
   function openPreview(set) {
+    if (sendingRef.current) return;
     setActiveSet(set);
     setMode('preview');
   }
@@ -537,12 +557,11 @@ export default function SavedSetsPanel({
 
           <div className="mt-3 shrink-0 border-y border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-center justify-between gap-2 text-xs">
-              <p className="font-bold text-slate-700 dark:text-slate-200">{selectedSets.length ? `${selectedSets.length} set${selectedSets.length === 1 ? '' : 's'} selected` : 'Select sets'} · {selectedStudentCount ? `${selectedStudentCount} selected students` : 'All students'}</p>
+              <p className="font-bold text-slate-700 dark:text-slate-200">{selectedSets.length ? `${selectedSets.length} set${selectedSets.length === 1 ? '' : 's'} selected` : 'Select sets'}</p>
               {selectedSets.length > 0 && <button type="button" disabled={sending} onClick={() => setSelectedSetIds([])} className="text-slate-500 hover:text-indigo-600 disabled:opacity-50">Clear</button>}
             </div>
             <div className="mt-2 flex gap-2">
-              <button type="button" disabled={!selectedSets.length || sending || questionCount > 60} onClick={() => sendSelected('ask')} title="Students answer the selected questions in Respond" className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Ask now</button>
-              <button type="button" disabled={!selectedSets.length || sending} onClick={() => sendSelected('inbox')} title="Keep each set as writing prompts in student inboxes" className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
+              <button type="button" disabled={!selectedSets.length || sending} onClick={() => chooseRecipients(selectedSets)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Send selected sets to…</button>
             </div>
             {hiddenSelectionCount > 0 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">{hiddenSelectionCount} selected outside this filter</p>}
             {questionCount > 60 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">Ask up to 60 questions at once. Select fewer sets or send to inbox.</p>}
@@ -615,7 +634,7 @@ export default function SavedSetsPanel({
         </section>
       )}
 
-      {previewOpen && previewFlyout && typeof document !== 'undefined' && createPortal(
+      {mode === 'preview' && previewOpen && previewFlyout && typeof document !== 'undefined' && createPortal(
         <aside
           data-iboard-sets-preview="true"
           className="sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
@@ -667,7 +686,7 @@ export default function SavedSetsPanel({
               <input type="checkbox" checked={selectedSetIds.includes(activeSet.id)} disabled={sending} onChange={() => toggleSet(activeSet.id)} className="h-4 w-4 accent-indigo-600" />
               Select set
             </label>
-            <button type="button" onClick={() => { onEnqueueSet(activeSet); setMode(''); setActiveSet(null); }} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
+            <button type="button" disabled={sending} onClick={() => chooseRecipients([activeSet])} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-40">Send to…</button>
             <button type="button" onClick={() => openEdit(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
               Edit
             </button>
@@ -686,6 +705,47 @@ export default function SavedSetsPanel({
           </div>
         </aside>,
         document.body
+      )}
+
+
+      {mode === 'recipients' && previewFlyout && createPortal(
+        <aside data-iboard-sets-preview="true" role="dialog" aria-label="Choose set recipients"
+          className="sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          style={{ top: previewFlyout.top, left: previewFlyout.left, height: previewFlyout.height, width: previewFlyout.width }}>
+          <div className="shrink-0 border-b border-slate-100 p-4 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Send to</p>
+              <button type="button" disabled={sending} onClick={() => setMode(activeSet ? 'preview' : '')} className="text-xs font-bold text-slate-500 disabled:opacity-40">Back</button>
+            </div>
+            <h4 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{recipientSets.length === 1 ? recipientSets[0].name : `${recipientSets.length} sets selected`}</h4>
+            {recipientSets.length > 1 && <p className="mt-1 text-xs text-slate-500">{recipientSets.map(set => set.name).join(' · ')}</p>}
+          </div>
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+              <input type="checkbox" disabled={sending || !recipientChoices.length} checked={recipientChoices.length > 0 && validRecipientIds.length === recipientChoices.length}
+                onChange={e => setRecipientIds(e.target.checked ? recipientChoices.map(s => Number(s.id)) : [])} className="h-4 w-4 accent-indigo-600" />
+              All students
+            </label>
+            <span className="text-xs text-slate-500">{validRecipientIds.length} selected</span>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            {recipientChoices.map(student => <label key={student.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-3 text-sm font-semibold text-slate-800 hover:bg-indigo-50 dark:text-slate-100 dark:hover:bg-slate-800">
+              <input type="checkbox" disabled={sending} checked={validRecipientIds.includes(Number(student.id))}
+                onChange={e => setRecipientIds(ids => e.target.checked ? [...ids, Number(student.id)] : ids.filter(id => id !== Number(student.id)))} className="h-4 w-4 accent-indigo-600" />
+              <span className="min-w-0 flex-1 break-words">{student.name}</span>
+              {student.connected === false && <span className="text-[10px] font-normal text-slate-400">Offline</span>}
+            </label>)}
+            {!recipientChoices.length && <p className="p-2 text-sm text-slate-500">No students in this room yet.</p>}
+          </div>
+          <div className="shrink-0 border-t border-slate-100 p-4 dark:border-slate-800">
+            {recipientQuestionCount > 60 && <p className="mb-2 text-xs text-amber-700">Ask supports up to 60 questions. Send these sets to inbox instead.</p>}
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={sending || !validRecipientIds.length || recipientQuestionCount > 60} onClick={() => sendSelected('ask')} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Ask now</button>
+              <button type="button" disabled={sending || !validRecipientIds.length} onClick={() => sendSelected('inbox')} className="rounded-lg border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
+            </div>
+            {sendStatus && <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-300">{sendStatus}</p>}
+          </div>
+        </aside>, document.body
       )}
 
       {sheetOpen && (

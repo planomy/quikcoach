@@ -420,14 +420,15 @@ export default function LiveResponseTeacher({
     });
   }
 
-  async function launchSets(sets) {
+  async function launchSets(sets, recipientIds) {
     const questions = sets.flatMap((set, setIndex) => normalizeSetQuestions(set.questions).map((question, index) => ({
       ...question,
       id: `set-${setIndex}-q-${index}`,
       ...(sets.length > 1 ? { helper: `${set.name}${question.helper ? ` · ${question.helper}` : ''}`.slice(0, 240) } : {}),
     })));
     if (!questions.length || questions.length > 60) return { ok: false, message: 'Select between 1 and 60 questions to ask at once.' };
-    const targetStudentIds = [...new Set((selectedStudentIds || []).map(Number).filter(Boolean))];
+    const targetStudentIds = [...new Set((recipientIds ?? selectedStudentIds ?? []).map(Number).filter(Boolean))];
+    if (recipientIds && !targetStudentIds.length) return { ok: false, message: 'Choose at least one student.' };
     try {
       await emitSetAction('teacher:live-launch', questions.length === 1
         ? { ...questions[0], targetStudentIds, timerSeconds: 0 }
@@ -441,8 +442,9 @@ export default function LiveResponseTeacher({
     } catch (error) { return { ok: false, message: error.message }; }
   }
 
-  async function sendSetsToInbox(sets) {
-    const selected = [...new Set((selectedStudentIds || []).map(Number).filter(Boolean))];
+  async function sendSetsToInbox(sets, recipientIds) {
+    const selected = [...new Set((recipientIds ?? selectedStudentIds ?? []).map(Number).filter(Boolean))];
+    if (recipientIds && !selected.length) return { ok: false, message: 'Choose at least one student.' };
     const roster = [...new Set((rosterStudentIds || []).map(Number).filter(Boolean))];
     const studentIds = selected.length ? selected : (roster.length ? roster : [...new Set((live?.students || []).map((student) => Number(student.id)).filter(Boolean))]);
     const batches = sets.map((set) => buildSetInboxDistributeItems({ setName: set.name, questions: set.questions, studentIds }));
@@ -1167,7 +1169,8 @@ export default function LiveResponseTeacher({
               onSendSetsToInbox={sendSetsToInbox}
               onEnqueueSet={enqueueSet}
               onMessage={setMessage}
-              selectedStudentCount={(selectedStudentIds || []).length}
+              students={live?.students || []}
+            selectedStudentIds={selectedStudentIds}
             />
           </div>
         )}
@@ -1184,7 +1187,8 @@ export default function LiveResponseTeacher({
             onSendSetsToInbox={sendSetsToInbox}
             onEnqueueSet={enqueueSet}
             onMessage={setMessage}
-            selectedStudentCount={(selectedStudentIds || []).length}
+            students={live?.students || []}
+            selectedStudentIds={selectedStudentIds}
           />
         )}
 
