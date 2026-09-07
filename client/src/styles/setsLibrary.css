@@ -176,7 +176,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   min-width: 0;
 }
 
-/* Respond dock: the top tab already says Respond, so keep only the close control. */
+/* Reply dock: the top tab already names the panel, so keep only the close control. */
 .iboard-header-dock--start > section:has(#audience-qna-teacher) > div:first-child {
   position: absolute;
   top: 0.25rem;

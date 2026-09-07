@@ -98,7 +98,7 @@ function CardViewIcon({ id }) {
 
 const TEACHER_TOOLS_TABS = [
   { id: 'ask', label: 'Ask' },
-  { id: 'respond', label: 'Respond' },
+  { id: 'respond', label: 'Reply' },
   { id: 'responses', label: 'Responses' },
 ];
 

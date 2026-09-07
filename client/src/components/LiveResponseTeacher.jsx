@@ -36,7 +36,7 @@ function firstName(name) {
 
 const PANEL_TAB_LABELS = {
   ask: { title: 'Ask', hint: 'Send a question to your class' },
-  respond: { title: 'Respond', hint: 'Questions waiting from students' },
+  respond: { title: 'Reply', hint: 'Questions waiting from students' },
   responses: { title: 'Responses', hint: 'Answers coming back from your live question' },
 };
 
@@ -649,7 +649,7 @@ export default function LiveResponseTeacher({
           onClick={() => onExpand?.(pendingQuestions.length && !activity ? 'respond' : 'ask')}
           className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
         >
-          {pendingQuestions.length && !activity ? 'Open Respond' : 'Open Ask'}
+          {pendingQuestions.length && !activity ? 'Open Reply' : 'Open Ask'}
         </button>
       </div>
     );
@@ -784,7 +784,7 @@ export default function LiveResponseTeacher({
       <PanelTabButton active={effectivePanelTab === 'ask'} label="Ask" onClick={() => switchPanelTab('ask')} />
       <PanelTabButton
         active={effectivePanelTab === 'respond'}
-        label="Respond"
+        label="Reply"
         badge={pendingQuestions.length || 0}
         onClick={() => switchPanelTab('respond')}
       />
