@@ -286,13 +286,18 @@ function markerPosition(range, card) {
   return { top, left, position: 'absolute', root };
 }
 
-function detachedMarkerPosition(paneRect, index) {
+function detachedMarkerPosition(pane, index) {
+  if (!pane) return null;
+  const root = contentRootForPane(pane) || pane;
+  const paneRect = pane.getBoundingClientRect();
+  const rootRect = root.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
-  return {
-    top: paneRect.top + MARKER_MARGIN + index * (MARKER_SIZE + 4),
-    left: paneRect.right - MARKER_SIZE - MARKER_MARGIN,
-    position: 'fixed',
-  };
+  // Keep orphaned ticks inside the writing pane — never fixed to the viewport chrome.
+  const top = paneRect.top - rootRect.top + MARKER_MARGIN + index * (MARKER_SIZE + 4);
+  const left = paneRect.right - rootRect.left - MARKER_SIZE - MARKER_MARGIN;
+  const maxTop = paneRect.bottom - rootRect.top - MARKER_SIZE - MARKER_MARGIN;
+  if (top > maxTop) return null;
+  return { top, left, position: 'absolute', root };
 }
 
 function paneIsOnScreen(paneRect) {
@@ -401,7 +406,7 @@ export default function TeacherAnnotationController() {
         const range = resolved.detached ? null : rangeForPlainOffsets(writingRoot, resolved.start, resolved.end);
         if (!range) {
           if (paneIsOnScreen(paneRect)) {
-            const position = detachedMarkerPosition(paneRect, detachedCount);
+            const position = detachedMarkerPosition(card.textPane, detachedCount);
             if (position) {
               nextMarkers.push({
                 studentId,
@@ -409,7 +414,7 @@ export default function TeacherAnnotationController() {
                 detached: true,
                 top: position.top,
                 left: position.left,
-                position: 'fixed',
+                position: position.position,
               });
               detachedCount += 1;
             }

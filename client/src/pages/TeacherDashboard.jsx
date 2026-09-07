@@ -2262,17 +2262,6 @@ function TeacherDashboardInner() {
           )}
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
 
-              {livePulse.activity && (
-                <div className="iboard-live-question mb-2 shrink-0 rounded-xl border px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-                    Question live
-                  </p>
-                  <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
-                    {livePulse.activity.prompt}
-                  </p>
-                </div>
-              )}
-
               <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
         <div className={`grid gap-4 ${studentGridClass}`}>
           {orderedStudents.length === 0 && posts.length === 0 && (
