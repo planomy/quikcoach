@@ -2101,10 +2101,10 @@ function TeacherDashboardInner() {
                   ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Draft Trail recording — click to stop')
                   : 'Record draft trail — writing changes only, not screen or audio')
               }
-              className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-xl border transition disabled:opacity-50 ${
+              className={`relative z-10 inline-flex h-9 items-center gap-1.5 rounded-xl border px-2.5 transition disabled:opacity-50 ${
                 room?.draftTrail?.active
-                  ? 'border-red-700 bg-red-700 text-white hover:bg-red-800'
-                  : 'border-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white'
+                  ? 'border-transparent text-[#ff7b72] hover:bg-white/10'
+                  : 'border-transparent text-slate-400 hover:bg-white/10 hover:text-slate-200'
               }`}
               onClick={() => {
                 if (room?.draftTrail?.active) {
@@ -2117,14 +2117,22 @@ function TeacherDashboardInner() {
             >
               <span
                 aria-hidden="true"
-                className={`h-2.5 w-2.5 rounded-full ${
+                className={`h-2 w-2 shrink-0 rounded-full ${
                   draftTrailBusy
                     ? 'bg-amber-300'
                     : room?.draftTrail?.active
-                      ? 'bg-red-200'
-                      : 'bg-slate-400'
+                      ? 'bg-[#ff7b72]'
+                      : 'bg-current'
                 }`}
               />
+              <span
+                aria-hidden="true"
+                className={`text-[10px] font-black uppercase tracking-[0.14em] ${
+                  draftTrailBusy ? 'text-amber-300' : ''
+                }`}
+              >
+                Rec
+              </span>
             </button>
             <HintWrap hint="Room settings" prefer="below">
               <button
