@@ -21,7 +21,11 @@ const MAX_FAVOURITES = 8;
 const MAX_BANKS = 12;
 const MAX_BANK_COMMENTS = 40;
 const PENDING_WIDTH = 468;
-const PENDING_HEIGHT = 520;
+/** Max scrollable panel height — not the height used for initial placement. */
+const PENDING_MAX_HEIGHT = 520;
+/** Typical composer height (header + banks + a few chits + draft). Oversizing this
+ *  makes clampFixedBox pin the panel to the top of the viewport. */
+const PENDING_PLACE_HEIGHT = 300;
 const OPEN_WIDTH = 280;
 const OPEN_HEIGHT = 220;
 const MARKER_SIZE = 28;
@@ -574,11 +578,12 @@ export default function TeacherAnnotationController() {
       setSaveNotice('');
       const vp = viewportBox();
       const panelWidth = Math.min(PENDING_WIDTH, vp.width - 20);
-      const panelHeight = Math.min(PENDING_HEIGHT, vp.height - 20);
+      const maxHeight = Math.min(PENDING_MAX_HEIGHT, vp.height - 16);
+      const placeHeight = Math.min(PENDING_PLACE_HEIGHT, maxHeight);
       const placed = placementNearAnchor({
         anchor: rect,
         width: panelWidth,
-        height: panelHeight,
+        height: placeHeight,
         prefer: 'below',
         padding: 8,
       });
@@ -588,7 +593,15 @@ export default function TeacherAnnotationController() {
         top: placed.top,
         left: placed.left,
         width: panelWidth,
-        maxHeight: panelHeight,
+        maxHeight,
+        anchor: {
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          height: rect.height,
+        },
       });
       setOpenMarker(null);
     }
@@ -608,15 +621,25 @@ export default function TeacherAnnotationController() {
     if (!panel) return undefined;
     const place = () => {
       const vp = viewportBox();
-      const maxHeight = Math.min(PENDING_HEIGHT, vp.height - 16);
+      const maxHeight = Math.min(PENDING_MAX_HEIGHT, vp.height - 16);
       const width = pending.width || Math.min(PENDING_WIDTH, vp.width - 16);
-      const next = clampFixedBox({
-        top: pending.top,
-        left: pending.left,
-        width,
-        height: Math.min(panel.offsetHeight || maxHeight, maxHeight),
-        padding: 8,
-      });
+      const measured = Math.min(panel.offsetHeight || PENDING_PLACE_HEIGHT, maxHeight);
+      const anchor = pending.anchor;
+      const next = anchor
+        ? placementNearAnchor({
+            anchor,
+            width,
+            height: measured,
+            prefer: 'below',
+            padding: 8,
+          })
+        : clampFixedBox({
+            top: pending.top,
+            left: pending.left,
+            width,
+            height: measured,
+            padding: 8,
+          });
       setPending((prev) => {
         if (!prev) return prev;
         if (
@@ -631,7 +654,7 @@ export default function TeacherAnnotationController() {
     };
     const frame = requestAnimationFrame(place);
     return () => cancelAnimationFrame(frame);
-  }, [pending?.studentId, pending?.start, pending?.end, orderedQuickComments.length, addingCustomComment, activeBankId]);
+  }, [pending?.studentId, pending?.start, pending?.end, pending?.anchor, orderedQuickComments.length, addingCustomComment, activeBankId]);
 
   useEffect(() => {
     // Persist migrated legacy customs on first mount.
@@ -1019,7 +1042,7 @@ export default function TeacherAnnotationController() {
             top: pending.top,
             left: pending.left,
             width: pending.width || Math.min(PENDING_WIDTH, typeof window !== 'undefined' ? window.innerWidth - 16 : PENDING_WIDTH),
-            maxHeight: pending.maxHeight || `min(${PENDING_HEIGHT}px, calc(100dvh - 16px))`,
+            maxHeight: pending.maxHeight || `min(${PENDING_MAX_HEIGHT}px, calc(100dvh - 16px))`,
           }}
         >
           <div className="flex shrink-0 items-start justify-between gap-2">
