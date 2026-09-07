@@ -177,7 +177,7 @@ export default function SavedSetsPanel({
     const sync = () => {
       const rect = dock.getBoundingClientRect();
       const gap = 8;
-      const maxWidth = 26 * 16;
+      const maxWidth = mode === 'recipients' ? 600 : 26 * 16;
       const minWidth = 20 * 16;
       const available = window.innerWidth - rect.right - gap - 8;
       let width = Math.min(maxWidth, available > minWidth ? available : maxWidth);
@@ -202,7 +202,7 @@ export default function SavedSetsPanel({
       observer?.disconnect();
       window.removeEventListener('resize', sync);
     };
-  }, [previewOpen, activeSet?.id]);
+  }, [previewOpen, activeSet?.id, mode]);
 
   const library = useMemo(() => {
     const custom = customSets.map((set) => ({ ...set, bank: false, overridden: false }));
@@ -729,12 +729,14 @@ export default function SavedSetsPanel({
             <span className="text-xs text-slate-500">{validRecipientIds.length} selected</span>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            {recipientChoices.map(student => <label key={student.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-3 text-sm font-semibold text-slate-800 hover:bg-indigo-50 dark:text-slate-100 dark:hover:bg-slate-800">
+            <div className="sets-recipient-grid" style={{ '--recipient-columns': previewFlyout.width >= 560 ? 3 : previewFlyout.width >= 380 ? 2 : 1 }}>
+            {recipientChoices.map(student => <label key={student.id} className="sets-recipient-row flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 text-xs font-semibold text-slate-800 hover:bg-indigo-50 dark:text-slate-100 dark:hover:bg-slate-800">
               <input type="checkbox" disabled={sending} checked={validRecipientIds.includes(Number(student.id))}
-                onChange={e => setRecipientIds(ids => e.target.checked ? [...ids, Number(student.id)] : ids.filter(id => id !== Number(student.id)))} className="h-4 w-4 accent-indigo-600" />
-              <span className="min-w-0 flex-1 break-words">{student.name}</span>
+                onChange={e => setRecipientIds(ids => e.target.checked ? [...ids, Number(student.id)] : ids.filter(id => id !== Number(student.id)))} className="h-3.5 w-3.5 shrink-0 accent-indigo-600" />
+              <span title={student.name} className="min-w-0 flex-1 truncate">{student.name}</span>
               {student.connected === false && <span className="text-[10px] font-normal text-slate-400">Offline</span>}
             </label>)}
+            </div>
             {!recipientChoices.length && <p className="p-2 text-sm text-slate-500">No students in this room yet.</p>}
           </div>
           <div className="shrink-0 border-t border-slate-100 p-4 dark:border-slate-800">
