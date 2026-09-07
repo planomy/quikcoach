@@ -15,14 +15,18 @@ const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
 const FAVOURITE_COMMENTS_KEY = 'iboard-teacher-favourite-inline-comments';
+const COMMENT_BANKS_KEY = 'iboard-teacher-comment-banks-v1';
+const DEFAULT_BANK_ID = 'default';
 const MAX_FAVOURITES = 8;
+const MAX_BANKS = 12;
+const MAX_BANK_COMMENTS = 40;
 const PENDING_WIDTH = 468;
 const PENDING_HEIGHT = 520;
 const OPEN_WIDTH = 280;
 const OPEN_HEIGHT = 220;
 const MARKER_SIZE = 28;
 const MARKER_MARGIN = 6;
-/** Flat bank — no category menus. Favourites float above via local pin order. */
+/** Default bank — curated. Teachers keep subject banks separately (Junior Eng, Y10 History, …). */
 const CORE_COMMENTS = [
   'Spelling',
   'Punctuation',
@@ -55,25 +59,29 @@ function normalizeCommentList(raw, limit) {
   return raw.map((item) => String(item || '').trim().slice(0, 500)).filter(Boolean).slice(0, limit);
 }
 
-function loadCustomComments() {
-  if (typeof window === 'undefined') return [];
+function newBankId() {
+  return `bank-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function normalizeBank(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = String(raw.id || '').trim();
+  const name = String(raw.name || '').trim().slice(0, 40);
+  if (!id || id === DEFAULT_BANK_ID || !name) return null;
+  const comments = normalizeCommentList(raw.comments, MAX_BANK_COMMENTS);
+  const favourites = normalizeCommentList(raw.favourites, MAX_FAVOURITES).filter((item) => comments.includes(item));
+  return { id, name, comments, favourites };
+}
+
+function loadLegacyCustoms() {
   try {
-    return normalizeCommentList(JSON.parse(localStorage.getItem(CUSTOM_COMMENTS_KEY) || '[]'), 30);
+    return normalizeCommentList(JSON.parse(localStorage.getItem(CUSTOM_COMMENTS_KEY) || '[]'), MAX_BANK_COMMENTS);
   } catch {
     return [];
   }
 }
 
-function saveCustomComments(comments) {
-  try {
-    localStorage.setItem(CUSTOM_COMMENTS_KEY, JSON.stringify(comments.slice(0, 30)));
-  } catch {
-    /* ignore storage failures */
-  }
-}
-
-function loadFavouriteComments(known) {
-  if (typeof window === 'undefined') return [];
+function loadLegacyFavourites(known) {
   try {
     const knownSet = new Set(known);
     return normalizeCommentList(JSON.parse(localStorage.getItem(FAVOURITE_COMMENTS_KEY) || '[]'), MAX_FAVOURITES).filter(
@@ -84,20 +92,64 @@ function loadFavouriteComments(known) {
   }
 }
 
-function saveFavouriteComments(comments) {
+function loadCommentBankState() {
+  const empty = {
+    activeId: DEFAULT_BANK_ID,
+    defaultFavourites: loadLegacyFavourites(CORE_COMMENTS),
+    banks: [],
+  };
+  if (typeof window === 'undefined') return empty;
   try {
-    localStorage.setItem(FAVOURITE_COMMENTS_KEY, JSON.stringify(comments.slice(0, MAX_FAVOURITES)));
+    const parsed = JSON.parse(localStorage.getItem(COMMENT_BANKS_KEY) || 'null');
+    if (parsed && typeof parsed === 'object') {
+      const banks = Array.isArray(parsed.banks)
+        ? parsed.banks.map(normalizeBank).filter(Boolean).slice(0, MAX_BANKS)
+        : [];
+      const activeId =
+        parsed.activeId === DEFAULT_BANK_ID || banks.some((bank) => bank.id === parsed.activeId)
+          ? parsed.activeId
+          : DEFAULT_BANK_ID;
+      const defaultFavourites = normalizeCommentList(parsed.defaultFavourites, MAX_FAVOURITES).filter((item) =>
+        CORE_COMMENTS.includes(item)
+      );
+      return {
+        activeId,
+        defaultFavourites: defaultFavourites.length ? defaultFavourites : loadLegacyFavourites(CORE_COMMENTS),
+        banks,
+      };
+    }
+  } catch {
+    /* fall through to migrate */
+  }
+  const legacyCustoms = loadLegacyCustoms();
+  return {
+    activeId: DEFAULT_BANK_ID,
+    defaultFavourites: loadLegacyFavourites(CORE_COMMENTS),
+    banks: legacyCustoms.length
+      ? [{ id: newBankId(), name: 'My comments', comments: legacyCustoms, favourites: [] }]
+      : [],
+  };
+}
+
+function saveCommentBankState(state) {
+  try {
+    localStorage.setItem(
+      COMMENT_BANKS_KEY,
+      JSON.stringify({
+        activeId: state.activeId,
+        defaultFavourites: state.defaultFavourites.slice(0, MAX_FAVOURITES),
+        banks: state.banks.slice(0, MAX_BANKS),
+      })
+    );
   } catch {
     /* ignore storage failures */
   }
 }
 
-function orderQuickComments(core, customs, favourites) {
-  const bank = [...core, ...customs];
-  const bankSet = new Set(bank);
-  const pinned = favourites.filter((item) => bankSet.has(item));
+function orderBankComments(comments, favourites) {
+  const pinned = favourites.filter((item) => comments.includes(item));
   const pinnedSet = new Set(pinned);
-  return [...pinned, ...bank.filter((item) => !pinnedSet.has(item))];
+  return [...pinned, ...comments.filter((item) => !pinnedSet.has(item))];
 }
 
 function currentSocket() {
@@ -265,10 +317,7 @@ export default function TeacherAnnotationController() {
   const [pending, setPending] = useState(null);
   const [draftNote, setDraftNote] = useState('');
   const [quickStack, setQuickStack] = useState([]);
-  const [customComments, setCustomComments] = useState(loadCustomComments);
-  const [favouriteComments, setFavouriteComments] = useState(() =>
-    loadFavouriteComments([...CORE_COMMENTS, ...loadCustomComments()])
-  );
+  const [bankState, setBankState] = useState(loadCommentBankState);
   const [customCommentDraft, setCustomCommentDraft] = useState('');
   const [addingCustomComment, setAddingCustomComment] = useState(false);
   const [commentError, setCommentError] = useState('');
@@ -284,12 +333,35 @@ export default function TeacherAnnotationController() {
   const draftNoteLatestRef = useRef('');
   const quickPrefixRef = useRef('');
 
-  const orderedQuickComments = useMemo(
-    () => orderQuickComments(CORE_COMMENTS, customComments, favouriteComments),
-    [customComments, favouriteComments]
+  const activeBankId = bankState.activeId || DEFAULT_BANK_ID;
+  const isDefaultBank = activeBankId === DEFAULT_BANK_ID;
+  const activeCustomBank = useMemo(
+    () => bankState.banks.find((bank) => bank.id === activeBankId) || null,
+    [bankState.banks, activeBankId]
   );
-  const favouriteSet = useMemo(() => new Set(favouriteComments), [favouriteComments]);
-  const customSet = useMemo(() => new Set(customComments), [customComments]);
+  const activeComments = isDefaultBank ? CORE_COMMENTS : activeCustomBank?.comments || [];
+  const activeFavourites = isDefaultBank
+    ? bankState.defaultFavourites
+    : activeCustomBank?.favourites || [];
+  const orderedQuickComments = useMemo(
+    () => orderBankComments(activeComments, activeFavourites),
+    [activeComments, activeFavourites]
+  );
+  const favouriteSet = useMemo(() => new Set(activeFavourites), [activeFavourites]);
+
+  function commitBankState(updater) {
+    setBankState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      saveCommentBankState(next);
+      return next;
+    });
+  }
+
+  function selectCommentBank(bankId) {
+    commitBankState((prev) => ({ ...prev, activeId: bankId }));
+    setAddingCustomComment(false);
+    setCustomCommentDraft('');
+  }
 
   const annotationTotal = useMemo(
     () => Object.values(byStudent).reduce((n, list) => n + (Array.isArray(list) ? list.length : 0), 0),
@@ -556,7 +628,13 @@ export default function TeacherAnnotationController() {
     };
     const frame = requestAnimationFrame(place);
     return () => cancelAnimationFrame(frame);
-  }, [pending?.studentId, pending?.start, pending?.end, orderedQuickComments.length, addingCustomComment]);
+  }, [pending?.studentId, pending?.start, pending?.end, orderedQuickComments.length, addingCustomComment, activeBankId]);
+
+  useEffect(() => {
+    // Persist migrated legacy customs on first mount.
+    saveCommentBankState(bankState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot hydrate write
+  }, []);
 
   async function copyPendingSelection() {
     const text = String(pending?.quote || '');
@@ -659,33 +737,45 @@ export default function TeacherAnnotationController() {
   }
 
   function addCustomComment() {
+    if (isDefaultBank || !activeCustomBank) return;
     const comment = customCommentDraft.trim().slice(0, 500);
     if (!comment) return;
-    const allComments = [...CORE_COMMENTS, ...customComments];
-    const existing = allComments.find((item) => item.toLocaleLowerCase() === comment.toLocaleLowerCase());
+    const existing = activeCustomBank.comments.find(
+      (item) => item.toLocaleLowerCase() === comment.toLocaleLowerCase()
+    );
     if (existing) {
       applyQuickComment(existing, { forceAdd: true });
       setCustomCommentDraft('');
       setAddingCustomComment(false);
       return;
     }
-    const nextCustoms = [...customComments, comment].slice(0, 30);
-    setCustomComments(nextCustoms);
-    saveCustomComments(nextCustoms);
+    commitBankState((prev) => ({
+      ...prev,
+      banks: prev.banks.map((bank) =>
+        bank.id === activeCustomBank.id
+          ? { ...bank, comments: [...bank.comments, comment].slice(0, MAX_BANK_COMMENTS) }
+          : bank
+      ),
+    }));
     applyQuickComment(comment, { forceAdd: true });
     setCustomCommentDraft('');
     setAddingCustomComment(false);
   }
 
   function removeCustomComment(comment) {
-    const next = customComments.filter((item) => item !== comment);
-    setCustomComments(next);
-    saveCustomComments(next);
-    if (favouriteSet.has(comment)) {
-      const nextFavs = favouriteComments.filter((item) => item !== comment);
-      setFavouriteComments(nextFavs);
-      saveFavouriteComments(nextFavs);
-    }
+    if (isDefaultBank || !activeCustomBank) return;
+    commitBankState((prev) => ({
+      ...prev,
+      banks: prev.banks.map((bank) =>
+        bank.id === activeCustomBank.id
+          ? {
+              ...bank,
+              comments: bank.comments.filter((item) => item !== comment),
+              favourites: bank.favourites.filter((item) => item !== comment),
+            }
+          : bank
+      ),
+    }));
     setQuickStack((prev) => {
       if (!prev.includes(comment)) return prev;
       const stack = prev.filter((item) => item !== comment);
@@ -695,18 +785,88 @@ export default function TeacherAnnotationController() {
   }
 
   function toggleFavouriteComment(comment) {
-    setFavouriteComments((prev) => {
-      let next;
-      if (prev.includes(comment)) {
-        next = prev.filter((item) => item !== comment);
-      } else if (prev.length >= MAX_FAVOURITES) {
-        return prev;
-      } else {
-        next = [...prev, comment];
+    commitBankState((prev) => {
+      if (prev.activeId === DEFAULT_BANK_ID) {
+        const pinned = prev.defaultFavourites.includes(comment);
+        if (pinned) {
+          return { ...prev, defaultFavourites: prev.defaultFavourites.filter((item) => item !== comment) };
+        }
+        if (prev.defaultFavourites.length >= MAX_FAVOURITES) return prev;
+        return { ...prev, defaultFavourites: [...prev.defaultFavourites, comment] };
       }
-      saveFavouriteComments(next);
-      return next;
+      return {
+        ...prev,
+        banks: prev.banks.map((bank) => {
+          if (bank.id !== prev.activeId) return bank;
+          const pinned = bank.favourites.includes(comment);
+          if (pinned) {
+            return { ...bank, favourites: bank.favourites.filter((item) => item !== comment) };
+          }
+          if (bank.favourites.length >= MAX_FAVOURITES) return bank;
+          return { ...bank, favourites: [...bank.favourites, comment] };
+        }),
+      };
     });
+  }
+
+  async function createCommentBank() {
+    if (bankState.banks.length >= MAX_BANKS) {
+      setCommentError(`You already have ${MAX_BANKS} comment banks.`);
+      return;
+    }
+    const name = await promptDialog({
+      title: 'New comment bank',
+      message: 'Name this set for a class or subject — e.g. Junior English, Y10 History, Y12 Ancient.',
+      inputLabel: 'Bank name',
+      placeholder: 'Y10 History',
+      confirmLabel: 'Create bank',
+      defaultValue: '',
+    });
+    const trimmed = String(name || '').trim().slice(0, 40);
+    if (!trimmed) return;
+    const id = newBankId();
+    commitBankState((prev) => ({
+      ...prev,
+      activeId: id,
+      banks: [...prev.banks, { id, name: trimmed, comments: [], favourites: [] }].slice(0, MAX_BANKS),
+    }));
+    setAddingCustomComment(true);
+    setCustomCommentDraft('');
+  }
+
+  async function renameActiveBank() {
+    if (isDefaultBank || !activeCustomBank) return;
+    const name = await promptDialog({
+      title: 'Rename comment bank',
+      message: 'Teachers often keep one bank per class or subject.',
+      inputLabel: 'Bank name',
+      placeholder: activeCustomBank.name,
+      confirmLabel: 'Save name',
+      defaultValue: activeCustomBank.name,
+    });
+    const trimmed = String(name || '').trim().slice(0, 40);
+    if (!trimmed) return;
+    commitBankState((prev) => ({
+      ...prev,
+      banks: prev.banks.map((bank) => (bank.id === activeCustomBank.id ? { ...bank, name: trimmed } : bank)),
+    }));
+  }
+
+  async function deleteActiveBank() {
+    if (isDefaultBank || !activeCustomBank) return;
+    const ok = await confirmDialog({
+      title: `Delete “${activeCustomBank.name}”?`,
+      message: 'The chits in this bank will be removed from this browser. Default comments stay.',
+      confirmLabel: 'Delete bank',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    commitBankState((prev) => ({
+      ...prev,
+      activeId: DEFAULT_BANK_ID,
+      banks: prev.banks.filter((bank) => bank.id !== activeCustomBank.id),
+    }));
+    setAddingCustomComment(false);
   }
 
   function addComment() {
@@ -877,45 +1037,117 @@ export default function TeacherAnnotationController() {
             </button>
           </div>
           <div className="mt-2 flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center justify-between gap-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                Quick comments <span className="font-semibold normal-case tracking-normal text-slate-400">· ★ pin · max {MAX_FAVOURITES}</span>
-              </p>
-              <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
+              <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
                   type="button"
-                  onClick={undoQuickComment}
-                  disabled={!quickStack.length}
-                  className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                  aria-label="Undo last quick comment"
-                  title="Undo last quick comment"
+                  onClick={() => selectCommentBank(DEFAULT_BANK_ID)}
+                  className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wide transition ${
+                    isDefaultBank
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  }`}
                 >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 14 4 9l5-5" />
-                    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13" />
-                  </svg>
+                  Default
                 </button>
+                {bankState.banks.map((bank) => {
+                  const active = bank.id === activeBankId;
+                  return (
+                    <button
+                      key={bank.id}
+                      type="button"
+                      onClick={() => selectCommentBank(bank.id)}
+                      onDoubleClick={() => {
+                        if (active) renameActiveBank();
+                      }}
+                      title={active ? 'Double-click to rename' : bank.name}
+                      className={`max-w-[9rem] shrink-0 truncate rounded-md px-2 py-1 text-[10px] font-black transition ${
+                        active
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {bank.name}
+                    </button>
+                  );
+                })}
                 <button
                   type="button"
-                  onClick={() => {
-                    setAddingCustomComment((open) => !open);
-                    setCustomCommentDraft('');
-                  }}
-                  className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
-                  aria-label="Add a reusable comment"
-                  title="Add your own quick comment"
+                  onClick={createCommentBank}
+                  disabled={bankState.banks.length >= MAX_BANKS}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-sm font-black text-indigo-700 hover:bg-indigo-200 disabled:opacity-40 dark:bg-indigo-950 dark:text-indigo-200"
+                  aria-label="Add a comment bank"
+                  title={bankState.banks.length >= MAX_BANKS ? `Max ${MAX_BANKS} banks` : 'Add a named bank'}
                 >
                   +
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={undoQuickComment}
+                disabled={!quickStack.length}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                aria-label="Undo last quick comment"
+                title="Undo last quick comment"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 14 4 9l5-5" />
+                  <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13" />
+                </svg>
+              </button>
+            </div>
+            <div className="mt-1 flex shrink-0 items-center justify-between gap-2">
+              <p className="min-w-0 truncate text-[9px] font-semibold text-slate-400">
+                {isDefaultBank
+                  ? `Default · ★ pin · max ${MAX_FAVOURITES}`
+                  : `${activeCustomBank?.name || 'Bank'} · ★ pin · add your chits`}
+              </p>
+              <div className="flex items-center gap-1">
+                {!isDefaultBank && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={renameActiveBank}
+                      className="rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      title="Rename bank"
+                    >
+                      Rename
+                    </button>
+                    <button
+                      type="button"
+                      onClick={deleteActiveBank}
+                      className="rounded px-1.5 py-0.5 text-[9px] font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                      title="Delete bank"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddingCustomComment((open) => !open);
+                        setCustomCommentDraft('');
+                      }}
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
+                      aria-label="Add a chit to this bank"
+                      title="Add a chit to this bank"
+                    >
+                      +
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
             <div className="mt-1.5 min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <div className="flex flex-wrap content-start gap-0.5">
+                {!orderedQuickComments.length && !isDefaultBank && (
+                  <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
+                    Empty bank — tap + to add chits for this class.
+                  </p>
+                )}
                 {orderedQuickComments.map((comment) => {
                   const selected = quickStack.includes(comment);
                   const pinned = favouriteSet.has(comment);
-                  const isCustom = customSet.has(comment);
-                  const pinBlocked = !pinned && favouriteComments.length >= MAX_FAVOURITES;
+                  const pinBlocked = !pinned && activeFavourites.length >= MAX_FAVOURITES;
                   return (
                     <span
                       key={comment}
@@ -924,9 +1156,9 @@ export default function TeacherAnnotationController() {
                           ? 'border-indigo-600 bg-indigo-600 text-white'
                           : pinned
                             ? 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
-                            : isCustom
-                              ? 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                              : 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
+                            : isDefaultBank
+                              ? 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
+                              : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
                       }`}
                     >
                       <button
@@ -956,13 +1188,13 @@ export default function TeacherAnnotationController() {
                       >
                         {pinned ? '★' : '☆'}
                       </button>
-                      {isCustom && (
+                      {!isDefaultBank && (
                         <button
                           type="button"
                           onClick={() => removeCustomComment(comment)}
                           className="shrink-0 border-l border-current/15 px-1 text-current/55 opacity-0 hover:text-red-600 group-hover:opacity-100 focus-visible:opacity-100"
-                          aria-label={`Remove reusable comment: ${comment}`}
-                          title="Remove quick comment"
+                          aria-label={`Remove chit: ${comment}`}
+                          title="Remove chit"
                         >
                           ×
                         </button>
@@ -972,10 +1204,10 @@ export default function TeacherAnnotationController() {
                 })}
               </div>
             </div>
-            {addingCustomComment && (
+            {addingCustomComment && !isDefaultBank && (
               <div className="mt-1.5 shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 p-1.5 dark:border-indigo-900 dark:bg-indigo-950/40">
                 <label htmlFor="custom-inline-comment" className="text-[9px] font-bold text-indigo-700 dark:text-indigo-200">
-                  New reusable comment
+                  New chit in {activeCustomBank?.name || 'this bank'}
                 </label>
                 <div className="mt-1 flex gap-1">
                   <input
