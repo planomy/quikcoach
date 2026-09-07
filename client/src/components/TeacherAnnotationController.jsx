@@ -14,34 +14,51 @@ import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
-const PENDING_WIDTH = 360;
-const PENDING_HEIGHT = 460;
+const FAVOURITE_COMMENTS_KEY = 'iboard-teacher-favourite-inline-comments';
+const MAX_FAVOURITES = 8;
+const PENDING_WIDTH = 380;
+const PENDING_HEIGHT = 480;
 const OPEN_WIDTH = 280;
 const OPEN_HEIGHT = 220;
 const MARKER_SIZE = 28;
 const MARKER_MARGIN = 6;
+/** Flat bank — no category menus. Favourites float above via local pin order. */
 const CORE_COMMENTS = [
-  'Grammar',
   'Spelling',
   'Punctuation',
-  'Repeated word or idea',
+  'Grammar',
   'Fragment sentence',
-  'Not following you',
-  'Change this',
-  'Love this',
-  'Increase sophistication',
-  'Use a better start',
+  'Tense slip',
+  'Repeated word or idea',
+  'Wrong word choice',
+  'New paragraph here',
   'Split this sentence',
-  'Missing the point/weak idea',
+  'This belongs somewhere else',
+  "Where's your topic sentence?",
+  'Which words could go?',
+  "What's a more precise word?",
+  'How else could this start?',
+  'Show me this instead of telling me',
+  'What are you arguing here?',
+  'This tells me what happens — what does it mean?',
+  "What's your evidence?",
+  'What does this quote actually suggest?',
+  'How does this link to the question?',
+  'Not following you — say it another way',
+  'Love this',
+  'This is your best line so far',
+  'More like this',
 ];
+
+function normalizeCommentList(raw, limit) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => String(item || '').trim().slice(0, 500)).filter(Boolean).slice(0, limit);
+}
 
 function loadCustomComments() {
   if (typeof window === 'undefined') return [];
   try {
-    const parsed = JSON.parse(localStorage.getItem(CUSTOM_COMMENTS_KEY) || '[]');
-    return Array.isArray(parsed)
-      ? parsed.map((item) => String(item || '').trim().slice(0, 500)).filter(Boolean).slice(0, 30)
-      : [];
+    return normalizeCommentList(JSON.parse(localStorage.getItem(CUSTOM_COMMENTS_KEY) || '[]'), 30);
   } catch {
     return [];
   }
@@ -53,6 +70,34 @@ function saveCustomComments(comments) {
   } catch {
     /* ignore storage failures */
   }
+}
+
+function loadFavouriteComments(known) {
+  if (typeof window === 'undefined') return [];
+  try {
+    const knownSet = new Set(known);
+    return normalizeCommentList(JSON.parse(localStorage.getItem(FAVOURITE_COMMENTS_KEY) || '[]'), MAX_FAVOURITES).filter(
+      (item) => knownSet.has(item)
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveFavouriteComments(comments) {
+  try {
+    localStorage.setItem(FAVOURITE_COMMENTS_KEY, JSON.stringify(comments.slice(0, MAX_FAVOURITES)));
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
+function orderQuickComments(core, customs, favourites) {
+  const bank = [...core, ...customs];
+  const bankSet = new Set(bank);
+  const pinned = favourites.filter((item) => bankSet.has(item));
+  const pinnedSet = new Set(pinned);
+  return [...pinned, ...bank.filter((item) => !pinnedSet.has(item))];
 }
 
 function currentSocket() {
@@ -221,6 +266,9 @@ export default function TeacherAnnotationController() {
   const [draftNote, setDraftNote] = useState('');
   const [quickStack, setQuickStack] = useState([]);
   const [customComments, setCustomComments] = useState(loadCustomComments);
+  const [favouriteComments, setFavouriteComments] = useState(() =>
+    loadFavouriteComments([...CORE_COMMENTS, ...loadCustomComments()])
+  );
   const [customCommentDraft, setCustomCommentDraft] = useState('');
   const [addingCustomComment, setAddingCustomComment] = useState(false);
   const [commentError, setCommentError] = useState('');
@@ -234,6 +282,13 @@ export default function TeacherAnnotationController() {
   const draftNoteRef = useRef(null);
   const draftNoteLatestRef = useRef('');
   const quickPrefixRef = useRef('');
+
+  const orderedQuickComments = useMemo(
+    () => orderQuickComments(CORE_COMMENTS, customComments, favouriteComments),
+    [customComments, favouriteComments]
+  );
+  const favouriteSet = useMemo(() => new Set(favouriteComments), [favouriteComments]);
+  const customSet = useMemo(() => new Set(customComments), [customComments]);
 
   const annotationTotal = useMemo(
     () => Object.values(byStudent).reduce((n, list) => n + (Array.isArray(list) ? list.length : 0), 0),
@@ -587,11 +642,31 @@ export default function TeacherAnnotationController() {
     const next = customComments.filter((item) => item !== comment);
     setCustomComments(next);
     saveCustomComments(next);
+    if (favouriteSet.has(comment)) {
+      const nextFavs = favouriteComments.filter((item) => item !== comment);
+      setFavouriteComments(nextFavs);
+      saveFavouriteComments(nextFavs);
+    }
     setQuickStack((prev) => {
       if (!prev.includes(comment)) return prev;
       const stack = prev.filter((item) => item !== comment);
       writeQuickDraft(quickPrefixRef.current, stack);
       return stack;
+    });
+  }
+
+  function toggleFavouriteComment(comment) {
+    setFavouriteComments((prev) => {
+      let next;
+      if (prev.includes(comment)) {
+        next = prev.filter((item) => item !== comment);
+      } else if (prev.length >= MAX_FAVOURITES) {
+        return prev;
+      } else {
+        next = [...prev, comment];
+      }
+      saveFavouriteComments(next);
+      return next;
     });
   }
 
@@ -740,8 +815,8 @@ export default function TeacherAnnotationController() {
       {pending && (
         <div
           data-teacher-annotation-ui
-          className="fixed z-[70] max-h-[calc(100vh-20px)] w-[360px] max-w-[calc(100vw-20px)] overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
-          style={{ top: pending.top, left: pending.left }}
+          className="fixed z-[70] max-h-[calc(100vh-20px)] max-w-[calc(100vw-20px)] overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          style={{ top: pending.top, left: pending.left, width: Math.min(PENDING_WIDTH, typeof window !== 'undefined' ? window.innerWidth - 20 : PENDING_WIDTH) }}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -758,9 +833,14 @@ export default function TeacherAnnotationController() {
           </div>
           <div className="mt-3">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                Quick comments
-              </p>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                  Quick comments
+                </p>
+                <p className="mt-0.5 text-[9px] font-semibold text-slate-400 dark:text-slate-500">
+                  ★ pins to top · max {MAX_FAVOURITES}
+                </p>
+              </div>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -789,44 +869,64 @@ export default function TeacherAnnotationController() {
                 </button>
               </div>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-1">
-              {CORE_COMMENTS.map((comment) => (
-                <button
-                  key={comment}
-                  type="button"
-                  onClick={() => applyQuickComment(comment)}
-                  className={`rounded-md border px-1.5 py-1 text-left text-[10px] font-semibold leading-snug transition ${
-                    quickStack.includes(comment)
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:border-indigo-400 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
-                  }`}
-                >
-                  {comment}
-                </button>
-              ))}
-              {customComments.map((comment) => (
-                <span
-                  key={comment}
-                  className={`inline-flex min-w-0 overflow-hidden rounded-md border text-[10px] font-semibold leading-snug transition ${
-                    quickStack.includes(comment)
-                      ? 'border-indigo-600 bg-indigo-600 text-white'
-                      : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                  }`}
-                >
-                  <button type="button" onClick={() => applyQuickComment(comment)} className="min-w-0 flex-1 truncate px-1.5 py-1 text-left hover:bg-indigo-100/70 dark:hover:bg-indigo-950/70">
-                    {comment}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeCustomComment(comment)}
-                    className="shrink-0 border-l border-current/20 px-1.5 text-current/60 hover:text-red-600"
-                    aria-label={`Remove reusable comment: ${comment}`}
-                    title="Remove quick comment"
+            <div className="mt-2 flex flex-wrap gap-1">
+              {orderedQuickComments.map((comment) => {
+                const selected = quickStack.includes(comment);
+                const pinned = favouriteSet.has(comment);
+                const isCustom = customSet.has(comment);
+                const pinBlocked = !pinned && favouriteComments.length >= MAX_FAVOURITES;
+                return (
+                  <span
+                    key={comment}
+                    className={`inline-flex max-w-full items-stretch overflow-hidden rounded-md border text-[10px] font-semibold leading-snug transition ${
+                      selected
+                        ? 'border-indigo-600 bg-indigo-600 text-white'
+                        : pinned
+                          ? 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
+                          : isCustom
+                            ? 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                            : 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
+                    }`}
                   >
-                    ×
-                  </button>
-                </span>
-              ))}
+                    <button
+                      type="button"
+                      onClick={() => applyQuickComment(comment)}
+                      className="max-w-[17rem] px-1.5 py-1 text-left hover:brightness-95"
+                    >
+                      {comment}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleFavouriteComment(comment)}
+                      disabled={pinBlocked}
+                      className={`shrink-0 border-l border-current/15 px-1.5 ${
+                        pinned ? 'text-amber-600 dark:text-amber-300' : 'text-current/45 hover:text-amber-600'
+                      } disabled:cursor-not-allowed disabled:opacity-30`}
+                      aria-label={pinned ? `Unpin ${comment}` : `Pin ${comment} to top`}
+                      title={
+                        pinned
+                          ? 'Unpin from top'
+                          : pinBlocked
+                            ? `Unpin one first (max ${MAX_FAVOURITES})`
+                            : 'Pin to top'
+                      }
+                    >
+                      {pinned ? '★' : '☆'}
+                    </button>
+                    {isCustom && (
+                      <button
+                        type="button"
+                        onClick={() => removeCustomComment(comment)}
+                        className="shrink-0 border-l border-current/15 px-1.5 text-current/55 hover:text-red-600"
+                        aria-label={`Remove reusable comment: ${comment}`}
+                        title="Remove quick comment"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </span>
+                );
+              })}
             </div>
             {addingCustomComment && (
               <div className="mt-2 rounded-xl border border-indigo-200 bg-indigo-50 p-2 dark:border-indigo-900 dark:bg-indigo-950/40">
