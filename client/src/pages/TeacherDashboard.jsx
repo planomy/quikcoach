@@ -2088,13 +2088,24 @@ function TeacherDashboardInner() {
               type="button"
               disabled={draftTrailBusy || !socketConnected || !joined}
               aria-pressed={!!room?.draftTrail?.active}
+              aria-label={
+                draftTrailBusy
+                  ? 'Updating Draft Trail'
+                  : room?.draftTrail?.active
+                    ? (room?.draftTrail?.label ? `Stop Draft Trail · ${room.draftTrail.label}` : 'Stop Draft Trail')
+                    : 'Record draft trail'
+              }
               title={
                 room?.draftTrail?.reason
                 || (room?.draftTrail?.active
-                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label}` : 'Recording writing changes only — no screen, audio or video')
-                  : 'Capture writing changes only — no screen, audio or video. Save session to keep the trail.')
+                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Draft Trail recording — click to stop')
+                  : 'Record draft trail — writing changes only, not screen or audio')
               }
-              className={`relative z-10 inline-flex items-center gap-2 rounded-lg border px-2 py-2 text-xs font-semibold disabled:opacity-50 sm:text-sm ${room?.draftTrail?.active ? 'border-red-700 bg-red-700 text-white' : 'border-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}
+              className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-xl border transition disabled:opacity-50 ${
+                room?.draftTrail?.active
+                  ? 'border-red-700 bg-red-700 text-white hover:bg-red-800'
+                  : 'border-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white'
+              }`}
               onClick={() => {
                 if (room?.draftTrail?.active) {
                   setDraftTrailRecording(false);
@@ -2104,12 +2115,16 @@ function TeacherDashboardInner() {
                 setDraftTrailLabelOpen(true);
               }}
             >
-              <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${room?.draftTrail?.active ? 'bg-red-300' : 'bg-slate-400'}`} />
-              {draftTrailBusy
-                ? 'Updating…'
-                : room?.draftTrail?.active
-                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label}` : 'Recording draft trail')
-                  : 'Record draft trail'}
+              <span
+                aria-hidden="true"
+                className={`h-2.5 w-2.5 rounded-full ${
+                  draftTrailBusy
+                    ? 'bg-amber-300'
+                    : room?.draftTrail?.active
+                      ? 'bg-red-200'
+                      : 'bg-slate-400'
+                }`}
+              />
             </button>
             <HintWrap hint="Room settings" prefer="below">
               <button
