@@ -29,3 +29,121 @@ html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-stud
 html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(p, span, label).text-slate-400 {
   color: #52647d;
 }
+
+
+/* Quiet Slate / Graphite: shared neutral surfaces, with semantic colours intact. */
+html:not(.dark) {
+  --iboard-canvas: #e6edf4;
+  --iboard-paper: #f8fafc;
+  --iboard-tool-surface: #d3dfec;
+  --iboard-tool-strip: #c5d3e3;
+  --iboard-tool-border: #afc0d4;
+}
+html.dark {
+  color-scheme: dark;
+  --iboard-canvas: #1c2127;
+  --iboard-paper: #252b32;
+  --iboard-tool-surface: #292f37;
+  --iboard-tool-strip: #22282f;
+  --iboard-tool-border: #444e5b;
+}
+html body,
+html :is(.iboard-teacher-canvas, .iboard-student-canvas) {
+  background-color: var(--iboard-canvas);
+}
+html:not(.dark) .iboard-app-header {
+  background: linear-gradient(105deg, #344c68, #405975);
+}
+html.dark .iboard-app-header {
+  background: #20262d;
+  border-bottom-color: #444e5b;
+  box-shadow: 0 2px 8px #0003;
+}
+html.dark :is(.dark\:bg-slate-950, .dark\:bg-slate-900, .dark\:bg-slate-800) {
+  background-color: var(--iboard-tool-surface);
+}
+html.dark :is(.dark\:bg-slate-950\/50, .dark\:bg-slate-900\/50, .dark\:bg-slate-800\/50) {
+  background-color: var(--iboard-tool-strip);
+}
+html.dark :is(.dark\:border-slate-700, .dark\:border-slate-800, .dark\:border-slate-600) {
+  border-color: var(--iboard-tool-border);
+}
+html.dark :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [data-teacher-annotation-ui].bg-white) {
+  background-color: var(--iboard-tool-surface);
+  color: #e8edf3;
+  border-color: var(--iboard-tool-border);
+}
+html.dark :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"])
+  :is(div, section, aside, article, nav, fieldset).bg-white {
+  background-color: var(--iboard-tool-surface);
+}
+html.dark :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"])
+  > :is(div.shrink-0.border-b, div.shrink-0.border-t, header, footer) {
+  background-color: var(--iboard-tool-strip);
+  border-color: var(--iboard-tool-border);
+}
+html.dark :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select, [contenteditable="true"], [data-student-writing-pane], [data-iboard-writing-content], .iboard-writing-surface) {
+  background-color: var(--iboard-paper);
+  color: #edf1f5;
+}
+html:not(.dark) :is(.iboard-writing-surface, [data-student-writing-pane], [contenteditable="true"]) {
+  background-color: var(--iboard-paper);
+}
+html.dark .iboard-app-header :is(.iboard-header-tab, .iboard-header-icon-button)[data-active="true"] {
+  background: #2563eb;
+  color: #fff;
+}
+html.dark :is(button.bg-indigo-600, button.bg-indigo-700, button.bg-violet-600) {
+  background-color: #2563eb;
+  color: #fff;
+}
+html.dark :is(button.bg-indigo-600, button.bg-indigo-700, button.bg-violet-600):hover {
+  background-color: #1d4ed8;
+}
+html.dark :is(.dark\:text-slate-400, .dark\:text-slate-500) {
+  color: #aebac8;
+}
+html.dark .iboard-confidence-ring {
+  --iboard-ring-gap: #292f37;
+  --iboard-ring-unanswered: #566170;
+  --iboard-ring-empty: #343c46;
+}
+
+/* Flatten the catalogue and question preview rather than nesting rounded cards. */
+html :is(.iboard-header-dock, .sets-preview-flyout, dialog, [data-teacher-annotation-ui].bg-white) {
+  border-radius: 8px;
+}
+html div:has(> #sets-subject-filter) {
+  /* Native controls retain their separate input surface. */
+}
+html div:has(> section #sets-subject-filter) #sets-subject-filter {
+  border-radius: 6px;
+}
+html section:has(#sets-subject-filter) .grid > article {
+  border-radius: 4px;
+  border-width: 0 0 1px;
+  border-bottom-color: var(--iboard-tool-border);
+  box-shadow: none;
+}
+html section:has(#sets-subject-filter) .grid > article p.font-black {
+  font-weight: 600;
+}
+html .sets-preview-flyout ol > li {
+  border-radius: 0;
+  border-width: 0 0 1px;
+  border-color: var(--iboard-tool-border);
+  background-color: transparent;
+  padding-left: 0;
+  padding-right: 0;
+  font-weight: 600;
+}
+html .sets-preview-flyout:has(ol) > .overflow-y-auto {
+  background-color: var(--iboard-paper);
+}
+html.dark section:has(#sets-subject-filter) .grid > article:has(input:checked) {
+  background-color: #284768;
+  color: #edf3ff;
+}
+html.dark section:has(#sets-subject-filter) .grid > article:hover {
+  background-color: #343e4b;
+}
