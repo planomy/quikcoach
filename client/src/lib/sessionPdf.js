@@ -86,6 +86,33 @@ export function linkInlineRevisions(events, annotations = []) {
   }
   return result;
 }
+
+function words(text) {
+  return String(text || '').trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Report only context actually saved for this student. */
+export function writingSummary(pack, student, events) {
+  const latest = student.archived ? events.at(-1)?.after || '' : student.text || '';
+  const start = events[0]?.at;
+  const finish = events.at(-1)?.at;
+  const spanMinutes = Number.isFinite(start) && Number.isFinite(finish)
+    ? Math.max(0, Math.round((finish - start) / 60000)) : null;
+  const titles = new Set();
+  for (const note of pack.teacherNotesByExportId?.[student.exportId] || []) {
+    const match = String(note.text || '').match(/^Prompt set\s*·\s*([^\r\n]+)/);
+    if (match) titles.add(match[1].trim());
+  }
+  return {
+    latestWords: words(latest),
+    startingWords: events.length ? words(events[0].after) : null,
+    start, finish, spanMinutes,
+    label: String(pack.draftTrail?.label || '').trim(),
+    setTitles: [...titles],
+    latestChange: [...events].reverse().find(e => ['change', 'paste'].includes(e.type))?.at,
+  };
+}
+
 function yearLabel(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
@@ -165,6 +192,14 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
     paragraph(student.name || 'Student', { size: 20, colour: [25, 59, 89], gap: 5 });
     paragraph([student.class_group && `Group ${student.class_group}`, yearLabel(student.year_level), student.archived && 'Archived trail - student card removed'].filter(Boolean).join(' | ') || 'Session writing and learning evidence', { size: 9, colour: [90, 102, 117] });
     const events = linkInlineRevisions(reconstructTrail(student.trail?.events), pack.annotationsByExportId?.[student.exportId] || []);
+    const summary = writingSummary(pack, student, events);
+    if (summary.label) paragraph(summary.label, { size: 11, colour: [29, 74, 116] });
+    for (const title of summary.setTitles) paragraph(`Set supplied: ${title}`, { size: 9, colour: [90, 102, 117] });
+    paragraph(`${summary.startingWords === null ? 'Starting word count unavailable' : `Starting draft: ${summary.startingWords} words`} | ${student.archived ? 'Last recorded draft' : 'Writing at export'}: ${summary.latestWords} words`, { size: 10 });
+    if (summary.spanMinutes !== null) {
+      paragraph(`Recorded span: ${when(summary.start)} to ${when(summary.finish)} | ${summary.spanMinutes < 1 ? 'Under 1 minute' : `${summary.spanMinutes} minutes`}`, { size: 9 });
+      paragraph('Elapsed time between first and last records; not continuous working time or the full lesson duration.', { size: 8, colour: [90, 102, 117] });
+    }
     heading(student.archived ? 'Last recorded writing' : 'Writing at export');
     paragraph(student.archived ? events.at(-1)?.after || '(No recorded writing)' : student.text || '(No writing received)');
     if (student.image?.base64) {
@@ -212,6 +247,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
         paragraph(truncateDraft(event.after || event.text || '', detailed ? 900 : 500), { size: 8, colour: [35, 45, 62], gap: 2 });
       }
     }
+    if (summary.latestChange) paragraph(`Latest recorded text change: ${when(summary.latestChange)}`, { size: 9, colour: [29, 74, 116] });
   }
   if (escapedGlyphs) paragraph('Characters unsupported by the report font are shown as Unicode code points [U+...]. The original text remains in the .iboard file.', { size: 9 });
   pageNames.set(pdf.getNumberOfPages(), studentName);
