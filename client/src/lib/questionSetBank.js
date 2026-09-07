@@ -239,6 +239,34 @@ export const QUESTION_SET_BANK = [
       'Rewrite it through the narrator’s perspective.',
     ],
   }),
+  set({
+    id: 'bank-eng-cw-12',
+    name: 'Narrative Essay Planner',
+    subject: 'English',
+    years: '7–10',
+    skill: 'Creative writing',
+    minutes: 12,
+    note: 'Whole-story planner before drafting. Send to Inbox as a keepable prompt set, or to Respond to collect plans.',
+    prompts: [
+      'What is the task?',
+      'How many words?',
+      'When is it due?',
+      {
+        prompt: 'What is your pitch (who, where, what, problem)?',
+        helper: 'One tight sentence a classmate could remember.',
+      },
+      'How will it resolve?',
+      {
+        prompt: 'List the paragraphs you will use (eg: hook, who, where, what, flashback, tension, complication, climax, resolution).',
+        helper: 'Choose only the beats you need — not every label.',
+      },
+      'What will change for your character by the end of the story?',
+      {
+        prompt: 'What specific theme/feature/motif do you need to include?',
+        helper: 'Name the requirement from the task so you do not forget it mid-draft.',
+      },
+    ],
+  }),
 
   // Analytical coaching
   set({
@@ -581,6 +609,36 @@ export const QUESTION_SET_BANK = [
       'How will the paragraphs build rather than repeat?',
       'What complexity, tension or alternative reading must you face?',
       'What should the reader understand by the final sentence?',
+    ],
+  }),
+  set({
+    id: 'bank-eng-15',
+    name: 'Analytical Essay Planner',
+    subject: 'English',
+    years: '7–12',
+    skill: 'Essay writing',
+    minutes: 12,
+    note: 'Whole-essay planner before drafting. Send to Inbox as a keepable prompt set, or to Respond to collect plans.',
+    prompts: [
+      'What is the task?',
+      'How many words?',
+      'When is it due?',
+      {
+        prompt: 'What is your thesis?',
+        helper: 'One clear, arguable claim that answers the task.',
+      },
+      {
+        prompt: 'What are your main arguments?',
+        helper: 'List the body points that will prove the thesis.',
+      },
+      {
+        prompt: 'What is the hook you will use at the start of the introduction?',
+        helper: 'Open with something that earns attention — then move to the thesis.',
+      },
+      {
+        prompt: 'What will be the takeaway sentence at the end of the conclusion?',
+        helper: 'Leave the reader with the point that matters most — not a summary dump.',
+      },
     ],
   }),
 
