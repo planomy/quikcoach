@@ -688,7 +688,7 @@ export default function SavedSetsPanel({
               <input type="checkbox" checked={selectedSetIds.includes(activeSet.id)} disabled={sending} onChange={() => toggleSet(activeSet.id)} className="h-4 w-4 accent-indigo-600" />
               Select set
             </label>
-            <button type="button" disabled={sending} onClick={() => chooseRecipients([activeSet])} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-40">Send to…</button>
+            <button type="button" disabled={sending} onClick={() => chooseRecipients([activeSet])} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-40">Select students</button>
             <button type="button" onClick={() => openEdit(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
               Edit
             </button>
@@ -711,12 +711,12 @@ export default function SavedSetsPanel({
 
 
       {mode === 'recipients' && previewFlyout && createPortal(
-        <aside data-iboard-sets-preview="true" role="dialog" aria-label="Choose set recipients"
+        <aside data-iboard-sets-preview="true" role="dialog" aria-label="Select students"
           className="sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{ top: previewFlyout.top, left: previewFlyout.left, height: 'auto', maxHeight: `calc(100dvh - ${previewFlyout.top + 8}px)`, width: previewFlyout.width }}>
           <div className="shrink-0 border-b border-slate-100 p-4 dark:border-slate-800">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Send to</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Select students</p>
               <button type="button" disabled={sending} onClick={() => setMode(activeSet ? 'preview' : '')} className="text-xs font-bold text-slate-500 disabled:opacity-40">Back</button>
             </div>
             <h4 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{recipientSets.length === 1 ? recipientSets[0].name : `${recipientSets.length} sets selected`}</h4>
