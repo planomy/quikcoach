@@ -4,6 +4,9 @@ import { randomUUID } from 'node:crypto';
 // Limits stop capture visibly; never silently drop the beginning of a trail.
 const MAX_ROOM_BYTES = 8 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 64 * 1024 * 1024;
+const QUIET_MS = 3 * 60 * 1000;
+const LARGE_PASTE = 120;
+const LARGE_JUMP = 250;
 const rooms = new Map();
 let totalBytes = 0;
 export function textDelta(before, after) {
@@ -14,12 +17,49 @@ export function textDelta(before, after) {
   return { start, removed: before.length - start - end, inserted: after.slice(start, after.length - end) };
 }
 function get(code) {
-  if (!rooms.has(code)) rooms.set(code, { active: false, token: '', reason: '', students: new Map(), bytes: 0, changed: Date.now() });
+  if (!rooms.has(code)) rooms.set(code, { active: false, token: '', reason: '', label: '', students: new Map(), bytes: 0, changed: Date.now() });
   return rooms.get(code);
 }
+
+/** Quiet red-dot signal: look at this trail first — not a cheating verdict. */
+export function studentTrailAttention(student) {
+  if (!student?.events?.length) return false;
+  let pastes = 0;
+  let lastAt = Number(student.events[0].at) || 0;
+  for (const event of student.events) {
+    const at = Number(event.at) || lastAt;
+    if (event.type === 'paste') {
+      pastes += 1;
+      const inserted = String(event.inserted || '').length;
+      if (pastes >= 2 || inserted >= LARGE_PASTE) return true;
+      if (at - lastAt >= QUIET_MS && inserted >= 80) return true;
+    } else if (event.type === 'change') {
+      const inserted = String(event.inserted || '').length;
+      if (inserted >= LARGE_JUMP) return true;
+      if (at - lastAt >= QUIET_MS && inserted >= 150) return true;
+    }
+    if (['baseline', 'resume', 'gap', 'change', 'paste'].includes(event.type)) lastAt = at;
+  }
+  return false;
+}
+
+function attentionIdsForRoom(room) {
+  if (!room) return [];
+  return [...room.students.values()]
+    .filter((student) => studentTrailAttention(student))
+    .map((student) => Number(student.id))
+    .filter(Boolean);
+}
+
 export function trailStatus(code) {
   const room = rooms.get(code);
-  return { active: !!room?.active, token: room?.token || '', reason: room?.reason || '' };
+  return {
+    active: !!room?.active,
+    token: room?.token || '',
+    reason: room?.reason || '',
+    label: room?.label || '',
+    attentionIds: attentionIdsForRoom(room),
+  };
 }
 function append(room, student, event) {
   const bytes = Buffer.byteLength(JSON.stringify(event));
@@ -61,7 +101,7 @@ function flush(room, student, at = Date.now()) {
     student.lastCheckpoint = at;
   } else student.pending = null;
 }
-export function setTrailRecording(code, active, rows, at = Date.now()) {
+export function setTrailRecording(code, active, rows, at = Date.now(), options = {}) {
   const room = get(code);
   if (room.active === active) return trailStatus(code);
   if (active && room.reason) throw new Error(room.reason);
@@ -69,6 +109,10 @@ export function setTrailRecording(code, active, rows, at = Date.now()) {
   if (active && room.reason) throw new Error(room.reason);
   room.active = active;
   room.token = randomUUID();
+  if (active) {
+    const label = String(options?.label ?? room.label ?? '').trim().slice(0, 80);
+    room.label = label;
+  }
   for (const row of rows) {
     if (room.reason) break;
     const existed = room.students.has(Number(row.id));
@@ -131,7 +175,13 @@ export function trailTick(at = Date.now()) {
 export function trailStudents(code) {
   const room = rooms.get(code);
   if (!room) return [];
-  return [...room.students.values()].map((s) => ({ id: s.id, name: s.name, checkpoints: s.events.filter(e => e.type !== 'feedback' && e.type !== 'stop').length, pasteEvents: s.events.filter(e => e.type === 'paste').length }));
+  return [...room.students.values()].map((s) => ({
+    id: s.id,
+    name: s.name,
+    checkpoints: s.events.filter(e => e.type !== 'feedback' && e.type !== 'stop').length,
+    pasteEvents: s.events.filter(e => e.type === 'paste').length,
+    attention: studentTrailAttention(s),
+  }));
 }
 export function readTrail(code, id) {
   const room = rooms.get(code);
@@ -148,10 +198,15 @@ export function clearTrail(code) {
 export function exportTrails(code, idToExport) {
   const room = rooms.get(code);
   if (!room) return undefined;
-  return { version: 1, reason: room.reason, students: [...room.students.values()].map(s => {
-    flush(room, s);
-    return { exportId: idToExport.get(s.id) || null, name: s.name, events: s.events.map(e => ({ ...e })) };
-  }) };
+  return {
+    version: 1,
+    reason: room.reason,
+    label: room.label || '',
+    students: [...room.students.values()].map(s => {
+      flush(room, s);
+      return { exportId: idToExport.get(s.id) || null, name: s.name, events: s.events.map(e => ({ ...e })) };
+    }),
+  };
 }
 export function validateTrails(raw) {
   if (raw == null) return;
@@ -190,6 +245,7 @@ export function importTrails(code, raw, exportToId) {
   if (!raw) return;
   const room = get(code);
   room.reason = String(raw.reason || '').slice(0, 200);
+  room.label = String(raw.label || '').trim().slice(0, 80);
   let archivedId = -1;
   for (const item of raw.students) {
     const id = exportToId.get(item.exportId) || archivedId--;

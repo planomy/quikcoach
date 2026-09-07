@@ -723,11 +723,11 @@ function emitBroadcastToRoom(code, payload) {
 }
 
 io.on('connection', (socket) => {
-  socket.on('teacher:draft-trail-control', ({ active } = {}, cb) => {
+  socket.on('teacher:draft-trail-control', ({ active, label } = {}, cb) => {
     const code = socket.data.roomCode;
     if (socket.data.role !== 'teacher' || !code || typeof active !== 'boolean') return cb?.({ ok: false });
     try {
-      const status = setTrailRecording(code, active, queries.listStudents(db, code));
+      const status = setTrailRecording(code, active, queries.listStudents(db, code), Date.now(), { label });
       broadcastRoom(code);
       cb?.({ ok: true, status });
     } catch (e) { cb?.({ ok: false, error: e.message }); }

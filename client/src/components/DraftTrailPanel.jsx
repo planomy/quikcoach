@@ -3,20 +3,24 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 const labels = { baseline: 'Recording baseline', resume: 'Recording resumed · unrecorded interval before this', gap: 'Unrecorded / reconnect interval', stop: 'Recording stopped', feedback: 'Teacher feedback sent', paste: 'Paste reported by student browser', change: 'Writing changed' };
 const buttonClass = 'rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-800';
 
-export default function DraftTrailPanel({ socket, onClose }) {
+export default function DraftTrailPanel({ socket, onClose, initialStudentId = null }) {
   const dialogRef = useRef(null);
   const [students, setStudents] = useState([]);
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState(() => (initialStudentId != null ? String(initialStudentId) : ''));
   const [trail, setTrail] = useState(null);
   const [index, setIndex] = useState(0);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [label, setLabel] = useState('');
   useEffect(() => {
     const prior = document.activeElement;
     dialogRef.current?.showModal();
     return () => prior?.focus?.();
   }, []);
+  useEffect(() => {
+    if (initialStudentId != null) setSelected(String(initialStudentId));
+  }, [initialStudentId]);
   useEffect(() => {
     let cancelled = false;
     setBusy(true);
@@ -28,6 +32,7 @@ export default function DraftTrailPanel({ socket, onClose }) {
       setBusy(false);
       if (err || !ack?.ok) { setError(ack?.error || 'Could not load Draft Trail. Try Refresh.'); return; }
       setStudents(ack.students || []);
+      setLabel(String(ack.status?.label || '').trim());
       if (selected === '' && ack.students?.length) { setSelected(String(ack.students[0].id)); return; }
       setTrail(ack.trail);
       setIndex(Math.max(0, (ack.trail?.events.length || 1) - 1));
@@ -51,14 +56,14 @@ export default function DraftTrailPanel({ socket, onClose }) {
   return (
     <dialog ref={dialogRef} onCancel={onClose} className="m-auto max-h-[90dvh] w-[min(64rem,94vw)] overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" aria-labelledby="draft-trail-title">
       <div className="flex items-center justify-between gap-4">
-        <h2 id="draft-trail-title" className="text-lg font-bold">Draft Trail</h2>
+        <h2 id="draft-trail-title" className="text-lg font-bold">Draft Trail{label ? ` · ${label}` : ''}</h2>
         <button type="button" className={buttonClass} onClick={onClose}>Close</button>
       </div>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Evidence of how writing developed, not proof of authorship. Names are classroom identities, not verified sign-ins.</p>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Evidence of how writing developed, not proof of authorship. Names are classroom identities, not verified sign-ins. A red dot on a card means look here first — not a cheating verdict.</p>
       <div className="my-4 flex flex-wrap items-center gap-3">
         <label className="text-sm font-semibold">Student <select aria-label="Student Draft Trail" value={selected} onChange={e => setSelected(e.target.value)} className="ml-2 max-w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-slate-600 dark:bg-slate-800">
           {!students.length && <option value="">No recorded students</option>}
-          {students.map(s => <option key={s.id} value={s.id}>{s.name} · {s.checkpoints} checkpoints · {s.pasteEvents} pastes</option>)}
+          {students.map(s => <option key={s.id} value={s.id}>{s.attention ? '● ' : ''}{s.name} · {s.checkpoints} checkpoints · {s.pasteEvents} pastes</option>)}
         </select></label>
         <button type="button" className={buttonClass} disabled={busy} onClick={() => setRefresh(n => n + 1)}>Refresh</button>
       </div>

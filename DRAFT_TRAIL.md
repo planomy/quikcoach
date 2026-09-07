@@ -1,14 +1,16 @@
 # Draft Trail
 
-Teacher header: **Record draft trail** / **Recording draft trail**. Teacher settings: **View Draft Trail**. Student writing-card header shows **Draft Trail on** with an explanation on hover.
+Teacher header: **Record draft trail** / **Recording draft trail** (optional lesson name when starting). Teacher settings: **View Draft Trail**. Student writing-card header shows **Draft Trail on** with an explanation on hover.
+
+While a trail is present, a quiet **red dot** can appear on a student writing card when the trail shows patterns worth a look (repeated or large pastes, or a sudden jump after quiet). The dot opens that student’s trail. It is a triage cue, not a cheating verdict, and has no label text on the card.
 
 Capture is opt-in per room and begins with the current server-received text as a baseline. It records plain-text deltas after 10 seconds without a received change, or at most 30 seconds between checkpoints during continuous writing. Student sync retains the 700ms idle debounce with a 5-second maximum-wait sync. Accepted paste operations flush immediately and are labelled as browser-reported, not AI detection. Rich formatting, images, screens, audio and video are not recorded. Text changes temporarily reversed between sync/checkpoints may not appear.
 
-Teacher notes and inline comments sent during recording are captured in sequence. The viewer shows before/after text with added and deleted spans, earlier feedback and a checkpoint slider. A later revision is not classified as successful feedback uptake. Detailed trails are fetched for one selected student, not broadcast with every live edit. A paused/reconnected interval is explicitly marked. Stop retains received work; it cannot capture an unsent final edit. Reopening does not restart recording.
+Teacher notes and inline comments sent during recording are captured in sequence. The viewer shows before/after text with added and deleted spans, earlier feedback and a checkpoint slider. A later revision is not classified as successful feedback uptake. Detailed trails are fetched for one selected student, not broadcast with every live edit. A paused/reconnected interval is explicitly marked. Stop retains received work; it cannot capture an unsent final edit. Stopping shows a reminder to **Save session (.iboard)**. Reopening does not restart recording.
 
 ## Retention and identity
 
-Trails are held only in this server process's memory. They survive student reconnects, but not server restarts. Save session (.iboard) preserves them with student names; reopening remaps student IDs. Old session files without trails remain supported. New Class clears them. Removing a student card retains already-captured evidence as an archived named trail. Unsaved trails expire after 24 hours without changes. This policy concerns the new trail only, not the application's existing SQLite data.
+Trails are held only in this server process's memory. They survive student reconnects, but not server restarts. Save session (.iboard) preserves them with student names and an optional recording label; reopening remaps student IDs. Old session files without trails remain supported. New Class clears them. Removing a student card retains already-captured evidence as an archived named trail. Unsaved trails expire after 24 hours without changes. This policy concerns the new trail only, not the application's existing SQLite data.
 
 Limits: 8 MiB serialized events per room, 64 MiB across rooms, 3,000 events per student and 500 tracked students per room. Capture stops visibly at a limit, without discarding existing events. Runtime memory is larger than serialized-event bytes because it includes current text, pending text and JavaScript overhead. No cloud archive or AI service added.
 

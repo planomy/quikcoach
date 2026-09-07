@@ -277,6 +277,10 @@ function TeacherDashboardInner() {
   const [draftTrailOpen, setDraftTrailOpen] = useState(false);
   const [sessionPdfOpen, setSessionPdfOpen] = useState(false);
   const [draftTrailBusy, setDraftTrailBusy] = useState(false);
+  const [draftTrailFocusId, setDraftTrailFocusId] = useState(null);
+  const [draftTrailLabelOpen, setDraftTrailLabelOpen] = useState(false);
+  const [draftTrailLabelDraft, setDraftTrailLabelDraft] = useState('');
+  const [draftTrailSaveHint, setDraftTrailSaveHint] = useState(false);
   const [addCardTitle, setAddCardTitle] = useState('Teacher');
   const [addCardText, setAddCardText] = useState('');
   const [addCardImage, setAddCardImage] = useState('');
@@ -1489,6 +1493,22 @@ function TeacherDashboardInner() {
     });
   }
 
+  function setDraftTrailRecording(active, label = '') {
+    setDraftTrailBusy(true);
+    setDraftTrailLabelOpen(false);
+    socket.timeout(10000).emit('teacher:draft-trail-control', { active, label }, (err, ack) => {
+      setDraftTrailBusy(false);
+      if (err || !ack?.ok) {
+        setError(ack?.error || 'Recording status could not be confirmed. Reconnect before trying again.');
+        return;
+      }
+      setRoom((prev) => ({ ...prev, draftTrail: ack.status }));
+      markSessionDirty();
+      if (!active) setDraftTrailSaveHint(true);
+      else setDraftTrailSaveHint(false);
+    });
+  }
+
   function downloadOneStudent(s) {
     const names = evidenceFilenames(codeInput, s.name);
     const text = buildStudentEvidenceText({
@@ -2068,20 +2088,28 @@ function TeacherDashboardInner() {
               type="button"
               disabled={draftTrailBusy || !socketConnected || !joined}
               aria-pressed={!!room?.draftTrail?.active}
-              title={room?.draftTrail?.reason || 'Capture writing changes only — no screen, audio or video. Save session to keep the trail.'}
+              title={
+                room?.draftTrail?.reason
+                || (room?.draftTrail?.active
+                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label}` : 'Recording writing changes only — no screen, audio or video')
+                  : 'Capture writing changes only — no screen, audio or video. Save session to keep the trail.')
+              }
               className={`relative z-10 inline-flex items-center gap-2 rounded-lg border px-2 py-2 text-xs font-semibold disabled:opacity-50 sm:text-sm ${room?.draftTrail?.active ? 'border-red-700 bg-red-700 text-white' : 'border-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}
               onClick={() => {
-                setDraftTrailBusy(true);
-                socket.timeout(10000).emit('teacher:draft-trail-control', { active: !room?.draftTrail?.active }, (err, ack) => {
-                  setDraftTrailBusy(false);
-                  if (err || !ack?.ok) { setError(ack?.error || 'Recording status could not be confirmed. Reconnect before trying again.'); return; }
-                  setRoom(prev => ({ ...prev, draftTrail: ack.status }));
-                  markSessionDirty();
-                });
+                if (room?.draftTrail?.active) {
+                  setDraftTrailRecording(false);
+                  return;
+                }
+                setDraftTrailLabelDraft(room?.draftTrail?.label || '');
+                setDraftTrailLabelOpen(true);
               }}
             >
               <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${room?.draftTrail?.active ? 'bg-red-300' : 'bg-slate-400'}`} />
-              {draftTrailBusy ? 'Updating…' : room?.draftTrail?.active ? 'Recording draft trail' : 'Record draft trail'}
+              {draftTrailBusy
+                ? 'Updating…'
+                : room?.draftTrail?.active
+                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label}` : 'Recording draft trail')
+                  : 'Record draft trail'}
             </button>
             <HintWrap hint="Room settings" prefer="below">
               <button
@@ -2104,7 +2132,65 @@ function TeacherDashboardInner() {
       </header>
       </div>
       {room?.draftTrail?.reason && <p role="alert" className="bg-amber-100 px-4 py-2 text-sm text-amber-950">{room.draftTrail.reason}</p>}
-      {draftTrailOpen && <DraftTrailPanel socket={socket} onClose={() => setDraftTrailOpen(false)} />}
+      {draftTrailSaveHint && !room?.draftTrail?.active && (
+        <div className="flex flex-wrap items-center gap-3 bg-amber-50 px-4 py-2 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
+          <p className="min-w-0 flex-1 font-semibold">Draft Trail stopped — save the session (.iboard) to keep these trails.</p>
+          <button
+            type="button"
+            disabled={sessionBusy || !joined}
+            onClick={() => {
+              setDraftTrailSaveHint(false);
+              saveSessionFile();
+            }}
+            className="rounded-lg bg-amber-800 px-3 py-1.5 text-xs font-black text-white hover:bg-amber-900 disabled:opacity-50"
+          >
+            Save session
+          </button>
+          <button type="button" onClick={() => setDraftTrailSaveHint(false)} className="text-xs font-bold underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+      {draftTrailLabelOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900" role="dialog" aria-labelledby="draft-trail-label-title">
+            <h2 id="draft-trail-label-title" className="font-display text-lg font-black text-slate-950 dark:text-white">Start Draft Trail</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Optional name for this recording (e.g. Period 3 narrative).</p>
+            <input
+              value={draftTrailLabelDraft}
+              onChange={(event) => setDraftTrailLabelDraft(event.target.value.slice(0, 80))}
+              className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950"
+              placeholder="Lesson or task name"
+              autoFocus
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') setDraftTrailRecording(true, draftTrailLabelDraft.trim());
+                if (event.key === 'Escape') setDraftTrailLabelOpen(false);
+              }}
+            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" disabled={draftTrailBusy} onClick={() => setDraftTrailRecording(true, draftTrailLabelDraft.trim())} className="rounded-lg bg-red-700 px-3 py-2 text-xs font-black text-white hover:bg-red-800 disabled:opacity-50">
+                Start recording
+              </button>
+              <button type="button" disabled={draftTrailBusy} onClick={() => setDraftTrailRecording(true, '')} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200">
+                Start without name
+              </button>
+              <button type="button" onClick={() => setDraftTrailLabelOpen(false)} className="rounded-lg px-3 py-2 text-xs font-bold text-slate-500">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {draftTrailOpen && (
+        <DraftTrailPanel
+          socket={socket}
+          initialStudentId={draftTrailFocusId}
+          onClose={() => {
+            setDraftTrailOpen(false);
+            setDraftTrailFocusId(null);
+          }}
+        />
+      )}
       {sessionPdfOpen && <SessionPdfExport socket={socket} onClose={() => setSessionPdfOpen(false)} />}
 
       {toolsPanelOpen && (
@@ -2308,6 +2394,19 @@ function TeacherDashboardInner() {
                   >
                     {s.name}
                   </h2>
+                  {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(s.id)) ? (
+                    <button
+                      type="button"
+                      title="Open Draft Trail"
+                      aria-label={`Open Draft Trail for ${s.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setDraftTrailFocusId(s.id);
+                        setDraftTrailOpen(true);
+                      }}
+                      className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 ring-2 ring-red-200 hover:ring-red-300 dark:ring-red-900"
+                    />
+                  ) : null}
                   {gradeShortLabel(s.year_level) && (
                     <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       {gradeShortLabel(s.year_level)}
@@ -3418,6 +3517,18 @@ function TeacherDashboardInner() {
                 <h2 id="focused-student-title" title={`ID #${focusedStudent.id}`} className="truncate font-display text-xl font-bold text-ink-900 dark:text-slate-100">
                   {focusedStudent.name}
                 </h2>
+                {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(focusedStudent.id)) ? (
+                  <button
+                    type="button"
+                    title="Open Draft Trail"
+                    aria-label={`Open Draft Trail for ${focusedStudent.name}`}
+                    onClick={() => {
+                      setDraftTrailFocusId(focusedStudent.id);
+                      setDraftTrailOpen(true);
+                    }}
+                    className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 ring-2 ring-red-200 hover:ring-red-300 dark:ring-red-900"
+                  />
+                ) : null}
                 <p className="text-xs text-slate-500 dark:text-slate-400">{wordCount(focusedStudent.text)} words · select text to add an inline comment</p>
               </div>
               <div className="flex items-center gap-2">
