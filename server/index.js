@@ -1129,7 +1129,7 @@ io.on('connection', (socket) => {
             };
           })
           .filter(Boolean)
-          .slice(0, 12);
+          .slice(0, 60);
         if (questions.length < 2) {
           cb?.({ ok: false, error: 'A set needs at least two questions' });
           return;
@@ -1280,7 +1280,8 @@ io.on('connection', (socket) => {
           }
           answers[questionId] = answer;
         }
-        const encoded = JSON.stringify(answers).slice(0, 8000);
+        // Each answer and the question count are bounded above. Never slice JSON.
+        const encoded = JSON.stringify(answers);
         queries.upsertLiveResponse(db, { activityId: activity.id, roomCode: code, studentId: sid, value: encoded });
         if (!activity.optional) queries.markLiveResponse(db, sid);
         emitLiveState(code);

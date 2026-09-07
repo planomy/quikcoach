@@ -410,76 +410,62 @@ export default function LiveResponseTeacher({
     setActiveView('prepared');
   }
 
-  function launchSet(set) {
-    let questions = normalizeSetQuestions(set?.questions);
-    if (!questions.length && Array.isArray(set?.prompts)) {
-      questions = normalizeSetQuestions(
-        set.prompts.map((prompt, index) => ({ id: `p${index + 1}`, type: 'short', prompt }))
-      );
-    }
-    if (!questions.length) {
-      setMessage('That set is empty.');
-      return;
-    }
-    const targetStudentIds = [...new Set((selectedStudentIds || []).map(Number).filter(Boolean))];
-    const targetNote = targetStudentIds.length
-      ? ` · ${targetStudentIds.length} selected student${targetStudentIds.length === 1 ? '' : 's'}`
-      : '';
-    if (questions.length === 1) {
-      launch(
-        { ...questions[0], imageUrl: '', timerSeconds: 0, targetStudentIds },
-        '',
-        `Question is live on Respond${targetNote}.`
-      );
-      return;
-    }
-    launch({
-      type: 'set',
-      prompt: String(set.name || 'Question set').trim().slice(0, 500),
-      questions,
-      options: [],
-      correctAnswer: '',
-      anonymous: false,
-      optional: false,
-      imageUrl: '',
-      timerSeconds: 0,
-      targetStudentIds,
-    }, '', `“${set.name}” is live on Respond · ${questions.length} questions${targetNote}.`);
+  function emitSetAction(event, payload) {
+    return new Promise((resolve, reject) => {
+      socket.timeout(15000).emit(event, payload, (error, ack) => {
+        if (error) reject(new Error('Delivery was not confirmed. Check the class before retrying.'));
+        else if (!ack?.ok) reject(new Error(ack?.error || 'Could not send the sets.'));
+        else resolve(ack);
+      });
+    });
   }
 
-  function sendSetToInbox(set) {
-    let questions = normalizeSetQuestions(set?.questions);
-    if (!questions.length && Array.isArray(set?.prompts)) {
-      questions = normalizeSetQuestions(
-        set.prompts.map((prompt, index) => ({ id: `p${index + 1}`, type: 'short', prompt }))
-      );
-    }
+  async function launchSets(sets) {
+    const questions = sets.flatMap((set, setIndex) => normalizeSetQuestions(set.questions).map((question, index) => ({
+      ...question,
+      id: `set-${setIndex}-q-${index}`,
+      ...(sets.length > 1 ? { helper: `${set.name}${question.helper ? ` · ${question.helper}` : ''}`.slice(0, 240) } : {}),
+    })));
+    if (!questions.length || questions.length > 60) return { ok: false, message: 'Select between 1 and 60 questions to ask at once.' };
+    const targetStudentIds = [...new Set((selectedStudentIds || []).map(Number).filter(Boolean))];
+    try {
+      await emitSetAction('teacher:live-launch', questions.length === 1
+        ? { ...questions[0], targetStudentIds, timerSeconds: 0 }
+        : { type: 'set', prompt: sets.map((set) => set.name).join(' · ').slice(0, 500), questions, targetStudentIds, anonymous: false, optional: false, timerSeconds: 0 });
+      const message = `${sets.length} set${sets.length === 1 ? '' : 's'} live · ${questions.length} questions · ${targetStudentIds.length ? `${targetStudentIds.length} selected students` : 'All students'}`;
+      setMessage(message);
+      if (targetStudentIds.length) onClearStudentSelection?.();
+      if (usingPanelTabs) { onQuestionLaunched?.(); switchPanelTab('responses'); }
+      else setActiveView('live');
+      return { ok: true, message };
+    } catch (error) { return { ok: false, message: error.message }; }
+  }
+
+  async function sendSetsToInbox(sets) {
     const selected = [...new Set((selectedStudentIds || []).map(Number).filter(Boolean))];
     const roster = [...new Set((rosterStudentIds || []).map(Number).filter(Boolean))];
-    const fromLive = [...new Set((live?.students || []).map((student) => Number(student?.id)).filter(Boolean))];
-    const studentIds = selected.length ? selected : (roster.length ? roster : fromLive);
-    const { items, error } = buildSetInboxDistributeItems({
-      setName: set?.name,
-      questions,
-      studentIds,
-    });
-    if (error) {
-      setMessage(error);
-      return;
-    }
-    socket.emit('teacher:distribute', { items }, (ack) => {
-      if (!ack?.ok) {
-        setMessage(ack?.error || 'Could not send to Inbox');
-        return;
+    const studentIds = selected.length ? selected : (roster.length ? roster : [...new Set((live?.students || []).map((student) => Number(student.id)).filter(Boolean))]);
+    const batches = sets.map((set) => buildSetInboxDistributeItems({ setName: set.name, questions: set.questions, studentIds }));
+    const invalid = batches.find((batch) => batch.error);
+    if (invalid) return { ok: false, message: invalid.error };
+    const items = batches.flatMap((batch) => batch.items);
+    let delivered = 0;
+    try {
+      for (let index = 0; index < items.length; index += 100) {
+        const chunk = items.slice(index, index + 100);
+        const ack = await emitSetAction('teacher:distribute', { items: chunk });
+        delivered += Number(ack.count) || 0;
+        if (Number(ack.count) !== chunk.length) throw new Error('Some recipients were unavailable.');
       }
-      const count = Number(ack.count) || items.length;
-      const targetNote = selected.length
-        ? ` · ${selected.length} selected student${selected.length === 1 ? '' : 's'}`
-        : ` · ${count} student${count === 1 ? '' : 's'}`;
-      setMessage(`“${set?.name || 'Set'}” sent to Inbox${targetNote}.`);
+      const message = `${sets.length} set${sets.length === 1 ? '' : 's'} sent to ${studentIds.length} students’ inboxes.`;
+      setMessage(message);
       if (selected.length) onClearStudentSelection?.();
-    });
+      return { ok: true, message };
+    } catch (error) {
+      return { ok: false, message: `${delivered ? `${delivered} deliveries confirmed. ` : ''}${error.message} Check inboxes before resending.` };
+    }
   }
+
 
   function enqueueSet(set) {
     const questions = normalizeSetQuestions(set?.questions);
@@ -983,9 +969,9 @@ export default function LiveResponseTeacher({
       </nav>
       )}
 
-      <div className={`min-h-0 flex-1 overflow-y-auto ${overlay ? '' : 'min-h-[260px]'}`}>
+      <div className={`min-h-0 flex-1 ${activeView === 'prepared' && (!usingPanelTabs || effectivePanelTab === 'ask') ? 'overflow-hidden' : 'overflow-y-auto'} ${overlay ? '' : 'min-h-[260px]'}`}>
 
-        {(!usingPanelTabs || effectivePanelTab === 'ask') && (activeView === 'build' || activeView === 'prepared' || activeView === 'quik') && (
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && (activeView === 'build' || activeView === 'quik') && (
           <QuikPulsePanel compact onLaunch={launchQuikPulse} />
         )}
 
@@ -1177,8 +1163,8 @@ export default function LiveResponseTeacher({
               queue={queue}
               setQueue={setQueue}
               onLaunchQuestion={(item, id) => launch(item, id)}
-              onLaunchSet={launchSet}
-              onSendSetToInbox={sendSetToInbox}
+              onLaunchSets={launchSets}
+              onSendSetsToInbox={sendSetsToInbox}
               onEnqueueSet={enqueueSet}
               onMessage={setMessage}
               selectedStudentCount={(selectedStudentIds || []).length}
@@ -1194,8 +1180,8 @@ export default function LiveResponseTeacher({
             queue={queue}
             setQueue={setQueue}
             onLaunchQuestion={(item, id) => launch(item, id)}
-            onLaunchSet={launchSet}
-            onSendSetToInbox={sendSetToInbox}
+            onLaunchSets={launchSets}
+            onSendSetsToInbox={sendSetsToInbox}
             onEnqueueSet={enqueueSet}
             onMessage={setMessage}
             selectedStudentCount={(selectedStudentIds || []).length}

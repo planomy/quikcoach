@@ -68,7 +68,7 @@ function sanitizeSetPromptMeta(raw) {
           };
         })
         .filter(Boolean)
-        .slice(0, 12)
+        .slice(0, 60)
     : [];
   if (!title && !questions.length) return null;
   return {

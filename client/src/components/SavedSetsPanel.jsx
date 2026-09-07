@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  cloneSetForEdit,
   newId,
   normalizeSetQuestions,
   parsePastedQuestions,
@@ -108,8 +107,8 @@ export default function SavedSetsPanel({
   queue,
   setQueue,
   onLaunchQuestion,
-  onLaunchSet,
-  onSendSetToInbox,
+  onLaunchSets,
+  onSendSetsToInbox,
   onEnqueueSet,
   onMessage,
   selectedStudentCount = 0,
@@ -123,6 +122,10 @@ export default function SavedSetsPanel({
   const [subject, setSubject] = useState('All');
   const [yearBand, setYearBand] = useState('All');
   const [activeSet, setActiveSet] = useState(null);
+  const [selectedSetIds, setSelectedSetIds] = useState([]);
+  const [sending, setSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState('');
+  const sendingRef = useRef(false);
   const [mode, setMode] = useState(''); // preview | edit | create
   const [draftName, setDraftName] = useState('');
   const [draftPaste, setDraftPaste] = useState('');
@@ -209,6 +212,31 @@ export default function SavedSetsPanel({
     [library, subject, yearBand, favouriteIds]
   );
 
+  const selectedSets = selectedSetIds.map((id) => library.find((set) => set.id === id)).filter(Boolean);
+  const hiddenSelectionCount = selectedSets.filter((set) => !filtered.some((item) => item.id === set.id)).length;
+  const questionCount = selectedSets.reduce((total, set) => total + (set.questions?.length || 0), 0);
+  function toggleSet(id) {
+    if (sendingRef.current) return;
+    setSelectedSetIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
+    setSendStatus('');
+  }
+  async function sendSelected(destination) {
+    if (!selectedSets.length || sendingRef.current) return;
+    sendingRef.current = true;
+    setSending(true);
+    setSendStatus('Sending…');
+    try {
+      const result = await (destination === 'ask' ? onLaunchSets(selectedSets) : onSendSetsToInbox(selectedSets));
+      setSendStatus(result.message);
+      if (result.ok) setSelectedSetIds([]);
+    } catch {
+      setSendStatus('Could not confirm delivery. Check the class before retrying.');
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
+  }
+
   const favouriteSet = useMemo(() => new Set(favouriteIds), [favouriteIds]);
 
   function openPreview(set) {
@@ -228,14 +256,6 @@ export default function SavedSetsPanel({
     setMode('edit');
   }
 
-  function duplicateSet(set) {
-    const draft = cloneSetForEdit(set);
-    draft.name = `${set.name} (copy)`.slice(0, 80);
-    setActiveSet(draft);
-    setDraftName(draft.name);
-    setDraftQuestions(draft.questions);
-    setMode('edit');
-  }
 
   function openCreate() {
     setActiveSet(null);
@@ -396,7 +416,7 @@ export default function SavedSetsPanel({
   return (
     <div
       ref={showSets ? setsRootRef : undefined}
-      className={showQueue ? 'border-t border-slate-200 px-4 py-2.5 dark:border-slate-700' : 'p-4'}
+      className={showQueue ? 'border-t border-slate-200 px-4 py-2.5 dark:border-slate-700' : 'flex h-full min-h-0 flex-col p-4'}
     >
       {showQueue && (
         <section>
@@ -472,11 +492,11 @@ export default function SavedSetsPanel({
       )}
 
       {showSets && (
-        <section>
+        <section className="flex min-h-0 flex-1 flex-col">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Sets · {filtered.length}</h3>
-              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Preview, edit, or send a whole routine.</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Tick sets to send · Click a title to preview.</p>
             </div>
             <button
               type="button"
@@ -515,17 +535,22 @@ export default function SavedSetsPanel({
             </select>
           </div>
 
-          {selectedStudentCount > 0 ? (
-            <p className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-bold text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
-              Sends go to {selectedStudentCount} selected student{selectedStudentCount === 1 ? '' : 's'} (checkboxes on cards). Clear selection for the whole class.
-            </p>
-          ) : (
-            <p className="mt-2 text-[11px] font-semibold text-slate-500">
-              Respond = answer now · Inbox = keep as writing prompts.
-            </p>
-          )}
+          <div className="mt-3 shrink-0 border-y border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <p className="font-bold text-slate-700 dark:text-slate-200">{selectedSets.length ? `${selectedSets.length} set${selectedSets.length === 1 ? '' : 's'} selected` : 'Select sets'} · {selectedStudentCount ? `${selectedStudentCount} selected students` : 'All students'}</p>
+              {selectedSets.length > 0 && <button type="button" disabled={sending} onClick={() => setSelectedSetIds([])} className="text-slate-500 hover:text-indigo-600 disabled:opacity-50">Clear</button>}
+            </div>
+            <div className="mt-2 flex gap-2">
+              <button type="button" disabled={!selectedSets.length || sending || questionCount > 60} onClick={() => sendSelected('ask')} title="Students answer the selected questions in Respond" className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Ask now</button>
+              <button type="button" disabled={!selectedSets.length || sending} onClick={() => sendSelected('inbox')} title="Keep each set as writing prompts in student inboxes" className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
+            </div>
+            <p className="mt-2 text-[11px] text-slate-500">Ask = answer now · Inbox = prompts while writing</p>
+            {hiddenSelectionCount > 0 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">{hiddenSelectionCount} selected outside this filter</p>}
+            {questionCount > 60 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">Ask up to 60 questions at once. Select fewer sets or send to inbox.</p>}
+            {sendStatus && <p role="status" className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-200">{sendStatus}</p>}
+          </div>
 
-          <div className="mt-3 min-h-0 max-h-[28rem] flex-1 overflow-y-auto pr-1 scrollbar-thin">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-3 pr-1 scrollbar-thin">
             <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-2">
               {filtered.map((set) => {
                 const isFavourite = favouriteSet.has(set.id);
@@ -534,11 +559,12 @@ export default function SavedSetsPanel({
                 <article
                   key={set.id}
                   className={`flex min-w-0 items-center gap-1.5 rounded-xl border p-1.5 transition ${
-                    isActive
+                    isActive || selectedSetIds.includes(set.id)
                       ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300 dark:border-indigo-500 dark:bg-indigo-950/40 dark:ring-indigo-700'
                       : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/35 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20'
                   }`}
                 >
+                  <input type="checkbox" checked={selectedSetIds.includes(set.id)} disabled={sending} onChange={() => toggleSet(set.id)} aria-label={`Select ${set.name}`} className="ml-1 h-4 w-4 shrink-0 accent-indigo-600" />
                   <button
                     type="button"
                     onClick={(event) => toggleFavourite(set.id, event)}
@@ -577,24 +603,6 @@ export default function SavedSetsPanel({
                       {formatSetCardMeta(set)}
                     </p>
                   </button>
-                  <div className="flex shrink-0 flex-col gap-1">
-                    <button
-                      type="button"
-                      onClick={() => onLaunchSet(set)}
-                      title="Send to Respond — students answer now"
-                      className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-indigo-800 dark:bg-indigo-950/55 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950 dark:ring-offset-slate-900"
-                    >
-                      Respond
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onSendSetToInbox?.(set)}
-                      title="Send to Inbox — keep as prompts while writing"
-                      className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-500 dark:ring-offset-slate-900"
-                    >
-                      Inbox
-                    </button>
-                  </div>
                 </article>
                 );
               })}
@@ -656,32 +664,17 @@ export default function SavedSetsPanel({
           </div>
 
           <div className="flex shrink-0 flex-wrap gap-2 border-t border-slate-100 px-3 py-2.5 dark:border-slate-800">
-            <button type="button" onClick={() => onLaunchSet(activeSet)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">
-              Send to Respond
-            </button>
-            <button
-              type="button"
-              onClick={() => onSendSetToInbox?.(activeSet)}
-              className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
-            >
-              Send to Inbox
-            </button>
+            <label className="mr-auto flex items-center gap-2 px-1 text-xs font-bold text-slate-700 dark:text-slate-200">
+              <input type="checkbox" checked={selectedSetIds.includes(activeSet.id)} disabled={sending} onChange={() => toggleSet(activeSet.id)} className="h-4 w-4 accent-indigo-600" />
+              Select set
+            </label>
             <button type="button" onClick={() => { onEnqueueSet(activeSet); setMode(''); setActiveSet(null); }} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
             <button type="button" onClick={() => openEdit(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
               Edit
             </button>
-            <button type="button" onClick={() => duplicateSet(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-              Duplicate
+            <button type="button" disabled={!activeSet.bank || !activeSet.overridden} onClick={() => resetBankOverride(activeSet.id)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+              Reset to original
             </button>
-            {activeSet.overridden && (
-              <button
-                type="button"
-                onClick={() => resetBankOverride(activeSet.id)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Reset to original
-              </button>
-            )}
             {!activeSet.bank && (
               <button
                 type="button"

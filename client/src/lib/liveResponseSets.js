@@ -30,7 +30,7 @@ export function normalizeSetQuestion(raw, index = 0) {
 
 export function normalizeSetQuestions(raw) {
   if (!Array.isArray(raw)) return [];
-  return raw.map(normalizeSetQuestion).filter(Boolean).slice(0, 12);
+  return raw.map(normalizeSetQuestion).filter(Boolean).slice(0, 60);
 }
 
 export function parseSetAnswers(value) {
@@ -254,4 +254,3 @@ export function buildSetInboxDistributeItems({ setName, questions, studentIds })
     })),
   };
 }
-
