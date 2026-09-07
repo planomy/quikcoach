@@ -1300,7 +1300,14 @@ export default function StudentView() {
                     <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'saving' ? 'bg-indigo-500' : draftSaveState === 'error' ? 'bg-red-600' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                     {draftSaveState === 'saving' ? 'Saving…' : draftSaveState === 'error' ? 'Save failed · local copy kept' : draftSaveState === 'offline' ? 'Offline · local copy saved' : draftSaveState === 'local' ? 'Recovered local copy' : 'Saved'}
                   </span>
-                  {room?.draftTrail?.active && <span role="status" title="Your teacher can see how this draft grows in today’s lesson — writing text only, not your screen or audio." className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-red-600" />Draft Trail on</span>}
+                  {room?.draftTrail?.active ? (
+                    <span
+                      role="status"
+                      title="Draft Trail is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)."
+                      aria-label="Draft Trail is on"
+                      className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-600"
+                    />
+                  ) : null}
                 </>
               }
             />
