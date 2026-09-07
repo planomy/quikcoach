@@ -1,0 +1,2476 @@
+{
+  "schema_version": "1.0",
+  "generated": "2026-09-07",
+  "set_count": 74,
+  "field_notes": {
+    "mode": "generate = works from nothing | revise = needs existing student work | either = both",
+    "requires": "null, or a plain-English prerequisite the UI can warn on at send time",
+    "year_min/year_max": "numeric filter range; band_label is the display string and is unchanged",
+    "teacher_note": "shown to teacher only, never sent to students",
+    "prompts[].hint": "sub-instruction shown under the prompt"
+  },
+  "sets": [
+    {
+      "id": "eng-fnd-01",
+      "legacy_id": "bank-eng-01",
+      "title": "Build a Strong Paragraph",
+      "subject": "English",
+      "category": "Writing",
+      "band_label": "5–6",
+      "year_min": 5,
+      "year_max": 6,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What is the one main idea you need to get across?"
+        },
+        {
+          "text": "Write a first sentence that puts that idea on the table."
+        },
+        {
+          "text": "Add one example, fact or detail that proves it."
+        },
+        {
+          "text": "Explain how that example supports your idea."
+        },
+        {
+          "text": "Write a last sentence that closes the paragraph."
+        },
+        {
+          "text": "Reread. Which sentence would confuse a classmate? Quote it."
+        }
+      ]
+    },
+    {
+      "id": "eng-fnd-02",
+      "legacy_id": "bank-eng-02",
+      "title": "Build a Narrative Paragraph",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "5–6",
+      "year_min": 5,
+      "year_max": 6,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Where is your character right now?"
+        },
+        {
+          "text": "What is happening in this exact moment?"
+        },
+        {
+          "text": "Add one thing they can see, hear or feel."
+        },
+        {
+          "text": "What does your character do next?"
+        },
+        {
+          "text": "What happens because of that action?"
+        },
+        {
+          "text": "Reread. Pick your weakest detail and rewrite it here."
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-01",
+      "legacy_id": "bank-eng-cw-01",
+      "title": "Show, Don't Tell",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "revise",
+      "requires": "a draft that names an emotion",
+      "teacher_note": "Students need writing on the page. For a cold start use Get Writing — Narrative first.",
+      "prompts": [
+        {
+          "text": "Find a sentence that tells the reader how the character feels. Paste it here."
+        },
+        {
+          "text": "Paste that sentence again with the emotion word removed."
+        },
+        {
+          "text": "What could the character do physically instead?"
+        },
+        {
+          "text": "Add one small body-language or sensory detail. Write the new sentence."
+        },
+        {
+          "text": "What would a reader now guess the character is feeling?"
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-02",
+      "legacy_id": "bank-eng-cw-02",
+      "title": "Character Through Action",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What does your character want right now?"
+        },
+        {
+          "text": "What action could reveal that want?"
+        },
+        {
+          "text": "Add one gesture, habit or choice that reveals character. Write it as a sentence."
+        },
+        {
+          "text": "Delete one sentence that explains the character. Paste what is left."
+        },
+        {
+          "text": "What should the reader work out for themselves?"
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-03",
+      "legacy_id": "bank-eng-cw-03",
+      "title": "Dialogue with Purpose",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What does each character want from this conversation?"
+        },
+        {
+          "text": "Cut one greeting, filler line or unnecessary explanation. Paste the line you cut."
+        },
+        {
+          "text": "What is one thing the character will not say directly?"
+        },
+        {
+          "text": "Add an action or reaction that hints at what is unsaid. Write it here."
+        },
+        {
+          "text": "Quote one line that only Character A would ever say."
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-04",
+      "legacy_id": "bank-eng-cw-04",
+      "title": "Build Tension",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 12,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What does the character want?"
+        },
+        {
+          "text": "What is stopping them?"
+        },
+        {
+          "text": "Where could you delay an action or a reveal?"
+        },
+        {
+          "text": "What could you keep from the reader for now?"
+        },
+        {
+          "text": "Add one small signal that something is wrong. Write the sentence."
+        },
+        {
+          "text": "Write your final line. Leave the pressure unresolved."
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-05",
+      "legacy_id": "bank-eng-cw-05",
+      "title": "Control the Pace",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Which moment in your story deserves the most attention?"
+        },
+        {
+          "text": "Slow that moment down using action, sensory detail or thought. Write the slowed version."
+        },
+        {
+          "text": "Which part could be shortened or skipped entirely?"
+        },
+        {
+          "text": "Write one short sentence that would land hard."
+        },
+        {
+          "text": "Where would a paragraph break change how it reads?"
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-06",
+      "legacy_id": "bank-eng-cw-06",
+      "title": "Make the Setting Work",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What should the setting make the reader feel?"
+        },
+        {
+          "text": "Take one general description and rewrite it with a precise detail."
+        },
+        {
+          "text": "Add sound, texture, smell or temperature. Write the sentence."
+        },
+        {
+          "text": "How can the character interact with the setting?"
+        },
+        {
+          "text": "Which single detail best reinforces the mood or tension?"
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-07",
+      "legacy_id": "bank-eng-cw-07",
+      "title": "Sensory Detail with Purpose",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Which sense matters most in this moment?"
+        },
+        {
+          "text": "What precise detail would the character actually notice?"
+        },
+        {
+          "text": "How does this detail affect the mood or meaning?"
+        },
+        {
+          "text": "Which sensory detail adds nothing? Name it and cut it."
+        },
+        {
+          "text": "Take one detail you kept and rewrite it so it does more work."
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-08",
+      "legacy_id": "bank-eng-cw-08",
+      "title": "Strong Openings",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What is the first thing that actually happens in your story?"
+        },
+        {
+          "text": "Could you start there instead of earlier? What would you cut?"
+        },
+        {
+          "text": "Which background information can wait until later?"
+        },
+        {
+          "text": "What question or tension should your opening create?"
+        },
+        {
+          "text": "Write a first sentence that makes the reader need the second one."
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-09",
+      "legacy_id": "bank-eng-cw-09",
+      "title": "Strong Endings",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What has changed by the end of your story?"
+        },
+        {
+          "text": "Which of your final sentences explains too much? Paste it."
+        },
+        {
+          "text": "Could an image, action or line of dialogue carry that meaning instead? Write it."
+        },
+        {
+          "text": "What should the reader feel or wonder as they finish?"
+        },
+        {
+          "text": "Paste your ending with the explanation cut. Which version is stronger, and why?"
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-10",
+      "legacy_id": "bank-eng-cw-10",
+      "title": "Sentence Craft & Precision",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "revise",
+      "requires": "a draft students can edit line by line",
+      "teacher_note": "Line editing. Fire this after a draft exists, not before.",
+      "prompts": [
+        {
+          "text": "Find a weak verb and replace it. Type: old verb → new verb."
+        },
+        {
+          "text": "Find a vague noun or description and rewrite it so it is specific."
+        },
+        {
+          "text": "Find a predictable sentence opening and rewrite the opening."
+        },
+        {
+          "text": "Find an overloaded sentence. Split it and paste both halves."
+        },
+        {
+          "text": "Which words add length but not meaning? Quote them, then cut them."
+        },
+        {
+          "text": "Read it aloud. Paste the sentence where the rhythm still feels wrong."
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-11",
+      "legacy_id": "bank-eng-cw-11",
+      "title": "Narrative Voice & Point of View",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Who is telling this moment?"
+        },
+        {
+          "text": "What can this narrator know, and what can they not know?"
+        },
+        {
+          "text": "What would this character notice first?"
+        },
+        {
+          "text": "Quote one phrase of yours that sounds like you rather than the narrator."
+        },
+        {
+          "text": "Find one sentence that breaks the point of view. Paste it."
+        },
+        {
+          "text": "Rewrite that sentence through the narrator's perspective."
+        }
+      ]
+    },
+    {
+      "id": "eng-cw-12",
+      "legacy_id": "bank-eng-cw-12",
+      "title": "Narrative Essay Planner",
+      "subject": "English",
+      "category": "Creative writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "Whole-story planner before drafting. Send to Inbox as a keepable prompt set, or to Respond to collect plans.",
+      "prompts": [
+        {
+          "text": "What is the task?"
+        },
+        {
+          "text": "How many words?"
+        },
+        {
+          "text": "When is it due?"
+        },
+        {
+          "text": "What is your pitch (who, where, what, problem)?",
+          "hint": "One tight sentence a classmate could remember."
+        },
+        {
+          "text": "How will it resolve?"
+        },
+        {
+          "text": "List the paragraphs you will use (eg: hook, who, where, what, flashback, tension, complication, climax, resolution).",
+          "hint": "Choose only the beats you need — not every label."
+        },
+        {
+          "text": "What will change for your character by the end of the story?"
+        },
+        {
+          "text": "What specific theme, feature or motif do you need to include?",
+          "hint": "Name the requirement from the task so you do not forget it mid-draft."
+        }
+      ]
+    },
+    {
+      "id": "eng-an-01",
+      "legacy_id": "bank-eng-an-01",
+      "title": "Stop Retelling the Plot",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "revise",
+      "requires": "a draft paragraph",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Paste the sentence that simply tells me what happened."
+        },
+        {
+          "text": "What does this event reveal?"
+        },
+        {
+          "text": "Why has the author included it?"
+        },
+        {
+          "text": "What idea does it develop?"
+        },
+        {
+          "text": "Rewrite the point so it makes an argument rather than retelling."
+        }
+      ]
+    },
+    {
+      "id": "eng-an-02",
+      "legacy_id": "bank-eng-an-02",
+      "title": "Make a Real Analytical Claim",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What are you actually arguing?"
+        },
+        {
+          "text": "What would someone who disagreed with you say?"
+        },
+        {
+          "text": "What does the text suggest, rather than simply show?"
+        },
+        {
+          "text": "Rewrite your claim so it is more specific."
+        },
+        {
+          "text": "Rewrite it again so it directly answers the question."
+        }
+      ]
+    },
+    {
+      "id": "eng-an-03",
+      "legacy_id": "bank-eng-an-03",
+      "title": "Strong Topic Sentences",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What is this paragraph arguing?"
+        },
+        {
+          "text": "Which key word from the question should it address?"
+        },
+        {
+          "text": "Paste your topic sentence with any plot summary removed."
+        },
+        {
+          "text": "Rewrite it so it interprets rather than describes."
+        },
+        {
+          "text": "Which words in it tie back to your thesis? Quote them."
+        }
+      ]
+    },
+    {
+      "id": "eng-an-04",
+      "legacy_id": "bank-eng-an-04",
+      "title": "Choose Better Evidence",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "either",
+      "requires": "a studied text",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Which piece of evidence best proves your point? Paste it."
+        },
+        {
+          "text": "Now cut it down to its strongest six words."
+        },
+        {
+          "text": "Which word or phrase in it carries the most meaning?"
+        },
+        {
+          "text": "Is there a more precise example? Paste it if so."
+        },
+        {
+          "text": "Why is this evidence stronger than the alternative?"
+        }
+      ]
+    },
+    {
+      "id": "eng-an-05",
+      "legacy_id": "bank-eng-an-05",
+      "title": "Unpack the Quote",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a quote",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Which word or phrase matters most?"
+        },
+        {
+          "text": "What does it suggest?"
+        },
+        {
+          "text": "What associations does that word carry?"
+        },
+        {
+          "text": "Why might the author have chosen it?"
+        },
+        {
+          "text": "How does it support your argument?"
+        }
+      ]
+    },
+    {
+      "id": "eng-an-06",
+      "legacy_id": "bank-eng-an-06",
+      "title": "Authorial Choices",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What deliberate choice has the author made?"
+        },
+        {
+          "text": "Which aesthetic feature or literary device is being used?"
+        },
+        {
+          "text": "How does it shape meaning?"
+        },
+        {
+          "text": "Why is this choice effective here?"
+        },
+        {
+          "text": "How does it support your interpretation?"
+        }
+      ]
+    },
+    {
+      "id": "eng-an-07",
+      "legacy_id": "bank-eng-an-07",
+      "title": "Audience Positioning",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "How is the audience positioned to respond?"
+        },
+        {
+          "text": "What might the audience think, feel, question or believe?"
+        },
+        {
+          "text": "Which authorial choice creates this response?"
+        },
+        {
+          "text": "Why does this response matter?"
+        },
+        {
+          "text": "How does audience positioning support the author's purpose?"
+        }
+      ]
+    },
+    {
+      "id": "eng-an-08",
+      "legacy_id": "bank-eng-an-08",
+      "title": "Culture, Values & Beliefs",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What assumption, attitude, value or belief is represented here?"
+        },
+        {
+          "text": "Is the text reinforcing, questioning or challenging it? Explain which."
+        },
+        {
+          "text": "Which character, event or authorial choice reveals this?"
+        },
+        {
+          "text": "How might different audiences respond?"
+        },
+        {
+          "text": "How does this shape the text's wider meaning?"
+        }
+      ]
+    },
+    {
+      "id": "eng-an-09",
+      "legacy_id": "bank-eng-an-09",
+      "title": "Higher Insight",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What bigger idea does this reveal?"
+        },
+        {
+          "text": "What does this suggest about people, society, culture, identity, power, values or the wider issue?"
+        },
+        {
+          "text": "Why does this matter beyond this single moment?"
+        },
+        {
+          "text": "Name one contradiction, tension or complexity here."
+        },
+        {
+          "text": "How does this deepen your interpretation?"
+        }
+      ]
+    },
+    {
+      "id": "eng-an-10",
+      "legacy_id": "bank-eng-an-10",
+      "title": "Link Evidence to Argument",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "revise",
+      "requires": "a paragraph with evidence already in it",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "How does this evidence prove your point?"
+        },
+        {
+          "text": "What part of your argument does it strengthen?"
+        },
+        {
+          "text": "What key idea does it connect to?"
+        },
+        {
+          "text": "Rewrite your final sentence so it clearly returns to the argument."
+        },
+        {
+          "text": "Which sentence in your paragraph answers the question? Quote it."
+        }
+      ]
+    },
+    {
+      "id": "eng-an-11",
+      "legacy_id": "bank-eng-an-11",
+      "title": "Extend & Synthesise",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What second piece of evidence could develop this idea?"
+        },
+        {
+          "text": "Does it reinforce, contrast or complicate the first example? Explain which."
+        },
+        {
+          "text": "What new layer does it add?"
+        },
+        {
+          "text": "Write the sentence that compares the two examples."
+        },
+        {
+          "text": "What stronger conclusion can you now draw?"
+        }
+      ]
+    },
+    {
+      "id": "eng-an-teacher",
+      "legacy_id": "bank-eng-teacher",
+      "title": "TEACHER Analytical Paragraph",
+      "subject": "English",
+      "category": "Analytical writing",
+      "band_label": "9–12",
+      "year_min": 9,
+      "year_max": 12,
+      "minutes": 15,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": "Flagship exam scaffold: Topic, Evidence, Author+Audience, Culture, Higher insight, Extend, Return.",
+      "prompts": [
+        {
+          "text": "T — Topic / Thesis: What is your paragraph arguing?",
+          "hint": "Write a clear point that answers the question."
+        },
+        {
+          "text": "E — Evidence: What evidence best proves your point?",
+          "hint": "Use a precise quote, example or textual detail."
+        },
+        {
+          "text": "A — Author + Audience: What has the author done, and how does it position the audience?",
+          "hint": "Analyse an aesthetic feature, literary device, language or structural choice, then explain what it makes the audience think, feel, notice or believe."
+        },
+        {
+          "text": "C — Culture: What assumptions, attitudes, values or beliefs are represented?",
+          "hint": "Explain what the text reinforces, questions or challenges."
+        },
+        {
+          "text": "H — Human / Higher Insight: What bigger idea does this reveal?",
+          "hint": "Think beyond the quote: people, society, culture, identity, power, values or the wider issue."
+        },
+        {
+          "text": "E — Extend: What further evidence develops or complicates your idea?",
+          "hint": "Add a second example that strengthens, contrasts or deepens the analysis."
+        },
+        {
+          "text": "R — Return: How does this return to your argument?",
+          "hint": "Tie the paragraph back to the question and your overall thesis."
+        }
+      ]
+    },
+    {
+      "id": "eng-lit-01",
+      "legacy_id": "bank-eng-05",
+      "title": "Analytical Paragraph Builder",
+      "subject": "English",
+      "category": "Text analysis",
+      "band_label": "7–8",
+      "year_min": 7,
+      "year_max": 8,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": "Junior version of TEACHER. Overlap is deliberate.",
+      "prompts": [
+        {
+          "text": "What claim are you making about the text?",
+          "hint": "Not what happens — what it means."
+        },
+        {
+          "text": "Choose the evidence that best proves that claim."
+        },
+        {
+          "text": "Zoom in on one important word, phrase or technique."
+        },
+        {
+          "text": "What does it suggest that a casual reader might miss?"
+        },
+        {
+          "text": "What does the author want the reader to think or feel?"
+        },
+        {
+          "text": "Rewrite your final sentence so it returns to your claim."
+        }
+      ]
+    },
+    {
+      "id": "eng-lit-02",
+      "legacy_id": "bank-eng-08",
+      "title": "Character Analysis",
+      "subject": "English",
+      "category": "Literature",
+      "band_label": "7–8",
+      "year_min": 7,
+      "year_max": 8,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What do we learn about this character that is not said outright?"
+        },
+        {
+          "text": "Choose one moment that reveals this."
+        },
+        {
+          "text": "What do they say, do, avoid or notice?"
+        },
+        {
+          "text": "Which detail carries the most weight?"
+        },
+        {
+          "text": "What does that detail suggest about them?"
+        },
+        {
+          "text": "Has our understanding of the character shifted by the end? Explain how."
+        }
+      ]
+    },
+    {
+      "id": "eng-lit-03",
+      "legacy_id": "bank-eng-09",
+      "title": "Theme Analysis",
+      "subject": "English",
+      "category": "Literature",
+      "band_label": "9–10",
+      "year_min": 9,
+      "year_max": 10,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What important idea is the text exploring?"
+        },
+        {
+          "text": "Where is that idea under pressure or in conflict?"
+        },
+        {
+          "text": "Which character, event, image or technique develops it?"
+        },
+        {
+          "text": "How does the idea become more complex as the text unfolds?"
+        },
+        {
+          "text": "What might the author be pushing the audience to consider?"
+        },
+        {
+          "text": "How does this idea shape the text as a whole?"
+        }
+      ]
+    },
+    {
+      "id": "eng-lit-04",
+      "legacy_id": "bank-eng-10",
+      "title": "Poetry Close Reading",
+      "subject": "English",
+      "category": "Poetry",
+      "band_label": "7–8",
+      "year_min": 7,
+      "year_max": 8,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a poem on screen or in hand",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What seems to be happening in this poem?"
+        },
+        {
+          "text": "Which word or image sticks in your mind?"
+        },
+        {
+          "text": "Name one technique doing real work."
+        },
+        {
+          "text": "What feeling or idea does that choice create?"
+        },
+        {
+          "text": "Why might the poet have chosen it instead of something simpler?"
+        },
+        {
+          "text": "In one sentence: what is the poem saying?"
+        }
+      ]
+    },
+    {
+      "id": "eng-lit-05",
+      "legacy_id": "bank-eng-11",
+      "title": "Poetry Analysis",
+      "subject": "English",
+      "category": "Poetry",
+      "band_label": "9–10",
+      "year_min": 9,
+      "year_max": 10,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "a poem on screen or in hand",
+      "teacher_note": "Reordered: the hardest question is no longer first.",
+      "prompts": [
+        {
+          "text": "Which image, pattern or structural feature is doing the heavy lifting?"
+        },
+        {
+          "text": "What technique is being used?"
+        },
+        {
+          "text": "How does that choice shape tone or meaning?"
+        },
+        {
+          "text": "What interpretation are you building?"
+        },
+        {
+          "text": "How does it position the reader?"
+        },
+        {
+          "text": "How does this feature connect to the poem's bigger ideas?"
+        }
+      ]
+    },
+    {
+      "id": "eng-per-01",
+      "legacy_id": "bank-eng-12",
+      "title": "Build a Persuasive Paragraph",
+      "subject": "English",
+      "category": "Persuasive writing",
+      "band_label": "7–8",
+      "year_min": 7,
+      "year_max": 8,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What do you want your audience to believe or do?"
+        },
+        {
+          "text": "Give your strongest reason — not your safest one."
+        },
+        {
+          "text": "Add evidence, an example or a concrete explanation."
+        },
+        {
+          "text": "Choose one word or phrase for deliberate persuasive effect. Name it and say why."
+        },
+        {
+          "text": "Why should the audience care about this now?"
+        },
+        {
+          "text": "Write a final sentence that leaves no room for doubt."
+        }
+      ]
+    },
+    {
+      "id": "eng-per-02",
+      "legacy_id": "bank-eng-13",
+      "title": "Argument & Counterargument",
+      "subject": "English",
+      "category": "Persuasive writing",
+      "band_label": "9–10",
+      "year_min": 9,
+      "year_max": 10,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "State your main argument in one sentence."
+        },
+        {
+          "text": "What evidence best supports it?"
+        },
+        {
+          "text": "What would a smart opponent say back?"
+        },
+        {
+          "text": "Why might that opposing view feel reasonable?"
+        },
+        {
+          "text": "How do you dismantle or limit that argument?"
+        },
+        {
+          "text": "How does addressing the other side make your case stronger?"
+        }
+      ]
+    },
+    {
+      "id": "eng-ess-01",
+      "legacy_id": "bank-eng-14",
+      "title": "Plan a Senior Essay",
+      "subject": "English",
+      "category": "Essay writing",
+      "band_label": "11–12",
+      "year_min": 11,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What is your overall contention?",
+          "hint": "Make it arguable — someone could disagree."
+        },
+        {
+          "text": "What will each body paragraph argue?"
+        },
+        {
+          "text": "Which evidence will do the real work in each paragraph?"
+        },
+        {
+          "text": "How will the paragraphs build rather than repeat?"
+        },
+        {
+          "text": "What complexity, tension or alternative reading must you face?"
+        },
+        {
+          "text": "What should the reader understand by the final sentence?"
+        }
+      ]
+    },
+    {
+      "id": "eng-ess-02",
+      "legacy_id": "bank-eng-15",
+      "title": "Analytical Essay Planner",
+      "subject": "English",
+      "category": "Essay writing",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "Whole-essay planner before drafting. Send to Inbox as a keepable prompt set, or to Respond to collect plans.",
+      "prompts": [
+        {
+          "text": "What is the task?"
+        },
+        {
+          "text": "How many words?"
+        },
+        {
+          "text": "When is it due?"
+        },
+        {
+          "text": "What is your thesis?",
+          "hint": "One clear, arguable claim that answers the task."
+        },
+        {
+          "text": "What are your main arguments?",
+          "hint": "List the body points that will prove the thesis."
+        },
+        {
+          "text": "What is the hook you will use at the start of the introduction?",
+          "hint": "Open with something that earns attention — then move to the thesis."
+        },
+        {
+          "text": "What will be the takeaway sentence at the end of the conclusion?",
+          "hint": "Leave the reader with the point that matters most — not a summary dump."
+        }
+      ]
+    },
+    {
+      "id": "hass-01",
+      "legacy_id": "bank-hass-15",
+      "title": "Source Detective",
+      "subject": "HASS",
+      "category": "History",
+      "band_label": "5–6",
+      "year_min": 5,
+      "year_max": 6,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "one source on the board or in Inbox",
+      "teacher_note": "Put one source on the board or in Inbox first.",
+      "prompts": [
+        {
+          "text": "What kind of source is this — and how can you tell?"
+        },
+        {
+          "text": "Who made it, and roughly when?"
+        },
+        {
+          "text": "What does it show or tell us in plain words?"
+        },
+        {
+          "text": "Why might someone have made this?"
+        },
+        {
+          "text": "What can this source help us learn?"
+        },
+        {
+          "text": "What can it not tell us?"
+        }
+      ]
+    },
+    {
+      "id": "hass-02",
+      "legacy_id": "bank-hass-16",
+      "title": "Whose View Is Missing?",
+      "subject": "HASS",
+      "category": "History / Civics",
+      "band_label": "5–6",
+      "year_min": 5,
+      "year_max": 6,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Who are the people or groups involved?"
+        },
+        {
+          "text": "What does each group want or believe?"
+        },
+        {
+          "text": "Why might their views clash?"
+        },
+        {
+          "text": "What evidence shows you that?"
+        },
+        {
+          "text": "Whose voice is missing from this story?"
+        },
+        {
+          "text": "Why does that missing view matter?"
+        }
+      ]
+    },
+    {
+      "id": "hass-03",
+      "legacy_id": "bank-hass-17",
+      "title": "IOPCAM Source Analysis",
+      "subject": "HASS",
+      "category": "History",
+      "band_label": "7–8",
+      "year_min": 7,
+      "year_max": 8,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "one source visible",
+      "teacher_note": "Classic IOPCAM — sharpened for live use with one source visible.",
+      "prompts": [
+        {
+          "text": "I — Information: What does the source actually tell or show?",
+          "hint": "Stick to what is there, not what you already know."
+        },
+        {
+          "text": "O — Origin: Who created it, and when?"
+        },
+        {
+          "text": "P — Purpose: Why was it created?"
+        },
+        {
+          "text": "C — Context: What was happening at the time that shaped it?"
+        },
+        {
+          "text": "A — Audience: Who was meant to see or hear this?"
+        },
+        {
+          "text": "M — Message: What main idea is it pushing?"
+        }
+      ]
+    },
+    {
+      "id": "hass-04",
+      "legacy_id": "bank-hass-18",
+      "title": "Reliability & Usefulness",
+      "subject": "HASS",
+      "category": "History",
+      "band_label": "9–10",
+      "year_min": 9,
+      "year_max": 10,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "one source visible",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What claim or message does this source present?"
+        },
+        {
+          "text": "Who created it — and what did they gain from people believing it?"
+        },
+        {
+          "text": "What was their purpose?"
+        },
+        {
+          "text": "What might distort their perspective?"
+        },
+        {
+          "text": "What makes this source useful for your inquiry?",
+          "hint": "Useful for what question, exactly?"
+        },
+        {
+          "text": "What are its limitations?"
+        },
+        {
+          "text": "What other evidence would you want next?"
+        }
+      ]
+    },
+    {
+      "id": "hass-05",
+      "legacy_id": "bank-hass-19",
+      "title": "Senior Source Evaluation",
+      "subject": "HASS",
+      "category": "History",
+      "band_label": "11–12",
+      "year_min": 11,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "one source visible",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What perspective does this source construct?"
+        },
+        {
+          "text": "How do origin and context shape that perspective?"
+        },
+        {
+          "text": "How does purpose decide what is included or left out?"
+        },
+        {
+          "text": "Which detail inside the source is most historically significant?"
+        },
+        {
+          "text": "What limitation most weakens its usefulness?"
+        },
+        {
+          "text": "What evidence could support — or seriously damage — this account?"
+        }
+      ]
+    },
+    {
+      "id": "hass-06",
+      "legacy_id": "bank-hass-20",
+      "title": "Cause & Consequence",
+      "subject": "HASS",
+      "category": "History",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Name the event or change you are explaining."
+        },
+        {
+          "text": "List the main causes — not just the dramatic one."
+        },
+        {
+          "text": "Which cause was most significant?",
+          "hint": "Significant means the outcome likely changes without it."
+        },
+        {
+          "text": "Prove that ranking in one sentence."
+        },
+        {
+          "text": "What were the immediate consequences?"
+        },
+        {
+          "text": "What longer-term consequences still mattered?"
+        }
+      ]
+    },
+    {
+      "id": "hass-07",
+      "legacy_id": "bank-hass-21",
+      "title": "Continuity & Change",
+      "subject": "HASS",
+      "category": "History",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What actually changed in this period?"
+        },
+        {
+          "text": "What stayed the same, even when you would expect it to change?"
+        },
+        {
+          "text": "Who experienced the greatest change — and who barely felt it?"
+        },
+        {
+          "text": "What drove the change?"
+        },
+        {
+          "text": "Was the change sudden, gradual, or so slow people barely noticed?"
+        },
+        {
+          "text": "Why does that pattern of change matter historically?"
+        }
+      ]
+    },
+    {
+      "id": "hass-08",
+      "legacy_id": "bank-hass-22",
+      "title": "Read the Map / Data",
+      "subject": "HASS",
+      "category": "Geography",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a map, graph or table on screen",
+      "teacher_note": "Works best with a map, graph or table on screen.",
+      "prompts": [
+        {
+          "text": "What does this map, graph or table actually show?"
+        },
+        {
+          "text": "What spatial or data pattern stands out?"
+        },
+        {
+          "text": "Where is the pattern strongest — and weakest?"
+        },
+        {
+          "text": "Which data point does not fit the pattern?"
+        },
+        {
+          "text": "Which geographic factors could explain the pattern?"
+        },
+        {
+          "text": "What conclusion can you defend with this evidence alone?"
+        }
+      ]
+    },
+    {
+      "id": "maths-01",
+      "legacy_id": "bank-maths-23",
+      "title": "Understand Before You Solve",
+      "subject": "Maths",
+      "category": "Problem solving",
+      "band_label": "5–6",
+      "year_min": 5,
+      "year_max": 6,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": "a problem to work on",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What is the problem asking you to find?"
+        },
+        {
+          "text": "List the numbers or facts you actually need."
+        },
+        {
+          "text": "What operation or strategy might work — and why?"
+        },
+        {
+          "text": "Estimate the answer before you calculate."
+        },
+        {
+          "text": "Solve it. Show your working here."
+        },
+        {
+          "text": "Does your answer make sense in the story of the problem? Explain."
+        }
+      ]
+    },
+    {
+      "id": "maths-02",
+      "legacy_id": "bank-maths-24",
+      "title": "Problem-Solving Routine",
+      "subject": "Maths",
+      "category": "Problem solving",
+      "band_label": "7–8",
+      "year_min": 7,
+      "year_max": 8,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": "a problem to work on",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What is the unknown?"
+        },
+        {
+          "text": "What given information is useful?"
+        },
+        {
+          "text": "What information is a distraction?"
+        },
+        {
+          "text": "Choose a strategy and name it.",
+          "hint": "Draw, table, equation, work backwards, simplify…"
+        },
+        {
+          "text": "Show the working another student could follow."
+        },
+        {
+          "text": "Check your answer a different way. Show that check."
+        },
+        {
+          "text": "Explain the solution in one clean sentence."
+        }
+      ]
+    },
+    {
+      "id": "maths-03",
+      "legacy_id": "bank-maths-25",
+      "title": "Complex Problem Attack",
+      "subject": "Maths",
+      "category": "Problem solving",
+      "band_label": "9–10",
+      "year_min": 9,
+      "year_max": 10,
+      "minutes": 15,
+      "mode": "generate",
+      "requires": "a problem to work on",
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What quantities or variables are in play?"
+        },
+        {
+          "text": "What relationships link them?"
+        },
+        {
+          "text": "Which mathematical idea, formula or model fits?"
+        },
+        {
+          "text": "Break the problem into the smallest useful steps. List them."
+        },
+        {
+          "text": "Solve — and justify each key move."
+        },
+        {
+          "text": "Check your result against the original problem's conditions. Does it hold?"
+        },
+        {
+          "text": "What assumptions or limitations should you flag?"
+        }
+      ]
+    },
+    {
+      "id": "maths-04",
+      "legacy_id": "bank-maths-26",
+      "title": "Mathematical Modelling",
+      "subject": "Maths",
+      "category": "Senior mathematics",
+      "band_label": "11–12",
+      "year_min": 11,
+      "year_max": 12,
+      "minutes": 18,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Define the real-world problem in one sentence."
+        },
+        {
+          "text": "What decision or prediction are you supporting?"
+        },
+        {
+          "text": "What assumptions must you make — and which are risky?"
+        },
+        {
+          "text": "Identify the variables and relationships."
+        },
+        {
+          "text": "Build a mathematical model that is simple enough to use."
+        },
+        {
+          "text": "Solve the model. Paste the result."
+        },
+        {
+          "text": "Interpret the result back in the original context."
+        },
+        {
+          "text": "Is the answer reasonable for the real situation? Explain."
+        },
+        {
+          "text": "Where does the model break down?"
+        }
+      ]
+    },
+    {
+      "id": "maths-05",
+      "legacy_id": "bank-maths-27",
+      "title": "Find the Error",
+      "subject": "Maths",
+      "category": "Mathematical reasoning",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a worked example containing an error, on the board",
+      "teacher_note": "Put a worked example with an error on the board first.",
+      "prompts": [
+        {
+          "text": "Scan the working without calculating yet. Which line looks wrong?"
+        },
+        {
+          "text": "Locate the first incorrect step."
+        },
+        {
+          "text": "What was the student trying to do there?"
+        },
+        {
+          "text": "Why does that step fail?"
+        },
+        {
+          "text": "Write the correct step."
+        },
+        {
+          "text": "Finish the solution from that point."
+        }
+      ]
+    },
+    {
+      "id": "maths-06",
+      "legacy_id": "bank-maths-28",
+      "title": "Explain Your Method",
+      "subject": "Maths",
+      "category": "Mathematical reasoning",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "revise",
+      "requires": "a completed problem",
+      "teacher_note": "Fire after students have finished a problem.",
+      "prompts": [
+        {
+          "text": "Name the strategy you used."
+        },
+        {
+          "text": "Why that strategy — not another?"
+        },
+        {
+          "text": "Show only the steps that earn the answer."
+        },
+        {
+          "text": "Which step demanded the most thinking?"
+        },
+        {
+          "text": "How did you check?"
+        },
+        {
+          "text": "Explain it so a classmate who was stuck could restart from your words."
+        }
+      ]
+    },
+    {
+      "id": "maths-07",
+      "legacy_id": "bank-maths-29",
+      "title": "Compare Two Strategies",
+      "subject": "Maths",
+      "category": "Mathematical reasoning",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "two methods on the board, or two student methods ready",
+      "teacher_note": "Show Strategy A and B on the board, or have two student methods ready.",
+      "prompts": [
+        {
+          "text": "How does Strategy A actually work?"
+        },
+        {
+          "text": "How does Strategy B work?"
+        },
+        {
+          "text": "What do they share underneath?"
+        },
+        {
+          "text": "Where do they differ?"
+        },
+        {
+          "text": "Which is more efficient for this problem — and why?"
+        },
+        {
+          "text": "When would the other strategy be the smarter choice?"
+        }
+      ]
+    },
+    {
+      "id": "maths-08",
+      "legacy_id": "bank-maths-30",
+      "title": "Interrogate the Data",
+      "subject": "Maths",
+      "category": "Data",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a graph or table visible",
+      "teacher_note": "Needs a graph or table visible.",
+      "prompts": [
+        {
+          "text": "What does this graph or table claim to represent?"
+        },
+        {
+          "text": "What pattern do you see — not what you expected to see?"
+        },
+        {
+          "text": "What comparison is most revealing?"
+        },
+        {
+          "text": "What looks unusual or suspicious?"
+        },
+        {
+          "text": "What calculation would unlock the story?"
+        },
+        {
+          "text": "What conclusion can you defend — and what can you not?"
+        }
+      ]
+    },
+    {
+      "id": "sci-01",
+      "legacy_id": "bank-sci-31",
+      "title": "Predict–Observe–Explain",
+      "subject": "Science",
+      "category": "Scientific thinking",
+      "band_label": "5–8",
+      "year_min": 5,
+      "year_max": 8,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "a demonstration or experiment",
+      "teacher_note": "Pause between predict / observe / explain during the demo.",
+      "prompts": [
+        {
+          "text": "What do you predict will happen?"
+        },
+        {
+          "text": "Why — using science, not guesswork?"
+        },
+        {
+          "text": "What actually happened?"
+        },
+        {
+          "text": "Was your prediction supported, partly right, or wrong?"
+        },
+        {
+          "text": "What scientific idea best explains the result?"
+        }
+      ]
+    },
+    {
+      "id": "sci-02",
+      "legacy_id": "bank-sci-32",
+      "title": "Nail the Variables",
+      "subject": "Science",
+      "category": "Investigations",
+      "band_label": "7–8",
+      "year_min": 7,
+      "year_max": 8,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Write the investigation question in one line."
+        },
+        {
+          "text": "What will you deliberately change?"
+        },
+        {
+          "text": "What will you measure?"
+        },
+        {
+          "text": "What must stay the same?"
+        },
+        {
+          "text": "Why would changing those \"same\" things ruin the test?"
+        },
+        {
+          "text": "How will you make this a fair test?"
+        }
+      ]
+    },
+    {
+      "id": "sci-03",
+      "legacy_id": "bank-sci-33",
+      "title": "Plan an Investigation",
+      "subject": "Science",
+      "category": "Investigations",
+      "band_label": "7–8",
+      "year_min": 7,
+      "year_max": 8,
+      "minutes": 12,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What question are you actually testing?"
+        },
+        {
+          "text": "State a testable hypothesis.",
+          "hint": "If… then… because…"
+        },
+        {
+          "text": "Independent variable: what you change."
+        },
+        {
+          "text": "Dependent variable: what you measure."
+        },
+        {
+          "text": "Controlled variables: what you keep constant."
+        },
+        {
+          "text": "What equipment do you need — and why each item?"
+        },
+        {
+          "text": "What data will convince you the hypothesis is supported or not?"
+        }
+      ]
+    },
+    {
+      "id": "sci-04",
+      "legacy_id": "bank-sci-34",
+      "title": "Claim–Evidence–Reasoning",
+      "subject": "Science",
+      "category": "Scientific explanation",
+      "band_label": "9–10",
+      "year_min": 9,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "C — Claim: What are you asserting?",
+          "hint": "One clear sentence. No padding."
+        },
+        {
+          "text": "E — Evidence: Which data or observation supports it?"
+        },
+        {
+          "text": "R — Reasoning: Which scientific concept links evidence to claim?"
+        },
+        {
+          "text": "How exactly does the evidence force that claim?"
+        },
+        {
+          "text": "What evidence does not fit — and what do you do with it?"
+        },
+        {
+          "text": "Write a conclusion that a doubtful reader could still respect."
+        }
+      ]
+    },
+    {
+      "id": "sci-05",
+      "legacy_id": "bank-sci-35",
+      "title": "Read the Results",
+      "subject": "Science",
+      "category": "Data analysis",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": "results, a graph or a table in view",
+      "teacher_note": "Needs results, a graph or a table in view.",
+      "prompts": [
+        {
+          "text": "What trend or pattern is actually there?"
+        },
+        {
+          "text": "Which piece of evidence most strongly supports that reading?"
+        },
+        {
+          "text": "Which result looks like an outlier?"
+        },
+        {
+          "text": "How strong is the pattern — clear, weak, or are you hoping?"
+        },
+        {
+          "text": "What scientific explanation could account for it?"
+        },
+        {
+          "text": "What conclusion is fair — and what would be claiming too much?"
+        }
+      ]
+    },
+    {
+      "id": "sci-06",
+      "legacy_id": "bank-sci-36",
+      "title": "Evaluate the Method",
+      "subject": "Science",
+      "category": "Investigations",
+      "band_label": "9–10",
+      "year_min": 9,
+      "year_max": 10,
+      "minutes": 12,
+      "mode": "revise",
+      "requires": "completed results from an investigation",
+      "teacher_note": "Fire after an investigation is finished and results are in.",
+      "prompts": [
+        {
+          "text": "How reliable are these results?"
+        },
+        {
+          "text": "Which results look inconsistent — and why might that be?"
+        },
+        {
+          "text": "Name the most likely sources of error."
+        },
+        {
+          "text": "Was the method actually suited to the question?"
+        },
+        {
+          "text": "What one change would improve the investigation most?"
+        },
+        {
+          "text": "What further test would make the conclusion harder to dismiss?"
+        }
+      ]
+    },
+    {
+      "id": "sci-07",
+      "legacy_id": "bank-sci-37",
+      "title": "Build a Scientific Explanation",
+      "subject": "Science",
+      "category": "Scientific writing",
+      "band_label": "7–10",
+      "year_min": 7,
+      "year_max": 10,
+      "minutes": 10,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What phenomenon are you explaining?"
+        },
+        {
+          "text": "Which scientific ideas must appear in a good explanation?"
+        },
+        {
+          "text": "What evidence or example will you lean on?"
+        },
+        {
+          "text": "Connect the evidence to the science — show the chain."
+        },
+        {
+          "text": "Find one everyday word in your answer and replace it with precise scientific language. Type: old word → new word."
+        },
+        {
+          "text": "Finish: why does this happen?"
+        }
+      ]
+    },
+    {
+      "id": "sci-08",
+      "legacy_id": "bank-sci-38",
+      "title": "Evaluate Scientific Evidence",
+      "subject": "Science",
+      "category": "Senior science",
+      "band_label": "11–12",
+      "year_min": 11,
+      "year_max": 12,
+      "minutes": 15,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What claim or conclusion is on the table?"
+        },
+        {
+          "text": "What evidence is offered for it?"
+        },
+        {
+          "text": "How reliable is that evidence?",
+          "hint": "Sample, method, bias, reproducibility…"
+        },
+        {
+          "text": "Where is the uncertainty, error or limitation?"
+        },
+        {
+          "text": "How valid is the leap from evidence to conclusion?"
+        },
+        {
+          "text": "What alternative explanations survive?"
+        },
+        {
+          "text": "What additional evidence would change your view?"
+        }
+      ]
+    },
+    {
+      "id": "gen-01",
+      "legacy_id": "bank-gen-39",
+      "title": "Retrieval Warm-Up",
+      "subject": "General",
+      "category": "Lesson opener",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Without looking: what stuck from last lesson?"
+        },
+        {
+          "text": "Write three important ideas — not three titles."
+        },
+        {
+          "text": "Give one concrete example."
+        },
+        {
+          "text": "Which idea are you least certain about?"
+        },
+        {
+          "text": "Write the one question you still need answered."
+        }
+      ]
+    },
+    {
+      "id": "gen-02",
+      "legacy_id": "bank-gen-40",
+      "title": "Confidence Pulse",
+      "subject": "General",
+      "category": "Formative check",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 5,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Confidence right now: 1–5. Be honest."
+        },
+        {
+          "text": "What part feels under control?"
+        },
+        {
+          "text": "Where are you unsure?"
+        },
+        {
+          "text": "What single thing would lift you one point?"
+        }
+      ]
+    },
+    {
+      "id": "gen-03",
+      "legacy_id": "bank-gen-41",
+      "title": "Kill the Misconception",
+      "subject": "General",
+      "category": "Understanding check",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": "a tempting wrong statement or example on the board",
+      "teacher_note": "Put a tempting wrong statement or example on the board.",
+      "prompts": [
+        {
+          "text": "Read it carefully. What seems wrong here?"
+        },
+        {
+          "text": "Name the incorrect idea."
+        },
+        {
+          "text": "Why is it wrong?"
+        },
+        {
+          "text": "State the correct idea cleanly."
+        },
+        {
+          "text": "What makes this mistake so easy to fall for?"
+        }
+      ]
+    },
+    {
+      "id": "gen-04",
+      "legacy_id": "bank-gen-42",
+      "title": "Exit Ticket That Matters",
+      "subject": "General",
+      "category": "Lesson close",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 6,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What is the one idea from today you must not forget?"
+        },
+        {
+          "text": "Explain it in your own words — no copying the slide."
+        },
+        {
+          "text": "Give an example from today's work."
+        },
+        {
+          "text": "What can you do now that you could not do at the start?"
+        },
+        {
+          "text": "What are you still unsure about?"
+        }
+      ]
+    },
+    {
+      "id": "gen-05",
+      "legacy_id": "bank-gen-43",
+      "title": "Peer Feedback That Helps",
+      "subject": "General",
+      "category": "Feedback",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "revise",
+      "requires": "a peer's work visible",
+      "teacher_note": "Students need a peer's work visible.",
+      "prompts": [
+        {
+          "text": "What is working well — point to a specific line or move?"
+        },
+        {
+          "text": "Quote or describe that strength."
+        },
+        {
+          "text": "Where does the meaning become unclear?"
+        },
+        {
+          "text": "Ask the writer one sharp question."
+        },
+        {
+          "text": "Give one change they could make in the next five minutes."
+        }
+      ]
+    },
+    {
+      "id": "gen-06",
+      "legacy_id": "bank-gen-44",
+      "title": "Use the Feedback",
+      "subject": "General",
+      "category": "Writing & feedback",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 12,
+      "mode": "revise",
+      "requires": "teacher or peer feedback on existing work",
+      "teacher_note": "Perfect after Inbox notes or board comments.",
+      "prompts": [
+        {
+          "text": "Which section are you improving?"
+        },
+        {
+          "text": "Read the teacher comment again. What is it actually asking?"
+        },
+        {
+          "text": "In your words: what must change?"
+        },
+        {
+          "text": "Describe the revision you will make before you make it."
+        },
+        {
+          "text": "Make the change. Paste the new version."
+        },
+        {
+          "text": "How is the work stronger now?"
+        }
+      ]
+    },
+    {
+      "id": "gen-07",
+      "legacy_id": "bank-gen-45",
+      "title": "Own the Key Word",
+      "subject": "General",
+      "category": "Vocabulary",
+      "band_label": "5–10",
+      "year_min": 5,
+      "year_max": 10,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": "the target word on the board",
+      "teacher_note": "Put the target word on the board.",
+      "prompts": [
+        {
+          "text": "What do you think this word means in this subject?"
+        },
+        {
+          "text": "Say it in plain words a Year 5 student would understand."
+        },
+        {
+          "text": "Use it in a sentence about today's work."
+        },
+        {
+          "text": "Name a near-synonym — and how it differs."
+        },
+        {
+          "text": "Give a clear example."
+        },
+        {
+          "text": "What do people often think it means that it does not?"
+        }
+      ]
+    },
+    {
+      "id": "gen-08",
+      "legacy_id": "bank-gen-46",
+      "title": "Compare to Decide",
+      "subject": "General",
+      "category": "Thinking routine",
+      "band_label": "5–10",
+      "year_min": 5,
+      "year_max": 10,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "What do these two things share?"
+        },
+        {
+          "text": "Name one difference that actually matters."
+        },
+        {
+          "text": "Find a second difference."
+        },
+        {
+          "text": "Which difference changes your judgment most?"
+        },
+        {
+          "text": "Why that one?"
+        },
+        {
+          "text": "What conclusion does the comparison lead you to?"
+        }
+      ]
+    },
+    {
+      "id": "gen-09",
+      "legacy_id": "bank-gen-47",
+      "title": "Live Work Check-In",
+      "subject": "General",
+      "category": "Live monitoring",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 5,
+      "mode": "either",
+      "requires": null,
+      "teacher_note": "Send mid-task when you need eyes on the room fast.",
+      "prompts": [
+        {
+          "text": "What are you doing right now — in one sentence?"
+        },
+        {
+          "text": "What have you finished?"
+        },
+        {
+          "text": "What is next?"
+        },
+        {
+          "text": "Where are you stuck, if anywhere?",
+          "hint": "If stuck: name the exact step that broke."
+        },
+        {
+          "text": "What do you need from your teacher in the next two minutes?"
+        }
+      ]
+    },
+    {
+      "id": "gen-10",
+      "legacy_id": "bank-gen-48",
+      "title": "Teach It Back",
+      "subject": "General",
+      "category": "Understanding",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 8,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
+      "prompts": [
+        {
+          "text": "Explain today's idea to someone who missed the lesson."
+        },
+        {
+          "text": "What must they understand first?"
+        },
+        {
+          "text": "Give the example that makes it click."
+        },
+        {
+          "text": "What mistake should they avoid?"
+        },
+        {
+          "text": "What question would prove they got it?"
+        }
+      ]
+    },
+    {
+      "id": "unstick-01",
+      "legacy_id": null,
+      "title": "Get Writing — Narrative",
+      "subject": "English",
+      "category": "Unstick",
+      "band_label": "5–10",
+      "year_min": 5,
+      "year_max": 10,
+      "minutes": 3,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "NEW. For a student who has written nothing. Four prompts, one sentence out the other end. Overwrite prompt one with your own wording if you have a better opener.",
+      "prompts": [
+        {
+          "text": "Who is in your story? Just a name or a description."
+        },
+        {
+          "text": "Where are they? One place. Be specific."
+        },
+        {
+          "text": "What is the first thing they do there? One action."
+        },
+        {
+          "text": "Now put those three together in one sentence. That is your opening."
+        }
+      ]
+    },
+    {
+      "id": "unstick-02",
+      "legacy_id": null,
+      "title": "Get Writing — Analytical",
+      "subject": "English",
+      "category": "Unstick",
+      "band_label": "7–12",
+      "year_min": 7,
+      "year_max": 12,
+      "minutes": 3,
+      "mode": "generate",
+      "requires": "a studied text",
+      "teacher_note": "NEW. For a student staring at a blank analytical response.",
+      "prompts": [
+        {
+          "text": "In your own words, what is the question asking you to argue about?"
+        },
+        {
+          "text": "Name one moment, line or character that connects to it."
+        },
+        {
+          "text": "What do you think that moment shows? A rough answer is fine."
+        },
+        {
+          "text": "Write that as one sentence starting: \"The text shows that…\""
+        }
+      ]
+    },
+    {
+      "id": "unstick-03",
+      "legacy_id": null,
+      "title": "Get Started — Maths",
+      "subject": "Maths",
+      "category": "Unstick",
+      "band_label": "5–12",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 3,
+      "mode": "generate",
+      "requires": "a problem in front of them",
+      "teacher_note": "NEW. For a student who has read the problem three times and written nothing.",
+      "prompts": [
+        {
+          "text": "Copy out the question in your own words."
+        },
+        {
+          "text": "Write down every number the question gives you."
+        },
+        {
+          "text": "What are you being asked to find? One thing."
+        },
+        {
+          "text": "Name one thing you could try first — even if you are not sure it works."
+        }
+      ]
+    },
+    {
+      "id": "unstick-04",
+      "legacy_id": null,
+      "title": "Get Started — Science",
+      "subject": "Science",
+      "category": "Unstick",
+      "band_label": "5–12",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 3,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "NEW. For a student stuck at the start of an explanation or investigation.",
+      "prompts": [
+        {
+          "text": "In one sentence, what are you trying to explain or find out?"
+        },
+        {
+          "text": "What do you already know about it? Anything counts."
+        },
+        {
+          "text": "Name one scientific word that belongs in your answer."
+        },
+        {
+          "text": "Write one sentence using that word. Rough is fine."
+        }
+      ]
+    },
+    {
+      "id": "unstick-05",
+      "legacy_id": null,
+      "title": "I Don't Know Where to Start",
+      "subject": "General",
+      "category": "Unstick",
+      "band_label": "All",
+      "year_min": 5,
+      "year_max": 12,
+      "minutes": 3,
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": "NEW. Subject-neutral. Send when a student says \"I don't get it\" and you need to find out where the block actually is.",
+      "prompts": [
+        {
+          "text": "In your own words, what is the task asking you to do?"
+        },
+        {
+          "text": "What part do you understand already?"
+        },
+        {
+          "text": "What is the exact bit that stopped you?"
+        },
+        {
+          "text": "Write down anything at all you could put on the page right now."
+        }
+      ]
+    }
+  ]
+}

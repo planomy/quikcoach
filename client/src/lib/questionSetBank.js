@@ -1,4 +1,6 @@
-/** Launch library of teaching question sets. Bank sets are not deletable. */
+/** Launch library of teaching question sets. Bank sets are not deletable.
+ *  Source audit revision: Downloads/question-sets.json (2026-09-07, 74 sets).
+ */
 
 function q(prompts) {
   return prompts.map((item, index) => {
@@ -45,12 +47,12 @@ export const QUESTION_SET_BANK = [
     skill: 'Writing',
     minutes: 10,
     prompts: [
-      'What is the one main idea of this paragraph?',
+      'What is the one main idea you need to get across?',
       'Write a first sentence that puts that idea on the table.',
       'Add one example, fact or detail that proves it.',
       'Explain how that example supports your idea.',
-      'Write a last sentence that wraps the paragraph shut.',
-      'Reread. Which sentence would confuse a classmate?',
+      'Write a last sentence that closes the paragraph.',
+      'Reread. Which sentence would confuse a classmate? Quote it.',
     ],
   }),
   set({
@@ -66,24 +68,23 @@ export const QUESTION_SET_BANK = [
       'Add one thing they can see, hear or feel.',
       'What does your character do next?',
       'What happens because of that action?',
-      'Reread. Upgrade one weak detail.',
+      'Reread. Pick your weakest detail and rewrite it here.',
     ],
   }),
-
-  // Narrative / creative coaching
   set({
     id: 'bank-eng-cw-01',
-    name: 'Show, Don’t Tell',
+    name: 'Show, Don\'t Tell',
     subject: 'English',
     years: '7–10',
     skill: 'Creative writing',
     minutes: 10,
+    note: 'Students need writing on the page. For a cold start use Get Writing — Narrative first. Best as revise — needs a draft that names an emotion.',
     prompts: [
-      'Find a sentence that tells the reader how the character feels.',
-      'Remove the emotion word.',
+      'Find a sentence that tells the reader how the character feels. Paste it here.',
+      'Paste that sentence again with the emotion word removed.',
       'What could the character do physically instead?',
-      'Add one small body-language or sensory detail.',
-      'Can the reader now infer the feeling without being told?',
+      'Add one small body-language or sensory detail. Write the new sentence.',
+      'What would a reader now guess the character is feeling?',
     ],
   }),
   set({
@@ -96,9 +97,9 @@ export const QUESTION_SET_BANK = [
     prompts: [
       'What does your character want right now?',
       'What action could reveal that want?',
-      'Add one gesture, habit or choice that reveals character.',
-      'Can you remove an explanation and let the action do the work?',
-      'What should the reader infer?',
+      'Add one gesture, habit or choice that reveals character. Write it as a sentence.',
+      'Delete one sentence that explains the character. Paste what is left.',
+      'What should the reader work out for themselves?',
     ],
   }),
   set({
@@ -110,10 +111,10 @@ export const QUESTION_SET_BANK = [
     minutes: 10,
     prompts: [
       'What does each character want from this conversation?',
-      'Cut one greeting, filler line or unnecessary explanation.',
+      'Cut one greeting, filler line or unnecessary explanation. Paste the line you cut.',
       'What is one thing the character will not say directly?',
-      'Add an action or reaction that creates subtext.',
-      'Do the characters sound different from each other?',
+      'Add an action or reaction that hints at what is unsaid. Write it here.',
+      'Quote one line that only Character A would ever say.',
     ],
   }),
   set({
@@ -126,10 +127,10 @@ export const QUESTION_SET_BANK = [
     prompts: [
       'What does the character want?',
       'What is stopping them?',
-      'Where could you delay an action or reveal?',
-      'What could you withhold from the reader?',
-      'Add one small signal that something is wrong.',
-      'End with the pressure still unresolved.',
+      'Where could you delay an action or a reveal?',
+      'What could you keep from the reader for now?',
+      'Add one small signal that something is wrong. Write the sentence.',
+      'Write your final line. Leave the pressure unresolved.',
     ],
   }),
   set({
@@ -140,11 +141,11 @@ export const QUESTION_SET_BANK = [
     skill: 'Creative writing',
     minutes: 10,
     prompts: [
-      'Which moment deserves the most attention?',
-      'Slow it using action, sensory detail or thought.',
-      'Which part could be compressed or skipped?',
-      'Where could a short sentence create impact?',
-      'Where could a paragraph break change the pace?',
+      'Which moment in your story deserves the most attention?',
+      'Slow that moment down using action, sensory detail or thought. Write the slowed version.',
+      'Which part could be shortened or skipped entirely?',
+      'Write one short sentence that would land hard.',
+      'Where would a paragraph break change how it reads?',
     ],
   }),
   set({
@@ -156,10 +157,10 @@ export const QUESTION_SET_BANK = [
     minutes: 10,
     prompts: [
       'What should the setting make the reader feel?',
-      'Replace one general description with a precise detail.',
-      'Add sound, texture, smell or temperature.',
+      'Take one general description and rewrite it with a precise detail.',
+      'Add sound, texture, smell or temperature. Write the sentence.',
       'How can the character interact with the setting?',
-      'Which detail could reinforce mood, tension or theme?',
+      'Which single detail best reinforces the mood or tension?',
     ],
   }),
   set({
@@ -172,9 +173,9 @@ export const QUESTION_SET_BANK = [
     prompts: [
       'Which sense matters most in this moment?',
       'What precise detail would the character actually notice?',
-      'How does this detail affect mood or meaning?',
-      'Remove one sensory detail that adds nothing.',
-      'Make one remaining detail do more work.',
+      'How does this detail affect the mood or meaning?',
+      'Which sensory detail adds nothing? Name it and cut it.',
+      'Take one detail you kept and rewrite it so it does more work.',
     ],
   }),
   set({
@@ -185,11 +186,11 @@ export const QUESTION_SET_BANK = [
     skill: 'Creative writing',
     minutes: 10,
     prompts: [
-      'How late can you enter the scene?',
-      'Can you begin with action, image, voice or problem?',
-      'What backstory can wait?',
-      'What question or tension should the opening create?',
-      'Rewrite the first sentence so it earns the second.',
+      'What is the first thing that actually happens in your story?',
+      'Could you start there instead of earlier? What would you cut?',
+      'Which background information can wait until later?',
+      'What question or tension should your opening create?',
+      'Write a first sentence that makes the reader need the second one.',
     ],
   }),
   set({
@@ -200,11 +201,11 @@ export const QUESTION_SET_BANK = [
     skill: 'Creative writing',
     minutes: 10,
     prompts: [
-      'What has changed by the end?',
-      'Which final sentence explains too much?',
-      'Could an image, action or line of dialogue carry the meaning?',
-      'What should the reader feel or wonder?',
-      'Is the ending stronger if you cut the explanation?',
+      'What has changed by the end of your story?',
+      'Which of your final sentences explains too much? Paste it.',
+      'Could an image, action or line of dialogue carry that meaning instead? Write it.',
+      'What should the reader feel or wonder as they finish?',
+      'Paste your ending with the explanation cut. Which version is stronger, and why?',
     ],
   }),
   set({
@@ -214,13 +215,14 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Creative writing',
     minutes: 10,
+    note: 'Line editing. Fire this after a draft exists, not before. Best as revise — needs a draft students can edit line by line.',
     prompts: [
-      'Replace one weak verb with a precise one.',
-      'Make one vague noun or description specific.',
-      'Change one predictable sentence opening.',
-      'Split or reshape one overloaded sentence.',
-      'Remove words that add length but not meaning.',
-      'Read it aloud. Where could the rhythm improve?',
+      'Find a weak verb and replace it. Type: old verb → new verb.',
+      'Find a vague noun or description and rewrite it so it is specific.',
+      'Find a predictable sentence opening and rewrite the opening.',
+      'Find an overloaded sentence. Split it and paste both halves.',
+      'Which words add length but not meaning? Quote them, then cut them.',
+      'Read it aloud. Paste the sentence where the rhythm still feels wrong.',
     ],
   }),
   set({
@@ -232,11 +234,11 @@ export const QUESTION_SET_BANK = [
     minutes: 12,
     prompts: [
       'Who is telling this moment?',
-      'What can this narrator know?',
+      'What can this narrator know, and what can they not know?',
       'What would this character notice first?',
-      'Does the language sound like this narrator?',
-      'Find one sentence that breaks the point of view.',
-      'Rewrite it through the narrator’s perspective.',
+      'Quote one phrase of yours that sounds like you rather than the narrator.',
+      'Find one sentence that breaks the point of view. Paste it.',
+      'Rewrite that sentence through the narrator\'s perspective.',
     ],
   }),
   set({
@@ -262,13 +264,11 @@ export const QUESTION_SET_BANK = [
       },
       'What will change for your character by the end of the story?',
       {
-        prompt: 'What specific theme/feature/motif do you need to include?',
+        prompt: 'What specific theme, feature or motif do you need to include?',
         helper: 'Name the requirement from the task so you do not forget it mid-draft.',
       },
     ],
   }),
-
-  // Analytical coaching
   set({
     id: 'bank-eng-an-01',
     name: 'Stop Retelling the Plot',
@@ -276,8 +276,9 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Analytical writing',
     minutes: 10,
+    note: 'Best as revise — needs a draft paragraph.',
     prompts: [
-      'Which sentence simply tells me what happened?',
+      'Paste the sentence that simply tells me what happened.',
       'What does this event reveal?',
       'Why has the author included it?',
       'What idea does it develop?',
@@ -293,10 +294,10 @@ export const QUESTION_SET_BANK = [
     minutes: 10,
     prompts: [
       'What are you actually arguing?',
-      'Could someone reasonably disagree with this?',
+      'What would someone who disagreed with you say?',
       'What does the text suggest, rather than simply show?',
-      'Make the claim more specific.',
-      'Make the claim answer the question.',
+      'Rewrite your claim so it is more specific.',
+      'Rewrite it again so it directly answers the question.',
     ],
   }),
   set({
@@ -309,9 +310,9 @@ export const QUESTION_SET_BANK = [
     prompts: [
       'What is this paragraph arguing?',
       'Which key word from the question should it address?',
-      'Remove plot summary from the topic sentence.',
-      'Make the sentence interpretive rather than descriptive.',
-      'Does it clearly support your overall thesis?',
+      'Paste your topic sentence with any plot summary removed.',
+      'Rewrite it so it interprets rather than describes.',
+      'Which words in it tie back to your thesis? Quote them.',
     ],
   }),
   set({
@@ -321,12 +322,13 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Analytical writing',
     minutes: 10,
+    note: 'Works cold or on a draft — needs a studied text.',
     prompts: [
-      'Which evidence best proves your point?',
-      'Is the quote too long?',
-      'Which word or phrase carries the strongest meaning?',
-      'Could a more precise example work better?',
-      'Why is this evidence stronger than another option?',
+      'Which piece of evidence best proves your point? Paste it.',
+      'Now cut it down to its strongest six words.',
+      'Which word or phrase in it carries the most meaning?',
+      'Is there a more precise example? Paste it if so.',
+      'Why is this evidence stronger than the alternative?',
     ],
   }),
   set({
@@ -336,10 +338,11 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Analytical writing',
     minutes: 10,
+    note: 'Needs a quote.',
     prompts: [
       'Which word or phrase matters most?',
       'What does it suggest?',
-      'What connotations does it carry?',
+      'What associations does that word carry?',
       'Why might the author have chosen it?',
       'How does it support your argument?',
     ],
@@ -351,6 +354,7 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 12,
+    note: 'Needs a studied text.',
     prompts: [
       'What deliberate choice has the author made?',
       'Which aesthetic feature or literary device is being used?',
@@ -366,12 +370,13 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 10,
+    note: 'Needs a studied text.',
     prompts: [
       'How is the audience positioned to respond?',
       'What might the audience think, feel, question or believe?',
       'Which authorial choice creates this response?',
       'Why does this response matter?',
-      'How does audience positioning support the author’s purpose?',
+      'How does audience positioning support the author\'s purpose?',
     ],
   }),
   set({
@@ -381,12 +386,13 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 12,
+    note: 'Needs a studied text.',
     prompts: [
       'What assumption, attitude, value or belief is represented here?',
-      'Is the text reinforcing, questioning or challenging it?',
+      'Is the text reinforcing, questioning or challenging it? Explain which.',
       'Which character, event or authorial choice reveals this?',
       'How might different audiences respond?',
-      'How does this shape the text’s wider meaning?',
+      'How does this shape the text\'s wider meaning?',
     ],
   }),
   set({
@@ -396,11 +402,12 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 10,
+    note: 'Needs a studied text.',
     prompts: [
       'What bigger idea does this reveal?',
       'What does this suggest about people, society, culture, identity, power, values or the wider issue?',
       'Why does this matter beyond this single moment?',
-      'Is there a contradiction, tension or complexity here?',
+      'Name one contradiction, tension or complexity here.',
       'How does this deepen your interpretation?',
     ],
   }),
@@ -411,12 +418,13 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Analytical writing',
     minutes: 10,
+    note: 'Best as revise — needs a paragraph with evidence already in it.',
     prompts: [
       'How does this evidence prove your point?',
       'What part of your argument does it strengthen?',
       'What key idea does it connect to?',
-      'Rewrite the final sentence so it clearly returns to the argument.',
-      'Does the paragraph still answer the question?',
+      'Rewrite your final sentence so it clearly returns to the argument.',
+      'Which sentence in your paragraph answers the question? Quote it.',
     ],
   }),
   set({
@@ -426,11 +434,12 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 12,
+    note: 'Needs a studied text.',
     prompts: [
       'What second piece of evidence could develop this idea?',
-      'Does it reinforce, contrast or complicate the first example?',
+      'Does it reinforce, contrast or complicate the first example? Explain which.',
       'What new layer does it add?',
-      'Can you compare the two examples rather than discuss them separately?',
+      'Write the sentence that compares the two examples.',
       'What stronger conclusion can you now draw?',
     ],
   }),
@@ -441,7 +450,7 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 15,
-    note: 'Flagship exam scaffold: Topic, Evidence, Author+Audience, Culture, Higher insight, Extend, Return.',
+    note: 'Flagship exam scaffold: Topic, Evidence, Author+Audience, Culture, Higher insight, Extend, Return. Needs a studied text.',
     prompts: [
       {
         prompt: 'T — Topic / Thesis: What is your paragraph arguing?',
@@ -473,8 +482,6 @@ export const QUESTION_SET_BANK = [
       },
     ],
   }),
-
-  // Keep junior analytical scaffold (different year/purpose from TEACHER)
   set({
     id: 'bank-eng-05',
     name: 'Analytical Paragraph Builder',
@@ -482,6 +489,7 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'Text analysis',
     minutes: 12,
+    note: 'Junior version of TEACHER. Overlap is deliberate. Needs a studied text.',
     prompts: [
       {
         prompt: 'What claim are you making about the text?',
@@ -494,8 +502,6 @@ export const QUESTION_SET_BANK = [
       'Rewrite your final sentence so it returns to your claim.',
     ],
   }),
-
-  // Literature / poetry / persuasive / essay
   set({
     id: 'bank-eng-08',
     name: 'Character Analysis',
@@ -503,13 +509,14 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'Literature',
     minutes: 10,
+    note: 'Needs a studied text.',
     prompts: [
       'What do we learn about this character that is not said outright?',
       'Choose one moment that reveals this.',
       'What do they say, do, avoid or notice?',
       'Which detail carries the most weight?',
       'What does that detail suggest about them?',
-      'Has our understanding of the character shifted by the end?',
+      'Has our understanding of the character shifted by the end? Explain how.',
     ],
   }),
   set({
@@ -519,6 +526,7 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'Literature',
     minutes: 12,
+    note: 'Needs a studied text.',
     prompts: [
       'What important idea is the text exploring?',
       'Where is that idea under pressure or in conflict?',
@@ -535,9 +543,10 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'Poetry',
     minutes: 10,
+    note: 'Needs a poem on screen or in hand.',
     prompts: [
       'What seems to be happening in this poem?',
-      'Which word or image will not leave you alone?',
+      'Which word or image sticks in your mind?',
       'Name one technique doing real work.',
       'What feeling or idea does that choice create?',
       'Why might the poet have chosen it instead of something simpler?',
@@ -551,13 +560,14 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'Poetry',
     minutes: 12,
+    note: 'Reordered: the hardest question is no longer first. Needs a poem on screen or in hand.',
     prompts: [
-      'What interpretation are you building?',
       'Which image, pattern or structural feature is doing the heavy lifting?',
       'What technique is being used?',
       'How does that choice shape tone or meaning?',
+      'What interpretation are you building?',
       'How does it position the reader?',
-      'How does this feature connect to the poem’s bigger ideas?',
+      'How does this feature connect to the poem\'s bigger ideas?',
     ],
   }),
   set({
@@ -571,9 +581,9 @@ export const QUESTION_SET_BANK = [
       'What do you want your audience to believe or do?',
       'Give your strongest reason — not your safest one.',
       'Add evidence, an example or a concrete explanation.',
-      'Choose one word or phrase for deliberate persuasive effect.',
+      'Choose one word or phrase for deliberate persuasive effect. Name it and say why.',
       'Why should the audience care about this now?',
-      'Finish by locking the argument shut.',
+      'Write a final sentence that leaves no room for doubt.',
     ],
   }),
   set({
@@ -641,6 +651,36 @@ export const QUESTION_SET_BANK = [
       },
     ],
   }),
+  set({
+    id: 'bank-eng-unstick-01',
+    name: 'Get Writing — Narrative',
+    subject: 'English',
+    years: '5–10',
+    skill: 'Unstick',
+    minutes: 3,
+    note: 'NEW. For a student who has written nothing. Four prompts, one sentence out the other end. Overwrite prompt one with your own wording if you have a better opener.',
+    prompts: [
+      'Who is in your story? Just a name or a description.',
+      'Where are they? One place. Be specific.',
+      'What is the first thing they do there? One action.',
+      'Now put those three together in one sentence. That is your opening.',
+    ],
+  }),
+  set({
+    id: 'bank-eng-unstick-02',
+    name: 'Get Writing — Analytical',
+    subject: 'English',
+    years: '7–12',
+    skill: 'Unstick',
+    minutes: 3,
+    note: 'NEW. For a student staring at a blank analytical response. Needs a studied text.',
+    prompts: [
+      'In your own words, what is the question asking you to argue about?',
+      'Name one moment, line or character that connects to it.',
+      'What do you think that moment shows? A rough answer is fine.',
+      'Write that as one sentence starting: "The text shows that…"',
+    ],
+  }),
 
   // HASS — craft-level source & historical thinking
   set({
@@ -650,7 +690,7 @@ export const QUESTION_SET_BANK = [
     years: '5–6',
     skill: 'History',
     minutes: 10,
-    note: 'Put one source on the board or in Inbox first.',
+    note: 'Put one source on the board or in Inbox first. Needs one source on the board or in Inbox.',
     prompts: [
       'What kind of source is this — and how can you tell?',
       'Who made it, and roughly when?',
@@ -683,7 +723,7 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'History',
     minutes: 12,
-    note: 'Classic IOPCAM — sharpened for live use with one source visible.',
+    note: 'Classic IOPCAM — sharpened for live use with one source visible. Needs one source visible.',
     prompts: [
       {
         prompt: 'I — Information: What does the source actually tell or show?',
@@ -703,9 +743,10 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'History',
     minutes: 12,
+    note: 'Needs one source visible.',
     prompts: [
       'What claim or message does this source present?',
-      'Who created it — and what skin do they have in the game?',
+      'Who created it — and what did they gain from people believing it?',
       'What was their purpose?',
       'What might distort their perspective?',
       {
@@ -713,7 +754,7 @@ export const QUESTION_SET_BANK = [
         helper: 'Useful for what question, exactly?',
       },
       'What are its limitations?',
-      'What other evidence would you demand next?',
+      'What other evidence would you want next?',
     ],
   }),
   set({
@@ -723,13 +764,14 @@ export const QUESTION_SET_BANK = [
     years: '11–12',
     skill: 'History',
     minutes: 12,
+    note: 'Needs one source visible.',
     prompts: [
       'What perspective does this source construct?',
       'How do origin and context shape that perspective?',
       'How does purpose decide what is included or left out?',
       'Which detail inside the source is most historically significant?',
       'What limitation most weakens its usefulness?',
-      'What evidence could corroborate — or wreck — this account?',
+      'What evidence could support — or seriously damage — this account?',
     ],
   }),
   set({
@@ -760,10 +802,10 @@ export const QUESTION_SET_BANK = [
     minutes: 10,
     prompts: [
       'What actually changed in this period?',
-      'What stayed stubbornly the same?',
+      'What stayed the same, even when you would expect it to change?',
       'Who experienced the greatest change — and who barely felt it?',
       'What drove the change?',
-      'Was the change sudden, staged or glacial?',
+      'Was the change sudden, gradual, or so slow people barely noticed?',
       'Why does that pattern of change matter historically?',
     ],
   }),
@@ -774,18 +816,18 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Geography',
     minutes: 10,
-    note: 'Works best with a map, graph or table on screen.',
+    note: 'Works best with a map, graph or table on screen. Needs a map, graph or table on screen.',
     prompts: [
       'What does this map, graph or table actually show?',
-      'What spatial or data pattern jumps out?',
+      'What spatial or data pattern stands out?',
       'Where is the pattern strongest — and weakest?',
-      'What anomaly refuses to fit?',
+      'Which data point does not fit the pattern?',
       'Which geographic factors could explain the pattern?',
       'What conclusion can you defend with this evidence alone?',
     ],
   }),
 
-  // Maths — thinking moves, not worksheets
+  // Maths
   set({
     id: 'bank-maths-23',
     name: 'Understand Before You Solve',
@@ -793,13 +835,14 @@ export const QUESTION_SET_BANK = [
     years: '5–6',
     skill: 'Problem solving',
     minutes: 8,
+    note: 'Needs a problem to work on.',
     prompts: [
       'What is the problem asking you to find?',
-      'Circle the information that actually helps.',
+      'List the numbers or facts you actually need.',
       'What operation or strategy might work — and why?',
-      'Estimate before you calculate.',
-      'Solve it.',
-      'Does your answer make sense in the story of the problem?',
+      'Estimate the answer before you calculate.',
+      'Solve it. Show your working here.',
+      'Does your answer make sense in the story of the problem? Explain.',
     ],
   }),
   set({
@@ -809,6 +852,7 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'Problem solving',
     minutes: 12,
+    note: 'Needs a problem to work on.',
     prompts: [
       'What is the unknown?',
       'What given information is useful?',
@@ -818,7 +862,7 @@ export const QUESTION_SET_BANK = [
         helper: 'Draw, table, equation, work backwards, simplify…',
       },
       'Show the working another student could follow.',
-      'Check your answer a different way.',
+      'Check your answer a different way. Show that check.',
       'Explain the solution in one clean sentence.',
     ],
   }),
@@ -829,13 +873,14 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'Problem solving',
     minutes: 15,
+    note: 'Needs a problem to work on.',
     prompts: [
       'What quantities or variables are in play?',
       'What relationships link them?',
       'Which mathematical idea, formula or model fits?',
-      'Break the problem into the smallest useful steps.',
+      'Break the problem into the smallest useful steps. List them.',
       'Solve — and justify each key move.',
-      'Does your result survive the original problem’s conditions?',
+      'Check your result against the original problem\'s conditions. Does it hold?',
       'What assumptions or limitations should you flag?',
     ],
   }),
@@ -847,16 +892,14 @@ export const QUESTION_SET_BANK = [
     skill: 'Senior mathematics',
     minutes: 18,
     prompts: [
-      {
-        prompt: 'Define the real-world problem in one sentence.',
-        helper: 'What decision or prediction are you supporting?',
-      },
+      'Define the real-world problem in one sentence.',
+      'What decision or prediction are you supporting?',
       'What assumptions must you make — and which are risky?',
       'Identify the variables and relationships.',
       'Build a mathematical model that is simple enough to use.',
-      'Solve the model.',
+      'Solve the model. Paste the result.',
       'Interpret the result back in the original context.',
-      'Is the answer reasonable for the real situation?',
+      'Is the answer reasonable for the real situation? Explain.',
       'Where does the model break down?',
     ],
   }),
@@ -867,9 +910,9 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Mathematical reasoning',
     minutes: 10,
-    note: 'Put a worked example with an error on the board first.',
+    note: 'Put a worked example with an error on the board first. Needs a worked example containing an error, on the board.',
     prompts: [
-      'Scan the working without calculating yet. Where does it feel wrong?',
+      'Scan the working without calculating yet. Which line looks wrong?',
       'Locate the first incorrect step.',
       'What was the student trying to do there?',
       'Why does that step fail?',
@@ -884,13 +927,14 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Mathematical reasoning',
     minutes: 10,
+    note: 'Fire after students have finished a problem. Best as revise — needs a completed problem.',
     prompts: [
       'Name the strategy you used.',
       'Why that strategy — not another?',
       'Show only the steps that earn the answer.',
       'Which step demanded the most thinking?',
       'How did you check?',
-      'Explain so a classmate who was stuck could restart from your words.',
+      'Explain it so a classmate who was stuck could restart from your words.',
     ],
   }),
   set({
@@ -900,12 +944,12 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Mathematical reasoning',
     minutes: 10,
-    note: 'Show Strategy A and B on the board, or have two student methods ready.',
+    note: 'Show Strategy A and B on the board, or have two student methods ready. Needs two methods on the board, or two student methods ready.',
     prompts: [
       'How does Strategy A actually work?',
       'How does Strategy B work?',
       'What do they share underneath?',
-      'Where do they diverge?',
+      'Where do they differ?',
       'Which is more efficient for this problem — and why?',
       'When would the other strategy be the smarter choice?',
     ],
@@ -917,7 +961,7 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Data',
     minutes: 10,
-    note: 'Needs a graph or table visible.',
+    note: 'Needs a graph or table visible. Needs a graph or table visible.',
     prompts: [
       'What does this graph or table claim to represent?',
       'What pattern do you see — not what you expected to see?',
@@ -927,8 +971,23 @@ export const QUESTION_SET_BANK = [
       'What conclusion can you defend — and what can you not?',
     ],
   }),
+  set({
+    id: 'bank-maths-unstick-01',
+    name: 'Get Started — Maths',
+    subject: 'Maths',
+    years: '5–12',
+    skill: 'Unstick',
+    minutes: 3,
+    note: 'NEW. For a student who has read the problem three times and written nothing. Needs a problem in front of them.',
+    prompts: [
+      'Copy out the question in your own words.',
+      'Write down every number the question gives you.',
+      'What are you being asked to find? One thing.',
+      'Name one thing you could try first — even if you are not sure it works.',
+    ],
+  }),
 
-  // Science — investigation & explanation craft
+  // Science
   set({
     id: 'bank-sci-31',
     name: 'Predict–Observe–Explain',
@@ -936,12 +995,12 @@ export const QUESTION_SET_BANK = [
     years: '5–8',
     skill: 'Scientific thinking',
     minutes: 10,
-    note: 'Pause between predict / observe / explain during the demo.',
+    note: 'Pause between predict / observe / explain during the demo. Needs a demonstration or experiment.',
     prompts: [
       'What do you predict will happen?',
-      'Why — using science, not vibes?',
+      'Why — using science, not guesswork?',
       'What actually happened?',
-      'Was your prediction supported, partial or wrong?',
+      'Was your prediction supported, partly right, or wrong?',
       'What scientific idea best explains the result?',
     ],
   }),
@@ -957,7 +1016,7 @@ export const QUESTION_SET_BANK = [
       'What will you deliberately change?',
       'What will you measure?',
       'What must stay the same?',
-      'Why would changing those “same” things wreck the test?',
+      'Why would changing those "same" things ruin the test?',
       'How will you make this a fair test?',
     ],
   }),
@@ -991,13 +1050,13 @@ export const QUESTION_SET_BANK = [
     prompts: [
       {
         prompt: 'C — Claim: What are you asserting?',
-        helper: 'One clear sentence. No waffle.',
+        helper: 'One clear sentence. No padding.',
       },
       'E — Evidence: Which data or observation supports it?',
       'R — Reasoning: Which scientific concept links evidence to claim?',
       'How exactly does the evidence force that claim?',
       'What evidence does not fit — and what do you do with it?',
-      'Write a conclusion a skeptic could still respect.',
+      'Write a conclusion that a doubtful reader could still respect.',
     ],
   }),
   set({
@@ -1007,14 +1066,14 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Data analysis',
     minutes: 10,
-    note: 'Needs results, a graph or a table in view.',
+    note: 'Needs results, a graph or a table in view. Needs results, a graph or a table in view.',
     prompts: [
       'What trend or pattern is actually there?',
       'Which piece of evidence most strongly supports that reading?',
-      'What looks like an outlier or mess?',
-      'How strong is the pattern — tight, soft or wishful?',
+      'Which result looks like an outlier?',
+      'How strong is the pattern — clear, weak, or are you hoping?',
       'What scientific explanation could account for it?',
-      'What conclusion is fair — and what would be overclaiming?',
+      'What conclusion is fair — and what would be claiming too much?',
     ],
   }),
   set({
@@ -1024,6 +1083,7 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'Investigations',
     minutes: 12,
+    note: 'Fire after an investigation is finished and results are in. Best as revise — needs completed results from an investigation.',
     prompts: [
       'How reliable are these results?',
       'Which results look inconsistent — and why might that be?',
@@ -1045,7 +1105,7 @@ export const QUESTION_SET_BANK = [
       'Which scientific ideas must appear in a good explanation?',
       'What evidence or example will you lean on?',
       'Connect the evidence to the science — show the chain.',
-      'Replace one everyday word with precise scientific language.',
+      'Find one everyday word in your answer and replace it with precise scientific language. Type: old word → new word.',
       'Finish: why does this happen?',
     ],
   }),
@@ -1066,11 +1126,26 @@ export const QUESTION_SET_BANK = [
       'Where is the uncertainty, error or limitation?',
       'How valid is the leap from evidence to conclusion?',
       'What alternative explanations survive?',
-      'What additional evidence would tip you one way or the other?',
+      'What additional evidence would change your view?',
+    ],
+  }),
+  set({
+    id: 'bank-science-unstick-01',
+    name: 'Get Started — Science',
+    subject: 'Science',
+    years: '5–12',
+    skill: 'Unstick',
+    minutes: 3,
+    note: 'NEW. For a student stuck at the start of an explanation or investigation.',
+    prompts: [
+      'In one sentence, what are you trying to explain or find out?',
+      'What do you already know about it? Anything counts.',
+      'Name one scientific word that belongs in your answer.',
+      'Write one sentence using that word. Rough is fine.',
     ],
   }),
 
-  // General — tomorrow’s lesson glue
+  // General / cross-curricular
   set({
     id: 'bank-gen-39',
     name: 'Retrieval Warm-Up',
@@ -1096,7 +1171,7 @@ export const QUESTION_SET_BANK = [
     prompts: [
       'Confidence right now: 1–5. Be honest.',
       'What part feels under control?',
-      'Where are you wobbly?',
+      'Where are you unsure?',
       'What single thing would lift you one point?',
     ],
   }),
@@ -1107,13 +1182,13 @@ export const QUESTION_SET_BANK = [
     years: 'All',
     skill: 'Understanding check',
     minutes: 8,
-    note: 'Put a tempting wrong statement or example on the board.',
+    note: 'Put a tempting wrong statement or example on the board. Needs a tempting wrong statement or example on the board.',
     prompts: [
-      'Read it carefully. What smells wrong?',
+      'Read it carefully. What seems wrong here?',
       'Name the incorrect idea.',
       'Why is it wrong?',
       'State the correct idea cleanly.',
-      'What trap would make a student fall for the misconception?',
+      'What makes this mistake so easy to fall for?',
     ],
   }),
   set({
@@ -1126,7 +1201,7 @@ export const QUESTION_SET_BANK = [
     prompts: [
       'What is the one idea from today you must not forget?',
       'Explain it in your own words — no copying the slide.',
-      'Give an example from today’s work.',
+      'Give an example from today\'s work.',
       'What can you do now that you could not do at the start?',
       'What are you still unsure about?',
     ],
@@ -1138,11 +1213,11 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Feedback',
     minutes: 8,
-    note: 'Students need a peer’s work visible.',
+    note: 'Students need a peer\'s work visible. Best as revise — needs a peer\'s work visible.',
     prompts: [
       'What is working well — point to a specific line or move?',
       'Quote or describe that strength.',
-      'Where does meaning go foggy?',
+      'Where does the meaning become unclear?',
       'Ask the writer one sharp question.',
       'Give one change they could make in the next five minutes.',
     ],
@@ -1154,13 +1229,13 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Writing & feedback',
     minutes: 12,
-    note: 'Perfect after Inbox notes or board comments.',
+    note: 'Perfect after Inbox notes or board comments. Best as revise — needs teacher or peer feedback on existing work.',
     prompts: [
       'Which section are you improving?',
       'Read the teacher comment again. What is it actually asking?',
       'In your words: what must change?',
       'Describe the revision you will make before you make it.',
-      'Make the change.',
+      'Make the change. Paste the new version.',
       'How is the work stronger now?',
     ],
   }),
@@ -1171,11 +1246,11 @@ export const QUESTION_SET_BANK = [
     years: '5–10',
     skill: 'Vocabulary',
     minutes: 8,
-    note: 'Put the target word on the board.',
+    note: 'Put the target word on the board. Needs the target word on the board.',
     prompts: [
       'What do you think this word means in this subject?',
-      'Say it in plain words a Year 5 student would get.',
-      'Use it in a sentence about today’s work.',
+      'Say it in plain words a Year 5 student would understand.',
+      'Use it in a sentence about today\'s work.',
       'Name a near-synonym — and how it differs.',
       'Give a clear example.',
       'What do people often think it means that it does not?',
@@ -1194,7 +1269,7 @@ export const QUESTION_SET_BANK = [
       'Find a second difference.',
       'Which difference changes your judgment most?',
       'Why that one?',
-      'What conclusion does the comparison force?',
+      'What conclusion does the comparison lead you to?',
     ],
   }),
   set({
@@ -1204,13 +1279,15 @@ export const QUESTION_SET_BANK = [
     years: 'All',
     skill: 'Live monitoring',
     minutes: 5,
-    note: 'Fire mid-task when you need eyes on the room fast.',
+    note: 'Send mid-task when you need eyes on the room fast.',
     prompts: [
       'What are you doing right now — in one sentence?',
       'What have you finished?',
       'What is next?',
-      'Where are you stuck, if anywhere?',
-      'If stuck: name the exact step that broke.',
+      {
+        prompt: 'Where are you stuck, if anywhere?',
+        helper: 'If stuck: name the exact step that broke.',
+      },
       'What do you need from your teacher in the next two minutes?',
     ],
   }),
@@ -1222,13 +1299,29 @@ export const QUESTION_SET_BANK = [
     skill: 'Understanding',
     minutes: 8,
     prompts: [
-      'Explain today’s idea to someone who missed the lesson.',
+      'Explain today\'s idea to someone who missed the lesson.',
       'What must they understand first?',
       'Give the example that makes it click.',
       'What mistake should they avoid?',
       'What question would prove they got it?',
     ],
   }),
+  set({
+    id: 'bank-gen-unstick-01',
+    name: 'I Don\'t Know Where to Start',
+    subject: 'General',
+    years: 'All',
+    skill: 'Unstick',
+    minutes: 3,
+    note: 'NEW. Subject-neutral. Send when a student says "I don\'t get it" and you need to find out where the block actually is.',
+    prompts: [
+      'In your own words, what is the task asking you to do?',
+      'What part do you understand already?',
+      'What is the exact bit that stopped you?',
+      'Write down anything at all you could put on the page right now.',
+    ],
+  }),
+
 ];
 
 const YEAR_ORDER = ['5–6', '7–8', '9–10', '11–12'];
