@@ -213,7 +213,8 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 /* Compact desktop recipient list; each full row remains a clickable label. */
 .sets-recipient-grid {
   display: grid;
-  grid-template-columns: repeat(var(--recipient-columns, 1), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--recipient-columns, 1), minmax(0, 160px));
+  justify-content: start;
   column-gap: 12px;
   align-content: start;
 }
