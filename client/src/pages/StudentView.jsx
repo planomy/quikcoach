@@ -17,7 +17,8 @@ import RichTextEditor from '../components/RichTextEditor.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import { plainTextToRichHtml } from '../lib/richText.js';
-import { buildStudentDraftHtml, downloadTextFile, safeFilePart, stampForFilename } from '../lib/exportRoom.js';
+import { safeFilePart, stampForFilename } from '../lib/exportRoom.js';
+import { buildStudentWord, saveStudentFile, WORD_MIME } from '../lib/studentDownload.js';
 import { readDraftBackup, saveDraftBackup } from '../lib/draftBackup.js';
 import {
   clearStudentSession,
@@ -142,6 +143,8 @@ export default function StudentView() {
   const [yearInput, setYearInput] = useState('');
   const [recentDismissedCode, setRecentDismissedCode] = useState('');
   const [draftSaveState, setDraftSaveState] = useState('saved');
+  const [exportBusy, setExportBusy] = useState(false);
+  const exportBusyRef = useRef(false);
   const [draftConflict, setDraftConflict] = useState(null);
 
   const socket = useMemo(() => createSocket(), []);
@@ -262,19 +265,9 @@ export default function StudentView() {
     if (!copied) throw new Error('Copy failed');
   }
 
-  async function copyPlainDraft() {
-    try {
-      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(draft);
-      else copyFallback(draft);
-      setImageHint('Plain text copied');
-    } catch {
-      setImageHint('Copy failed — select the draft and copy it manually');
-    }
-    setTimeout(() => setImageHint(''), 2500);
-  }
 
   async function copyFormattedDraft() {
-    const html = buildStudentDraftHtml({ roomCode: activeRoomCode, studentName: student?.name, html: draftHtml, text: draft });
+    const html = draftHtml || plainTextToRichHtml(draft);
     try {
       if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
         await navigator.clipboard.write([
@@ -288,11 +281,12 @@ export default function StudentView() {
       } else {
         copyFallback(draft);
       }
-      setImageHint('Formatted draft copied — paste it into Word');
+      setImageHint('Copied — paste into Word or another app');
     } catch {
       try {
-        copyFallback(draft);
-        setImageHint('Plain text copied — formatted copy was unavailable');
+        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(draft);
+        else copyFallback(draft);
+        setImageHint('Copied — paste into Word or another app');
       } catch {
         setImageHint('Copy failed — select the draft and copy it manually');
       }
@@ -300,16 +294,6 @@ export default function StudentView() {
     setTimeout(() => setImageHint(''), 3000);
   }
 
-  async function downloadWordCopy() {
-    if (!student?.id || !activeRoomCode) return;
-    saveDraftBackup({ code: activeRoomCode, studentId: student.id, name: student.name, text: draft, richHtml: draftHtml });
-    const html = buildStudentDraftHtml({ roomCode: activeRoomCode, studentName: student.name, html: draftHtml, text: draft });
-    const filename = `iboard-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.html`;
-    const result = await downloadTextFile(filename, html, 'text/html;charset=utf-8');
-    if (result?.method === 'cancelled') return;
-    setImageHint(result?.method === 'picker' ? 'Word-friendly draft saved' : 'Word-friendly draft downloaded');
-    setTimeout(() => setImageHint(''), 3000);
-  }
 
   useEffect(() => {
     socket.connect();
@@ -889,20 +873,23 @@ export default function StudentView() {
     });
   }
 
-  async function saveDraftToDevice() {
-    if (!student?.id || !activeRoomCode) return;
-    saveDraftBackup({
-      code: activeRoomCode,
-      studentId: student.id,
-      name: student.name,
-      text: draft,
-      richHtml: draftHtml,
-    });
-    const filename = `iboard-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.txt`;
-    const result = await downloadTextFile(filename, draft, 'text/plain;charset=utf-8');
-    if (result?.method === 'cancelled') return;
-    setImageHint(result?.method === 'picker' ? 'Draft saved' : 'Draft downloaded');
-    setTimeout(() => setImageHint(''), 2500);
+  async function saveDraftToDevice(format) {
+    if (!student?.id || !activeRoomCode || exportBusyRef.current) return;
+    exportBusyRef.current = true;
+    setExportBusy(true);
+    try {
+      saveDraftBackup({ code: activeRoomCode, studentId: student.id, name: student.name, text: draft, richHtml: draftHtml });
+      const filename = `iboard-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.${format}`;
+      const method = await saveStudentFile(filename, format === 'docx' ? WORD_MIME : 'text/plain',
+        () => format === 'docx' ? buildStudentWord(draftHtml, draft) : new Blob([draft], { type: 'text/plain;charset=utf-8' }));
+      if (method !== 'cancelled') setImageHint(method === 'saved' ? 'Writing saved' : 'Writing downloaded — check your downloads');
+    } catch {
+      setImageHint('Could not save the file — please try again. Your writing is still here.');
+    } finally {
+      exportBusyRef.current = false;
+      setExportBusy(false);
+      setTimeout(() => setImageHint(''), 5000);
+    }
   }
 
   function changeRoom() {
@@ -1142,36 +1129,24 @@ export default function StudentView() {
                 <ThemeToggle className="w-full justify-center" />
                 <button
                   type="button"
-                  onClick={saveDraftToDevice}
-                  disabled={!draft.trim()}
-                  className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800 transition hover:border-indigo-300 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
-                >
-                  Download plain text (.txt)
-                </button>
-                <button
-                  type="button"
-                  onClick={copyPlainDraft}
-                  disabled={!draft.trim()}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  Copy plain text
-                </button>
-                <button
-                  type="button"
                   onClick={copyFormattedDraft}
                   disabled={!draft.trim()}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                 >
-                  Copy formatted draft
+                  Copy my writing
                 </button>
-                <button
-                  type="button"
-                  onClick={downloadWordCopy}
-                  disabled={!draft.trim()}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  Download Word copy (.html)
-                </button>
+                <details className="rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-black text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
+                  <summary className="cursor-pointer px-3 py-2 text-center">Download my writing</summary>
+                  <div className="grid gap-1 border-t border-indigo-200 p-2 dark:border-indigo-900">
+                    <button type="button" disabled={!draft.trim() || exportBusy} onClick={() => saveDraftToDevice('docx')} className="rounded-lg px-3 py-2 text-left hover:bg-indigo-100 disabled:opacity-50 dark:hover:bg-indigo-900">
+                      Word document (.docx)
+                    </button>
+                    <button type="button" disabled={!draft.trim() || exportBusy} onClick={() => saveDraftToDevice('txt')} className="rounded-lg px-3 py-2 text-left hover:bg-indigo-100 disabled:opacity-50 dark:hover:bg-indigo-900">
+                      Text file (.txt)
+                    </button>
+                    {exportBusy && <p role="status" className="px-3 py-1 font-medium">Saving your writing…</p>}
+                  </div>
+                </details>
                 <button
                   type="button"
                   onClick={changeRoom}
