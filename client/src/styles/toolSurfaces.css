@@ -1,0 +1,31 @@
+/* Light-theme tool surfaces. Writing, controls and semantic colours retain their roles. */
+html:not(.dark) {
+  --iboard-tool-surface: #dce4ef;
+  --iboard-tool-strip: #cfdae8;
+  --iboard-tool-border: #b9c8db;
+}
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white):not(.bg-indigo-600):not(.bg-slate-950):not(.bg-red-950\/50):not(.fixed.inset-0) {
+  background-color: var(--iboard-tool-surface);
+}
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(div, section, aside, article, nav, fieldset).bg-white,
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(div, section, aside, nav).bg-slate-50,
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(div, section, aside, nav).bg-slate-100 {
+  background-color: var(--iboard-tool-surface);
+}
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) > :is(header, footer),
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) > div.shrink-0.border-b,
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) > div.shrink-0.border-t {
+  background-color: var(--iboard-tool-strip);
+  border-color: var(--iboard-tool-border);
+}
+/* Neutral separators remain visible against blue-grey without changing selection rings. */
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(.border-slate-100, .border-slate-200) {
+  border-color: var(--iboard-tool-border);
+}
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select, [contenteditable="true"], [data-student-writing-pane], [data-iboard-writing-content], iframe, canvas) {
+  background-color: #fff;
+}
+/* Keep secondary labels legible on the tinted surface. */
+html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(p, span, label).text-slate-400 {
+  color: #52647d;
+}

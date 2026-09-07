@@ -18,6 +18,7 @@ import ConfirmDialogHost from './components/ConfirmDialogHost.jsx';
 import './styles/teacherCleanUi.css';
 import './styles/studentCleanUi.css';
 import './styles/studentLiveResponsePolish.css';
+import './styles/toolSurfaces.css';
 
 function TeacherConsole() {
   return (
