@@ -543,13 +543,16 @@ export default function TeacherAnnotationController() {
       // Releasing the mouse on the comment popup must not be treated as a new text
       // selection. In particular, closing the popup on Add comment removes the button
       // before its click event can fire, so the annotation never reaches the server.
-      if (target?.closest?.('[data-teacher-annotation-ui]')) return;
+      // Same for centred prompts (create/rename bank) — they live outside the panel.
+      if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
       const selection = window.getSelection?.();
       if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) {
         setPending(null);
         setQuickStack([]);
         draftNoteLatestRef.current = '';
         quickPrefixRef.current = '';
+        setAddingCustomComment(false);
+        setCustomCommentDraft('');
         return;
       }
       const range = selection.getRangeAt(0);
@@ -743,21 +746,17 @@ export default function TeacherAnnotationController() {
     const existing = activeCustomBank.comments.find(
       (item) => item.toLocaleLowerCase() === comment.toLocaleLowerCase()
     );
-    if (existing) {
-      applyQuickComment(existing, { forceAdd: true });
-      setCustomCommentDraft('');
-      setAddingCustomComment(false);
-      return;
+    // Save to the bank only — do not also stack into the draft comment.
+    if (!existing) {
+      commitBankState((prev) => ({
+        ...prev,
+        banks: prev.banks.map((bank) =>
+          bank.id === activeCustomBank.id
+            ? { ...bank, comments: [...bank.comments, comment].slice(0, MAX_BANK_COMMENTS) }
+            : bank
+        ),
+      }));
     }
-    commitBankState((prev) => ({
-      ...prev,
-      banks: prev.banks.map((bank) =>
-        bank.id === activeCustomBank.id
-          ? { ...bank, comments: [...bank.comments, comment].slice(0, MAX_BANK_COMMENTS) }
-          : bank
-      ),
-    }));
-    applyQuickComment(comment, { forceAdd: true });
     setCustomCommentDraft('');
     setAddingCustomComment(false);
   }

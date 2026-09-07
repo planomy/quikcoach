@@ -102,7 +102,10 @@ export default function ConfirmDialogHost() {
       : 'rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white hover:bg-red-700';
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-slate-950/50 p-4 backdrop-blur-[1px] sm:items-center">
+    <div
+      data-iboard-dialog
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-slate-950/50 p-4 backdrop-blur-[1px] sm:items-center"
+    >
       <div
         className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
         role="dialog"
