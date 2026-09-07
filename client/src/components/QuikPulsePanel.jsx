@@ -181,7 +181,7 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
           <details className="relative">
             <summary title="Choose 2, 3 or 4 answer options" className={`${buttonClass} cursor-pointer list-none`}><span aria-hidden="true" className="h-5 w-5 shrink-0 text-indigo-500 dark:text-indigo-300"><QuikPulseIcon name="choice" /></span><span>A–D Choice ▾</span></summary>
             <div className="absolute left-0 top-full z-20 mt-1 flex gap-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900" aria-label="Number of choices">
-              {[2, 3, 4].map((count) => <button key={count} type="button" aria-label={`${count} answer choices`} className={buttonClass} onClick={(event) => { event.currentTarget.closest('details').open = false; launchChoice(count); }}>{count}</button>)}
+              {[2, 3, 4].map((count) => <button key={count} type="button" aria-label={`${count} answer choices`} className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-slate-200 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-indigo-950" onClick={(event) => { event.currentTarget.closest('details').open = false; launchChoice(count); }}>{count}</button>)}
             </div>
           </details>
           {pulseCards.slice(3).map(quickButton)}
