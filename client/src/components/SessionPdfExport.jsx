@@ -38,7 +38,6 @@ export default function SessionPdfExport({ socket, onClose }) {
       await new Promise(resolve => setTimeout(resolve, 0));
       await downloadSessionPdf(pack, { selectedKeys: selected, detailed });
       setMessage('PDF downloaded. Keep the .iboard file too if you want to reopen the lesson.');
-      onClose?.();
     } catch (e) { setError(e.message || 'Could not export the PDF.'); setMessage(''); }
     finally { setBusy(false); }
   }

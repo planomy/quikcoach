@@ -1,5 +1,4 @@
 import { jsPDF } from 'jspdf';
-import { writingPlainFromStudent } from './richText.js';
 
 export function reportStudents(pack) {
   const students = (pack.students || []).map(s => ({ ...s, key: s.exportId,
@@ -92,15 +91,9 @@ function words(text) {
   return String(text || '').trim().split(/\s+/).filter(Boolean).length;
 }
 
-function writingBody(student, events) {
-  if (student.archived) return events.at(-1)?.after || '(No recorded writing)';
-  const plain = writingPlainFromStudent(student);
-  return plain || '(No writing received)';
-}
-
 /** Report only context actually saved for this student. */
 export function writingSummary(pack, student, events) {
-  const latest = writingBody(student, events);
+  const latest = student.archived ? events.at(-1)?.after || '' : student.text || '';
   const start = events[0]?.at;
   const finish = events.at(-1)?.at;
   const spanMinutes = Number.isFinite(start) && Number.isFinite(finish)
@@ -111,13 +104,12 @@ export function writingSummary(pack, student, events) {
     if (match) titles.add(match[1].trim());
   }
   return {
-    latestWords: words(latest === '(No writing received)' || latest === '(No recorded writing)' ? '' : latest),
+    latestWords: words(latest),
     startingWords: events.length ? words(events[0].after) : null,
     start, finish, spanMinutes,
     label: String(pack.draftTrail?.label || '').trim(),
     setTitles: [...titles],
     latestChange: [...events].reverse().find(e => ['change', 'paste'].includes(e.type))?.at,
-    latestText: latest,
   };
 }
 
@@ -137,32 +129,11 @@ function changeDescription(event) {
   return 'No visible text change.';
 }
 
-/** Sample revisions; keep milestones, but collapse runs of reconnect gaps. */
 function buildJourneyEvents(events, detailed) {
   const revisions = events.filter((e) => ['change', 'paste'].includes(e.type));
   const selected = new Set(sampleRevisions(revisions, detailed));
-  const out = [];
-  let pendingGaps = 0;
-  let firstGap = null;
-  const flushGaps = () => {
-    if (!pendingGaps) return;
-    out.push({ ...firstGap, gapCount: pendingGaps });
-    pendingGaps = 0;
-    firstGap = null;
-  };
-  for (const event of events) {
-    if (event.type === 'gap') {
-      if (!pendingGaps) firstGap = event;
-      pendingGaps += 1;
-      continue;
-    }
-    flushGaps();
-    if (['baseline', 'resume', 'stop'].includes(event.type) || selected.has(event)) {
-      out.push(event);
-    }
-  }
-  flushGaps();
-  return out;
+  const milestones = new Set(['baseline', 'resume', 'gap', 'stop']);
+  return events.filter((event) => milestones.has(event.type) || selected.has(event));
 }
 
 /** Same renderer runs in the browser and the PDF layout check. No server upload. */
@@ -230,7 +201,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
       paragraph('Elapsed time between first and last records; not continuous working time or the full lesson duration.', { size: 8, colour: [90, 102, 117] });
     }
     heading(student.archived ? 'Last recorded writing' : 'Writing at export');
-    paragraph(summary.latestText);
+    paragraph(student.archived ? events.at(-1)?.after || '(No recorded writing)' : student.text || '(No writing received)');
     if (student.image?.base64) {
       heading('Student image / working');
       try {
@@ -246,34 +217,19 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
     if (!events.length) { paragraph('No Draft Trail was captured for this student. This does not indicate misconduct.'); continue; }
     const revisions = events.filter(e => ['change', 'paste'].includes(e.type));
     const pastes = events.filter(e => e.type === 'paste');
-    const gapCount = events.filter(e => e.type === 'gap').length;
-    paragraph(`${events.length} recorded events | ${revisions.length} text-change checkpoints | ${pastes.length} browser-reported pastes | ${gapCount} unrecorded intervals`);
+    paragraph(`${events.length} recorded events | ${revisions.length} text-change checkpoints | ${pastes.length} browser-reported pastes | ${events.filter(e => ['gap', 'resume'].includes(e.type)).length} unrecorded intervals`);
     paragraph(`First record: ${when(events[0].at)}\nLatest record: ${when(events.at(-1).at)}`, { size: 9 });
     const journeyEvents = buildJourneyEvents(events, detailed);
     const shownRevisions = journeyEvents.filter(e => ['change', 'paste'].includes(e.type)).length;
     heading(detailed ? 'Writing journey (sampled)' : 'Writing journey');
     paragraph(
       detailed
-        ? `Showing ${shownRevisions} of ${revisions.length} text changes plus milestones. Meaningful revisions are prioritised. Each entry shows the edit, not a full reprint of the draft (full writing is above). Reconnect gaps are listed without reprinting writing.`
-        : 'Up to three selected revision extracts plus recording milestones. Rewording, deletions and revisions following inline feedback are prioritised. Full writing is above; the .iboard file keeps the complete trail. Reconnect gaps are listed without reprinting writing.'
+        ? `Showing ${shownRevisions} of ${revisions.length} text changes plus milestones. Meaningful revisions are prioritised. Each entry shows the edit, not a full reprint of the draft (full writing is above).`
+        : 'Up to three selected revision extracts plus recording milestones. Rewording, deletions and revisions following inline feedback are prioritised. Full writing is above; the .iboard file keeps the complete trail.'
     );
     if (!journeyEvents.length) paragraph('No Draft Trail events were recorded after the baseline.');
     for (const event of journeyEvents) {
       space(12);
-      if (event.type === 'gap') {
-        const count = Number(event.gapCount) || 1;
-        paragraph(
-          `${when(event.at)} | ${count === 1 ? labels.gap : `${count} unrecorded / reconnect intervals`}`,
-          { size: 9, colour: [29, 74, 116], gap: 1 }
-        );
-        paragraph(
-          count === 1
-            ? 'Connection interrupted. Writing during this interval was not recorded continuously.'
-            : 'Repeated connection interruptions. Writing during these intervals was not recorded continuously.',
-          { size: 8, colour: [90, 102, 117], gap: 2 }
-        );
-        continue;
-      }
       paragraph(`${when(event.at)} | ${labels[event.type]}`, { size: 9, colour: [29, 74, 116], gap: 1 });
 
       if (event.type === 'stop') { paragraph('Capture stopped. Later work is outside this recording segment.', { size: 9 }); continue; }
@@ -287,13 +243,8 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
         paragraph(extract(event.after, event.start, event.inserted?.length), { size: 8, colour: [35, 45, 62], gap: 2 });
         continue;
       }
-      if (event.type === 'resume') {
-        paragraph('Recording resumed from this draft point:', { size: 8, colour: [90, 102, 117], gap: 1 });
-        paragraph(truncateDraft(event.after || event.text || '', detailed ? 400 : 220), { size: 8, colour: [35, 45, 62], gap: 2 });
-        continue;
-      }
-      if (event.type === 'baseline') {
-        paragraph(truncateDraft(event.after || event.text || '', detailed ? 500 : 280), { size: 8, colour: [35, 45, 62], gap: 2 });
+      if (['baseline', 'resume', 'gap'].includes(event.type)) {
+        paragraph(truncateDraft(event.after || event.text || '', detailed ? 900 : 500), { size: 8, colour: [35, 45, 62], gap: 2 });
       }
     }
     if (summary.latestChange) paragraph(`Latest recorded text change: ${when(summary.latestChange)}`, { size: 9, colour: [29, 74, 116] });

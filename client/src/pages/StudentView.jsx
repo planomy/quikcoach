@@ -146,7 +146,6 @@ export default function StudentView() {
   const [exportBusy, setExportBusy] = useState(false);
   const exportBusyRef = useRef(false);
   const [draftConflict, setDraftConflict] = useState(null);
-  const [removedByTeacher, setRemovedByTeacher] = useState(null);
 
   const socket = useMemo(() => createSocket(), []);
   const draftTrailTokenRef = useRef('');
@@ -155,7 +154,6 @@ export default function StudentView() {
   const saveBootstrappedRef = useRef(false);
   const saveTimerRef = useRef(null);
   const studentRef = useRef(null);
-  const removedRef = useRef(false);
   /** Until React commits `student`, `room:state` may arrive first; match payload by this id. */
   const hydrateStudentIdRef = useRef(null);
   const wasDisconnectedRef = useRef(false);
@@ -244,86 +242,6 @@ export default function StudentView() {
     setDraftHtml(joinedDraft.html);
     setDraftConflict(joinedDraft.conflict || null);
     setDraftSaveState(joinedDraft.conflict ? 'local' : 'saved');
-  }
-
-  function applyTeacherRemoval(payload = {}) {
-    if (removedRef.current) return;
-    removedRef.current = true;
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-    saveBootstrappedRef.current = false;
-    const code = String(payload.code || room?.code || codeInput || '')
-      .replace(/\D/g, '')
-      .slice(0, 4);
-    const snapshot = {
-      code,
-      name: String(studentRef.current?.name || student?.name || '').trim().slice(0, 120),
-      text: String(pendingRef.current?.text ?? draft ?? ''),
-      html: String(pendingRef.current?.richTextHtml ?? draftHtml ?? ''),
-    };
-    if (code.length === 4 && snapshot.text) {
-      saveDraftBackup({
-        code,
-        studentId: Number(studentRef.current?.id || student?.id || 0) || Date.now(),
-        name: snapshot.name || 'student',
-        text: snapshot.text,
-        richHtml: snapshot.html,
-      });
-    }
-    clearStudentSession();
-    if (code.length === 4) forgetRecentStudentSession(code);
-    hydrateStudentIdRef.current = null;
-    studentRef.current = null;
-    window.__iboardStudentId = 0;
-    window.__iboardStudentRoomCode = '';
-    setStudent(null);
-    setRoom(null);
-    setJoined(false);
-    setDraftSaveState('saved');
-    setError('');
-    setRemovedByTeacher(snapshot);
-  }
-
-  function returnToJoinAfterRemoval() {
-    const code = String(removedByTeacher?.code || '').replace(/\D/g, '').slice(0, 4);
-    removedRef.current = false;
-    setRemovedByTeacher(null);
-    setDraft('');
-    setDraftHtml('');
-    lastSentRef.current = '';
-    pendingRef.current = { text: '', richTextHtml: '' };
-    if (code.length === 4) setCodeInput(code);
-  }
-
-  async function downloadRemovedDraft(format) {
-    if (!removedByTeacher || exportBusyRef.current) return;
-    exportBusyRef.current = true;
-    setExportBusy(true);
-    try {
-      const code = String(removedByTeacher.code || '0000').replace(/\D/g, '').slice(0, 4) || '0000';
-      const name = removedByTeacher.name || 'student';
-      const filename = `iboard-${safeFilePart(name)}-room${code}-${stampForFilename()}.${format}`;
-      const method = await saveStudentFile(
-        filename,
-        format === 'docx' ? WORD_MIME : 'text/plain',
-        () =>
-          format === 'docx'
-            ? buildStudentWord(removedByTeacher.html, removedByTeacher.text)
-            : new Blob([removedByTeacher.text || ''], { type: 'text/plain;charset=utf-8' })
-      );
-      if (method !== 'cancelled') {
-        setImageHint(method === 'saved' ? 'Writing saved' : 'Writing downloaded — check your downloads');
-        setTimeout(() => setImageHint(''), 5000);
-      }
-    } catch {
-      setImageHint('Could not save the file — please try again.');
-      setTimeout(() => setImageHint(''), 5000);
-    } finally {
-      exportBusyRef.current = false;
-      setExportBusy(false);
-    }
   }
 
   function keepServerDraft() {
@@ -663,7 +581,6 @@ export default function StudentView() {
     }
 
     const fingerprint = `${draft}\n${draftHtml}`;
-    if (removedRef.current) return undefined;
     if (!saveBootstrappedRef.current) {
       saveBootstrappedRef.current = true;
       lastSentRef.current = fingerprint;
@@ -681,12 +598,7 @@ export default function StudentView() {
       const payload = pendingRef.current;
       const sentAt = `${payload.text}\n${payload.richTextHtml}`;
       socket.emit('student:text', payload, (ack) => {
-        if (removedRef.current) return;
         if (sentAt !== `${pendingRef.current.text}\n${pendingRef.current.richTextHtml}`) return;
-        if (ack && (ack.code === 'removed' || ack.error === 'removed')) {
-          applyTeacherRemoval({ code: String(room?.code || codeInput || '') });
-          return;
-        }
         if (ack && ack.ok === false) {
           setDraftSaveState('error');
           return;
@@ -705,7 +617,6 @@ export default function StudentView() {
   useEffect(() => {
     if (!joined || !student?.id) return undefined;
     const timer = setInterval(() => {
-      if (removedRef.current) return;
       if (!saveBootstrappedRef.current) return;
       if (!socket.connected) {
         setDraftSaveState('offline');
@@ -716,12 +627,7 @@ export default function StudentView() {
       if (fingerprint === lastSentRef.current) return;
       setDraftSaveState('saving');
       socket.emit('student:text', payload, ack => {
-        if (removedRef.current) return;
         if (fingerprint !== `${pendingRef.current.text}\n${pendingRef.current.richTextHtml}`) return;
-        if (ack?.code === 'removed' || ack?.error === 'removed') {
-          applyTeacherRemoval({ code: String(room?.code || codeInput || '') });
-          return;
-        }
         if (ack?.ok) {
           lastSentRef.current = fingerprint;
           setDraftSaveState('saved');
@@ -732,12 +638,6 @@ export default function StudentView() {
     }, 5000);
     return () => clearInterval(timer);
   }, [socket, joined, student?.id]);
-
-  useEffect(() => {
-    const onRemoved = (payload) => applyTeacherRemoval(payload || {});
-    socket.on('student:removed', onRemoved);
-    return () => socket.off('student:removed', onRemoved);
-  }, [socket]);
 
   useEffect(() => {
     if (!joined || !student?.id) return undefined;
@@ -1049,62 +949,6 @@ export default function StudentView() {
       .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
   }, [feedbackInbox, broadcastHistory, materialHistory, inboxUnreadIds, dismissedInboxIds]);
   const inboxTabCount = inboxUnreadIds.size;
-
-  if (removedByTeacher) {
-    const roomLabel = String(removedByTeacher.code || '').replace(/\D/g, '').slice(0, 4);
-    const hasWriting = String(removedByTeacher.text || '').trim().length > 0;
-    return (
-      <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
-        <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-card dark:border-slate-700 dark:bg-slate-900">
-            <IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" />
-            <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">
-              Your card was removed
-            </h1>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              Your teacher removed this card from the room
-              {roomLabel ? ` (${roomLabel})` : ''}. Your writing is still on this device
-              {hasWriting ? '' : ' (this draft was empty)'}.
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              If that was a mistake, rejoin with your real name.
-            </p>
-            {imageHint ? <p className="mt-3 text-sm font-semibold text-emerald-700 dark:text-emerald-300">{imageHint}</p> : null}
-            <div className="mt-6 flex flex-col gap-2">
-              {hasWriting ? (
-                <>
-                  <button
-                    type="button"
-                    disabled={exportBusy}
-                    onClick={() => downloadRemovedDraft('docx')}
-                    className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
-                  >
-                    {exportBusy ? 'Preparing…' : 'Download Word draft'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={exportBusy}
-                    onClick={() => downloadRemovedDraft('txt')}
-                    className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    Download text draft
-                  </button>
-                </>
-              ) : null}
-              <button
-                type="button"
-                onClick={returnToJoinAfterRemoval}
-                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700"
-              >
-                Rejoin room
-              </button>
-            </div>
-          </div>
-        </div>
-        <AppFooter />
-      </div>
-    );
-  }
 
   if (!joined) {
     return (

@@ -177,15 +177,11 @@ export default function AudienceQnaTeacher({
               open={false}
               onOpenChange={(next) => setReplyOpenId(next ? question.id : null)}
               showToggle
-              onSent={() => {
-                setReplyOpenId(null);
-                update(question, 'answer');
-              }}
             />
           ) : null}
           {(mode === 'pending' || mode === 'published') && (
-            <button type="button" onClick={() => finishQuestion(question, mode)} className={TEXT_ACTION} title="Clear without a private reply">
-              Dismiss
+            <button type="button" onClick={() => finishQuestion(question, mode)} className={TEXT_ACTION}>
+              Done
             </button>
           )}
           {mode === 'answered' && (
@@ -209,10 +205,6 @@ export default function AudienceQnaTeacher({
             open
             onOpenChange={(next) => setReplyOpenId(next ? question.id : null)}
             showToggle
-            onSent={() => {
-              setReplyOpenId(null);
-              update(question, 'answer');
-            }}
             className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800"
           />
         ) : null}

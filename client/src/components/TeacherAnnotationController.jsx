@@ -184,14 +184,9 @@ function cardForStudent(studentId) {
   const id = Number(studentId);
   if (!id) return null;
 
-  // Full draft puts role="dialog" on the article itself (not a nested article).
-  const dialogSelf = document.querySelector(
-    `article[data-student-id="${id}"][role="dialog"][aria-modal="true"]`
-  );
-  const nestedDialogArticle = document.querySelector(
+  const modalArticle = document.querySelector(
     `[role="dialog"][aria-modal="true"] article[data-student-id="${id}"]`
   );
-  const modalArticle = dialogSelf || nestedDialogArticle;
   if (modalArticle) {
     const modalPane =
       modalArticle.querySelector('[data-student-writing-pane]') ||
@@ -200,8 +195,8 @@ function cardForStudent(studentId) {
   }
 
   const article =
-    document.querySelector(`main article[data-student-id="${id}"]:not([role="dialog"])`) ||
-    document.querySelector(`article[data-student-id="${id}"]:not([role="dialog"])`) ||
+    document.querySelector(`main article[data-student-id="${id}"]`) ||
+    document.querySelector(`article[data-student-id="${id}"]`) ||
     document.querySelector(`h2[title="ID #${id}"]`)?.closest('article');
   const textPane =
     article?.querySelector('[data-student-writing-pane]') || article?.querySelector('div.max-h-52');
@@ -764,23 +759,6 @@ export default function TeacherAnnotationController() {
     });
   }
 
-  function handleQuickCommentClick(event, comment) {
-    if (event.shiftKey) {
-      applyQuickComment(comment);
-      return;
-    }
-    // Single click: send this chit immediately (keep any free-typed prefix).
-    const prefix = quickStack.length === 0
-      ? String(draftNoteLatestRef.current || '').trim()
-      : quickPrefixRef.current;
-    quickPrefixRef.current = prefix;
-    const text = composeQuickDraft(prefix, [comment]);
-    draftNoteLatestRef.current = text;
-    setDraftNote(text);
-    setQuickStack([comment]);
-    addComment(text);
-  }
-
   function undoQuickComment() {
     setQuickStack((prev) => {
       if (!prev.length) return prev;
@@ -919,8 +897,8 @@ export default function TeacherAnnotationController() {
     setAddingCustomComment(false);
   }
 
-  function addComment(noteOverride) {
-    const note = String(noteOverride ?? draftNoteLatestRef.current ?? draftNote).trim();
+  function addComment() {
+    const note = draftNote.trim();
     if (!socket || !pending || !note) return;
     const quotedText = pending.quote;
     setCommentError('');
@@ -966,13 +944,6 @@ export default function TeacherAnnotationController() {
 
   async function deleteComment(marker) {
     if (!socket) return;
-    const ok = await confirmDialog({
-      title: 'Delete this inline comment?',
-      message: 'This removes the highlight and note from the student’s writing.',
-      confirmLabel: 'Delete comment',
-      tone: 'danger',
-    });
-    if (!ok) return;
     socket.emit('teacher:annotation-delete', { annotationId: marker.annotation.id });
     setOpenMarker(null);
   }
@@ -1213,8 +1184,7 @@ export default function TeacherAnnotationController() {
                     >
                       <button
                         type="button"
-                        onClick={(event) => handleQuickCommentClick(event, comment)}
-                        title="Click to send · Shift+click to stack more"
+                        onClick={() => applyQuickComment(comment)}
                         className="px-1.5 py-0.5 text-left hover:brightness-95"
                       >
                         {comment}
@@ -1299,7 +1269,7 @@ export default function TeacherAnnotationController() {
               }
               if (event.key === 'Escape') closePending();
             }}
-            placeholder="Type… Return to add"
+            placeholder="Type your comment…"
             className="mt-2 min-h-[3.25rem] w-full shrink-0 resize-none rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
           {commentError && (
@@ -1307,8 +1277,7 @@ export default function TeacherAnnotationController() {
               {commentError}
             </p>
           )}
-          <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2">
-            <p className="text-[9px] font-semibold text-slate-400">Click chit to send · Shift+click stacks · Return adds</p>
+          <div className="mt-1.5 flex shrink-0 items-center justify-end gap-2">
             <div className="flex gap-1.5">
               <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
               <button type="button" disabled={!draftNote.trim()} onClick={addComment} className="rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>

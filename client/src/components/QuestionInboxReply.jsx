@@ -1,5 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { ensureTeacherRoom } from '../lib/teacherRoom.js';
 
 const TOGGLE_CLASS = 'text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300';
@@ -14,9 +14,8 @@ export default function QuestionInboxReply({
   open: openProp,
   onOpenChange,
   showToggle = true,
-  defaultOpen = false,
 }) {
-  const [openInternal, setOpenInternal] = useState(defaultOpen);
+  const [openInternal, setOpenInternal] = useState(false);
   const open = openProp ?? openInternal;
   const setOpen = onOpenChange ?? setOpenInternal;
 
@@ -24,24 +23,6 @@ export default function QuestionInboxReply({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
-  const textareaRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      const field = textareaRef.current;
-      if (!field) return;
-      if (document.activeElement === field) return;
-      field.focus({ preventScroll: true });
-      const len = field.value.length;
-      try {
-        field.setSelectionRange(len, len);
-      } catch {
-        /* ignore */
-      }
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [open, studentId]);
 
   function sendReply() {
     const answer = draft.trim();
@@ -69,7 +50,6 @@ export default function QuestionInboxReply({
         }
         setDraft('');
         setSent(true);
-        setOpen(false);
         onSent?.();
         setTimeout(() => setSent(false), 2800);
       });
@@ -87,26 +67,22 @@ export default function QuestionInboxReply({
   return (
     <div className={className}>
       {showToggle ? (
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="text-[11px] font-medium text-slate-400">Return sends · Shift+Return new line</p>
+        <div className="mb-2 flex justify-end">
           <CloseButton onClick={() => setOpen(false)} label="Close" />
         </div>
-      ) : (
-        <p className="mb-2 text-[11px] font-medium text-slate-400">Return sends · Shift+Return new line</p>
-      )}
+      ) : null}
       <textarea
-        ref={textareaRef}
         rows={3}
         maxLength={5000}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === 'Enter' && !event.shiftKey) {
+          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
             event.preventDefault();
             sendReply();
           }
         }}
-        placeholder={`Private reply${studentName ? ` to ${studentName}` : ''}…`}
+        placeholder="Private reply…"
         className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
       />
       <div className="mt-2 flex flex-wrap items-center justify-end gap-2">

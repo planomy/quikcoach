@@ -235,7 +235,6 @@ function TeacherDashboardInner() {
   const [noteAnchorRect, setNoteAnchorRect] = useState(null);
   const [noteBox, setNoteBox] = useState(null);
   const noteComposerRef = useRef(null);
-  const noteTextareaRef = useRef(null);
   const [broadcastPick, setBroadcastPick] = useState({});
   const [snapshots, setSnapshots] = useState([]);
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
@@ -862,25 +861,6 @@ function TeacherDashboardInner() {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [noteTarget, noteSending]);
-
-  // Focus after the composer is placed and visible — autofocus alone fails while off-screen.
-  useEffect(() => {
-    if (!noteTarget || !noteBox) return undefined;
-    const frame = requestAnimationFrame(() => {
-      const field = noteTextareaRef.current;
-      if (!field) return;
-      // Placement re-runs as the draft grows; never steal an active caret.
-      if (document.activeElement === field) return;
-      field.focus({ preventScroll: true });
-      const len = field.value.length;
-      try {
-        field.setSelectionRange(len, len);
-      } catch {
-        /* some browsers reject selection on empty fields */
-      }
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [noteTarget, noteBox]);
 
   useEffect(() => {
     if (!toolsPanelOpen && !addCardOpen && !settingsOpen) return undefined;
@@ -3637,16 +3617,15 @@ function TeacherDashboardInner() {
             </label>
             <textarea
               id="private-note-text"
-              ref={noteTextareaRef}
+              autoFocus
               rows={4}
               maxLength={5000}
               value={noteDraft}
               onChange={(event) => setNoteDraft(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
+                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
                   event.preventDefault();
                   sendNoteToStudent();
-                  return;
                 }
                 if (event.key === 'Escape') closeNoteComposer();
               }}
@@ -3654,9 +3633,7 @@ function TeacherDashboardInner() {
               className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
             <div className="mt-1.5 flex items-start justify-between gap-3">
-              <p className={`text-xs font-medium ${noteError ? 'text-red-600 dark:text-red-300' : 'text-slate-400'}`}>
-                {noteError || 'Return sends · Shift+Return new line'}
-              </p>
+              <p className="text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p>
               <p className="shrink-0 text-[11px] text-slate-400">{noteDraft.length}/5000</p>
             </div>
           </div>

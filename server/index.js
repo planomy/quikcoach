@@ -418,33 +418,6 @@ function isStudentConnected(studentId) {
   return (connectedStudentSockets.get(Number(studentId))?.size || 0) > 0;
 }
 
-/** Tell a removed student's open tabs to stop autosave and show a calm exit screen. */
-function notifyStudentRemoved(io, studentId, roomCode) {
-  const sid = Number(studentId);
-  const code = normalizeRoomCode(roomCode);
-  if (!sid || code.length !== 4) return;
-  io.to(studentSocketName(sid)).emit('student:removed', {
-    code,
-    reason: 'teacher_removed',
-    at: Date.now(),
-  });
-  const socketIds = connectedStudentSockets.get(sid);
-  if (socketIds) {
-    for (const socketId of [...socketIds]) {
-      const client = io.sockets.sockets.get(socketId);
-      if (client) {
-        try {
-          client.leave(studentSocketName(sid));
-        } catch {
-          /* ignore */
-        }
-        client.data.studentId = 0;
-      }
-      removeStudentPresence(sid, socketId);
-    }
-  }
-}
-
 /** Keep base64 in SQLite; send students/teachers a small HTTP URL over Socket.IO. */
 function liveActivityForClients(activity) {
   if (!activity) return null;
@@ -750,11 +723,11 @@ function emitBroadcastToRoom(code, payload) {
 }
 
 io.on('connection', (socket) => {
-  socket.on('teacher:draft-trail-control', ({ active, label } = {}, cb) => {
+  socket.on('teacher:draft-trail-control', ({ active } = {}, cb) => {
     const code = socket.data.roomCode;
     if (socket.data.role !== 'teacher' || !code || typeof active !== 'boolean') return cb?.({ ok: false });
     try {
-      const status = setTrailRecording(code, active, queries.listStudents(db, code), Date.now(), { label });
+      const status = setTrailRecording(code, active, queries.listStudents(db, code));
       broadcastRoom(code);
       cb?.({ ok: true, status });
     } catch (e) { cb?.({ ok: false, error: e.message }); }
@@ -1587,12 +1560,8 @@ io.on('connection', (socket) => {
       }
       const roomRow = queries.ensureRoom(db, code);
       const beforeRow = queries.getStudent(db, sid);
-      if (!beforeRow || normalizeRoomCode(beforeRow.room_code) !== code) {
-        cb?.({ ok: false, error: 'removed', code: 'removed' });
-        return;
-      }
-      if (roomRow.freeze_class) {
-        cb?.({ ok: false, error: 'frozen', code: 'frozen' });
+      if (!beforeRow || normalizeRoomCode(beforeRow.room_code) !== code || roomRow.freeze_class) {
+        cb?.({ ok: false });
         return;
       }
       let t = String(text ?? '');
@@ -1899,7 +1868,6 @@ io.on('connection', (socket) => {
         cb?.({ ok: false, error: 'Student not found' });
         return;
       }
-      notifyStudentRemoved(io, sid, code);
       queries.deleteStudent(db, sid);
       if (row.image_filename) unlinkRoomMedia(code, row.image_filename);
       if (row.teacher_markup_filename) unlinkRoomMedia(code, row.teacher_markup_filename);
