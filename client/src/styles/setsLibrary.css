@@ -19,7 +19,7 @@
 /* The teacher already clicked Ask. Keep only the close control, without spending a row on a redundant header. */
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > div:first-child {
   position: absolute;
-  top: 0.25rem;
+  top: 1rem;
   right: 0.25rem;
   z-index: 40;
   border: 0;
@@ -29,6 +29,11 @@
 
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > div:first-child > div:first-child {
   display: none;
+}
+
+/* Keep the close control in a dedicated slot beside the Quick tiles. */
+.iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > section[aria-label="Quick questions"] {
+  padding-right: 3.25rem;
 }
 
 /* DOM order is shared by Write one and Sets: Quick, tabs, then workspace. */
