@@ -14,8 +14,9 @@ export default function QuestionInboxReply({
   open: openProp,
   onOpenChange,
   showToggle = true,
+  defaultOpen = false,
 }) {
-  const [openInternal, setOpenInternal] = useState(false);
+  const [openInternal, setOpenInternal] = useState(defaultOpen);
   const open = openProp ?? openInternal;
   const setOpen = onOpenChange ?? setOpenInternal;
 
@@ -27,11 +28,20 @@ export default function QuestionInboxReply({
 
   useEffect(() => {
     if (!open) return undefined;
-    const id = window.requestAnimationFrame(() => {
-      textareaRef.current?.focus?.();
+    const frame = window.requestAnimationFrame(() => {
+      const field = textareaRef.current;
+      if (!field) return;
+      if (document.activeElement === field) return;
+      field.focus({ preventScroll: true });
+      const len = field.value.length;
+      try {
+        field.setSelectionRange(len, len);
+      } catch {
+        /* ignore */
+      }
     });
-    return () => window.cancelAnimationFrame(id);
-  }, [open]);
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, studentId]);
 
   function sendReply() {
     const answer = draft.trim();
@@ -77,24 +87,26 @@ export default function QuestionInboxReply({
   return (
     <div className={className}>
       {showToggle ? (
-        <div className="mb-2 flex justify-end">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-[11px] font-medium text-slate-400">Return sends · Shift+Return new line</p>
           <CloseButton onClick={() => setOpen(false)} label="Close" />
         </div>
-      ) : null}
+      ) : (
+        <p className="mb-2 text-[11px] font-medium text-slate-400">Return sends · Shift+Return new line</p>
+      )}
       <textarea
         ref={textareaRef}
         rows={3}
         maxLength={5000}
         value={draft}
-        autoFocus
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
-          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+          if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             sendReply();
           }
         }}
-        placeholder="Private reply…"
+        placeholder={`Private reply${studentName ? ` to ${studentName}` : ''}…`}
         className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
       />
       <div className="mt-2 flex flex-wrap items-center justify-end gap-2">

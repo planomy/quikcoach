@@ -243,10 +243,12 @@ export default function TeacherLiveQuestionIndicators() {
           </div>
 
           <QuestionInboxReply
+            key={selectedQuestion.id}
             socket={connection.socket}
             studentId={selectedQuestion.studentId}
             studentName={selectedQuestion.studentName}
             questionText={selectedQuestion.text}
+            defaultOpen
             onSent={() => {
               setSelectedQuestionId(null);
               setMessage('');
