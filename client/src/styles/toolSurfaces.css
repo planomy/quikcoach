@@ -147,3 +147,31 @@ html.dark section:has(#sets-subject-filter) .grid > article:has(input:checked) {
 html.dark section:has(#sets-subject-filter) .grid > article:hover {
   background-color: #343e4b;
 }
+
+/* Recipient picker: one quiet shell, two compact columns and clear actions. */
+html .sets-recipient-panel .sets-recipient-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+}
+html:not(.dark) .sets-recipient-panel > .recipient-heading,
+html:not(.dark) .sets-recipient-panel > .recipient-all,
+html:not(.dark) .sets-recipient-panel > .recipient-actions {
+  background-color: transparent;
+}
+html:not(.dark) .sets-recipient-panel > .recipient-names {
+  background-color: #f8fafc;
+}
+html:not(.dark) .sets-recipient-panel .sets-recipient-row:has(input:checked) {
+  background-color: #e8eefb;
+}
+html:not(.dark) .sets-recipient-panel .sets-recipient-row:hover {
+  background-color: #dbe6fa;
+}
+html:not(.dark) .sets-recipient-panel .recipient-inbox {
+  background-color: #fff;
+  border-color: #818cf8;
+  color: #4338ca;
+}
+html:not(.dark) .sets-recipient-panel .recipient-inbox:hover:not(:disabled) {
+  background-color: #eef2ff;
+}

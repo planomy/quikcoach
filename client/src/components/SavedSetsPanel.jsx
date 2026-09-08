@@ -178,7 +178,7 @@ export default function SavedSetsPanel({
       const rect = dock.getBoundingClientRect();
       const gap = 8;
       const maxWidth = mode === 'recipients'
-        ? (recipientChoices.length <= 2 ? 380 : recipientChoices.length <= 12 ? 416 : 600)
+        ? 416
         : 26 * 16;
       const minWidth = 20 * 16;
       const available = window.innerWidth - rect.right - gap - 8;
@@ -712,17 +712,17 @@ export default function SavedSetsPanel({
 
       {mode === 'recipients' && previewFlyout && createPortal(
         <aside data-iboard-sets-preview="true" role="dialog" aria-label="Select students"
-          className="sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          className="sets-recipient-panel sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{ top: previewFlyout.top, left: previewFlyout.left, height: 'auto', maxHeight: `calc(100dvh - ${previewFlyout.top + 8}px)`, width: previewFlyout.width }}>
-          <div className="shrink-0 border-b border-slate-100 p-4 dark:border-slate-800">
+          <div className="recipient-heading shrink-0 px-4 pt-4 pb-2">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Select students</p>
+              <h4 className="text-base font-bold text-slate-950 dark:text-white">Select students</h4>
               <button type="button" disabled={sending} onClick={() => setMode(activeSet ? 'preview' : '')} className="text-xs font-bold text-slate-500 disabled:opacity-40">Back</button>
             </div>
-            <h4 className="mt-2 text-lg font-black text-slate-950 dark:text-white">{recipientSets.length === 1 ? recipientSets[0].name : `${recipientSets.length} sets selected`}</h4>
+            <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-300">{recipientSets.length === 1 ? recipientSets[0].name : `${recipientSets.length} sets selected`}</p>
             {recipientSets.length > 1 && <p className="mt-1 text-xs text-slate-500">{recipientSets.map(set => set.name).join(' · ')}</p>}
           </div>
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+          <div className="recipient-all flex shrink-0 items-center justify-between px-4 py-2">
             <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
               <input type="checkbox" disabled={sending || !recipientChoices.length} checked={recipientChoices.length > 0 && validRecipientIds.length === recipientChoices.length}
                 onChange={e => setRecipientIds(e.target.checked ? recipientChoices.map(s => Number(s.id)) : [])} className="h-4 w-4 accent-indigo-600" />
@@ -730,8 +730,8 @@ export default function SavedSetsPanel({
             </label>
             <span className="text-xs text-slate-500">{validRecipientIds.length} selected</span>
           </div>
-          <div className="min-h-0 flex-[0_1_auto] overflow-y-auto p-3">
-            <div className="sets-recipient-grid" style={{ '--recipient-columns': previewFlyout.width >= 560 ? 3 : previewFlyout.width >= 380 ? 2 : 1 }}>
+          <div className="recipient-names min-h-0 flex-[0_1_auto] overflow-y-auto mx-3 mb-3 p-2 rounded-md">
+            <div className="sets-recipient-grid" style={{ '--recipient-columns': 2 }}>
             {recipientChoices.map(student => <label key={student.id} className="sets-recipient-row flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 text-xs font-semibold text-slate-800 hover:bg-indigo-50 dark:text-slate-100 dark:hover:bg-slate-800">
               <input type="checkbox" disabled={sending} checked={validRecipientIds.includes(Number(student.id))}
                 onChange={e => setRecipientIds(ids => e.target.checked ? [...ids, Number(student.id)] : ids.filter(id => id !== Number(student.id)))} className="h-3.5 w-3.5 shrink-0 accent-indigo-600" />
@@ -741,11 +741,11 @@ export default function SavedSetsPanel({
             </div>
             {!recipientChoices.length && <p className="p-2 text-sm text-slate-500">No students in this room yet.</p>}
           </div>
-          <div className="shrink-0 border-t border-slate-100 p-4 dark:border-slate-800">
+          <div className="recipient-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
             {recipientQuestionCount > 60 && <p className="mb-2 text-xs text-amber-700">Ask supports up to 60 questions. Send these sets to inbox instead.</p>}
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={sending || !validRecipientIds.length || recipientQuestionCount > 60} onClick={() => sendSelected('ask')} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Ask now</button>
-              <button type="button" disabled={sending || !validRecipientIds.length} onClick={() => sendSelected('inbox')} className="rounded-lg border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
+              <button type="button" disabled={sending || !validRecipientIds.length} onClick={() => sendSelected('inbox')} className="recipient-inbox rounded-lg border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
             </div>
             {sendStatus && <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-300">{sendStatus}</p>}
           </div>
