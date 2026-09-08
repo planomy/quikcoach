@@ -175,3 +175,15 @@ html:not(.dark) .sets-recipient-panel .recipient-inbox {
 html:not(.dark) .sets-recipient-panel .recipient-inbox:hover:not(:disabled) {
   background-color: #eef2ff;
 }
+
+/* Preview shares the recipient shell, with a content-sized reading surface. */
+html:not(.dark) .sets-question-preview > .preview-heading,
+html:not(.dark) .sets-question-preview > .preview-actions {
+  background-color: transparent;
+}
+html .sets-question-preview > .preview-questions {
+  background-color: var(--iboard-paper);
+}
+html .sets-question-preview ol > li:last-child {
+  border-bottom: 0;
+}

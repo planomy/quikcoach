@@ -639,20 +639,21 @@ export default function SavedSetsPanel({
       {mode === 'preview' && previewOpen && previewFlyout && typeof document !== 'undefined' && createPortal(
         <aside
           data-iboard-sets-preview="true"
-          className="sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          className="sets-question-preview sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{
             top: previewFlyout.top,
             left: previewFlyout.left,
-            height: previewFlyout.height,
+            height: 'auto',
+            maxHeight: `calc(100dvh - ${previewFlyout.top + 8}px)`,
             width: previewFlyout.width,
           }}
           role="dialog"
           aria-label={`Preview ${activeSet.name}`}
         >
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
+          <div className="preview-heading flex shrink-0 items-start justify-between gap-3 px-4 pt-4 pb-3">
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Preview</p>
-              <h4 className="mt-0.5 truncate font-display text-lg font-black text-slate-950 dark:text-white">{activeSet.name}</h4>
+              <h4 className="mt-0.5 text-base font-bold text-slate-950 dark:text-white">{activeSet.name}</h4>
               <p className="mt-0.5 text-[11px] font-bold text-slate-400">{formatSetMeta(activeSet)}</p>
             </div>
             <button
@@ -664,7 +665,7 @@ export default function SavedSetsPanel({
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 scrollbar-thin">
+          <div className="preview-questions min-h-0 flex-[0_1_auto] overflow-y-auto mx-3 mb-3 rounded-md px-3 py-2 scrollbar-thin">
             {activeSet.note && (
               <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-100">{activeSet.note}</p>
             )}
@@ -683,16 +684,19 @@ export default function SavedSetsPanel({
             </ol>
           </div>
 
-          <div className="flex shrink-0 flex-wrap gap-2 border-t border-slate-100 px-3 py-2.5 dark:border-slate-800">
+          <div className="preview-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-2">
             <label className="mr-auto flex items-center gap-2 px-1 text-xs font-bold text-slate-700 dark:text-slate-200">
               <input type="checkbox" checked={selectedSetIds.includes(activeSet.id)} disabled={sending} onChange={() => toggleSet(activeSet.id)} className="h-4 w-4 accent-indigo-600" />
               Select set
             </label>
             <button type="button" disabled={sending} onClick={() => chooseRecipients([activeSet])} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-40">Select students</button>
-            <button type="button" onClick={() => openEdit(activeSet)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+            <button type="button" onClick={() => openEdit(activeSet)} className="rounded px-1 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
               Edit
             </button>
-            <button type="button" disabled={!activeSet.bank || !activeSet.overridden} onClick={() => resetBankOverride(activeSet.id)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+            <button type="button" disabled={!activeSet.bank || !activeSet.overridden} onClick={() => resetBankOverride(activeSet.id)} className="rounded px-1 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800">
               Reset to original
             </button>
             {!activeSet.bank && (
@@ -704,6 +708,7 @@ export default function SavedSetsPanel({
                 Delete
               </button>
             )}
+            </div>
           </div>
         </aside>,
         document.body
