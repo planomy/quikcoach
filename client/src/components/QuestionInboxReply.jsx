@@ -1,5 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ensureTeacherRoom } from '../lib/teacherRoom.js';
 
 const TOGGLE_CLASS = 'text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300';
@@ -23,6 +23,15 @@ export default function QuestionInboxReply({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const id = window.requestAnimationFrame(() => {
+      textareaRef.current?.focus?.();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [open]);
 
   function sendReply() {
     const answer = draft.trim();
@@ -50,6 +59,7 @@ export default function QuestionInboxReply({
         }
         setDraft('');
         setSent(true);
+        setOpen(false);
         onSent?.();
         setTimeout(() => setSent(false), 2800);
       });
@@ -72,9 +82,11 @@ export default function QuestionInboxReply({
         </div>
       ) : null}
       <textarea
+        ref={textareaRef}
         rows={3}
         maxLength={5000}
         value={draft}
+        autoFocus
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
           if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {

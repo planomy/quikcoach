@@ -247,6 +247,10 @@ export default function TeacherLiveQuestionIndicators() {
             studentId={selectedQuestion.studentId}
             studentName={selectedQuestion.studentName}
             questionText={selectedQuestion.text}
+            onSent={() => {
+              setSelectedQuestionId(null);
+              setMessage('');
+            }}
             className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800"
           />
         </aside>
