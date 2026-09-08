@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useState } from 'react';
 
 const CONFIDENCE_OPTIONS = [
@@ -64,13 +65,7 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
     <section className={`rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900 ${compact ? 'p-3' : 'p-4'} ${className}`}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Quick answer</p>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-        >
-          Close
-        </button>
+        <CloseButton onClick={() => setOpen(false)} label="Close" />
       </div>
       <form onSubmit={submit} className="mt-2 space-y-2">
         <textarea

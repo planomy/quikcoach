@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
 import ThinkingTrigger from './ThinkingTrigger.jsx';
@@ -289,14 +290,7 @@ export default function TeacherAnswerRail({
             </div>
             {!embedded && (
               <HintWrap hint="Hide">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                  aria-label="Hide responses"
-                >
-                  ×
-                </button>
+                <CloseButton onClick={onClose} aria-label="Hide responses" />
               </HintWrap>
             )}
           </div>

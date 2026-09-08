@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import HintWrap from './HintWrap.jsx';
@@ -205,14 +206,7 @@ export function ThinkingPopover({
               : `Push ${targetLabel || 'this student'} · pick up to ${THINKING_MAX_SELECT}`}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          aria-label="Close thinking prompts"
-        >
-          ×
-        </button>
+        <CloseButton onClick={onClose} aria-label="Close thinking prompts" />
       </div>
 
       <div className="mt-2.5 grid grid-cols-3 gap-2">

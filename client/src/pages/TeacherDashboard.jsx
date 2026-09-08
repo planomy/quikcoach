@@ -1,3 +1,4 @@
+import { RemoveButton, CloseButton } from '../components/PanelActions.jsx';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
@@ -1038,8 +1039,15 @@ function TeacherDashboardInner() {
     setNoteSending(false);
   }
 
-  function closeNoteComposer() {
-    if (noteSending) return;
+  const noteClosePending = useRef(false);
+  async function closeNoteComposer() {
+    if (noteSending || noteClosePending.current) return;
+    if (noteDraft.trim()) {
+      noteClosePending.current = true;
+      const discard = await confirmDialog({ title: 'Discard private note?', message: 'This note has not been sent.', confirmLabel: 'Discard note', cancelLabel: 'Keep writing' });
+      noteClosePending.current = false;
+      if (!discard) return;
+    }
     setNoteTarget(null);
     setNoteDraft('');
     setNoteError('');
@@ -2286,14 +2294,7 @@ function TeacherDashboardInner() {
                 <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-ink-900 dark:text-slate-100">{post.title || 'Teacher'}</h2>
                 <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-700 dark:bg-slate-700 dark:text-slate-200">Teacher</span>
                 <HintWrap hint="Remove card">
-                  <button
-                    type="button"
-                    onClick={() => deleteTeacherCard(post.id)}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
-                    aria-label="Remove teacher card"
-                  >
-                    ×
-                  </button>
+                  <RemoveButton onClick={() => deleteTeacherCard(post.id)} aria-label="Remove teacher card" />
                 </HintWrap>
               </div>
               <div className={`mt-2 rounded-xl bg-white p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}>
@@ -2603,9 +2604,7 @@ function TeacherDashboardInner() {
               <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
                 {libraryPanel === 'feedback' ? 'AI feedback' : 'Evidence'}
               </h2>
-              <button type="button" onClick={() => setLibraryPanel(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close">
-                ×
-              </button>
+              <CloseButton onClick={() => setLibraryPanel(null)} aria-label="Close" />
             </div>
             <div className="overflow-y-auto p-5 scrollbar-thin">
         {libraryPanel === 'evidence' && (
@@ -3126,9 +3125,7 @@ function TeacherDashboardInner() {
                 <h2 id="add-teacher-card-title" className="font-display text-base font-black text-slate-950 dark:text-white">Add card or handout</h2>
                 <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">PDF or image to Inbox for this lesson</p>
               </div>
-              <button type="button" onClick={closeAddCard} disabled={addCardBusy} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 dark:text-indigo-400">
-                Close
-              </button>
+              <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
             </div>
             <div className="space-y-3 px-4 py-3">
               <input
@@ -3230,9 +3227,7 @@ function TeacherDashboardInner() {
             <div>
               <h2 id="room-settings-title" className="font-display text-base font-black text-slate-950 dark:text-white">Room settings</h2>
             </div>
-            <button type="button" onClick={closeSettings} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400">
-              Close
-            </button>
+            <CloseButton onClick={closeSettings} label="Close" />
           </div>
           <div className="overflow-y-auto px-2 py-2 scrollbar-thin">
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
@@ -3552,9 +3547,7 @@ function TeacherDashboardInner() {
                     ✎ Mark up drawing
                   </button>
                 )}
-                <button type="button" onClick={() => setFocusedStudentId(null)} className="flex h-10 w-10 items-center justify-center rounded-xl text-xl font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-label="Close full draft">
-                  ×
-                </button>
+                <CloseButton onClick={() => setFocusedStudentId(null)} aria-label="Close full draft" />
               </div>
             </div>
             <div data-student-writing-pane className="relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-12 text-base leading-7 text-slate-800 scrollbar-thin dark:text-slate-200">
@@ -3616,15 +3609,7 @@ function TeacherDashboardInner() {
                 Goes to their Inbox.
               </p>
             </div>
-            <button
-              type="button"
-              disabled={noteSending}
-              onClick={closeNoteComposer}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-              aria-label="Close private note"
-            >
-              ×
-            </button>
+            <CloseButton disabled={noteSending} onClick={closeNoteComposer} aria-label="Close private note" />
           </div>
           <div className="px-4 py-3">
             <label htmlFor="private-note-text" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
@@ -3737,14 +3722,7 @@ function TeacherDashboardInner() {
               <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
                 {snapshotViewer.label || `Snapshot #${snapshotViewer.id}`}
               </h2>
-              <button
-                type="button"
-                onClick={() => setSnapshotViewer(null)}
-                className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
-                aria-label="Close"
-              >
-                ×
-              </button>
+              <CloseButton onClick={() => setSnapshotViewer(null)} aria-label="Close" />
             </div>
             <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5 text-sm scrollbar-thin">
               <p className="text-xs text-slate-500 dark:text-slate-400">{snapshotViewer.created_at}</p>
@@ -3773,14 +3751,7 @@ function TeacherDashboardInner() {
           >
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4">
               <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Prepare feedback</h2>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="rounded-lg p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"
-                aria-label="Close"
-              >
-                ×
-              </button>
+              <CloseButton onClick={() => setModalOpen(false)} aria-label="Close" />
             </div>
             <div className="max-h-[60vh] space-y-5 overflow-y-auto p-5 scrollbar-thin">
               <div>
@@ -3893,14 +3864,7 @@ function TeacherDashboardInner() {
                               onChange={(v) => setExtraFocusEnabled(feedbackMode, item.id, v)}
                             />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeExtraFocus(feedbackMode, item.id)}
-                            className="shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
-                            aria-label={`Remove ${item.text}`}
-                          >
-                            ×
-                          </button>
+                          <RemoveButton onClick={() => removeExtraFocus(feedbackMode, item.id)} aria-label={`Remove ${item.text}`} />
                         </div>
                       ))}
                     </div>
@@ -3946,14 +3910,7 @@ function TeacherDashboardInner() {
                             onChange={(v) => setExtraFocusEnabled('custom', item.id, v)}
                           />
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeExtraFocus('custom', item.id)}
-                          className="shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
-                          aria-label={`Remove ${item.text}`}
-                        >
-                          ×
-                        </button>
+                        <RemoveButton onClick={() => removeExtraFocus('custom', item.id)} aria-label={`Remove ${item.text}`} />
                       </div>
                     ))}
                   </div>

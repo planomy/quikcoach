@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
 import { isUnknownAnswer } from '../lib/liveResponseUnknown.js';
@@ -224,9 +225,7 @@ export default function AudienceQnaTeacher({
             </button>
           )}
           {typeof onClose === 'function' ? (
-            <button type="button" onClick={onClose} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-              Close
-            </button>
+            <CloseButton onClick={onClose} label="Close" />
           ) : null}
         </div>
 

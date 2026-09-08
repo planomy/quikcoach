@@ -1,3 +1,4 @@
+import { RemoveButton } from './PanelActions.jsx';
 import { useRef, useState } from 'react';
 import RichTextDisplay from './RichTextDisplay.jsx';
 import { formatInboxTime } from '../lib/inboxTime.js';
@@ -243,15 +244,7 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
                 </span>
               </button>
               {!open && typeof onDismiss === 'function' ? (
-                <button
-                  type="button"
-                  onClick={() => onDismiss(item.id)}
-                  className="shrink-0 px-3 text-lg font-bold leading-none text-slate-300 transition hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300"
-                  aria-label="Dismiss"
-                  title="Dismiss"
-                >
-                  ×
-                </button>
+                <RemoveButton onClick={() => onDismiss(item.id)} aria-label="Dismiss" title="Dismiss" />
               ) : null}
             </div>
             {open && (

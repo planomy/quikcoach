@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
@@ -375,14 +376,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   }
 
   const collapseButton = compact && onCollapse ? (
-    <button
-      type="button"
-      onClick={onCollapse}
-      className="mb-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400"
-      aria-label="Close Pulse panel"
-    >
-      Close
-    </button>
+    <CloseButton onClick={onCollapse} aria-label="Close Pulse panel" className="mb-0" />
   ) : null;
 
   if (!activity && !nudge) {

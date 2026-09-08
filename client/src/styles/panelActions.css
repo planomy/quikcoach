@@ -1,0 +1,27 @@
+/* Shared dismiss/remove controls; callers supply positioning only. */
+html button.iboard-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  box-shadow: none;
+  cursor: pointer;
+}
+html button.iboard-icon-action:hover:not(:disabled) { background: #64748b1a; color: #334155; }
+html button.iboard-icon-action:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+html button.iboard-icon-action:disabled { opacity: .4; cursor: not-allowed; }
+html.dark button.iboard-icon-action { color: #b8c4d2; }
+html.dark button.iboard-icon-action:hover:not(:disabled) { background: #ffffff14; color: #f1f5f9; }
+html button.iboard-icon-action--remove:hover:not(:disabled) { color: #dc2626; }
+html button.iboard-icon-action.on-dark { color: #e2e8f0; }
+html button.iboard-icon-action.on-dark:hover:not(:disabled) { background: #ffffff1f; color: white; }
+@media (any-pointer: coarse) {
+  html button.iboard-icon-action { width: 44px; height: 44px; }
+}

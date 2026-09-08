@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useState } from 'react';
 import { ensureTeacherRoom } from '../lib/teacherRoom.js';
 
@@ -67,9 +68,7 @@ export default function QuestionInboxReply({
     <div className={className}>
       {showToggle ? (
         <div className="mb-2 flex justify-end">
-          <button type="button" onClick={() => setOpen(false)} className={TOGGLE_CLASS}>
-            Close
-          </button>
+          <CloseButton onClick={() => setOpen(false)} label="Close" />
         </div>
       ) : null}
       <textarea

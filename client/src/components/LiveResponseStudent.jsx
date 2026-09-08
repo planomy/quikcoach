@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useRef, useState } from 'react';
 import LiveResponseStudentCore from './LiveResponseStudentCore.jsx';
 import StudentVerbalRespond from './StudentVerbalRespond.jsx';
@@ -158,14 +159,7 @@ function TabbedStudentResponse({ socket, ...props }) {
   };
 
   const closeAnswerButton = activity?.id && response && !collapsed ? (
-    <button
-      type="button"
-      onClick={closeReopenedAnswer}
-      className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400"
-      aria-label="Close answer"
-    >
-      Close
-    </button>
+    <CloseButton onClick={closeReopenedAnswer} aria-label="Close answer" />
   ) : null;
 
   return (

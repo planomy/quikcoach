@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { emitAck } from '../lib/iboardSession.js';
 
@@ -41,7 +42,7 @@ export default function SessionPdfExport({ socket, onClose }) {
     finally { setBusy(false); }
   }
   return <dialog ref={dialog} onCancel={event => { if (busy) event.preventDefault(); else onClose(); }} aria-labelledby="session-pdf-title" className="m-auto max-h-[90dvh] w-[min(36rem,94vw)] overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-    <div className="flex items-center justify-between gap-3"><h2 id="session-pdf-title" className="text-lg font-bold">Export session report (PDF)</h2><button type="button" className={buttonClass} onClick={onClose}>Close</button></div>
+    <div className="flex items-center justify-between gap-3"><h2 id="session-pdf-title" className="text-lg font-bold">Export session report (PDF)</h2><CloseButton onClick={onClose} disabled={busy} label="Close session report" /></div>
     <p className="my-3 text-sm text-slate-500 dark:text-slate-400">Includes writing, student images and compact named Draft Trails, with inline feedback linked to subsequent passage revisions.</p>
     {pack && <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">Session captured {new Date(pack.exportedAt).toLocaleString()}. Reopen this window to capture later changes.</p>}
     {error && <div role="alert" className="my-3 text-sm text-red-600 dark:text-red-300">{error} {!pack && <button type="button" className={buttonClass} onClick={() => setReload(n => n + 1)}>Retry</button>}</div>}

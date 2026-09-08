@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useState } from 'react';
 import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { downloadLessonReportCsv, downloadLessonReportHtml } from '../lib/lessonReport.js';
@@ -91,9 +92,7 @@ export default function LessonReportPanel({ roomCode, onClose }) {
                 </button>
               </>
             ) : null}
-            <button type="button" onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close">
-              ×
-            </button>
+            <CloseButton onClick={onClose} aria-label="Close" />
           </div>
         </div>
 

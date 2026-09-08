@@ -1,4 +1,6 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useRef, useState } from 'react';
+import { confirmDialog } from './ConfirmDialogHost.jsx';
 
 function currentSocket() {
   if (typeof window === 'undefined') return null;
@@ -105,8 +107,15 @@ export default function TeacherCardEditController() {
     };
   }, [socket]);
 
-  function closeEditor() {
-    if (busy) return;
+  const closePending = useRef(false);
+  async function closeEditor() {
+    if (busy || closePending.current) return;
+    if (editing && (title !== String(editing.title || 'Teacher') || text !== String(editing.text || ''))) {
+      closePending.current = true;
+      const discard = await confirmDialog({ title: 'Discard card changes?', message: 'Your unsaved edits will be lost.', confirmLabel: 'Discard changes', cancelLabel: 'Keep editing' });
+      closePending.current = false;
+      if (!discard) return;
+    }
     setEditing(null);
     setError('');
   }
@@ -177,7 +186,7 @@ export default function TeacherCardEditController() {
             <p className="text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">Teacher card</p>
             <h2 id="edit-teacher-card-title" className="mt-1 font-display text-lg font-black text-slate-950 dark:text-white">Edit card</h2>
           </div>
-          <button type="button" disabled={busy} onClick={closeEditor} className="grid h-9 w-9 place-items-center rounded-lg text-xl font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-slate-200" aria-label="Close editor">×</button>
+          <CloseButton disabled={busy} onClick={closeEditor} aria-label="Close editor" />
         </div>
         <div className="space-y-3 px-5 py-4">
           <label className="block text-xs font-black uppercase tracking-wide text-slate-500">Title</label>

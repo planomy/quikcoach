@@ -1,3 +1,4 @@
+import { RemoveButton, CloseButton } from './PanelActions.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -1216,15 +1217,7 @@ export default function TeacherAnnotationController() {
                         {pinned ? '★' : '☆'}
                       </button>
                       {!isDefaultBank && (
-                        <button
-                          type="button"
-                          onClick={() => removeCustomComment(comment)}
-                          className="shrink-0 border-l border-current/15 px-1 text-current/55 opacity-0 hover:text-red-600 group-hover:opacity-100 focus-visible:opacity-100"
-                          aria-label={`Remove chit: ${comment}`}
-                          title="Remove chit"
-                        >
-                          ×
-                        </button>
+                        <RemoveButton onClick={() => removeCustomComment(comment)} aria-label={`Remove chit: ${comment}`} title="Remove chit" />
                       )}
                     </span>
                   );
@@ -1307,7 +1300,7 @@ export default function TeacherAnnotationController() {
           className="fixed z-[70] w-[280px] rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{ top: openMarkerPos.top, left: openMarkerPos.left }}
         >
-          <button type="button" onClick={() => setOpenMarker(null)} className="float-right text-sm font-black text-slate-400 hover:text-slate-700">×</button>
+          <CloseButton onClick={() => setOpenMarker(null)} label="Close" className="float-right" />
           <p className={`text-[10px] font-black uppercase tracking-[0.13em] ${
             openMarker.annotation.status === 'fixed'
               ? 'text-emerald-600 dark:text-emerald-300'

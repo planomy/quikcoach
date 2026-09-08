@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useState } from 'react';
 
 const STATUS_LABELS = {
@@ -144,16 +145,10 @@ export default function AudienceQnaStudent({ socket, compact = false, collapsed 
         <div className="space-y-4 p-4">
           {showEmbeddedComposer ? (
             <div className="-mt-1 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
+              <CloseButton onClick={() => {
                   setComposerExpanded(false);
                   setMessage('');
-                }}
-                className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400"
-              >
-                Close
-              </button>
+                }} label="Close" />
             </div>
           ) : null}
           <form onSubmit={submit}>

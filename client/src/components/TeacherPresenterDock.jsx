@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -540,7 +541,7 @@ export default function TeacherPresenterDock() {
               Q {pendingQuestions.length}
             </button>
             <button type="button" className="iboard-presenter-head-button" onClick={bringBoardForward}>Board</button>
-            <button type="button" className="iboard-presenter-head-button" onClick={closeDock} aria-label="Close Presenter Dock">×</button>
+            <CloseButton onClick={closeDock} aria-label="Close Presenter Dock" />
           </header>
 
           <div className="iboard-presenter-body">

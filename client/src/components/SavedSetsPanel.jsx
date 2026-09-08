@@ -1,5 +1,7 @@
+import { RemoveButton, CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { confirmDialog } from './ConfirmDialogHost.jsx';
 import {
   newId,
   normalizeSetQuestions,
@@ -279,6 +281,22 @@ export default function SavedSetsPanel({
   }
 
 
+  const closePending = useRef(false);
+  async function closeSetEditor() {
+    if (closePending.current) return;
+    const dirty = mode === 'create'
+      ? !!(draftName.trim() || draftPaste.trim())
+      : draftName !== activeSet?.name || JSON.stringify(draftQuestions) !== JSON.stringify(activeSet?.questions || []);
+    if (dirty) {
+      closePending.current = true;
+      const discard = await confirmDialog({ title: 'Discard set changes?', message: 'Your unsaved questions and edits will be lost.', confirmLabel: 'Discard changes', cancelLabel: 'Keep editing' });
+      closePending.current = false;
+      if (!discard) return;
+    }
+    setMode('');
+    setActiveSet(null);
+  }
+
   function openCreate() {
     setActiveSet(null);
     setDraftName('');
@@ -496,14 +514,7 @@ export default function SavedSetsPanel({
                       >
                         Launch
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))}
-                        className="text-xs font-black text-red-500"
-                        aria-label="Remove from queue"
-                      >
-                        ×
-                      </button>
+                      <RemoveButton onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} aria-label="Remove from queue" />
                     </div>
                   </div>
                 ))}
@@ -656,13 +667,7 @@ export default function SavedSetsPanel({
               <h4 className="mt-0.5 text-base font-bold text-slate-950 dark:text-white">{activeSet.name}</h4>
               <p className="mt-0.5 text-[11px] font-bold text-slate-400">{formatSetMeta(activeSet)}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => { setMode(''); setActiveSet(null); }}
-              className="shrink-0 text-sm font-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-            >
-              Close
-            </button>
+            <CloseButton onClick={() => { setMode(''); setActiveSet(null); }} label="Close" />
           </div>
 
           <div className="preview-questions min-h-0 flex-[0_1_auto] overflow-y-auto mx-3 mb-3 rounded-md px-3 py-2 scrollbar-thin">
@@ -772,7 +777,7 @@ export default function SavedSetsPanel({
                   className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
               </div>
-              <button type="button" onClick={() => { setMode(''); setActiveSet(null); }} className="text-sm font-black text-slate-500">Close</button>
+              <CloseButton onClick={closeSetEditor} label="Close set editor" />
             </div>
 
             {mode === 'edit' && (
@@ -786,7 +791,7 @@ export default function SavedSetsPanel({
                         onChange={(event) => updateDraftPrompt(index, event.target.value)}
                         className="min-h-[3rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                       />
-                      <button type="button" onClick={() => removeDraftPrompt(index)} className="text-sm font-black text-red-500">×</button>
+                      <RemoveButton onClick={() => removeDraftPrompt(index)} label={`Remove question ${index + 1}`} />
                     </div>
                   ))}
                 </div>
@@ -799,7 +804,7 @@ export default function SavedSetsPanel({
                 </button>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button type="button" onClick={saveEditedSet} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Save set</button>
-                  <button type="button" onClick={() => { setMode(''); setActiveSet(null); }} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 dark:border-slate-700">Cancel</button>
+                  <button type="button" onClick={closeSetEditor} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 dark:border-slate-700">Cancel</button>
                 </div>
               </>
             )}
@@ -815,7 +820,7 @@ export default function SavedSetsPanel({
                 />
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button type="button" onClick={savePastedSet} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Save set</button>
-                  <button type="button" onClick={() => setMode('')} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 dark:border-slate-700">Cancel</button>
+                  <button type="button" onClick={closeSetEditor} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 dark:border-slate-700">Cancel</button>
                 </div>
               </>
             )}

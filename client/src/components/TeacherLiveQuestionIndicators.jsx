@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
 import { activeTeacherRoomCode, ensureTeacherRoom } from '../lib/teacherRoom.js';
@@ -222,9 +223,9 @@ export default function TeacherLiveQuestionIndicators() {
               <div className="flex items-start justify-between gap-3">
                 <span className="text-[10px] font-black tabular-nums text-indigo-600 dark:text-indigo-300">Q{selectedPosition}</span>
                 <p className="max-w-[55%] truncate text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{selectedQuestion.studentName}</p>
+                <CloseButton onClick={() => { setSelectedQuestionId(null); setMessage(''); }} aria-label="Close popup" title="Close popup — question stays in queue" />
               </div>
               <p className="mt-2 text-xl font-bold leading-snug text-slate-950 dark:text-white">{selectedQuestion.text}</p>
-              <button type="button" onClick={() => { setSelectedQuestionId(null); setMessage(''); }} className="mt-2 text-[11px] font-bold text-indigo-600 dark:text-indigo-400" aria-label="Close popup" title="Close popup — question stays in queue">Close</button>
             </div>
           </div>
 

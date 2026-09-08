@@ -1,3 +1,4 @@
+import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const labels = { baseline: 'Recording baseline', resume: 'Recording resumed · unrecorded interval before this', gap: 'Unrecorded / reconnect interval', stop: 'Recording stopped', feedback: 'Teacher feedback sent', paste: 'Paste reported by student browser', change: 'Writing changed' };
@@ -57,7 +58,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
     <dialog ref={dialogRef} onCancel={onClose} className="m-auto max-h-[90dvh] w-[min(64rem,94vw)] overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" aria-labelledby="draft-trail-title">
       <div className="flex items-center justify-between gap-4">
         <h2 id="draft-trail-title" className="text-lg font-bold">Draft Trail{label ? ` · ${label}` : ''}</h2>
-        <button type="button" className={buttonClass} onClick={onClose}>Close</button>
+        <CloseButton onClick={onClose} label="Close" />
       </div>
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Evidence of how writing developed, not proof of authorship. Names are classroom identities, not verified sign-ins. A red dot on a card means look here first — not a cheating verdict.</p>
       <div className="my-4 flex flex-wrap items-center gap-3">

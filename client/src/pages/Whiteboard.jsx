@@ -1,3 +1,4 @@
+import { RemoveButton } from '../components/PanelActions.jsx';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
@@ -105,17 +106,10 @@ const BoardCard = memo(function BoardCard({ s, displayName, picked, selectMode, 
           </span>
           <span className={`h-2 w-2 rounded-full ${light}`} title="Activity" />
           {!selectMode && (
-            <button
-              type="button"
-              onClick={(e) => {
+            <RemoveButton onClick={(e) => {
                 e.stopPropagation();
                 onRemove?.(s.id, s.name);
-              }}
-              className="flex h-5 w-5 items-center justify-center rounded bg-slate-800 text-xs font-bold text-slate-300 hover:bg-red-600 hover:text-white"
-              title="Remove this student card"
-            >
-              ×
-            </button>
+              }} title="Remove this student card" label="Remove" />
           )}
         </div>
       </header>
