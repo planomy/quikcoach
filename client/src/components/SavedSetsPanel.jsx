@@ -124,6 +124,7 @@ export default function SavedSetsPanel({
   const [favouriteIds, setFavouriteIds] = useState(() => loadFavouriteIds());
   const [subject, setSubject] = useState('All');
   const [yearBand, setYearBand] = useState('All');
+  const [setScope, setSetScope] = useState('all');
   const [activeSet, setActiveSet] = useState(null);
   const [selectedSetIds, setSelectedSetIds] = useState([]);
   const [recipientSets, setRecipientSets] = useState([]);
@@ -216,10 +217,10 @@ export default function SavedSetsPanel({
 
   const filtered = useMemo(
     () => sortSetsByFavourite(
-      library.filter((set) => setMatchesFilters(set, subject, yearBand)),
+      library.filter((set) => (setScope === 'all' || !set.bank) && setMatchesFilters(set, subject, yearBand)),
       favouriteIds
     ),
-    [library, subject, yearBand, favouriteIds]
+    [library, setScope, subject, yearBand, favouriteIds]
   );
 
   const selectedSets = selectedSetIds.map((id) => library.find((set) => set.id === id)).filter(Boolean);
@@ -536,11 +537,18 @@ export default function SavedSetsPanel({
               onClick={openCreate}
               className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
             >
-              + New set
+              Create a set
             </button>
           </div>
 
           <div className="mt-3 flex items-center gap-2">
+            <div className="flex shrink-0 rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-800" role="group" aria-label="Set library">
+              <button type="button" onClick={() => setSetScope('all')} className={`rounded-md px-2 py-1.5 text-[11px] font-black ${setScope === 'all' ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-slate-500 dark:text-slate-300'}`}>All sets</button>
+              <button type="button" onClick={() => setSetScope('mine')} className={`rounded-md px-2 py-1.5 text-[11px] font-black ${setScope === 'mine' ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-slate-500 dark:text-slate-300'}`}>My sets{customSets.length ? ` · ${customSets.length}` : ''}</button>
+            </div>
+          </div>
+
+          <div className="mt-2 flex items-center gap-2">
             <label htmlFor="sets-subject-filter" className="sr-only">Subject</label>
             <select
               id="sets-subject-filter"
