@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSessionPdf, reportStudents, reconstructTrail } from '../src/lib/sessionPdf.js';
+import { buildSessionPdf, reportStudents, reconstructTrail, writingSummary } from '../src/lib/sessionPdf.js';
+import { writingPlainFromStudent } from '../src/lib/richText.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const output = process.argv[2];
@@ -20,33 +21,77 @@ const events = [
   { type: 'stop', at: at + 240000 },
   { type: 'resume', at: at + 300000, text: 'After the break, I reconsidered the evidence.' },
   { type: 'gap', at: at + 360000, text: 'After reconnecting, the student continued the draft.' },
+  { type: 'gap', at: at + 370000, text: 'After reconnecting, the student continued the draft. More writing.' },
+  { type: 'gap', at: at + 380000, text: 'After reconnecting, the student continued the draft. Still more writing that must not be reprinted on every gap.' },
 ];
+const plannerHtml = '<h2>Trouble</h2><div>Who: Lilith</div><div>Where: at night, in a science laboratory</div><div>What: someone breaking into the lab</div>';
+const collapsedPlain = 'TroubleWho: LilithWhere: at night, in a science laboratoryWhat: someone breaking into the lab';
+assert.match(
+  writingPlainFromStudent({ text: collapsedPlain, rich_text_html: plannerHtml }),
+  /Trouble\n+Who: Lilith\n+Where:/
+);
+assert.doesNotMatch(
+  writingPlainFromStudent({ text: collapsedPlain, rich_text_html: plannerHtml }),
+  /TroubleWho:|LilithWhere:|laboratoryWhat:/
+);
+
 const pack = {
   format: 'iboard', version: 1, sourceRoomCode: '4821', exportedAt: new Date(at + 400000).toISOString(),
   students: [
     { exportId: 's1', name: 'Zoë O’Connor', year_level: '8', class_group: 'English', text: opening + addition },
     { exportId: 's2', name: 'Student Two - Long Writing', text: 'Paragraph with evidence and interpretation. '.repeat(350) },
     { exportId: 's3', name: 'Student Three - No Trail', text: '' },
+    {
+      exportId: 's4',
+      name: 'Planner Student',
+      text: collapsedPlain,
+      rich_text_html: plannerHtml,
+    },
   ],
   teacherNotesByExportId: { s1: [{ text: 'PRIVATE-FEEDBACK-ZOE: Explain the connection.', createdAt: '2026-09-06 00:01:00' }] },
   annotationsByExportId: { s1: [{ quote: 'loyalty matters more than pride', note: 'Explain why.', created_at: '2026-09-06 00:02:00' }] },
   live: { lessonPulse: { questions: [{ activity_id: 'q1', prompt: 'What changed your interpretation?' }], cells: [{ activity_id: 'q1', exportStudentId: 's1', question_number: 1, value: '__iboard_unknown__', submitted_at: '2026-09-06 00:03:00' }] } },
-  draftTrail: { version: 1, students: [{ exportId: 's1', name: 'Zoë O’Connor', events }, { exportId: null, name: 'Archived Learner', events: [{ type: 'baseline', at, text: 'Archived writing remains available.' }] }] },
+  draftTrail: {
+    version: 1,
+    students: [
+      { exportId: 's1', name: 'Zoë O’Connor', events },
+      { exportId: null, name: 'Archived Learner', events: [{ type: 'baseline', at, text: 'Archived writing remains available.' }] },
+      {
+        exportId: 's4',
+        name: 'Planner Student',
+        events: [
+          { type: 'baseline', at, text: '' },
+          ...Array.from({ length: 40 }, (_, i) => ({
+            type: 'gap',
+            at: at + 1000 * (i + 1),
+            text: `${collapsedPlain}\n${'Filler paragraph that used to bloat every reconnect dump. '.repeat(8)}`,
+          })),
+          { type: 'change', at: at + 50000, start: 0, removed: 0, inserted: collapsedPlain },
+        ],
+      },
+    ],
+  },
 };
-assert.equal(reportStudents(pack).length, 4);
+assert.equal(reportStudents(pack).length, 5);
 assert.equal(reconstructTrail(events)[2].after, opening + addition);
 assert.equal(reconstructTrail(events)[3].before, opening + addition);
+const plannerSummary = writingSummary(pack, pack.students[3], reconstructTrail(pack.draftTrail.students[2].events));
+assert.match(plannerSummary.latestText, /Trouble\n+Who: Lilith\n+Where:/);
 assert.throws(() => buildSessionPdf(pack, { selectedKeys: [], fontData }), /Select at least/);
 for (const [name, options] of [
   ['session-summary.pdf', {}],
   ['session-selected.pdf', { selectedKeys: ['s3'] }],
   ['session-detailed.pdf', { selectedKeys: ['s1'], detailed: true }],
+  ['session-gaps.pdf', { selectedKeys: ['s4'], detailed: true }],
 ]) {
   const pdf = buildSessionPdf(pack, { ...options, fontData });
   const bytes = Buffer.from(pdf.output('arraybuffer'));
   fs.writeFileSync(path.join(output, name), bytes);
   if (name === 'session-summary.pdf') {
     assert.ok(bytes.length > 1000);
+  }
+  if (name === 'session-gaps.pdf') {
+    assert.ok(pdf.getNumberOfPages() <= 4, `gap spam still bloating PDF: ${pdf.getNumberOfPages()} pages`);
   }
   console.log(`${name}: ${pdf.getNumberOfPages()} pages`);
 }
