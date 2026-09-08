@@ -1278,6 +1278,7 @@ export default function TeacherAnnotationController() {
             </p>
           )}
           <div className="mt-1.5 flex shrink-0 items-center justify-end gap-2">
+            <p className="mr-auto text-[9px] font-semibold text-slate-400">Shift-click stacks comments · Shift-Return new line</p>
             <div className="flex gap-1.5">
               <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
               <button type="button" disabled={!draftNote.trim()} onClick={addComment} className="rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>
