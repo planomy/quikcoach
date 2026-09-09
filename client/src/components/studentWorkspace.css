@@ -1,6 +1,13 @@
 /* Student workspace: use the available screen, preserve readable writing measure,
    and keep reference material visible without letting Pulse dominate the page. */
 
+/* Keep the light canvas tint edge-to-edge on ultrawide displays (body utilities are near-white). */
+html.iboard-student-workspace,
+html.iboard-student-workspace body,
+html.iboard-student-workspace #root {
+  background-color: var(--iboard-canvas, #e6edf4) !important;
+}
+
 /* Header utilities must sit above the support rail when its menu is open. */
 html.iboard-student-workspace header {
   position: relative;
@@ -299,13 +306,15 @@ html.iboard-student-workspace .iboard-question-pulse {
     background: transparent;
   }
 
-  /* Use viewport height for the student's main task, but keep line length readable. */
+  /* Use viewport height for the student's main task; fill the writing column
+     so ultrawide monitors do not leave empty gutters beside a 100ch box. */
   .iboard-student-workspace main [role='textbox'][contenteditable='true'],
   .iboard-student-workspace main [role='textbox'][contenteditable='false'] {
     min-height: max(22rem, calc(100vh - 16rem));
-    width: min(100%, 100ch);
-    margin-right: auto;
-    margin-left: auto;
+    width: 100%;
+    max-width: none;
+    margin-right: 0;
+    margin-left: 0;
   }
 }
 

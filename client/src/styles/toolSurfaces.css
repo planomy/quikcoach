@@ -49,7 +49,8 @@ html.dark {
 }
 html body,
 html :is(.iboard-teacher-canvas, .iboard-student-canvas) {
-  background-color: var(--iboard-canvas);
+  /* Beat Tailwind body utilities (bg-slate-50) so the canvas tint is edge-to-edge. */
+  background-color: var(--iboard-canvas) !important;
 }
 html:not(.dark) .iboard-app-header {
   background: linear-gradient(105deg, #344c68, #405975);

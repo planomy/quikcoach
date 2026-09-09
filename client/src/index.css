@@ -97,6 +97,8 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 
 .iboard-teacher-canvas,
 .iboard-student-canvas {
+  width: 100%;
+  min-width: 100%;
   background: #eef4fa;
 }
 

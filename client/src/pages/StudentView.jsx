@@ -17,6 +17,7 @@ import StudentNoteReply from '../components/StudentNoteReply.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
+import '../components/studentWorkspace.css';
 import { plainTextToRichHtml } from '../lib/richText.js';
 import { safeFilePart, stampForFilename } from '../lib/exportRoom.js';
 import { buildStudentWord, saveStudentFile, WORD_MIME } from '../lib/studentDownload.js';
@@ -1254,7 +1255,7 @@ export default function StudentView() {
   }
 
   return (
-    <div className="iboard-student-canvas flex min-h-screen flex-col dark:bg-slate-950">
+    <div className="iboard-student-canvas flex min-h-screen w-full min-w-0 flex-col dark:bg-slate-950">
       {timesUp && (
         <button
           type="button"
@@ -1352,7 +1353,7 @@ export default function StudentView() {
         </div>
       )}
       <header className="iboard-app-header border-b backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+        <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">
             {activeRoomCode && (
               <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
@@ -1431,8 +1432,8 @@ export default function StudentView() {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
+      <main className="mx-auto w-full flex-1 px-4 py-6 sm:px-6">
+        <div className="mx-auto flex w-full flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
           <aside
             data-iboard-student-support
             className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1"
