@@ -1165,7 +1165,7 @@ export default function StudentView() {
             data-iboard-student-support
             className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1"
           >
-            <nav aria-label="Student tools" className="relative z-10 flex shrink-0 items-end gap-1 overflow-visible border-b border-slate-200 pt-3.5 dark:border-slate-700">
+            <nav aria-label="Student tools" className="relative z-10 flex shrink-0 items-end gap-1 overflow-visible border-b border-slate-200 pt-2 dark:border-slate-700">
               {SUPPORT_TABS.map((tab) => {
                 const active = supportTab === tab.id;
                 const badge = tab.id === 'inbox'

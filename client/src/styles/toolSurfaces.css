@@ -7,6 +7,10 @@ html:not(.dark) {
 html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white):not(.bg-indigo-600):not(.bg-slate-950):not(.bg-red-950\/50):not(.fixed.inset-0) {
   background-color: var(--iboard-tool-surface);
 }
+/* The student support column should sit on the canvas; only its actual tools get the slate treatment. */
+html:not(.dark) [data-iboard-student-support] {
+  background-color: transparent;
+}
 html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(div, section, aside, article, nav, fieldset).bg-white,
 html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(div, section, aside, nav).bg-slate-50,
 html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-student-support], dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white) :is(div, section, aside, nav).bg-slate-100 {
