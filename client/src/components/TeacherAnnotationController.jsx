@@ -759,6 +759,18 @@ export default function TeacherAnnotationController() {
     });
   }
 
+  function handleQuickCommentClick(event, comment) {
+    if (event.shiftKey) {
+      applyQuickComment(comment);
+      return;
+    }
+    // Single click: compose that chit (plus any typed prefix) and send immediately.
+    const prefix = String(draftNoteLatestRef.current || '').trim();
+    const stack = quickStack.includes(comment) ? quickStack : [...quickStack, comment];
+    const text = writeQuickDraft(prefix, stack);
+    addComment(text);
+  }
+
   function undoQuickComment() {
     setQuickStack((prev) => {
       if (!prev.length) return prev;
@@ -897,8 +909,8 @@ export default function TeacherAnnotationController() {
     setAddingCustomComment(false);
   }
 
-  function addComment() {
-    const note = draftNote.trim();
+  function addComment(noteOverride) {
+    const note = String(noteOverride ?? draftNote).trim();
     if (!socket || !pending || !note) return;
     const quotedText = pending.quote;
     setCommentError('');
@@ -1184,7 +1196,8 @@ export default function TeacherAnnotationController() {
                     >
                       <button
                         type="button"
-                        onClick={() => applyQuickComment(comment)}
+                        onClick={(event) => handleQuickCommentClick(event, comment)}
+                        title="Click to send · Shift+click to stack more"
                         className="px-1.5 py-0.5 text-left hover:brightness-95"
                       >
                         {comment}
@@ -1278,7 +1291,7 @@ export default function TeacherAnnotationController() {
             </p>
           )}
           <div className="mt-1.5 flex shrink-0 items-center justify-end gap-2">
-            <p className="mr-auto text-[9px] font-semibold text-slate-400">Shift-click stacks comments · Shift-Return new line</p>
+            <p className="mr-auto text-[9px] font-semibold text-slate-400">Click chit to send · Shift+click stacks · Shift+Return new line</p>
             <div className="flex gap-1.5">
               <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
               <button type="button" disabled={!draftNote.trim()} onClick={addComment} className="rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>
