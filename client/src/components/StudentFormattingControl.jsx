@@ -76,7 +76,7 @@ export default function StudentFormattingControl({ compact = false }) {
           Student formatting
         </p>
         {!compact && (
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">Bold · underline · highlight</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Bold · underline · highlight (H again clears)</p>
         )}
       </div>
       <button

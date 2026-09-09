@@ -201,6 +201,95 @@ export default function RichTextEditor({
     return editor.contains(range.commonAncestorContainer);
   }
 
+  function selectionHasHighlight() {
+    const editor = editorRef.current;
+    const selection = window.getSelection?.();
+    if (!editor || !selection?.rangeCount || selection.isCollapsed) return false;
+    const range = selection.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return false;
+
+    const startEl =
+      range.startContainer.nodeType === 1
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    if (startEl?.closest?.('mark') && editor.contains(startEl.closest('mark'))) return true;
+
+    for (const mark of editor.querySelectorAll('mark')) {
+      try {
+        if (selection.containsNode(mark, true)) return true;
+      } catch {
+        /* containsNode can throw across documents */
+      }
+    }
+    return false;
+  }
+
+  function clearHighlightFromSelection() {
+    const editor = editorRef.current;
+    const selection = window.getSelection?.();
+    if (!editor || !selection?.rangeCount) return;
+    editor.focus();
+
+    // Prefer transparent highlight first (span-based browsers), then unwrap <mark>.
+    try {
+      document.execCommand('hiliteColor', false, 'transparent');
+    } catch {
+      try {
+        document.execCommand('backColor', false, 'transparent');
+      } catch {
+        /* unsupported */
+      }
+    }
+
+    const marks = [...editor.querySelectorAll('mark')].filter((mark) => {
+      try {
+        return selection.containsNode(mark, true);
+      } catch {
+        return false;
+      }
+    });
+    for (const mark of marks) {
+      const parent = mark.parentNode;
+      if (!parent) continue;
+      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+      parent.removeChild(mark);
+      parent.normalize?.();
+    }
+  }
+
+  function highlightSelection() {
+    if (disabled || !formattingEnabled) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    if (!hasSelectedText()) {
+      showToolbarHint('Select text, then tap H to highlight or clear', 2400);
+      return;
+    }
+    editor.focus();
+
+    if (selectionHasHighlight()) {
+      clearHighlightFromSelection();
+      commitFromDom({ normaliseDom: true });
+      showToolbarHint('Highlight cleared', 1400);
+      return;
+    }
+
+    let worked = false;
+    try {
+      worked = document.execCommand('hiliteColor', false, '#fde68a');
+    } catch {
+      worked = false;
+    }
+    if (!worked) {
+      try {
+        document.execCommand('backColor', false, '#fde68a');
+      } catch {
+        /* unsupported */
+      }
+    }
+    commitFromDom({ normaliseDom: true });
+  }
+
   function commitFromDom({ normaliseDom = false, paste = false } = {}) {
     const editor = editorRef.current;
     if (!editor) return;
@@ -238,31 +327,6 @@ export default function RichTextEditor({
       /* unsupported command */
     }
     commitFromDom();
-  }
-
-  function highlightSelection() {
-    if (disabled || !formattingEnabled) return;
-    const editor = editorRef.current;
-    if (!editor) return;
-    if (!hasSelectedText()) {
-      showFormatHint();
-      return;
-    }
-    editor.focus();
-    let worked = false;
-    try {
-      worked = document.execCommand('hiliteColor', false, '#fde68a');
-    } catch {
-      worked = false;
-    }
-    if (!worked) {
-      try {
-        document.execCommand('backColor', false, '#fde68a');
-      } catch {
-        /* unsupported */
-      }
-    }
-    commitFromDom({ normaliseDom: true });
   }
 
   function handlePaste(event) {
@@ -330,7 +394,7 @@ export default function RichTextEditor({
                   <ToolbarButton
                     disabled={disabled}
                     label={<span className="rounded bg-yellow-200 px-1.5 py-0.5 text-xs text-slate-900">H</span>}
-                    title="Highlight"
+                    title="Highlight — tap again on highlighted text to clear"
                     requiresSelection
                     hasSelection={hasSelectedText}
                     onClick={highlightSelection}
