@@ -7,6 +7,17 @@ function countWords(value) {
   return text ? text.split(/\s+/).filter(Boolean).length : 0;
 }
 
+function restoreCaretAtEnd(editor) {
+  if (!editor || typeof window === 'undefined') return;
+  const selection = window.getSelection?.();
+  if (!selection) return;
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
 function initialFormattingEnabled() {
   if (typeof window === 'undefined') return true;
   return window.__iboardStudentFormattingEnabled !== false;
@@ -191,6 +202,7 @@ export default function RichTextEditor({
     if (maxWords > 0 && countWords(plainText) > maxWords) {
       editor.innerHTML = lastAcceptedHtmlRef.current || '';
       setEmpty(!richHtmlToPlainText(editor.innerHTML).trim());
+      restoreCaretAtEnd(editor);
       return;
     }
 
