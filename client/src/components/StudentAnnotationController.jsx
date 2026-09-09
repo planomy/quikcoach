@@ -8,9 +8,9 @@ const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-student-fixed-comments';
 const MARKER_SIZE = 28;
 const MARKER_MARGIN = 6;
-const POPUP_WIDTH = 290;
+const POPUP_WIDTH = 320;
 /** Placement budget — keep the action button visible on short iPad viewports. */
-const POPUP_HEIGHT = 300;
+const POPUP_HEIGHT = 360;
 
 function currentStudentId() {
   if (typeof window === 'undefined') return 0;
@@ -311,7 +311,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       {openMarker && openPopupPosition && (
         <div
           data-teacher-annotation-ui
-          className="fixed z-[70] flex w-[290px] flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          className="fixed z-[70] flex w-[320px] flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{
             top: openPopupPosition.top,
             left: openPopupPosition.left,
@@ -328,7 +328,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
               {openMarker.annotation.status === 'fixed' ? 'Marked as fixed' : 'Teacher comment'}
             </p>
             <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{openMarker.annotation.quote}”</p>
-            <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">{openMarker.annotation.note}</p>
+            <p className="mt-3 whitespace-pre-wrap break-words text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">
+              {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
+            </p>
             {openMarker.detached && openMarker.annotation.status !== 'fixed' && (
               <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                 Your edit changed the highlighted passage. Check the teacher comment, then mark it fixed when you are happy.

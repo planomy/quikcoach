@@ -47,30 +47,37 @@ export default function NoteSendStatusControl() {
   return (
     <style>{`
       /* Outline-only status on the note icon (stroke uses currentColor). */
+      button[data-note-status="sending"] svg,
+      button[data-note-status="waiting"] svg,
+      button[data-note-status="sent"] svg,
+      button[data-note-status="seen"] svg,
+      button[data-note-status="failed"] svg {
+        stroke-width: 2.6;
+      }
       button[data-note-status="sending"] {
-        color: rgb(79 70 229) !important;
-        opacity: 0.7;
+        color: #2563eb !important; /* vivid blue */
+        opacity: 0.75;
       }
       button[data-note-status="waiting"],
       button[data-note-status="sent"] {
-        color: rgb(79 70 229) !important;
+        color: #2563eb !important;
       }
       button[data-note-status="seen"] {
-        color: rgb(22 163 74) !important;
+        color: #22c55e !important; /* vivid green */
       }
       button[data-note-status="failed"] {
-        color: rgb(220 38 38) !important;
+        color: #dc2626 !important;
       }
       .dark button[data-note-status="sending"],
       .dark button[data-note-status="waiting"],
       .dark button[data-note-status="sent"] {
-        color: rgb(129 140 248) !important;
+        color: #60a5fa !important;
       }
       .dark button[data-note-status="seen"] {
-        color: rgb(74 222 128) !important;
+        color: #4ade80 !important;
       }
       .dark button[data-note-status="failed"] {
-        color: rgb(248 113 113) !important;
+        color: #f87171 !important;
       }
     `}</style>
   );

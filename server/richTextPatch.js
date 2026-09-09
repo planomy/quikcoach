@@ -316,7 +316,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
 
         const text = String(student.text || '').replace(/\r\n?/g, '\n');
         const quote = String(payload.quote || '').replace(/\r\n?/g, '\n').trim().slice(0, 1200);
-        const note = String(payload.note || '').trim().slice(0, 500);
+        const note = typeof payload.note === 'string' ? payload.note.trim().slice(0, 500) : '';
         if (!quote || !note) {
           cb?.({ ok: false, error: 'Select some writing and add a comment' });
           return;
@@ -354,7 +354,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
       try {
         const roomCode = normaliseRoomCode(socket.data.roomCode);
         const annotationId = Number(payload.annotationId);
-        const note = String(payload.note || '').trim().slice(0, 500);
+        const note = typeof payload.note === 'string' ? payload.note.trim().slice(0, 500) : '';
         const row = annotationId ? selectAnnotationStmt.get(annotationId) : null;
         if (
           socket.data.role !== 'teacher' ||
