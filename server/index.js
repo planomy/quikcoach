@@ -2000,11 +2000,21 @@ io.on('connection', (socket) => {
         const row = queries.getBoardPost(db, id);
         if (!row || normalizeRoomCode(row.room_code) !== code) continue;
         const post = queries.rowToBoardPost(row);
-        const text = String(post.text || '').slice(0, 14_000);
         const image_url = post.image_url || null;
-        if (!text.trim() && !image_url) continue;
+        const file_url = post.file_url || null;
+        // Media posts store the original filename in `text`; do not expose it
+        // in an anonymous exemplar, and let the student see a neutral label.
+        const text = image_url || file_url ? '' : String(post.text || '').slice(0, 14_000);
+        if (!text.trim() && !image_url && !file_url) continue;
         const label = `Exemplar ${String.fromCharCode(65 + items.length)}`;
-        items.push({ label, text, image_url, from: 'teacher' });
+        items.push({
+          label,
+          text,
+          image_url,
+          file_url,
+          mimeType: post.mime_type || (image_url ? mimeFromExt(extFromName(image_url)) : ''),
+          from: 'teacher',
+        });
       }
       for (const id of sIds) {
         if (pushCap()) break;
@@ -2015,7 +2025,14 @@ io.on('connection', (socket) => {
         const image_url = student.image_url || null;
         if (!text.trim() && !image_url) continue;
         const label = `Exemplar ${String.fromCharCode(65 + items.length)}`;
-        items.push({ label, text, image_url, from: 'student' });
+        items.push({
+          label,
+          text,
+          image_url,
+          file_url: null,
+          mimeType: image_url ? 'image/jpeg' : '',
+          from: 'student',
+        });
       }
       if (!items.length) {
         cb?.({

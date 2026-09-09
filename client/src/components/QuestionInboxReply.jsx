@@ -1,5 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { ensureTeacherRoom } from '../lib/teacherRoom.js';
 
 const TOGGLE_CLASS = 'text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300';
@@ -25,10 +25,28 @@ export default function QuestionInboxReply({
   const [sent, setSent] = useState(false);
   const draftRef = useRef(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return undefined;
-    const frame = requestAnimationFrame(() => draftRef.current?.focus());
-    return () => cancelAnimationFrame(frame);
+
+    let cancelled = false;
+    const focusDraft = () => {
+      if (cancelled) return;
+      const field = draftRef.current;
+      if (!field) return;
+      field.focus({ preventScroll: true });
+      field.setSelectionRange(field.value.length, field.value.length);
+    };
+
+    // The field can be mounted as part of a newly opened card or modal. Try
+    // immediately, after the browser paints, and once more after layout settles.
+    focusDraft();
+    const frame = window.requestAnimationFrame(focusDraft);
+    const timer = window.setTimeout(focusDraft, 60);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
   }, [open]);
 
   function sendReply() {

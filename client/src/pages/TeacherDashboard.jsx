@@ -235,6 +235,8 @@ function TeacherDashboardInner() {
   const [noteAnchorRect, setNoteAnchorRect] = useState(null);
   const [noteBox, setNoteBox] = useState(null);
   const noteComposerRef = useRef(null);
+  const noteDraftRef = useRef(null);
+  const noteFocusTargetRef = useRef(null);
   const [broadcastPick, setBroadcastPick] = useState({});
   const [snapshots, setSnapshots] = useState([]);
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
@@ -837,6 +839,36 @@ function TeacherDashboardInner() {
       unsubscribe();
     };
   }, [noteTarget, noteAnchorRect, noteDraft, noteError]);
+
+  useLayoutEffect(() => {
+    const targetId = noteTarget?.id;
+    if (!targetId) {
+      noteFocusTargetRef.current = null;
+      return undefined;
+    }
+    if (!noteBox || noteFocusTargetRef.current === targetId) return undefined;
+
+    noteFocusTargetRef.current = targetId;
+    let cancelled = false;
+    const focusDraft = () => {
+      if (cancelled) return;
+      const field = noteDraftRef.current;
+      if (!field) return;
+      field.focus({ preventScroll: true });
+      field.setSelectionRange(field.value.length, field.value.length);
+    };
+
+    // The note popup is initially hidden while its position is measured, so
+    // autofocus can happen too early. Focus again once it is actually visible.
+    focusDraft();
+    const frame = window.requestAnimationFrame(focusDraft);
+    const timer = window.setTimeout(focusDraft, 60);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [noteTarget?.id, !!noteBox]);
 
   useEffect(() => {
     if (!noteTarget) return undefined;
@@ -3617,6 +3649,7 @@ function TeacherDashboardInner() {
             </label>
             <textarea
               id="private-note-text"
+              ref={noteDraftRef}
               autoFocus
               rows={4}
               maxLength={5000}

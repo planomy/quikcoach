@@ -12,6 +12,40 @@ function isPdfMime(mime, name = '') {
   return String(mime || '') === 'application/pdf' || /\.pdf$/i.test(name);
 }
 
+function materialMimeFromUrl(url) {
+  const extension = String(url || '').split('?')[0].match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase();
+  if (extension === 'pdf') return 'application/pdf';
+  if (extension === 'png') return 'image/png';
+  if (extension === 'webp') return 'image/webp';
+  return 'image/jpeg';
+}
+
+function materialExtension(mime) {
+  if (String(mime || '').toLowerCase() === 'application/pdf') return 'pdf';
+  if (String(mime || '').toLowerCase() === 'image/png') return 'png';
+  if (String(mime || '').toLowerCase() === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
+function broadcastMaterialItem(item, exemplar, index) {
+  const label = String(exemplar?.label || `Exemplar ${index + 1}`).trim() || `Exemplar ${index + 1}`;
+  const url = exemplar?.image_url || exemplar?.file_url || '';
+  const mimeType = exemplar?.mimeType || materialMimeFromUrl(url);
+  const safeLabel = label.replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || `exemplar-${index + 1}`;
+  return {
+    id: `${item.id}-material-${index}`,
+    title: label,
+    originalName: `${safeLabel}.${materialExtension(mimeType)}`,
+    mimeType,
+    url,
+    at: item.at,
+  };
+}
+
+function looksLikeMaterialFilename(text) {
+  return /^[^/\\\n]{1,160}\.(?:pdf|jpe?g|png|webp)$/i.test(String(text || '').trim());
+}
+
 async function downloadMaterial(item) {
   const url = String(item.url || '');
   if (!url) throw new Error('missing url');
@@ -265,26 +299,42 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
                       Class exemplars — names are not shown.
                     </p>
                     {(item.exemplars || []).map((ex, i) => (
-                      <div
-                        key={`${ex.label}-${i}`}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-950"
-                      >
-                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-indigo-600 dark:text-indigo-400">
-                          {ex.label}
-                        </p>
-                        {ex.image_url && (
-                          <img src={ex.image_url} alt="" className="mt-2 max-h-48 w-full object-contain" />
-                        )}
-                        {ex.text?.trim() ? (
-                          <RichTextDisplay
-                            html={ex.rich_text_html}
-                            text={ex.text}
-                            className="mt-2 max-h-48 overflow-auto text-slate-700 dark:text-slate-300 scrollbar-thin"
-                          />
-                        ) : !ex.image_url ? (
-                          <p className="mt-2 text-slate-500">—</p>
-                        ) : null}
-                      </div>
+                      (() => {
+                        const materialItem = ex.image_url || ex.file_url ? broadcastMaterialItem(item, ex, i) : null;
+                        const showText = ex.text?.trim() && (!materialItem || !looksLikeMaterialFilename(ex.text));
+                        return (
+                          <div
+                            key={`${ex.label}-${i}`}
+                            className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-950"
+                          >
+                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-indigo-600 dark:text-indigo-400">
+                              {ex.label}
+                            </p>
+                            {materialItem ? (
+                              <div className="mt-2">
+                                <MaterialBody
+                                  item={materialItem}
+                                  large={largeMaterialId === materialItem.id}
+                                  onToggleLarge={
+                                    typeof onToggleMaterialLarge === 'function'
+                                      ? () => onToggleMaterialLarge(item.id, materialItem.id)
+                                      : undefined
+                                  }
+                                />
+                              </div>
+                            ) : null}
+                            {showText ? (
+                              <RichTextDisplay
+                                html={ex.rich_text_html}
+                                text={ex.text}
+                                className={`${materialItem ? 'mt-3 ' : 'mt-2 '}max-h-48 overflow-auto text-slate-700 dark:text-slate-300 scrollbar-thin`}
+                              />
+                            ) : !materialItem ? (
+                              <p className="mt-2 text-slate-500">—</p>
+                            ) : null}
+                          </div>
+                        );
+                      })()
                     ))}
                   </>
                 ) : isSetPrompt ? (

@@ -1210,9 +1210,9 @@ export default function StudentView() {
                 items={inboxItems}
                 expandedId={inboxExpandedId}
                 largeMaterialId={largeMaterialId}
-                onToggleMaterialLarge={(id) => {
-                  setLargeMaterialId((current) => (current === id ? null : id));
-                  setInboxExpandedId(id);
+                onToggleMaterialLarge={(itemId, viewId = itemId) => {
+                  setLargeMaterialId((current) => (current === viewId ? null : viewId));
+                  setInboxExpandedId(itemId);
                 }}
                 onToggle={(id) => {
                   setInboxExpandedId((current) => (current === id ? null : id));
