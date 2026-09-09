@@ -2364,8 +2364,21 @@ setInterval(() => {
 }, 1000).unref();
 
 if (fs.existsSync(clientDist)) {
-  app.use(express.static(clientDist));
+  const clientAssets = path.join(clientDist, 'assets') + path.sep;
+  app.use(express.static(clientDist, {
+    setHeaders: (res, filePath) => {
+      if (filePath === path.join(clientDist, 'index.html')) {
+        res.setHeader('Cache-Control', 'no-store, max-age=0');
+      } else if (filePath.startsWith(clientAssets)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
+  // Do not let the SPA fallback return index.html for a missing hashed JS chunk.
+  // That produces a misleading dynamic-import MIME error in the browser.
+  app.get(/^\/assets\/.+/, (_req, res) => res.status(404).end());
   app.get('*', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 }
