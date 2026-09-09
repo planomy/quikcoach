@@ -1,5 +1,6 @@
-import { RemoveButton } from './PanelActions.jsx';
-import { useRef, useState } from 'react';
+import { CloseButton, RemoveButton } from './PanelActions.jsx';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import RichTextDisplay from './RichTextDisplay.jsx';
 import StudentNoteReply from './StudentNoteReply.jsx';
 import { formatInboxTime } from '../lib/inboxTime.js';
@@ -111,7 +112,20 @@ function MaterialBody({ item, large, onToggleLarge }) {
   const previewRef = useRef(null);
   const image = isImageMime(item.mimeType);
   const pdf = isPdfMime(item.mimeType, item.originalName);
-  const previewHeight = large ? 'min(70vh, 36rem)' : '16rem';
+
+  useEffect(() => {
+    if (!large || typeof onToggleLarge !== 'function') return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') onToggleLarge();
+    };
+    window.addEventListener('keydown', onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [large, onToggleLarge]);
 
   async function onDownload() {
     setBusy('download');
@@ -153,31 +167,91 @@ function MaterialBody({ item, large, onToggleLarge }) {
     }
   }
 
+  function renderMedia(className) {
+    if (image) {
+      return <img src={item.url} alt={item.title || 'Handout'} className={className} />;
+    }
+    if (pdf) {
+      return (
+        <iframe
+          title={item.title || 'PDF handout'}
+          src={item.url}
+          className={`${className} border-0 bg-white outline-none focus:outline-none`}
+          tabIndex={-1}
+        />
+      );
+    }
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
+        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Preview not available for this file type</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Download it, or save a snapshot card.</p>
+      </div>
+    );
+  }
+
+  const lightbox =
+    large && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[85] flex flex-col bg-slate-950/92 p-2 sm:p-3"
+            role="dialog"
+            aria-modal="true"
+            aria-label={item.title || item.originalName || 'Handout preview'}
+          >
+            <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col overflow-hidden rounded-2xl border border-slate-700 bg-white shadow-2xl dark:bg-slate-900">
+              <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-3 py-2.5 dark:border-slate-700 sm:px-4">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+                    Full screen handout
+                  </p>
+                  <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {item.title || item.originalName || 'Handout'}
+                  </p>
+                </div>
+                <CloseButton onClick={onToggleLarge} aria-label="Close full screen" title="Close full screen" />
+              </div>
+              <div className="min-h-0 flex-1 bg-slate-100 p-1 dark:bg-slate-950 sm:p-2">
+                {renderMedia('h-full w-full object-contain')}
+              </div>
+              <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950 sm:px-4">
+                <button
+                  type="button"
+                  onClick={onDownload}
+                  disabled={!!busy}
+                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {busy === 'download' ? 'Saving…' : 'Save file'}
+                </button>
+                <button
+                  type="button"
+                  onClick={onSnapshot}
+                  disabled={!!busy}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  {busy === 'snapshot' ? 'Saving…' : 'Save snapshot'}
+                </button>
+                <button
+                  type="button"
+                  onClick={onToggleLarge}
+                  className="ml-auto rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
+                >
+                  Close full screen
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <div className="space-y-3" ref={previewRef}>
       <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
         {item.originalName || 'Handout'}
         {item.size ? ` · ${Math.max(1, Math.round(item.size / 1024))} KB` : ''}
       </p>
-      <div
-        className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950"
-        style={{ height: previewHeight }}
-      >
-        {image ? (
-          <img src={item.url} alt={item.title || 'Handout'} className="h-full w-full object-contain" />
-        ) : pdf ? (
-          <iframe
-            title={item.title || 'PDF handout'}
-            src={item.url}
-            className="h-full w-full border-0 bg-white outline-none focus:outline-none"
-            tabIndex={-1}
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Preview not available for this file type</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Download it, or save a snapshot card.</p>
-          </div>
-        )}
+      <div className="h-64 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+        {renderMedia('h-full w-full object-contain')}
       </div>
       <div className="flex flex-wrap gap-2">
         <button
@@ -202,11 +276,12 @@ function MaterialBody({ item, large, onToggleLarge }) {
             onClick={onToggleLarge}
             className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
           >
-            {large ? 'Smaller view' : 'Larger view'}
+            {large ? 'Close full screen' : 'View full screen'}
           </button>
         ) : null}
       </div>
       {message ? <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{message}</p> : null}
+      {lightbox}
     </div>
   );
 }
