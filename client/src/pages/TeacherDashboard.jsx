@@ -3623,7 +3623,7 @@ function TeacherDashboardInner() {
               value={noteDraft}
               onChange={(event) => setNoteDraft(event.target.value)}
               onKeyDown={(event) => {
-                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault();
                   sendNoteToStudent();
                 }
