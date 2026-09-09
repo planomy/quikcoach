@@ -104,13 +104,13 @@ export default function RichTextEditor({
 }) {
   const editorRef = useRef(null);
   const lastAcceptedHtmlRef = useRef('');
-  const formatHintTimerRef = useRef(null);
+  const hintTimerRef = useRef(null);
   const formatMenuRef = useRef(null);
   const [focused, setFocused] = useState(false);
   const [empty, setEmpty] = useState(!String(text || '').trim());
   const [formattingEnabled, setFormattingEnabled] = useState(initialFormattingEnabled);
   const [drawMode, setDrawMode] = useState(false);
-  const [formatHint, setFormatHint] = useState('');
+  const [toolbarHint, setToolbarHint] = useState('');
   const [formatMenuOpen, setFormatMenuOpen] = useState(false);
 
   const incomingHtml = useMemo(() => {
@@ -175,13 +175,22 @@ export default function RichTextEditor({
   }, [formatMenuOpen]);
 
   useEffect(() => () => {
-    if (formatHintTimerRef.current) clearTimeout(formatHintTimerRef.current);
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
   }, []);
 
+  function showToolbarHint(message, ms = 2200) {
+    setToolbarHint(message);
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = setTimeout(() => setToolbarHint(''), ms);
+  }
+
   function showFormatHint() {
-    setFormatHint('Select text first');
-    if (formatHintTimerRef.current) clearTimeout(formatHintTimerRef.current);
-    formatHintTimerRef.current = setTimeout(() => setFormatHint(''), 1800);
+    showToolbarHint('Select text first', 1800);
+  }
+
+  function showWordLimitHint() {
+    if (!(maxWords > 0)) return;
+    showToolbarHint(`Word limit reached (${maxWords})`);
   }
 
   function hasSelectedText() {
@@ -203,6 +212,7 @@ export default function RichTextEditor({
       editor.innerHTML = lastAcceptedHtmlRef.current || '';
       setEmpty(!richHtmlToPlainText(editor.innerHTML).trim());
       restoreCaretAtEnd(editor);
+      showWordLimitHint();
       return;
     }
 
@@ -351,12 +361,12 @@ export default function RichTextEditor({
             title="Draw or show your working"
             onClick={() => setDrawMode(true)}
           />
-          {formatHint && (
+          {toolbarHint && (
             <span
               role="status"
               className="absolute right-3 top-full z-20 mt-2 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold text-white shadow-lg dark:bg-white dark:text-slate-900"
             >
-              {formatHint}
+              {toolbarHint}
             </span>
           )}
         </div>
