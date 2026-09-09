@@ -230,8 +230,10 @@ function TeacherDashboardInner() {
   const [copiedStudentId, setCopiedStudentId] = useState(null);
   const [noteTarget, setNoteTarget] = useState(null);
   const [noteDraft, setNoteDraft] = useState('');
+  const [noteUrgent, setNoteUrgent] = useState(false);
   const [noteError, setNoteError] = useState('');
   const [noteSending, setNoteSending] = useState(false);
+  const [noteReceiptByStudentId, setNoteReceiptByStudentId] = useState({});
   const [noteAnchorRect, setNoteAnchorRect] = useState(null);
   const [noteBox, setNoteBox] = useState(null);
   const noteComposerRef = useRef(null);
@@ -520,6 +522,21 @@ function TeacherDashboardInner() {
     if (joinedRef.current) socket.emit('teacher:qna-sync', {});
     return () => socket.off('qna:teacher', onQna);
   }, [socket, markSessionDirty]);
+
+  useEffect(() => {
+    const onFeedbackSeen = (payload = {}) => {
+      const studentId = Number(payload.studentId);
+      if (!studentId) return;
+      setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'seen' }));
+      window.dispatchEvent(
+        new CustomEvent('iboard:note-send-status', {
+          detail: { studentId, status: 'seen' },
+        })
+      );
+    };
+    socket.on('feedback:seen', onFeedbackSeen);
+    return () => socket.off('feedback:seen', onFeedbackSeen);
+  }, [socket]);
 
   useEffect(() => {
     function onBeforeUnload(event) {
@@ -1067,6 +1084,7 @@ function TeacherDashboardInner() {
     setNoteBox(null);
     setNoteTarget({ id: Number(student.id), name: String(student.name || 'Student') });
     setNoteDraft('');
+    setNoteUrgent(false);
     setNoteError('');
     setNoteSending(false);
   }
@@ -1082,6 +1100,7 @@ function TeacherDashboardInner() {
     }
     setNoteTarget(null);
     setNoteDraft('');
+    setNoteUrgent(false);
     setNoteError('');
     setNoteAnchorRect(null);
     setNoteBox(null);
@@ -1096,20 +1115,32 @@ function TeacherDashboardInner() {
     }
 
     const target = noteTarget;
+    const urgent = !!noteUrgent;
     setNoteError('');
     setNoteSending(true);
     window.__iboardPendingNoteStudentId = target.id;
-    socket.emit('teacher:distribute', { items: [{ studentId: target.id, text }] }, (ack) => {
+    socket.emit('teacher:distribute', { items: [{ studentId: target.id, text, urgent }] }, (ack) => {
       setNoteSending(false);
       if (!ack?.ok) {
         setNoteError(ack?.error || 'Could not send this note.');
         return;
       }
+      setNoteReceiptByStudentId((current) => ({ ...current, [target.id]: 'waiting' }));
+      window.dispatchEvent(
+        new CustomEvent('iboard:note-send-status', {
+          detail: { studentId: target.id, status: 'waiting' },
+        })
+      );
       setNoteTarget(null);
       setNoteDraft('');
+      setNoteUrgent(false);
       setNoteAnchorRect(null);
       setNoteBox(null);
-      setCopyToast(`Note sent to ${target.name}`);
+      setCopyToast(
+        urgent
+          ? `Urgent note sent to ${target.name}`
+          : `Note sent to ${target.name}`
+      );
       setTimeout(() => setCopyToast(''), 2500);
     });
   }
@@ -2529,12 +2560,33 @@ function TeacherDashboardInner() {
                         </svg>
                       </button>
                     </HintWrap>
-                    <HintWrap hint="Send note">
+                    <HintWrap hint={
+                      noteReceiptByStudentId[s.id] === 'seen'
+                        ? 'Note seen'
+                        : noteReceiptByStudentId[s.id] === 'waiting'
+                          ? 'Note sent — waiting'
+                          : 'Send note'
+                    }>
                       <button
                         type="button"
+                        data-note-student-id={s.id}
+                        data-note-student-name={s.name}
+                        data-note-status={noteReceiptByStudentId[s.id] || undefined}
                         onClick={(event) => openNoteForStudent(s, event)}
-                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                        aria-label={`Note ${s.name}`}
+                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                          noteReceiptByStudentId[s.id] === 'seen'
+                            ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400'
+                            : noteReceiptByStudentId[s.id] === 'waiting'
+                              ? 'text-indigo-600 hover:text-indigo-700 dark:text-indigo-400'
+                              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                        aria-label={
+                          noteReceiptByStudentId[s.id] === 'seen'
+                            ? `Note to ${s.name} seen`
+                            : noteReceiptByStudentId[s.id] === 'waiting'
+                              ? `Note sent to ${s.name} — waiting for them to open it`
+                              : `Note ${s.name}`
+                        }
                       >
                         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -3638,7 +3690,7 @@ function TeacherDashboardInner() {
                 Note for {noteTarget.name}
               </h2>
               <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Goes to their Inbox.
+                Goes to their Inbox{noteUrgent ? ' · taps them on the shoulder' : ''}.
               </p>
             </div>
             <CloseButton disabled={noteSending} onClick={closeNoteComposer} aria-label="Close private note" />
@@ -3670,22 +3722,33 @@ function TeacherDashboardInner() {
               <p className="shrink-0 text-[11px] text-slate-400">{noteDraft.length}/5000</p>
             </div>
           </div>
-          <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-950">
-            <button
-              type="button"
-              disabled={noteSending}
-              onClick={closeNoteComposer}
-              className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={noteSending || !noteDraft.trim()}
-              className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
-            >
-              {noteSending ? 'Sending…' : 'Send note'}
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-950">
+            <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={noteUrgent}
+                onChange={(event) => setNoteUrgent(event.target.checked)}
+                className="h-3.5 w-3.5 accent-indigo-600"
+              />
+              Urgent — toast over their draft
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={noteSending}
+                onClick={closeNoteComposer}
+                className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={noteSending || !noteDraft.trim()}
+                className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
+              >
+                {noteSending ? 'Sending…' : noteUrgent ? 'Send urgent' : 'Send note'}
+              </button>
+            </div>
           </div>
         </form>
       )}

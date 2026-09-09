@@ -68,7 +68,7 @@ export default function QuestionInboxReply({
         setError(joinAck?.error || 'Open the room as teacher first');
         return;
       }
-      socket.emit('teacher:distribute', { items: [{ studentId: sid, text }] }, (ack) => {
+      socket.emit('teacher:distribute', { items: [{ studentId: sid, text, urgent: true }] }, (ack) => {
         setBusy(false);
         if (!ack?.ok) {
           setError(ack?.error || 'Could not send this reply');

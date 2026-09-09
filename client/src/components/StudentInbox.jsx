@@ -214,6 +214,7 @@ function noteTitle(item) {
   if (item?.type === 'set-prompt' || parseSetPromptForDisplay(item)) return 'Prompt set';
   const text = String(item?.text || '');
   if (/^Re:\s*[“"']/.test(text)) return 'Reply to your question';
+  if (item?.urgent) return 'Urgent teacher note';
   return 'Teacher note';
 }
 

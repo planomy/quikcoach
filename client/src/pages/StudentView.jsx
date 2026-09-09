@@ -44,6 +44,8 @@ function feedbackInboxItem(item, { fallbackAt = 0 } = {}) {
     type: kind,
     text,
     at,
+    feedbackId: feedbackId || undefined,
+    urgent: kind === 'note' && !!item?.urgent,
   };
   if (kind === 'set-prompt') {
     base.title = String(item?.title || '').trim() || 'Prompt set';
@@ -138,6 +140,9 @@ export default function StudentView() {
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [helpSeenToast, setHelpSeenToast] = useState(false);
+  const [urgentNoteToast, setUrgentNoteToast] = useState(null);
+  const feedbackSeenAckRef = useRef(new Set());
+  const baseDocumentTitleRef = useRef('');
   const [imageBusy, setImageBusy] = useState(false);
   const [imageHint, setImageHint] = useState('');
   const [yearInput, setYearInput] = useState('');
@@ -177,6 +182,19 @@ export default function StudentView() {
 
   useEffect(() => {
     if (!joined) return undefined;
+    if (!baseDocumentTitleRef.current) {
+      baseDocumentTitleRef.current = document.title.replace(/^\(\d+\)\s*/, '') || 'iBoard';
+    }
+    const base = baseDocumentTitleRef.current;
+    const unread = inboxUnreadIds.size || (urgentNoteToast ? 1 : 0);
+    document.title = unread > 0 ? `(${unread}) ${base}` : base;
+    return () => {
+      document.title = base;
+    };
+  }, [joined, inboxUnreadIds, urgentNoteToast]);
+
+  useEffect(() => {
+    if (!joined) return undefined;
     document.documentElement.classList.add('iboard-student-workspace');
     return () => document.documentElement.classList.remove('iboard-student-workspace');
   }, [joined]);
@@ -196,6 +214,36 @@ export default function StudentView() {
         const node = document.querySelector(`[data-inbox-item="${CSS.escape(String(itemId))}"]`);
         scrollStudentSupportToNode(node);
       });
+    });
+  }
+
+  function markFeedbackSeen(itemId) {
+    const match = String(itemId || '').match(/^feedback-(\d+)$/);
+    if (!match || !socket?.connected) return;
+    const feedbackId = Number(match[1]);
+    if (!feedbackId || feedbackSeenAckRef.current.has(feedbackId)) return;
+    feedbackSeenAckRef.current.add(feedbackId);
+    socket.emit('student:feedback-seen', { feedbackId });
+    setInboxUnreadIds((current) => {
+      if (!current.has(itemId)) return current;
+      const next = new Set(current);
+      next.delete(itemId);
+      return next;
+    });
+  }
+
+  function dismissUrgentNoteToast({ markSeen = true } = {}) {
+    const id = urgentNoteToast?.id;
+    setUrgentNoteToast(null);
+    if (markSeen && id) markFeedbackSeen(id);
+  }
+
+  function flagInboxUnread(itemId) {
+    if (!itemId) return;
+    setInboxUnreadIds((current) => {
+      const next = new Set(current);
+      next.add(itemId);
+      return next;
     });
   }
 
@@ -497,9 +545,18 @@ export default function StudentView() {
         (best, item) => (!best || Number(item.at) > Number(best.at) ? item : best),
         null
       );
-      if (newest) {
-        // After state merge so the expanded item exists when Inbox paints.
-        queueMicrotask(() => activateInbox(newest.id));
+      if (!newest) return;
+      // Quiet notes: badge only. Urgent notes: toast over the draft + open Inbox.
+      if (newest.urgent) {
+        queueMicrotask(() => {
+          activateInbox(newest.id);
+          setUrgentNoteToast({
+            id: newest.id,
+            text: String(newest.text || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+          });
+        });
+      } else {
+        queueMicrotask(() => flagInboxUnread(newest.id));
       }
     };
     const onBroadcast = (payload = {}) => {
@@ -1219,6 +1276,36 @@ export default function StudentView() {
           <p className="text-sm font-black text-white">Response seen</p>
         </div>
       )}
+      {urgentNoteToast && (
+        <div
+          role="alertdialog"
+          aria-labelledby="urgent-note-title"
+          className="fixed inset-x-3 top-3 z-[76] mx-auto max-w-lg overflow-hidden rounded-2xl border border-indigo-300 bg-white shadow-2xl ring-2 ring-indigo-200 dark:border-indigo-700 dark:bg-slate-900 dark:ring-indigo-900 sm:top-6"
+        >
+          <div className="bg-indigo-600 px-4 py-2.5">
+            <p id="urgent-note-title" className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100">
+              Teacher note · needs your eyes
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-sm font-semibold leading-relaxed text-slate-900 dark:text-slate-100">
+              {urgentNoteToast.text || 'Your teacher sent a private note.'}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  activateInbox(urgentNoteToast.id);
+                  dismissUrgentNoteToast({ markSeen: true });
+                }}
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {connBanner === 'lost' && (
         <div
           role="status"
@@ -1371,7 +1458,11 @@ export default function StudentView() {
                   setInboxExpandedId(itemId);
                 }}
                 onToggle={(id) => {
-                  setInboxExpandedId((current) => (current === id ? null : id));
+                  setInboxExpandedId((current) => {
+                    const next = current === id ? null : id;
+                    if (next === id) markFeedbackSeen(id);
+                    return next;
+                  });
                   setInboxUnreadIds((current) => {
                     if (!current.has(id)) return current;
                     const next = new Set(current);

@@ -20,6 +20,7 @@ feedbackDb.exec(`CREATE INDEX IF NOT EXISTS idx_teacher_feedback_room ON teacher
 for (const sql of [
   `ALTER TABLE teacher_feedback_messages ADD COLUMN kind TEXT NOT NULL DEFAULT 'note'`,
   `ALTER TABLE teacher_feedback_messages ADD COLUMN meta_json TEXT NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE teacher_feedback_messages ADD COLUMN seen_at TEXT`,
 ]) {
   try {
     feedbackDb.exec(sql);
@@ -33,6 +34,10 @@ function normaliseRoomCode(code) {
     .replace(/\D/g, '')
     .slice(0, 4)
     .padStart(4, '0');
+}
+
+function teacherSocketName(code) {
+  return `teacher:${normaliseRoomCode(code)}`;
 }
 
 function parseSqliteUtcMs(value) {
@@ -95,6 +100,11 @@ function feedbackForClient(row) {
     item.title = String(meta.title || '').trim().slice(0, 120) || 'Prompt set';
     item.questions = Array.isArray(meta.questions) ? meta.questions : [];
   }
+  if (kind === 'note' && meta.urgent) item.urgent = true;
+  if (row.seen_at) {
+    item.seenAt = row.seen_at;
+    item.seenAtMs = parseSqliteUtcMs(row.seen_at) || undefined;
+  }
   return item;
 }
 
@@ -124,6 +134,48 @@ function emitHistoryAfterJoin(socket) {
   });
 }
 
+function markFeedbackSeen(io, socket, payload = {}, cb) {
+  try {
+    const sid = Number(socket.data.studentId);
+    const roomCode = normaliseRoomCode(socket.data.roomCode);
+    const feedbackId = Number(payload?.feedbackId);
+    if (socket.data.role !== 'student' || !sid || roomCode.length !== 4 || !feedbackId) {
+      cb?.({ ok: false });
+      return;
+    }
+
+    const row = feedbackDb
+      .prepare(
+        `SELECT * FROM teacher_feedback_messages WHERE id = ? AND student_id = ? AND room_code = ?`
+      )
+      .get(feedbackId, sid, roomCode);
+    if (!row) {
+      cb?.({ ok: false, error: 'Note not found' });
+      return;
+    }
+
+    if (!row.seen_at) {
+      feedbackDb
+        .prepare(`UPDATE teacher_feedback_messages SET seen_at = datetime('now') WHERE id = ?`)
+        .run(feedbackId);
+    }
+    const updated = feedbackDb
+      .prepare(`SELECT * FROM teacher_feedback_messages WHERE id = ?`)
+      .get(feedbackId);
+    const item = feedbackForClient(updated);
+    io.to(teacherSocketName(roomCode)).emit('feedback:seen', {
+      feedbackId: item.feedbackId,
+      studentId: item.studentId,
+      seenAt: item.seenAt,
+      seenAtMs: item.seenAtMs,
+    });
+    cb?.({ ok: true, item });
+  } catch (error) {
+    console.error('Could not mark teacher feedback seen', error);
+    cb?.({ ok: false, error: 'Could not acknowledge note' });
+  }
+}
+
 function deliverFeedback(io, socket, payload = {}, cb) {
   try {
     const roomCode = normaliseRoomCode(socket.data.roomCode);
@@ -148,7 +200,10 @@ function deliverFeedback(io, socket, payload = {}, cb) {
 
       const kind = String(raw?.kind || '') === 'set-prompt' ? 'set-prompt' : 'note';
       const setMeta = kind === 'set-prompt' ? sanitizeSetPromptMeta(raw) : null;
-      const metaJson = setMeta ? JSON.stringify(setMeta) : '{}';
+      const urgent = kind === 'note' && !!raw?.urgent;
+      const metaJson = setMeta
+        ? JSON.stringify(setMeta)
+        : JSON.stringify(urgent ? { urgent: true } : {});
 
       const result = feedbackDb
         .prepare(
@@ -180,6 +235,11 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       requested: rawItems.length,
       reached: reachedStudents.size,
       persisted: saved.length,
+      items: saved.map((item) => ({
+        feedbackId: item.feedbackId,
+        studentId: item.studentId,
+        urgent: !!item.urgent,
+      })),
     });
   } catch (error) {
     console.error('Could not deliver teacher feedback', error);
@@ -211,6 +271,8 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
         cb?.({ ok: false, error: 'Could not load feedback' });
       }
     });
+
+    socket.on('student:feedback-seen', (payload, cb) => markFeedbackSeen(io, socket, payload, cb));
 
     const originalSocketOn = socket.on;
     socket.on = function interceptCoreHandler(name, handler) {
