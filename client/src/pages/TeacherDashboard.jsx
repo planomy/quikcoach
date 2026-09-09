@@ -3769,23 +3769,15 @@ function TeacherDashboardInner() {
             sendNoteToStudent();
           }}
         >
-          <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 dark:text-indigo-300">
-                Private feedback
-              </p>
-              <h2 id="private-note-title" className="mt-0.5 truncate font-display text-base font-bold text-ink-900 dark:text-slate-100">
-                Note for {noteTarget.name}
-              </h2>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Goes to their Inbox{noteUrgent ? ' · taps them on the shoulder' : ''}.
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-3 px-4 pt-3">
+            <h2 id="private-note-title" className="min-w-0 truncate font-display text-sm font-bold text-ink-900 dark:text-slate-100">
+              Note for {noteTarget.name}
+            </h2>
             <CloseButton disabled={noteSending} onClick={closeNoteComposer} aria-label="Close private note" />
           </div>
-          <div className="px-4 py-3">
+          <div className="px-4 py-2.5">
             {noteReplyByStudentId[noteTarget.id] ? (
-              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+              <div className="mb-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
                 <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
                   Their reply
                 </p>
@@ -3799,12 +3791,10 @@ function TeacherDashboardInner() {
                 </p>
               </div>
             ) : null}
-            <label htmlFor="private-note-text" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
-              Your note
-            </label>
             <textarea
               id="private-note-text"
               ref={noteDraftRef}
+              aria-labelledby="private-note-title"
               autoFocus
               rows={4}
               maxLength={5000}
@@ -3817,23 +3807,23 @@ function TeacherDashboardInner() {
                 }
                 if (event.key === 'Escape') closeNoteComposer();
               }}
-              placeholder="Write a private note…"
-              className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              placeholder="Private note…"
+              className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
-            <div className="mt-1.5 flex items-start justify-between gap-3">
-              <p className="text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p>
-              <p className="shrink-0 text-[11px] text-slate-400">{noteDraft.length}/5000</p>
-            </div>
+            {noteError ? <p className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p> : null}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-950">
-            <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
+            <label
+              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300"
+              title="Shows a toast over their draft"
+            >
               <input
                 type="checkbox"
                 checked={noteUrgent}
                 onChange={(event) => setNoteUrgent(event.target.checked)}
                 className="h-3.5 w-3.5 accent-indigo-600"
               />
-              Urgent — toast over their draft
+              Urgent
             </label>
             <div className="flex gap-2">
               <button
@@ -3849,7 +3839,7 @@ function TeacherDashboardInner() {
                 disabled={noteSending || !noteDraft.trim()}
                 className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
               >
-                {noteSending ? 'Sending…' : noteUrgent ? 'Send urgent' : 'Send note'}
+                {noteSending ? 'Sending…' : noteUrgent ? 'Send urgent' : 'Send'}
               </button>
             </div>
           </div>
