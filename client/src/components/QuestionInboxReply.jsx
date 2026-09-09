@@ -14,8 +14,9 @@ export default function QuestionInboxReply({
   open: openProp,
   onOpenChange,
   showToggle = true,
+  defaultOpen = false,
 }) {
-  const [openInternal, setOpenInternal] = useState(false);
+  const [openInternal, setOpenInternal] = useState(defaultOpen);
   const open = openProp ?? openInternal;
   const setOpen = onOpenChange ?? setOpenInternal;
 
