@@ -234,6 +234,8 @@ function TeacherDashboardInner() {
   const [noteError, setNoteError] = useState('');
   const [noteSending, setNoteSending] = useState(false);
   const [noteReceiptByStudentId, setNoteReceiptByStudentId] = useState({});
+  const [noteReplyByStudentId, setNoteReplyByStudentId] = useState({});
+  const noteReplyByStudentIdRef = useRef({});
   const [noteAnchorRect, setNoteAnchorRect] = useState(null);
   const [noteBox, setNoteBox] = useState(null);
   const noteComposerRef = useRef(null);
@@ -524,18 +526,65 @@ function TeacherDashboardInner() {
   }, [socket, markSessionDirty]);
 
   useEffect(() => {
+    noteReplyByStudentIdRef.current = noteReplyByStudentId;
+  }, [noteReplyByStudentId]);
+
+  useEffect(() => {
     const onFeedbackSeen = (payload = {}) => {
       const studentId = Number(payload.studentId);
       if (!studentId) return;
-      setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'seen' }));
+      if (noteReplyByStudentIdRef.current[studentId]) return;
+      setNoteReceiptByStudentId((current) => {
+        if (current[studentId] === 'replied') return current;
+        return { ...current, [studentId]: 'seen' };
+      });
       window.dispatchEvent(
         new CustomEvent('iboard:note-send-status', {
           detail: { studentId, status: 'seen' },
         })
       );
     };
+    const ingestReply = (item, { replay = false } = {}) => {
+      const studentId = Number(item?.studentId);
+      const text = String(item?.text || '').trim();
+      if (!studentId || !text) return;
+      setNoteReplyByStudentId((current) => ({
+        ...current,
+        [studentId]: {
+          replyId: Number(item.replyId) || 0,
+          feedbackId: Number(item.feedbackId) || 0,
+          text,
+          parentText: String(item.parentText || '').trim(),
+          at: Number(item.at) || Date.now(),
+          studentName: String(item.studentName || '').trim(),
+        },
+      }));
+      setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'replied' }));
+      window.dispatchEvent(
+        new CustomEvent('iboard:note-send-status', {
+          detail: { studentId, status: 'replied' },
+        })
+      );
+      if (!replay) {
+        const name = String(item.studentName || 'Student').trim() || 'Student';
+        setCopyToast(`${name} replied to your note`);
+        setTimeout(() => setCopyToast(''), 3200);
+      }
+    };
+    const onNoteReply = (payload = {}) => ingestReply(payload.item);
+    const onNoteReplyBatch = (payload = {}) => {
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      for (const item of items) ingestReply(item, { replay: !!payload.replay });
+    };
     socket.on('feedback:seen', onFeedbackSeen);
-    return () => socket.off('feedback:seen', onFeedbackSeen);
+    socket.on('feedback:note-reply', onNoteReply);
+    socket.on('feedback:note-reply-batch', onNoteReplyBatch);
+    if (joinedRef.current) socket.emit('teacher:note-replies-sync', {});
+    return () => {
+      socket.off('feedback:seen', onFeedbackSeen);
+      socket.off('feedback:note-reply', onNoteReply);
+      socket.off('feedback:note-reply-batch', onNoteReplyBatch);
+    };
   }, [socket]);
 
   useEffect(() => {
@@ -1071,6 +1120,7 @@ function TeacherDashboardInner() {
   function openNoteForStudent(student, event) {
     const trigger = event?.currentTarget;
     const rect = trigger?.getBoundingClientRect?.();
+    const studentId = Number(student.id);
     setNoteAnchorRect(rect
       ? {
           top: rect.top,
@@ -1082,11 +1132,20 @@ function TeacherDashboardInner() {
         }
       : null);
     setNoteBox(null);
-    setNoteTarget({ id: Number(student.id), name: String(student.name || 'Student') });
+    setNoteTarget({ id: studentId, name: String(student.name || 'Student') });
     setNoteDraft('');
     setNoteUrgent(false);
     setNoteError('');
     setNoteSending(false);
+    if (studentId && noteReplyByStudentId[studentId]) {
+      socket.emit('teacher:note-reply-seen', { studentId });
+      setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'seen' }));
+      window.dispatchEvent(
+        new CustomEvent('iboard:note-send-status', {
+          detail: { studentId, status: 'seen' },
+        })
+      );
+    }
   }
 
   const noteClosePending = useRef(false);
@@ -1104,6 +1163,14 @@ function TeacherDashboardInner() {
     setNoteError('');
     setNoteAnchorRect(null);
     setNoteBox(null);
+    if (noteTarget?.id) {
+      setNoteReplyByStudentId((current) => {
+        if (!current[noteTarget.id]) return current;
+        const next = { ...current };
+        delete next[noteTarget.id];
+        return next;
+      });
+    }
   }
 
   function sendNoteToStudent() {
@@ -1131,6 +1198,12 @@ function TeacherDashboardInner() {
           detail: { studentId: target.id, status: 'waiting' },
         })
       );
+      setNoteReplyByStudentId((current) => {
+        if (!current[target.id]) return current;
+        const next = { ...current };
+        delete next[target.id];
+        return next;
+      });
       setNoteTarget(null);
       setNoteDraft('');
       setNoteUrgent(false);
@@ -2561,11 +2634,13 @@ function TeacherDashboardInner() {
                       </button>
                     </HintWrap>
                     <HintWrap hint={
-                      noteReceiptByStudentId[s.id] === 'seen'
-                        ? 'Note seen'
-                        : noteReceiptByStudentId[s.id] === 'waiting'
-                          ? 'Note sent — waiting'
-                          : 'Send note'
+                      noteReceiptByStudentId[s.id] === 'replied'
+                        ? 'Student replied — open to read'
+                        : noteReceiptByStudentId[s.id] === 'seen'
+                          ? 'Note seen'
+                          : noteReceiptByStudentId[s.id] === 'waiting'
+                            ? 'Note sent — waiting'
+                            : 'Send note'
                     }>
                       <button
                         type="button"
@@ -2574,18 +2649,22 @@ function TeacherDashboardInner() {
                         data-note-status={noteReceiptByStudentId[s.id] || undefined}
                         onClick={(event) => openNoteForStudent(s, event)}
                         className={`grid h-6 w-6 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                          noteReceiptByStudentId[s.id] === 'seen'
-                            ? 'text-green-500 hover:text-green-600 dark:text-green-400'
-                            : noteReceiptByStudentId[s.id] === 'waiting'
-                              ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
-                              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                          noteReceiptByStudentId[s.id] === 'replied'
+                            ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
+                            : noteReceiptByStudentId[s.id] === 'seen'
+                              ? 'text-green-500 hover:text-green-600 dark:text-green-400'
+                              : noteReceiptByStudentId[s.id] === 'waiting'
+                                ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                                : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                         }`}
                         aria-label={
-                          noteReceiptByStudentId[s.id] === 'seen'
-                            ? `Note to ${s.name} seen`
-                            : noteReceiptByStudentId[s.id] === 'waiting'
-                              ? `Note sent to ${s.name} — waiting for them to open it`
-                              : `Note ${s.name}`
+                          noteReceiptByStudentId[s.id] === 'replied'
+                            ? `${s.name} replied to your note`
+                            : noteReceiptByStudentId[s.id] === 'seen'
+                              ? `Note to ${s.name} seen`
+                              : noteReceiptByStudentId[s.id] === 'waiting'
+                                ? `Note sent to ${s.name} — waiting for them to open it`
+                                : `Note ${s.name}`
                         }
                       >
                         <svg
@@ -3705,6 +3784,21 @@ function TeacherDashboardInner() {
             <CloseButton disabled={noteSending} onClick={closeNoteComposer} aria-label="Close private note" />
           </div>
           <div className="px-4 py-3">
+            {noteReplyByStudentId[noteTarget.id] ? (
+              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                  Their reply
+                </p>
+                {noteReplyByStudentId[noteTarget.id].parentText ? (
+                  <p className="mt-1 text-[11px] italic leading-snug text-amber-800/80 dark:text-amber-200/80">
+                    Re: “{noteReplyByStudentId[noteTarget.id].parentText}”
+                  </p>
+                ) : null}
+                <p className="mt-1.5 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-amber-950 dark:text-amber-50">
+                  {noteReplyByStudentId[noteTarget.id].text}
+                </p>
+              </div>
+            ) : null}
             <label htmlFor="private-note-text" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
               Your note
             </label>

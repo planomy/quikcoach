@@ -13,6 +13,7 @@ import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import AudienceQnaStudent from '../components/AudienceQnaStudent.jsx';
 import StudentHandRaise from '../components/StudentHandRaise.jsx';
 import StudentInbox from '../components/StudentInbox.jsx';
+import StudentNoteReply from '../components/StudentNoteReply.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
@@ -552,7 +553,9 @@ export default function StudentView() {
           activateInbox(newest.id);
           setUrgentNoteToast({
             id: newest.id,
-            text: String(newest.text || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+            feedbackId: Number(newest.feedbackId) || 0,
+            text: String(newest.text || '').replace(/\s+/g, ' ').trim().slice(0, 280),
+            replyOpen: false,
           });
         });
       } else {
@@ -1291,18 +1294,44 @@ export default function StudentView() {
             <p className="text-sm font-semibold leading-relaxed text-slate-900 dark:text-slate-100">
               {urgentNoteToast.text || 'Your teacher sent a private note.'}
             </p>
-            <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  activateInbox(urgentNoteToast.id);
-                  dismissUrgentNoteToast({ markSeen: true });
-                }}
-                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
-              >
-                Got it
-              </button>
-            </div>
+            {urgentNoteToast.replyOpen ? (
+              <div className="mt-3">
+                <StudentNoteReply
+                  socket={socket}
+                  feedbackId={urgentNoteToast.feedbackId}
+                  autoFocus
+                  compact
+                  onSent={() => dismissUrgentNoteToast({ markSeen: true })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setUrgentNoteToast((current) => (current ? { ...current, replyOpen: false } : current))}
+                  className="mt-2 text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400"
+                >
+                  Cancel reply
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUrgentNoteToast((current) => (current ? { ...current, replyOpen: true } : current))}
+                  className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200"
+                >
+                  Reply
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    activateInbox(urgentNoteToast.id);
+                    dismissUrgentNoteToast({ markSeen: true });
+                  }}
+                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
+                >
+                  Got it
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1450,6 +1479,7 @@ export default function StudentView() {
             </div>
             <div className={supportTab === 'inbox' ? '' : 'hidden'}>
               <StudentInbox
+                socket={socket}
                 items={inboxItems}
                 expandedId={inboxExpandedId}
                 largeMaterialId={largeMaterialId}

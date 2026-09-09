@@ -14,9 +14,11 @@ export default function NoteSendStatusControl() {
     const onStatus = (event) => {
       const studentId = Number(event.detail?.studentId);
       const status = String(event.detail?.status || '');
-      if (!studentId || !['sending', 'waiting', 'sent', 'seen', 'failed'].includes(status)) return;
+      if (!studentId || !['sending', 'waiting', 'sent', 'seen', 'replied', 'failed'].includes(status)) return;
       const button = noteButtonForStudent(studentId);
       if (!button) return;
+      // Don't downgrade a pending student reply to plain "seen".
+      if (status === 'seen' && button.dataset.noteStatus === 'replied') return;
       const nextStatus = status === 'sent' ? 'waiting' : status;
       button.dataset.noteStatus = nextStatus;
       const name = String(button.getAttribute('data-note-student-name') || 'student');
@@ -26,18 +28,22 @@ export default function NoteSendStatusControl() {
           ? `Note sent to ${name} — waiting for them to open it`
           : nextStatus === 'seen'
             ? `Note to ${name} seen`
-            : nextStatus === 'failed'
-              ? `Note to ${name} failed — click to retry`
-              : `Sending note to ${name}`
+            : nextStatus === 'replied'
+              ? `${name} replied to your note`
+              : nextStatus === 'failed'
+                ? `Note to ${name} failed — click to retry`
+                : `Sending note to ${name}`
       );
       button.title =
         nextStatus === 'waiting'
           ? 'Sent — waiting for student to open'
           : nextStatus === 'seen'
             ? 'Seen by student'
-            : nextStatus === 'failed'
-              ? 'Failed to send'
-              : 'Sending…';
+            : nextStatus === 'replied'
+              ? 'Student replied — open to read'
+              : nextStatus === 'failed'
+                ? 'Failed to send'
+                : 'Sending…';
     };
 
     window.addEventListener('iboard:note-send-status', onStatus);
@@ -51,6 +57,7 @@ export default function NoteSendStatusControl() {
       button[data-note-status="waiting"] svg,
       button[data-note-status="sent"] svg,
       button[data-note-status="seen"] svg,
+      button[data-note-status="replied"] svg,
       button[data-note-status="failed"] svg {
         stroke-width: 2.6;
       }
@@ -65,6 +72,9 @@ export default function NoteSendStatusControl() {
       button[data-note-status="seen"] {
         color: #22c55e !important; /* vivid green */
       }
+      button[data-note-status="replied"] {
+        color: #f59e0b !important; /* vivid amber — needs eyes */
+      }
       button[data-note-status="failed"] {
         color: #dc2626 !important;
       }
@@ -75,6 +85,9 @@ export default function NoteSendStatusControl() {
       }
       .dark button[data-note-status="seen"] {
         color: #4ade80 !important;
+      }
+      .dark button[data-note-status="replied"] {
+        color: #fbbf24 !important;
       }
       .dark button[data-note-status="failed"] {
         color: #f87171 !important;

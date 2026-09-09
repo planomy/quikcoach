@@ -29,6 +29,28 @@ for (const sql of [
   }
 }
 
+feedbackDb.exec(`
+  CREATE TABLE IF NOT EXISTS student_note_replies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_code TEXT NOT NULL,
+    student_id INTEGER NOT NULL,
+    feedback_id INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    teacher_seen_at TEXT,
+    FOREIGN KEY (feedback_id) REFERENCES teacher_feedback_messages(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+  )
+`);
+feedbackDb.exec(
+  `CREATE INDEX IF NOT EXISTS idx_student_note_replies_room_unseen
+   ON student_note_replies(room_code, teacher_seen_at)`
+);
+feedbackDb.exec(
+  `CREATE INDEX IF NOT EXISTS idx_student_note_replies_feedback
+   ON student_note_replies(feedback_id)`
+);
+
 function normaliseRoomCode(code) {
   return String(code ?? '')
     .replace(/\D/g, '')
@@ -108,6 +130,52 @@ function feedbackForClient(row) {
   return item;
 }
 
+function noteReplyForClient(row) {
+  if (!row) return null;
+  const createdAt = row.created_at || '';
+  const at = parseSqliteUtcMs(createdAt);
+  return {
+    replyId: Number(row.id),
+    feedbackId: Number(row.feedback_id),
+    studentId: Number(row.student_id),
+    studentName: String(row.student_name || '').trim().slice(0, 80),
+    text: String(row.text || ''),
+    parentText: String(row.parent_text || '').trim().slice(0, 160),
+    createdAt,
+    at: at || Date.now(),
+    teacherSeenAt: row.teacher_seen_at || null,
+  };
+}
+
+function listUnreadNoteReplies(roomCode) {
+  return feedbackDb
+    .prepare(
+      `SELECT r.*, s.name AS student_name, f.text AS parent_text
+       FROM student_note_replies r
+       JOIN students s ON s.id = r.student_id
+       JOIN teacher_feedback_messages f ON f.id = r.feedback_id
+       WHERE r.room_code = ? AND r.teacher_seen_at IS NULL
+       ORDER BY r.id ASC
+       LIMIT 200`
+    )
+    .all(normaliseRoomCode(roomCode))
+    .map(noteReplyForClient)
+    .filter(Boolean);
+}
+
+function emitUnreadNoteReplies(io, socket) {
+  setImmediate(() => {
+    const roomCode = normaliseRoomCode(socket.data.roomCode);
+    if (socket.data.role !== 'teacher' || roomCode.length !== 4) return;
+    try {
+      const items = listUnreadNoteReplies(roomCode);
+      if (items.length) socket.emit('feedback:note-reply-batch', { items, replay: true });
+    } catch (error) {
+      console.error('Could not sync note replies', error);
+    }
+  });
+}
+
 // Prepare statements at the moment they are used rather than keeping long-lived
 // StatementSync objects across the other preload modules' database migrations.
 // Node's built-in sqlite can invalidate those older prepared statements after schema
@@ -173,6 +241,121 @@ function markFeedbackSeen(io, socket, payload = {}, cb) {
   } catch (error) {
     console.error('Could not mark teacher feedback seen', error);
     cb?.({ ok: false, error: 'Could not acknowledge note' });
+  }
+}
+
+function saveStudentNoteReply(io, socket, payload = {}, cb) {
+  try {
+    const roomCode = normaliseRoomCode(socket.data.roomCode);
+    const studentId = Number(socket.data.studentId);
+    const feedbackId = Number(payload?.feedbackId);
+    const text = String(payload?.text || '').trim().slice(0, 2000);
+    if (socket.data.role !== 'student' || roomCode.length !== 4 || !studentId) {
+      cb?.({ ok: false, error: 'Join the room as a student first' });
+      return;
+    }
+    if (!feedbackId || !text) {
+      cb?.({ ok: false, error: 'Write a short reply first' });
+      return;
+    }
+
+    const parent = feedbackDb
+      .prepare(
+        `SELECT * FROM teacher_feedback_messages
+         WHERE id = ? AND student_id = ? AND room_code = ?`
+      )
+      .get(feedbackId, studentId, roomCode);
+    if (!parent || String(parent.kind || 'note') === 'set-prompt') {
+      cb?.({ ok: false, error: 'That note is no longer available' });
+      return;
+    }
+
+    const result = feedbackDb
+      .prepare(
+        `INSERT INTO student_note_replies (room_code, student_id, feedback_id, text)
+         VALUES (?, ?, ?, ?)`
+      )
+      .run(roomCode, studentId, feedbackId, text);
+
+    // Replying implies the student has opened the note.
+    if (!parent.seen_at) {
+      feedbackDb
+        .prepare(
+          `UPDATE teacher_feedback_messages
+           SET seen_at = datetime('now')
+           WHERE id = ? AND seen_at IS NULL`
+        )
+        .run(feedbackId);
+      const updated = feedbackDb
+        .prepare(`SELECT * FROM teacher_feedback_messages WHERE id = ?`)
+        .get(feedbackId);
+      const seenItem = feedbackForClient(updated);
+      if (seenItem) {
+        io.to(teacherSocketName(roomCode)).emit('feedback:seen', {
+          feedbackId: seenItem.feedbackId,
+          studentId: seenItem.studentId,
+          seenAt: seenItem.seenAt,
+          seenAtMs: seenItem.seenAtMs,
+        });
+      }
+    }
+
+    const row = feedbackDb
+      .prepare(
+        `SELECT r.*, s.name AS student_name, f.text AS parent_text
+         FROM student_note_replies r
+         JOIN students s ON s.id = r.student_id
+         JOIN teacher_feedback_messages f ON f.id = r.feedback_id
+         WHERE r.id = ?`
+      )
+      .get(Number(result.lastInsertRowid));
+    const item = noteReplyForClient(row);
+    if (!item) {
+      cb?.({ ok: false, error: 'Could not save reply' });
+      return;
+    }
+
+    io.to(teacherSocketName(roomCode)).emit('feedback:note-reply', { item });
+    cb?.({ ok: true, item });
+  } catch (error) {
+    console.error('Could not save student note reply', error);
+    cb?.({ ok: false, error: 'Could not send reply' });
+  }
+}
+
+function markNoteReplySeen(io, socket, payload = {}, cb) {
+  try {
+    const roomCode = normaliseRoomCode(socket.data.roomCode);
+    if (socket.data.role !== 'teacher' || roomCode.length !== 4) {
+      cb?.({ ok: false, error: 'Open the room as teacher first' });
+      return;
+    }
+    const replyId = Number(payload?.replyId);
+    const studentId = Number(payload?.studentId);
+    if (replyId) {
+      feedbackDb
+        .prepare(
+          `UPDATE student_note_replies
+           SET teacher_seen_at = datetime('now')
+           WHERE id = ? AND room_code = ? AND teacher_seen_at IS NULL`
+        )
+        .run(replyId, roomCode);
+    } else if (studentId) {
+      feedbackDb
+        .prepare(
+          `UPDATE student_note_replies
+           SET teacher_seen_at = datetime('now')
+           WHERE student_id = ? AND room_code = ? AND teacher_seen_at IS NULL`
+        )
+        .run(studentId, roomCode);
+    } else {
+      cb?.({ ok: false, error: 'Missing reply' });
+      return;
+    }
+    cb?.({ ok: true });
+  } catch (error) {
+    console.error('Could not mark note reply seen', error);
+    cb?.({ ok: false, error: 'Could not acknowledge reply' });
   }
 }
 
@@ -257,6 +440,8 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
   return baseServerOn.call(this, eventName, (socket) => {
     socket.on('student:join', () => emitHistoryAfterJoin(socket));
     socket.on('student:rejoin', () => emitHistoryAfterJoin(socket));
+    socket.on('teacher:join', () => emitUnreadNoteReplies(io, socket));
+    socket.on('teacher:rejoin', () => emitUnreadNoteReplies(io, socket));
 
     socket.on('student:feedback-sync', (_payload, cb) => {
       const sid = Number(socket.data.studentId);
@@ -273,6 +458,23 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
     });
 
     socket.on('student:feedback-seen', (payload, cb) => markFeedbackSeen(io, socket, payload, cb));
+    socket.on('student:note-reply', (payload, cb) => saveStudentNoteReply(io, socket, payload, cb));
+    socket.on('teacher:note-replies-sync', (_payload, cb) => {
+      const roomCode = normaliseRoomCode(socket.data.roomCode);
+      if (socket.data.role !== 'teacher' || roomCode.length !== 4) {
+        cb?.({ ok: false });
+        return;
+      }
+      try {
+        const items = listUnreadNoteReplies(roomCode);
+        cb?.({ ok: true, items });
+        if (items.length) socket.emit('feedback:note-reply-batch', { items, replay: true });
+      } catch (error) {
+        console.error('Could not sync note replies', error);
+        cb?.({ ok: false, error: 'Could not load replies' });
+      }
+    });
+    socket.on('teacher:note-reply-seen', (payload, cb) => markNoteReplySeen(io, socket, payload, cb));
 
     const originalSocketOn = socket.on;
     socket.on = function interceptCoreHandler(name, handler) {

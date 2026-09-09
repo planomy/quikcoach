@@ -1,6 +1,7 @@
 import { RemoveButton } from './PanelActions.jsx';
 import { useRef, useState } from 'react';
 import RichTextDisplay from './RichTextDisplay.jsx';
+import StudentNoteReply from './StudentNoteReply.jsx';
 import { formatInboxTime } from '../lib/inboxTime.js';
 import { parseSetPromptForDisplay } from '../lib/liveResponseSets.js';
 
@@ -218,7 +219,15 @@ function noteTitle(item) {
   return 'Teacher note';
 }
 
-export default function StudentInbox({ items, expandedId, onToggle, onDismiss, largeMaterialId, onToggleMaterialLarge }) {
+export default function StudentInbox({
+  items,
+  expandedId,
+  onToggle,
+  onDismiss,
+  largeMaterialId,
+  onToggleMaterialLarge,
+  socket,
+}) {
   if (!items.length) {
     return <div className="h-4" aria-hidden="true" />;
   }
@@ -361,8 +370,13 @@ export default function StudentInbox({ items, expandedId, onToggle, onDismiss, l
                     </ol>
                   </>
                 ) : (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                    {item.text}
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                      {item.text}
+                    </div>
+                    {item.type !== 'set-prompt' && Number(item.feedbackId) ? (
+                      <StudentNoteReply socket={socket} feedbackId={item.feedbackId} compact />
+                    ) : null}
                   </div>
                 )}
                 {typeof onDismiss === 'function' ? (
