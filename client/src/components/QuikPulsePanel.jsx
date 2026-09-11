@@ -276,47 +276,20 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
     : 'group flex h-full min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
 
   function renderCard(card) {
-    if (card.id === 'choice') {
-      return (
-        <div key={card.id} className={`relative h-full ${compact ? 'min-h-[3.75rem]' : 'min-h-[5.25rem]'}`}>
-          <button
-            ref={choiceAnchorRef}
-            type="button"
-            onClick={() => setChoiceOpen((open) => !open)}
-            className={cardClass}
-            title={card.hint}
-            aria-expanded={choiceOpen}
-            aria-haspopup="dialog"
-          >
-            <span className={`grid place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
-              <QuikPulseIcon name={card.icon} />
-            </span>
-            <span className={`font-black leading-tight text-slate-950 dark:text-white ${compact ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>
-              {card.label}
-            </span>
-            {!compact && (
-              <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">
-                {card.hint}
-              </span>
-            )}
-          </button>
-          <ChoiceCountPicker
-            open={choiceOpen}
-            anchorRef={choiceAnchorRef}
-            onClose={() => setChoiceOpen(false)}
-            onPick={launchChoice}
-          />
-        </div>
-      );
-    }
-
+    const isChoice = card.id === 'choice';
     return (
       <button
         key={card.id}
+        ref={isChoice ? choiceAnchorRef : undefined}
         type="button"
-        onClick={() => onLaunch(card.question)}
+        onClick={() => {
+          if (isChoice) setChoiceOpen((open) => !open);
+          else onLaunch(card.question);
+        }}
         className={cardClass}
         title={card.hint}
+        aria-expanded={isChoice ? choiceOpen : undefined}
+        aria-haspopup={isChoice ? 'dialog' : undefined}
       >
         <span className={`grid place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
           <QuikPulseIcon name={card.icon} />
@@ -325,7 +298,7 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
           {card.label}
         </span>
         {!compact && (
-          <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">
+          <span className="mt-0.5 max-w-full px-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">
             {card.hint}
           </span>
         )}
@@ -333,21 +306,32 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
     );
   }
 
+  const picker = (
+    <ChoiceCountPicker
+      open={choiceOpen}
+      anchorRef={choiceAnchorRef}
+      onClose={() => setChoiceOpen(false)}
+      onPick={launchChoice}
+    />
+  );
+
   if (compact) {
     return (
       <section aria-label="Quick questions" className="relative z-10 shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(65px,1fr))] gap-1.5">
           {pulseCards.map(renderCard)}
         </div>
+        {picker}
       </section>
     );
   }
 
   return (
     <section className="flex h-full flex-col p-3 sm:p-4" aria-label="Quick questions">
-      <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-3 content-start gap-2">
+      <div className="grid min-h-0 flex-1 grid-cols-3 grid-rows-2 items-stretch gap-2">
         {pulseCards.map(renderCard)}
       </div>
+      {picker}
     </section>
   );
 }
