@@ -1,3 +1,5 @@
+import { useEffect, useId, useRef, useState } from 'react';
+
 const baseQuestion = {
   correctAnswer: '',
   anonymous: false,
@@ -7,22 +9,6 @@ const baseQuestion = {
 };
 
 const choicePrompt = 'Choose the option that best answers the question you just heard.';
-
-function choiceCard(count) {
-  const letters = ['A', 'B', 'C', 'D'].slice(0, count);
-  return {
-    id: `choice-${count}`,
-    label: `${letters[0]}–${letters[letters.length - 1]} Choice`,
-    hint: `${count} answer options`,
-    icon: 'choice',
-    question: {
-      ...baseQuestion,
-      type: 'choice',
-      prompt: choicePrompt,
-      options: letters,
-    },
-  };
-}
 
 const pulseCards = [
   {
@@ -61,9 +47,12 @@ const pulseCards = [
       options: ['Strongly disagree', 'Disagree', 'Unsure', 'Agree', 'Strongly agree'],
     },
   },
-  choiceCard(2),
-  choiceCard(3),
-  choiceCard(4),
+  {
+    id: 'choice',
+    label: 'A–D Choice',
+    hint: 'Pick 2, 3 or 4 options',
+    icon: 'choice',
+  },
   {
     id: 'one-word',
     label: 'One Word',
@@ -93,7 +82,7 @@ const pulseCards = [
 export function isQuikPulseActivity(activity) {
   if (!activity?.prompt) return false;
   return activity.prompt === choicePrompt
-    || pulseCards.some((card) => card.question.prompt === activity.prompt);
+    || pulseCards.some((card) => card.question?.prompt === activity.prompt);
 }
 
 function QuikPulseIcon({ name }) {
@@ -176,31 +165,137 @@ function QuikPulseIcon({ name }) {
   );
 }
 
+function ChoiceCountPicker({ open, onClose, onPick, compact = false }) {
+  const titleId = useId();
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    const onPointer = (event) => {
+      if (!panelRef.current?.contains(event.target)) onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointer);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointer);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      className={`absolute z-30 rounded-xl border border-indigo-200 bg-white p-2.5 shadow-xl dark:border-indigo-800 dark:bg-slate-900 ${
+        compact ? 'left-0 top-full mt-1' : 'left-1/2 top-[calc(100%-0.35rem)] w-[min(12.5rem,calc(100vw-2rem))] -translate-x-1/2'
+      }`}
+    >
+      <p id={titleId} className="px-1 pb-2 text-center text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+        How many options?
+      </p>
+      <div className="flex gap-1.5" aria-label="Number of choices">
+        {[2, 3, 4].map((count) => (
+          <button
+            key={count}
+            type="button"
+            aria-label={`${count} answer choices`}
+            className="grid h-10 min-w-10 flex-1 place-items-center rounded-lg border border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-800 transition hover:border-indigo-500 hover:bg-indigo-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"
+            onClick={() => onPick(count)}
+          >
+            {count}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function QuikPulsePanel({ onLaunch, compact = false }) {
+  const [choiceOpen, setChoiceOpen] = useState(false);
+
+  function launchChoice(count) {
+    setChoiceOpen(false);
+    onLaunch({
+      ...baseQuestion,
+      type: 'choice',
+      prompt: choicePrompt,
+      options: ['A', 'B', 'C', 'D'].slice(0, count),
+    });
+  }
+
   const cardClass = compact
-    ? 'group flex min-h-[3.75rem] flex-col items-center justify-center rounded-lg border border-indigo-200 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
-    : 'group flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
+    ? 'group relative flex min-h-[3.75rem] w-full flex-col items-center justify-center rounded-lg border border-indigo-200 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
+    : 'group relative flex min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
+
+  function renderCard(card) {
+    if (card.id === 'choice') {
+      return (
+        <div key={card.id} className="relative">
+          <button
+            type="button"
+            onClick={() => setChoiceOpen((open) => !open)}
+            className={cardClass}
+            title={card.hint}
+            aria-expanded={choiceOpen}
+            aria-haspopup="dialog"
+          >
+            <span className={`grid place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
+              <QuikPulseIcon name={card.icon} />
+            </span>
+            <span className={`font-black leading-tight text-slate-950 dark:text-white ${compact ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>
+              {card.label}
+            </span>
+            {!compact && (
+              <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">
+                {card.hint}
+              </span>
+            )}
+          </button>
+          <ChoiceCountPicker
+            open={choiceOpen}
+            compact={compact}
+            onClose={() => setChoiceOpen(false)}
+            onPick={launchChoice}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <button
+        key={card.id}
+        type="button"
+        onClick={() => onLaunch(card.question)}
+        className={cardClass}
+        title={card.hint}
+      >
+        <span className={`grid place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
+          <QuikPulseIcon name={card.icon} />
+        </span>
+        <span className={`font-black leading-tight text-slate-950 dark:text-white ${compact ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>
+          {card.label}
+        </span>
+        {!compact && (
+          <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">
+            {card.hint}
+          </span>
+        )}
+      </button>
+    );
+  }
 
   if (compact) {
-    const buttonClass = 'flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-md border border-slate-200 bg-white px-1 py-1 text-center text-[10px] leading-tight font-bold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-indigo-950';
     return (
-      <section aria-label="Quick questions" className="relative z-10 shrink-0 border-b border-slate-200 bg-slate-50 pl-3 pr-6 py-2 dark:border-slate-700 dark:bg-slate-950">
+      <section aria-label="Quick questions" className="relative z-10 shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(65px,1fr))] gap-1.5">
-          {pulseCards.map((card) => (
-            <button
-              key={card.id}
-              type="button"
-              onClick={() => onLaunch(card.question)}
-              title={`${card.label} — ${card.hint}`}
-              aria-label={card.label}
-              className={buttonClass}
-            >
-              <span aria-hidden="true" className="h-5 w-5 shrink-0 text-indigo-500 dark:text-indigo-300">
-                <QuikPulseIcon name={card.icon} />
-              </span>
-              <span>{card.label}</span>
-            </button>
-          ))}
+          {pulseCards.map(renderCard)}
         </div>
       </section>
     );
@@ -209,25 +304,7 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
   return (
     <section className="flex h-full flex-col p-3 sm:p-4" aria-label="Quick questions">
       <div className="grid min-h-0 flex-1 grid-cols-3 content-start gap-2">
-        {pulseCards.map((card) => (
-          <button
-            key={card.id}
-            type="button"
-            onClick={() => onLaunch(card.question)}
-            className={cardClass}
-            title={card.hint}
-          >
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950">
-              <QuikPulseIcon name={card.icon} />
-            </span>
-            <span className="mt-1.5 text-[11px] font-black leading-tight text-slate-950 dark:text-white">
-              {card.label}
-            </span>
-            <span className="mt-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">
-              {card.hint}
-            </span>
-          </button>
-        ))}
+        {pulseCards.map(renderCard)}
       </div>
     </section>
   );
