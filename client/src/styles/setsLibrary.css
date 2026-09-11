@@ -1,4 +1,4 @@
-/* Ask dock: Quick stays topmost, navigation stays fixed, and only the active work area scrolls. */
+/* Ask dock: one Ask mode at a time (Quick / Write one / Sets); only the active work area scrolls. */
 
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) {
   bottom: 0;
@@ -19,7 +19,7 @@
 /* The teacher already clicked Ask. Keep only the close control, without spending a row on a redundant header. */
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > div:first-child {
   position: absolute;
-  top: 1rem;
+  top: 0.55rem;
   right: 0.25rem;
   z-index: 40;
   border: 0;
@@ -31,14 +31,10 @@
   display: none;
 }
 
-/* Keep the close control in a dedicated slot beside the Quick tiles. */
-.iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > section[aria-label="Quick questions"] {
-  padding-right: 3.25rem;
-}
-
-/* DOM order is shared by Write one and Sets: Quick, tabs, then workspace. */
+/* Leave room for the close control beside the Ask mode tabs. */
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > nav[aria-label="Ask options"] {
   flex-shrink: 0;
+  padding-right: 3.25rem;
 }
 
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > div.min-h-0.flex-1 {

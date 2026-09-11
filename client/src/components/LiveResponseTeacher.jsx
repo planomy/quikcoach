@@ -35,6 +35,16 @@ function firstName(name) {
   return trimmed.split(/\s+/)[0];
 }
 
+function readSavedAskTab() {
+  try {
+    const saved = localStorage.getItem('iboard-ask-tab');
+    if (saved === 'prepared' || saved === 'build' || saved === 'quik') return saved;
+  } catch {
+    /* ignore */
+  }
+  return 'quik';
+}
+
 const PANEL_TAB_LABELS = {
   ask: { title: 'Ask', hint: 'Send a question to your class' },
   respond: { title: 'Reply', hint: 'Questions waiting from students' },
@@ -184,14 +194,7 @@ export default function LiveResponseTeacher({
   const [anonymous, setAnonymous] = useState(false);
   const [optional, setOptional] = useState(false);
   const [displayMode, setDisplayMode] = useState(false);
-  const [activeView, setActiveView] = useState(() => {
-    try {
-      const saved = localStorage.getItem('iboard-ask-tab');
-      return saved === 'prepared' ? 'prepared' : 'build';
-    } catch {
-      return 'build';
-    }
-  });
+  const [activeView, setActiveView] = useState(readSavedAskTab);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [engagementFocus, setEngagementFocus] = useState(null);
   const [qnaQuestions, setQnaQuestions] = useState([]);
@@ -258,11 +261,11 @@ export default function LiveResponseTeacher({
   const currentActivityIsQuikPulse = isQuikPulseActivity(activity);
 
   useEffect(() => {
-    if (!activity && activeView === 'live') setActiveView('build');
+    if (!activity && activeView === 'live') setActiveView(readSavedAskTab());
   }, [activity, activeView]);
 
   useEffect(() => {
-    if (activeView === 'build' || activeView === 'prepared') {
+    if (activeView === 'build' || activeView === 'prepared' || activeView === 'quik') {
       try { localStorage.setItem('iboard-ask-tab', activeView); } catch { /* ignore */ }
     }
   }, [activeView]);
@@ -304,12 +307,7 @@ export default function LiveResponseTeacher({
     else if (panelTabs) setInternalPanelTab(nextTab);
     if (nextTab === 'respond') setActiveView('qna');
     else if (nextTab === 'ask' && (activeView === 'qna' || activeView === 'student')) {
-      try {
-        const saved = localStorage.getItem('iboard-ask-tab');
-        setActiveView(saved === 'prepared' ? 'prepared' : 'build');
-      } catch {
-        setActiveView('build');
-      }
+      setActiveView(readSavedAskTab());
     }
   }
 
@@ -495,7 +493,7 @@ export default function LiveResponseTeacher({
     socket.emit('teacher:live-control', { action }, (ack) => {
       if (!ack?.ok) setMessage(ack?.error || 'Could not update question');
       if (action === 'clear' && ack?.ok) {
-        setActiveView('build');
+        setActiveView(readSavedAskTab());
         if (usingPanelTabs) onClose?.();
         else setMessage('Question ended. Ready for the next one.');
       }
@@ -572,7 +570,7 @@ export default function LiveResponseTeacher({
     if (usingPanelTabs && effectivePanelTab === 'respond') {
       setActiveView('qna');
     } else {
-      setActiveView(activity ? 'live' : 'build');
+      setActiveView(activity ? 'live' : readSavedAskTab());
     }
     setSelectedStudentId(null);
   }
@@ -750,6 +748,7 @@ export default function LiveResponseTeacher({
   const askSubNav = (
     <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
       {[
+        ['quik', 'Quick'],
         ['build', queue.length ? `Write one · ${queue.length}` : 'Write one'],
         ['prepared', 'Sets'],
       ].map(([view, label]) => (
@@ -887,9 +886,6 @@ export default function LiveResponseTeacher({
       )}
 
       {panelTabNav}
-      {((usingPanelTabs && effectivePanelTab === 'ask') || (!usingPanelTabs && ['build', 'prepared', 'quik'].includes(activeView))) && (
-        <QuikPulsePanel compact onLaunch={launchQuikPulse} />
-      )}
       {usingPanelTabs && effectivePanelTab === 'responses' && awarenessStrip}
       {usingPanelTabs && effectivePanelTab === 'ask' && askSubNav}
 
@@ -897,9 +893,20 @@ export default function LiveResponseTeacher({
       <nav aria-label="Ask pages" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
         <button
           type="button"
+          onClick={() => setActiveView('quik')}
+          className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
+            activeView === 'quik'
+              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+          }`}
+        >
+          Quick
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveView('build')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
-            activeView === 'build' || activeView === 'quik'
+            activeView === 'build'
               ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
               : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
           }`}
@@ -1003,6 +1010,10 @@ export default function LiveResponseTeacher({
           />
         )}
 
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'quik' && (
+          <QuikPulsePanel onLaunch={launchQuikPulse} />
+        )}
+
         {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'live' && activity && (
           <div className="p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1024,7 +1035,7 @@ export default function LiveResponseTeacher({
                 {currentActivityIsQuikPulse && (
                   <>
                     <button type="button" onClick={repeatQuikPulse} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Repeat</button>
-                    <button type="button" onClick={() => setActiveView('build')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask another</button>
+                    <button type="button" onClick={() => setActiveView('quik')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask another</button>
                   </>
                 )}
                 <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white dark:bg-white dark:text-slate-900">Done</button>
