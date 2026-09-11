@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const baseQuestion = {
   correctAnswer: '',
@@ -165,9 +166,36 @@ function QuikPulseIcon({ name }) {
   );
 }
 
-function ChoiceCountPicker({ open, onClose, onPick, compact = false }) {
+function ChoiceCountPicker({ open, onClose, onPick, anchorRef }) {
   const titleId = useId();
   const panelRef = useRef(null);
+  const [box, setBox] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef?.current) {
+      setBox(null);
+      return undefined;
+    }
+
+    function place() {
+      const rect = anchorRef.current.getBoundingClientRect();
+      const width = Math.max(rect.width, 168);
+      const left = Math.min(
+        Math.max(8, rect.left),
+        Math.max(8, window.innerWidth - width - 8)
+      );
+      const top = Math.min(rect.bottom + 6, window.innerHeight - 96);
+      setBox({ top, left, width });
+    }
+
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, anchorRef]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -175,7 +203,10 @@ function ChoiceCountPicker({ open, onClose, onPick, compact = false }) {
       if (event.key === 'Escape') onClose();
     };
     const onPointer = (event) => {
-      if (!panelRef.current?.contains(event.target)) onClose();
+      const target = event.target;
+      if (panelRef.current?.contains(target)) return;
+      if (anchorRef?.current?.contains(target)) return;
+      onClose();
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onPointer);
@@ -183,21 +214,29 @@ function ChoiceCountPicker({ open, onClose, onPick, compact = false }) {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onPointer);
     };
-  }, [open, onClose]);
+  }, [open, onClose, anchorRef]);
 
-  if (!open) return null;
+  if (!open || !box || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div
       ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className={`absolute z-30 rounded-xl border border-indigo-200 bg-white p-2.5 shadow-xl dark:border-indigo-800 dark:bg-slate-900 ${
-        compact ? 'left-0 top-full mt-1' : 'left-1/2 top-[calc(100%-0.35rem)] w-[min(12.5rem,calc(100vw-2rem))] -translate-x-1/2'
-      }`}
+      className="rounded-xl border border-indigo-200 bg-white p-2.5 shadow-xl dark:border-indigo-800 dark:bg-slate-900"
+      style={{
+        position: 'fixed',
+        top: box.top,
+        left: box.left,
+        width: box.width,
+        zIndex: 80,
+      }}
     >
-      <p id={titleId} className="px-1 pb-2 text-center text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+      <p
+        id={titleId}
+        className="px-1 pb-2 text-center text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
+      >
         How many options?
       </p>
       <div className="flex gap-1.5" aria-label="Number of choices">
@@ -213,12 +252,14 @@ function ChoiceCountPicker({ open, onClose, onPick, compact = false }) {
           </button>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 export default function QuikPulsePanel({ onLaunch, compact = false }) {
   const [choiceOpen, setChoiceOpen] = useState(false);
+  const choiceAnchorRef = useRef(null);
 
   function launchChoice(count) {
     setChoiceOpen(false);
@@ -231,14 +272,15 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
   }
 
   const cardClass = compact
-    ? 'group relative flex min-h-[3.75rem] w-full flex-col items-center justify-center rounded-lg border border-indigo-200 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
-    : 'group relative flex min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
+    ? 'group flex h-full min-h-[3.75rem] w-full flex-col items-center justify-center rounded-lg border border-indigo-200 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
+    : 'group flex h-full min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
 
   function renderCard(card) {
     if (card.id === 'choice') {
       return (
-        <div key={card.id} className="relative">
+        <div key={card.id} className={`relative h-full ${compact ? 'min-h-[3.75rem]' : 'min-h-[5.25rem]'}`}>
           <button
+            ref={choiceAnchorRef}
             type="button"
             onClick={() => setChoiceOpen((open) => !open)}
             className={cardClass}
@@ -260,7 +302,7 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
           </button>
           <ChoiceCountPicker
             open={choiceOpen}
-            compact={compact}
+            anchorRef={choiceAnchorRef}
             onClose={() => setChoiceOpen(false)}
             onPick={launchChoice}
           />
@@ -303,7 +345,7 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
 
   return (
     <section className="flex h-full flex-col p-3 sm:p-4" aria-label="Quick questions">
-      <div className="grid min-h-0 flex-1 grid-cols-3 content-start gap-2">
+      <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-3 content-start gap-2">
         {pulseCards.map(renderCard)}
       </div>
     </section>
