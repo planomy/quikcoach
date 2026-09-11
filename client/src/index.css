@@ -5,7 +5,7 @@
 /* Light mode uses a dark product masthead around a bright working surface. */
 .iboard-app-header {
   background:
-    radial-gradient(circle at 8% -120%, rgba(56, 189, 248, 0.2), transparent 42%),
+    radial-gradient(circle at 8% -120%, rgba(129, 140, 248, 0.22), transparent 42%),
     linear-gradient(105deg, #172554 0%, #25245f 58%, #1e3a5f 100%);
   border-bottom-color: #334c82;
   box-shadow: 0 5px 18px rgba(15, 23, 42, 0.22);
@@ -13,7 +13,7 @@
 
 html.iboard-student-workspace .iboard-app-header {
   background:
-    radial-gradient(circle at 8% -120%, rgba(96, 165, 250, 0.16), transparent 42%),
+    radial-gradient(circle at 8% -120%, rgba(165, 180, 252, 0.16), transparent 42%),
     linear-gradient(105deg, #1b2a5b 0%, #29255f 58%, #21375f 100%);
 }
 
@@ -22,13 +22,13 @@ html.iboard-student-workspace .iboard-app-header {
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-code {
-  color: #7dd3fc;
+  color: #a5b4fc;
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-chip {
   border-color: rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.1);
-  color: #dbeafe;
+  color: #e0e7ff;
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-tool-group {
@@ -49,7 +49,7 @@ html:not(.dark) .iboard-app-header .iboard-header-tab:hover {
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-tab[data-active='true'] {
-  background: #2563eb;
+  background: #4f46e5;
   color: #ffffff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.28);
 }
@@ -57,25 +57,25 @@ html:not(.dark) .iboard-app-header .iboard-header-tab[data-active='true'] {
 html:not(.dark) .iboard-app-header .iboard-header-icon-button {
   border-color: rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.08);
-  color: #dbeafe;
+  color: #e0e7ff;
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-icon-button:hover {
-  border-color: rgba(147, 197, 253, 0.55);
+  border-color: rgba(165, 180, 252, 0.55);
   background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-icon-button[data-active='true'] {
-  border-color: #60a5fa;
-  background: #2563eb;
+  border-color: #818cf8;
+  background: #4f46e5;
   color: #ffffff;
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-icon-button--quiet {
   border-color: transparent;
   background: transparent;
-  color: #93c5fd;
+  color: #a5b4fc;
   box-shadow: none;
 }
 
@@ -86,7 +86,7 @@ html:not(.dark) .iboard-app-header .iboard-header-icon-button--quiet:hover {
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-icon-button--quiet[data-active='true'] {
-  border-color: rgba(147, 197, 253, 0.45);
+  border-color: rgba(165, 180, 252, 0.45);
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }

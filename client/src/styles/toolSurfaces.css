@@ -91,15 +91,15 @@ html:not(.dark) :is(.iboard-writing-surface, [data-student-writing-pane], [conte
   background-color: var(--iboard-paper);
 }
 html.dark .iboard-app-header :is(.iboard-header-tab, .iboard-header-icon-button)[data-active="true"] {
-  background: #2563eb;
+  background: #4f46e5;
   color: #fff;
 }
 html.dark :is(button.bg-indigo-600, button.bg-indigo-700, button.bg-violet-600) {
-  background-color: #2563eb;
+  background-color: #4f46e5;
   color: #fff;
 }
 html.dark :is(button.bg-indigo-600, button.bg-indigo-700, button.bg-violet-600):hover {
-  background-color: #1d4ed8;
+  background-color: #4338ca;
 }
 html.dark :is(.dark\:text-slate-400, .dark\:text-slate-500) {
   color: #aebac8;
