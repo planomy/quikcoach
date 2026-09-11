@@ -758,8 +758,8 @@ export default function LiveResponseTeacher({
           onClick={() => setActiveView(view)}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === view
-              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
           }`}
         >
           {label}
@@ -771,8 +771,8 @@ export default function LiveResponseTeacher({
           onClick={() => setActiveView('featured')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'featured'
-              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300'
+              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40'
           }`}
         >
           Featured · {featuredWall.length}
@@ -896,8 +896,8 @@ export default function LiveResponseTeacher({
           onClick={() => setActiveView('quik')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'quik'
-              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
           }`}
         >
           Quick
@@ -907,8 +907,8 @@ export default function LiveResponseTeacher({
           onClick={() => setActiveView('build')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'build'
-              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
           }`}
         >
           {queue.length ? `Write one · ${queue.length}` : 'Write one'}
@@ -918,8 +918,8 @@ export default function LiveResponseTeacher({
           onClick={() => setActiveView('prepared')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'prepared'
-              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-              : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
           }`}
         >
           Sets
@@ -930,10 +930,10 @@ export default function LiveResponseTeacher({
           disabled={!activity}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'live'
-              ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
               : activity
-                ? 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
-                : 'cursor-not-allowed border border-transparent bg-slate-100 text-slate-300 dark:bg-slate-900 dark:text-slate-600'
+                ? 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
+                : 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-600'
           }`}
         >
           Live Questions{activity ? ` · ${responses.length}/{participantCount}` : ''}
@@ -944,8 +944,8 @@ export default function LiveResponseTeacher({
             onClick={() => { setSelectedStudentId(null); setActiveView('qna'); }}
             className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
               activeView === 'qna'
-                ? 'relative z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-                : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300'
+                ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+                : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'
             }`}
           >
             From students · {pendingQuestions.length}
