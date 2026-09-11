@@ -191,8 +191,8 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
   }
 
   const cardClass = compact
-    ? 'group flex min-h-[3.75rem] flex-col items-center justify-center rounded-lg border border-indigo-100 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50'
-    : 'group flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-100 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/50';
+    ? 'group flex min-h-[3.75rem] flex-col items-center justify-center rounded-lg border border-indigo-200 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
+    : 'group flex min-h-[5.25rem] flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
 
   return (
     <section className={compact ? 'border-b border-slate-200 bg-slate-50/80 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40' : 'flex h-full flex-col p-3 sm:p-4'}>
@@ -224,7 +224,7 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
           {!compact && <span className="mt-0.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400">How many choices?</span>}
           <div className={`flex gap-1 ${compact ? 'mt-1' : 'mt-1.5'}`} aria-label="Choose number of answer options">
             {[2, 3, 4].map((count) => (
-              <button key={count} type="button" onClick={() => launchChoice(count)} className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-black text-indigo-800 hover:bg-indigo-600 hover:text-white dark:bg-indigo-950 dark:text-indigo-200">
+              <button key={count} type="button" onClick={() => launchChoice(count)} className="rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-black text-indigo-800 hover:border-indigo-500 hover:bg-indigo-600 hover:text-white dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">
                 {count}
               </button>
             ))}
