@@ -272,8 +272,8 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
   }
 
   const cardClass = compact
-    ? 'group flex h-full min-h-[3.75rem] w-full flex-col items-center justify-center rounded-lg border border-indigo-200 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
-    : 'group flex h-full min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
+    ? 'group relative flex min-h-[3.75rem] w-full flex-col items-center justify-center rounded-lg border border-indigo-200 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
+    : 'group relative flex min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
 
   function renderCard(card) {
     const isChoice = card.id === 'choice';
@@ -328,7 +328,7 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
 
   return (
     <section className="flex h-full flex-col p-3 sm:p-4" aria-label="Quick questions">
-      <div className="grid min-h-0 flex-1 grid-cols-3 grid-rows-2 items-stretch gap-2">
+      <div className="grid min-h-0 flex-1 grid-cols-3 content-start items-stretch gap-2">
         {pulseCards.map(renderCard)}
       </div>
       {picker}
