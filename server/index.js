@@ -2357,6 +2357,14 @@ io.on('connection', (socket) => {
         if (s.image_filename) unlinkRoomMedia(code, s.image_filename);
         if (s.teacher_markup_filename) unlinkRoomMedia(code, s.teacher_markup_filename);
       }
+      // Cards are gone — wipe inline comments too so Settings doesn't keep a stale
+      // "Clear fixed comments" count from the previous class on this room code.
+      try {
+        db.prepare(`DELETE FROM teacher_annotations WHERE room_code = ?`).run(code);
+      } catch (e) {
+        console.error('Could not clear teacher annotations with cards', e);
+      }
+      emitTeacherAnnotationsRoom(code);
       const postRows = queries.deleteAllBoardPosts(db, code);
       for (const p of postRows) {
         if (p.image_filename) unlinkRoomMedia(code, p.image_filename);
