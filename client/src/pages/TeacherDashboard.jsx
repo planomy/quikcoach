@@ -230,12 +230,8 @@ function TeacherDashboardInner() {
   const [copiedStudentId, setCopiedStudentId] = useState(null);
   const [noteTarget, setNoteTarget] = useState(null);
   const [noteDraft, setNoteDraft] = useState('');
-  const [noteUrgent, setNoteUrgent] = useState(false);
   const [noteError, setNoteError] = useState('');
   const [noteSending, setNoteSending] = useState(false);
-  const [noteReceiptByStudentId, setNoteReceiptByStudentId] = useState({});
-  const [noteReplyByStudentId, setNoteReplyByStudentId] = useState({});
-  const noteReplyByStudentIdRef = useRef({});
   const [noteAnchorRect, setNoteAnchorRect] = useState(null);
   const [noteBox, setNoteBox] = useState(null);
   const noteComposerRef = useRef(null);
@@ -303,15 +299,12 @@ function TeacherDashboardInner() {
   const teacherRoomRef = useRef('');
   const joinedRef = useRef(false);
   const autoJoinTriedRef = useRef(false);
-  const savedClearRef = useRef(null);
   const sessionDirtyRef = useRef(false);
   const sessionHydratedRef = useRef(false);
   const sessionFileInputRef = useRef(null);
 
   const markSaved = useCallback(() => {
     setSaveStatus('saved');
-    if (savedClearRef.current) clearTimeout(savedClearRef.current);
-    savedClearRef.current = setTimeout(() => setSaveStatus('idle'), 2200);
   }, []);
 
   const markSessionDirty = useCallback(() => {
@@ -356,10 +349,6 @@ function TeacherDashboardInner() {
 
   useEffect(() => () => {
     if (wordTargetPushRef.current) clearTimeout(wordTargetPushRef.current);
-  }, []);
-
-  useEffect(() => () => {
-    if (savedClearRef.current) clearTimeout(savedClearRef.current);
   }, []);
 
   useEffect(() => {
@@ -476,12 +465,15 @@ function TeacherDashboardInner() {
       if (!modalOpen && r?.feedback_toggles) {
         hydrateFeedbackStateFromRoom(r);
       }
+      markSaved();
       if (sessionHydratedRef.current) markSessionDirty();
       else sessionHydratedRef.current = true;
     };
     const onLive = ({ student: s }) => {
       if (!s?.id) return;
       const row = normalizeStudentFromServer(s);
+      // student:live is emitted only after the server has committed the draft.
+      markSaved();
       setStudents((prev) => {
         const i = prev.findIndex((x) => x.id === row.id);
         if (i === -1) {
@@ -513,79 +505,18 @@ function TeacherDashboardInner() {
       socket.off('room:state', onState);
       socket.off('student:live', onLive);
     };
-  }, [socket, modalOpen, hydrateFeedbackStateFromRoom, markSessionDirty]);
+  }, [socket, modalOpen, hydrateFeedbackStateFromRoom, markSessionDirty, markSaved]);
 
   useEffect(() => {
     const onQna = (payload) => {
       setAudienceQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
       markSessionDirty();
+      markSaved();
     };
     socket.on('qna:teacher', onQna);
     if (joinedRef.current) socket.emit('teacher:qna-sync', {});
     return () => socket.off('qna:teacher', onQna);
-  }, [socket, markSessionDirty]);
-
-  useEffect(() => {
-    noteReplyByStudentIdRef.current = noteReplyByStudentId;
-  }, [noteReplyByStudentId]);
-
-  useEffect(() => {
-    const onFeedbackSeen = (payload = {}) => {
-      const studentId = Number(payload.studentId);
-      if (!studentId) return;
-      if (noteReplyByStudentIdRef.current[studentId]) return;
-      setNoteReceiptByStudentId((current) => {
-        if (current[studentId] === 'replied') return current;
-        return { ...current, [studentId]: 'seen' };
-      });
-      window.dispatchEvent(
-        new CustomEvent('iboard:note-send-status', {
-          detail: { studentId, status: 'seen' },
-        })
-      );
-    };
-    const ingestReply = (item, { replay = false } = {}) => {
-      const studentId = Number(item?.studentId);
-      const text = String(item?.text || '').trim();
-      if (!studentId || !text) return;
-      setNoteReplyByStudentId((current) => ({
-        ...current,
-        [studentId]: {
-          replyId: Number(item.replyId) || 0,
-          feedbackId: Number(item.feedbackId) || 0,
-          text,
-          parentText: String(item.parentText || '').trim(),
-          at: Number(item.at) || Date.now(),
-          studentName: String(item.studentName || '').trim(),
-        },
-      }));
-      setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'replied' }));
-      window.dispatchEvent(
-        new CustomEvent('iboard:note-send-status', {
-          detail: { studentId, status: 'replied' },
-        })
-      );
-      if (!replay) {
-        const name = String(item.studentName || 'Student').trim() || 'Student';
-        setCopyToast(`${name} replied to your note`);
-        setTimeout(() => setCopyToast(''), 3200);
-      }
-    };
-    const onNoteReply = (payload = {}) => ingestReply(payload.item);
-    const onNoteReplyBatch = (payload = {}) => {
-      const items = Array.isArray(payload.items) ? payload.items : [];
-      for (const item of items) ingestReply(item, { replay: !!payload.replay });
-    };
-    socket.on('feedback:seen', onFeedbackSeen);
-    socket.on('feedback:note-reply', onNoteReply);
-    socket.on('feedback:note-reply-batch', onNoteReplyBatch);
-    if (joinedRef.current) socket.emit('teacher:note-replies-sync', {});
-    return () => {
-      socket.off('feedback:seen', onFeedbackSeen);
-      socket.off('feedback:note-reply', onNoteReply);
-      socket.off('feedback:note-reply-batch', onNoteReplyBatch);
-    };
-  }, [socket]);
+  }, [socket, markSessionDirty, markSaved]);
 
   useEffect(() => {
     function onBeforeUnload(event) {
@@ -1120,7 +1051,6 @@ function TeacherDashboardInner() {
   function openNoteForStudent(student, event) {
     const trigger = event?.currentTarget;
     const rect = trigger?.getBoundingClientRect?.();
-    const studentId = Number(student.id);
     setNoteAnchorRect(rect
       ? {
           top: rect.top,
@@ -1132,20 +1062,10 @@ function TeacherDashboardInner() {
         }
       : null);
     setNoteBox(null);
-    setNoteTarget({ id: studentId, name: String(student.name || 'Student') });
+    setNoteTarget({ id: Number(student.id), name: String(student.name || 'Student') });
     setNoteDraft('');
-    setNoteUrgent(false);
     setNoteError('');
     setNoteSending(false);
-    if (studentId && noteReplyByStudentId[studentId]) {
-      socket.emit('teacher:note-reply-seen', { studentId });
-      setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'seen' }));
-      window.dispatchEvent(
-        new CustomEvent('iboard:note-send-status', {
-          detail: { studentId, status: 'seen' },
-        })
-      );
-    }
   }
 
   const noteClosePending = useRef(false);
@@ -1159,18 +1079,9 @@ function TeacherDashboardInner() {
     }
     setNoteTarget(null);
     setNoteDraft('');
-    setNoteUrgent(false);
     setNoteError('');
     setNoteAnchorRect(null);
     setNoteBox(null);
-    if (noteTarget?.id) {
-      setNoteReplyByStudentId((current) => {
-        if (!current[noteTarget.id]) return current;
-        const next = { ...current };
-        delete next[noteTarget.id];
-        return next;
-      });
-    }
   }
 
   function sendNoteToStudent() {
@@ -1182,38 +1093,20 @@ function TeacherDashboardInner() {
     }
 
     const target = noteTarget;
-    const urgent = !!noteUrgent;
     setNoteError('');
     setNoteSending(true);
     window.__iboardPendingNoteStudentId = target.id;
-    socket.emit('teacher:distribute', { items: [{ studentId: target.id, text, urgent }] }, (ack) => {
+    socket.emit('teacher:distribute', { items: [{ studentId: target.id, text }] }, (ack) => {
       setNoteSending(false);
       if (!ack?.ok) {
         setNoteError(ack?.error || 'Could not send this note.');
         return;
       }
-      setNoteReceiptByStudentId((current) => ({ ...current, [target.id]: 'waiting' }));
-      window.dispatchEvent(
-        new CustomEvent('iboard:note-send-status', {
-          detail: { studentId: target.id, status: 'waiting' },
-        })
-      );
-      setNoteReplyByStudentId((current) => {
-        if (!current[target.id]) return current;
-        const next = { ...current };
-        delete next[target.id];
-        return next;
-      });
       setNoteTarget(null);
       setNoteDraft('');
-      setNoteUrgent(false);
       setNoteAnchorRect(null);
       setNoteBox(null);
-      setCopyToast(
-        urgent
-          ? `Urgent note sent to ${target.name}`
-          : `Note sent to ${target.name}`
-      );
+      setCopyToast(`Note sent to ${target.name}`);
       setTimeout(() => setCopyToast(''), 2500);
     });
   }
@@ -2214,9 +2107,6 @@ function TeacherDashboardInner() {
             <h1 className="pointer-events-auto font-display truncate text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
               Room <span className="iboard-header-code font-mono text-indigo-600">{codeInput}</span>
             </h1>
-            <span className="pointer-events-auto">
-              <SaveStatusChip status={saveStatus} />
-            </span>
             <span className="iboard-header-chip pointer-events-auto hidden rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 sm:inline">
               Participants: {orderedStudents.length}
             </span>
@@ -2228,6 +2118,7 @@ function TeacherDashboardInner() {
           </div>
 
           <div className="ml-auto flex shrink-0 items-center justify-end gap-2">
+            {joined && <SaveStatusChip status={saveStatus === 'idle' ? 'saved' : saveStatus} />}
             <button
               type="button"
               disabled={draftTrailBusy || !socketConnected || !joined}
@@ -2245,10 +2136,10 @@ function TeacherDashboardInner() {
                   ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Draft Trail recording — click to stop')
                   : 'Record draft trail — writing changes only, not screen or audio')
               }
-              className={`relative z-10 inline-flex h-9 items-center gap-1.5 rounded-xl border px-2.5 transition disabled:opacity-50 ${
+              className={`relative z-10 inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-slate-100 shadow-sm transition disabled:opacity-50 ${
                 room?.draftTrail?.active
-                  ? 'border-transparent text-[#ff7b72] hover:bg-white/10'
-                  : 'border-transparent text-slate-400 hover:bg-white/10 hover:text-slate-200'
+                  ? 'border-red-300/30 bg-red-400/10 text-[#ff9b94] hover:bg-red-400/20'
+                  : 'border-white/20 bg-white/10 hover:border-white/35 hover:bg-white/15 hover:text-white'
               }`}
               onClick={() => {
                 if (room?.draftTrail?.active) {
@@ -2261,7 +2152,7 @@ function TeacherDashboardInner() {
             >
               <span
                 aria-hidden="true"
-                className={`h-2 w-2 shrink-0 rounded-full ${
+                className={`h-2.5 w-2.5 shrink-0 rounded-full ${
                   draftTrailBusy
                     ? 'bg-amber-300'
                     : room?.draftTrail?.active
@@ -2271,7 +2162,7 @@ function TeacherDashboardInner() {
               />
               <span
                 aria-hidden="true"
-                className={`text-[10px] font-black uppercase tracking-[0.14em] ${
+                className={`text-[11px] font-black uppercase tracking-[0.13em] ${
                   draftTrailBusy ? 'text-amber-300' : ''
                 }`}
               >
@@ -2285,10 +2176,10 @@ function TeacherDashboardInner() {
                 onClick={toggleSettings}
                 aria-expanded={settingsOpen}
                 data-active={settingsOpen ? 'true' : 'false'}
-                className="iboard-header-icon-button iboard-header-icon-button--quiet flex h-9 w-9 items-center justify-center rounded-xl border transition dark:border-transparent dark:bg-transparent dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+                className="iboard-header-icon-button flex h-10 w-10 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
                 aria-label="Room settings"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
                   <path d="M2 14h4M10 8h4M18 16h4" />
                 </svg>
@@ -2633,50 +2524,14 @@ function TeacherDashboardInner() {
                         </svg>
                       </button>
                     </HintWrap>
-                    <HintWrap hint={
-                      noteReceiptByStudentId[s.id] === 'replied'
-                        ? 'Student replied — open to read'
-                        : noteReceiptByStudentId[s.id] === 'seen'
-                          ? 'Note seen'
-                          : noteReceiptByStudentId[s.id] === 'waiting'
-                            ? 'Note sent — waiting'
-                            : 'Send note'
-                    }>
+                    <HintWrap hint="Send note">
                       <button
                         type="button"
-                        data-note-student-id={s.id}
-                        data-note-student-name={s.name}
-                        data-note-status={noteReceiptByStudentId[s.id] || undefined}
                         onClick={(event) => openNoteForStudent(s, event)}
-                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                          noteReceiptByStudentId[s.id] === 'replied'
-                            ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
-                            : noteReceiptByStudentId[s.id] === 'seen'
-                              ? 'text-green-500 hover:text-green-600 dark:text-green-400'
-                              : noteReceiptByStudentId[s.id] === 'waiting'
-                                ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
-                                : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                        }`}
-                        aria-label={
-                          noteReceiptByStudentId[s.id] === 'replied'
-                            ? `${s.name} replied to your note`
-                            : noteReceiptByStudentId[s.id] === 'seen'
-                              ? `Note to ${s.name} seen`
-                              : noteReceiptByStudentId[s.id] === 'waiting'
-                                ? `Note sent to ${s.name} — waiting for them to open it`
-                                : `Note ${s.name}`
-                        }
+                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                        aria-label={`Note ${s.name}`}
                       >
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 24 24"
-                          className="h-3.5 w-3.5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={noteReceiptByStudentId[s.id] ? 2.6 : 2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
                       </button>
@@ -3401,6 +3256,19 @@ function TeacherDashboardInner() {
             </div>
             <CloseButton onClick={closeSettings} label="Close" />
           </div>
+          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <button
+              type="button"
+              disabled={sessionBusy}
+              onClick={saveSessionFile}
+              className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-left text-sm font-black text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
+            </button>
+            <p className="mt-1.5 px-1 text-[11px] font-semibold text-slate-500 dark:text-slate-300">
+              Download a complete lesson copy to your device.
+            </p>
+          </div>
           <div className="overflow-y-auto px-2 py-2 scrollbar-thin">
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
             <div className="mb-1 px-3">
@@ -3562,24 +3430,14 @@ function TeacherDashboardInner() {
                 Engagement
               </button>
             </div>
-            <div className="flex gap-0.5">
-              <button
-                type="button"
-                disabled={sessionBusy}
-                onClick={saveSessionFile}
-                className="min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                {sessionBusy ? 'Working…' : 'Save .iboard'}
-              </button>
-              <button
-                type="button"
-                disabled={sessionBusy}
-                onClick={openSessionFilePicker}
-                className="min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Open .iboard
-              </button>
-            </div>
+            <button
+              type="button"
+              disabled={sessionBusy}
+              onClick={openSessionFilePicker}
+              className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Open .iboard
+            </button>
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Classroom</p>
             <button type="button" onClick={() => { closeSettings(); openJoinScreen(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
@@ -3792,32 +3650,27 @@ function TeacherDashboardInner() {
             sendNoteToStudent();
           }}
         >
-          <div className="flex items-center justify-between gap-3 px-4 pt-3">
-            <h2 id="private-note-title" className="min-w-0 truncate font-display text-sm font-bold text-ink-900 dark:text-slate-100">
-              Note for {noteTarget.name}
-            </h2>
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-600 dark:text-indigo-300">
+                Private feedback
+              </p>
+              <h2 id="private-note-title" className="mt-0.5 truncate font-display text-base font-bold text-ink-900 dark:text-slate-100">
+                Note for {noteTarget.name}
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Goes to their Inbox.
+              </p>
+            </div>
             <CloseButton disabled={noteSending} onClick={closeNoteComposer} aria-label="Close private note" />
           </div>
-          <div className="px-4 py-2.5">
-            {noteReplyByStudentId[noteTarget.id] ? (
-              <div className="mb-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
-                  Their reply
-                </p>
-                {noteReplyByStudentId[noteTarget.id].parentText ? (
-                  <p className="mt-1 text-[11px] italic leading-snug text-amber-800/80 dark:text-amber-200/80">
-                    Re: “{noteReplyByStudentId[noteTarget.id].parentText}”
-                  </p>
-                ) : null}
-                <p className="mt-1.5 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-amber-950 dark:text-amber-50">
-                  {noteReplyByStudentId[noteTarget.id].text}
-                </p>
-              </div>
-            ) : null}
+          <div className="px-4 py-3">
+            <label htmlFor="private-note-text" className="block text-xs font-bold text-slate-600 dark:text-slate-300">
+              Your note
+            </label>
             <textarea
               id="private-note-text"
               ref={noteDraftRef}
-              aria-labelledby="private-note-title"
               autoFocus
               rows={4}
               maxLength={5000}
@@ -3830,41 +3683,30 @@ function TeacherDashboardInner() {
                 }
                 if (event.key === 'Escape') closeNoteComposer();
               }}
-              placeholder="Private note…"
-              className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              placeholder="Write a private note…"
+              className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
-            {noteError ? <p className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p> : null}
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
-            <label
-              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300"
-              title="Shows a toast over their draft"
-            >
-              <input
-                type="checkbox"
-                checked={noteUrgent}
-                onChange={(event) => setNoteUrgent(event.target.checked)}
-                className="h-3.5 w-3.5 accent-indigo-600"
-              />
-              Urgent
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={noteSending}
-                onClick={closeNoteComposer}
-                className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={noteSending || !noteDraft.trim()}
-                className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
-              >
-                {noteSending ? 'Sending…' : noteUrgent ? 'Send urgent' : 'Send'}
-              </button>
+            <div className="mt-1.5 flex items-start justify-between gap-3">
+              <p className="text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p>
+              <p className="shrink-0 text-[11px] text-slate-400">{noteDraft.length}/5000</p>
             </div>
+          </div>
+          <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-950">
+            <button
+              type="button"
+              disabled={noteSending}
+              onClick={closeNoteComposer}
+              className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={noteSending || !noteDraft.trim()}
+              className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
+            >
+              {noteSending ? 'Sending…' : 'Send note'}
+            </button>
           </div>
         </form>
       )}

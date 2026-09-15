@@ -12,7 +12,8 @@ export default function SaveStatusChip({ status }) {
     <span
       role="status"
       aria-live="polite"
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black leading-none ${tone}`}
+      title={status === 'error' ? 'The latest change could not be saved to the server' : 'Live lesson changes are saved to the server'}
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-black leading-none shadow-sm ${tone}`}
     >
       {status === 'saving' && (
         <span aria-hidden="true" className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
