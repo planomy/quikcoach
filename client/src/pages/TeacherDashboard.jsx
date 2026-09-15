@@ -3388,21 +3388,20 @@ function TeacherDashboardInner() {
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
-          aria-labelledby="room-settings-title"
+          aria-label="Room settings"
         >
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-1.5 dark:border-slate-700">
-            <h2 id="room-settings-title" className="font-display text-sm font-black text-slate-950 dark:text-white">Room settings</h2>
-            <CloseButton onClick={closeSettings} label="Close" className="!h-9 !w-9" />
-          </div>
           <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <button
-              type="button"
-              disabled={sessionBusy}
-              onClick={saveSessionFile}
-              className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-left text-sm font-black text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={sessionBusy}
+                onClick={saveSessionFile}
+                className="min-w-0 flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-left text-sm font-black text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
+              </button>
+              <CloseButton onClick={closeSettings} label="Close" className="!h-9 !w-9" />
+            </div>
             <p className="mt-1.5 px-1 text-[11px] font-semibold text-slate-500 dark:text-slate-300">
               Download a complete lesson copy to your device.
             </p>
