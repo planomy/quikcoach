@@ -21,46 +21,75 @@ const DEFAULT_BANK_ID = 'default';
 const MAX_FAVOURITES = 8;
 const MAX_BANKS = 12;
 const MAX_BANK_COMMENTS = 40;
-const PENDING_WIDTH = 468;
+const PENDING_WIDTH = 420;
 /** Max scrollable panel height — not the height used for initial placement. */
-const PENDING_MAX_HEIGHT = 520;
-/** Typical composer height (header + banks + a few chits + draft). Oversizing this
- *  makes clampFixedBox pin the panel to the top of the viewport. */
-const PENDING_PLACE_HEIGHT = 300;
+const PENDING_MAX_HEIGHT = 440;
+/** Typical composer height (header + pins + one category + draft). */
+const PENDING_PLACE_HEIGHT = 260;
 const OPEN_WIDTH = 320;
 /** Placement budget for the open-comment card; CSS max-height lets it grow with the note. */
 const OPEN_PLACE_HEIGHT = 280;
 const OPEN_MAX_HEIGHT = 480;
 const MARKER_SIZE = 28;
 const MARKER_MARGIN = 6;
-/** Default bank — curated. Teachers keep subject banks separately (Junior Eng, Y10 History, …). */
-const CORE_COMMENTS = [
+
+const CHIT_CATEGORIES = [
+  { id: 'fix', label: 'Fix' },
+  { id: 'shape', label: 'Shape' },
+  { id: 'craft', label: 'Craft' },
+  { id: 'praise', label: 'Praise' },
+];
+
+/**
+ * Default bank: short chip labels, fuller text sent to the student.
+ * Keep `text` stable — pins / banks are stored by that string.
+ */
+const CORE_COMMENT_DEFS = [
+  { label: 'Spelling', text: 'Spelling', category: 'fix' },
+  { label: 'Punctuation', text: 'Punctuation', category: 'fix' },
+  { label: 'Grammar', text: 'Grammar', category: 'fix' },
+  { label: 'Fragment', text: 'Fragment sentence', category: 'fix' },
+  { label: 'Tense', text: 'Tense slip', category: 'fix' },
+  { label: 'Repeated', text: 'Repeated word or idea', category: 'fix' },
+  { label: 'Wrong word', text: 'Wrong word choice', category: 'fix' },
+  { label: 'New ¶', text: 'New paragraph here', category: 'shape' },
+  { label: 'Split sentence', text: 'Split this sentence', category: 'shape' },
+  { label: 'Move this', text: 'This belongs somewhere else', category: 'shape' },
+  { label: 'Topic sentence?', text: "Where's your topic sentence?", category: 'shape' },
+  { label: 'Cut words', text: 'Which words could go?', category: 'craft' },
+  { label: 'Precise word', text: "What's a more precise word?", category: 'craft' },
+  { label: 'Restart', text: 'How else could this start?', category: 'craft' },
+  { label: "Show, don't tell", text: 'Show me this instead of telling me', category: 'craft' },
+  { label: 'Argument?', text: 'What are you arguing here?', category: 'craft' },
+  { label: 'So what?', text: 'This tells me what happens — what does it mean?', category: 'craft' },
+  { label: 'Evidence?', text: "What's your evidence?", category: 'craft' },
+  { label: 'Quote meaning', text: 'What does this quote actually suggest?', category: 'craft' },
+  { label: 'Link to Q', text: 'How does this link to the question?', category: 'craft' },
+  { label: 'Say it again', text: 'Not following you — say it another way', category: 'craft' },
+  { label: 'Love this', text: 'Love this', category: 'praise' },
+  { label: 'Best line', text: 'This is your best line so far', category: 'praise' },
+  { label: 'More like this', text: 'More like this', category: 'praise' },
+];
+
+const CORE_COMMENTS = CORE_COMMENT_DEFS.map((item) => item.text);
+const CORE_LABEL_BY_TEXT = Object.fromEntries(CORE_COMMENT_DEFS.map((item) => [item.text, item.label]));
+/** First-run pins so Default opens as a toolkit, not a wall. */
+const DEFAULT_STARTER_PINS = [
   'Spelling',
   'Punctuation',
   'Grammar',
-  'Fragment sentence',
-  'Tense slip',
-  'Repeated word or idea',
-  'Wrong word choice',
   'New paragraph here',
-  'Split this sentence',
-  'This belongs somewhere else',
-  "Where's your topic sentence?",
-  'Which words could go?',
-  "What's a more precise word?",
-  'How else could this start?',
-  'Show me this instead of telling me',
-  'What are you arguing here?',
-  'This tells me what happens — what does it mean?',
-  "What's your evidence?",
-  'What does this quote actually suggest?',
-  'How does this link to the question?',
-  'Not following you — say it another way',
   'Love this',
-  'This is your best line so far',
   'More like this',
 ];
 
+function chitLabel(text) {
+  return CORE_LABEL_BY_TEXT[text] || text;
+}
+
+function starterPins() {
+  return DEFAULT_STARTER_PINS.filter((item) => CORE_COMMENTS.includes(item)).slice(0, MAX_FAVOURITES);
+}
 function normalizeCommentList(raw, limit) {
   if (!Array.isArray(raw)) return [];
   return raw.map((item) => String(item || '').trim().slice(0, 500)).filter(Boolean).slice(0, limit);
@@ -102,7 +131,7 @@ function loadLegacyFavourites(known) {
 function loadCommentBankState() {
   const empty = {
     activeId: DEFAULT_BANK_ID,
-    defaultFavourites: loadLegacyFavourites(CORE_COMMENTS),
+    defaultFavourites: starterPins(),
     banks: [],
   };
   if (typeof window === 'undefined') return empty;
@@ -116,12 +145,13 @@ function loadCommentBankState() {
         parsed.activeId === DEFAULT_BANK_ID || banks.some((bank) => bank.id === parsed.activeId)
           ? parsed.activeId
           : DEFAULT_BANK_ID;
-      const defaultFavourites = normalizeCommentList(parsed.defaultFavourites, MAX_FAVOURITES).filter((item) =>
+      const savedPins = normalizeCommentList(parsed.defaultFavourites, MAX_FAVOURITES).filter((item) =>
         CORE_COMMENTS.includes(item)
       );
+      const legacyPins = loadLegacyFavourites(CORE_COMMENTS);
       return {
         activeId,
-        defaultFavourites: defaultFavourites.length ? defaultFavourites : loadLegacyFavourites(CORE_COMMENTS),
+        defaultFavourites: savedPins.length ? savedPins : legacyPins.length ? legacyPins : starterPins(),
         banks,
       };
     }
@@ -129,9 +159,10 @@ function loadCommentBankState() {
     /* fall through to migrate */
   }
   const legacyCustoms = loadLegacyCustoms();
+  const legacyPins = loadLegacyFavourites(CORE_COMMENTS);
   return {
     activeId: DEFAULT_BANK_ID,
-    defaultFavourites: loadLegacyFavourites(CORE_COMMENTS),
+    defaultFavourites: legacyPins.length ? legacyPins : starterPins(),
     banks: legacyCustoms.length
       ? [{ id: newBankId(), name: 'My comments', comments: legacyCustoms, favourites: [] }]
       : [],
@@ -151,12 +182,6 @@ function saveCommentBankState(state) {
   } catch {
     /* ignore storage failures */
   }
-}
-
-function orderBankComments(comments, favourites) {
-  const pinned = favourites.filter((item) => comments.includes(item));
-  const pinnedSet = new Set(pinned);
-  return [...pinned, ...comments.filter((item) => !pinnedSet.has(item))];
 }
 
 function currentSocket() {
@@ -351,6 +376,7 @@ export default function TeacherAnnotationController() {
   const [reviewBusyId, setReviewBusyId] = useState(null);
   const [reviewError, setReviewError] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [chitCategory, setChitCategory] = useState(null);
   const moveFrameRef = useRef(null);
   const selectingInPaneRef = useRef(false);
   const draftNoteRef = useRef(null);
@@ -368,11 +394,20 @@ export default function TeacherAnnotationController() {
   const activeFavourites = isDefaultBank
     ? bankState.defaultFavourites
     : activeCustomBank?.favourites || [];
-  const orderedQuickComments = useMemo(
-    () => orderBankComments(activeComments, activeFavourites),
-    [activeComments, activeFavourites]
+  const pinnedComments = useMemo(
+    () => activeFavourites.filter((item) => activeComments.includes(item)),
+    [activeFavourites, activeComments]
   );
-  const favouriteSet = useMemo(() => new Set(activeFavourites), [activeFavourites]);
+  const favouriteSet = useMemo(() => new Set(pinnedComments), [pinnedComments]);
+  const browseComments = useMemo(() => {
+    if (isDefaultBank) {
+      if (!chitCategory) return [];
+      return CORE_COMMENT_DEFS
+        .filter((item) => item.category === chitCategory && !favouriteSet.has(item.text))
+        .map((item) => item.text);
+    }
+    return activeComments.filter((item) => !favouriteSet.has(item));
+  }, [isDefaultBank, chitCategory, favouriteSet, activeComments]);
 
   function commitBankState(updater) {
     setBankState((prev) => {
@@ -386,6 +421,7 @@ export default function TeacherAnnotationController() {
     commitBankState((prev) => ({ ...prev, activeId: bankId }));
     setAddingCustomComment(false);
     setCustomCommentDraft('');
+    setChitCategory(null);
   }
 
   const annotationTotal = useMemo(
@@ -694,7 +730,11 @@ export default function TeacherAnnotationController() {
     };
     const frame = requestAnimationFrame(place);
     return () => cancelAnimationFrame(frame);
-  }, [pending?.studentId, pending?.start, pending?.end, pending?.anchor, orderedQuickComments.length, addingCustomComment, activeBankId]);
+  }, [pending?.studentId, pending?.start, pending?.end, pending?.anchor, pinnedComments.length, browseComments.length, addingCustomComment, activeBankId, chitCategory]);
+
+  useEffect(() => {
+    if (!pending) setChitCategory(null);
+  }, [pending]);
 
   useEffect(() => {
     // Persist migrated legacy customs on first mount.
@@ -1045,6 +1085,56 @@ export default function TeacherAnnotationController() {
       })
     : null;
 
+  function renderChitChip(comment, { pinned }) {
+    const selected = quickStack.includes(comment);
+    const pinBlocked = !pinned && activeFavourites.length >= MAX_FAVOURITES;
+    const label = chitLabel(comment);
+    return (
+      <span
+        key={comment}
+        className={`group inline-flex max-w-full items-stretch overflow-hidden rounded-lg border text-[11px] font-semibold leading-tight transition ${
+          selected
+            ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+            : pinned
+              ? 'border-amber-300 bg-amber-50 text-amber-950 shadow-sm dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
+              : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/40'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={(event) => handleQuickCommentClick(event, comment)}
+          title={`${comment} · Tap to send · Shift+tap to stack`}
+          className="px-2 py-1 text-left hover:brightness-95"
+        >
+          {label}
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleFavouriteComment(comment)}
+          disabled={pinBlocked}
+          className={`shrink-0 border-l border-current/15 px-1.5 text-[10px] ${
+            pinned
+              ? 'text-amber-600 dark:text-amber-300'
+              : 'text-current/35 opacity-0 hover:text-amber-600 group-hover:opacity-100 focus-visible:opacity-100'
+          } disabled:cursor-not-allowed disabled:opacity-0`}
+          aria-label={pinned ? `Unpin ${label}` : `Pin ${label} to Quick`}
+          title={
+            pinned
+              ? 'Unpin from Quick'
+              : pinBlocked
+                ? `Unpin one first (max ${MAX_FAVOURITES})`
+                : 'Pin to Quick'
+          }
+        >
+          {pinned ? '★' : '☆'}
+        </button>
+        {!isDefaultBank && (
+          <RemoveButton onClick={() => removeCustomComment(comment)} aria-label={`Remove chit: ${comment}`} title="Remove chit" />
+        )}
+      </span>
+    );
+  }
+
   function renderMarkerButton(marker) {
     const button = (
       <button
@@ -1176,106 +1266,119 @@ export default function TeacherAnnotationController() {
                 </svg>
               </button>
             </div>
-            <div className="mt-1 flex shrink-0 items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-[9px] font-semibold text-slate-400">
-                {isDefaultBank
-                  ? `Default · ★ pin · max ${MAX_FAVOURITES}`
-                  : `${activeCustomBank?.name || 'Bank'} · ★ pin · add your chits`}
-              </p>
-              <div className="flex items-center gap-1">
-                {!isDefaultBank && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={renameActiveBank}
-                      className="rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      title="Rename bank"
-                    >
-                      Rename
-                    </button>
-                    <button
-                      type="button"
-                      onClick={deleteActiveBank}
-                      className="rounded px-1.5 py-0.5 text-[9px] font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                      title="Delete bank"
-                    >
-                      Delete
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddingCustomComment((open) => !open);
-                        setCustomCommentDraft('');
-                      }}
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
-                      aria-label="Add a chit to this bank"
-                      title="Add a chit to this bank"
-                    >
-                      +
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="mt-1.5 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              <div className="flex flex-wrap content-start gap-0.5">
-                {!orderedQuickComments.length && !isDefaultBank && (
-                  <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
-                    Empty bank — tap + to add chits for this class.
+            <div className="mt-1.5 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
+              {/* Pinned toolkit — the commercial default surface */}
+              <div>
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <p className="text-[9px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                    Quick · ★ pin up to {MAX_FAVOURITES}
                   </p>
-                )}
-                {orderedQuickComments.map((comment) => {
-                  const selected = quickStack.includes(comment);
-                  const pinned = favouriteSet.has(comment);
-                  const pinBlocked = !pinned && activeFavourites.length >= MAX_FAVOURITES;
-                  return (
-                    <span
-                      key={comment}
-                      className={`group inline-flex max-w-full items-stretch overflow-hidden rounded border text-[9px] font-semibold leading-tight transition ${
-                        selected
-                          ? 'border-indigo-600 bg-indigo-600 text-white'
-                          : pinned
-                            ? 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
-                            : isDefaultBank
-                              ? 'border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-200'
-                              : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                      }`}
-                    >
+                  {!isDefaultBank && (
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={(event) => handleQuickCommentClick(event, comment)}
-                        title="Click to send · Shift+click to stack more"
-                        className="px-1.5 py-0.5 text-left hover:brightness-95"
+                        onClick={renameActiveBank}
+                        className="rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        title="Rename bank"
                       >
-                        {comment}
+                        Rename
                       </button>
                       <button
                         type="button"
-                        onClick={() => toggleFavouriteComment(comment)}
-                        disabled={pinBlocked}
-                        className={`shrink-0 border-l border-current/15 px-1 ${
-                          pinned
-                            ? 'text-amber-600 dark:text-amber-300'
-                            : 'text-current/40 opacity-0 hover:text-amber-600 group-hover:opacity-100 focus-visible:opacity-100'
-                        } disabled:cursor-not-allowed disabled:opacity-0`}
-                        aria-label={pinned ? `Unpin ${comment}` : `Pin ${comment} to top`}
-                        title={
-                          pinned
-                            ? 'Unpin from top'
-                            : pinBlocked
-                              ? `Unpin one first (max ${MAX_FAVOURITES})`
-                              : 'Pin to top'
-                        }
+                        onClick={deleteActiveBank}
+                        className="rounded px-1.5 py-0.5 text-[9px] font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                        title="Delete bank"
                       >
-                        {pinned ? '★' : '☆'}
+                        Delete
                       </button>
-                      {!isDefaultBank && (
-                        <RemoveButton onClick={() => removeCustomComment(comment)} aria-label={`Remove chit: ${comment}`} title="Remove chit" />
-                      )}
-                    </span>
-                  );
-                })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddingCustomComment((open) => !open);
+                          setCustomCommentDraft('');
+                        }}
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
+                        aria-label="Add a chit to this bank"
+                        title="Add a chit to this bank"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap content-start gap-1">
+                  {!pinnedComments.length && (
+                    <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
+                      {isDefaultBank
+                        ? 'Star chits below to build your quick row.'
+                        : 'Empty — tap + to add chits, then ★ pin your favourites.'}
+                    </p>
+                  )}
+                  {pinnedComments.map((comment) => renderChitChip(comment, { pinned: true }))}
+                </div>
               </div>
+
+              {isDefaultBank ? (
+                <div>
+                  <div className="flex items-center gap-1">
+                    {CHIT_CATEGORIES.map((category) => {
+                      const active = chitCategory === category.id;
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => setChitCategory((current) => (current === category.id ? null : category.id))}
+                          className={`rounded-full px-2.5 py-1 text-[10px] font-black transition ${
+                            active
+                              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {category.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {chitCategory ? (
+                    <div className="mt-1.5 flex flex-wrap content-start gap-1">
+                      {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
+                      {!browseComments.length && (
+                        <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
+                          All {CHIT_CATEGORIES.find((item) => item.id === chitCategory)?.label || ''} chits are pinned.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
+                      Tap Fix / Shape / Craft / Praise only when you need more.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  {browseComments.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setChitCategory((current) => (current === 'all' ? null : 'all'))}
+                        className="text-[10px] font-black text-indigo-700 hover:underline dark:text-indigo-300"
+                      >
+                        {chitCategory === 'all' ? 'Hide bank chits' : `Show all bank chits · ${browseComments.length}`}
+                      </button>
+                      {chitCategory === 'all' && (
+                        <div className="mt-1.5 flex flex-wrap content-start gap-1">
+                          {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {!activeComments.length && (
+                    <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
+                      Empty bank — tap + to add chits for this class.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             {addingCustomComment && !isDefaultBank && (
               <div className="mt-1.5 shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 p-1.5 dark:border-indigo-900 dark:bg-indigo-950/40">
@@ -1338,7 +1441,7 @@ export default function TeacherAnnotationController() {
             </p>
           )}
           <div className="mt-1.5 flex shrink-0 items-center justify-end gap-2">
-            <p className="mr-auto text-[9px] font-semibold text-slate-400">Click chit to send · Shift+click stacks · Shift+Return new line</p>
+            <p className="mr-auto text-[9px] font-semibold text-slate-400">Tap to send · Shift+tap stacks · Shift+Return new line</p>
             <div className="flex gap-1.5">
               <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
               <button type="button" disabled={!draftNote.trim()} onClick={() => addComment()} className="rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>
