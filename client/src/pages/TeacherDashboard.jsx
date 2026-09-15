@@ -64,7 +64,8 @@ const MODE_LABELS = {
 
 const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
-const CARD_FONT_STEPS = ['text-xs', 'text-sm', 'text-base', 'text-lg'];
+/** Per-card writing size steps (applied as rem so rich HTML inherits). */
+const CARD_FONT_REMS = [0.75, 0.875, 1, 1.125, 1.25];
 const CARD_FONT_DEFAULT = 1;
 const CARD_VIEWS = [
   { id: 'overview', label: 'Overview' },
@@ -83,12 +84,14 @@ function readCardFontMap() {
   }
 }
 
-function cardFontClass(map, studentId) {
+function cardFontIndex(map, studentId) {
   const idx = Number(map?.[studentId]);
-  const safe = Number.isFinite(idx)
-    ? Math.max(0, Math.min(CARD_FONT_STEPS.length - 1, Math.round(idx)))
-    : CARD_FONT_DEFAULT;
-  return CARD_FONT_STEPS[safe];
+  if (!Number.isFinite(idx)) return CARD_FONT_DEFAULT;
+  return Math.max(0, Math.min(CARD_FONT_REMS.length - 1, Math.round(idx)));
+}
+
+function cardFontRem(map, studentId) {
+  return CARD_FONT_REMS[cardFontIndex(map, studentId)];
 }
 
 function CardViewIcon({ id }) {
@@ -464,8 +467,8 @@ function TeacherDashboardInner() {
   function bumpCardFont(studentId, delta) {
     const id = String(studentId);
     setCardFontById((prev) => {
-      const current = Number.isFinite(Number(prev[id])) ? Number(prev[id]) : CARD_FONT_DEFAULT;
-      const next = Math.max(0, Math.min(CARD_FONT_STEPS.length - 1, current + delta));
+      const current = cardFontIndex(prev, id);
+      const next = Math.max(0, Math.min(CARD_FONT_REMS.length - 1, current + delta));
       if (next === current) return prev;
       return { ...prev, [id]: next };
     });
@@ -2694,6 +2697,28 @@ function TeacherDashboardInner() {
                           setTimeout(() => setCopyToast(''), 2500);
                         }}
                       />
+                      <HintWrap hint="Smaller text">
+                        <button
+                          type="button"
+                          onClick={() => bumpCardFont(s.id, -1)}
+                          disabled={cardFontIndex(cardFontById, s.id) <= 0}
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-30 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                          aria-label={`Smaller text on ${s.name}'s card`}
+                        >
+                          <span className="text-[11px] font-black leading-none">A−</span>
+                        </button>
+                      </HintWrap>
+                      <HintWrap hint="Larger text">
+                        <button
+                          type="button"
+                          onClick={() => bumpCardFont(s.id, 1)}
+                          disabled={cardFontIndex(cardFontById, s.id) >= CARD_FONT_REMS.length - 1}
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-30 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                          aria-label={`Larger text on ${s.name}'s card`}
+                        >
+                          <span className="text-[12px] font-black leading-none">A+</span>
+                        </button>
+                      </HintWrap>
                     </div>
                     <div className="relative" data-student-actions-menu>
                       <HintWrap hint="More actions">
@@ -2725,14 +2750,12 @@ function TeacherDashboardInner() {
                               Mark up drawing
                             </button>
                           )}
-                          <div className="my-1 flex items-center gap-1 px-1">
-                            <button type="button" onClick={() => bumpCardFont(s.id, -1)} className="flex-1 rounded-lg px-2 py-1.5 text-left text-xs font-black text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" role="menuitem" aria-label={`Smaller text on ${s.name}'s card`}>
-                              A−
-                            </button>
-                            <button type="button" onClick={() => bumpCardFont(s.id, 1)} className="flex-1 rounded-lg px-2 py-1.5 text-left text-xs font-black text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" role="menuitem" aria-label={`Larger text on ${s.name}'s card`}>
-                              A+
-                            </button>
-                          </div>
+                          <button type="button" onClick={() => bumpCardFont(s.id, -1)} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                            Smaller text (A−)
+                          </button>
+                          <button type="button" onClick={() => bumpCardFont(s.id, 1)} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                            Larger text (A+)
+                          </button>
                           <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
                           <button type="button" onClick={() => { requestRemoveStudent(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40" role="menuitem">
                             Remove card
@@ -2745,7 +2768,9 @@ function TeacherDashboardInner() {
                 </div>
                 <div
                   data-student-writing-pane
-                  className={`iboard-writing-surface relative mt-2 rounded-xl bg-white p-2.5 pr-9 leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${cardFontClass(cardFontById, s.id)} ${writingPaneClass}`}
+                  data-card-font="true"
+                  style={{ fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl bg-white p-2.5 pr-9 leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
