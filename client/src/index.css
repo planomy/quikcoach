@@ -121,7 +121,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 }
 
 /* Descendants inherit the pane's inline rem size (do not override the pane itself). */
-.iboard-writing-surface[data-card-font='true'] :is(p, div, span, li, ul, ol, strong, em, u, s, mark, a) {
+[data-card-font='true'] :is(p, div, span, li, ul, ol, strong, em, u, s, mark, a) {
   font-size: inherit !important;
 }
 
