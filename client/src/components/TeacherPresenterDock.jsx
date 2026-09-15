@@ -1,4 +1,3 @@
-import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -159,6 +158,27 @@ const DOCK_CSS = `
   .iboard-presenter-head-button.is-question {
     border-color: #c7d2fe;
     background: #4f46e5;
+  }
+  .iboard-presenter-head-close {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid rgba(255,255,255,.42);
+    border-radius: 999px;
+    background: rgba(255,255,255,.2);
+    color: #ffffff;
+    cursor: pointer;
+    line-height: 0;
+  }
+  .iboard-presenter-head-close:hover {
+    background: rgba(255,255,255,.34);
+  }
+  .iboard-presenter-head-close svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
   }
   .iboard-presenter-body { padding: 10px; }
   .iboard-presenter-status-row {
@@ -541,7 +561,17 @@ export default function TeacherPresenterDock() {
               Q {pendingQuestions.length}
             </button>
             <button type="button" className="iboard-presenter-head-button" onClick={bringBoardForward}>Board</button>
-            <CloseButton onClick={closeDock} aria-label="Close Presenter Dock" />
+            <button
+              type="button"
+              className="iboard-presenter-head-close"
+              onClick={closeDock}
+              aria-label="Close Presenter Dock"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="m6 6 12 12M18 6 6 18" />
+              </svg>
+            </button>
           </header>
 
           <div className="iboard-presenter-body">
