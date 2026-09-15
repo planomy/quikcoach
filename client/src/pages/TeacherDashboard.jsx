@@ -3390,11 +3390,9 @@ function TeacherDashboardInner() {
           aria-modal="false"
           aria-labelledby="room-settings-title"
         >
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <div>
-              <h2 id="room-settings-title" className="font-display text-base font-black text-slate-950 dark:text-white">Room settings</h2>
-            </div>
-            <CloseButton onClick={closeSettings} label="Close" />
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-1.5 dark:border-slate-700">
+            <h2 id="room-settings-title" className="font-display text-sm font-black text-slate-950 dark:text-white">Room settings</h2>
+            <CloseButton onClick={closeSettings} label="Close" className="!h-9 !w-9" />
           </div>
           <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
             <button
