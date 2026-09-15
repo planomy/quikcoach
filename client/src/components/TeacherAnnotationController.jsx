@@ -1320,18 +1320,24 @@ export default function TeacherAnnotationController() {
 
               {isDefaultBank ? (
                 <div>
-                  <div className="flex items-center gap-1">
+                  <div
+                    className="inline-flex w-full rounded-xl border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-950"
+                    role="tablist"
+                    aria-label="Comment categories"
+                  >
                     {CHIT_CATEGORIES.map((category) => {
                       const active = chitCategory === category.id;
                       return (
                         <button
                           key={category.id}
                           type="button"
+                          role="tab"
+                          aria-selected={active}
                           onClick={() => setChitCategory((current) => (current === category.id ? null : category.id))}
-                          className={`rounded-full px-2.5 py-1 text-[10px] font-black transition ${
+                          className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[10px] font-black transition ${
                             active
-                              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                              ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                           }`}
                         >
                           {category.label}
@@ -1340,7 +1346,7 @@ export default function TeacherAnnotationController() {
                     })}
                   </div>
                   {chitCategory ? (
-                    <div className="mt-1.5 flex flex-wrap content-start gap-1">
+                    <div className="mt-1.5 flex flex-wrap content-start gap-1" role="tabpanel">
                       {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
                       {!browseComments.length && (
                         <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
@@ -1350,7 +1356,7 @@ export default function TeacherAnnotationController() {
                     </div>
                   ) : (
                     <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
-                      Tap Fix / Shape / Craft / Praise only when you need more.
+                      Open a tab when you need more than Quick.
                     </p>
                   )}
                 </div>
