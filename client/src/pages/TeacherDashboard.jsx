@@ -279,6 +279,7 @@ function TeacherDashboardInner() {
   const [livePulse, setLivePulse] = useState({ activity: null, responses: [], students: [] });
   const [cardView, setCardView] = useState(initialCardView);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
+  const [studentActionMenuId, setStudentActionMenuId] = useState(null);
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [draftTrailOpen, setDraftTrailOpen] = useState(false);
@@ -401,6 +402,22 @@ function TeacherDashboardInner() {
     window.addEventListener('iboard:fixed-comments', onFixed);
     return () => window.removeEventListener('iboard:fixed-comments', onFixed);
   }, []);
+
+  useEffect(() => {
+    if (!studentActionMenuId) return undefined;
+    const closeOutside = (event) => {
+      if (!event.target?.closest?.('[data-student-actions-menu]')) setStudentActionMenuId(null);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setStudentActionMenuId(null);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [studentActionMenuId]);
 
   useEffect(() => {
     try {
@@ -2496,11 +2513,13 @@ function TeacherDashboardInner() {
                     setHandQuestionTarget({ student: s, questions: handQuestions });
                   }
                 } : undefined}
-                className={`iboard-student-card relative flex flex-col overflow-visible rounded-2xl p-3 ${
+                className={`iboard-student-card group/student-card relative flex flex-col overflow-visible rounded-2xl p-3 ${
                   handUp
                     ? 'cursor-pointer border border-orange-500 bg-orange-200/90 shadow-[inset_4px_0_0_0_#ea580c] dark:border-orange-400 dark:bg-orange-900/75 dark:shadow-[inset_4px_0_0_0_#fb923c] dark:ring-1 dark:ring-orange-500/40'
                     : `bg-white dark:bg-slate-900 ${
-                        showPulseState
+                        broadcastPick[s.id]
+                          ? 'border border-indigo-400 ring-2 ring-indigo-200 dark:border-indigo-500 dark:ring-indigo-900/70'
+                          : showPulseState
                           ? pulseMeta.className
                           : 'border dark:border-slate-700/80'
                       }`
@@ -2579,140 +2598,96 @@ function TeacherDashboardInner() {
                       {wc}w
                     </span>
                   ) : null}
-                  <div
-                    className="ml-auto flex shrink-0 items-center gap-0.5 opacity-70 transition hover:opacity-100"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <HintWrap hint={copiedStudentId === s.id ? 'Copied!' : 'Copy draft'}>
-                      <button
-                        type="button"
-                        disabled={!displayText.trim()}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          copyStudentText(s);
-                        }}
-                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition disabled:cursor-not-allowed disabled:opacity-30 ${
-                          copiedStudentId === s.id
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                        }`}
-                        aria-label={
-                          copiedStudentId === s.id
-                            ? `Copied ${s.name}'s writing`
-                            : `Copy ${s.name}'s writing`
-                        }
-                      >
-                        {copiedStudentId === s.id ? (
-                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="m5 12 4 4L19 6" />
-                          </svg>
-                        ) : (
-                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="8" y="8" width="11" height="11" rx="2" />
-                            <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
-                          </svg>
-                        )}
-                      </button>
-                    </HintWrap>
-                    <HintWrap hint="Save file">
-                      <button
-                        type="button"
-                        onClick={() => downloadOneStudent(s)}
-                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                        aria-label={`Save ${s.name}'s draft`}
-                      >
-                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 3v12" />
-                          <path d="m7 10 5 5 5-5" />
-                          <path d="M5 21h14" />
-                        </svg>
-                      </button>
-                    </HintWrap>
-                    <HintWrap hint={
-                      noteReceiptByStudentId[s.id] === 'replied'
-                        ? 'Student replied — open to read'
-                        : noteReceiptByStudentId[s.id] === 'seen'
-                          ? 'Note seen'
-                          : noteReceiptByStudentId[s.id] === 'waiting'
-                            ? 'Note sent — waiting'
-                            : 'Send note'
-                    }>
-                      <button
-                        type="button"
-                        data-note-student-id={s.id}
-                        data-note-student-name={s.name}
-                        data-note-status={noteReceiptByStudentId[s.id] || undefined}
-                        onClick={(event) => openNoteForStudent(s, event)}
-                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                          noteReceiptByStudentId[s.id] === 'replied'
-                            ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
-                            : noteReceiptByStudentId[s.id] === 'seen'
-                              ? 'text-green-500 hover:text-green-600 dark:text-green-400'
-                              : noteReceiptByStudentId[s.id] === 'waiting'
-                                ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
-                                : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                        }`}
-                        aria-label={
-                          noteReceiptByStudentId[s.id] === 'replied'
-                            ? `${s.name} replied to your note`
-                            : noteReceiptByStudentId[s.id] === 'seen'
-                              ? `Note to ${s.name} seen`
-                              : noteReceiptByStudentId[s.id] === 'waiting'
-                                ? `Note sent to ${s.name} — waiting for them to open it`
-                                : `Note ${s.name}`
-                        }
-                      >
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 24 24"
-                          className="h-3.5 w-3.5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={noteReceiptByStudentId[s.id] ? 2.6 : 2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                  <div className="ml-auto flex shrink-0 items-center gap-0.5" onClick={(event) => event.stopPropagation()}>
+                    <div className={`${noteReceiptByStudentId[s.id] ? 'flex' : 'hidden group-hover/student-card:flex group-focus-within/student-card:flex'} items-center gap-0.5`}>
+                      <HintWrap hint={
+                        noteReceiptByStudentId[s.id] === 'replied'
+                          ? 'Student replied — open to read'
+                          : noteReceiptByStudentId[s.id] === 'seen'
+                            ? 'Note seen'
+                            : noteReceiptByStudentId[s.id] === 'waiting'
+                              ? 'Note sent — waiting'
+                              : 'Send note'
+                      }>
+                        <button
+                          type="button"
+                          data-note-student-id={s.id}
+                          data-note-student-name={s.name}
+                          data-note-status={noteReceiptByStudentId[s.id] || undefined}
+                          onClick={(event) => openNoteForStudent(s, event)}
+                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                            noteReceiptByStudentId[s.id] === 'replied'
+                              ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
+                              : noteReceiptByStudentId[s.id] === 'seen'
+                                ? 'text-green-500 hover:text-green-600 dark:text-green-400'
+                                : noteReceiptByStudentId[s.id] === 'waiting'
+                                  ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                                  : 'text-slate-500 hover:text-indigo-700 dark:text-slate-300 dark:hover:text-indigo-300'
+                          }`}
+                          aria-label={
+                            noteReceiptByStudentId[s.id] === 'replied'
+                              ? `${s.name} replied to your note`
+                              : noteReceiptByStudentId[s.id] === 'seen'
+                                ? `Note to ${s.name} seen`
+                                : noteReceiptByStudentId[s.id] === 'waiting'
+                                  ? `Note sent to ${s.name} — waiting for them to open it`
+                                  : `Note ${s.name}`
+                          }
                         >
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                        </svg>
-                      </button>
-                    </HintWrap>
-                    <ThinkingTrigger
-                      socket={socket}
-                      studentIds={[s.id]}
-                      targetLabel={s.name}
-                      subjectAssist={promptSubjectAssist}
-                      onSent={({ count }) => {
-                        setCopyToast(`Thinking prompt${count === 1 ? '' : 's'} sent to ${s.name}`);
-                        setTimeout(() => setCopyToast(''), 2500);
-                      }}
-                    />
-                    <HintWrap hint="Open card">
-                      <button
-                        type="button"
-                        onClick={() => setFocusedStudentId(s.id)}
-                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                        aria-label={`Open ${s.name}'s full draft`}
-                      >
-                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M15 3h6v6" />
-                          <path d="M10 14 21 3" />
-                          <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
-                        </svg>
-                      </button>
-                    </HintWrap>
-                    <HintWrap hint="Remove card">
-                      <button
-                        type="button"
-                        onClick={() => requestRemoveStudent(s)}
-                        className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-600 dark:text-slate-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"
-                        aria-label={`Remove ${s.name} from the room`}
-                      >
-                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6 6 18" />
-                          <path d="m6 6 12 12" />
-                        </svg>
-                      </button>
-                    </HintWrap>
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={noteReceiptByStudentId[s.id] ? 2.6 : 2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                          </svg>
+                        </button>
+                      </HintWrap>
+                      <ThinkingTrigger
+                        socket={socket}
+                        studentIds={[s.id]}
+                        targetLabel={s.name}
+                        subjectAssist={promptSubjectAssist}
+                        className="!h-7 !w-7 !text-slate-500 dark:!text-slate-300"
+                        onSent={({ count }) => {
+                          setCopyToast(`Thinking prompt${count === 1 ? '' : 's'} sent to ${s.name}`);
+                          setTimeout(() => setCopyToast(''), 2500);
+                        }}
+                      />
+                    </div>
+                    <div className="relative" data-student-actions-menu>
+                      <HintWrap hint="More actions">
+                        <button
+                          type="button"
+                          onClick={() => setStudentActionMenuId((current) => current === s.id ? null : s.id)}
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                          aria-label={`More actions for ${s.name}`}
+                          aria-expanded={studentActionMenuId === s.id}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                            <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+                          </svg>
+                        </button>
+                      </HintWrap>
+                      {studentActionMenuId === s.id && (
+                        <div className="absolute right-0 top-8 z-40 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900" role="menu">
+                          <button type="button" disabled={!displayText.trim()} onClick={() => { copyStudentText(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                            Copy draft
+                          </button>
+                          <button type="button" onClick={() => { downloadOneStudent(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                            Save file
+                          </button>
+                          <button type="button" onClick={() => { setFocusedStudentId(s.id); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                            Open full draft
+                          </button>
+                          {s.image_url && (
+                            <button type="button" onClick={() => { setDrawingMarkupTarget(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50" role="menuitem">
+                              Mark up drawing
+                            </button>
+                          )}
+                          <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+                          <button type="button" onClick={() => { requestRemoveStudent(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40" role="menuitem">
+                            Remove card
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div
@@ -2727,16 +2702,6 @@ function TeacherDashboardInner() {
                         alt={`${s.name}'s drawing`}
                         imageClassName="max-h-36 w-full object-contain"
                       />
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setDrawingMarkupTarget(s);
-                        }}
-                        className="absolute bottom-2 right-2 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white shadow-lg hover:bg-indigo-700"
-                      >
-                        ✎ Mark up
-                      </button>
                     </div>
                   )}
                   {displayText ? (
