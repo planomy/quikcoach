@@ -2765,7 +2765,6 @@ function TeacherDashboardInner() {
                     </div>
                   </div>
                 </div>
-                </div>
                 <div
                   data-student-writing-pane
                   data-card-font="true"
