@@ -2488,8 +2488,26 @@ function TeacherDashboardInner() {
                 </HintWrap>
                 <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-ink-900 dark:text-slate-100">{post.title || 'Teacher'}</h2>
                 <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-slate-700 dark:bg-slate-700 dark:text-slate-200">Teacher</span>
+                <HintWrap hint="Edit card">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.dispatchEvent(
+                        new CustomEvent('iboard:edit-teacher-card', { detail: { post } }),
+                      );
+                    }}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-100"
+                    aria-label="Edit teacher card"
+                    title=""
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                </HintWrap>
                 <HintWrap hint="Remove card">
-                  <RemoveButton onClick={() => deleteTeacherCard(post.id)} aria-label="Remove teacher card" />
+                  <RemoveButton onClick={() => deleteTeacherCard(post.id)} aria-label="Remove teacher card" title="" />
                 </HintWrap>
               </div>
               <div className={`mt-2 rounded-xl bg-white p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${writingPaneClass}`}>
