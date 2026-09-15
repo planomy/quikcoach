@@ -66,7 +66,7 @@ const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
 /** Per-card writing size steps (applied as rem so rich HTML inherits). */
 const CARD_FONT_REMS = [0.75, 0.875, 1, 1.125, 1.25];
-const CARD_FONT_DEFAULT = 1;
+const CARD_FONT_DEFAULT = 2; /* index of 1rem */
 const CARD_VIEWS = [
   { id: 'overview', label: 'Overview' },
   { id: 'reading', label: 'Reading' },
@@ -2768,12 +2768,6 @@ function TeacherDashboardInner() {
                               Mark up drawing
                             </button>
                           )}
-                          <button type="button" onClick={() => bumpCardFont(s.id, -1)} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
-                            Smaller text (A−)
-                          </button>
-                          <button type="button" onClick={() => bumpCardFont(s.id, 1)} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
-                            Larger text (A+)
-                          </button>
                           <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
                           <button type="button" onClick={() => { requestRemoveStudent(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40" role="menuitem">
                             Remove card

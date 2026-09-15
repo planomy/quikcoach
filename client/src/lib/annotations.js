@@ -132,6 +132,27 @@ function mappedPlainTokens(root) {
   return collapsed;
 }
 
+function firstTextDescendant(node) {
+  if (!node) return null;
+  if (node.nodeType === Node.TEXT_NODE) return node;
+  for (const child of Array.from(node.childNodes || [])) {
+    const found = firstTextDescendant(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+function lastTextDescendant(node) {
+  if (!node) return null;
+  if (node.nodeType === Node.TEXT_NODE) return node;
+  const children = Array.from(node.childNodes || []);
+  for (let i = children.length - 1; i >= 0; i -= 1) {
+    const found = lastTextDescendant(children[i]);
+    if (found) return found;
+  }
+  return null;
+}
+
 function tokenIndexForDomPoint(tokens, node, offset, preferEnd = false) {
   if (!node) return -1;
   if (node.nodeType === Node.TEXT_NODE) {
@@ -146,6 +167,35 @@ function tokenIndexForDomPoint(tokens, node, offset, preferEnd = false) {
         if (!token.virtual && token.node === node && token.startOffset >= offset) return i;
       }
     }
+    return -1;
+  }
+
+  // RTL / block-boundary selections often report element containers + child offsets.
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    if (preferEnd) {
+      if (offset <= 0) {
+        const first = firstTextDescendant(node);
+        return first ? tokenIndexForDomPoint(tokens, first, 0, false) : -1;
+      }
+      const prev = node.childNodes[offset - 1];
+      if (!prev) return -1;
+      if (prev.nodeType === Node.TEXT_NODE) {
+        return tokenIndexForDomPoint(tokens, prev, String(prev.nodeValue || '').length, true);
+      }
+      const last = lastTextDescendant(prev);
+      return last ? tokenIndexForDomPoint(tokens, last, String(last.nodeValue || '').length, true) : -1;
+    }
+    if (offset >= node.childNodes.length) {
+      const last = lastTextDescendant(node);
+      return last ? tokenIndexForDomPoint(tokens, last, String(last.nodeValue || '').length, true) : -1;
+    }
+    const child = node.childNodes[offset];
+    if (!child) return -1;
+    if (child.nodeType === Node.TEXT_NODE) {
+      return tokenIndexForDomPoint(tokens, child, 0, false);
+    }
+    const first = firstTextDescendant(child);
+    return first ? tokenIndexForDomPoint(tokens, first, 0, false) : -1;
   }
   return -1;
 }
@@ -165,7 +215,8 @@ export function selectionOffsetsWithin(root, rawExpectedText) {
 
   const selectedRange = range.cloneRange();
   const selectedText = fragmentToPlainText(selectedRange.cloneContents());
-  const quote = normalise(selectedText).trim();
+  const rawQuote = normalise(selectedText);
+  const quote = rawQuote.trim();
   if (!quote) return null;
 
   if (mappedStart < 0 || mappedEnd < mappedStart) {
@@ -173,10 +224,12 @@ export function selectionOffsetsWithin(root, rawExpectedText) {
     prefixRange.setStart(root, 0);
     prefixRange.setEnd(range.startContainer, range.startOffset);
     mappedStart = fragmentToPlainText(prefixRange.cloneContents()).length;
-    mappedEnd = mappedStart + quote.length;
+    mappedEnd = mappedStart + rawQuote.length;
   }
 
-  let start = mappedStart;
+  // Trim only affects the stored quote — keep offsets on the real selected span.
+  const leadWs = rawQuote.length - rawQuote.trimStart().length;
+  let start = mappedStart + leadWs;
   let end = start + quote.length;
   const sourceText = mappedText === expectedText ? mappedText : expectedText;
   if (sourceText.slice(start, end) !== quote) {

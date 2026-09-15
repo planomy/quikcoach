@@ -120,8 +120,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
   box-shadow: inset 0 0 0 1px rgba(214, 224, 235, 0.78);
 }
 
-/* Per-card A−/A+ should beat inline rich-text font sizes */
-.iboard-writing-surface[data-card-font='true'],
+/* Descendants inherit the pane's inline rem size (do not override the pane itself). */
 .iboard-writing-surface[data-card-font='true'] :is(p, div, span, li, ul, ol, strong, em, u, s, mark, a) {
   font-size: inherit !important;
 }

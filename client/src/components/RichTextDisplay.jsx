@@ -1,15 +1,15 @@
 import { useMemo } from 'react';
 import { richHtmlToPlainText, sanitizeRichHtml } from '../lib/richText.js';
 
+/**
+ * Keep plain drafts as one text container. Per-line block &lt;div&gt;s make Chromium
+ * expand right-to-left selections to the start of the block (soft-wrap / block boundary).
+ */
 function PlainTextBlocks({ text = '', className = '' }) {
-  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+  const normalised = String(text || '').replace(/\r\n?/g, '\n');
   return (
     <div className={`whitespace-pre-wrap break-words ${className}`}>
-      {lines.map((line, index) => (
-        <div key={index} className={index > 0 ? 'mt-2 min-h-[1em]' : 'min-h-[1em]'}>
-          {line || '\u00a0'}
-        </div>
-      ))}
+      {normalised || '\u00a0'}
     </div>
   );
 }

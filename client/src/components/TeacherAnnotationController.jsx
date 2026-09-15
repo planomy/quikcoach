@@ -230,11 +230,11 @@ function markerViewportBox(marker) {
     };
   }
   const card = cardForStudent(marker.studentId);
-  const root = card && contentRootForPane(card.textPane);
-  if (!root) return null;
-  const rootRect = root.getBoundingClientRect();
-  const top = rootRect.top + marker.top;
-  const left = rootRect.left + marker.left;
+  const pane = card?.textPane;
+  if (!pane) return null;
+  const paneRect = pane.getBoundingClientRect();
+  const top = paneRect.top + marker.top;
+  const left = paneRect.left + marker.left;
   return {
     top,
     left,
@@ -265,42 +265,54 @@ function markerPosition(range, card) {
   if (!paneRect.width || !paneRect.height) return null;
   if (!isRangeVisibleInPane(rangeRect, paneRect)) return null;
 
-  const root = contentRootForPane(pane);
-  const rootRect = root.getBoundingClientRect();
-
-  const paneLeftInRoot = paneRect.left - rootRect.left;
-  const paneRightInRoot = paneRect.right - rootRect.left;
-  const paneTopInRoot = paneRect.top - rootRect.top;
-  const paneBottomInRoot = paneRect.bottom - rootRect.top;
-
-  const minLeft = paneLeftInRoot + MARKER_MARGIN;
-  const maxLeft = paneRightInRoot - MARKER_SIZE - MARKER_MARGIN;
-  const minTop = paneTopInRoot + MARKER_MARGIN;
-  const maxTop = paneBottomInRoot - MARKER_SIZE - MARKER_MARGIN;
+  // Position relative to the writing pane (portal target), not the text root —
+  // markers inside the selectable text tree make RTL drags jump.
+  const minLeft = MARKER_MARGIN;
+  const maxLeft = paneRect.width - MARKER_SIZE - MARKER_MARGIN;
+  const minTop = MARKER_MARGIN;
+  const maxTop = paneRect.height - MARKER_SIZE - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
   // Sit on the top-right corner of the highlight so the bubble clears the next words.
-  let left = rangeRect.right - rootRect.left - MARKER_SIZE * 0.45;
-  let top = rangeRect.top - rootRect.top - MARKER_SIZE + 10;
-  if (top < minTop) top = rangeRect.top - rootRect.top - 4;
+  let left = rangeRect.right - paneRect.left - MARKER_SIZE * 0.45;
+  let top = rangeRect.top - paneRect.top - MARKER_SIZE + 10;
+  if (top < minTop) top = rangeRect.top - paneRect.top - 4;
   left = Math.max(minLeft, Math.min(maxLeft, left));
   top = Math.max(minTop, Math.min(maxTop, top));
 
-  return { top, left, position: 'absolute', root };
+  return { top, left, position: 'absolute', root: pane };
 }
 
 function detachedMarkerPosition(pane, index) {
   if (!pane) return null;
-  const root = contentRootForPane(pane) || pane;
   const paneRect = pane.getBoundingClientRect();
-  const rootRect = root.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
   // Keep orphaned ticks inside the writing pane — never fixed to the viewport chrome.
-  const top = paneRect.top - rootRect.top + MARKER_MARGIN + index * (MARKER_SIZE + 4);
-  const left = paneRect.right - rootRect.left - MARKER_SIZE - MARKER_MARGIN;
-  const maxTop = paneRect.bottom - rootRect.top - MARKER_SIZE - MARKER_MARGIN;
+  const top = MARKER_MARGIN + index * (MARKER_SIZE + 4);
+  const left = paneRect.width - MARKER_SIZE - MARKER_MARGIN;
+  const maxTop = paneRect.height - MARKER_SIZE - MARKER_MARGIN;
   if (top > maxTop) return null;
-  return { top, left, position: 'absolute', root };
+  return { top, left, position: 'absolute', root: pane };
+}
+
+function markersMatch(a, b) {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+    if (
+      Number(left.studentId) !== Number(right.studentId) ||
+      Number(left.annotation?.id) !== Number(right.annotation?.id) ||
+      left.detached !== right.detached ||
+      left.position !== right.position ||
+      Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
+      Math.abs((left.left || 0) - (right.left || 0)) > 0.5
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function paneIsOnScreen(paneRect) {
@@ -340,6 +352,7 @@ export default function TeacherAnnotationController() {
   const [reviewError, setReviewError] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
   const moveFrameRef = useRef(null);
+  const selectingInPaneRef = useRef(false);
   const draftNoteRef = useRef(null);
   const pendingPanelRef = useRef(null);
   const draftNoteLatestRef = useRef('');
@@ -391,6 +404,10 @@ export default function TeacherAnnotationController() {
 
   const refreshHighlights = useCallback(() => {
     if (typeof document === 'undefined') return;
+    // Rebuilding CSS highlights / portaled markers mid-drag mutates the writing
+    // DOM and makes Chromium expand right-to-left selections.
+    if (selectingInPaneRef.current) return;
+
     const ranges = [];
     const fixedRanges = [];
     const nextMarkers = [];
@@ -444,7 +461,7 @@ export default function TeacherAnnotationController() {
       if (fixedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...fixedRanges));
       else globalThis.CSS.highlights.delete(FIXED_HIGHLIGHT_NAME);
     }
-    setMarkers(nextMarkers);
+    setMarkers((prev) => (markersMatch(prev, nextMarkers) ? prev : nextMarkers));
     setOpenMarker((previous) => {
       if (!previous) return previous;
       return (
@@ -550,7 +567,18 @@ export default function TeacherAnnotationController() {
   }, [refreshHighlights]);
 
   useEffect(() => {
+    function onMouseDown(event) {
+      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
+      if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
+      selectingInPaneRef.current = !!target?.closest?.('[data-student-writing-pane]');
+    }
     function onMouseUp(event) {
+      const wasSelecting = selectingInPaneRef.current;
+      selectingInPaneRef.current = false;
+      if (wasSelecting) {
+        requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
+      }
+
       const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
       // Releasing the mouse on the comment popup must not be treated as a new text
       // selection. In particular, closing the popup on Add comment removes the button
@@ -613,9 +641,13 @@ export default function TeacherAnnotationController() {
       });
       setOpenMarker(null);
     }
+    document.addEventListener('mousedown', onMouseDown);
     document.addEventListener('mouseup', onMouseUp);
-    return () => document.removeEventListener('mouseup', onMouseUp);
-  }, []);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [refreshHighlights]);
 
   useEffect(() => {
     if (!saveNotice) return undefined;
@@ -1045,9 +1077,9 @@ export default function TeacherAnnotationController() {
     if (marker.position === 'fixed') return button;
 
     const card = cardForStudent(marker.studentId);
-    const root = card && contentRootForPane(card.textPane);
-    if (!root) return null;
-    return createPortal(button, root);
+    const pane = card?.textPane;
+    if (!pane) return null;
+    return createPortal(button, pane);
   }
 
   return (
