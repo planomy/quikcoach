@@ -21,11 +21,11 @@ const DEFAULT_BANK_ID = 'default';
 const MAX_FAVOURITES = 8;
 const MAX_BANKS = 12;
 const MAX_BANK_COMMENTS = 40;
-const PENDING_WIDTH = 420;
+const PENDING_WIDTH = 400;
 /** Max scrollable panel height — not the height used for initial placement. */
 const PENDING_MAX_HEIGHT = 440;
-/** Typical composer height (header + pins + one category + draft). */
-const PENDING_PLACE_HEIGHT = 260;
+/** Compact type-first composer; grows when Quick tray opens. */
+const PENDING_PLACE_HEIGHT = 200;
 const OPEN_WIDTH = 320;
 /** Placement budget for the open-comment card; CSS max-height lets it grow with the note. */
 const OPEN_PLACE_HEIGHT = 280;
@@ -377,12 +377,17 @@ export default function TeacherAnnotationController() {
   const [reviewError, setReviewError] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
   const [chitCategory, setChitCategory] = useState(null);
+  const [quickTrayOpen, setQuickTrayOpen] = useState(false);
   const moveFrameRef = useRef(null);
   const selectingInPaneRef = useRef(false);
   const draftNoteRef = useRef(null);
   const pendingPanelRef = useRef(null);
   const draftNoteLatestRef = useRef('');
   const quickPrefixRef = useRef('');
+  const quickHoverOpenRef = useRef(null);
+  const quickHoverCloseRef = useRef(null);
+  /** Click/tap keeps the tray open; hover alone auto-closes on leave. */
+  const quickPinnedOpenRef = useRef(false);
 
   const activeBankId = bankState.activeId || DEFAULT_BANK_ID;
   const isDefaultBank = activeBankId === DEFAULT_BANK_ID;
@@ -422,6 +427,52 @@ export default function TeacherAnnotationController() {
     setAddingCustomComment(false);
     setCustomCommentDraft('');
     setChitCategory(null);
+  }
+
+  function clearQuickHoverTimers() {
+    if (quickHoverOpenRef.current != null) {
+      window.clearTimeout(quickHoverOpenRef.current);
+      quickHoverOpenRef.current = null;
+    }
+    if (quickHoverCloseRef.current != null) {
+      window.clearTimeout(quickHoverCloseRef.current);
+      quickHoverCloseRef.current = null;
+    }
+  }
+
+  function resetQuickTray() {
+    clearQuickHoverTimers();
+    quickPinnedOpenRef.current = false;
+    setQuickTrayOpen(false);
+    setChitCategory(null);
+  }
+
+  function openQuickTraySoon() {
+    clearQuickHoverTimers();
+    quickHoverOpenRef.current = window.setTimeout(() => {
+      quickHoverOpenRef.current = null;
+      setQuickTrayOpen(true);
+    }, 140);
+  }
+
+  function closeQuickTraySoon() {
+    if (quickPinnedOpenRef.current) return;
+    clearQuickHoverTimers();
+    quickHoverCloseRef.current = window.setTimeout(() => {
+      quickHoverCloseRef.current = null;
+      setQuickTrayOpen(false);
+      setChitCategory(null);
+    }, 160);
+  }
+
+  function toggleQuickTray() {
+    clearQuickHoverTimers();
+    setQuickTrayOpen((open) => {
+      const next = !open;
+      quickPinnedOpenRef.current = next;
+      if (!next) setChitCategory(null);
+      return next;
+    });
   }
 
   const annotationTotal = useMemo(
@@ -730,11 +781,15 @@ export default function TeacherAnnotationController() {
     };
     const frame = requestAnimationFrame(place);
     return () => cancelAnimationFrame(frame);
-  }, [pending?.studentId, pending?.start, pending?.end, pending?.anchor, pinnedComments.length, browseComments.length, addingCustomComment, activeBankId, chitCategory]);
+  }, [pending?.studentId, pending?.start, pending?.end, pending?.anchor, pinnedComments.length, browseComments.length, addingCustomComment, activeBankId, chitCategory, quickTrayOpen]);
 
   useEffect(() => {
-    if (!pending) setChitCategory(null);
-  }, [pending]);
+    resetQuickTray();
+    // Fresh selection always opens type-first — never remember an expanded Quick tray.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset on each new pending anchor only
+  }, [pending?.studentId, pending?.start, pending?.end]);
+
+  useEffect(() => () => clearQuickHoverTimers(), []);
 
   useEffect(() => {
     // Persist migrated legacy customs on first mount.
@@ -794,6 +849,7 @@ export default function TeacherAnnotationController() {
     draftNoteLatestRef.current = '';
     quickPrefixRef.current = '';
     setCommentError('');
+    resetQuickTray();
   }
 
   function focusDraftEnd(text) {
@@ -1198,228 +1254,258 @@ export default function TeacherAnnotationController() {
               <p className="text-[10px] font-black uppercase tracking-[0.13em] text-indigo-600">Selected passage</p>
               <p className="mt-0.5 line-clamp-2 text-[11px] italic leading-snug text-slate-500 dark:text-slate-400">“{pending.quote}”</p>
             </div>
-            <button
-              type="button"
-              onClick={copyPendingSelection}
-              className="shrink-0 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
-            >
-              Copy
-            </button>
-          </div>
-          <div className="mt-2 flex min-h-0 flex-1 flex-col">
             <div className="flex shrink-0 items-center gap-1">
-              <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button
-                  type="button"
-                  onClick={() => selectCommentBank(DEFAULT_BANK_ID)}
-                  className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wide transition ${
-                    isDefaultBank
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  Default
-                </button>
-                {bankState.banks.map((bank) => {
-                  const active = bank.id === activeBankId;
-                  return (
-                    <button
-                      key={bank.id}
-                      type="button"
-                      onClick={() => selectCommentBank(bank.id)}
-                      onDoubleClick={() => {
-                        if (active) renameActiveBank();
-                      }}
-                      title={active ? 'Double-click to rename' : bank.name}
-                      className={`max-w-[9rem] shrink-0 truncate rounded-md px-2 py-1 text-[10px] font-black transition ${
-                        active
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {bank.name}
-                    </button>
-                  );
-                })}
-                <button
-                  type="button"
-                  onClick={createCommentBank}
-                  disabled={bankState.banks.length >= MAX_BANKS}
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-sm font-black text-indigo-700 hover:bg-indigo-200 disabled:opacity-40 dark:bg-indigo-950 dark:text-indigo-200"
-                  aria-label="Add a comment bank"
-                  title={bankState.banks.length >= MAX_BANKS ? `Max ${MAX_BANKS} banks` : 'Add a named bank'}
-                >
-                  +
-                </button>
-              </div>
               <button
                 type="button"
-                onClick={undoQuickComment}
-                disabled={!quickStack.length}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                aria-label="Undo last quick comment"
-                title="Undo last quick comment"
+                onClick={copyPendingSelection}
+                className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 14 4 9l5-5" />
-                  <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13" />
-                </svg>
+                Copy
               </button>
+              <div
+                onMouseEnter={openQuickTraySoon}
+                onMouseLeave={closeQuickTraySoon}
+              >
+                <button
+                  type="button"
+                  onClick={toggleQuickTray}
+                  aria-expanded={quickTrayOpen}
+                  aria-label={quickTrayOpen ? 'Hide quick comments' : 'Show quick comments'}
+                  title="Quick comments"
+                  className={`grid h-7 w-7 place-items-center rounded-md border text-slate-600 transition dark:text-slate-300 ${
+                    quickTrayOpen
+                      ? 'border-indigo-300 bg-indigo-100 text-indigo-800 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'
+                      : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                    <circle cx="5" cy="12" r="1.8" />
+                    <circle cx="12" cy="12" r="1.8" />
+                    <circle cx="19" cy="12" r="1.8" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="mt-1.5 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
-              {/* Pinned toolkit — the commercial default surface */}
-              <div>
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-[9px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
-                    Quick · ★ pin up to {MAX_FAVOURITES}
-                  </p>
-                  {!isDefaultBank && (
-                    <div className="flex items-center gap-1">
+          </div>
+
+          {quickTrayOpen && (
+            <div
+              className="mt-2 flex min-h-0 flex-1 flex-col border-t border-slate-100 pt-2 dark:border-slate-800"
+              onMouseEnter={openQuickTraySoon}
+              onMouseLeave={closeQuickTraySoon}
+            >
+              <div className="flex shrink-0 items-center gap-1">
+                <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <button
+                    type="button"
+                    onClick={() => selectCommentBank(DEFAULT_BANK_ID)}
+                    className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wide transition ${
+                      isDefaultBank
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Default
+                  </button>
+                  {bankState.banks.map((bank) => {
+                    const active = bank.id === activeBankId;
+                    return (
                       <button
+                        key={bank.id}
                         type="button"
-                        onClick={renameActiveBank}
-                        className="rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        title="Rename bank"
-                      >
-                        Rename
-                      </button>
-                      <button
-                        type="button"
-                        onClick={deleteActiveBank}
-                        className="rounded px-1.5 py-0.5 text-[9px] font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                        title="Delete bank"
-                      >
-                        Delete
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAddingCustomComment((open) => !open);
-                          setCustomCommentDraft('');
+                        onClick={() => selectCommentBank(bank.id)}
+                        onDoubleClick={() => {
+                          if (active) renameActiveBank();
                         }}
-                        className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
-                        aria-label="Add a chit to this bank"
-                        title="Add a chit to this bank"
+                        title={active ? 'Double-click to rename' : bank.name}
+                        className={`max-w-[9rem] shrink-0 truncate rounded-md px-2 py-1 text-[10px] font-black transition ${
+                          active
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                        }`}
                       >
-                        +
+                        {bank.name}
                       </button>
-                    </div>
-                  )}
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={createCommentBank}
+                    disabled={bankState.banks.length >= MAX_BANKS}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-sm font-black text-indigo-700 hover:bg-indigo-200 disabled:opacity-40 dark:bg-indigo-950 dark:text-indigo-200"
+                    aria-label="Add a comment bank"
+                    title={bankState.banks.length >= MAX_BANKS ? `Max ${MAX_BANKS} banks` : 'Add a named bank'}
+                  >
+                    +
+                  </button>
                 </div>
-                <div className="flex flex-wrap content-start gap-1">
-                  {!pinnedComments.length && (
-                    <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
-                      {isDefaultBank
-                        ? 'Star chits below to build your quick row.'
-                        : 'Empty — tap + to add chits, then ★ pin your favourites.'}
-                    </p>
-                  )}
-                  {pinnedComments.map((comment) => renderChitChip(comment, { pinned: true }))}
-                </div>
+                <button
+                  type="button"
+                  onClick={undoQuickComment}
+                  disabled={!quickStack.length}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  aria-label="Undo last quick comment"
+                  title="Undo last quick comment"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 14 4 9l5-5" />
+                    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13" />
+                  </svg>
+                </button>
               </div>
 
-              {isDefaultBank ? (
+              <div className="mt-1.5 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
                 <div>
-                  <div
-                    className="inline-flex w-full rounded-xl border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-950"
-                    role="tablist"
-                    aria-label="Comment categories"
-                  >
-                    {CHIT_CATEGORIES.map((category) => {
-                      const active = chitCategory === category.id;
-                      return (
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                      Quick · ★ pin up to {MAX_FAVOURITES}
+                    </p>
+                    {!isDefaultBank && (
+                      <div className="flex items-center gap-1">
                         <button
-                          key={category.id}
                           type="button"
-                          role="tab"
-                          aria-selected={active}
-                          onClick={() => setChitCategory((current) => (current === category.id ? null : category.id))}
-                          className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[10px] font-black transition ${
-                            active
-                              ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
-                              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                          }`}
+                          onClick={renameActiveBank}
+                          className="rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          title="Rename bank"
                         >
-                          {category.label}
+                          Rename
                         </button>
-                      );
-                    })}
+                        <button
+                          type="button"
+                          onClick={deleteActiveBank}
+                          className="rounded px-1.5 py-0.5 text-[9px] font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                          title="Delete bank"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAddingCustomComment((open) => !open);
+                            setCustomCommentDraft('');
+                          }}
+                          className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
+                          aria-label="Add a chit to this bank"
+                          title="Add a chit to this bank"
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  {chitCategory ? (
-                    <div className="mt-1.5 flex flex-wrap content-start gap-1" role="tabpanel">
-                      {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
-                      {!browseComments.length && (
-                        <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
-                          All {CHIT_CATEGORIES.find((item) => item.id === chitCategory)?.label || ''} chits are pinned.
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
-                      Open a tab when you need more than Quick.
-                    </p>
-                  )}
+                  <div className="flex flex-wrap content-start gap-1">
+                    {!pinnedComments.length && (
+                      <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
+                        {isDefaultBank
+                          ? 'Open Fix / Shape / Craft / Praise and ★ pin what you use.'
+                          : 'Empty — tap + to add chits, then ★ pin your favourites.'}
+                      </p>
+                    )}
+                    {pinnedComments.map((comment) => renderChitChip(comment, { pinned: true }))}
+                  </div>
                 </div>
-              ) : (
-                <div>
-                  {browseComments.length > 0 && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setChitCategory((current) => (current === 'all' ? null : 'all'))}
-                        className="text-[10px] font-black text-indigo-700 hover:underline dark:text-indigo-300"
-                      >
-                        {chitCategory === 'all' ? 'Hide bank chits' : `Show all bank chits · ${browseComments.length}`}
-                      </button>
-                      {chitCategory === 'all' && (
-                        <div className="mt-1.5 flex flex-wrap content-start gap-1">
-                          {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {!activeComments.length && (
-                    <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
-                      Empty bank — tap + to add chits for this class.
-                    </p>
-                  )}
+
+                {isDefaultBank ? (
+                  <div>
+                    <div
+                      className="inline-flex w-full rounded-xl border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-950"
+                      role="tablist"
+                      aria-label="Comment categories"
+                    >
+                      {CHIT_CATEGORIES.map((category) => {
+                        const active = chitCategory === category.id;
+                        return (
+                          <button
+                            key={category.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={active}
+                            onClick={() => setChitCategory((current) => (current === category.id ? null : category.id))}
+                            className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[10px] font-black transition ${
+                              active
+                                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                            }`}
+                          >
+                            {category.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {chitCategory ? (
+                      <div className="mt-1.5 flex flex-wrap content-start gap-1" role="tabpanel">
+                        {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
+                        {!browseComments.length && (
+                          <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
+                            All {CHIT_CATEGORIES.find((item) => item.id === chitCategory)?.label || ''} chits are pinned.
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div>
+                    {browseComments.length > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setChitCategory((current) => (current === 'all' ? null : 'all'))}
+                          className="text-[10px] font-black text-indigo-700 hover:underline dark:text-indigo-300"
+                        >
+                          {chitCategory === 'all' ? 'Hide bank chits' : `Show all bank chits · ${browseComments.length}`}
+                        </button>
+                        {chitCategory === 'all' && (
+                          <div className="mt-1.5 flex flex-wrap content-start gap-1">
+                            {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {!activeComments.length && (
+                      <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
+                        Empty bank — tap + to add chits for this class.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {addingCustomComment && !isDefaultBank && (
+                <div className="mt-1.5 shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 p-1.5 dark:border-indigo-900 dark:bg-indigo-950/40">
+                  <label htmlFor="custom-inline-comment" className="text-[9px] font-bold text-indigo-700 dark:text-indigo-200">
+                    New chit in {activeCustomBank?.name || 'this bank'}
+                  </label>
+                  <div className="mt-1 flex gap-1">
+                    <input
+                      id="custom-inline-comment"
+                      autoFocus
+                      value={customCommentDraft}
+                      maxLength={500}
+                      onChange={(event) => setCustomCommentDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          addCustomComment();
+                        }
+                        if (event.key === 'Escape') setAddingCustomComment(false);
+                      }}
+                      placeholder="Type your comment…"
+                      className="min-w-0 flex-1 rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] text-slate-900 outline-none ring-indigo-500 focus:ring-2 dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      disabled={!customCommentDraft.trim()}
+                      onClick={addCustomComment}
+                      className="rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-            {addingCustomComment && !isDefaultBank && (
-              <div className="mt-1.5 shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 p-1.5 dark:border-indigo-900 dark:bg-indigo-950/40">
-                <label htmlFor="custom-inline-comment" className="text-[9px] font-bold text-indigo-700 dark:text-indigo-200">
-                  New chit in {activeCustomBank?.name || 'this bank'}
-                </label>
-                <div className="mt-1 flex gap-1">
-                  <input
-                    id="custom-inline-comment"
-                    autoFocus
-                    value={customCommentDraft}
-                    maxLength={500}
-                    onChange={(event) => setCustomCommentDraft(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        addCustomComment();
-                      }
-                      if (event.key === 'Escape') setAddingCustomComment(false);
-                    }}
-                    placeholder="Type your comment…"
-                    className="min-w-0 flex-1 rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] text-slate-900 outline-none ring-indigo-500 focus:ring-2 dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
-                  />
-                  <button
-                    type="button"
-                    disabled={!customCommentDraft.trim()}
-                    onClick={addCustomComment}
-                    className="rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
+
           <textarea
             ref={draftNoteRef}
             autoFocus
@@ -1447,7 +1533,9 @@ export default function TeacherAnnotationController() {
             </p>
           )}
           <div className="mt-1.5 flex shrink-0 items-center justify-end gap-2">
-            <p className="mr-auto text-[9px] font-semibold text-slate-400">Tap to send · Shift+tap stacks · Shift+Return new line</p>
+            <p className="mr-auto text-[9px] font-semibold text-slate-400">
+              {quickTrayOpen ? 'Tap chit to send · Shift+tap stacks' : 'Return to send · Esc cancel'}
+            </p>
             <div className="flex gap-1.5">
               <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
               <button type="button" disabled={!draftNote.trim()} onClick={() => addComment()} className="rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>
