@@ -459,7 +459,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   border-radius: 1rem;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.08),
-    0 3px 4px rgba(15, 23, 42, 0.12);
+    0 3px 3px rgba(15, 23, 42, 0.12);
 }
 
 .iboard-teacher-panel-head {
@@ -566,7 +566,7 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
   border-color: #dedee6;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.08),
-    0 3px 4px rgba(15, 23, 42, 0.12);
+    0 3px 3px rgba(15, 23, 42, 0.12);
 }
 
 /* Overview (compact): square tiles that auto-pack across the board width. */
