@@ -141,14 +141,14 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 
 /* LZ-inspired teacher shell (light): cool blue-grey → purply-blue (MS LZ wash) */
 html:not(.dark) .iboard-teacher-canvas {
-  background: #f1f0f8;
-  background-image: linear-gradient(105deg, #edf5fd 0%, #eff1fd 42%, #f5f0fe 100%);
+  background: #eff4fd;
+  background-image: linear-gradient(105deg, #eff4fd 0%, #f7f0ff 100%);
   color: #3c3c45;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-app-header {
-  background: rgba(255, 255, 255, 0.86);
-  border-bottom-color: #e2e2ea;
+  background: #ffffff;
+  border-bottom-color: #e0e0e0;
   box-shadow: none;
   backdrop-filter: blur(8px);
 }
@@ -214,14 +214,14 @@ html:not(.dark) .iboard-teacher-canvas .iboard-brand-logo {
 
 /* LZ-inspired student shell (light): match teacher quiet chrome */
 html:not(.dark) .iboard-student-canvas {
-  background: #f1f0f8;
-  background-image: linear-gradient(105deg, #edf5fd 0%, #eff1fd 42%, #f5f0fe 100%);
+  background: #eff4fd;
+  background-image: linear-gradient(105deg, #eff4fd 0%, #f7f0ff 100%);
   color: #3c3c45;
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header {
-  background: rgba(255, 255, 255, 0.86);
-  border-bottom-color: #e2e2ea;
+  background: #ffffff;
+  border-bottom-color: #e0e0e0;
   box-shadow: none;
   backdrop-filter: blur(8px);
 }
@@ -359,7 +359,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   align-items: center;
   justify-content: center;
   gap: 0.15rem;
-  background: linear-gradient(180deg, #f8faff 0%, #f3f7fc 100%);
+  background: #f7fafe;
   border-right: 1px solid #e5ebf2;
   padding: 0.75rem 0;
   min-height: 0;
@@ -459,7 +459,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   border-radius: 1rem;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.08),
-    0 3px 8px rgba(15, 23, 42, 0.1);
+    0 2px 5px rgba(15, 23, 42, 0.1);
 }
 
 .iboard-teacher-panel-head {
@@ -566,7 +566,7 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
   border-color: #cdd6e2;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.08),
-    0 3px 8px rgba(15, 23, 42, 0.1);
+    0 2px 5px rgba(15, 23, 42, 0.1);
 }
 
 /* Overview (compact): square tiles that auto-pack across the board width. */
