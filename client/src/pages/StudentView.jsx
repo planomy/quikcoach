@@ -1115,13 +1115,10 @@ export default function StudentView() {
     const roomLabel = String(removedByTeacher.code || '').replace(/\D/g, '').slice(0, 4);
     const hasWriting = String(removedByTeacher.text || '').trim().length > 0;
     return (
-      <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+      <div className="iboard-student-canvas flex min-h-screen flex-col dark:bg-slate-950">
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-card dark:border-slate-700 dark:bg-slate-900">
-            <IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" />
-            <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">
-              Your card was removed
-            </h1>
+          <div className="w-full max-w-md rounded-2xl border border-[#d5d4e4] bg-white p-8 shadow-card dark:border-slate-700 dark:bg-slate-900">
+            <IBoardWordmark className="text-2xl" variant="full" />
             <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               Your teacher removed this card from the room
               {roomLabel ? ` (${roomLabel})` : ''}. Your writing is still on this device
@@ -1169,11 +1166,11 @@ export default function StudentView() {
 
   if (!joined) {
     return (
-      <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+      <div className="iboard-student-canvas flex min-h-screen flex-col dark:bg-slate-950">
         <div className="flex flex-1 flex-col px-4 py-10">
-          <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 shadow-card">
+          <div className="mx-auto w-full max-w-md rounded-2xl border border-[#d5d4e4] bg-white dark:border-slate-700 dark:bg-slate-900 p-8 shadow-card">
             <div className="flex items-start justify-between gap-3">
-              <IBoardWordmark className="text-2xl" iClassName="italic text-indigo-600" />
+              <IBoardWordmark className="text-2xl" variant="full" />
               <ThemeToggle />
             </div>
             <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">Join your class</h1>
@@ -1353,25 +1350,30 @@ export default function StudentView() {
         </div>
       )}
       <header className="iboard-app-header border-b backdrop-blur">
-        <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2.5">
-            {activeRoomCode && (
-              <h1 className="font-display text-lg font-bold tracking-tight text-ink-900 dark:text-slate-100">
-                Room <span className="iboard-header-code font-mono text-indigo-600">{activeRoomCode}</span>
-              </h1>
-            )}
-            <span className="iboard-header-chip truncate rounded-full border border-indigo-100 bg-white/70 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-[0_1px_3px_rgba(79,70,229,0.06)] dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
-              {student?.name}
-            </span>
+        <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
+            <IBoardWordmark />
+            <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5 text-sm">
+              {activeRoomCode && (
+                <span>
+                  Room <b className="iboard-header-code font-mono">{activeRoomCode}</b>
+                </span>
+              )}
+              {student?.name ? (
+                <span className="iboard-header-chip truncate rounded-full border px-2.5 py-0.5 text-xs font-semibold">
+                  {student.name}
+                </span>
+              ) : null}
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <details className="group relative shrink-0">
               <summary
-                className="iboard-header-icon-button grid h-10 w-10 cursor-pointer list-none place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 [&::-webkit-details-marker]:hidden"
+                className="iboard-header-icon-button grid h-9 w-9 cursor-pointer list-none place-items-center rounded-xl border shadow-sm transition [&::-webkit-details-marker]:hidden"
                 aria-label="Student tools"
                 title="Student tools"
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M4 7h10" />
                   <path d="M18 7h2" />
                   <circle cx="16" cy="7" r="2" />
@@ -1453,8 +1455,8 @@ export default function StudentView() {
                     onClick={() => selectSupportTab(tab.id)}
                     className={`relative inline-flex items-center overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
                       active
-                        ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-                        : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+                        ? 'z-[1] -mb-px border border-b-white border-[#5a5fc3] bg-[#5a5fc3] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500 dark:bg-indigo-600'
+                        : 'border border-transparent bg-[#eceaf8] text-[#52525c] hover:bg-[#e4e3f2] hover:text-[#3c3c45] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
                     }`}
                   >
                     {tab.label}

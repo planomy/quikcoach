@@ -370,7 +370,7 @@ export default function RichTextEditor({
         />
       )}
 
-      <div className={`${drawMode ? 'hidden' : ''} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card ring-indigo-500 focus-within:border-indigo-500 focus-within:ring-2 dark:border-slate-600 dark:bg-slate-900`}>
+      <div className={`${drawMode ? 'hidden' : ''} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card dark:border-slate-600 dark:bg-slate-900`}>
         <div className="relative flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
           {formattingEnabled ? (
             <div ref={formatMenuRef} className="relative">

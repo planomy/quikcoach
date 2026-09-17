@@ -35,6 +35,10 @@ Expected response:
 {"ok":true}
 ```
 
+## NUC handoff (ports 443 / 80)
+
+School NUC packaging lives in `nuc-handoff/`. Compose runs the app image internally on **3001** and puts **Caddy** in front on **TCP 443** (HTTPS + WebSocket) and **80** (HTTP). See `nuc-handoff/README.md`.
+
 ## Persistent data
 
 `DATA_DIR` must point to storage that survives container replacement. iBOARD currently stores both of these beneath that directory:

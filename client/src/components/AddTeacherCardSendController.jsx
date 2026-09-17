@@ -108,7 +108,10 @@ export default function AddTeacherCardSendController() {
 
   if (!error) return null;
   return (
-    <div role="status" className="fixed bottom-5 left-1/2 z-[110] -translate-x-1/2 rounded-full bg-red-600 px-4 py-2 text-sm font-black text-white shadow-lg">
+    <div
+      role="status"
+      className="fixed left-1/2 top-3 z-[110] inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] -translate-x-1/2 items-center truncate rounded-lg bg-red-500 px-3 text-[11px] font-black text-red-950 shadow-sm"
+    >
       {error}
     </div>
   );

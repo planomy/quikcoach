@@ -1,20 +1,23 @@
-# iBOARD proof-of-concept on a NUC (or any Linux box with Docker).
-# Usage (after loading the image tar):
+# iBOARD on a NUC (Docker).
+# Edge listens on school-friendly ports 443 (HTTPS) and 80 (HTTP).
+# App stays on internal 3001; Caddy proxies HTTP + WebSocket (/socket.io).
+#
+# After loading the image tar:
 #   docker compose up -d
-# Then open http://<nuc-ip>:3001
+# Open https://<nuc-ip>  (or http://<nuc-ip> on port 80)
 
 services:
   iboard:
     image: iboard:poc
     container_name: iboard-poc
     restart: unless-stopped
-    ports:
-      - "3001:3001"
     environment:
       PORT: "3001"
       DATA_DIR: /data
     volumes:
       - iboard-data:/data
+    expose:
+      - "3001"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -22,5 +25,23 @@ services:
       retries: 3
       start_period: 15s
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: iboard-edge
+    restart: unless-stopped
+    depends_on:
+      iboard:
+        condition: service_healthy
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
 volumes:
   iboard-data:
+  caddy-data:
+  caddy-config:

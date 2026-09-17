@@ -758,7 +758,7 @@ function WhiteboardInner() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-slate-950 text-slate-100">
+    <div className="relative flex h-full min-h-[100dvh] flex-col bg-slate-950 text-slate-100">
       {(!socketConnected || backOnline) && (
         <div
           className={`fixed inset-x-0 top-0 z-50 px-3 py-2 text-center text-sm font-semibold ${
@@ -829,6 +829,22 @@ function WhiteboardInner() {
             }`}
           >
             {selectMode ? 'Selecting…' : 'Select'}
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                if (document.fullscreenElement) await document.exitFullscreen?.();
+                else await document.documentElement.requestFullscreen?.();
+              } catch {
+                /* browser may block without gesture persistence */
+              }
+              bumpChrome();
+            }}
+            className="rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-indigo-200 hover:bg-indigo-600 hover:text-white"
+            title="Fill the display"
+          >
+            Fullscreen
           </button>
           <button
             type="button"
@@ -927,10 +943,10 @@ function WhiteboardInner() {
       )}
 
       {(error || toast) && (
-        <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
+        <div className="pointer-events-none fixed left-1/2 top-3 z-50 flex -translate-x-1/2 items-center px-3">
           <div
-            className={`rounded-xl px-4 py-2 text-sm font-medium shadow-lg ${
-              error ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'
+            className={`inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg px-3 text-[11px] font-black shadow-sm ${
+              error ? 'bg-red-500 text-red-950' : 'bg-emerald-500 text-emerald-950'
             }`}
           >
             {error || toast}

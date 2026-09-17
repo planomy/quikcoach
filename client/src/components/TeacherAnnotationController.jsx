@@ -1150,10 +1150,10 @@ export default function TeacherAnnotationController() {
         key={comment}
         className={`group inline-flex max-w-full items-stretch overflow-hidden rounded-lg border text-[11px] font-semibold leading-tight transition ${
           selected
-            ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+            ? 'border-[#5a5fc3] bg-[#5a5fc3] text-white shadow-sm'
             : pinned
-              ? 'border-amber-300 bg-amber-50 text-amber-950 shadow-sm dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100'
-              : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/40'
+              ? 'border-[#cfcce8] bg-[#ebeaf8] text-[#3c3c45] shadow-sm dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-100'
+              : 'border-[#d5d4e4] bg-white text-[#52525c] hover:border-[#cfcce8] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/40'
         }`}
       >
         <button
@@ -1170,8 +1170,8 @@ export default function TeacherAnnotationController() {
           disabled={pinBlocked}
           className={`shrink-0 border-l border-current/15 px-1.5 text-[10px] ${
             pinned
-              ? 'text-amber-600 dark:text-amber-300'
-              : 'text-current/35 opacity-0 hover:text-amber-600 group-hover:opacity-100 focus-visible:opacity-100'
+              ? 'text-[#5a5fc3] dark:text-indigo-300'
+              : 'text-current/35 opacity-0 hover:text-[#5a5fc3] group-hover:opacity-100 focus-visible:opacity-100'
           } disabled:cursor-not-allowed disabled:opacity-0`}
           aria-label={pinned ? `Unpin ${label}` : `Pin ${label} to Quick`}
           title={
@@ -1204,7 +1204,7 @@ export default function TeacherAnnotationController() {
         className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-lg transition ${
           marker.annotation.status === 'fixed'
             ? 'bg-emerald-500/75 hover:bg-emerald-600'
-            : 'bg-indigo-600 hover:bg-indigo-700'
+            : 'bg-[#5a5fc3] hover:bg-[#4f54b0]'
         }`}
         style={{ top: marker.top, left: marker.left }}
         title={
@@ -1231,7 +1231,7 @@ export default function TeacherAnnotationController() {
   return (
     <>
       <style>{`
-        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(196, 181, 253, 0.72); text-decoration: underline 2px rgb(124, 58, 237); text-underline-offset: 2px; }
+        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.18); text-decoration: underline 2px #5a5fc3; text-underline-offset: 2px; }
         ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
       `}</style>
 
@@ -1241,7 +1241,7 @@ export default function TeacherAnnotationController() {
         <div
           ref={pendingPanelRef}
           data-teacher-annotation-ui
-          className="fixed z-[70] flex max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white p-2.5 shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          className="fixed z-[70] flex max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white p-2.5 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
           style={{
             top: pending.top,
             left: pending.left,
@@ -1251,14 +1251,14 @@ export default function TeacherAnnotationController() {
         >
           <div className="flex shrink-0 items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.13em] text-indigo-600">Selected passage</p>
-              <p className="mt-0.5 line-clamp-2 text-[11px] italic leading-snug text-slate-500 dark:text-slate-400">“{pending.quote}”</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3]">Selected passage</p>
+              <p className="mt-0.5 line-clamp-2 text-[11px] italic leading-snug text-[#52525c] dark:text-slate-400">“{pending.quote}”</p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={copyPendingSelection}
-                className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                className="rounded-md border border-[#d5d4e4] bg-[#ebeaf8] px-2 py-1 text-[10px] font-black text-[#5a5fc3] hover:bg-white dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
               >
                 Copy
               </button>
@@ -1274,7 +1274,7 @@ export default function TeacherAnnotationController() {
                   title="Quick comments"
                   className={`grid h-7 w-7 place-items-center rounded-md border text-slate-600 transition dark:text-slate-300 ${
                     quickTrayOpen
-                      ? 'border-indigo-300 bg-indigo-100 text-indigo-800 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'
+                      ? 'border-[#cfcce8] bg-[#ebeaf8] text-[#5a5fc3] dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'
                       : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
                   }`}
                 >
@@ -1301,8 +1301,8 @@ export default function TeacherAnnotationController() {
                     onClick={() => selectCommentBank(DEFAULT_BANK_ID)}
                     className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wide transition ${
                       isDefaultBank
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                        ? 'bg-[#5a5fc3] text-white'
+                        : 'border border-[#d5d4e4] bg-white text-[#52525c] hover:bg-[#ebeaf8] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
                     }`}
                   >
                     Default
@@ -1320,8 +1320,8 @@ export default function TeacherAnnotationController() {
                         title={active ? 'Double-click to rename' : bank.name}
                         className={`max-w-[9rem] shrink-0 truncate rounded-md px-2 py-1 text-[10px] font-black transition ${
                           active
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                            ? 'bg-[#5a5fc3] text-white'
+                            : 'border border-[#d5d4e4] bg-white text-[#52525c] hover:bg-[#ebeaf8] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
                         }`}
                       >
                         {bank.name}
@@ -1332,7 +1332,7 @@ export default function TeacherAnnotationController() {
                     type="button"
                     onClick={createCommentBank}
                     disabled={bankState.banks.length >= MAX_BANKS}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-sm font-black text-indigo-700 hover:bg-indigo-200 disabled:opacity-40 dark:bg-indigo-950 dark:text-indigo-200"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#ebeaf8] text-sm font-black text-[#5a5fc3] hover:bg-[#e0dff5] disabled:opacity-40 dark:bg-indigo-950 dark:text-indigo-200"
                     aria-label="Add a comment bank"
                     title={bankState.banks.length >= MAX_BANKS ? `Max ${MAX_BANKS} banks` : 'Add a named bank'}
                   >
@@ -1343,7 +1343,7 @@ export default function TeacherAnnotationController() {
                   type="button"
                   onClick={undoQuickComment}
                   disabled={!quickStack.length}
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ebeaf8] text-[#52525c] hover:bg-[#e0dff5] disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                   aria-label="Undo last quick comment"
                   title="Undo last quick comment"
                 >
@@ -1357,7 +1357,7 @@ export default function TeacherAnnotationController() {
               <div className="mt-1.5 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
                 <div>
                   <div className="mb-1 flex items-center justify-between gap-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#5a5fc3]">
                       Quick · ★ pin up to {MAX_FAVOURITES}
                     </p>
                     {!isDefaultBank && (
@@ -1365,7 +1365,7 @@ export default function TeacherAnnotationController() {
                         <button
                           type="button"
                           onClick={renameActiveBank}
-                          className="rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          className="rounded px-1.5 py-0.5 text-[9px] font-bold text-[#52525c] hover:bg-[#ebeaf8] dark:hover:bg-slate-800"
                           title="Rename bank"
                         >
                           Rename
@@ -1384,7 +1384,7 @@ export default function TeacherAnnotationController() {
                             setAddingCustomComment((open) => !open);
                             setCustomCommentDraft('');
                           }}
-                          className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200"
+                          className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ebeaf8] text-xs font-black text-[#5a5fc3] hover:bg-[#e0dff5] dark:bg-indigo-950 dark:text-indigo-200"
                           aria-label="Add a chit to this bank"
                           title="Add a chit to this bank"
                         >
@@ -1408,7 +1408,7 @@ export default function TeacherAnnotationController() {
                 {isDefaultBank ? (
                   <div>
                     <div
-                      className="inline-flex w-full rounded-xl border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-950"
+                      className="inline-flex w-full rounded-xl border border-[#d5d4e4] bg-[#ebeaf8] p-0.5 dark:border-slate-700 dark:bg-slate-950"
                       role="tablist"
                       aria-label="Comment categories"
                     >
@@ -1423,8 +1423,8 @@ export default function TeacherAnnotationController() {
                             onClick={() => setChitCategory((current) => (current === category.id ? null : category.id))}
                             className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[10px] font-black transition ${
                               active
-                                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
-                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                ? 'bg-[#5a5fc3] text-white shadow-sm'
+                                : 'text-[#52525c] hover:bg-white/70 hover:text-[#3c3c45] dark:text-slate-400 dark:hover:text-slate-200'
                             }`}
                           >
                             {category.label}
@@ -1450,7 +1450,7 @@ export default function TeacherAnnotationController() {
                         <button
                           type="button"
                           onClick={() => setChitCategory((current) => (current === 'all' ? null : 'all'))}
-                          className="text-[10px] font-black text-indigo-700 hover:underline dark:text-indigo-300"
+                          className="text-[10px] font-black text-[#5a5fc3] hover:underline dark:text-indigo-300"
                         >
                           {chitCategory === 'all' ? 'Hide bank chits' : `Show all bank chits · ${browseComments.length}`}
                         </button>
@@ -1471,8 +1471,8 @@ export default function TeacherAnnotationController() {
               </div>
 
               {addingCustomComment && !isDefaultBank && (
-                <div className="mt-1.5 shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 p-1.5 dark:border-indigo-900 dark:bg-indigo-950/40">
-                  <label htmlFor="custom-inline-comment" className="text-[9px] font-bold text-indigo-700 dark:text-indigo-200">
+                <div className="mt-1.5 shrink-0 rounded-lg border border-[#d5d4e4] bg-[#ebeaf8] p-1.5 dark:border-indigo-900 dark:bg-indigo-950/40">
+                  <label htmlFor="custom-inline-comment" className="text-[9px] font-bold text-[#5a5fc3] dark:text-indigo-200">
                     New chit in {activeCustomBank?.name || 'this bank'}
                   </label>
                   <div className="mt-1 flex gap-1">
@@ -1490,13 +1490,13 @@ export default function TeacherAnnotationController() {
                         if (event.key === 'Escape') setAddingCustomComment(false);
                       }}
                       placeholder="Type your comment…"
-                      className="min-w-0 flex-1 rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] text-slate-900 outline-none ring-indigo-500 focus:ring-2 dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
+                      className="min-w-0 flex-1 rounded-md border border-[#d5d4e4] bg-white px-2 py-1 text-[11px] text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
                     />
                     <button
                       type="button"
                       disabled={!customCommentDraft.trim()}
                       onClick={addCustomComment}
-                      className="rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40"
+                      className="rounded-md bg-[#5a5fc3] px-2 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40"
                     >
                       Add
                     </button>
@@ -1505,6 +1505,7 @@ export default function TeacherAnnotationController() {
               )}
             </div>
           )}
+
 
           <textarea
             ref={draftNoteRef}
@@ -1525,7 +1526,7 @@ export default function TeacherAnnotationController() {
               if (event.key === 'Escape') closePending();
             }}
             placeholder="Type your comment…"
-            className="mt-2 min-h-[3.25rem] w-full shrink-0 resize-none rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="mt-2 min-h-[3.25rem] w-full shrink-0 resize-none rounded-lg border border-[#d5d4e4] px-2.5 py-1.5 text-xs text-[#3c3c45] outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
           {commentError && (
             <p className="mt-1 shrink-0 text-[11px] font-semibold leading-relaxed text-red-600 dark:text-red-300">
@@ -1537,8 +1538,8 @@ export default function TeacherAnnotationController() {
               {quickTrayOpen ? 'Tap chit to send · Shift+tap stacks' : 'Return to send · Esc cancel'}
             </p>
             <div className="flex gap-1.5">
-              <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-              <button type="button" disabled={!draftNote.trim()} onClick={() => addComment()} className="rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Add comment</button>
+              <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-[#52525c] hover:bg-[#ebeaf8] dark:hover:bg-slate-800">Cancel</button>
+              <button type="button" disabled={!draftNote.trim()} onClick={() => addComment()} className="rounded-md bg-[#5a5fc3] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40">Add comment</button>
             </div>
           </div>
         </div>
@@ -1547,7 +1548,7 @@ export default function TeacherAnnotationController() {
       {openMarker && openMarkerPos && (
         <div
           data-teacher-annotation-ui
-          className="fixed z-[70] flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          className="fixed z-[70] flex flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
           style={{
             top: openMarkerPos.top,
             left: openMarkerPos.left,
@@ -1560,12 +1561,12 @@ export default function TeacherAnnotationController() {
             <p className={`text-[10px] font-black uppercase tracking-[0.13em] ${
               openMarker.annotation.status === 'fixed'
                 ? 'text-emerald-600 dark:text-emerald-300'
-                : 'text-indigo-600 dark:text-indigo-300'
+                : 'text-[#5a5fc3] dark:text-indigo-300'
             }`}>
               {openMarker.annotation.status === 'fixed' ? 'Student marked fixed' : 'Your inline comment'}
             </p>
-            <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{openMarker.annotation.quote}”</p>
-            <p className="mt-2 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-100">
+            <p className="mt-1 line-clamp-2 text-xs italic text-[#52525c] dark:text-slate-400">“{openMarker.annotation.quote}”</p>
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100">
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
             {openMarker.detached && (
@@ -1575,7 +1576,7 @@ export default function TeacherAnnotationController() {
             )}
             {reviewError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{reviewError}</p>}
           </div>
-          <div className="shrink-0 border-t border-indigo-100 bg-white p-3 dark:border-indigo-900 dark:bg-slate-900">
+          <div className="shrink-0 border-t border-[#d5d4e4] bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
             {openMarker.annotation.status === 'fixed' ? (
               <div className="space-y-2">
                 <button
@@ -1595,13 +1596,13 @@ export default function TeacherAnnotationController() {
                   Needs another look
                 </button>
                 <div className="flex gap-2 pt-1">
-                  <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-indigo-100 px-3 py-1.5 text-xs font-bold text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">Edit</button>
+                  <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-[#ebeaf8] px-3 py-1.5 text-xs font-bold text-[#5a5fc3] hover:bg-[#e0dff5] dark:bg-indigo-950 dark:text-indigo-200">Edit</button>
                   <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
                 </div>
               </div>
             ) : (
               <div className="flex gap-2">
-                <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-indigo-100 px-3 py-1.5 text-xs font-bold text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">Edit</button>
+                <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-[#ebeaf8] px-3 py-1.5 text-xs font-bold text-[#5a5fc3] hover:bg-[#e0dff5] dark:bg-indigo-950 dark:text-indigo-200">Edit</button>
                 <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
               </div>
             )}
@@ -1614,9 +1615,11 @@ export default function TeacherAnnotationController() {
           data-teacher-annotation-ui
           role="status"
           aria-live="polite"
-          className="fixed bottom-4 left-1/2 z-[80] -translate-x-1/2 rounded-xl border border-emerald-300 bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-2xl"
+          className="pointer-events-none fixed left-1/2 top-3 z-[80] flex -translate-x-1/2 items-center"
         >
-          ✓ {saveNotice}
+          <div className="inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg bg-emerald-500 px-3 text-[11px] font-black text-emerald-950 shadow-sm">
+            {saveNotice}
+          </div>
         </div>
       )}
     </>

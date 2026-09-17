@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fill the real viewport — needed for F11 / Fullscreen API so the shell is not letterboxed. */
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+html:fullscreen,
+html:-webkit-full-screen {
+  height: 100%;
+  background: #f1f0f8;
+}
+
+html.dark:fullscreen,
+html.dark:-webkit-full-screen {
+  background: #020617;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+.iboard-teacher-canvas {
+  min-height: 100%;
+  height: 100%;
+  max-height: 100dvh;
+}
+
+html:fullscreen .iboard-teacher-canvas,
+html:-webkit-full-screen .iboard-teacher-canvas {
+  height: 100%;
+  max-height: none;
+  min-height: 100%;
+}
+
 /* Light mode uses a dark product masthead around a bright working surface. */
 .iboard-app-header {
   background:
@@ -102,6 +139,376 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
   background: #eef4fa;
 }
 
+/* LZ-inspired teacher shell (light): cool blue-grey → purply-blue (MS LZ wash) */
+html:not(.dark) .iboard-teacher-canvas {
+  background: #f1f0f8;
+  background-image: linear-gradient(105deg, #edf5fd 0%, #eff1fd 42%, #f5f0fe 100%);
+  color: #3c3c45;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-app-header {
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom-color: #e2e2ea;
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-app-header h1 {
+  color: #52525c;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-code {
+  color: #5a5fc3;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta {
+  color: #6b6b78;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b {
+  color: #52525c;
+  font-weight: 550;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-brand {
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-brand-logo {
+  display: block;
+  height: 1.175rem;
+  width: auto;
+  max-width: min(5.75rem, 28vw);
+  object-fit: contain;
+}
+
+.iboard-brand-logo {
+  display: block;
+  height: 1.175rem;
+  width: auto;
+  max-width: min(5.75rem, 28vw);
+  object-fit: contain;
+}
+
+.iboard-brand-logo--lg {
+  height: 1.425rem;
+  max-width: min(6.75rem, 32vw);
+}
+
+.iboard-brand-logo--hero {
+  height: 2.75rem;
+  max-width: min(13rem, 70vw);
+}
+
+.iboard-brand-logo--full.iboard-brand-logo--hero {
+  height: 3.35rem;
+  max-width: min(15rem, 78vw);
+}
+
+.iboard-brand-logo--full:not(.iboard-brand-logo--hero):not(.iboard-brand-logo--lg) {
+  height: 1.55rem;
+  max-width: min(7.5rem, 36vw);
+}
+
+/* LZ-inspired student shell (light): match teacher quiet chrome */
+html:not(.dark) .iboard-student-canvas {
+  background: #f1f0f8;
+  background-image: linear-gradient(105deg, #edf5fd 0%, #eff1fd 42%, #f5f0fe 100%);
+  color: #3c3c45;
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header {
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom-color: #e2e2ea;
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header h1 {
+  color: #52525c;
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-code {
+  color: #5a5fc3;
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-meta {
+  color: #6b6b76;
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-meta b {
+  color: #52525c;
+  font-weight: 550;
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-chip {
+  border-color: #e2e2ea;
+  background: #f6f6fb;
+  color: #52525c;
+  box-shadow: none;
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button {
+  border-color: #e2e2ea;
+  background: #ffffff;
+  color: #475569;
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button:hover {
+  border-color: #c9c8d8;
+  background: #f6f6fb;
+  color: #5a5fc3;
+}
+
+html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] {
+  border-bottom-color: #d5d4e4;
+}
+
+html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button {
+  border-radius: 0.65rem 0.65rem 0 0;
+}
+
+html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button.bg-indigo-600,
+html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button[class*='bg-indigo-600'] {
+  background: #5a5fc3 !important;
+  border-color: #5a5fc3 !important;
+  color: #ffffff !important;
+}
+
+html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button.bg-slate-200\/80,
+html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button[class*='bg-slate-200'] {
+  background: #eceaf8 !important;
+  color: #52525c !important;
+}
+
+html:not(.dark) .iboard-student-canvas footer {
+  border-top-color: #e2e2ea;
+  color: #8b8b96;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-status-saved {
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-rec {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #8b8b96;
+  gap: 0.4rem;
+  padding: 0;
+  height: auto;
+  border-radius: 0;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-rec.is-recording {
+  color: #dc2626;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-rec:hover {
+  background: transparent;
+  opacity: 0.85;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button {
+  border-color: #e2e2ea;
+  background: #ffffff;
+  color: #475569;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button:hover {
+  border-color: #c9cbd6;
+  background: #fafafa;
+  color: #334155;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button[data-active='true'] {
+  border-color: #c9c2ff;
+  background: #eceefc;
+  color: #5a5fc3;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
+  gap: 1.5rem;
+}
+
+.iboard-teacher-shell {
+  display: grid;
+  grid-template-columns: 6.65rem minmax(0, 15.5rem) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  transition: grid-template-columns 180ms ease;
+}
+
+.iboard-teacher-shell.is-teacher-hidden {
+  grid-template-columns: 6.65rem 0 minmax(0, 1fr);
+}
+
+.iboard-arr-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  background: #f6f6fb;
+  border-right: 1px solid #e6e8ef;
+  padding: 0.75rem 0;
+  min-height: 0;
+}
+
+.iboard-arr-btn {
+  width: 5.75rem;
+  border: 0;
+  background: transparent;
+  border-radius: 0.85rem;
+  padding: 0.2rem 0.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3f4656;
+}
+
+.iboard-arr-btn img {
+  display: block;
+  width: 4.97rem;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  /* Knock out PNG white so icons sit on the strip */
+  mix-blend-mode: multiply;
+}
+
+.iboard-arr-btn:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.iboard-arr-btn[data-active='true'] {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.iboard-teacher-panel-wrap {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.75rem 0 0.75rem 1.125rem;
+  opacity: 1;
+  transition: opacity 160ms ease;
+}
+
+.iboard-teacher-shell.is-teacher-hidden .iboard-teacher-panel-wrap {
+  opacity: 0;
+  pointer-events: none;
+  padding: 0;
+}
+
+.iboard-teacher-panel {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid rgba(226, 226, 234, 0.95);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(30, 41, 59, 0.05);
+}
+
+.iboard-teacher-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem 0.65rem;
+  flex-shrink: 0;
+}
+
+.iboard-teacher-panel-head h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #52525c;
+  letter-spacing: -0.01em;
+}
+
+.iboard-teacher-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.iboard-teacher-panel-action {
+  border: 0;
+  background: transparent;
+  color: #52525c;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  cursor: pointer;
+  padding: 0.2rem 0.15rem;
+  border-radius: 0.5rem;
+}
+
+.iboard-teacher-panel-action:hover {
+  background: rgba(60, 60, 69, 0.06);
+}
+
+.iboard-teacher-panel-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.25rem 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.iboard-teacher-panel-list::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none;
+}
+
+html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card {
+  background: #f7f7f9;
+  border-color: #e8e9ee;
+  box-shadow: none;
+}
+
+html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-card-body {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.iboard-student-board {
+  min-width: 0;
+  overflow: auto;
+  padding: 0.75rem 0.9rem 0.9rem 1.125rem;
+}
+
+.iboard-show-teacher {
+  border: 1px solid #e2e2ea;
+  background: #ffffff;
+  color: #5a5fc3;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  margin-bottom: 0.65rem;
+  cursor: pointer;
+}
+
 .iboard-live-question {
   border-color: #bfdbfe;
   background: linear-gradient(100deg, #eff6ff 0%, #f8fbff 100%);
@@ -115,9 +522,27 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
     0 8px 22px -18px rgba(30, 64, 175, 0.22);
 }
 
+/* Overview (compact): square tiles that auto-pack across the board width. */
+.iboard-student-card--overview {
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.iboard-student-card--overview .iboard-writing-surface {
+  margin-top: 0.4rem;
+  padding: 0.45rem 1.75rem 0.45rem 0.55rem;
+  font-size: 0.78em;
+  line-height: 1.35;
+}
+
 .iboard-writing-surface {
   background: #f6f9fc;
   box-shadow: inset 0 0 0 1px rgba(214, 224, 235, 0.78);
+}
+
+.iboard-student-card .iboard-writing-surface {
+  box-shadow: none;
 }
 
 /* Descendants inherit the pane's inline rem size (do not override the pane itself). */
@@ -212,6 +637,55 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
 .iboard-header-dock--start {
   border-bottom-right-radius: 1rem;
   box-shadow: 12px 0 32px -18px rgba(15, 23, 42, 0.22);
+  /* Sit beside the ARR rail when the LZ teacher shell is active */
+  left: 6.65rem;
+}
+
+/* Ask / Reply / Responses: slide out from the ARR strip */
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
+  left: 6.65rem;
+  border: 1px solid #d5d4e4;
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: 1rem;
+  background: #f7f6fb;
+  box-shadow: 10px 8px 28px -16px rgba(60, 60, 90, 0.28);
+  animation: iboard-rail-dock-in 180ms ease-out;
+}
+
+@keyframes iboard-rail-dock-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-600 {
+  background-color: #5a5fc3 !important;
+}
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .hover\:bg-indigo-700:hover {
+  background-color: #4f54b5 !important;
+}
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-600,
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-700,
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-800,
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-900,
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-950 {
+  color: #5a5fc3 !important;
+}
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .border-indigo-100,
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .border-indigo-200,
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .border-indigo-300 {
+  border-color: #cfcce8 !important;
+}
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50,
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50\/80,
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50\/60 {
+  background-color: #eceaf8 !important;
 }
 
 .iboard-header-dock--end {
@@ -293,18 +767,15 @@ html.dark .iboard-workspace-scrim {
   }
 }
 
-@layer utilities {
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(148 163 184) transparent;
-  }
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-slate-300;
-  }
+/* Hidden scrollbars — wheel/trackpad scroll still works. */
+.scrollbar-thin {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none;
 }
 
 /* Teach-style espresso flip countdown */

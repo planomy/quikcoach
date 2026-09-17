@@ -1,0 +1,19 @@
+# Edge for school LAN: TCP 443 (HTTPS) + 80 (HTTP).
+# WebSockets (/socket.io) are proxied automatically.
+# TLS uses the bundled self-signed cert in ./certs (no Let's Encrypt on LAN).
+
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	encode gzip
+	reverse_proxy iboard:3001
+}
+
+:443 {
+	tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
+	encode gzip
+	reverse_proxy iboard:3001
+}

@@ -1992,7 +1992,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('teacher:broadcast', async ({ studentIds, postIds }, cb) => {
+  socket.on('teacher:broadcast', async ({ studentIds, postIds, recipientIds }, cb) => {
     try {
       const codeRaw = socket.data.roomCode;
       if (socket.data.role !== 'teacher' || !codeRaw) {
@@ -2002,10 +2002,13 @@ io.on('connection', (socket) => {
       const code = normalizeRoomCode(codeRaw);
       const rawStudents = Array.isArray(studentIds) ? studentIds : [];
       const rawPosts = Array.isArray(postIds) ? postIds : [];
+      const rawRecipients = Array.isArray(recipientIds) ? recipientIds : null;
       const sIds = [];
       const pIds = [];
+      const rIds = [];
       const seenS = new Set();
       const seenP = new Set();
+      const seenR = new Set();
       for (const x of rawStudents) {
         const n = Number(x);
         if (n > 0 && !seenS.has(n)) {
@@ -2018,6 +2021,19 @@ io.on('connection', (socket) => {
         if (n > 0 && !seenP.has(n)) {
           seenP.add(n);
           pIds.push(n);
+        }
+      }
+      if (rawRecipients) {
+        for (const x of rawRecipients) {
+          const n = Number(x);
+          if (n > 0 && !seenR.has(n)) {
+            seenR.add(n);
+            rIds.push(n);
+          }
+        }
+        if (!rIds.length) {
+          cb?.({ ok: false, error: 'Choose at least one student' });
+          return;
         }
       }
       if (!sIds.length && !pIds.length) {
@@ -2074,14 +2090,28 @@ io.on('connection', (socket) => {
         return;
       }
       const payload = { items, at: Date.now() };
-      emitBroadcastToRoom(code, payload);
       const sockets = await io.in(roomSocketName(code)).fetchSockets();
       const studentSockets = sockets.filter((s) => s.data?.role === 'student');
+      let reached = 0;
+      if (rIds.length) {
+        // Targeted send — only those students; do not add to class-wide broadcast history.
+        const targets = new Set(rIds);
+        for (const studentSocket of studentSockets) {
+          const sid = Number(studentSocket.data?.studentId);
+          if (!targets.has(sid)) continue;
+          studentSocket.emit('broadcast:exemplars', payload);
+          reached += 1;
+        }
+      } else {
+        emitBroadcastToRoom(code, payload);
+        reached = studentSockets.length;
+      }
       cb?.({
         ok: true,
         count: items.length,
-        reached: studentSockets.length,
+        reached,
         devices: sockets.length,
+        targeted: rIds.length > 0,
       });
     } catch (e) {
       console.error(e);

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Load the iBOARD image from USB and start it on a Linux NUC.
+# Load the iBOARD image from USB and start it on a Linux NUC (edge on TCP 443).
 set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -19,36 +19,55 @@ if [[ ! -f "$TAR" ]]; then
   exit 1
 fi
 
+if [[ ! -f "$DIR/Caddyfile" ]]; then
+  echo "Missing $DIR/Caddyfile (needed for port 443)."
+  exit 1
+fi
+
+if [[ ! -f "$DIR/certs/cert.pem" || ! -f "$DIR/certs/key.pem" ]]; then
+  echo "Missing TLS files in $DIR/certs/ (cert.pem + key.pem)."
+  echo "Regenerate on the Mac: openssl req -x509 -nodes -newkey rsa:2048 -days 825 \\"
+  echo "  -keyout nuc-handoff/certs/key.pem -out nuc-handoff/certs/cert.pem \\"
+  echo "  -subj '/CN=iboard.local/O=iBOARD NUC/C=AU'"
+  exit 1
+fi
+
 echo "==> Loading Docker image from USB ..."
 docker load -i "$TAR"
 
-echo "==> Starting iBOARD on port 3001 ..."
+echo "==> Pulling Caddy edge image (HTTPS / port 443) ..."
+docker pull caddy:2-alpine
+
+echo "==> Starting iBOARD behind Caddy on ports 443 (HTTPS) and 80 (HTTP) ..."
 cd "$DIR"
 if docker compose version >/dev/null 2>&1; then
   docker compose up -d
 elif command -v docker-compose >/dev/null 2>&1; then
   docker-compose up -d
 else
-  echo "docker compose not found. Starting container directly ..."
-  docker run -d --name iboard-poc --restart unless-stopped \
-    -p 3001:3001 \
-    -e PORT=3001 \
-    -e DATA_DIR=/data \
-    -v iboard-data:/data \
-    "$IMAGE"
+  echo "docker compose not found. Install docker-compose-v2, then re-run this script."
+  exit 1
 fi
 
-sleep 2
-if curl -fsS "http://127.0.0.1:3001/api/health" >/dev/null 2>&1; then
-  echo "==> Health check OK."
+sleep 3
+if curl -fsSk "https://127.0.0.1/api/health" >/dev/null 2>&1; then
+  echo "==> Health check OK on https://127.0.0.1 (443)."
+elif curl -fsS "http://127.0.0.1/api/health" >/dev/null 2>&1; then
+  echo "==> Health check OK on http://127.0.0.1 (80)."
 else
-  echo "==> Container started; waiting for health (check: curl http://127.0.0.1:3001/api/health)"
+  echo "==> Containers started; waiting for health."
+  echo "    Try: curl -k https://127.0.0.1/api/health"
+  echo "    Or:  curl http://127.0.0.1/api/health"
 fi
 
 IP=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
 echo ""
-echo "Open in a browser on the school network:"
-echo "  http://${IP:-<nuc-ip>}:3001"
+echo "Open in a browser on the school network (firewall: allow TCP 443):"
+echo "  https://${IP:-<nuc-ip>}"
+echo "  http://${IP:-<nuc-ip>}     (optional, if TCP 80 is open)"
+echo ""
+echo "First HTTPS visit may warn about the local certificate — proceed / Advanced → continue."
 echo ""
 echo "Stop:  docker compose -f \"$DIR/docker-compose.yml\" down"
-echo "Logs:  docker logs -f iboard-poc"
+echo "Logs:  docker logs -f iboard-poc   # app"
+echo "       docker logs -f iboard-edge  # Caddy / 443"

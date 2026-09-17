@@ -14,7 +14,7 @@ PLATFORM="${PLATFORM:-linux/amd64}"
 if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
   DOCKER_BIN=docker
 elif [[ -x "$TOOLS/docker" ]] && [[ -x "$TOOLS/colima" ]]; then
-  export PATH="$TOOLS:$PATH"
+  export PATH="$TOOLS:$TOOLS/bin:$PATH"
   if ! "$TOOLS/colima" status >/dev/null 2>&1; then
     echo "Starting Colima (first run downloads a VM; allow a few minutes)..."
     "$TOOLS/colima" start --cpu 2 --memory 4 --disk 20
@@ -46,5 +46,6 @@ echo "==> Done. Image size: $(echo "$BYTES" | awk '{printf "%.1f MB", $1/1024/10
 echo ""
 echo "Copy everything in nuc-handoff/ to the thumb drive:"
 echo "  $OUT_DIR/"
+echo "  (must include docker-compose.yml + Caddyfile — edge on TCP 443)"
 echo ""
-echo "Rob runs LOAD-AND-RUN.sh on the NUC (see README.md)."
+echo "Rob runs LOAD-AND-RUN.sh on the NUC → https://<nuc-ip> (see README.md)."

@@ -21,6 +21,7 @@ export default function TeacherCardEditController() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const closePending = useRef(false);
+  const studentIdsRef = useRef([]);
 
   useEffect(() => {
     const onTeacherSocket = (event) => {
@@ -31,6 +32,16 @@ export default function TeacherCardEditController() {
     if (currentSocket()) setSocket(currentSocket());
     return () => window.removeEventListener('iboard:teacher-socket', onTeacherSocket);
   }, []);
+
+  useEffect(() => {
+    if (!socket) return undefined;
+    const onRoom = (payload) => {
+      const students = Array.isArray(payload?.students) ? payload.students : [];
+      studentIdsRef.current = students.map((s) => Number(s.id)).filter((id) => id > 0);
+    };
+    socket.on('room:state', onRoom);
+    return () => socket.off('room:state', onRoom);
+  }, [socket]);
 
   useEffect(() => {
     const onEdit = (event) => {
@@ -102,10 +113,33 @@ export default function TeacherCardEditController() {
           window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'saved' } }));
           return;
         }
-        socket.emit('teacher:broadcast', { studentIds: [], postIds: [editing.id] }, (broadcastAck) => {
+        // Text cards → durable Inbox notes (not Broadcast exemplars).
+        // Image cards → class Broadcast so students still get the media.
+        if (editing.kind === 'image') {
+          socket.emit('teacher:broadcast', { studentIds: [], postIds: [editing.id] }, (broadcastAck) => {
+            setBusy(false);
+            if (!broadcastAck?.ok) {
+              setError(broadcastAck?.error || 'Card saved, but sending to Inbox failed.');
+              window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'error' } }));
+              return;
+            }
+            setEditing(null);
+            window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'saved' } }));
+          });
+          return;
+        }
+        const noteText = `${cleanTitle}: ${cleanText}`.slice(0, 4000);
+        const recipients = studentIdsRef.current.map((studentId) => ({ studentId, text: noteText }));
+        if (!recipients.length) {
           setBusy(false);
-          if (!broadcastAck?.ok) {
-            setError(broadcastAck?.error || 'Card saved, but sending to Inbox failed.');
+          setError('Card saved, but no students are in the room to receive Inbox.');
+          window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'error' } }));
+          return;
+        }
+        socket.emit('teacher:distribute', { items: recipients }, (distAck) => {
+          setBusy(false);
+          if (!distAck?.ok) {
+            setError(distAck?.error || 'Card saved, but sending to Inbox failed.');
             window.dispatchEvent(new CustomEvent('iboard:teacher-save-status', { detail: { status: 'error' } }));
             return;
           }

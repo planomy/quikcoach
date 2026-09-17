@@ -199,10 +199,10 @@ export default function ClassResetController({ role }) {
   return (
     <div
       role="status"
-      className={`fixed bottom-5 left-1/2 z-[100] -translate-x-1/2 rounded-full px-4 py-2 text-sm font-black shadow-lg ${
+      className={`fixed left-1/2 top-3 z-[100] inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] -translate-x-1/2 items-center truncate rounded-lg px-3 text-[11px] font-black shadow-sm ${
         message === 'New class ready'
-          ? 'bg-emerald-600 text-white'
-          : 'bg-red-600 text-white'
+          ? 'bg-emerald-500 text-emerald-950'
+          : 'bg-red-500 text-red-950'
       }`}
     >
       {message}

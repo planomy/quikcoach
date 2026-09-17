@@ -284,7 +284,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   return (
     <>
       <style>{`
-        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(196, 181, 253, 0.78); text-decoration: underline 2px rgb(124, 58, 237); text-underline-offset: 2px; }
+        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.18); text-decoration: underline 2px #5a5fc3; text-underline-offset: 2px; }
         ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.62); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
       `}</style>
       {markers.map((marker) => (

@@ -58,8 +58,8 @@ function PanelTabButton({ active, label, badge, onClick }) {
       onClick={onClick}
       className={`relative inline-flex items-center overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
         active
-          ? 'z-[1] -mb-px border border-b-white border-slate-200 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-          : 'border border-transparent bg-slate-200/80 text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+          ? 'z-[1] -mb-px border border-b-[#f3f2f9] border-[#d5d4e4] bg-[#5a5fc3] text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+          : 'border border-transparent bg-[#ebeaf8] text-[#52525c] hover:bg-white hover:text-[#3c3c45] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
       }`}
     >
       {label}
@@ -758,8 +758,8 @@ export default function LiveResponseTeacher({
           onClick={() => setActiveView(view)}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === view
-              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
-              : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
+              ? 'relative z-[1] -mb-px border border-b-[#f3f2f9] border-[#d5d4e4] bg-[#5a5fc3] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-[#d5d4e4] bg-white text-[#52525c] shadow-sm hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
           }`}
         >
           {label}
@@ -771,8 +771,8 @@ export default function LiveResponseTeacher({
           onClick={() => setActiveView('featured')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             activeView === 'featured'
-              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
-              : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40'
+              ? 'relative z-[1] -mb-px border border-b-[#f3f2f9] border-[#d5d4e4] bg-[#5a5fc3] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-[#d5d4e4] bg-white text-[#52525c] shadow-sm hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40'
           }`}
         >
           Featured · {featuredWall.length}
@@ -802,15 +802,15 @@ export default function LiveResponseTeacher({
   return (
     <section className={sectionClass}>
       {overlay && (
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-indigo-100 bg-indigo-50/80 px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/35">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#d5d4e4] bg-[#ebeaf8] px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/35">
           <div>
-            <p className="text-xs font-black text-indigo-950 dark:text-indigo-100">{panelMeta?.title || 'Ask the room'}</p>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs font-bold text-[#3c3c45] dark:text-indigo-100">{panelMeta?.title || 'Ask the room'}</p>
+            <p className="text-[11px] text-[#6b6b78]">
               {effectivePanelTab === 'responses' && activity ? responseSummary : panelMeta?.hint || (activity ? responseSummary : 'Send questions and review student answers')}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {message && <span aria-live="polite" className="max-w-[12rem] truncate rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">{message}</span>}
+            {message && <span aria-live="polite" className="max-w-[12rem] truncate rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#5a5fc3] dark:bg-indigo-950 dark:text-indigo-200">{message}</span>}
             {typeof onClose === 'function' && (
               <CloseButton onClick={onClose} aria-label="Close" />
             )}

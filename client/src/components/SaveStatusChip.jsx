@@ -1,7 +1,28 @@
 /** Compact autosave chip for headers — Saving… / Saved / Save failed. */
-export default function SaveStatusChip({ status }) {
+export default function SaveStatusChip({ status, plain = false }) {
   if (!status || status === 'idle') return null;
   const label = status === 'saving' ? 'Saving…' : status === 'error' ? 'Save failed' : 'Saved';
+  if (plain) {
+    const tone =
+      status === 'saving'
+        ? 'text-emerald-700 dark:text-emerald-300'
+        : status === 'error'
+          ? 'text-red-700 dark:text-red-300'
+          : 'iboard-header-status-saved text-emerald-700 dark:text-emerald-300';
+    return (
+      <span
+        role="status"
+        aria-live="polite"
+        title={status === 'error' ? 'The latest change could not be saved to the server' : 'Live lesson changes are saved to the server'}
+        className={`inline-flex items-center text-[12px] font-semibold leading-none ${tone}`}
+      >
+        {status === 'saving' && (
+          <span aria-hidden="true" className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+        )}
+        {label}
+      </span>
+    );
+  }
   const tone =
     status === 'saving'
       ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
