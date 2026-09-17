@@ -33,10 +33,14 @@ section:has(nav[aria-label='Pulse tools']) > div:first-child > div:first-child >
 }
 
 /* Soften student-card chrome so writing is the product. */
-article[data-student-id] {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+html:not(.dark) article[data-student-id] {
+  box-shadow:
+    0 2px 5px rgba(15, 23, 42, 0.09),
+    0 12px 26px -18px rgba(37, 99, 235, 0.32) !important;
 }
 
-article[data-student-id]:hover {
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
+html:not(.dark) article[data-student-id]:hover {
+  box-shadow:
+    0 4px 10px rgba(15, 23, 42, 0.11),
+    0 16px 32px -18px rgba(37, 99, 235, 0.38) !important;
 }

@@ -289,7 +289,7 @@ html:not(.dark) .iboard-student-canvas footer {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-status-saved {
-  color: #15803d;
+  color: #5a5fc3;
   font-size: 12px;
   font-weight: 600;
   background: transparent;
@@ -343,14 +343,14 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 
 .iboard-teacher-shell {
   display: grid;
-  grid-template-columns: 6.65rem minmax(0, 15.5rem) minmax(0, 1fr);
+  grid-template-columns: 5.75rem minmax(0, 15.5rem) minmax(0, 1fr);
   min-height: 0;
   flex: 1;
   transition: grid-template-columns 180ms ease;
 }
 
 .iboard-teacher-shell.is-teacher-hidden {
-  grid-template-columns: 6.65rem 0 minmax(0, 1fr);
+  grid-template-columns: 5.75rem 0 minmax(0, 1fr);
 }
 
 .iboard-arr-rail {
@@ -359,14 +359,14 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   align-items: center;
   justify-content: center;
   gap: 0.15rem;
-  background: #f6f6fb;
-  border-right: 1px solid #e6e8ef;
+  background: linear-gradient(180deg, #f4f8ff 0%, #edf4fc 100%);
+  border-right: 1px solid #dbe6f3;
   padding: 0.75rem 0;
   min-height: 0;
 }
 
 .iboard-arr-btn {
-  width: 5.75rem;
+  width: 5rem;
   border: 0;
   background: transparent;
   border-radius: 0.85rem;
@@ -382,8 +382,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 
 .iboard-arr-btn img {
   display: block;
-  width: 2.85rem;
-  height: 2.85rem;
+  width: 2.5rem;
+  height: 2.5rem;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
@@ -432,7 +432,9 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   background: #ffffff;
   border: 1px solid rgba(226, 226, 234, 0.95);
   border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(30, 41, 59, 0.05);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.09),
+    0 14px 30px -22px rgba(37, 99, 235, 0.34);
 }
 
 .iboard-teacher-panel-head {
@@ -538,8 +540,8 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 .iboard-student-card {
   border-color: #d6e0eb;
   box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.06),
-    0 8px 22px -18px rgba(30, 64, 175, 0.22);
+    0 2px 5px rgba(15, 23, 42, 0.09),
+    0 12px 26px -18px rgba(37, 99, 235, 0.32);
 }
 
 /* Overview (compact): square tiles that auto-pack across the board width. */
@@ -658,12 +660,12 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
   border-bottom-right-radius: 1rem;
   box-shadow: 12px 0 32px -18px rgba(15, 23, 42, 0.22);
   /* Sit beside the ARR rail when the LZ teacher shell is active */
-  left: 6.65rem;
+  left: 5.75rem;
 }
 
 /* Ask / Reply / Responses: slide out from the ARR strip */
 html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
-  left: 6.65rem;
+  left: 5.75rem;
   border: 1px solid #d5d4e4;
   border-left: 0;
   border-top: 0;

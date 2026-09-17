@@ -2349,7 +2349,7 @@ function TeacherDashboardInner() {
       />
       <div className="shrink-0">
       <header ref={teacherHeaderRef} className="iboard-app-header relative z-50 shrink-0 border-b backdrop-blur">
-        <div className="relative flex w-full flex-wrap items-center gap-3 px-3 py-3 sm:px-4">
+        <div className="relative flex w-full flex-wrap items-center gap-3 px-3 py-2 sm:px-4">
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
             <div className="iboard-brand shrink-0" aria-label="TUIT">
               <img src="/brand/tuit-logo.png" alt="TUIT" className="iboard-brand-logo" />
@@ -2641,7 +2641,7 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && (
         <div
           ref={teacherToolsPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail fixed z-[60] w-[min(29rem,calc(100vw-6.65rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail fixed z-[60] w-[min(29rem,calc(100vw-5.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
@@ -3643,7 +3643,7 @@ function TeacherDashboardInner() {
         <div
           ref={addCardPanelRef}
           data-iboard-add-card-panel="true"
-          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(29rem,calc(100vw-6.65rem))]"
+          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(29rem,calc(100vw-5.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
