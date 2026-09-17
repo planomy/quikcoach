@@ -63,6 +63,7 @@ const MODE_LABELS = {
 };
 
 const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
+const OVERVIEW_COLUMNS_STORAGE_KEY = 'iboard-overview-columns';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
 const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden';
 /** Per-card writing size steps (applied as rem so rich HTML inherits). */
@@ -73,6 +74,15 @@ const CARD_VIEWS = [
   { id: 'reading', label: 'Reading' },
   { id: 'full', label: 'Full drafts' },
 ];
+/** Overview density steps (Classroom-style column count). Default 4 suits 10–11" iPads. */
+const OVERVIEW_COLUMN_OPTIONS = [6, 5, 4, 3];
+const OVERVIEW_COLUMNS_DEFAULT = 4;
+const OVERVIEW_GRID_CLASS = {
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+  5: 'grid-cols-5',
+  6: 'grid-cols-6',
+};
 
 function readCardFontMap() {
   try {
@@ -124,9 +134,9 @@ function CardViewIcon({ id }) {
 }
 
 const TEACHER_TOOLS_TABS = [
-  { id: 'ask', label: 'Ask', icon: '/rail/ask.png' },
-  { id: 'respond', label: 'Reply', icon: '/rail/reply.png' },
-  { id: 'responses', label: 'Responses', icon: '/rail/responses.png' },
+  { id: 'ask', label: 'Ask', icon: '/rail/ask-icon.png' },
+  { id: 'respond', label: 'Reply', icon: '/rail/reply-icon.png' },
+  { id: 'responses', label: 'Responses', icon: '/rail/responses-icon.png' },
 ];
 
 function csvCell(value) {
@@ -141,6 +151,16 @@ function initialCardView() {
     return CARD_VIEWS.some((view) => view.id === saved) ? saved : 'overview';
   } catch {
     return 'overview';
+  }
+}
+
+function initialOverviewColumns() {
+  if (typeof window === 'undefined') return OVERVIEW_COLUMNS_DEFAULT;
+  try {
+    const saved = Number(localStorage.getItem(OVERVIEW_COLUMNS_STORAGE_KEY));
+    return OVERVIEW_COLUMN_OPTIONS.includes(saved) ? saved : OVERVIEW_COLUMNS_DEFAULT;
+  } catch {
+    return OVERVIEW_COLUMNS_DEFAULT;
   }
 }
 
@@ -307,6 +327,8 @@ function TeacherDashboardInner() {
   const [clearFixedArmed, setClearFixedArmed] = useState(false);
   const [livePulse, setLivePulse] = useState({ activity: null, responses: [], students: [] });
   const [cardView, setCardView] = useState(initialCardView);
+  const [overviewColumns, setOverviewColumns] = useState(initialOverviewColumns);
+  const [overviewColumnsOpen, setOverviewColumnsOpen] = useState(false);
   const [cardFontById, setCardFontById] = useState(readCardFontMap);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [focusedPostId, setFocusedPostId] = useState(null);
@@ -486,9 +508,40 @@ function TeacherDashboardInner() {
     } catch {
       /* The view still works when browser storage is unavailable. */
     }
+    if (cardView !== 'overview') setOverviewColumnsOpen(false);
     const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
     return () => cancelAnimationFrame(frame);
   }, [cardView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(OVERVIEW_COLUMNS_STORAGE_KEY, String(overviewColumns));
+    } catch {
+      /* Density still applies for this session if storage is unavailable. */
+    }
+    const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
+    return () => cancelAnimationFrame(frame);
+  }, [overviewColumns]);
+
+  useEffect(() => {
+    if (!overviewColumnsOpen) return undefined;
+    const closeOutside = (event) => {
+      if (!event.target?.closest?.('[data-overview-columns-menu]')) setOverviewColumnsOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setOverviewColumnsOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [overviewColumnsOpen]);
+
+  useEffect(() => {
+    if (!settingsOpen) setOverviewColumnsOpen(false);
+  }, [settingsOpen]);
 
   useEffect(() => {
     function syncFullscreen() {
@@ -2265,11 +2318,10 @@ function TeacherDashboardInner() {
 
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
   const focusedPost = posts.find((post) => Number(post.id) === Number(focusedPostId)) || null;
-  // Overview: square tiles, at most 6 across (drops on narrower boards).
-  // Reading / Full: wider reading columns.
+  // Overview: fixed column density (6/5/4/3). Reading / Full: wider reading columns.
   const studentGridClass =
     cardView === 'overview'
-      ? 'iboard-student-grid--overview grid-cols-[repeat(auto-fit,minmax(max(9.75rem,calc((100%-3.75rem)/6)),1fr))]'
+      ? `iboard-student-grid--overview ${OVERVIEW_GRID_CLASS[overviewColumns] || OVERVIEW_GRID_CLASS[OVERVIEW_COLUMNS_DEFAULT]}`
       : cardView === 'reading'
         ? 'grid-cols-[repeat(auto-fit,minmax(min(100%,26rem),1fr))]'
         : 'grid-cols-[repeat(auto-fit,minmax(min(100%,30rem),1fr))]';
@@ -2648,6 +2700,7 @@ function TeacherDashboardInner() {
                 aria-label={tab.label}
               >
                 <img src={tab.icon} alt="" />
+                <span className="iboard-arr-label">{tab.label}</span>
                 {badge ? (
                   <span className="absolute right-1 top-1 z-[2] grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-black tabular-nums leading-none text-white shadow-sm">
                     {badge}
@@ -3726,18 +3779,33 @@ function TeacherDashboardInner() {
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
             <div className="mb-1 px-3">
               <div
-                className="inline-flex rounded-xl bg-slate-200/80 p-0.5 dark:bg-slate-800"
+                className="relative inline-flex rounded-xl bg-slate-200/80 p-0.5 dark:bg-slate-800"
                 role="group"
                 aria-label="Card view"
+                data-overview-columns-menu
               >
                 {CARD_VIEWS.map((view) => (
                   <button
                     key={view.id}
                     type="button"
-                    onClick={() => setCardView(view.id)}
-                    title={view.label}
-                    aria-label={view.label}
+                    onClick={() => {
+                      if (view.id === 'overview') {
+                        if (cardView === 'overview') {
+                          setOverviewColumnsOpen((open) => !open);
+                        } else {
+                          setCardView('overview');
+                          setOverviewColumnsOpen(false);
+                        }
+                        return;
+                      }
+                      setOverviewColumnsOpen(false);
+                      setCardView(view.id);
+                    }}
+                    title={view.id === 'overview' ? `${view.label} · columns` : view.label}
+                    aria-label={view.id === 'overview' ? `${view.label}, choose columns` : view.label}
                     aria-pressed={cardView === view.id}
+                    aria-expanded={view.id === 'overview' ? overviewColumnsOpen : undefined}
+                    aria-haspopup={view.id === 'overview' ? 'menu' : undefined}
                     className={`grid h-9 w-10 place-items-center rounded-[0.65rem] border transition ${
                       cardView === view.id
                         ? 'border-indigo-400/90 bg-indigo-50/70 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-200'
@@ -3747,6 +3815,36 @@ function TeacherDashboardInner() {
                     <CardViewIcon id={view.id} />
                   </button>
                 ))}
+                {overviewColumnsOpen && cardView === 'overview' && (
+                  <div
+                    className="absolute left-0 top-[calc(100%+0.4rem)] z-50 flex items-center gap-0.5 rounded-xl border border-[#d5d4e4] bg-white p-1 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
+                    role="menu"
+                    aria-label="Overview columns"
+                  >
+                    {OVERVIEW_COLUMN_OPTIONS.map((count) => {
+                      const active = overviewColumns === count;
+                      return (
+                        <button
+                          key={count}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={active}
+                          onClick={() => {
+                            setOverviewColumns(count);
+                            setOverviewColumnsOpen(false);
+                          }}
+                          className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
+                            active
+                              ? 'bg-[#5a5fc3] text-white shadow-sm'
+                              : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {count}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />

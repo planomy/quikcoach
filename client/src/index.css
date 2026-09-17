@@ -370,23 +370,35 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   border: 0;
   background: transparent;
   border-radius: 0.85rem;
-  padding: 0.2rem 0.1rem;
+  padding: 0.35rem 0.2rem 0.4rem;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.2rem;
   color: #3f4656;
 }
 
 .iboard-arr-btn img {
   display: block;
-  width: 4.97rem;
-  height: auto;
+  width: 2.85rem;
+  height: 2.85rem;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
-  /* Knock out PNG white so icons sit on the strip */
-  mix-blend-mode: multiply;
+}
+
+.iboard-arr-label {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: #3f4656;
+  white-space: nowrap;
 }
 
 .iboard-arr-btn:hover {
@@ -498,15 +510,23 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 }
 
 .iboard-show-teacher {
+  align-self: flex-start;
+  width: 15.5rem;
+  max-width: 100%;
   border: 1px solid #e2e2ea;
   background: #ffffff;
   color: #5a5fc3;
   font-size: 0.75rem;
   font-weight: 700;
-  border-radius: 999px;
-  padding: 0.35rem 0.75rem;
+  border-radius: 0.85rem;
+  padding: 0.45rem 0.75rem;
   margin-bottom: 0.65rem;
   cursor: pointer;
+  text-align: center;
+}
+
+.iboard-show-teacher:hover {
+  background: #ebeaf8;
 }
 
 .iboard-live-question {
