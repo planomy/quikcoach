@@ -3239,7 +3239,7 @@ function TeacherDashboardInner() {
                       {isAway ? (
                         <span
                           title="Tab or app in background"
-                          className="shrink-0 rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200"
+                          className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
                         >
                           Away
                         </span>
@@ -3261,7 +3261,7 @@ function TeacherDashboardInner() {
                         }
                         className={`h-2 w-2 shrink-0 rounded-full ${
                           isAway && !showPulseState
-                            ? 'bg-sky-500 ring-2 ring-sky-200 dark:ring-sky-900'
+                            ? 'bg-[#5a5fc3] ring-2 ring-[#d5d4e4] dark:ring-indigo-900'
                             : light
                         }`}
                       />
