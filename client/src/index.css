@@ -449,7 +449,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 }
 
 .iboard-teacher-shell.is-teacher-hidden {
-  grid-template-columns: 4.75rem 3.15rem minmax(0, 1fr);
+  grid-template-columns: 4.75rem max-content minmax(0, 1fr);
 }
 
 .iboard-arr-rail {
@@ -543,7 +543,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 }
 
 .iboard-teacher-shell.is-teacher-hidden .iboard-teacher-panel-wrap {
-  padding: 0.75rem 0.25rem 0.75rem 0.4rem;
+  align-self: start;
+  padding: 0.75rem 0 0.75rem 0.5rem;
 }
 
 .iboard-teacher-panel {
@@ -633,19 +634,17 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 }
 
 .iboard-teacher-panel-reveal {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  width: 100%;
-  min-height: 0;
+  gap: 0.15rem;
   border: 1px solid #dedee6;
-  border-radius: 1rem;
+  border-radius: 0.85rem;
   background: #ffffff;
   color: #5a5fc3;
   box-shadow: 0 3px 3px -2px rgba(15, 23, 42, 0.22);
   cursor: pointer;
-  padding: 0.85rem 0;
+  padding: 0.45rem 0.6rem;
   transition:
     background-color 160ms ease,
     border-color 160ms ease;
@@ -657,12 +656,9 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 }
 
 .iboard-teacher-panel-reveal span {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   line-height: 1;
   white-space: nowrap;
 }
