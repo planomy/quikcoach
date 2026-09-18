@@ -465,7 +465,7 @@ export default function StudentView() {
   // Tell the teacher when this tab is in the background (Away ≠ Offline).
   useEffect(() => {
     if (!joined || !student?.id) return undefined;
-    const AWAY_MS = 10000;
+    const AWAY_MS = 60_000;
     let awayTimer = null;
     const emitPresence = (state) => {
       if (!socket.connected) return;
