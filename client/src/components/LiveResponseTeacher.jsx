@@ -1088,33 +1088,71 @@ export default function LiveResponseTeacher({
                       setCorrectAnswer((current) => (current && current === option.trim() ? next.trim() : current));
                     }}
                     placeholder={`Choice ${String.fromCharCode(65 + index)}`}
-                    className="rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    className="rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-2 text-sm outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                   />
                 ))}
               </div>
             )}
-            <details className="mt-3">
-              <summary className="cursor-pointer py-1.5 text-[11px] font-semibold text-[#6b6b78] hover:text-[#3c3c45] dark:text-slate-400 dark:hover:text-slate-200">More options</summary>
+            {type === 'short' ? (
+              <label className="mt-3 block text-[0.78rem] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-200">
+                Expected answer <span className="font-medium text-[#8a8a96]">optional</span>
+                <input
+                  value={correctAnswer}
+                  onChange={(event) => setCorrectAnswer(event.target.value.slice(0, 120))}
+                  placeholder="Shown when you reveal the answer"
+                  className="mt-1 block w-full rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-2 text-sm font-normal outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </label>
+            ) : type === 'rating' ? null : (
+              <label className="mt-3 block text-[0.78rem] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-200">
+                Correct answer <span className="font-medium text-[#8a8a96]">optional</span>
+                <select
+                  value={correctAnswer}
+                  onChange={(event) => setCorrectAnswer(event.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-2 text-sm font-normal outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                >
+                  <option value="">No correct answer / opinion poll</option>
+                  {type === 'choice'
+                    ? options.map((option, index) => {
+                        const text = option.trim();
+                        if (!text) return null;
+                        const letter = String.fromCharCode(65 + index);
+                        return <option key={`${letter}-${text}`} value={text}>{letter}: {text}</option>;
+                      })
+                    : (type === 'truefalse' ? ['True', 'False'] : []).map((value) => (
+                        <option key={value} value={value}>{value}</option>
+                      ))}
+                </select>
+                {type === 'choice' && !options.some((option) => option.trim()) && (
+                  <span className="mt-1 block text-[11px] font-medium text-[#8a8a96]">Fill in choices above to pick a correct answer.</span>
+                )}
+              </label>
+            )}
+            <details className="group mt-3">
+              <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1 text-[11px] font-semibold text-[#6b6b78] hover:text-[#3c3c45] dark:text-slate-400 dark:hover:text-slate-200 [&::-webkit-details-marker]:hidden">
+                <span className="inline-block text-[10px] transition group-open:rotate-90" aria-hidden>▸</span>
+                Settings
+              </summary>
               <div className="mt-2 space-y-3 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="cursor-pointer rounded-lg bg-indigo-100 px-2.5 py-1.5 text-xs font-black text-indigo-900 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">
+                  <label className="cursor-pointer rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-2.5 py-1.5 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
                     {imageBusy ? 'Preparing…' : imageUrl ? 'Replace image' : 'Add image'}
                     <input type="file" accept="image/*" className="hidden" onChange={(event) => loadImage(event.target.files?.[0])} />
                   </label>
                   {imageUrl && (
                     <>
                       <img src={imageUrl} alt="Question preview" className="h-12 w-20 rounded-lg bg-white object-contain" />
-                      <button type="button" onClick={() => setImageUrl('')} className="text-xs font-black text-red-600">Remove</button>
+                      <button type="button" onClick={() => setImageUrl('')} className="text-xs font-semibold text-red-600">Remove</button>
                     </>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    <input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-3.5 w-3.5 accent-indigo-600" /> Optional
+                  <label className="flex items-center gap-2 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
+                    <input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-3.5 w-3.5 accent-[#5a5fc3]" /> Optional
                   </label>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                    Timer{' '}
-                    <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="ml-1 rounded-lg border border-slate-200 px-2 py-1 dark:border-slate-700 dark:bg-slate-950">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
+                    Timer
+                    <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="rounded-lg border border-[#e2e2e8] bg-white px-2 py-1 text-xs font-medium outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950">
                       <option value="0">None</option>
                       <option value="15">15 sec</option>
                       <option value="30">30 sec</option>
@@ -1123,50 +1161,17 @@ export default function LiveResponseTeacher({
                     </select>
                   </label>
                   {type === 'short' && (
-                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                      <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-3.5 w-3.5 accent-indigo-600" /> Anonymous when featured
+                    <label className="flex items-center gap-2 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
+                      <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-3.5 w-3.5 accent-[#5a5fc3]" /> Anonymous when featured
                     </label>
                   )}
                 </div>
-                {type === 'short' ? (
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
-                    Expected answer (optional)
-                    <input
-                      value={correctAnswer}
-                      onChange={(event) => setCorrectAnswer(event.target.value.slice(0, 120))}
-                      placeholder="Shown when you reveal the answer"
-                      className="mt-1 block w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    />
-                  </label>
-                ) : type === 'rating' ? null : (
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
-                    Correct answer (optional)
-                    <select value={correctAnswer} onChange={(event) => setCorrectAnswer(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
-                      <option value="">No correct answer / opinion poll</option>
-                      {type === 'choice'
-                        ? options.map((option, index) => {
-                            const text = option.trim();
-                            if (!text) return null;
-                            const letter = String.fromCharCode(65 + index);
-                            return <option key={`${letter}-${text}`} value={text}>{letter}: {text}</option>;
-                          })
-                        : (type === 'truefalse' ? ['True', 'False'] : []).map((value) => (
-                            <option key={value} value={value}>{value}</option>
-                          ))}
-                    </select>
-                    {type === 'choice' && !options.some((option) => option.trim()) && (
-                      <span className="mt-1 block text-[11px] font-semibold text-slate-400">Fill in choices above to pick a correct answer.</span>
-                    )}
-                  </label>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={saveDraftAsSet} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Save as set</button>
-                </div>
               </div>
             </details>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
+              <button type="button" onClick={saveDraftAsSet} className="rounded-lg border border-[#cfcce8] bg-white px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Save as set</button>
               <button type="button" onClick={addToQueue} className="rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2]">Add to queue</button>
-              <button type="button" onClick={() => launch()} className="rounded-xl bg-[#5a5fc3] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4b50b0]">Launch</button>
+              <button type="button" onClick={() => launch()} className="ml-auto rounded-xl bg-[#5a5fc3] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4b50b0]">Launch</button>
             </div>
             <SavedSetsPanel
               panel="queue"
