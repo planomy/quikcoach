@@ -1,5 +1,6 @@
 import { RemoveButton, CloseButton } from '../components/PanelActions.jsx';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
@@ -373,6 +374,8 @@ function TeacherDashboardInner() {
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
   const [monitoredIds, setMonitoredIds] = useState(() => new Set());
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
+  const [studentActionMenuAnchor, setStudentActionMenuAnchor] = useState(null);
+  const studentActionMenuBtnRefs = useRef(new Map());
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [teacherPanelHidden, setTeacherPanelHidden] = useState(() => {
@@ -504,6 +507,32 @@ function TeacherDashboardInner() {
     window.addEventListener('iboard:fixed-comments', onFixed);
     return () => window.removeEventListener('iboard:fixed-comments', onFixed);
   }, []);
+
+  useLayoutEffect(() => {
+    if (!studentActionMenuId) {
+      setStudentActionMenuAnchor(null);
+      return undefined;
+    }
+    const place = () => {
+      const button = studentActionMenuBtnRefs.current.get(Number(studentActionMenuId));
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      setStudentActionMenuAnchor({
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+      });
+    };
+    place();
+    window.addEventListener('resize', place);
+    // Capture scroll from nested board panes so the floating menu stays on the button.
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [studentActionMenuId]);
 
   useEffect(() => {
     if (!studentActionMenuId) return undefined;
@@ -3232,6 +3261,11 @@ function TeacherDashboardInner() {
                         <HintWrap hint="More actions">
                           <button
                             type="button"
+                            ref={(node) => {
+                              const id = Number(s.id);
+                              if (node) studentActionMenuBtnRefs.current.set(id, node);
+                              else studentActionMenuBtnRefs.current.delete(id);
+                            }}
                             onClick={() => setStudentActionMenuId((current) => current === s.id ? null : s.id)}
                             className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
                             aria-label={`More actions for ${s.name}`}
@@ -3242,39 +3276,6 @@ function TeacherDashboardInner() {
                             </svg>
                           </button>
                         </HintWrap>
-                        {studentActionMenuId === s.id && (
-                          <div className="absolute bottom-8 right-0 z-40 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900" role="menu">
-                            <button type="button" disabled={!displayText.trim()} onClick={() => { copyStudentText(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
-                              Copy draft
-                            </button>
-                            <button type="button" onClick={() => { downloadOneStudent(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
-                              Save file
-                            </button>
-                            <button type="button" onClick={() => { setFocusedStudentId(s.id); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
-                              Open full draft
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                toggleMonitorStudent(s.id);
-                                setStudentActionMenuId(null);
-                              }}
-                              className="w-full rounded-lg px-3 py-2 text-left font-semibold text-amber-800 hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
-                              role="menuitem"
-                            >
-                              {monitoring ? 'Stop monitoring' : 'Monitor'}
-                            </button>
-                            {s.image_url && (
-                              <button type="button" onClick={() => { setDrawingMarkupTarget(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50" role="menuitem">
-                                Mark up drawing
-                              </button>
-                            )}
-                            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-                            <button type="button" onClick={() => { requestRemoveStudent(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40" role="menuitem">
-                              Remove card
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -3311,6 +3312,59 @@ function TeacherDashboardInner() {
       </main>
       </div>
       </div>
+
+      {studentActionMenuId != null && studentActionMenuAnchor && typeof document !== 'undefined'
+        && createPortal((() => {
+          const menuStudent = visibleStudents.find((student) => Number(student.id) === Number(studentActionMenuId));
+          if (!menuStudent) return null;
+          const menuMonitoring = monitoredIds.has(Number(menuStudent.id));
+          const menuText = String(menuStudent.text || '');
+          const menuWidth = 176;
+          const gap = 6;
+          const left = Math.max(
+            8,
+            Math.min(studentActionMenuAnchor.right - menuWidth, (typeof window !== 'undefined' ? window.innerWidth : 400) - menuWidth - 8)
+          );
+          const bottom = Math.max(8, (typeof window !== 'undefined' ? window.innerHeight : 800) - studentActionMenuAnchor.top + gap);
+          return (
+            <div
+              data-student-actions-menu
+              role="menu"
+              className="fixed z-[90] w-44 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+              style={{ left, bottom }}
+            >
+              <button type="button" disabled={!menuText.trim()} onClick={() => { copyStudentText(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                Copy draft
+              </button>
+              <button type="button" onClick={() => { downloadOneStudent(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                Save file
+              </button>
+              <button type="button" onClick={() => { setFocusedStudentId(menuStudent.id); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                Open full draft
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  toggleMonitorStudent(menuStudent.id);
+                  setStudentActionMenuId(null);
+                }}
+                className="w-full rounded-lg px-3 py-2 text-left font-semibold text-amber-800 hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                role="menuitem"
+              >
+                {menuMonitoring ? 'Stop monitoring' : 'Monitor'}
+              </button>
+              {menuStudent.image_url && (
+                <button type="button" onClick={() => { setDrawingMarkupTarget(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50" role="menuitem">
+                  Mark up drawing
+                </button>
+              )}
+              <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
+              <button type="button" onClick={() => { requestRemoveStudent(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40" role="menuitem">
+                Remove card
+              </button>
+            </div>
+          );
+        })(), document.body)}
 
       {lessonReportOpen && (
         <LessonReportPanel roomCode={codeInput} onClose={() => setLessonReportOpen(false)} />

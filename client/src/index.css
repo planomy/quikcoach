@@ -926,6 +926,10 @@ html.dark .iboard-header-actions {
   pointer-events: auto;
 }
 
+.iboard-student-card-actions[data-open='true'] {
+  z-index: 80;
+}
+
 html.dark .iboard-student-card-actions {
   border-color: #4b5664;
   background: rgba(37, 43, 50, 0.97);
