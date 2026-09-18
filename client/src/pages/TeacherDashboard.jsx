@@ -4406,9 +4406,6 @@ function TeacherDashboardInner() {
                 <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">{snapshots.length}</span>
               )}
             </button>
-            <button type="button" onClick={() => openLibrary('reports')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Student reports
-            </button>
             <button type="button" onClick={() => { closeSettings(); setDraftTrailOpen(true); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Draft trail
             </button>
@@ -4417,31 +4414,38 @@ function TeacherDashboardInner() {
             </button>
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Files &amp; reports</p>
-            <div className="flex gap-0.5">
+            <div className="grid grid-cols-2 gap-0.5">
               <button
                 type="button"
                 disabled={sessionBusy}
                 onClick={() => { closeSettings(); setSessionPdfOpen(true); }}
-                className="min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Export PDF
               </button>
               <button
                 type="button"
                 onClick={openLessonReport}
-                className="min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Engagement
               </button>
+              <button
+                type="button"
+                disabled={sessionBusy}
+                onClick={openSessionFilePicker}
+                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Open .iboard
+              </button>
+              <button
+                type="button"
+                onClick={() => openLibrary('reports')}
+                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Student reports
+              </button>
             </div>
-            <button
-              type="button"
-              disabled={sessionBusy}
-              onClick={openSessionFilePicker}
-              className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              Open .iboard
-            </button>
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Classroom</p>
             <button type="button" onClick={() => { closeSettings(); openJoinScreen(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
