@@ -3266,7 +3266,7 @@ function TeacherDashboardInner() {
                               ? 'Away — tab or app in background'
                               : 'Writing activity'
                         }
-                        className={`h-1 w-1 shrink-0 rounded-full ${
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
                           isAway && !showPulseState
                             ? 'bg-[#5a5fc3] ring-1 ring-[#d5d4e4] dark:ring-indigo-900'
                             : light

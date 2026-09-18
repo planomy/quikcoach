@@ -833,11 +833,12 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
   left: 4.75rem;
 }
 
-/* Ask / Reply / Responses: float beside the rail, vertically centered */
+/* Ask / Reply / Responses: float beside the rail, vertically centered.
+   Hug content height; only scroll after near-full viewport. */
 .iboard-header-dock--rail {
   top: 50%;
   left: 4.75rem;
-  max-height: min(82dvh, calc(100dvh - 2.5rem));
+  max-height: calc(100dvh - 1.25rem);
   border-left: 0;
   border-radius: 0 1rem 1rem 0;
   transform: translateY(-50%);
@@ -859,6 +860,17 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
   to {
     opacity: 1;
     transform: translate(0, -50%);
+  }
+}
+
+@keyframes iboard-rail-dock-in-top {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -1058,8 +1070,10 @@ html.dark .iboard-workspace-scrim {
   .iboard-teacher-shell,
   .iboard-teacher-panel-wrap,
   .iboard-teacher-panel,
-  .iboard-teacher-panel-reveal {
+  .iboard-teacher-panel-reveal,
+  .iboard-header-dock--rail {
     transition: none;
+    animation: none;
   }
 }
 
