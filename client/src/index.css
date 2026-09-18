@@ -814,7 +814,7 @@ html.dark .iboard-header-actions {
 }
 
 .iboard-student-card:hover .iboard-student-card-actions,
-.iboard-student-card:focus-within .iboard-student-card-actions,
+.iboard-student-card-actions:focus-within,
 .iboard-student-card-actions[data-open='true'] {
   opacity: 1;
   transform: translateY(0);
@@ -828,7 +828,7 @@ html.dark .iboard-student-card-actions {
 }
 
 @media (hover: none) {
-  .iboard-student-card-actions {
+  .iboard-student-card:focus-within .iboard-student-card-actions {
     opacity: 1;
     transform: none;
     pointer-events: auto;
