@@ -2978,6 +2978,17 @@ function TeacherDashboardInner() {
         </nav>
 
         <div className="iboard-teacher-panel-wrap">
+          {teacherPanelHidden ? (
+            <button
+              type="button"
+              className="iboard-teacher-panel-reveal"
+              onClick={() => setTeacherPanelHidden(false)}
+              aria-label="Show teacher"
+              title="Show teacher"
+            >
+              <span>Show</span>
+            </button>
+          ) : (
           <aside className="iboard-teacher-panel" aria-label="Teacher cards">
             <div className="iboard-teacher-panel-head">
               <h2>Teacher</h2>
@@ -3089,18 +3100,10 @@ function TeacherDashboardInner() {
               ))}
             </div>
           </aside>
+          )}
         </div>
 
       <main className="iboard-student-board relative flex min-h-0 flex-col overflow-y-auto">
-          {teacherPanelHidden && (
-            <button
-              type="button"
-              className="iboard-show-teacher shrink-0"
-              onClick={() => setTeacherPanelHidden(false)}
-            >
-              Show teacher
-            </button>
-          )}
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
 
               <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
