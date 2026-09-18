@@ -653,6 +653,18 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
   background: #ebeaf8;
 }
 
+html.dark .iboard-show-teacher {
+  border-color: #475569;
+  background: #1e293b;
+  color: #a5b4fc;
+}
+
+html.dark .iboard-show-teacher:hover {
+  border-color: #6366f1;
+  background: #312e81;
+  color: #e0e7ff;
+}
+
 .iboard-live-question {
   border-color: #bfdbfe;
   background: linear-gradient(100deg, #eff6ff 0%, #f8fbff 100%);
