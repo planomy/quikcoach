@@ -2398,14 +2398,7 @@ function TeacherDashboardInner() {
           </div>
 
           <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(22rem,calc(100vw-11rem))] -translate-x-1/2 items-center">
-            {!socketConnected ? (
-              <div
-                role="status"
-                className="pointer-events-auto inline-flex h-8 max-w-full items-center truncate rounded-lg bg-amber-500 px-3 text-[11px] font-black uppercase tracking-[0.08em] text-amber-950 shadow-sm"
-              >
-                Reconnecting…
-              </div>
-            ) : copyToast ? (
+            {!socketConnected ? null : copyToast ? (
               <div
                 role="status"
                 aria-live="polite"
