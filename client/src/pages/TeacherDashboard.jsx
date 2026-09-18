@@ -67,7 +67,8 @@ const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
 const OVERVIEW_COLUMNS_STORAGE_KEY = 'iboard-overview-columns';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
 const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden';
-const WATCH_STORAGE_KEY = 'iboard-teacher-watch';
+const MONITOR_STORAGE_KEY = 'iboard-teacher-monitor';
+const LEGACY_WATCH_STORAGE_KEY = 'iboard-teacher-watch';
 /** Per-card writing size steps (applied as rem so rich HTML inherits). */
 const CARD_FONT_REMS = [0.75, 0.875, 1, 1.125, 1.25];
 const CARD_FONT_DEFAULT = 2; /* index of 1rem */
@@ -86,13 +87,13 @@ const OVERVIEW_GRID_CLASS = {
   6: 'grid-cols-6',
 };
 
-function watchRoomKey(code) {
+function monitorRoomKey(code) {
   return String(code || '').replace(/\D/g, '').slice(0, 4);
 }
 
-function readWatchMap() {
+function readMonitorMap() {
   try {
-    const raw = localStorage.getItem(WATCH_STORAGE_KEY);
+    const raw = localStorage.getItem(MONITOR_STORAGE_KEY) || localStorage.getItem(LEGACY_WATCH_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' ? parsed : {};
@@ -101,23 +102,23 @@ function readWatchMap() {
   }
 }
 
-function readWatchedIdsForRoom(code) {
-  const key = watchRoomKey(code);
+function readMonitoredIdsForRoom(code) {
+  const key = monitorRoomKey(code);
   if (key.length !== 4) return new Set();
-  const list = readWatchMap()[key];
+  const list = readMonitorMap()[key];
   if (!Array.isArray(list)) return new Set();
   return new Set(list.map(Number).filter((id) => Number.isFinite(id) && id > 0));
 }
 
-function writeWatchedIdsForRoom(code, ids) {
-  const key = watchRoomKey(code);
+function writeMonitoredIdsForRoom(code, ids) {
+  const key = monitorRoomKey(code);
   if (key.length !== 4) return;
   try {
-    const map = readWatchMap();
+    const map = readMonitorMap();
     map[key] = [...ids];
-    localStorage.setItem(WATCH_STORAGE_KEY, JSON.stringify(map));
+    localStorage.setItem(MONITOR_STORAGE_KEY, JSON.stringify(map));
   } catch {
-    /* Watch list is optional when storage is unavailable. */
+    /* Monitor list is optional when storage is unavailable. */
   }
 }
 
@@ -370,7 +371,7 @@ function TeacherDashboardInner() {
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [focusedPostId, setFocusedPostId] = useState(null);
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
-  const [watchedIds, setWatchedIds] = useState(() => new Set());
+  const [monitoredIds, setMonitoredIds] = useState(() => new Set());
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -981,27 +982,27 @@ function TeacherDashboardInner() {
   const visibleStudents = useMemo(
     () =>
       [...orderedStudents].sort((a, b) => {
-        const aWatch = watchedIds.has(Number(a.id)) ? 0 : 1;
-        const bWatch = watchedIds.has(Number(b.id)) ? 0 : 1;
-        if (aWatch !== bWatch) return aWatch - bWatch;
+        const aMonitored = monitoredIds.has(Number(a.id)) ? 0 : 1;
+        const bMonitored = monitoredIds.has(Number(b.id)) ? 0 : 1;
+        if (aMonitored !== bMonitored) return aMonitored - bMonitored;
         return Number(a.id) - Number(b.id);
       }),
-    [orderedStudents, watchedIds]
+    [orderedStudents, monitoredIds]
   );
 
   useEffect(() => {
-    setWatchedIds(readWatchedIdsForRoom(codeInput));
+    setMonitoredIds(readMonitoredIdsForRoom(codeInput));
   }, [codeInput, joined]);
 
   useEffect(() => {
-    writeWatchedIdsForRoom(codeInput, watchedIds);
-  }, [watchedIds, codeInput]);
+    writeMonitoredIdsForRoom(codeInput, monitoredIds);
+  }, [monitoredIds, codeInput]);
 
-  // Drop watches for students who have left the room.
+  // Drop monitors for students who have left the room.
   useEffect(() => {
     if (!orderedStudents.length) return;
     const live = new Set(orderedStudents.map((student) => Number(student.id)));
-    setWatchedIds((current) => {
+    setMonitoredIds((current) => {
       let changed = false;
       const next = new Set();
       for (const id of current) {
@@ -1012,10 +1013,10 @@ function TeacherDashboardInner() {
     });
   }, [orderedStudents]);
 
-  function toggleWatchStudent(studentId) {
+  function toggleMonitorStudent(studentId) {
     const id = Number(studentId);
     if (!id) return;
-    setWatchedIds((current) => {
+    setMonitoredIds((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -1023,21 +1024,21 @@ function TeacherDashboardInner() {
     });
   }
 
-  function watchSelectedStudents() {
+  function monitorSelectedStudents() {
     const ids = orderedStudents.filter((student) => broadcastPick[student.id]).map((student) => Number(student.id));
     if (!ids.length) return;
-    setWatchedIds((current) => {
+    setMonitoredIds((current) => {
       const next = new Set(current);
       ids.forEach((id) => next.add(id));
       return next;
     });
-    setCopyToast(`Watching ${ids.length} student${ids.length === 1 ? '' : 's'}`);
+    setCopyToast(`Monitoring ${ids.length} student${ids.length === 1 ? '' : 's'}`);
     setTimeout(() => setCopyToast(''), 2500);
   }
 
-  function clearWatchedStudents() {
-    setWatchedIds(new Set());
-    setCopyToast('Watch list cleared');
+  function clearMonitoredStudents() {
+    setMonitoredIds(new Set());
+    setCopyToast('Monitor list cleared');
     setTimeout(() => setCopyToast(''), 2000);
   }
 
@@ -2462,7 +2463,7 @@ function TeacherDashboardInner() {
 
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
   const selectedStudentPickCount = orderedStudents.filter((student) => broadcastPick[student.id]).length;
-  const watchedCount = watchedIds.size;
+  const monitoredCount = monitoredIds.size;
   const liveResponseCount = (livePulse.responses || []).length;
   const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen;
 
@@ -2594,34 +2595,34 @@ function TeacherDashboardInner() {
               {selectedStudentPickCount > 0 ? (
                 <button
                   type="button"
-                  onClick={watchSelectedStudents}
+                  onClick={monitorSelectedStudents}
                   className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-3 text-white shadow-sm hover:bg-[#4f54b0]"
-                  aria-label={`Watch ${selectedStudentPickCount} selected students`}
+                  aria-label={`Monitor ${selectedStudentPickCount} selected students`}
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
                     <circle cx="12" cy="12" r="2.5" />
                   </svg>
-                  <span className="text-[11px] font-black uppercase tracking-[0.12em]">Watch</span>
+                  <span className="text-[11px] font-black uppercase tracking-[0.12em]">Monitor</span>
                   <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[11px] font-black tabular-nums">
                     {selectedStudentPickCount}
                   </span>
                 </button>
               ) : null}
               </div>
-            ) : watchedCount > 0 ? (
+            ) : monitoredCount > 0 ? (
               <div className="pointer-events-auto inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-3 text-white shadow-sm">
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 opacity-90" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
                   <circle cx="12" cy="12" r="2.5" />
                 </svg>
-                <span className="truncate text-[11px] font-black">Watching · {watchedCount}</span>
+                <span className="truncate text-[11px] font-black">Monitoring · {monitoredCount}</span>
                 <button
                   type="button"
-                  onClick={clearWatchedStudents}
+                  onClick={clearMonitoredStudents}
                   className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-white/80 hover:bg-white/15 hover:text-white"
-                  aria-label="Clear watch list"
-                  title="Clear watch list"
+                  aria-label="Clear monitor list"
+                  title="Clear monitor list"
                 >
                   ×
                 </button>
@@ -3026,7 +3027,7 @@ function TeacherDashboardInner() {
                     : 'bg-slate-300';
             const handQuestions = pendingHandByStudentId.get(Number(s.id)) || [];
             const handUp = handQuestions.length > 0;
-            const watching = watchedIds.has(Number(s.id));
+            const monitoring = monitoredIds.has(Number(s.id));
             return (
               <article
                 key={s.id}
@@ -3049,7 +3050,7 @@ function TeacherDashboardInner() {
                     : `bg-white dark:bg-slate-900 ${
                         broadcastPick[s.id]
                           ? 'border border-indigo-400 ring-2 ring-indigo-200 dark:border-indigo-500 dark:ring-indigo-900/70'
-                          : watching
+                          : monitoring
                           ? 'border border-amber-400 ring-2 ring-amber-200/80 dark:border-amber-500 dark:ring-amber-900/50'
                           : showPulseState
                           ? pulseMeta.className
@@ -3093,11 +3094,11 @@ function TeacherDashboardInner() {
                       >
                         {s.name}
                       </h2>
-                      {watching ? (
+                      {monitoring ? (
                         <span
                           className="grid h-4 w-4 shrink-0 place-items-center text-amber-600 dark:text-amber-300"
-                          title="Watching"
-                          aria-label="Watching"
+                          title="Monitoring"
+                          aria-label="Monitoring"
                         >
                           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
@@ -3255,13 +3256,13 @@ function TeacherDashboardInner() {
                             <button
                               type="button"
                               onClick={() => {
-                                toggleWatchStudent(s.id);
+                                toggleMonitorStudent(s.id);
                                 setStudentActionMenuId(null);
                               }}
                               className="w-full rounded-lg px-3 py-2 text-left font-semibold text-amber-800 hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
                               role="menuitem"
                             >
-                              {watching ? 'Stop watching' : 'Watch'}
+                              {monitoring ? 'Stop monitoring' : 'Monitor'}
                             </button>
                             {s.image_url && (
                               <button type="button" onClick={() => { setDrawingMarkupTarget(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50" role="menuitem">
