@@ -392,6 +392,8 @@ function TeacherDashboardInner() {
       return false;
     }
   });
+  const teacherRevealLockRef = useRef(false);
+  const teacherRevealTimerRef = useRef(null);
   const [draftTrailOpen, setDraftTrailOpen] = useState(false);
   const [sessionPdfOpen, setSessionPdfOpen] = useState(false);
   const [draftTrailBusy, setDraftTrailBusy] = useState(false);
@@ -653,6 +655,27 @@ function TeacherDashboardInner() {
     const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
     return () => cancelAnimationFrame(frame);
   }, [teacherPanelHidden]);
+
+  useEffect(() => () => {
+    if (teacherRevealTimerRef.current) window.clearTimeout(teacherRevealTimerRef.current);
+  }, []);
+
+  function revealTeacherPanel(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (teacherRevealTimerRef.current) window.clearTimeout(teacherRevealTimerRef.current);
+    teacherRevealLockRef.current = true;
+    setTeacherPanelHidden(false);
+    teacherRevealTimerRef.current = window.setTimeout(() => {
+      teacherRevealLockRef.current = false;
+      teacherRevealTimerRef.current = null;
+    }, 350);
+  }
+
+  function openFocusedTeacherPost(postId) {
+    if (teacherRevealLockRef.current) return;
+    setFocusedPostId(postId);
+  }
 
   useEffect(() => {
     try {
@@ -1092,8 +1115,6 @@ function TeacherDashboardInner() {
 
   function clearMonitoredStudents() {
     setMonitoredIds(new Set());
-    setCopyToast('Monitor list cleared');
-    setTimeout(() => setCopyToast(''), 2000);
   }
 
   useEffect(() => {
@@ -2982,54 +3003,63 @@ function TeacherDashboardInner() {
             <button
               type="button"
               className="iboard-teacher-panel-reveal"
-              onClick={() => setTeacherPanelHidden(false)}
+              onPointerDown={revealTeacherPanel}
+              onClick={(event) => event.preventDefault()}
               aria-label="Show teacher"
               title="Show teacher"
             >
               <span>Show</span>
             </button>
-          ) : (
-          <aside className="iboard-teacher-panel" aria-label="Teacher cards">
+          ) : null}
+          <aside
+            className="iboard-teacher-panel"
+            aria-label="Teacher cards"
+            aria-hidden={teacherPanelHidden}
+          >
             <div className="iboard-teacher-panel-head">
+              <button
+                type="button"
+                className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
+                onClick={() => setTeacherPanelHidden(true)}
+                aria-label="Hide teacher"
+                title="Hide"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 6 9 12l6 6" />
+                </svg>
+              </button>
               <h2>Teacher</h2>
-              <div className="iboard-teacher-panel-actions">
-                <button
-                  type="button"
-                  className="iboard-teacher-panel-action"
-                  onClick={() => setTeacherPanelHidden(true)}
-                >
-                  Hide
-                </button>
-                <button
-                  ref={addCardButtonRef}
-                  type="button"
-                  className="iboard-teacher-panel-action"
-                  onClick={openAddCard}
-                  aria-expanded={addCardOpen}
-                >
-                  + Add
-                </button>
-              </div>
+              <button
+                ref={addCardButtonRef}
+                type="button"
+                className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
+                onClick={openAddCard}
+                aria-expanded={addCardOpen}
+                aria-label="Add teacher card"
+                title="Add"
+              >
+                <span aria-hidden="true">+</span>
+              </button>
             </div>
             <div className="iboard-teacher-panel-list">
               {posts.length === 0 && (
                 <p className="px-1 py-6 text-center text-xs font-semibold text-slate-400">
-                  No teacher cards yet — use + Add
+                  No teacher cards yet — use +
                 </p>
               )}
               {posts.map((post) => (
             <article
               key={`post-${post.id}`}
               className="iboard-teacher-card flex cursor-pointer flex-col rounded-xl border border-slate-300 bg-slate-100/80 p-3 transition hover:border-[#cfcce8] dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-indigo-500"
-              onClick={() => setFocusedPostId(post.id)}
+              onClick={() => openFocusedTeacherPost(post.id)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  setFocusedPostId(post.id);
+                  openFocusedTeacherPost(post.id);
                 }
               }}
               role="button"
-              tabIndex={0}
+              tabIndex={teacherPanelHidden ? -1 : 0}
               aria-label={`Open larger view of ${post.title || 'teacher card'}`}
             >
               <div className="flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
@@ -3100,7 +3130,6 @@ function TeacherDashboardInner() {
               ))}
             </div>
           </aside>
-          )}
         </div>
 
       <main className="iboard-student-board relative flex min-h-0 flex-col overflow-y-auto">
