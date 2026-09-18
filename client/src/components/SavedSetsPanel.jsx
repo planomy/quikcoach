@@ -529,32 +529,34 @@ export default function SavedSetsPanel({
         <section className="flex min-h-0 flex-1 flex-col">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="font-display text-lg font-black text-slate-950 dark:text-white">Sets · {filtered.length}</h3>
-              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Tick sets to send · Click a title to preview.</p>
+              <h3 className="text-[13px] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-100">
+                Sets
+                <span className="ml-1.5 font-medium text-[#8a8a96] dark:text-slate-400">{filtered.length}</span>
+              </h3>
+              <p className="mt-0.5 text-[11px] font-normal text-[#6b6b78] dark:text-slate-400">
+                Tick to send · click a title to preview
+              </p>
             </div>
             <button
               type="button"
               onClick={openCreate}
-              className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+              className="text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300 dark:hover:text-indigo-200"
             >
               Create a set
             </button>
           </div>
 
-          <div className="mt-3 flex items-center gap-2">
-            <div className="flex shrink-0 rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-800" role="group" aria-label="Set library">
-              <button type="button" onClick={() => setSetScope('all')} className={`rounded-md px-2 py-1.5 text-[11px] font-black ${setScope === 'all' ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-slate-500 dark:text-slate-300'}`}>All sets</button>
-              <button type="button" onClick={() => setSetScope('mine')} className={`rounded-md px-2 py-1.5 text-[11px] font-black ${setScope === 'mine' ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-slate-500 dark:text-slate-300'}`}>My sets{customSets.length ? ` · ${customSets.length}` : ''}</button>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <div className="flex shrink-0 rounded-lg bg-[#ececef] p-0.5 dark:bg-slate-800" role="group" aria-label="Set library">
+              <button type="button" onClick={() => setSetScope('all')} className={`rounded-md px-2 py-1.5 text-[11px] font-semibold ${setScope === 'all' ? 'bg-white text-[#5a5fc3] shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-[#6b6b78] dark:text-slate-300'}`}>All sets</button>
+              <button type="button" onClick={() => setSetScope('mine')} className={`rounded-md px-2 py-1.5 text-[11px] font-semibold ${setScope === 'mine' ? 'bg-white text-[#5a5fc3] shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-[#6b6b78] dark:text-slate-300'}`}>My sets{customSets.length ? ` · ${customSets.length}` : ''}</button>
             </div>
-          </div>
-
-          <div className="mt-2 flex items-center gap-2">
             <label htmlFor="sets-subject-filter" className="sr-only">Subject</label>
             <select
               id="sets-subject-filter"
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-indigo-950"
+              className="min-w-0 flex-1 rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#3c3c45] outline-none transition focus:border-[#cfcce8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
               <option value="All">All subjects</option>
               {SUBJECTS.map((item) => (
@@ -567,7 +569,7 @@ export default function SavedSetsPanel({
               id="sets-year-filter"
               value={yearBand}
               onChange={(event) => setYearBand(event.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-indigo-950"
+              className="min-w-0 flex-1 rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#3c3c45] outline-none transition focus:border-[#cfcce8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
               <option value="All">All years</option>
               {YEAR_BANDS.map((item) => (
@@ -576,13 +578,22 @@ export default function SavedSetsPanel({
             </select>
           </div>
 
-          <div className="mt-3 shrink-0 border-y border-slate-200 bg-white py-3 dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex items-center justify-between gap-2 text-xs">
-              <p className="font-bold text-slate-700 dark:text-slate-200">{selectedSets.length ? `${selectedSets.length} set${selectedSets.length === 1 ? '' : 's'} selected` : 'Select sets'}</p>
-              {selectedSets.length > 0 && <button type="button" disabled={sending} onClick={() => setSelectedSetIds([])} className="text-slate-500 hover:text-indigo-600 disabled:opacity-50">Clear</button>}
-            </div>
-            <div className="mt-2 flex gap-2">
-              <button type="button" disabled={!selectedSets.length || sending} onClick={() => chooseRecipients(selectedSets)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Send selected sets to…</button>
+          <div className="mt-2.5 shrink-0 border-t border-[#e4e4ea] pt-2.5 dark:border-slate-700">
+            <div className="flex items-center gap-2">
+              {selectedSets.length > 0 ? (
+                <p className="text-[11px] font-medium text-[#6b6b78] dark:text-slate-300">
+                  {selectedSets.length} selected
+                  <button type="button" disabled={sending} onClick={() => setSelectedSetIds([])} className="ml-2 text-[#5a5fc3] hover:underline disabled:opacity-50">Clear</button>
+                </p>
+              ) : null}
+              <button
+                type="button"
+                disabled={!selectedSets.length || sending}
+                onClick={() => chooseRecipients(selectedSets)}
+                className="ml-auto rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-35"
+              >
+                {selectedSets.length ? 'Send to…' : 'Send selected…'}
+              </button>
             </div>
             {hiddenSelectionCount > 0 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">{hiddenSelectionCount} selected outside this filter</p>}
             {questionCount > 60 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">Ask up to 60 questions at once. Select fewer sets or send to inbox.</p>}

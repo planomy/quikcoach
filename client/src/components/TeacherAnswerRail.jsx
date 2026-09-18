@@ -254,9 +254,18 @@ export default function TeacherAnswerRail({
   if (!activity) {
     if (embedded) {
       return (
-        <div className="grid min-h-[280px] place-items-center p-8 text-center">
-          <p className="text-sm font-bold text-slate-800 dark:text-slate-100">No live question right now</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Use Ask to send a quick question to the class.</p>
+        <div className="grid place-items-center px-6 py-10 text-center">
+          <p className="text-sm font-semibold text-[#3c3c45] dark:text-slate-100">No live question right now</p>
+          <p className="mt-1 text-xs text-[#6b6b78] dark:text-slate-400">Send one from Ask to see answers here.</p>
+          {typeof onOpenAsk === 'function' ? (
+            <button
+              type="button"
+              onClick={onOpenAsk}
+              className="mt-3 rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#4b50b0]"
+            >
+              Open Ask
+            </button>
+          ) : null}
         </div>
       );
     }

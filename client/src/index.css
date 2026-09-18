@@ -974,6 +974,11 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50\/
   border-radius: 0.75rem;
   background: #ffffff;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  overflow: visible;
+}
+
+.iboard-room-settings__list,
+.iboard-room-settings__grid {
   overflow: hidden;
 }
 
@@ -1062,10 +1067,31 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50\/
 }
 
 .iboard-room-settings__board {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+
+.iboard-room-settings__board-timer {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+}
+
+.iboard-room-settings__columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid #efeff3;
+}
+
+html.dark .iboard-room-settings__columns {
+  border-top-color: #334155;
 }
 
 .iboard-room-settings__seg {
@@ -1138,6 +1164,15 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50\/
   color: #3c3c45;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.iboard-room-settings__field-row input[type='number']::-webkit-outer-spin-button,
+.iboard-room-settings__field-row input[type='number']::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .iboard-room-settings__mini {

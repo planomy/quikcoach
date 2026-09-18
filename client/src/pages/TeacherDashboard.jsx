@@ -4231,38 +4231,8 @@ function TeacherDashboardInner() {
                         <CardViewIcon id={view.id} />
                       </button>
                     ))}
-                    {overviewColumnsOpen && cardView === 'overview' && (
-                      <div
-                        className="absolute left-0 top-[calc(100%+0.4rem)] z-50 flex items-center gap-0.5 rounded-xl border border-[#d5d4e4] bg-white p-1 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
-                        role="menu"
-                        aria-label="Overview columns"
-                      >
-                        {OVERVIEW_COLUMN_OPTIONS.map((count) => {
-                          const active = overviewColumns === count;
-                          return (
-                            <button
-                              key={count}
-                              type="button"
-                              role="menuitemradio"
-                              aria-checked={active}
-                              onClick={() => {
-                                setOverviewColumns(count);
-                                setOverviewColumnsOpen(false);
-                              }}
-                              className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
-                                active
-                                  ? 'bg-[#5a5fc3] text-white shadow-sm'
-                                  : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
-                              }`}
-                            >
-                              {count}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
-                  <div>
+                  <div className="iboard-room-settings__board-timer">
                     {!room?.timer?.active ? (
                       <div className="iboard-room-settings__field-row">
                         <span className="iboard-room-settings__timer-label">Timer</span>
@@ -4284,7 +4254,7 @@ function TeacherDashboardInner() {
                         </button>
                       </div>
                     ) : (
-                      <>
+                      <div className="min-w-0 flex-1">
                         <div className="iboard-room-settings__timer-head">
                           <span>Timer</span>
                           <RoomTimerPill timer={room?.timer} />
@@ -4315,10 +4285,41 @@ function TeacherDashboardInner() {
                             End
                           </button>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
+                {overviewColumnsOpen && cardView === 'overview' ? (
+                  <div
+                    className="iboard-room-settings__columns"
+                    role="menu"
+                    aria-label="Overview columns"
+                    data-overview-columns-menu
+                  >
+                    {OVERVIEW_COLUMN_OPTIONS.map((count) => {
+                      const active = overviewColumns === count;
+                      return (
+                        <button
+                          key={count}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={active}
+                          onClick={() => {
+                            setOverviewColumns(count);
+                            setOverviewColumnsOpen(false);
+                          }}
+                          className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
+                            active
+                              ? 'bg-[#5a5fc3] text-white shadow-sm'
+                              : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {count}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             </section>
 

@@ -746,7 +746,7 @@ export default function LiveResponseTeacher({
   );
 
   const askSubNav = (
-    <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
+    <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-[#e4e4ea] bg-[#ebebed] px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
       {[
         ['quik', 'Quick'],
         ['build', queue.length ? `Write one · ${queue.length}` : 'Write one'],
@@ -1069,11 +1069,11 @@ export default function LiveResponseTeacher({
               if (file) { event.preventDefault(); loadImage(file); }
             }}
           >
-            <label className="block text-[10px] font-black uppercase tracking-wide text-slate-500">Question</label>
-            <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+            <label className="block text-[0.78rem] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-200">Question</label>
+            <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border border-[#e2e2e8] bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
             <div className="mt-3 flex flex-wrap gap-1.5">
               {TYPES.map(([value, label]) => (
-                <button key={value} type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ${type === value ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}>{label}</button>
+                <button key={value} type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold ${type === value ? 'bg-[#5a5fc3] text-white' : 'border border-[#e2e2e8] bg-white text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'}`}>{label}</button>
               ))}
             </div>
             {type === 'choice' && (
@@ -1093,9 +1093,9 @@ export default function LiveResponseTeacher({
                 ))}
               </div>
             )}
-            <details className="mt-4 rounded-xl border border-slate-200 open:bg-slate-50 dark:border-slate-700 dark:open:bg-slate-950/50">
-              <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300">More options</summary>
-              <div className="space-y-3 border-t border-slate-200 px-3 py-3 dark:border-slate-700">
+            <details className="mt-3">
+              <summary className="cursor-pointer py-1.5 text-[11px] font-semibold text-[#6b6b78] hover:text-[#3c3c45] dark:text-slate-400 dark:hover:text-slate-200">More options</summary>
+              <div className="mt-2 space-y-3 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="cursor-pointer rounded-lg bg-indigo-100 px-2.5 py-1.5 text-xs font-black text-indigo-900 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">
                     {imageBusy ? 'Preparing…' : imageUrl ? 'Replace image' : 'Add image'}
@@ -1164,9 +1164,9 @@ export default function LiveResponseTeacher({
                 </div>
               </div>
             </details>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
-              <button type="button" onClick={addToQueue} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-900">Add to queue</button>
-              <button type="button" onClick={() => launch()} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-md hover:bg-indigo-700">Launch</button>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
+              <button type="button" onClick={addToQueue} className="rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2]">Add to queue</button>
+              <button type="button" onClick={() => launch()} className="rounded-xl bg-[#5a5fc3] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4b50b0]">Launch</button>
             </div>
             <SavedSetsPanel
               panel="queue"
