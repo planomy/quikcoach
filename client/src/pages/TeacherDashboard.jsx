@@ -67,6 +67,7 @@ const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
 const OVERVIEW_COLUMNS_STORAGE_KEY = 'iboard-overview-columns';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
 const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden';
+const WATCH_STORAGE_KEY = 'iboard-teacher-watch';
 /** Per-card writing size steps (applied as rem so rich HTML inherits). */
 const CARD_FONT_REMS = [0.75, 0.875, 1, 1.125, 1.25];
 const CARD_FONT_DEFAULT = 2; /* index of 1rem */
@@ -84,6 +85,41 @@ const OVERVIEW_GRID_CLASS = {
   5: 'grid-cols-5',
   6: 'grid-cols-6',
 };
+
+function watchRoomKey(code) {
+  return String(code || '').replace(/\D/g, '').slice(0, 4);
+}
+
+function readWatchMap() {
+  try {
+    const raw = localStorage.getItem(WATCH_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function readWatchedIdsForRoom(code) {
+  const key = watchRoomKey(code);
+  if (key.length !== 4) return new Set();
+  const list = readWatchMap()[key];
+  if (!Array.isArray(list)) return new Set();
+  return new Set(list.map(Number).filter((id) => Number.isFinite(id) && id > 0));
+}
+
+function writeWatchedIdsForRoom(code, ids) {
+  const key = watchRoomKey(code);
+  if (key.length !== 4) return;
+  try {
+    const map = readWatchMap();
+    map[key] = [...ids];
+    localStorage.setItem(WATCH_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    /* Watch list is optional when storage is unavailable. */
+  }
+}
 
 function readCardFontMap() {
   try {
@@ -334,6 +370,7 @@ function TeacherDashboardInner() {
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [focusedPostId, setFocusedPostId] = useState(null);
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
+  const [watchedIds, setWatchedIds] = useState(() => new Set());
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -941,7 +978,68 @@ function TeacherDashboardInner() {
     [students]
   );
 
-  const visibleStudents = orderedStudents;
+  const visibleStudents = useMemo(
+    () =>
+      [...orderedStudents].sort((a, b) => {
+        const aWatch = watchedIds.has(Number(a.id)) ? 0 : 1;
+        const bWatch = watchedIds.has(Number(b.id)) ? 0 : 1;
+        if (aWatch !== bWatch) return aWatch - bWatch;
+        return Number(a.id) - Number(b.id);
+      }),
+    [orderedStudents, watchedIds]
+  );
+
+  useEffect(() => {
+    setWatchedIds(readWatchedIdsForRoom(codeInput));
+  }, [codeInput, joined]);
+
+  useEffect(() => {
+    writeWatchedIdsForRoom(codeInput, watchedIds);
+  }, [watchedIds, codeInput]);
+
+  // Drop watches for students who have left the room.
+  useEffect(() => {
+    if (!orderedStudents.length) return;
+    const live = new Set(orderedStudents.map((student) => Number(student.id)));
+    setWatchedIds((current) => {
+      let changed = false;
+      const next = new Set();
+      for (const id of current) {
+        if (live.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [orderedStudents]);
+
+  function toggleWatchStudent(studentId) {
+    const id = Number(studentId);
+    if (!id) return;
+    setWatchedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function watchSelectedStudents() {
+    const ids = orderedStudents.filter((student) => broadcastPick[student.id]).map((student) => Number(student.id));
+    if (!ids.length) return;
+    setWatchedIds((current) => {
+      const next = new Set(current);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+    setCopyToast(`Watching ${ids.length} student${ids.length === 1 ? '' : 's'}`);
+    setTimeout(() => setCopyToast(''), 2500);
+  }
+
+  function clearWatchedStudents() {
+    setWatchedIds(new Set());
+    setCopyToast('Watch list cleared');
+    setTimeout(() => setCopyToast(''), 2000);
+  }
 
   useEffect(() => {
     if (!joined || codeInput.length !== 4) return;
@@ -2363,6 +2461,8 @@ function TeacherDashboardInner() {
   const teacherWritingPaneClass = 'max-h-52 overflow-y-auto overflow-x-visible';
 
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
+  const selectedStudentPickCount = orderedStudents.filter((student) => broadcastPick[student.id]).length;
+  const watchedCount = watchedIds.size;
   const liveResponseCount = (livePulse.responses || []).length;
   const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen;
 
@@ -2408,7 +2508,8 @@ function TeacherDashboardInner() {
                 {copyToast}
               </div>
             ) : broadcastPickCount > 0 ? (
-              <div ref={sendToMenuRef} data-send-to-menu className="pointer-events-auto relative">
+              <div className="pointer-events-auto flex items-center gap-2">
+              <div ref={sendToMenuRef} data-send-to-menu className="relative">
                 <button
                   type="button"
                   onClick={() => {
@@ -2489,6 +2590,41 @@ function TeacherDashboardInner() {
                     </div>
                   </div>
                 )}
+              </div>
+              {selectedStudentPickCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={watchSelectedStudents}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-3 text-white shadow-sm hover:bg-[#4f54b0]"
+                  aria-label={`Watch ${selectedStudentPickCount} selected students`}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                  <span className="text-[11px] font-black uppercase tracking-[0.12em]">Watch</span>
+                  <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[11px] font-black tabular-nums">
+                    {selectedStudentPickCount}
+                  </span>
+                </button>
+              ) : null}
+              </div>
+            ) : watchedCount > 0 ? (
+              <div className="pointer-events-auto inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-3 text-white shadow-sm">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 opacity-90" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+                  <circle cx="12" cy="12" r="2.5" />
+                </svg>
+                <span className="truncate text-[11px] font-black">Watching · {watchedCount}</span>
+                <button
+                  type="button"
+                  onClick={clearWatchedStudents}
+                  className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-white/80 hover:bg-white/15 hover:text-white"
+                  aria-label="Clear watch list"
+                  title="Clear watch list"
+                >
+                  ×
+                </button>
               </div>
             ) : draftTrailSaveHint && !room?.draftTrail?.active ? (
               <div className="pointer-events-auto inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-3 text-white shadow-sm">
@@ -2890,6 +3026,7 @@ function TeacherDashboardInner() {
                     : 'bg-slate-300';
             const handQuestions = pendingHandByStudentId.get(Number(s.id)) || [];
             const handUp = handQuestions.length > 0;
+            const watching = watchedIds.has(Number(s.id));
             return (
               <article
                 key={s.id}
@@ -2912,6 +3049,8 @@ function TeacherDashboardInner() {
                     : `bg-white dark:bg-slate-900 ${
                         broadcastPick[s.id]
                           ? 'border border-indigo-400 ring-2 ring-indigo-200 dark:border-indigo-500 dark:ring-indigo-900/70'
+                          : watching
+                          ? 'border border-amber-400 ring-2 ring-amber-200/80 dark:border-amber-500 dark:ring-amber-900/50'
                           : showPulseState
                           ? pulseMeta.className
                           : 'border dark:border-slate-700/80'
@@ -2954,6 +3093,18 @@ function TeacherDashboardInner() {
                       >
                         {s.name}
                       </h2>
+                      {watching ? (
+                        <span
+                          className="grid h-4 w-4 shrink-0 place-items-center text-amber-600 dark:text-amber-300"
+                          title="Watching"
+                          aria-label="Watching"
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+                            <circle cx="12" cy="12" r="2.5" />
+                          </svg>
+                        </span>
+                      ) : null}
                       {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(s.id)) ? (
                         <button
                           type="button"
@@ -3100,6 +3251,17 @@ function TeacherDashboardInner() {
                             </button>
                             <button type="button" onClick={() => { setFocusedStudentId(s.id); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                               Open full draft
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toggleWatchStudent(s.id);
+                                setStudentActionMenuId(null);
+                              }}
+                              className="w-full rounded-lg px-3 py-2 text-left font-semibold text-amber-800 hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                              role="menuitem"
+                            >
+                              {watching ? 'Stop watching' : 'Watch'}
                             </button>
                             {s.image_url && (
                               <button type="button" onClick={() => { setDrawingMarkupTarget(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50" role="menuitem">
