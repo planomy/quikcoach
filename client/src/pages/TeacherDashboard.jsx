@@ -2999,18 +2999,18 @@ function TeacherDashboardInner() {
         </nav>
 
         <div className="iboard-teacher-panel-wrap">
-          {teacherPanelHidden ? (
-            <button
-              type="button"
-              className="iboard-teacher-panel-reveal"
-              onPointerDown={revealTeacherPanel}
-              onClick={(event) => event.preventDefault()}
-              aria-label="Show teacher"
-              title="Show teacher"
-            >
-              <span>Show</span>
-            </button>
-          ) : null}
+          <button
+            type="button"
+            className="iboard-teacher-panel-reveal"
+            onPointerDown={revealTeacherPanel}
+            onClick={(event) => event.preventDefault()}
+            aria-label="Show teacher"
+            title="Show teacher"
+            tabIndex={teacherPanelHidden ? 0 : -1}
+            aria-hidden={!teacherPanelHidden}
+          >
+            <span aria-hidden="true">&gt;</span>
+          </button>
           <aside
             className="iboard-teacher-panel"
             aria-label="Teacher cards"

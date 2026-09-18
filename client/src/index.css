@@ -442,14 +442,14 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 
 .iboard-teacher-shell {
   display: grid;
-  grid-template-columns: 4.75rem minmax(0, 15.5rem) minmax(0, 1fr);
+  grid-template-columns: 4.75rem 15.5rem minmax(0, 1fr);
   min-height: 0;
   flex: 1;
-  transition: grid-template-columns 180ms ease;
+  transition: grid-template-columns 210ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-teacher-shell.is-teacher-hidden {
-  grid-template-columns: 4.75rem max-content minmax(0, 1fr);
+  grid-template-columns: 4.75rem 2.05rem minmax(0, 1fr);
 }
 
 .iboard-arr-rail {
@@ -534,26 +534,24 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 }
 
 .iboard-teacher-panel-wrap {
+  position: relative;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   padding: 0.75rem 0 0.75rem 1.125rem;
   display: flex;
   flex-direction: column;
+  transition: padding 210ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-teacher-shell.is-teacher-hidden .iboard-teacher-panel-wrap {
-  align-self: start;
-  padding: 0.75rem 0 0.75rem 0.5rem;
-}
-
-.iboard-teacher-shell.is-teacher-hidden .iboard-teacher-panel {
-  display: none;
+  padding: 0.75rem 0.15rem 0.75rem 0.3rem;
 }
 
 .iboard-teacher-panel {
   height: 100%;
   min-height: 0;
+  min-width: 13.75rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -561,6 +559,17 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   border: 1px solid #dedee6;
   border-radius: 1rem;
   box-shadow: 0 3px 3px -2px rgba(15, 23, 42, 0.22);
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 160ms ease,
+    transform 210ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-teacher-shell.is-teacher-hidden .iboard-teacher-panel {
+  opacity: 0;
+  transform: translateX(-0.55rem);
+  pointer-events: none;
 }
 
 .iboard-teacher-panel-head {
@@ -644,20 +653,32 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 }
 
 .iboard-teacher-panel-reveal {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
+  position: absolute;
+  top: 0.75rem;
+  left: 0.3rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
   border: 1px solid #dedee6;
-  border-radius: 0.85rem;
+  border-radius: 0.65rem;
   background: #ffffff;
   color: #5a5fc3;
   box-shadow: 0 3px 3px -2px rgba(15, 23, 42, 0.22);
   cursor: pointer;
-  padding: 0.45rem 0.6rem;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
   transition:
     background-color 160ms ease,
-    border-color 160ms ease;
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.iboard-teacher-shell.is-teacher-hidden .iboard-teacher-panel-reveal {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .iboard-teacher-panel-reveal:hover {
@@ -666,11 +687,9 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 }
 
 .iboard-teacher-panel-reveal span {
-  font-size: 0.72rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
   line-height: 1;
-  white-space: nowrap;
 }
 
 html.dark .iboard-teacher-panel-reveal {
@@ -1034,6 +1053,13 @@ html.dark .iboard-workspace-scrim {
   .iboard-question-pulse,
   .iboard-timer-urgent {
     animation: none;
+  }
+
+  .iboard-teacher-shell,
+  .iboard-teacher-panel-wrap,
+  .iboard-teacher-panel,
+  .iboard-teacher-panel-reveal {
+    transition: none;
   }
 }
 
