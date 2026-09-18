@@ -33,7 +33,9 @@ html.dark:-webkit-full-screen {
 }
 
 html:fullscreen .iboard-teacher-canvas,
-html:-webkit-full-screen .iboard-teacher-canvas {
+html:-webkit-full-screen .iboard-teacher-canvas,
+html:fullscreen .iboard-student-canvas,
+html:-webkit-full-screen .iboard-student-canvas {
   height: 100%;
   max-height: none;
   min-height: 100%;
@@ -137,6 +139,12 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
   width: 100%;
   min-width: 100%;
   background: #eef4fa;
+}
+
+.iboard-student-canvas {
+  min-height: 100%;
+  height: 100%;
+  max-height: 100dvh;
 }
 
 /* LZ-inspired teacher shell (light): cool blue-grey → purply-blue (MS LZ wash) */
@@ -774,26 +782,32 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
   left: 4.75rem;
 }
 
-/* Ask / Reply / Responses: slide out from the ARR strip */
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
+/* Ask / Reply / Responses: float beside the rail, vertically centered */
+.iboard-header-dock--rail {
+  top: 50%;
   left: 4.75rem;
+  max-height: min(82dvh, calc(100dvh - 2.5rem));
+  border-left: 0;
+  border-radius: 0 1rem 1rem 0;
+  transform: translateY(-50%);
+  animation: iboard-rail-dock-in 180ms ease-out;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
   border: 1px solid #d5d4e4;
   border-left: 0;
-  border-top: 0;
-  border-bottom-right-radius: 1rem;
   background: #f7f6fb;
   box-shadow: 10px 8px 28px -16px rgba(60, 60, 90, 0.28);
-  animation: iboard-rail-dock-in 180ms ease-out;
 }
 
 @keyframes iboard-rail-dock-in {
   from {
     opacity: 0;
-    transform: translateX(-12px);
+    transform: translate(-12px, -50%);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translate(0, -50%);
   }
 }
 

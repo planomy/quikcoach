@@ -147,6 +147,7 @@ export default function StudentView() {
   const exportBusyRef = useRef(false);
   const [draftConflict, setDraftConflict] = useState(null);
   const [removedByTeacher, setRemovedByTeacher] = useState(null);
+  const [browserFullscreen, setBrowserFullscreen] = useState(false);
 
   const socket = useMemo(() => createSocket(), []);
   const draftTrailTokenRef = useRef('');
@@ -188,6 +189,35 @@ export default function StudentView() {
     document.documentElement.classList.add('iboard-student-workspace');
     return () => document.documentElement.classList.remove('iboard-student-workspace');
   }, [joined]);
+
+  useEffect(() => {
+    function syncFullscreen() {
+      setBrowserFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
+    }
+    syncFullscreen();
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    document.addEventListener('webkitfullscreenchange', syncFullscreen);
+    return () => {
+      document.removeEventListener('fullscreenchange', syncFullscreen);
+      document.removeEventListener('webkitfullscreenchange', syncFullscreen);
+    };
+  }, []);
+
+  async function toggleBrowserFullscreen() {
+    try {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+        return;
+      }
+      const root = document.documentElement;
+      if (root.requestFullscreen) await root.requestFullscreen();
+      else if (root.webkitRequestFullscreen) await root.webkitRequestFullscreen();
+    } catch {
+      setImageHint('Fullscreen blocked — try the browser View menu');
+      setTimeout(() => setImageHint(''), 3200);
+    }
+  }
 
   function activateInbox(itemId) {
     if (!itemId) return;
@@ -1317,6 +1347,31 @@ export default function StudentView() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <RoomTimerPill timer={room?.timer} />
+            <button
+              type="button"
+              onClick={() => void toggleBrowserFullscreen()}
+              aria-pressed={browserFullscreen}
+              data-active={browserFullscreen ? 'true' : 'false'}
+              className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
+              aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              title={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'}
+            >
+              {browserFullscreen ? (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 3v6H3" />
+                  <path d="M15 3v6h6" />
+                  <path d="M9 21v-6H3" />
+                  <path d="M15 21v-6h6" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 9V3h6" />
+                  <path d="M21 9V3h-6" />
+                  <path d="M3 15v6h6" />
+                  <path d="M21 15v6h-6" />
+                </svg>
+              )}
+            </button>
             <details className="group relative shrink-0">
               <summary
                 className="iboard-header-icon-button grid h-9 w-9 cursor-pointer list-none place-items-center rounded-xl border shadow-sm transition [&::-webkit-details-marker]:hidden"
