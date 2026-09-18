@@ -12,6 +12,7 @@ import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import StudentHandRaise from '../components/StudentHandRaise.jsx';
 import StudentInbox from '../components/StudentInbox.jsx';
+import StudentVerbalRespond from '../components/StudentVerbalRespond.jsx';
 import RoomTimerPill from '../components/RoomTimerPill.jsx';
 import StudentNoteReply from '../components/StudentNoteReply.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
@@ -1389,17 +1390,23 @@ export default function StudentView() {
             data-iboard-student-support
             className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1"
           >
-            <div className="flex min-h-9 shrink-0 items-center border-b border-slate-200 px-1 dark:border-slate-700">
-              <h2 className="text-xs font-black uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">Inbox</h2>
-              {inboxTabCount ? (
-                <span className="ml-2 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-black tabular-nums text-white">
-                  {inboxTabCount}
-                </span>
-              ) : null}
+            <div className="iboard-inbox-head">
+              <div className="iboard-inbox-head__row">
+                <div className="iboard-inbox-head__title-wrap">
+                  <span className="iboard-inbox-head__mark" aria-hidden="true" />
+                  <h2 className="iboard-inbox-head__title">Inbox</h2>
+                  {inboxTabCount ? (
+                    <span className="iboard-inbox-head__count" aria-label={`${inboxTabCount} unread`}>
+                      {inboxTabCount}
+                    </span>
+                  ) : null}
+                </div>
+                <StudentVerbalRespond socket={socket} variant="chip" />
+              </div>
             </div>
 
             <div className="iboard-student-support-scroll flex min-h-0 flex-1 flex-col gap-3">
-            <LiveResponseStudent socket={socket} unifiedInbox />
+            <LiveResponseStudent socket={socket} unifiedInbox hideQuickAnswer />
             <div>
               <StudentInbox
                 socket={socket}
