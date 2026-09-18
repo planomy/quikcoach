@@ -4263,12 +4263,9 @@ function TeacherDashboardInner() {
                     )}
                   </div>
                   <div>
-                    <div className="iboard-room-settings__timer-head">
-                      <span>Timer</span>
-                      <RoomTimerPill timer={room?.timer} />
-                    </div>
                     {!room?.timer?.active ? (
                       <div className="iboard-room-settings__field-row">
+                        <span className="iboard-room-settings__timer-label">Timer</span>
                         <input
                           type="number"
                           min="1"
@@ -4287,32 +4284,38 @@ function TeacherDashboardInner() {
                         </button>
                       </div>
                     ) : (
-                      <div className="iboard-room-settings__field-row flex-wrap">
-                        <button
-                          type="button"
-                          disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
-                          onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
-                          className="iboard-room-settings__mini-ghost"
-                        >
-                          {room.timer.running ? 'Pause' : 'Resume'}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={timerBusy}
-                          onClick={() => controlRoomTimer('add', { seconds: 60 })}
-                          className="iboard-room-settings__mini-ghost"
-                        >
-                          +1m
-                        </button>
-                        <button
-                          type="button"
-                          disabled={timerBusy}
-                          onClick={() => controlRoomTimer('end')}
-                          className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
-                        >
-                          End
-                        </button>
-                      </div>
+                      <>
+                        <div className="iboard-room-settings__timer-head">
+                          <span>Timer</span>
+                          <RoomTimerPill timer={room?.timer} />
+                        </div>
+                        <div className="iboard-room-settings__field-row flex-wrap">
+                          <button
+                            type="button"
+                            disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
+                            onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
+                            className="iboard-room-settings__mini-ghost"
+                          >
+                            {room.timer.running ? 'Pause' : 'Resume'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={timerBusy}
+                            onClick={() => controlRoomTimer('add', { seconds: 60 })}
+                            className="iboard-room-settings__mini-ghost"
+                          >
+                            +1m
+                          </button>
+                          <button
+                            type="button"
+                            disabled={timerBusy}
+                            onClick={() => controlRoomTimer('end')}
+                            className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
+                          >
+                            End
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
