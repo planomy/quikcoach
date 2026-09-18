@@ -1009,12 +1009,12 @@ html.dark .iboard-student-card-actions {
 
 .iboard-workspace-scrim {
   background: rgba(15, 23, 42, 0.34);
-  backdrop-filter: blur(2.5px);
+  backdrop-filter: blur(1.25px);
 }
 
 html.dark .iboard-workspace-scrim {
   background: rgba(2, 6, 23, 0.55);
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(1.5px);
 }
 
 @keyframes iboardQuestionArrival {
