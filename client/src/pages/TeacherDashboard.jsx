@@ -6,6 +6,7 @@ import { createSocket } from '../lib/socket.js';
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import { activityStatus, wordCount } from '../lib/text.js';
+import useActivityClock from '../hooks/useActivityClock.js';
 import {
   buildAiPrompt,
   parseNumberedPaste,
@@ -279,6 +280,7 @@ function ToggleRow({ label, checked, onChange }) {
 
 function TeacherDashboardInner() {
   const { isDark, toggleTheme } = useTheme();
+  const activityNow = useActivityClock(5000);
   const [searchParams] = useSearchParams();
   const codeFromLink = String(searchParams.get('code') || '')
     .replace(/\D/g, '')
@@ -3034,7 +3036,7 @@ function TeacherDashboardInner() {
           {visibleStudents.map((s) => {
             const displayText = s.text || '';
             const wc = wordCount(s.text);
-            const st = activityStatus(s.updated_at);
+            const st = activityStatus(s.updated_at, activityNow);
             const pulseStudent = liveStudentById.get(Number(s.id));
             const inQuestion = !!livePulse.activity;
             const pulseMeta = pulseStudent ? studentTileMeta(pulseStudent) : null;

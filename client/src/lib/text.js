@@ -29,12 +29,29 @@ export function recommendedWordRange(wordTarget) {
   return { low, high: Math.max(low + 5, high) };
 }
 
+/**
+ * Parse server timestamps for age checks.
+ * SQLite `datetime('now')` is UTC without a timezone suffix; browsers treat that as local.
+ */
+export function parseServerDateMs(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return NaN;
+  if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(raw)) {
+    const ms = Date.parse(raw);
+    return Number.isFinite(ms) ? ms : NaN;
+  }
+  // "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DDTHH:MM:SS" → force UTC
+  const iso = (raw.includes('T') ? raw : raw.replace(' ', 'T')) + 'Z';
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? ms : NaN;
+}
+
 /** Activity dot: `live` (recent save), `warm`, or `idle`. */
-export function activityStatus(updatedAt) {
+export function activityStatus(updatedAt, nowMs = Date.now()) {
   if (!updatedAt) return 'idle';
-  const ms = new Date(updatedAt).getTime();
+  const ms = parseServerDateMs(updatedAt);
   if (Number.isNaN(ms)) return 'idle';
-  const sec = (Date.now() - ms) / 1000;
+  const sec = (nowMs - ms) / 1000;
   if (sec < 20) return 'live';
   if (sec < 120) return 'warm';
   return 'idle';

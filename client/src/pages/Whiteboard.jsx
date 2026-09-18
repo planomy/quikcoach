@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import { activityStatus, wordCount } from '../lib/text.js';
+import useActivityClock from '../hooks/useActivityClock.js';
 import { buildEvidenceHtml, downloadTextFile, evidenceFilenames } from '../lib/exportRoom.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
@@ -52,9 +53,9 @@ function boardGridClass() {
   return 'grid grid-cols-2 content-start gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7';
 }
 
-const BoardCard = memo(function BoardCard({ s, displayName, picked, selectMode, onToggle, onRemove }) {
+const BoardCard = memo(function BoardCard({ s, displayName, picked, selectMode, onToggle, onRemove, nowMs }) {
   const wc = wordCount(s.text);
-  const st = activityStatus(s.updated_at);
+  const st = activityStatus(s.updated_at, nowMs);
   const light =
     st === 'live'
       ? 'bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.7)]'
@@ -253,6 +254,7 @@ const TeacherPostCard = memo(function TeacherPostCard({
 
 function WhiteboardInner() {
   const [searchParams] = useSearchParams();
+  const activityNow = useActivityClock(5000);
   const initialCode = String(searchParams.get('code') || '')
     .replace(/\D/g, '')
     .slice(0, 4);
@@ -993,6 +995,7 @@ function WhiteboardInner() {
                 selectMode={selectMode}
                 onToggle={toggleStudentPick}
                 onRemove={removeStudentCard}
+                nowMs={activityNow}
               />
             ))}
           </div>
