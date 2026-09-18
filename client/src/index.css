@@ -343,14 +343,14 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 
 .iboard-teacher-shell {
   display: grid;
-  grid-template-columns: 5.25rem minmax(0, 15.5rem) minmax(0, 1fr);
+  grid-template-columns: 4.75rem minmax(0, 15.5rem) minmax(0, 1fr);
   min-height: 0;
   flex: 1;
   transition: grid-template-columns 180ms ease;
 }
 
 .iboard-teacher-shell.is-teacher-hidden {
-  grid-template-columns: 5.25rem 0 minmax(0, 1fr);
+  grid-template-columns: 4.75rem 0 minmax(0, 1fr);
 }
 
 .iboard-arr-rail {
@@ -366,7 +366,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 }
 
 .iboard-arr-btn {
-  width: 4.5rem;
+  width: 4rem;
   border: 1px solid transparent;
   background: transparent;
   border-radius: 0.85rem;
@@ -400,7 +400,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   width: 100%;
   text-align: center;
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.15;
   letter-spacing: 0.01em;
   color: #3f4656;
@@ -680,12 +680,12 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
   border-bottom-right-radius: 1rem;
   box-shadow: 12px 0 32px -18px rgba(15, 23, 42, 0.22);
   /* Sit beside the ARR rail when the LZ teacher shell is active */
-  left: 5.25rem;
+  left: 4.75rem;
 }
 
 /* Ask / Reply / Responses: slide out from the ARR strip */
 html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
-  left: 5.25rem;
+  left: 4.75rem;
   border: 1px solid #d5d4e4;
   border-left: 0;
   border-top: 0;

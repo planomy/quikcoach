@@ -2670,7 +2670,7 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && (
         <div
           ref={teacherToolsPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail fixed z-[60] w-[min(29rem,calc(100vw-5.25rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
@@ -3676,7 +3676,7 @@ function TeacherDashboardInner() {
         <div
           ref={addCardPanelRef}
           data-iboard-add-card-panel="true"
-          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(29rem,calc(100vw-5.25rem))]"
+          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
