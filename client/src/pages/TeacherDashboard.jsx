@@ -4013,9 +4013,17 @@ function TeacherDashboardInner() {
               </button>
               <CloseButton onClick={closeSettings} label="Close" className="!h-9 !w-9" />
             </div>
-            <p className="mt-1.5 px-1 text-[11px] font-semibold text-slate-500 dark:text-slate-300">
-              Download a complete lesson copy to your device.
-            </p>
+            <button
+              type="button"
+              onClick={() => {
+                const v = !frozen;
+                setRoom((r) => (r ? { ...r, freeze_class: v } : r));
+                pushSettings({ freeze_class: v });
+              }}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {frozen ? 'Unfreeze class' : 'Freeze class'}
+            </button>
           </div>
           <div className="overflow-y-auto px-2 py-2 scrollbar-thin">
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
@@ -4181,17 +4189,6 @@ function TeacherDashboardInner() {
               </div>
             </div>
             <div className="flex gap-0.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const v = !frozen;
-                  setRoom((r) => (r ? { ...r, freeze_class: v } : r));
-                  pushSettings({ freeze_class: v });
-                }}
-                className="min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                {frozen ? 'Unfreeze' : 'Freeze class'}
-              </button>
               <button
                 type="button"
                 onClick={toggleTheme}
