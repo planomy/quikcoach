@@ -135,12 +135,12 @@ export default function StudentHandRaise({ socket, compact = false }) {
   const btnClass = compact
     ? `flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 shadow-sm transition ${
         handUp
-          ? 'border-rose-300 bg-rose-50 text-rose-600 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300'
+          ? 'border-[#cfcce8] bg-[#ebeaf8] text-[#5a5fc3] dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
           : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
       }`
     : `grid h-10 w-10 shrink-0 place-items-center rounded-xl border shadow-sm transition ${
         handUp
-          ? 'border-rose-300 bg-rose-50 text-rose-600 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300'
+          ? 'border-[#cfcce8] bg-[#ebeaf8] text-[#5a5fc3] dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
           : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
       }`;
 
@@ -182,7 +182,7 @@ export default function StudentHandRaise({ socket, compact = false }) {
                   rows={3}
                   onChange={(event) => setDraft(event.target.value.slice(0, 500))}
                   placeholder="What do you need?"
-                  className="w-full resize-none rounded-lg border border-rose-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-rose-400 focus:border-rose-400 focus:ring-1 dark:border-rose-900 dark:bg-slate-950 dark:text-white"
+                  className="w-full resize-none rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none focus:border-[#5a5fc3] focus:ring-1 focus:ring-[#cfcce8] dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-500/40"
                 />
                 {error ? <p className="mt-1 text-[11px] font-semibold text-red-600">{error}</p> : null}
                 <div className="mt-1.5 flex items-center justify-end gap-1.5">
@@ -190,14 +190,14 @@ export default function StudentHandRaise({ socket, compact = false }) {
                     type="button"
                     disabled={sending}
                     onClick={close}
-                    className="rounded-lg px-2.5 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-slate-800"
+                    className="rounded-lg px-2.5 py-1 text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={sending || !draft.trim()}
-                    className="rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-black text-white hover:bg-rose-700 disabled:opacity-40"
+                    className="rounded-lg bg-[#5a5fc3] px-2.5 py-1 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-40 dark:bg-indigo-500 dark:hover:bg-indigo-400"
                   >
                     {sending ? '…' : 'Send'}
                   </button>
