@@ -106,6 +106,17 @@ export function migrate(db) {
   } catch {
     /* column already exists */
   }
+  try {
+    db.exec(`ALTER TABLE students ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))`);
+  } catch {
+    /* column already exists */
+  }
+  try {
+    // Backfill join time for rows that only got the migration default.
+    db.exec(`UPDATE students SET created_at = COALESCE(NULLIF(created_at, ''), updated_at) WHERE created_at IS NULL OR created_at = ''`);
+  } catch {
+    /* ignore */
+  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS room_snapshots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1352,6 +1363,7 @@ export const queries = {
       name: row.name,
       text: row.text || '',
       updated_at: row.updated_at,
+      created_at: row.created_at || row.updated_at || null,
       class_group: row.class_group != null ? String(row.class_group) : '',
       year_level: row.year_level != null ? String(row.year_level) : '',
       engagement_status: row.engagement_status != null ? String(row.engagement_status) : '',

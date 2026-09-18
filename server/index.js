@@ -436,6 +436,8 @@ const broadcastHistoryByRoom = new Map();
 
 /** Active student sockets are kept in memory; learning history stays in SQLite. */
 const connectedStudentSockets = new Map();
+/** Tab/app background — ephemeral; cleared on disconnect. Away ≠ Offline. */
+const studentAwayFlags = new Map();
 
 function studentSocketName(studentId) {
   return `student:${Number(studentId)}`;
@@ -457,11 +459,33 @@ function removeStudentPresence(studentId, socketId) {
   const ids = connectedStudentSockets.get(sid);
   if (!ids) return;
   ids.delete(socketId);
-  if (!ids.size) connectedStudentSockets.delete(sid);
+  if (!ids.size) {
+    connectedStudentSockets.delete(sid);
+    studentAwayFlags.delete(sid);
+  }
 }
 
 function isStudentConnected(studentId) {
   return (connectedStudentSockets.get(Number(studentId))?.size || 0) > 0;
+}
+
+function setStudentAway(studentId, away) {
+  const sid = Number(studentId);
+  if (!sid) return;
+  if (away) studentAwayFlags.set(sid, true);
+  else studentAwayFlags.delete(sid);
+}
+
+function isStudentAway(studentId) {
+  return studentAwayFlags.get(Number(studentId)) === true;
+}
+
+function emitStudentPresence(code, studentId) {
+  const sid = Number(studentId);
+  const c = normalizeRoomCode(code);
+  if (!sid || c.length !== 4) return;
+  const away = isStudentConnected(sid) && isStudentAway(sid);
+  io.to(teacherSocketName(c)).emit('student:presence', { studentId: sid, away });
 }
 
 /** Tell a removed student's open tabs to stop autosave and show a calm exit screen. */
@@ -581,6 +605,7 @@ function buildTeacherLivePayload(code) {
       name: student.name,
       year_level: student.year_level,
       connected: isStudentConnected(student.id),
+      away: isStudentConnected(student.id) && isStudentAway(student.id),
       engagement_status: student.engagement_status,
       engagement: { ...student.engagement, segments },
       hasResponded: responseByStudent.has(student.id),
@@ -890,6 +915,7 @@ io.on('connection', (socket) => {
       socket.data.roomCode = c;
       socket.data.studentId = student.id;
       addStudentPresence(student.id, socket.id);
+      setStudentAway(student.id, false);
       const payload = buildRoomPayload(c);
       cb?.({ ok: true, student, room: payload.room, students: payload.students, resumed });
       try {
@@ -898,6 +924,7 @@ io.on('connection', (socket) => {
         emitMaterialHistoryToSocket(socket, c);
         emitLiveState(c);
         emitAudienceQnaState(c);
+        emitStudentPresence(c, student.id);
       } catch (postJoinError) {
         // Never fail the join ack after success — live extras can recover on sync.
         console.error(postJoinError);
@@ -928,6 +955,7 @@ io.on('connection', (socket) => {
       socket.data.roomCode = c;
       socket.data.studentId = student.id;
       addStudentPresence(student.id, socket.id);
+      setStudentAway(student.id, false);
       const payload = buildRoomPayload(c);
       cb?.({ ok: true, student, room: payload.room, students: payload.students });
       try {
@@ -936,6 +964,7 @@ io.on('connection', (socket) => {
         emitMaterialHistoryToSocket(socket, c);
         emitLiveState(c);
         emitAudienceQnaState(c);
+        emitStudentPresence(c, student.id);
       } catch (postJoinError) {
         console.error(postJoinError);
       }
@@ -1467,6 +1496,28 @@ io.on('connection', (socket) => {
       }
       queries.setStudentEngagementStatus(db, sid, status);
       io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
+      cb?.({ ok: true });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false });
+    }
+  });
+
+  socket.on('student:presence', ({ state }, cb) => {
+    try {
+      const code = socket.data.roomCode;
+      const sid = Number(socket.data.studentId);
+      if (socket.data.role !== 'student' || !code || !sid) {
+        cb?.({ ok: false });
+        return;
+      }
+      const away = String(state || '') === 'away';
+      const wasAway = isStudentAway(sid);
+      setStudentAway(sid, away);
+      if (wasAway !== away) {
+        emitStudentPresence(code, sid);
+        io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
+      }
       cb?.({ ok: true });
     } catch (e) {
       console.error(e);
@@ -2542,9 +2593,13 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const sid = Number(socket.data.studentId);
     const code = socket.data.roomCode;
+    const wasAway = sid ? isStudentAway(sid) : false;
     if (sid) removeStudentPresence(sid, socket.id);
     if (sid && code) disconnectTrail(code, sid);
-    if (code) io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
+    if (code) {
+      if (sid && (wasAway || !isStudentConnected(sid))) emitStudentPresence(code, sid);
+      io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
+    }
   });
 });
 

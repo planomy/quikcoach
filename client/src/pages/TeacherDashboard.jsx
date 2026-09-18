@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
-import { activityStatus, wordCount } from '../lib/text.js';
+import { activityStatus, isNotStarted, wordCount } from '../lib/text.js';
 import useActivityClock from '../hooks/useActivityClock.js';
 import {
   buildAiPrompt,
@@ -248,6 +248,7 @@ function normalizeStudentFromServer(s) {
     rich_text_html: String(s.rich_text_html ?? ''),
     room_code: s.room_code != null ? String(s.room_code) : '',
     updated_at: s.updated_at,
+    created_at: s.created_at || null,
     class_group: s.class_group != null ? String(s.class_group) : '',
     year_level: s.year_level != null ? String(s.year_level) : '',
     image_url: s.image_url || null,
@@ -375,6 +376,10 @@ function TeacherDashboardInner() {
   const [focusedPostId, setFocusedPostId] = useState(null);
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
   const [monitoredIds, setMonitoredIds] = useState(() => new Set());
+  /** studentId → away (tab/app background). Synced from student:presence + live:teacher. */
+  const [awayByStudentId, setAwayByStudentId] = useState(() => new Map());
+  /** Pin attention cards (away / not started) to the top when true. */
+  const [attentionFocus, setAttentionFocus] = useState(false);
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
   const [studentActionMenuAnchor, setStudentActionMenuAnchor] = useState(null);
   const studentActionMenuBtnRefs = useRef(new Map());
@@ -1016,13 +1021,22 @@ function TeacherDashboardInner() {
         const aMonitored = monitoredIds.has(Number(a.id)) ? 0 : 1;
         const bMonitored = monitoredIds.has(Number(b.id)) ? 0 : 1;
         if (aMonitored !== bMonitored) return aMonitored - bMonitored;
+        if (attentionFocus) {
+          const aAttention =
+            awayByStudentId.get(Number(a.id)) || isNotStarted(a, activityNow) ? 0 : 1;
+          const bAttention =
+            awayByStudentId.get(Number(b.id)) || isNotStarted(b, activityNow) ? 0 : 1;
+          if (aAttention !== bAttention) return aAttention - bAttention;
+        }
         return Number(a.id) - Number(b.id);
       }),
-    [orderedStudents, monitoredIds]
+    [orderedStudents, monitoredIds, attentionFocus, awayByStudentId, activityNow]
   );
 
   useEffect(() => {
     setMonitoredIds(readMonitoredIdsForRoom(codeInput));
+    setAwayByStudentId(new Map());
+    setAttentionFocus(false);
   }, [codeInput, joined]);
 
   useEffect(() => {
@@ -1038,6 +1052,15 @@ function TeacherDashboardInner() {
       const next = new Set();
       for (const id of current) {
         if (live.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : current;
+    });
+    setAwayByStudentId((current) => {
+      let changed = false;
+      const next = new Map();
+      for (const [id, away] of current) {
+        if (live.has(id) && away) next.set(id, true);
         else changed = true;
       }
       return changed ? next : current;
@@ -1200,12 +1223,37 @@ function TeacherDashboardInner() {
 
   useEffect(() => {
     if (!joined) return;
+    const syncAwayFromLive = (payload) => {
+      const next = new Map();
+      for (const student of payload?.students || []) {
+        if (student?.away) next.set(Number(student.id), true);
+      }
+      setAwayByStudentId(next);
+    };
     const onLive = (payload) => {
-      setLivePulse(payload || { activity: null, responses: [], students: [] });
+      const safe = payload || { activity: null, responses: [], students: [] };
+      setLivePulse(safe);
+      syncAwayFromLive(safe);
+    };
+    const onPresence = ({ studentId, away }) => {
+      const sid = Number(studentId);
+      if (!sid) return;
+      setAwayByStudentId((prev) => {
+        const has = prev.get(sid) === true;
+        if (Boolean(away) === has) return prev;
+        const next = new Map(prev);
+        if (away) next.set(sid, true);
+        else next.delete(sid);
+        return next;
+      });
     };
     socket.on('live:teacher', onLive);
+    socket.on('student:presence', onPresence);
     socket.emit('teacher:live-sync', {});
-    return () => socket.off('live:teacher', onLive);
+    return () => {
+      socket.off('live:teacher', onLive);
+      socket.off('student:presence', onPresence);
+    };
   }, [socket, joined]);
 
   useEffect(() => {
@@ -2495,6 +2543,20 @@ function TeacherDashboardInner() {
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
   const selectedStudentPickCount = orderedStudents.filter((student) => broadcastPick[student.id]).length;
   const monitoredCount = monitoredIds.size;
+  const awayCount = orderedStudents.reduce(
+    (n, student) => n + (awayByStudentId.get(Number(student.id)) ? 1 : 0),
+    0
+  );
+  const notStartedCount = orderedStudents.reduce(
+    (n, student) => n + (isNotStarted(student, activityNow) ? 1 : 0),
+    0
+  );
+  const attentionSummary = [
+    awayCount > 0 ? `${awayCount} away` : '',
+    notStartedCount > 0 ? `${notStartedCount} not started` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
   const liveResponseCount = (livePulse.responses || []).length;
   const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen;
 
@@ -2521,6 +2583,21 @@ function TeacherDashboardInner() {
               <span>
                 Online <b>{orderedStudents.length}</b>
               </span>
+              {attentionSummary ? (
+                <button
+                  type="button"
+                  onClick={() => setAttentionFocus((on) => !on)}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold transition ${
+                    attentionFocus
+                      ? 'bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-900'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  }`}
+                  title={attentionFocus ? 'Show all cards' : 'Bring away / not started cards to the top'}
+                  aria-pressed={attentionFocus}
+                >
+                  {attentionSummary}
+                </button>
+              ) : null}
               {frozen && (
                 <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
                   Frozen
@@ -3059,6 +3136,8 @@ function TeacherDashboardInner() {
             const handQuestions = pendingHandByStudentId.get(Number(s.id)) || [];
             const handUp = handQuestions.length > 0;
             const monitoring = monitoredIds.has(Number(s.id));
+            const isAway = awayByStudentId.get(Number(s.id)) === true;
+            const notStarted = isNotStarted(s, activityNow);
             return (
               <article
                 key={s.id}
@@ -3085,6 +3164,8 @@ function TeacherDashboardInner() {
                           ? 'border border-amber-400 ring-2 ring-amber-200/80 dark:border-amber-500 dark:ring-amber-900/50'
                           : showPulseState
                           ? pulseMeta.className
+                          : notStarted
+                          ? 'border border-amber-200/90 dark:border-amber-800/70'
                           : 'border dark:border-slate-700/80'
                       }`
                 }`}
@@ -3155,7 +3236,35 @@ function TeacherDashboardInner() {
                           {gradeShortLabel(s.year_level)}
                         </span>
                       )}
-                      <span title={showPulseState ? pulseMeta.title : 'Writing activity'} className={`h-2 w-2 shrink-0 rounded-full ${light}`} />
+                      {isAway ? (
+                        <span
+                          title="Tab or app in background"
+                          className="shrink-0 rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-800 dark:bg-sky-950/60 dark:text-sky-200"
+                        >
+                          Away
+                        </span>
+                      ) : notStarted ? (
+                        <span
+                          title="No writing yet"
+                          className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+                        >
+                          Not started
+                        </span>
+                      ) : null}
+                      <span
+                        title={
+                          showPulseState
+                            ? pulseMeta.title
+                            : isAway
+                              ? 'Away — tab or app in background'
+                              : 'Writing activity'
+                        }
+                        className={`h-2 w-2 shrink-0 rounded-full ${
+                          isAway && !showPulseState
+                            ? 'bg-sky-500 ring-2 ring-sky-200 dark:ring-sky-900'
+                            : light
+                        }`}
+                      />
                     </div>
                     {showPulseState && inQuestion && pulseStudent?.hasResponded ? (
                       <HintWrap

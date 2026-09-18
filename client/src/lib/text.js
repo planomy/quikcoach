@@ -56,3 +56,19 @@ export function activityStatus(updatedAt, nowMs = Date.now()) {
   if (sec < 120) return 'warm';
   return 'idle';
 }
+
+/** Empty draft with no image — candidate for not-started after grace. */
+export function isDraftEmpty(student) {
+  if (!student) return true;
+  if (String(student.text || '').trim()) return false;
+  if (student.image_url) return false;
+  return true;
+}
+
+/** Flag empty cards after grace from join (`created_at`), default 4 minutes. */
+export function isNotStarted(student, nowMs = Date.now(), graceMs = 4 * 60 * 1000) {
+  if (!isDraftEmpty(student)) return false;
+  const joined = parseServerDateMs(student.created_at || student.updated_at);
+  if (Number.isNaN(joined)) return false;
+  return nowMs - joined >= graceMs;
+}

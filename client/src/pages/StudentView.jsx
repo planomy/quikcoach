@@ -462,6 +462,40 @@ export default function StudentView() {
     };
   }, [socket]);
 
+  // Tell the teacher when this tab is in the background (Away ≠ Offline).
+  useEffect(() => {
+    if (!joined || !student?.id) return undefined;
+    const AWAY_MS = 10000;
+    let awayTimer = null;
+    const emitPresence = (state) => {
+      if (!socket.connected) return;
+      socket.emit('student:presence', { state });
+    };
+    const onVisibility = () => {
+      if (typeof document === 'undefined') return;
+      if (document.hidden) {
+        if (awayTimer != null) window.clearTimeout(awayTimer);
+        awayTimer = window.setTimeout(() => {
+          awayTimer = null;
+          emitPresence('away');
+        }, AWAY_MS);
+      } else {
+        if (awayTimer != null) {
+          window.clearTimeout(awayTimer);
+          awayTimer = null;
+        }
+        emitPresence('active');
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    onVisibility();
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (awayTimer != null) window.clearTimeout(awayTimer);
+      emitPresence('active');
+    };
+  }, [joined, student?.id, socket]);
+
   // After Wi‑Fi blips, rejoin the room so broadcasts / live sync still work
   useEffect(() => {
     const onConnect = () => {
