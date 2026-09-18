@@ -3161,12 +3161,12 @@ function TeacherDashboardInner() {
                         broadcastPick[s.id]
                           ? 'border border-indigo-400 ring-2 ring-indigo-200 dark:border-indigo-500 dark:ring-indigo-900/70'
                           : monitoring
-                          ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8]/80 dark:border-indigo-400 dark:ring-indigo-900/50'
+                          ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8] dark:border-indigo-400 dark:ring-indigo-900/50'
                           : showPulseState
                           ? pulseMeta.className
                           : notStarted
                           ? 'border border-amber-200/90 dark:border-amber-800/70'
-                          : 'border dark:border-slate-700/80'
+                          : 'border border-[#dedee6] dark:border-slate-700/80'
                       }`
                 }`}
               >
