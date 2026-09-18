@@ -4145,16 +4145,19 @@ function TeacherDashboardInner() {
           aria-label="Room settings"
         >
           <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <div className="flex items-start gap-2">
-              <div className="min-w-0 flex-1 space-y-2">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   disabled={sessionBusy}
                   onClick={saveSessionFile}
-                  className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-left text-sm font-black text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="min-w-0 flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-left text-sm font-black text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
                 </button>
+                <CloseButton onClick={closeSettings} label="Close" className="!h-10 !w-10 shrink-0" />
+              </div>
+              <div className="flex items-stretch gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -4162,20 +4165,17 @@ function TeacherDashboardInner() {
                     setRoom((r) => (r ? { ...r, freeze_class: v } : r));
                     pushSettings({ freeze_class: v });
                   }}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="flex min-h-10 min-w-0 flex-1 items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   {frozen ? 'Unfreeze class' : 'Freeze class'}
                 </button>
-              </div>
-              <div className="flex shrink-0 flex-col items-center gap-2">
-                <CloseButton onClick={closeSettings} label="Close" className="!h-9 !w-9" />
                 <button
                   type="button"
                   onClick={toggleTheme}
                   aria-pressed={isDark}
                   title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
                   aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                  className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="grid w-10 shrink-0 place-items-center self-stretch rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   {isDark ? (
                     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
