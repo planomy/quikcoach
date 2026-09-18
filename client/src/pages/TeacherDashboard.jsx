@@ -3161,7 +3161,7 @@ function TeacherDashboardInner() {
                         broadcastPick[s.id]
                           ? 'border border-indigo-400 ring-2 ring-indigo-200 dark:border-indigo-500 dark:ring-indigo-900/70'
                           : monitoring
-                          ? 'border border-amber-400 ring-2 ring-amber-200/80 dark:border-amber-500 dark:ring-amber-900/50'
+                          ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8]/80 dark:border-indigo-400 dark:ring-indigo-900/50'
                           : showPulseState
                           ? pulseMeta.className
                           : notStarted
@@ -3242,7 +3242,7 @@ function TeacherDashboardInner() {
                       />
                       {monitoring ? (
                         <span
-                          className="grid h-3.5 w-3.5 shrink-0 place-items-center text-amber-600 dark:text-amber-300"
+                          className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#5a5fc3] dark:text-indigo-300"
                           title="Monitoring"
                           aria-label="Monitoring"
                         >
@@ -3459,7 +3459,7 @@ function TeacherDashboardInner() {
                   toggleMonitorStudent(menuStudent.id);
                   setStudentActionMenuId(null);
                 }}
-                className="w-full rounded-lg px-3 py-2 text-left font-semibold text-amber-800 hover:bg-amber-50 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                className="w-full rounded-lg px-3 py-2 text-left font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:text-indigo-300 dark:hover:bg-indigo-950/40"
                 role="menuitem"
               >
                 {menuMonitoring ? 'Stop monitoring' : 'Monitor'}
