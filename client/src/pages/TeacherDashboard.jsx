@@ -4138,26 +4138,29 @@ function TeacherDashboardInner() {
       {settingsOpen && (
         <div
           ref={settingsPanelRef}
-          className="iboard-header-dock iboard-header-dock--end fixed right-0 z-[60] w-[min(22rem,100vw)]"
+          className="iboard-header-dock iboard-header-dock--end iboard-room-settings fixed right-0 z-[60] w-[min(22rem,100vw)]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
           aria-label="Room settings"
         >
-          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={sessionBusy}
-                  onClick={saveSessionFile}
-                  className="min-w-0 flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-left text-sm font-black text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
-                </button>
-                <CloseButton onClick={closeSettings} label="Close" className="!h-10 !w-10 shrink-0" />
-              </div>
-              <div className="flex items-stretch gap-2">
+          <div className="iboard-room-settings__chrome">
+            <h2>Room settings</h2>
+            <div className="iboard-room-settings__chrome-close">
+              <CloseButton onClick={closeSettings} label="Close" />
+            </div>
+          </div>
+          <div className="iboard-room-settings__body scrollbar-thin">
+            <div className="iboard-room-settings__hero">
+              <button
+                type="button"
+                disabled={sessionBusy}
+                onClick={saveSessionFile}
+                className="iboard-room-settings__primary"
+              >
+                {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
+              </button>
+              <div className="iboard-room-settings__row">
                 <button
                   type="button"
                   onClick={() => {
@@ -4165,7 +4168,7 @@ function TeacherDashboardInner() {
                     setRoom((r) => (r ? { ...r, freeze_class: v } : r));
                     pushSettings({ freeze_class: v });
                   }}
-                  className="flex min-h-10 min-w-0 flex-1 items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="iboard-room-settings__secondary"
                 >
                   {frozen ? 'Unfreeze class' : 'Freeze class'}
                 </button>
@@ -4175,7 +4178,7 @@ function TeacherDashboardInner() {
                   aria-pressed={isDark}
                   title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
                   aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                  className="grid w-10 shrink-0 place-items-center self-stretch rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="iboard-room-settings__icon-btn"
                 >
                   {isDark ? (
                     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -4190,275 +4193,272 @@ function TeacherDashboardInner() {
                 </button>
               </div>
             </div>
-          </div>
-          <div className="overflow-y-auto px-2 py-2 scrollbar-thin">
-            <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
-            <div className="mb-1 flex items-start gap-2 px-3">
-              <div
-                className="relative inline-flex shrink-0 rounded-xl bg-slate-200/80 p-0.5 dark:bg-slate-800"
-                role="group"
-                aria-label="Card view"
-                data-overview-columns-menu
-              >
-                {CARD_VIEWS.map((view) => (
-                  <button
-                    key={view.id}
-                    type="button"
-                    onClick={() => {
-                      if (view.id === 'overview') {
-                        if (cardView === 'overview') {
-                          setOverviewColumnsOpen((open) => !open);
-                        } else {
-                          setCardView('overview');
-                          setOverviewColumnsOpen(false);
-                        }
-                        return;
-                      }
-                      setOverviewColumnsOpen(false);
-                      setCardView(view.id);
-                    }}
-                    title={view.id === 'overview' ? `${view.label} · columns` : view.label}
-                    aria-label={view.id === 'overview' ? `${view.label}, choose columns` : view.label}
-                    aria-pressed={cardView === view.id}
-                    aria-expanded={view.id === 'overview' ? overviewColumnsOpen : undefined}
-                    aria-haspopup={view.id === 'overview' ? 'menu' : undefined}
-                    className={`grid h-9 w-10 place-items-center rounded-[0.65rem] border transition ${
-                      cardView === view.id
-                        ? 'border-indigo-400/90 bg-indigo-50/70 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-200'
-                        : 'border-transparent text-slate-500 hover:bg-slate-100/80 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <CardViewIcon id={view.id} />
-                  </button>
-                ))}
-                {overviewColumnsOpen && cardView === 'overview' && (
+
+            <section className="iboard-room-settings__section">
+              <h3 className="iboard-room-settings__label">Board</h3>
+              <div className="iboard-room-settings__card iboard-room-settings__card-pad">
+                <div className="iboard-room-settings__board">
                   <div
-                    className="absolute left-0 top-[calc(100%+0.4rem)] z-50 flex items-center gap-0.5 rounded-xl border border-[#d5d4e4] bg-white p-1 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
-                    role="menu"
-                    aria-label="Overview columns"
+                    className="iboard-room-settings__seg relative"
+                    role="group"
+                    aria-label="Card view"
+                    data-overview-columns-menu
                   >
-                    {OVERVIEW_COLUMN_OPTIONS.map((count) => {
-                      const active = overviewColumns === count;
-                      return (
-                        <button
-                          key={count}
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={active}
-                          onClick={() => {
-                            setOverviewColumns(count);
-                            setOverviewColumnsOpen(false);
-                          }}
-                          className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
-                            active
-                              ? 'bg-[#5a5fc3] text-white shadow-sm'
-                              : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          {count}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex items-center justify-between gap-1.5">
-                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-200">Timer</span>
-                  <RoomTimerPill timer={room?.timer} />
-                </div>
-                {!room?.timer?.active ? (
-                  <div className="mt-1.5 flex items-center gap-1.5">
-                    <input
-                      type="number"
-                      min="1"
-                      max="120"
-                      value={timerMinutes}
-                      onChange={(event) => setTimerMinutes(Math.max(1, Math.min(120, Number(event.target.value) || 1)))}
-                      aria-label="Timer minutes"
-                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      disabled={timerBusy}
-                      onClick={() => controlRoomTimer('start', { seconds: timerMinutes * 60 })}
-                      className="rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-black text-white hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                      Start
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    <button
-                      type="button"
-                      disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
-                      onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
-                      className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      {room.timer.running ? 'Pause' : 'Resume'}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={timerBusy}
-                      onClick={() => controlRoomTimer('add', { seconds: 60 })}
-                      className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      +1m
-                    </button>
-                    <button
-                      type="button"
-                      disabled={timerBusy}
-                      onClick={() => controlRoomTimer('end')}
-                      className="rounded-lg px-2 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50 disabled:opacity-40 dark:text-red-300 dark:hover:bg-red-950/40"
-                    >
-                      End
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-            <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Lesson</p>
-            <div className="iboard-word-target-row px-3 py-1.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Word target</span>
-                <span className="font-mono text-[11px] font-bold tabular-nums text-indigo-600 dark:text-indigo-300">{wt}</span>
-              </div>
-              <div className="iboard-word-target-bar mt-1 flex items-center gap-2">
-                <input
-                  type="range"
-                  min={0}
-                  max={500}
-                  step={10}
-                  value={wt}
-                  onChange={(e) => commitWordTarget(e.target.value)}
-                  onPointerUp={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
-                  onBlur={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
-                  className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
-                  aria-label="Word target"
-                />
-                <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                  <span>Enforce target</span>
-                  <input
-                    type="checkbox"
-                    checked={enforceWords}
-                    onChange={(e) => {
-                      const v = e.target.checked;
-                      setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
-                      pushSettings({ enforce_word_count: v });
-                    }}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
-                  />
-                </label>
-              </div>
-            </div>
-            {fixedCommentCount > 0 && (
-              <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-950/40">
-                {!clearFixedArmed ? (
-                  <button
-                    type="button"
-                    onClick={() => setClearFixedArmed(true)}
-                    className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
-                  >
-                    <span>Clear fixed comments</span>
-                    <span className="rounded-full bg-emerald-600 px-1.5 text-[10px] font-black text-white">
-                      {fixedCommentCount}
-                    </span>
-                  </button>
-                ) : (
-                  <div className="space-y-2 px-1 py-0.5">
-                    <p className="text-[11px] font-semibold leading-snug text-emerald-900 dark:text-emerald-100">
-                      Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
-                    </p>
-                    <div className="flex gap-2">
+                    {CARD_VIEWS.map((view) => (
                       <button
+                        key={view.id}
                         type="button"
-                        disabled={clearFixedBusy}
                         onClick={() => {
-                          window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
-                          setClearFixedArmed(false);
-                          closeSettings();
+                          if (view.id === 'overview') {
+                            if (cardView === 'overview') {
+                              setOverviewColumnsOpen((open) => !open);
+                            } else {
+                              setCardView('overview');
+                              setOverviewColumnsOpen(false);
+                            }
+                            return;
+                          }
+                          setOverviewColumnsOpen(false);
+                          setCardView(view.id);
                         }}
-                        className="flex-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+                        title={view.id === 'overview' ? `${view.label} · columns` : view.label}
+                        aria-label={view.id === 'overview' ? `${view.label}, choose columns` : view.label}
+                        aria-pressed={cardView === view.id}
+                        aria-expanded={view.id === 'overview' ? overviewColumnsOpen : undefined}
+                        aria-haspopup={view.id === 'overview' ? 'menu' : undefined}
+                        className="iboard-room-settings__seg-btn"
                       >
-                        {clearFixedBusy ? 'Clearing…' : 'Clear'}
+                        <CardViewIcon id={view.id} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setClearFixedArmed(false)}
-                        className="rounded-lg px-2 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-900/50"
+                    ))}
+                    {overviewColumnsOpen && cardView === 'overview' && (
+                      <div
+                        className="absolute left-0 top-[calc(100%+0.4rem)] z-50 flex items-center gap-0.5 rounded-xl border border-[#d5d4e4] bg-white p-1 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
+                        role="menu"
+                        aria-label="Overview columns"
                       >
-                        Cancel
-                      </button>
-                    </div>
+                        {OVERVIEW_COLUMN_OPTIONS.map((count) => {
+                          const active = overviewColumns === count;
+                          return (
+                            <button
+                              key={count}
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={active}
+                              onClick={() => {
+                                setOverviewColumns(count);
+                                setOverviewColumnsOpen(false);
+                              }}
+                              className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
+                                active
+                                  ? 'bg-[#5a5fc3] text-white shadow-sm'
+                                  : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
+                              }`}
+                            >
+                              {count}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
+                  <div>
+                    <div className="iboard-room-settings__timer-head">
+                      <span>Timer</span>
+                      <RoomTimerPill timer={room?.timer} />
+                    </div>
+                    {!room?.timer?.active ? (
+                      <div className="iboard-room-settings__field-row">
+                        <input
+                          type="number"
+                          min="1"
+                          max="120"
+                          value={timerMinutes}
+                          onChange={(event) => setTimerMinutes(Math.max(1, Math.min(120, Number(event.target.value) || 1)))}
+                          aria-label="Timer minutes"
+                        />
+                        <button
+                          type="button"
+                          disabled={timerBusy}
+                          onClick={() => controlRoomTimer('start', { seconds: timerMinutes * 60 })}
+                          className="iboard-room-settings__mini"
+                        >
+                          Start
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="iboard-room-settings__field-row flex-wrap">
+                        <button
+                          type="button"
+                          disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
+                          onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
+                          className="iboard-room-settings__mini-ghost"
+                        >
+                          {room.timer.running ? 'Pause' : 'Resume'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={timerBusy}
+                          onClick={() => controlRoomTimer('add', { seconds: 60 })}
+                          className="iboard-room-settings__mini-ghost"
+                        >
+                          +1m
+                        </button>
+                        <button
+                          type="button"
+                          disabled={timerBusy}
+                          onClick={() => controlRoomTimer('end')}
+                          className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
+                        >
+                          End
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
-            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-            <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Evidence</p>
-            <button type="button" onClick={() => { closeSettings(); openEvidenceModal(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Save current student content
-            </button>
-            <button type="button" onClick={() => openLibrary('evidence', 'lessons')} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Saved student content
-              {snapshots.length > 0 && (
-                <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">{snapshots.length}</span>
+            </section>
+
+            <section className="iboard-room-settings__section">
+              <h3 className="iboard-room-settings__label">Lesson</h3>
+              <div className="iboard-room-settings__card iboard-room-settings__card-pad">
+                <div className="iboard-word-target-row">
+                  <div className="iboard-room-settings__meta">
+                    <span>Word target</span>
+                    <span>{wt}</span>
+                  </div>
+                  <div className="iboard-word-target-bar flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={0}
+                      max={500}
+                      step={10}
+                      value={wt}
+                      onChange={(e) => commitWordTarget(e.target.value)}
+                      onPointerUp={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
+                      onBlur={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
+                      className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
+                      aria-label="Word target"
+                    />
+                    <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                      <span>Enforce</span>
+                      <input
+                        type="checkbox"
+                        checked={enforceWords}
+                        onChange={(e) => {
+                          const v = e.target.checked;
+                          setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
+                          pushSettings({ enforce_word_count: v });
+                        }}
+                        className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+              {fixedCommentCount > 0 && (
+                <div className="iboard-room-settings__cleanup">
+                  {!clearFixedArmed ? (
+                    <button type="button" onClick={() => setClearFixedArmed(true)}>
+                      <span>Clear fixed comments</span>
+                      <span className="iboard-room-settings__cleanup-badge">{fixedCommentCount}</span>
+                    </button>
+                  ) : (
+                    <div className="iboard-room-settings__cleanup-confirm">
+                      <p>
+                        Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={clearFixedBusy}
+                          onClick={() => {
+                            window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
+                            setClearFixedArmed(false);
+                            closeSettings();
+                          }}
+                          className="iboard-room-settings__mini flex-1"
+                        >
+                          {clearFixedBusy ? 'Clearing…' : 'Clear'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setClearFixedArmed(false)}
+                          className="iboard-room-settings__mini-ghost"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-            </button>
-            <button type="button" onClick={() => { closeSettings(); setDraftTrailOpen(true); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Draft trail
-            </button>
-            <button type="button" onClick={() => openLibrary('feedback')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              AI feedback
-            </button>
-            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-            <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Files &amp; reports</p>
-            <div className="grid grid-cols-2 gap-0.5">
-              <button
-                type="button"
-                disabled={sessionBusy}
-                onClick={() => { closeSettings(); setSessionPdfOpen(true); }}
-                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Export PDF
-              </button>
-              <button
-                type="button"
-                onClick={openLessonReport}
-                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Engagement
-              </button>
-              <button
-                type="button"
-                disabled={sessionBusy}
-                onClick={openSessionFilePicker}
-                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Open .iboard
-              </button>
-              <button
-                type="button"
-                onClick={() => openLibrary('reports')}
-                className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Student reports
-              </button>
-            </div>
-            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-            <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Classroom</p>
-            <button type="button" onClick={() => { closeSettings(); openJoinScreen(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Present join screen
-            </button>
-            <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Download participant list
-            </button>
-            <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
-              Open Ask-only window ↗
-            </a>
-            <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
-            <button type="button" onClick={() => { closeSettings(); openNewClassConfirmation(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40">
+            </section>
+
+            <section className="iboard-room-settings__section">
+              <h3 className="iboard-room-settings__label">Evidence</h3>
+              <div className="iboard-room-settings__card iboard-room-settings__list">
+                <button type="button" onClick={() => { closeSettings(); openEvidenceModal(); }}>
+                  Save current student content
+                </button>
+                <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
+                  <span>Saved student content</span>
+                  {snapshots.length > 0 ? (
+                    <span className="iboard-room-settings__badge">{snapshots.length}</span>
+                  ) : null}
+                </button>
+                <button type="button" onClick={() => { closeSettings(); setDraftTrailOpen(true); }}>
+                  Draft trail
+                </button>
+                <button type="button" onClick={() => openLibrary('feedback')}>
+                  AI feedback
+                </button>
+              </div>
+            </section>
+
+            <section className="iboard-room-settings__section">
+              <h3 className="iboard-room-settings__label">Files &amp; reports</h3>
+              <div className="iboard-room-settings__card iboard-room-settings__grid">
+                <button
+                  type="button"
+                  disabled={sessionBusy}
+                  onClick={() => { closeSettings(); setSessionPdfOpen(true); }}
+                >
+                  Export PDF
+                </button>
+                <button type="button" onClick={openLessonReport}>
+                  Engagement
+                </button>
+                <button type="button" disabled={sessionBusy} onClick={openSessionFilePicker}>
+                  Open .iboard
+                </button>
+                <button type="button" onClick={() => openLibrary('reports')}>
+                  Student reports
+                </button>
+              </div>
+            </section>
+
+            <section className="iboard-room-settings__section">
+              <h3 className="iboard-room-settings__label">Classroom</h3>
+              <div className="iboard-room-settings__card iboard-room-settings__list">
+                <button type="button" onClick={() => { closeSettings(); openJoinScreen(); }}>
+                  Present join screen
+                </button>
+                <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }}>
+                  Download participant list
+                </button>
+                <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`}>
+                  <span>Open Ask-only window</span>
+                  <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </section>
+
+            <button
+              type="button"
+              onClick={() => { closeSettings(); openNewClassConfirmation(); }}
+              className="iboard-room-settings__danger"
+            >
               Start new class
             </button>
           </div>
