@@ -4002,28 +4002,30 @@ function TeacherDashboardInner() {
           aria-label="Room settings"
         >
           <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={sessionBusy}
-                onClick={saveSessionFile}
-                className="min-w-0 flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-left text-sm font-black text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
-              </button>
-              <CloseButton onClick={closeSettings} label="Close" className="!h-9 !w-9" />
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1 space-y-2">
+                <button
+                  type="button"
+                  disabled={sessionBusy}
+                  onClick={saveSessionFile}
+                  className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-left text-sm font-black text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = !frozen;
+                    setRoom((r) => (r ? { ...r, freeze_class: v } : r));
+                    pushSettings({ freeze_class: v });
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  {frozen ? 'Unfreeze class' : 'Freeze class'}
+                </button>
+              </div>
+              <CloseButton onClick={closeSettings} label="Close" className="!h-9 !w-9 shrink-0" />
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const v = !frozen;
-                setRoom((r) => (r ? { ...r, freeze_class: v } : r));
-                pushSettings({ freeze_class: v });
-              }}
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              {frozen ? 'Unfreeze class' : 'Freeze class'}
-            </button>
           </div>
           <div className="overflow-y-auto px-2 py-2 scrollbar-thin">
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Card view</p>
