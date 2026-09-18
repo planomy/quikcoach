@@ -24,6 +24,7 @@ import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
 import SaveStatusChip from '../components/SaveStatusChip.jsx';
+import RoomTimerPill from '../components/RoomTimerPill.jsx';
 import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
 import QuestionInboxReply from '../components/QuestionInboxReply.jsx';
@@ -360,6 +361,8 @@ function TeacherDashboardInner() {
   const [addCardPlaceOnBoard, setAddCardPlaceOnBoard] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [sessionBusy, setSessionBusy] = useState(false);
+  const [timerMinutes, setTimerMinutes] = useState(5);
+  const [timerBusy, setTimerBusy] = useState(false);
 
   const socket = useMemo(() => createSocket(), []);
   const teacherRoomRef = useRef('');
@@ -689,11 +692,36 @@ function TeacherDashboardInner() {
     };
     socket.on('room:state', onState);
     socket.on('student:live', onLive);
+    const onTimerState = (payload) => {
+      setRoom((current) => current ? { ...current, timer: payload?.timer || null } : current);
+      setTimerBusy(false);
+    };
+    socket.on('timer:state', onTimerState);
     return () => {
       socket.off('room:state', onState);
       socket.off('student:live', onLive);
+      socket.off('timer:state', onTimerState);
     };
   }, [socket, modalOpen, hydrateFeedbackStateFromRoom, markSessionDirty, markSaved]);
+
+  function controlRoomTimer(action, extra = {}) {
+    if (timerBusy) return;
+    setTimerBusy(true);
+    socket.timeout(8000).emit('teacher:timer-control', { action, ...extra }, (err, ack) => {
+      setTimerBusy(false);
+      if (err || !ack?.ok) {
+        setError(ack?.error || 'Could not update timer');
+        return;
+      }
+      setRoom((current) => current ? { ...current, timer: ack.timer } : current);
+    });
+  }
+
+  function openTimerSettings() {
+    closeTeacherTools();
+    setAddCardOpen(false);
+    setSettingsOpen(true);
+  }
 
   useEffect(() => {
     const onQna = (payload) => {
@@ -2504,6 +2532,7 @@ function TeacherDashboardInner() {
           </div>
 
           <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
+            <RoomTimerPill timer={room?.timer} onClick={openTimerSettings} />
             {joined && <SaveStatusChip status={saveStatus === 'idle' ? 'saved' : saveStatus} plain />}
             <button
               type="button"
@@ -2641,7 +2670,7 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && (
         <div
           ref={teacherToolsPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail fixed z-[60] w-[min(29rem,calc(100vw-5.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail fixed z-[60] w-[min(29rem,calc(100vw-5.25rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
@@ -2800,7 +2829,7 @@ function TeacherDashboardInner() {
                       <iframe
                         title={post.title || 'Handout'}
                         src={post.file_url}
-                        className="h-64 w-full rounded-lg border-0 bg-slate-50 outline-none dark:bg-slate-900"
+                        className="pointer-events-none h-64 w-full rounded-lg border-0 bg-slate-50 outline-none dark:bg-slate-900"
                         tabIndex={-1}
                       />
                     ) : null}
@@ -2976,8 +3005,12 @@ function TeacherDashboardInner() {
                       </p>
                     ) : null}
                   </div>
-                  <div className="ml-auto flex shrink-0 items-center gap-0.5" onClick={(event) => event.stopPropagation()}>
-                    {/* Note receipt stays visible as the alert; the rest of the toolbar is hover-only. */}
+                  <div
+                    className="iboard-student-card-actions ml-auto flex shrink-0 items-center gap-0.5"
+                    data-open={studentActionMenuId === s.id ? 'true' : 'false'}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {/* Keep every action out of the student-name row; the tray appears on card hover/focus. */}
                     <HintWrap hint={
                       noteReceiptByStudentId[s.id] === 'replied'
                         ? 'Student replied — open to read'
@@ -2993,7 +3026,7 @@ function TeacherDashboardInner() {
                         data-note-student-name={s.name}
                         data-note-status={noteReceiptByStudentId[s.id] || undefined}
                         onClick={(event) => openNoteForStudent(s, event)}
-                        className={`${noteReceiptByStudentId[s.id] ? 'grid' : 'hidden group-hover/student-card:grid group-focus-within/student-card:grid'} h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
                           noteReceiptByStudentId[s.id] === 'replied'
                             ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
                             : noteReceiptByStudentId[s.id] === 'seen'
@@ -3017,7 +3050,7 @@ function TeacherDashboardInner() {
                         </svg>
                       </button>
                     </HintWrap>
-                    <div className={`${studentActionMenuId === s.id ? 'flex' : 'hidden group-hover/student-card:flex group-focus-within/student-card:flex'} items-center gap-0.5`}>
+                    <div className="flex items-center gap-0.5">
                       <ThinkingTrigger
                         socket={socket}
                         studentIds={[s.id]}
@@ -3066,7 +3099,7 @@ function TeacherDashboardInner() {
                           </button>
                         </HintWrap>
                         {studentActionMenuId === s.id && (
-                          <div className="absolute right-0 top-8 z-40 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900" role="menu">
+                          <div className="absolute bottom-8 right-0 z-40 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900" role="menu">
                             <button type="button" disabled={!displayText.trim()} onClick={() => { copyStudentText(s); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                               Copy draft
                             </button>
@@ -3095,7 +3128,7 @@ function TeacherDashboardInner() {
                   data-student-writing-pane
                   data-card-font="true"
                   style={{ fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl bg-white p-2.5 pr-9 leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${studentWritingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl bg-white p-2.5 leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${studentWritingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
@@ -3643,7 +3676,7 @@ function TeacherDashboardInner() {
         <div
           ref={addCardPanelRef}
           data-iboard-add-card-panel="true"
-          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(29rem,calc(100vw-5.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(29rem,calc(100vw-5.25rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
@@ -3849,6 +3882,62 @@ function TeacherDashboardInner() {
             </div>
             <div className="my-1 border-t border-slate-200 dark:border-slate-700" />
             <p className="px-3 pb-1 pt-1 text-[10px] font-black uppercase tracking-wide text-slate-400">Lesson</p>
+            <div className="mx-3 mb-2 rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-black text-slate-700 dark:text-slate-200">Timer</span>
+                <RoomTimerPill timer={room?.timer} />
+              </div>
+              {!room?.timer?.active ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <label className="flex min-w-0 flex-1 items-center gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                    <span>Minutes</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={timerMinutes}
+                      onChange={(event) => setTimerMinutes(Math.max(1, Math.min(120, Number(event.target.value) || 1)))}
+                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={timerBusy}
+                    onClick={() => controlRoomTimer('start', { seconds: timerMinutes * 60 })}
+                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    Start
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
+                    onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
+                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    {room.timer.running ? 'Pause' : 'Resume'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={timerBusy}
+                    onClick={() => controlRoomTimer('add', { seconds: 60 })}
+                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    +1 minute
+                  </button>
+                  <button
+                    type="button"
+                    disabled={timerBusy}
+                    onClick={() => controlRoomTimer('end')}
+                    className="ml-auto rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-red-600 hover:bg-red-50 disabled:opacity-40 dark:text-red-300 dark:hover:bg-red-950/40"
+                  >
+                    End
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="iboard-word-target-row px-3 py-1.5">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Word target</span>
@@ -3955,6 +4044,9 @@ function TeacherDashboardInner() {
               {snapshots.length > 0 && (
                 <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">{snapshots.length}</span>
               )}
+            </button>
+            <button type="button" onClick={() => openLibrary('reports')} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+              Student reports
             </button>
             <button type="button" onClick={() => { closeSettings(); openEvidenceModal(); }} className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
               Save current evidence

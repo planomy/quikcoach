@@ -150,6 +150,52 @@ const MATERIAL_HISTORY_LIMIT = 20;
 /** Teacher handouts pushed to student Inbox for the current lesson. */
 const materialHistoryByRoom = new Map();
 
+/** Lightweight classroom countdowns. Active timers survive reconnects, but not a server restart. */
+const roomTimers = new Map();
+const roomTimerTimeouts = new Map();
+
+function timerStateForRoom(code) {
+  const state = roomTimers.get(normalizeRoomCode(code));
+  if (!state?.active) return { active: false, running: false, remainingSeconds: 0, endsAt: '' };
+  if (!state.running || !state.endsAt) return { ...state };
+  const remainingSeconds = Math.max(0, Math.ceil((Date.parse(state.endsAt) - Date.now()) / 1000));
+  return { ...state, remainingSeconds };
+}
+
+function clearRoomTimerTimeout(code) {
+  const c = normalizeRoomCode(code);
+  const timeout = roomTimerTimeouts.get(c);
+  if (timeout) clearTimeout(timeout);
+  roomTimerTimeouts.delete(c);
+}
+
+function publishRoomTimer(code) {
+  const c = normalizeRoomCode(code);
+  const timer = timerStateForRoom(c);
+  io.to(roomSocketName(c)).emit('timer:state', { timer, serverNow: Date.now() });
+  return timer;
+}
+
+function finishRoomTimer(code) {
+  const c = normalizeRoomCode(code);
+  clearRoomTimerTimeout(c);
+  const current = timerStateForRoom(c);
+  if (!current.active) return;
+  const timer = { ...current, running: false, remainingSeconds: 0, endsAt: '', finishedAt: new Date().toISOString() };
+  roomTimers.set(c, timer);
+  publishRoomTimer(c);
+  io.to(roomSocketName(c)).emit('timer:times-up', { at: Date.now() });
+}
+
+function scheduleRoomTimer(code) {
+  const c = normalizeRoomCode(code);
+  clearRoomTimerTimeout(c);
+  const timer = timerStateForRoom(c);
+  if (!timer.active || !timer.running || !timer.endsAt) return;
+  const delay = Math.max(0, Date.parse(timer.endsAt) - Date.now());
+  roomTimerTimeouts.set(c, setTimeout(() => finishRoomTimer(c), delay));
+}
+
 const MATERIAL_TYPES = {
   'application/pdf': 'pdf',
   'image/jpeg': 'jpg',
@@ -243,7 +289,7 @@ app.get('/api/rooms/:code', (req, res) => {
     const row = queries.ensureRoom(db, code);
     const students = queries.listStudents(db, code);
     res.json({
-      room: queries.rowToRoom(row),
+      room: { ...queries.rowToRoom(row), timer: timerStateForRoom(code) },
       students: students.map(queries.rowToStudent),
     });
   } catch (e) {
@@ -368,7 +414,7 @@ function buildRoomPayload(code) {
   const students = queries.listStudents(db, c);
   const posts = queries.listBoardPosts(db, c);
   return {
-    room: { ...queries.rowToRoom(row), draftTrail: trailStatus(c) },
+    room: { ...queries.rowToRoom(row), draftTrail: trailStatus(c), timer: timerStateForRoom(c) },
     students: students.map(queries.rowToStudent),
     posts: posts.map(queries.rowToBoardPost),
   };
@@ -1927,6 +1973,64 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('teacher:timer-control', (payload = {}, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const action = String(payload.action || '');
+      const current = timerStateForRoom(code);
+      let next = current;
+
+      if (action === 'start') {
+        const requested = Math.round(Number(payload.seconds) || Number(current.remainingSeconds) || 300);
+        const seconds = Math.max(10, Math.min(7200, requested));
+        next = {
+          active: true,
+          running: true,
+          durationSeconds: seconds,
+          remainingSeconds: seconds,
+          endsAt: new Date(Date.now() + seconds * 1000).toISOString(),
+        };
+      } else if (action === 'pause' && current.active && current.running) {
+        next = { ...current, running: false, remainingSeconds: current.remainingSeconds, endsAt: '' };
+      } else if (action === 'resume' && current.active && !current.running && current.remainingSeconds > 0) {
+        next = {
+          ...current,
+          running: true,
+          endsAt: new Date(Date.now() + current.remainingSeconds * 1000).toISOString(),
+        };
+      } else if (action === 'add' && current.active) {
+        const addSeconds = Math.max(10, Math.min(600, Math.round(Number(payload.seconds) || 60)));
+        const remainingSeconds = Math.min(7200, current.remainingSeconds + addSeconds);
+        next = {
+          ...current,
+          remainingSeconds,
+          endsAt: current.running ? new Date(Date.now() + remainingSeconds * 1000).toISOString() : '',
+        };
+      } else if (action === 'end') {
+        clearRoomTimerTimeout(code);
+        roomTimers.delete(code);
+        next = { active: false, running: false, remainingSeconds: 0, endsAt: '' };
+      } else {
+        cb?.({ ok: false, error: 'Timer action is not available' });
+        return;
+      }
+
+      if (next.active) roomTimers.set(code, next);
+      if (next.running) scheduleRoomTimer(code);
+      else clearRoomTimerTimeout(code);
+      const timer = publishRoomTimer(code);
+      cb?.({ ok: true, timer });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not update timer' });
+    }
+  });
+
   socket.on('teacher:material-send', ({ title, fileBase64, mimeType, originalName, sendToInbox, placeOnBoard }, cb) => {
     try {
       const codeRaw = socket.data.roomCode;
@@ -2411,6 +2515,12 @@ io.on('connection', (socket) => {
       }
       materialHistoryByRoom.delete(code);
       io.to(roomSocketName(code)).emit('inbox:material', { history: [], cleared: true });
+      clearRoomTimerTimeout(code);
+      roomTimers.delete(code);
+      io.to(roomSocketName(code)).emit('timer:state', {
+        timer: { active: false, running: false, remainingSeconds: 0, endsAt: '' },
+        serverNow: Date.now(),
+      });
       queries.clearLiveActivity(db, code);
       queries.clearFeaturedWall(db, code);
       queries.clearLessonPulseLog(db, code);

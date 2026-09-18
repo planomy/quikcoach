@@ -10,9 +10,9 @@ import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import PulseLink from '../components/PulseLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
-import AudienceQnaStudent from '../components/AudienceQnaStudent.jsx';
 import StudentHandRaise from '../components/StudentHandRaise.jsx';
 import StudentInbox from '../components/StudentInbox.jsx';
+import RoomTimerPill from '../components/RoomTimerPill.jsx';
 import StudentNoteReply from '../components/StudentNoteReply.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
@@ -67,12 +67,6 @@ function mergeFeedbackInbox(previous, incoming, { liveFallbackAt = 0 } = {}) {
   }
   return [...byId.values()].sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
 }
-
-const SUPPORT_TABS = [
-  { id: 'ask', label: 'Ask' },
-  { id: 'respond', label: 'Respond' },
-  { id: 'inbox', label: 'Inbox' },
-];
 
 function parseServerUpdatedAt(value) {
   const raw = String(value || '').trim();
@@ -133,12 +127,10 @@ export default function StudentView() {
   const [feedbackInbox, setFeedbackInbox] = useState([]);
   const [broadcastHistory, setBroadcastHistory] = useState([]);
   const [materialHistory, setMaterialHistory] = useState([]);
-  const [supportTab, setSupportTab] = useState('inbox');
   const [inboxExpandedId, setInboxExpandedId] = useState(null);
   const [inboxUnreadIds, setInboxUnreadIds] = useState(() => new Set());
   const [dismissedInboxIds, setDismissedInboxIds] = useState(() => new Set());
   const [largeMaterialId, setLargeMaterialId] = useState(null);
-  const [respondPendingCount, setRespondPendingCount] = useState(0);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [helpSeenToast, setHelpSeenToast] = useState(false);
@@ -168,7 +160,6 @@ export default function StudentView() {
   const wasDisconnectedRef = useRef(false);
   const onlineBannerTimerRef = useRef(null);
   const helpSeenTimerRef = useRef(null);
-  const supportTabRef = useRef(supportTab);
   const broadcastBootstrappedRef = useRef(false);
   const lastBroadcastAtRef = useRef(null);
   const materialBootstrappedRef = useRef(false);
@@ -177,10 +168,6 @@ export default function StudentView() {
   useEffect(() => {
     studentRef.current = student;
   }, [student]);
-
-  useEffect(() => {
-    supportTabRef.current = supportTab;
-  }, [supportTab]);
 
   useEffect(() => {
     if (!joined) return undefined;
@@ -203,7 +190,6 @@ export default function StudentView() {
 
   function activateInbox(itemId) {
     if (!itemId) return;
-    setSupportTab('inbox');
     setInboxExpandedId(itemId);
     setInboxUnreadIds((current) => {
       const next = new Set(current);
@@ -278,16 +264,6 @@ export default function StudentView() {
     }
     setDismissedInboxIds(readDismissedInboxIds(code, sid));
   }, [joined, student?.id, room?.code, codeInput]);
-
-  function selectSupportTab(tabId) {
-    setSupportTab(tabId);
-    if (tabId === 'inbox') {
-      setInboxUnreadIds(new Set());
-    }
-    if (tabId === 'respond') {
-      setRespondPendingCount(0);
-    }
-  }
 
   function applyJoinedDraft(joinedDraft) {
     setDraft(joinedDraft.text);
@@ -628,45 +604,11 @@ export default function StudentView() {
               next.add(latest.id);
               return next;
             });
-            // Keep writing focus: only open Inbox if they're already there.
-            if (supportTabRef.current === 'inbox') {
-              setInboxExpandedId(latest.id);
-            }
+            setInboxExpandedId(latest.id);
           });
         }
         return nextHistory;
       });
-    };
-    const showRespondBadge = (activity) => {
-      if (!activity?.id) {
-        setRespondPendingCount(0);
-        return;
-      }
-      if (supportTabRef.current === 'respond') {
-        setRespondPendingCount(0);
-        return;
-      }
-      // Count of live questions still waiting for this student — not the Q number.
-      setRespondPendingCount(1);
-    };
-    const onLiveActivity = (payload) => {
-      if (payload?.activity?.id) showRespondBadge(payload.activity);
-      else setRespondPendingCount(0);
-    };
-    const onLiveRealert = (payload) => {
-      if (payload?.activity?.id) showRespondBadge(payload.activity);
-    };
-    const onLiveStudent = (payload) => {
-      if (!payload?.activity?.id) {
-        setRespondPendingCount(0);
-        return;
-      }
-      if (payload?.response?.value) {
-        setRespondPendingCount(0);
-      }
-    };
-    const onLiveNudge = () => {
-      setSupportTab('respond');
     };
     const onLiveHelpSeen = () => {
       setHelpSeenToast(true);
@@ -674,29 +616,26 @@ export default function StudentView() {
       helpSeenTimerRef.current = setTimeout(() => setHelpSeenToast(false), 4000);
     };
     const onTimesUp = () => setTimesUp(true);
+    const onTimerState = (payload) => {
+      setRoom((current) => current ? { ...current, timer: payload?.timer || null } : current);
+    };
     socket.on('room:state', onState);
     socket.on('student:live', onLive);
     socket.on('feedback:batch', onBatch);
     socket.on('broadcast:exemplars', onBroadcast);
     socket.on('inbox:material', onMaterial);
-    socket.on('live:activity', onLiveActivity);
-    socket.on('live:realert', onLiveRealert);
-    socket.on('live:student', onLiveStudent);
-    socket.on('live:nudge', onLiveNudge);
     socket.on('live:help-seen', onLiveHelpSeen);
     socket.on('timer:times-up', onTimesUp);
+    socket.on('timer:state', onTimerState);
     return () => {
       socket.off('room:state', onState);
       socket.off('student:live', onLive);
       socket.off('feedback:batch', onBatch);
       socket.off('broadcast:exemplars', onBroadcast);
       socket.off('inbox:material', onMaterial);
-      socket.off('live:activity', onLiveActivity);
-      socket.off('live:realert', onLiveRealert);
-      socket.off('live:student', onLiveStudent);
-      socket.off('live:nudge', onLiveNudge);
       socket.off('live:help-seen', onLiveHelpSeen);
       socket.off('timer:times-up', onTimesUp);
+      socket.off('timer:state', onTimerState);
       if (helpSeenTimerRef.current) clearTimeout(helpSeenTimerRef.current);
     };
   }, [socket]);
@@ -1367,6 +1306,7 @@ export default function StudentView() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <RoomTimerPill timer={room?.timer} />
             <details className="group relative shrink-0">
               <summary
                 className="iboard-header-icon-button grid h-9 w-9 cursor-pointer list-none place-items-center rounded-xl border shadow-sm transition [&::-webkit-details-marker]:hidden"
@@ -1440,47 +1380,18 @@ export default function StudentView() {
             data-iboard-student-support
             className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1"
           >
-            <nav aria-label="Student tools" className="relative z-10 flex shrink-0 items-end gap-1 overflow-visible border-b border-slate-200 pt-0 dark:border-slate-700">
-              {SUPPORT_TABS.map((tab) => {
-                const active = supportTab === tab.id;
-                const badge = tab.id === 'inbox'
-                  ? inboxTabCount
-                  : tab.id === 'respond' && respondPendingCount > 0
-                    ? respondPendingCount
-                    : 0;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => selectSupportTab(tab.id)}
-                    className={`relative inline-flex items-center overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
-                      active
-                        ? 'z-[1] -mb-px border border-b-white border-[#5a5fc3] bg-[#5a5fc3] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500 dark:bg-indigo-600'
-                        : 'border border-transparent bg-[#eceaf8] text-[#52525c] hover:bg-[#e4e3f2] hover:text-[#3c3c45] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
-                    }`}
-                  >
-                    {tab.label}
-                    {badge ? (
-                      <span
-                        data-iboard-tab-badge=""
-                        className="absolute left-1/2 top-0 z-[2] grid h-5 w-5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-rose-600 text-[10px] font-black tabular-nums leading-none text-white shadow-sm ring-2 ring-white dark:ring-slate-900"
-                      >
-                        {badge}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </nav>
+            <div className="flex min-h-9 shrink-0 items-center border-b border-slate-200 px-1 dark:border-slate-700">
+              <h2 className="text-xs font-black uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">Inbox</h2>
+              {inboxTabCount ? (
+                <span className="ml-2 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-black tabular-nums text-white">
+                  {inboxTabCount}
+                </span>
+              ) : null}
+            </div>
 
             <div className="iboard-student-support-scroll flex min-h-0 flex-1 flex-col gap-3">
-            <div className={supportTab === 'ask' ? '' : 'hidden'}>
-              <AudienceQnaStudent socket={socket} embedded />
-            </div>
-            <div className={supportTab === 'respond' ? '' : 'hidden'}>
-              <LiveResponseStudent socket={socket} standalone />
-            </div>
-            <div className={supportTab === 'inbox' ? '' : 'hidden'}>
+            <LiveResponseStudent socket={socket} unifiedInbox />
+            <div>
               <StudentInbox
                 socket={socket}
                 items={inboxItems}

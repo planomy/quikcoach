@@ -280,6 +280,9 @@ function DockedPulse({ socket, ...props }) {
 }
 
 export default function LiveResponseStudent(props) {
+  if (props?.unifiedInbox) {
+    return <LiveResponseStudentCore {...props} standalone />;
+  }
   if (isTabbedStudentWorkspace(props)) {
     return <TabbedStudentResponse {...props} />;
   }
