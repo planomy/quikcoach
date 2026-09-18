@@ -1105,45 +1105,51 @@ export default function StudentView() {
 
   if (!joined) {
     return (
-      <div className="iboard-student-canvas flex min-h-screen flex-col dark:bg-slate-950">
-        <div className="flex flex-1 flex-col px-4 py-10">
-          <div className="mx-auto w-full max-w-md rounded-2xl border border-[#d5d4e4] bg-white dark:border-slate-700 dark:bg-slate-900 p-8 shadow-card">
-            <div className="flex items-start justify-between gap-3">
-              <IBoardWordmark className="text-2xl" variant="full" />
-              <ThemeToggle />
+      <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+        <div className="absolute right-4 top-4 z-10">
+          <ThemeToggle />
+        </div>
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
+          <div className="iboard-join-stack text-center">
+            <div className="flex justify-center">
+              <IBoardWordmark size="hero" variant="full" />
             </div>
-            <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">Join your class</h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Your writing appears on your teacher’s screen as you type. Live questions can also show up here.
-            </p>
-            <div className="mt-6 space-y-3">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Room code from your teacher</label>
+
+            <div className="mt-10 space-y-3">
               <input
                 value={codeInput}
                 onChange={(e) => {
                   setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4));
                   setRecentDismissedCode('');
                 }}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 font-mono text-lg outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && codeInput.length === 4 && nameInput.trim()) join();
+                }}
+                className="box-border w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-center font-mono text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 placeholder="0000"
                 inputMode="numeric"
+                maxLength={4}
+                aria-label="Room code from your teacher"
               />
-              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+
               {recentRoomSession ? (
-                <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/50">
+                <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/50">
                   <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">
                     Returning student
                   </p>
                   <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                    You previously joined this room as
-                  </p>
-                  <p className="mt-1 font-display text-lg font-black text-slate-950 dark:text-white">
-                    {recentRoomSession.name || 'your previous student card'}
+                    Continue as{' '}
+                    <span className="font-black text-slate-950 dark:text-white">
+                      {recentRoomSession.name || 'your previous card'}
+                    </span>
+                    ?
                   </p>
                   <button
                     type="button"
                     onClick={continueRecentRoom}
-                    className="mt-3 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-lift hover:bg-indigo-700"
+                    className="mt-3 box-border w-full rounded-2xl bg-indigo-600 px-4 py-4 text-base font-bold text-white shadow-lift hover:bg-indigo-700"
                   >
                     Continue and restore my work
                   </button>
@@ -1153,30 +1159,33 @@ export default function StudentView() {
                       setRecentDismissedCode(recentRoomSession.code);
                       setNameInput('');
                     }}
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                    className="mt-2 box-border w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
                     This isn&apos;t me
                   </button>
                 </div>
               ) : (
                 <>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Your name</label>
                   <input
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-                    placeholder="Name as shown to teacher"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && codeInput.length === 4 && nameInput.trim()) join();
+                    }}
+                    className="box-border w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-center text-base font-semibold text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    placeholder="Your name"
+                    aria-label="Your name"
                   />
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Your year</label>
                   <StudentGradeSelect
                     value={yearInput}
                     onChange={setYearInput}
-                    className="w-full !rounded-xl !px-3 !py-2.5 !text-sm"
+                    className="box-border w-full !rounded-2xl !border-2 !border-slate-200 !bg-white !px-4 !py-4 !text-center !text-base !font-semibold dark:!border-slate-700 dark:!bg-slate-900"
                   />
                   <button
                     type="button"
                     onClick={join}
-                    className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-lift hover:bg-indigo-700"
+                    disabled={codeInput.length !== 4 || !nameInput.trim()}
+                    className="mt-5 box-border w-full rounded-2xl bg-indigo-600 py-4 text-base font-bold text-white shadow-lift hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Join and start writing
                   </button>

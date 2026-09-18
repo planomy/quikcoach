@@ -207,6 +207,12 @@ html:not(.dark) .iboard-teacher-canvas .iboard-brand-logo {
   max-width: min(15rem, 78vw);
 }
 
+/* Teacher + student join screens share one control column width. */
+.iboard-join-stack {
+  width: 100%;
+  max-width: 24rem;
+}
+
 .iboard-brand-logo--full:not(.iboard-brand-logo--hero):not(.iboard-brand-logo--lg) {
   height: 1.55rem;
   max-width: min(7.5rem, 36vw);
