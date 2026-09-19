@@ -60,8 +60,8 @@ html:not(.dark) .iboard-student-canvas .iboard-app-header {
   background: #ffffff !important;
   border-bottom-color: #e2e8ef !important;
   box-shadow:
-    0 1px 0 rgba(15, 23, 42, 0.035),
-    0 4px 14px rgba(15, 23, 42, 0.05) !important;
+    0 1px 0 rgba(15, 23, 42, 0.06),
+    0 1px 3px rgba(15, 23, 42, 0.08) !important;
 }
 html.dark .iboard-app-header {
   background: #20262d !important;
