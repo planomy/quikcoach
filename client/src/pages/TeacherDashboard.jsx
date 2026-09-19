@@ -4542,7 +4542,7 @@ function TeacherDashboardInner() {
       {settingsOpen && (
         <div
           ref={settingsPanelRef}
-          className="iboard-header-dock iboard-header-dock--end iboard-room-settings fixed right-0 z-[60] w-[min(22rem,100vw)]"
+          className="iboard-header-dock iboard-header-dock--start iboard-room-settings fixed z-[60] w-[min(22rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
