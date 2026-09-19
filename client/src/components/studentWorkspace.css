@@ -440,8 +440,12 @@ html.iboard-student-workspace .iboard-question-pulse {
   }
 }
 
-/* Breakout peers: capped squares, fixed gap, centered row (snug on tablet, not sparse on wide). */
+/* Breakout peers: height-first squares (size from viewport), fixed gap, centered.
+   Writing/inbox already flex-shrink above this strip — peer height is capped so
+   content cannot stretch the cards (min-height:auto was blowing long drafts). */
 .iboard-breakout-peers {
+  --peer-gap: 0.65rem;
+  --peer-size: clamp(10rem, 24dvh, 15rem);
   width: 100%;
   margin-top: 0.5rem;
   padding: 0;
@@ -462,22 +466,23 @@ html.iboard-student-workspace .iboard-question-pulse {
 }
 
 .iboard-breakout-peers__grid {
-  --peer-gap: 0.65rem;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
   gap: var(--peer-gap);
   width: 100%;
-  align-items: stretch;
 }
 
 .iboard-breakout-peers__slot {
-  /* Fill up to 4 across when space is tight; cap size so wide laptops stay dense. */
-  --peer-size: min(15.75rem, 30vh, calc((100% - (3 * var(--peer-gap))) / 4));
+  box-sizing: border-box;
   flex: 0 0 var(--peer-size);
   width: var(--peer-size);
   height: var(--peer-size);
-  min-width: 0;
+  min-width: var(--peer-size);
+  max-width: var(--peer-size);
+  min-height: 0;
+  max-height: var(--peer-size);
   overflow: hidden;
   display: flex;
   flex-direction: column;
