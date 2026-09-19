@@ -421,7 +421,7 @@ function TeacherDashboardInner() {
   const [addCardPlaceOnBoard, setAddCardPlaceOnBoard] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [sessionBusy, setSessionBusy] = useState(false);
-  const [timerMinutes, setTimerMinutes] = useState(5);
+  const [timerMinutes, setTimerMinutes] = useState('5');
   const [timerBusy, setTimerBusy] = useState(false);
 
   const socket = useMemo(() => createSocket(), []);
@@ -1112,12 +1112,28 @@ function TeacherDashboardInner() {
       return visibleStudents.map((student) => ({ type: 'card', student }));
     }
     const byId = new Map(visibleStudents.map((s) => [Number(s.id), s]));
+    const rankStudent = (student) => {
+      if (!student) return Number.MAX_SAFE_INTEGER;
+      const monitored = monitoredIds.has(Number(student.id)) ? 0 : 1;
+      const attention =
+        attentionFocus &&
+        (awayByStudentId.get(Number(student.id)) || isNotStarted(student, activityNow))
+          ? 0
+          : 1;
+      return monitored * 10 + attention;
+    };
+    const sortMembers = (list) =>
+      [...list].sort((a, b) => {
+        const rank = rankStudent(a) - rankStudent(b);
+        if (rank !== 0) return rank;
+        return Number(a.id) - Number(b.id);
+      });
     const used = new Set();
     const rows = [];
     for (const roomMeta of breakouts.rooms || []) {
-      const members = (roomMeta.memberIds || [])
-        .map((id) => byId.get(Number(id)))
-        .filter(Boolean);
+      const members = sortMembers(
+        (roomMeta.memberIds || []).map((id) => byId.get(Number(id))).filter(Boolean)
+      );
       for (const s of members) used.add(Number(s.id));
       rows.push({
         type: 'header',
@@ -1129,13 +1145,21 @@ function TeacherDashboardInner() {
         rows.push({ type: 'card', student });
       }
     }
-    const rest = visibleStudents.filter((s) => !used.has(Number(s.id)));
+    const rest = sortMembers(visibleStudents.filter((s) => !used.has(Number(s.id))));
     if (rest.length) {
       rows.push({ type: 'header', id: 'unassigned', label: 'Unassigned', count: rest.length });
       for (const student of rest) rows.push({ type: 'card', student });
     }
     return rows;
-  }, [breakoutsActive, breakouts, visibleStudents]);
+  }, [
+    breakoutsActive,
+    breakouts,
+    visibleStudents,
+    monitoredIds,
+    attentionFocus,
+    awayByStudentId,
+    activityNow,
+  ]);
 
   function startBreakoutsAuto() {
     if (!socket || breakoutBusy) return;
@@ -4586,14 +4610,32 @@ function TeacherDashboardInner() {
                           type="number"
                           min="1"
                           max="120"
+                          inputMode="numeric"
                           value={timerMinutes}
-                          onChange={(event) => setTimerMinutes(Math.max(1, Math.min(120, Number(event.target.value) || 1)))}
+                          onFocus={() => setTimerMinutes('')}
+                          onChange={(event) => {
+                            const raw = event.target.value;
+                            if (raw === '') {
+                              setTimerMinutes('');
+                              return;
+                            }
+                            const next = Math.floor(Number(raw));
+                            if (!Number.isFinite(next)) return;
+                            setTimerMinutes(String(Math.max(1, Math.min(120, next))));
+                          }}
+                          onBlur={() => {
+                            if (timerMinutes === '' || !Number(timerMinutes)) setTimerMinutes('5');
+                          }}
                           aria-label="Timer minutes"
                         />
                         <button
                           type="button"
-                          disabled={timerBusy}
-                          onClick={() => controlRoomTimer('start', { seconds: timerMinutes * 60 })}
+                          disabled={timerBusy || !Number(timerMinutes)}
+                          onClick={() =>
+                            controlRoomTimer('start', {
+                              seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
+                            })
+                          }
                           className="iboard-room-settings__mini"
                         >
                           Start

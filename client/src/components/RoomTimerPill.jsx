@@ -17,12 +17,12 @@ export default function RoomTimerPill({ timer, onClick, className = '' }) {
   const urgent = seconds <= 60;
   const finished = seconds === 0;
   const label = finished ? 'Time up' : formatTimer(seconds);
-  const sharedClass = `iboard-room-timer inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 font-mono text-[11px] font-black tabular-nums transition ${
+  const sharedClass = `iboard-room-timer inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-1.5 font-mono text-[11px] font-black tabular-nums transition ${
     finished
-      ? 'border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200'
+      ? 'border-0 bg-transparent text-red-600 dark:text-red-300'
       : urgent
-        ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200'
-        : 'border-slate-200 bg-white/80 text-slate-700 dark:border-slate-600 dark:bg-white/10 dark:text-slate-100'
+        ? 'border-0 bg-transparent text-amber-700 dark:text-amber-300'
+        : 'border border-slate-200 bg-white/80 text-slate-700 dark:border-slate-600 dark:bg-white/10 dark:text-slate-100'
   } ${className}`;
 
   const content = (
