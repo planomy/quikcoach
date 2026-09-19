@@ -286,6 +286,7 @@ function WhiteboardInner() {
   const addPasteRef = useRef(null);
   const hadDisconnectRef = useRef(false);
   const backOnlineTimer = useRef(null);
+  const timesUpTimer = useRef(null);
 
   useEffect(() => {
     socket.connect();
@@ -360,9 +361,16 @@ function WhiteboardInner() {
     };
     socket.on('room:state', onState);
     socket.on('student:live', onLive);
+    const onTimesUpClear = () => {
+      setTimesUp(false);
+      if (timesUpTimer.current) clearTimeout(timesUpTimer.current);
+    };
+    socket.on('timer:times-up-clear', onTimesUpClear);
     return () => {
       socket.off('room:state', onState);
       socket.off('student:live', onLive);
+      socket.off('timer:times-up-clear', onTimesUpClear);
+      if (timesUpTimer.current) clearTimeout(timesUpTimer.current);
     };
   }, [socket]);
 
@@ -790,6 +798,8 @@ function WhiteboardInner() {
               setTimesUp(true);
               bumpChrome();
               socket.emit('teacher:times-up', {});
+              if (timesUpTimer.current) clearTimeout(timesUpTimer.current);
+              timesUpTimer.current = setTimeout(() => setTimesUp(false), 2000);
             }}
           />
           <div className="flex gap-1">
@@ -928,20 +938,15 @@ function WhiteboardInner() {
       </div>
 
       {timesUp && (
-        <button
-          type="button"
-          onClick={() => setTimesUp(false)}
-          className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center bg-red-950/55 px-6 backdrop-blur-[2px]"
+        <div
+          role="status"
           aria-live="assertive"
+          className="pointer-events-none fixed left-1/2 top-3 z-[80] flex -translate-x-1/2 items-center px-3"
         >
-          <div className="animate-pulse rounded-3xl border-4 border-red-400 bg-red-600 px-10 py-8 text-center shadow-2xl shadow-red-900/50 sm:px-16 sm:py-12">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-red-100">Timer</p>
-            <p className="mt-2 font-display text-5xl font-black uppercase tracking-wide text-white sm:text-7xl">
-              Time&apos;s up!
-            </p>
-            <p className="mt-4 text-sm font-semibold text-red-100">Tap to dismiss</p>
+          <div className="inline-flex h-9 items-center rounded-lg bg-red-600 px-3.5 text-[12px] font-black uppercase tracking-[0.08em] text-white shadow-lg">
+            Time&apos;s up
           </div>
-        </button>
+        </div>
       )}
 
       {(error || toast) && (

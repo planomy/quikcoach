@@ -3008,7 +3008,11 @@ function TeacherDashboardInner() {
           </div>
 
           <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
-            <RoomTimerPill timer={room?.timer} onClick={openTimerSettings} />
+            <RoomTimerPill
+              timer={room?.timer}
+              onClick={openTimerSettings}
+              onFinishedClick={() => controlRoomTimer('end')}
+            />
             {joined && <SaveStatusChip status={saveStatus === 'idle' ? 'saved' : saveStatus} plain />}
             <button
               type="button"
@@ -4645,7 +4649,10 @@ function TeacherDashboardInner() {
                       <div className="min-w-0 flex-1">
                         <div className="iboard-room-settings__timer-head">
                           <span>Timer</span>
-                          <RoomTimerPill timer={room?.timer} />
+                          <RoomTimerPill
+                            timer={room?.timer}
+                            onFinishedClick={() => controlRoomTimer('end')}
+                          />
                         </div>
                         <div className="iboard-room-settings__field-row flex-wrap">
                           <button

@@ -6,7 +6,7 @@ function formatTimer(totalSeconds) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-export default function RoomTimerPill({ timer, onClick, className = '' }) {
+export default function RoomTimerPill({ timer, onClick, onFinishedClick, className = '' }) {
   const running = !!timer?.active && !!timer?.running && !!timer?.endsAt;
   const liveSeconds = useEndsAtCountdown(timer?.endsAt, { enabled: running });
   if (!timer?.active) return null;
@@ -36,9 +36,27 @@ export default function RoomTimerPill({ timer, onClick, className = '' }) {
     </>
   );
 
-  if (onClick) {
+  const handleClick = () => {
+    if (finished && typeof onFinishedClick === 'function') {
+      onFinishedClick();
+      return;
+    }
+    onClick?.();
+  };
+
+  if (onClick || onFinishedClick) {
     return (
-      <button type="button" onClick={onClick} className={sharedClass} aria-label={`Timer ${label}. Open timer settings.`}>
+      <button
+        type="button"
+        onClick={handleClick}
+        className={sharedClass}
+        aria-label={
+          finished
+            ? 'Time up. Clear timer for the class.'
+            : `Timer ${label}. Open timer settings.`
+        }
+        title={finished ? 'Clear timer for the class' : undefined}
+      >
         {content}
       </button>
     );

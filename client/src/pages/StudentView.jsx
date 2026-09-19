@@ -165,6 +165,7 @@ export default function StudentView() {
   const wasDisconnectedRef = useRef(false);
   const onlineBannerTimerRef = useRef(null);
   const helpSeenTimerRef = useRef(null);
+  const timesUpTimerRef = useRef(null);
   const broadcastBootstrappedRef = useRef(false);
   const lastBroadcastAtRef = useRef(null);
   const materialBootstrappedRef = useRef(false);
@@ -706,7 +707,15 @@ export default function StudentView() {
       if (helpSeenTimerRef.current) clearTimeout(helpSeenTimerRef.current);
       helpSeenTimerRef.current = setTimeout(() => setHelpSeenToast(false), 4000);
     };
-    const onTimesUp = () => setTimesUp(true);
+    const onTimesUp = () => {
+      setTimesUp(true);
+      if (timesUpTimerRef.current) clearTimeout(timesUpTimerRef.current);
+      timesUpTimerRef.current = setTimeout(() => setTimesUp(false), 2000);
+    };
+    const onTimesUpClear = () => {
+      setTimesUp(false);
+      if (timesUpTimerRef.current) clearTimeout(timesUpTimerRef.current);
+    };
     const onTimerState = (payload) => {
       setRoom((current) => current ? { ...current, timer: payload?.timer || null } : current);
     };
@@ -717,6 +726,7 @@ export default function StudentView() {
     socket.on('inbox:material', onMaterial);
     socket.on('live:help-seen', onLiveHelpSeen);
     socket.on('timer:times-up', onTimesUp);
+    socket.on('timer:times-up-clear', onTimesUpClear);
     socket.on('timer:state', onTimerState);
     return () => {
       socket.off('room:state', onState);
@@ -726,8 +736,10 @@ export default function StudentView() {
       socket.off('inbox:material', onMaterial);
       socket.off('live:help-seen', onLiveHelpSeen);
       socket.off('timer:times-up', onTimesUp);
+      socket.off('timer:times-up-clear', onTimesUpClear);
       socket.off('timer:state', onTimerState);
       if (helpSeenTimerRef.current) clearTimeout(helpSeenTimerRef.current);
+      if (timesUpTimerRef.current) clearTimeout(timesUpTimerRef.current);
     };
   }, [socket]);
 
@@ -1311,20 +1323,15 @@ export default function StudentView() {
   return (
     <div className="iboard-student-canvas flex min-h-screen w-full min-w-0 flex-col dark:bg-slate-950">
       {timesUp && (
-        <button
-          type="button"
-          onClick={() => setTimesUp(false)}
-          className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center bg-red-950/50 px-6 backdrop-blur-[1px]"
+        <div
+          role="status"
           aria-live="assertive"
+          className="pointer-events-none fixed left-1/2 top-3 z-[80] flex -translate-x-1/2 items-center px-3"
         >
-          <div className="animate-pulse rounded-3xl border-4 border-red-400 bg-red-600 px-10 py-8 text-center shadow-2xl sm:px-14 sm:py-10">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-red-100">Timer</p>
-            <p className="mt-2 font-display text-4xl font-black uppercase tracking-wide text-white sm:text-6xl">
-              Time&apos;s up!
-            </p>
-            <p className="mt-3 text-sm font-semibold text-red-100">Tap to dismiss</p>
+          <div className="inline-flex h-9 items-center rounded-lg bg-red-600 px-3.5 text-[12px] font-black uppercase tracking-[0.08em] text-white shadow-lg">
+            Time&apos;s up
           </div>
-        </button>
+        </div>
       )}
       {helpSeenToast && (
         <div

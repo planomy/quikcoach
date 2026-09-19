@@ -2258,6 +2258,7 @@ io.on('connection', (socket) => {
         clearRoomTimerTimeout(code);
         roomTimers.delete(code);
         next = { active: false, running: false, remainingSeconds: 0, endsAt: '' };
+        io.to(roomSocketName(code)).emit('timer:times-up-clear', { at: Date.now() });
       } else {
         cb?.({ ok: false, error: 'Timer action is not available' });
         return;
