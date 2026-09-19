@@ -14,7 +14,7 @@ body,
 html:fullscreen,
 html:-webkit-full-screen {
   height: 100%;
-  background: #eef1f6;
+  background: #f0f4f8;
 }
 
 html.dark:fullscreen,
@@ -138,7 +138,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 .iboard-student-canvas {
   width: 100%;
   min-width: 100%;
-  background: #eef1f6;
+  background: #f0f4f8;
 }
 
 .iboard-student-canvas {
@@ -147,19 +147,19 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
   max-height: 100dvh;
 }
 
-/* Teacher shell (light): cool neutral field — chrome sits above, rooms nest below */
+/* Teacher shell (light): cool ice-blue field — indigo accents stay brand */
 html:not(.dark) .iboard-teacher-canvas {
-  background: #eef1f6;
+  background: #f0f4f8;
   background-image: none;
   color: #3c3c45;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-app-header {
   background: #ffffff;
-  border-bottom-color: #e4e7ec;
+  border-bottom-color: #e2e8ef;
   box-shadow:
-    0 1px 0 rgba(15, 23, 42, 0.04),
-    0 4px 14px rgba(15, 23, 42, 0.055);
+    0 1px 0 rgba(15, 23, 42, 0.035),
+    0 4px 14px rgba(15, 23, 42, 0.05);
   backdrop-filter: blur(8px);
 }
 
@@ -313,19 +313,19 @@ html.dark .iboard-inbox-answer-chip:hover {
   max-width: min(7.5rem, 36vw);
 }
 
-/* Student shell (light): match teacher cool field */
+/* Student shell (light): match teacher ice-blue field */
 html:not(.dark) .iboard-student-canvas {
-  background: #eef1f6;
+  background: #f0f4f8;
   background-image: none;
   color: #3c3c45;
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header {
   background: #ffffff;
-  border-bottom-color: #e4e7ec;
+  border-bottom-color: #e2e8ef;
   box-shadow:
-    0 1px 0 rgba(15, 23, 42, 0.04),
-    0 4px 14px rgba(15, 23, 42, 0.055);
+    0 1px 0 rgba(15, 23, 42, 0.035),
+    0 4px 14px rgba(15, 23, 42, 0.05);
   backdrop-filter: blur(8px);
 }
 
@@ -462,8 +462,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  background: #e9edf3;
-  border-right: 1px solid #dde3eb;
+  background: #f0f4f8;
+  border-right: 1px solid #e2e8ef;
   padding: 0.75rem 0;
   min-height: 0;
 }
@@ -562,7 +562,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   overflow: hidden;
   background: #ffffff;
   border: 0;
-  border-right: 1px solid #dde3eb;
+  border-right: 1px solid #e2e8ef;
   border-radius: 0;
   box-shadow: none;
   opacity: 1;
@@ -666,14 +666,18 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 }
 
 .iboard-room-tray {
-  background: #e4e9f0;
-  border: 1px solid rgba(15, 23, 42, 0.045);
+  background: #e8eef4;
+  border: 1px solid rgba(15, 40, 70, 0.04);
   border-radius: 0.75rem;
   padding: 0.7rem 0.8rem 0.85rem;
 }
 
+/* No tray when breakouts are off — cards sit on canvas like student BOR */
 .iboard-room-tray--solo {
-  background: #e7ebf1;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
 }
 
 .iboard-room-tray__head {
@@ -696,7 +700,7 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 .iboard-room-tray__meta {
   font-size: 0.6875rem;
   font-weight: 550;
-  color: #7a8494;
+  color: #6b7a8c;
 }
 
 html.dark .iboard-room-tray {
@@ -705,7 +709,9 @@ html.dark .iboard-room-tray {
 }
 
 html.dark .iboard-room-tray--solo {
-  background: #171e27;
+  background: transparent;
+  border: 0;
+  padding: 0;
 }
 
 html.dark .iboard-room-tray__head h3 {
