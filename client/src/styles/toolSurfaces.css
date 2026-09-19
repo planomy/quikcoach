@@ -172,18 +172,18 @@ html:not(.dark) .sets-recipient-panel > .recipient-names {
   background-color: #f8fafc;
 }
 html:not(.dark) .sets-recipient-panel .sets-recipient-row:has(input:checked) {
-  background-color: #e8eefb;
+  background-color: #ebeaf8;
 }
 html:not(.dark) .sets-recipient-panel .sets-recipient-row:hover {
-  background-color: #dbe6fa;
+  background-color: #e0dff2;
 }
 html:not(.dark) .sets-recipient-panel .recipient-inbox {
   background-color: #fff;
-  border-color: #818cf8;
-  color: #4338ca;
+  border-color: #cfcce8;
+  color: #5a5fc3;
 }
 html:not(.dark) .sets-recipient-panel .recipient-inbox:hover:not(:disabled) {
-  background-color: #eef2ff;
+  background-color: #ebeaf8;
 }
 
 /* Preview shares the recipient shell, with a content-sized reading surface. */
