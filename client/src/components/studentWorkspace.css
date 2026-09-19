@@ -488,7 +488,7 @@ html.iboard-student-workspace .iboard-question-pulse {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-radius: 0.75rem;
+  border-radius: 0.65rem;
   border: 1px solid #e4e4ea;
   background: #ffffff;
   padding: 0.6rem 0.7rem;

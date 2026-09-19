@@ -3444,7 +3444,7 @@ function TeacherDashboardInner() {
                     setHandQuestionTarget({ student: s, questions: handQuestions });
                   }
                 } : undefined}
-                className={`iboard-student-card group/student-card relative flex flex-col overflow-visible rounded-2xl p-3 ${
+                className={`iboard-student-card group/student-card relative flex flex-col overflow-visible rounded-xl p-3 ${
                   cardView === 'overview' ? 'iboard-student-card--overview' : ''
                 } ${
                   handUp
