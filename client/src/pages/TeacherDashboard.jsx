@@ -3236,7 +3236,7 @@ function TeacherDashboardInner() {
                 title="Room settings"
                 aria-label="Room settings"
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-[1.625rem] w-[1.625rem]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M4 7h10" />
                   <path d="M18 7h2" />
                   <circle cx="16" cy="7" r="2" />
