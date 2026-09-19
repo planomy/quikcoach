@@ -253,7 +253,24 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           saveRichText.run(safeRich, studentId);
           const updated = selectStudent.get(studentId);
           const student = queries.rowToStudent(updated);
-          io.to(`room:${roomCode}`).emit('student:live', { student });
+          const roomRow = queries.ensureRoom(richDb, roomCode);
+          if (!Number(roomRow?.breakouts_active)) {
+            io.to(`room:${roomCode}`).emit('student:live', { student });
+          } else {
+            io.to(`teacher:${roomCode}`).emit('student:live', { student });
+            const roomId = String(student.breakout_room_id || '').trim();
+            const peers = queries
+              .listStudents(richDb, roomCode)
+              .map(queries.rowToStudent)
+              .filter((row) =>
+                roomId
+                  ? String(row.breakout_room_id || '').trim() === roomId
+                  : Number(row.id) === Number(student.id)
+              );
+            for (const peer of peers) {
+              io.to(`student:${peer.id}`).emit('student:live', { student });
+            }
+          }
         } catch (error) {
           console.error('Could not persist student rich text', error);
         }

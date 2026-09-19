@@ -10,6 +10,16 @@ import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
 import { buildSessionPack, importSessionPack } from './sessionPack.js';
 import { trailStatus, setTrailRecording, recordTrailText, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail } from './draftTrail.js';
+import {
+  BREAKOUT_SIZE,
+  autoAssignBreakouts,
+  buildBreakoutsMeta,
+  clampBreakoutCount,
+  isBreakoutsActive,
+  normalizeBreakoutRoomId,
+  peerStudentIds,
+  scopeStudentsForViewer,
+} from './breakouts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3001;
@@ -411,12 +421,23 @@ const io = new Server(server, {
 function buildRoomPayload(code) {
   const c = normalizeRoomCode(code);
   const row = queries.ensureRoom(db, c);
-  const students = queries.listStudents(db, c);
+  const students = queries.listStudents(db, c).map(queries.rowToStudent);
   const posts = queries.listBoardPosts(db, c);
+  const active = isBreakoutsActive(row);
   return {
     room: { ...queries.rowToRoom(row), draftTrail: trailStatus(c), timer: timerStateForRoom(c) },
-    students: students.map(queries.rowToStudent),
+    students,
     posts: posts.map(queries.rowToBoardPost),
+    breakouts: buildBreakoutsMeta(students, active, row.breakout_count),
+  };
+}
+
+function buildScopedRoomPayload(code, viewerStudentId) {
+  const full = buildRoomPayload(code);
+  const active = !!full.breakouts?.active;
+  return {
+    ...full,
+    students: scopeStudentsForViewer(full.students, viewerStudentId, active),
   };
 }
 
@@ -424,10 +445,38 @@ function emitRoomState(code, payload) {
   io.to(roomSocketName(code)).emit('room:state', payload);
 }
 
+/** Teachers always get the full roster; students get self (+ breakout peers when active). */
 function broadcastRoom(code) {
-  const payload = buildRoomPayload(code);
-  emitRoomState(code, payload);
-  return payload;
+  const c = normalizeRoomCode(code);
+  const full = buildRoomPayload(c);
+  if (!full.breakouts?.active) {
+    emitRoomState(c, full);
+    return full;
+  }
+  io.to(teacherSocketName(c)).emit('room:state', full);
+  for (const student of full.students) {
+    io.to(studentSocketName(student.id)).emit('room:state', {
+      ...full,
+      students: scopeStudentsForViewer(full.students, student.id, true),
+    });
+  }
+  return full;
+}
+
+/** Live draft patches — scope to breakout peers when breakouts are on. */
+function emitStudentLive(code, student) {
+  const c = normalizeRoomCode(code);
+  const roomRow = queries.ensureRoom(db, c);
+  if (!isBreakoutsActive(roomRow)) {
+    io.to(roomSocketName(c)).emit('student:live', { student });
+    return;
+  }
+  io.to(teacherSocketName(c)).emit('student:live', { student });
+  const all = queries.listStudents(db, c).map(queries.rowToStudent);
+  const peers = peerStudentIds(all, student, true) || [Number(student.id)];
+  for (const sid of peers) {
+    io.to(studentSocketName(sid)).emit('student:live', { student });
+  }
 }
 
 const BROADCAST_HISTORY_LIMIT = 10;
@@ -916,10 +965,17 @@ io.on('connection', (socket) => {
       socket.data.studentId = student.id;
       addStudentPresence(student.id, socket.id);
       setStudentAway(student.id, false);
-      const payload = buildRoomPayload(c);
-      cb?.({ ok: true, student, room: payload.room, students: payload.students, resumed });
+      const payload = buildScopedRoomPayload(c, student.id);
+      cb?.({
+        ok: true,
+        student,
+        room: payload.room,
+        students: payload.students,
+        breakouts: payload.breakouts,
+        resumed,
+      });
       try {
-        emitRoomState(c, payload);
+        broadcastRoom(c);
         emitBroadcastHistoryToSocket(socket, c);
         emitMaterialHistoryToSocket(socket, c);
         emitLiveState(c);
@@ -956,10 +1012,16 @@ io.on('connection', (socket) => {
       socket.data.studentId = student.id;
       addStudentPresence(student.id, socket.id);
       setStudentAway(student.id, false);
-      const payload = buildRoomPayload(c);
-      cb?.({ ok: true, student, room: payload.room, students: payload.students });
+      const payload = buildScopedRoomPayload(c, student.id);
+      cb?.({
+        ok: true,
+        student,
+        room: payload.room,
+        students: payload.students,
+        breakouts: payload.breakouts,
+      });
       try {
-        emitRoomState(c, payload);
+        broadcastRoom(c);
         emitBroadcastHistoryToSocket(socket, c);
         emitMaterialHistoryToSocket(socket, c);
         emitLiveState(c);
@@ -1705,7 +1767,7 @@ io.on('connection', (socket) => {
       const student = queries.rowToStudent(row);
       // Live patch only — do NOT broadcastRoom() here. Full room:state on every
       // 2s sync × N students freezes teacher dashboard / iBoard with large classes.
-      io.to(roomSocketName(code)).emit('student:live', { student });
+      emitStudentLive(code, student);
       cb?.({ ok: true });
     } catch (e) {
       console.error(e);
@@ -1743,7 +1805,7 @@ io.on('connection', (socket) => {
       fs.writeFileSync(path.join(boardMediaDir(code), filename), decoded.buf);
       const row = queries.updateStudentImage(db, sid, filename);
       const student = queries.rowToStudent(row);
-      io.to(roomSocketName(code)).emit('student:live', { student });
+      emitStudentLive(code, student);
       cb?.({ ok: true, student });
     } catch (e) {
       console.error(e);
@@ -1769,7 +1831,7 @@ io.on('connection', (socket) => {
       if (existing.image_filename) unlinkRoomMedia(code, existing.image_filename);
       const row = queries.updateStudentImage(db, sid, '');
       const student = queries.rowToStudent(row);
-      io.to(roomSocketName(code)).emit('student:live', { student });
+      emitStudentLive(code, student);
       cb?.({ ok: true, student });
     } catch (e) {
       console.error(e);
@@ -1815,7 +1877,7 @@ io.on('connection', (socket) => {
       const updated = queries.updateStudentDrawingMarkup(db, sid, filename, existing.image_filename);
       if (existing.teacher_markup_filename) unlinkRoomMedia(code, existing.teacher_markup_filename);
       const student = queries.rowToStudent(updated);
-      io.to(roomSocketName(code)).emit('student:live', { student });
+      emitStudentLive(code, student);
       cb?.({ ok: true, student });
     } catch (e) {
       console.error(e);
@@ -1850,7 +1912,7 @@ io.on('connection', (socket) => {
       const updated = queries.clearStudentDrawingMarkup(db, sid);
       if (existing.teacher_markup_filename) unlinkRoomMedia(code, existing.teacher_markup_filename);
       const student = queries.rowToStudent(updated);
-      io.to(roomSocketName(code)).emit('student:live', { student });
+      emitStudentLive(code, student);
       cb?.({ ok: true, student });
     } catch (e) {
       console.error(e);
@@ -1925,6 +1987,136 @@ io.on('connection', (socket) => {
     } catch (e) {
       console.error(e);
       cb?.({ ok: false });
+    }
+  });
+
+  socket.on('teacher:breakouts-start', (payload = {}, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const rows = queries.listStudents(db, code);
+      if (!rows.length) {
+        cb?.({ ok: false, error: 'No students in the room yet' });
+        return;
+      }
+      const mode = String(payload?.mode || 'auto') === 'manual' ? 'manual' : 'auto';
+      if (mode === 'manual') {
+        const roomCount = clampBreakoutCount(payload?.roomCount ?? 1, { min: 1, max: 40 });
+        const rawAssignments = Array.isArray(payload?.assignments) ? payload.assignments : [];
+        const allowedIds = new Set(rows.map((row) => Number(row.id)));
+        const assignments = rawAssignments
+          .map((item) => {
+            const studentId = Number(item?.studentId ?? item?.id);
+            if (!studentId || !allowedIds.has(studentId)) return null;
+            const roomId = normalizeBreakoutRoomId(item?.breakout_room_id);
+            if (roomId && Number(roomId) > roomCount) return { studentId, breakout_room_id: '' };
+            return { studentId, breakout_room_id: roomId };
+          })
+          .filter(Boolean);
+        // Ensure every student has a row (clears anyone not in the payload).
+        const assignedIds = new Set(assignments.map((item) => item.studentId));
+        for (const row of rows) {
+          if (!assignedIds.has(Number(row.id))) {
+            assignments.push({ studentId: Number(row.id), breakout_room_id: '' });
+          }
+        }
+        queries.applyBreakoutAssignments(db, code, assignments);
+        queries.setBreakoutsActive(db, code, true, roomCount);
+      } else {
+        const { assignments, roomCount } = autoAssignBreakouts(rows, BREAKOUT_SIZE);
+        queries.applyBreakoutAssignments(db, code, assignments);
+        queries.setBreakoutsActive(db, code, true, roomCount);
+      }
+      const result = broadcastRoom(code);
+      cb?.({ ok: true, roomCount: result.breakouts?.roomCount || 0, breakouts: result.breakouts });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not start breakouts' });
+    }
+  });
+
+  socket.on('teacher:breakouts-update', ({ assignments, studentId, breakout_room_id } = {}, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const roomRow = queries.ensureRoom(db, code);
+      if (!isBreakoutsActive(roomRow)) {
+        cb?.({ ok: false, error: 'Breakouts are not active' });
+        return;
+      }
+      let list = Array.isArray(assignments) ? assignments : null;
+      if (!list && studentId != null) {
+        list = [{ studentId, breakout_room_id: normalizeBreakoutRoomId(breakout_room_id) }];
+      }
+      if (!list?.length) {
+        cb?.({ ok: false, error: 'No assignments' });
+        return;
+      }
+      queries.applyBreakoutAssignments(db, code, list);
+      const result = broadcastRoom(code);
+      cb?.({ ok: true, breakouts: result.breakouts });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not update breakouts' });
+    }
+  });
+
+  socket.on('teacher:breakouts-set-count', ({ roomCount } = {}, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const roomRow = queries.ensureRoom(db, code);
+      if (!isBreakoutsActive(roomRow)) {
+        cb?.({ ok: false, error: 'Breakouts are not active' });
+        return;
+      }
+      const count = clampBreakoutCount(roomCount, { min: 1, max: 40 });
+      const maxKeep = count;
+      // Drop students from rooms above the new count into unassigned.
+      const rows = queries.listStudents(db, code);
+      const demote = rows
+        .filter((row) => {
+          const id = Number(normalizeBreakoutRoomId(row.breakout_room_id) || 0);
+          return id > maxKeep;
+        })
+        .map((row) => ({ studentId: row.id, breakout_room_id: '' }));
+      if (demote.length) queries.applyBreakoutAssignments(db, code, demote);
+      queries.setBreakoutCount(db, code, count);
+      const result = broadcastRoom(code);
+      cb?.({ ok: true, breakouts: result.breakouts });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not change room count' });
+    }
+  });
+
+  socket.on('teacher:breakouts-end', (_payload, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      queries.clearAllBreakoutRooms(db, code);
+      queries.setBreakoutsActive(db, code, false, 0);
+      const result = broadcastRoom(code);
+      cb?.({ ok: true, breakouts: result.breakouts });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not end breakouts' });
     }
   });
 

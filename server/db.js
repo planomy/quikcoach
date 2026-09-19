@@ -72,6 +72,21 @@ export function migrate(db) {
     /* column already exists */
   }
   try {
+    db.exec(`ALTER TABLE rooms ADD COLUMN breakouts_active INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    /* column already exists */
+  }
+  try {
+    db.exec(`ALTER TABLE rooms ADD COLUMN breakout_count INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    /* column already exists */
+  }
+  try {
+    db.exec(`ALTER TABLE students ADD COLUMN breakout_room_id TEXT NOT NULL DEFAULT ''`);
+  } catch {
+    /* column already exists */
+  }
+  try {
     db.exec(`ALTER TABLE students ADD COLUMN image_filename TEXT NOT NULL DEFAULT ''`);
   } catch {
     /* column already exists */
@@ -539,6 +554,66 @@ export const queries = {
     const g = !raw ? '' : allowed.includes(raw.charAt(0)) ? raw.charAt(0) : '';
     run(db, `UPDATE students SET class_group = ? WHERE id = ?`, [g, studentId]);
     return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
+  },
+
+  setBreakoutsActive(db, roomCode, active, roomCount = null) {
+    if (roomCount == null) {
+      run(db, `UPDATE rooms SET breakouts_active = ? WHERE code = ?`, [active ? 1 : 0, roomCode]);
+    } else {
+      const count = Math.max(0, Math.min(40, Math.floor(Number(roomCount) || 0)));
+      run(
+        db,
+        `UPDATE rooms SET breakouts_active = ?, breakout_count = ? WHERE code = ?`,
+        [active ? 1 : 0, active ? count : 0, roomCode]
+      );
+    }
+    return queries.ensureRoom(db, roomCode);
+  },
+
+  setBreakoutCount(db, roomCode, roomCount) {
+    const count = Math.max(1, Math.min(40, Math.floor(Number(roomCount) || 1)));
+    run(db, `UPDATE rooms SET breakout_count = ? WHERE code = ?`, [count, roomCode]);
+    return queries.ensureRoom(db, roomCode);
+  },
+
+  setStudentBreakoutRoom(db, studentId, breakoutRoomId) {
+    const id = String(breakoutRoomId ?? '').trim();
+    const safe = !id ? '' : /^\d{1,3}$/.test(id) && Number(id) >= 1 && Number(id) <= 40 ? String(Number(id)) : '';
+    run(db, `UPDATE students SET breakout_room_id = ? WHERE id = ?`, [safe, studentId]);
+    return get(db, 'SELECT * FROM students WHERE id = ?', [studentId]);
+  },
+
+  clearAllBreakoutRooms(db, roomCode) {
+    run(db, `UPDATE students SET breakout_room_id = '' WHERE room_code = ?`, [roomCode]);
+  },
+
+  applyBreakoutAssignments(db, roomCode, assignments) {
+    const list = Array.isArray(assignments) ? assignments : [];
+    // node:sqlite DatabaseSync has no .transaction(); use explicit BEGIN/COMMIT.
+    db.exec('BEGIN');
+    try {
+      for (const item of list) {
+        const sid = Number(item?.studentId ?? item?.id);
+        if (!sid) continue;
+        const row = get(db, 'SELECT id, room_code FROM students WHERE id = ?', [sid]);
+        if (!row || String(row.room_code) !== String(roomCode)) continue;
+        const raw = String(item?.breakout_room_id ?? '').trim();
+        const safe = !raw
+          ? ''
+          : /^\d{1,3}$/.test(raw) && Number(raw) >= 1 && Number(raw) <= 40
+            ? String(Number(raw))
+            : '';
+        run(db, `UPDATE students SET breakout_room_id = ? WHERE id = ?`, [safe, sid]);
+      }
+      db.exec('COMMIT');
+    } catch (error) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        /* transaction already closed */
+      }
+      throw error;
+    }
   },
 
   updateStudentYearLevel(db, studentId, yearLevel) {
@@ -1342,6 +1417,8 @@ export const queries = {
       word_target: row.word_target,
       enforce_word_count: !!row.enforce_word_count,
       freeze_class: !!row.freeze_class,
+      breakouts_active: !!row.breakouts_active,
+      breakout_count: Math.max(0, Math.min(40, Number(row.breakout_count) || 0)),
       genre: normalizeFeedbackMode(row.genre),
       feedback_toggles,
     };
@@ -1365,6 +1442,7 @@ export const queries = {
       updated_at: row.updated_at,
       created_at: row.created_at || row.updated_at || null,
       class_group: row.class_group != null ? String(row.class_group) : '',
+      breakout_room_id: row.breakout_room_id != null ? String(row.breakout_room_id) : '',
       year_level: row.year_level != null ? String(row.year_level) : '',
       engagement_status: row.engagement_status != null ? String(row.engagement_status) : '',
       last_engaged_at: row.last_engaged_at || null,

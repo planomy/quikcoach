@@ -16,6 +16,7 @@ import StudentVerbalRespond from '../components/StudentVerbalRespond.jsx';
 import RoomTimerPill from '../components/RoomTimerPill.jsx';
 import StudentNoteReply from '../components/StudentNoteReply.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
+import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import '../components/studentWorkspace.css';
@@ -121,6 +122,8 @@ export default function StudentView() {
   const [nameInput, setNameInput] = useState('');
   const [student, setStudent] = useState(null);
   const [room, setRoom] = useState(null);
+  const [breakoutPeers, setBreakoutPeers] = useState([]);
+  const [breakoutsActive, setBreakoutsActive] = useState(false);
   const [draft, setDraft] = useState('');
   const [draftHtml, setDraftHtml] = useState('');
   const [joined, setJoined] = useState(false);
@@ -189,6 +192,11 @@ export default function StudentView() {
     document.documentElement.classList.add('iboard-student-workspace');
     return () => document.documentElement.classList.remove('iboard-student-workspace');
   }, [joined]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('iboard-student-breakouts', !!joined && !!breakoutsActive);
+    return () => document.documentElement.classList.remove('iboard-student-breakouts');
+  }, [joined, breakoutsActive]);
 
   useEffect(() => {
     function syncFullscreen() {
@@ -546,11 +554,19 @@ export default function StudentView() {
     const onState = (payload) => {
       setRoom(payload.room || null);
       const sid = studentRef.current?.id ?? hydrateStudentIdRef.current;
+      const active = !!payload.breakouts?.active || !!payload.room?.breakouts_active;
+      setBreakoutsActive(active);
       if (!sid || !payload.students) return;
       const me = payload.students.find((s) => s.id === sid);
       if (!me) return;
       hydrateStudentIdRef.current = null;
       setStudent(me);
+      const peers = active
+        ? payload.students
+            .filter((s) => Number(s.id) !== Number(sid))
+            .slice(0, 4)
+        : [];
+      setBreakoutPeers(peers);
       const typing = !!document.activeElement?.isContentEditable;
       const r = payload.room;
       const lim =
@@ -569,8 +585,18 @@ export default function StudentView() {
     };
     const onLive = ({ student: s }) => {
       const sid = studentRef.current?.id ?? hydrateStudentIdRef.current;
-      if (!sid || !s?.id || Number(s.id) !== Number(sid)) return;
-      setStudent((prev) => ({ ...(prev || {}), ...s }));
+      if (!sid || !s?.id) return;
+      if (Number(s.id) === Number(sid)) {
+        setStudent((prev) => ({ ...(prev || {}), ...s }));
+        return;
+      }
+      setBreakoutPeers((prev) => {
+        const i = prev.findIndex((p) => Number(p.id) === Number(s.id));
+        if (i === -1) return prev;
+        const next = [...prev];
+        next[i] = { ...next[i], ...s };
+        return next;
+      });
     };
     const onBatch = ({ items, replay }) => {
       const sid =
@@ -868,6 +894,15 @@ export default function StudentView() {
         setCodeInput(code);
         setStudent(ack.student);
         if (ack.room) setRoom(ack.room);
+        {
+          const active = !!ack.breakouts?.active || !!ack.room?.breakouts_active;
+          setBreakoutsActive(active);
+          setBreakoutPeers(
+            active && Array.isArray(ack.students)
+              ? ack.students.filter((s) => Number(s.id) !== Number(ack.student?.id)).slice(0, 4)
+              : []
+          );
+        }
         const lim =
           ack.room?.enforce_word_count && (ack.room?.word_target ?? 0) > 0
             ? Number(ack.room.word_target)
@@ -961,6 +996,15 @@ export default function StudentView() {
       saveStudentSession({ code: c, studentId: ack.student.id, name: ack.student?.name || n });
       setStudent(ack.student);
       if (ack.room) setRoom(ack.room);
+      {
+        const active = !!ack.breakouts?.active || !!ack.room?.breakouts_active;
+        setBreakoutsActive(active);
+        setBreakoutPeers(
+          active && Array.isArray(ack.students)
+            ? ack.students.filter((s) => Number(s.id) !== Number(ack.student?.id)).slice(0, 4)
+            : []
+        );
+      }
       const lim =
         ack.room?.enforce_word_count && (ack.room?.word_target ?? 0) > 0
           ? Number(ack.room.word_target)
@@ -1473,8 +1517,8 @@ export default function StudentView() {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full flex-1 px-4 py-6 sm:px-6">
-        <div className="mx-auto flex w-full flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
+      <main className="mx-auto flex w-full min-h-0 flex-1 flex-col px-4 py-6 sm:px-6">
+        <div className="iboard-student-workspace-grid mx-auto flex w-full min-h-0 flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
           <aside
             data-iboard-student-support
             className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1"
@@ -1525,8 +1569,8 @@ export default function StudentView() {
             </div>
           </aside>
 
-          <section className="order-2 flex min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+          <section className="iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
+            <p className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
               Tip: paste a screenshot into the box to add an image to your board card.
             </p>
             {student?.image_url && (
@@ -1570,47 +1614,73 @@ export default function StudentView() {
               </div>
             )}
             <StudentAnnotationController socket={socket} studentId={student?.id} />
-            <RichTextEditor
-              text={draft}
-              html={draftHtml}
-              onChange={({ text, html, paste }) => {
-                draftTrailTokenRef.current = socket.connected ? room?.draftTrail?.token || '' : '';
-                if (paste && socket.connected && room?.draftTrail?.active) {
-                  socket.emit('student:text', { text, richTextHtml: html, draftTrail: { token: draftTrailTokenRef.current, paste: true } });
-                }
-                setDraft(text);
-                setDraftHtml(html);
-              }}
-              onPaste={onDraftPaste}
-              disabled={frozen}
-              maxWords={enforce && wt > 0 ? wt : 0}
-              placeholder="Write here… or paste an image"
-              headerActions={
-                <>
-                  {student?.id ? <StudentHandRaise socket={socket} compact /> : null}
-                  <span
-                    role="status"
-                    title={draftSaveState === 'offline' ? 'Your device has a local backup. iBOARD will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}
-                    className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-300'}`}
-                  >
-                    <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'saving' ? 'bg-indigo-500' : draftSaveState === 'error' ? 'bg-red-600' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                    {draftSaveState === 'saving' ? 'Saving…' : draftSaveState === 'error' ? 'Save failed · local copy kept' : draftSaveState === 'offline' ? 'Offline · local copy saved' : draftSaveState === 'local' ? 'Recovered local copy' : 'Saved'}
-                  </span>
-                  {room?.draftTrail?.active ? (
+            <div className="iboard-student-writing-pane min-h-0 flex-1">
+              <RichTextEditor
+                text={draft}
+                html={draftHtml}
+                onChange={({ text, html, paste }) => {
+                  draftTrailTokenRef.current = socket.connected ? room?.draftTrail?.token || '' : '';
+                  if (paste && socket.connected && room?.draftTrail?.active) {
+                    socket.emit('student:text', { text, richTextHtml: html, draftTrail: { token: draftTrailTokenRef.current, paste: true } });
+                  }
+                  setDraft(text);
+                  setDraftHtml(html);
+                }}
+                onPaste={onDraftPaste}
+                disabled={frozen}
+                maxWords={enforce && wt > 0 ? wt : 0}
+                placeholder="Write here… or paste an image"
+                headerActions={
+                  <>
+                    {student?.id ? <StudentHandRaise socket={socket} compact /> : null}
                     <span
                       role="status"
-                      title="Draft Trail is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)."
-                      aria-label="Draft Trail is on"
-                      className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-600"
-                    />
-                  ) : null}
-                </>
-              }
-            />
+                      title={draftSaveState === 'offline' ? 'Your device has a local backup. iBOARD will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-300'}`}
+                    >
+                      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'saving' ? 'bg-indigo-500' : draftSaveState === 'error' ? 'bg-red-600' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      {draftSaveState === 'saving' ? 'Saving…' : draftSaveState === 'error' ? 'Save failed · local copy kept' : draftSaveState === 'offline' ? 'Offline · local copy saved' : draftSaveState === 'local' ? 'Recovered local copy' : 'Saved'}
+                    </span>
+                    {room?.draftTrail?.active ? (
+                      <span
+                        role="status"
+                        title="Draft Trail is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)."
+                        aria-label="Draft Trail is on"
+                        className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-600"
+                      />
+                    ) : null}
+                  </>
+                }
+              />
+            </div>
           </section>
         </div>
+        {breakoutsActive ? (
+          <section className="iboard-breakout-peers shrink-0" aria-label="Breakout room peers">
+            <div className="iboard-breakout-peers__head">
+              <h3>Your breakout</h3>
+            </div>
+            <div className="iboard-breakout-peers__grid">
+              {breakoutPeers.slice(0, 4).map((peer) => (
+                <article key={peer.id} className="iboard-breakout-peers__slot">
+                  <p className="iboard-breakout-peers__name">{peer.name}</p>
+                  {peer.image_url ? (
+                    <img src={peer.image_url} alt="" className="iboard-breakout-peers__image" />
+                  ) : null}
+                  <div className="iboard-breakout-peers__body">
+                    {peer.text || peer.rich_text_html ? (
+                      <RichTextDisplay html={peer.rich_text_html} text={peer.text || ''} />
+                    ) : (
+                      <span className="iboard-breakout-peers__empty-copy">No writing yet</span>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </main>
-      <AppFooter />
+      {!breakoutsActive ? <AppFooter /> : null}
     </div>
   );
 }

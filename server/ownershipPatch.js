@@ -99,10 +99,28 @@ function emitAudienceQnaState(io, code) {
 function buildRoomPayload(code) {
   const c = normalizeRoomCode(code);
   const room = queries.ensureRoom(ownershipDb, c);
+  const students = queries.listStudents(ownershipDb, c).map(queries.rowToStudent);
+  const active = !!room.breakouts_active;
+  const declared = Math.max(0, Math.min(40, Number(room.breakout_count) || 0));
+  const byRoom = new Map();
+  for (const s of students) {
+    const id = String(s.breakout_room_id || '').trim();
+    if (!id) continue;
+    if (!byRoom.has(id)) byRoom.set(id, []);
+    byRoom.get(id).push(Number(s.id));
+  }
+  const maxFromMembers = [...byRoom.keys()].reduce((m, id) => Math.max(m, Number(id) || 0), 0);
+  const total = active ? Math.max(declared, maxFromMembers) : 0;
+  const rooms = [];
+  for (let i = 1; i <= total; i += 1) {
+    const id = String(i);
+    rooms.push({ id, label: `Room ${id}`, memberIds: byRoom.get(id) || [] });
+  }
   return {
     room: queries.rowToRoom(room),
-    students: queries.listStudents(ownershipDb, c).map(queries.rowToStudent),
+    students,
     posts: queries.listBoardPosts(ownershipDb, c).map(queries.rowToBoardPost),
+    breakouts: { active, roomCount: total, rooms },
   };
 }
 
@@ -166,7 +184,7 @@ function updateTeacherCard(io, socket, payload = {}, cb) {
         .run(title, nextText, postId, code);
     }
 
-    io.to(roomSocketName(code)).emit('room:state', buildRoomPayload(code));
+    io.to(teacherSocketName(code)).emit('room:state', buildRoomPayload(code));
     cb?.({ ok: true, post: queries.rowToBoardPost(queries.getBoardPost(ownershipDb, postId)) });
   } catch (error) {
     console.error('Could not update teacher card', error);

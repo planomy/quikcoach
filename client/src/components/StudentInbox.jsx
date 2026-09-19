@@ -106,7 +106,58 @@ function saveSnapshotCard(item) {
   });
 }
 
-function MaterialBody({ item, large, onToggleLarge }) {
+function MaterialIconButton({ label, busyLabel, busy, onClick, children, tone = 'neutral' }) {
+  const toneClass =
+    tone === 'primary'
+      ? 'border-indigo-200 bg-indigo-600 text-white hover:bg-indigo-700 dark:border-indigo-700'
+      : tone === 'accent'
+        ? 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200'
+        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!!busy}
+      title={busy ? busyLabel : label}
+      aria-label={busy ? busyLabel : label}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${toneClass}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function IconDownload() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3v12" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 21h14" />
+    </svg>
+  );
+}
+
+function IconSnapshot() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 8h3l2-2h6l2 2h3v11H4z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </svg>
+  );
+}
+
+function IconFullscreen() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 3H3v6" />
+      <path d="M15 3h6v6" />
+      <path d="M9 21H3v-6" />
+      <path d="M15 21h6v-6" />
+    </svg>
+  );
+}
+
+function MaterialBody({ item, large, onToggleLarge, compact = false }) {
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
   const previewRef = useRef(null);
@@ -189,6 +240,39 @@ function MaterialBody({ item, large, onToggleLarge }) {
     );
   }
 
+  const actions = (
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      <MaterialIconButton
+        label="Save file"
+        busyLabel="Saving…"
+        busy={busy}
+        onClick={onDownload}
+        tone="primary"
+      >
+        <IconDownload />
+      </MaterialIconButton>
+      <MaterialIconButton
+        label="Save snapshot"
+        busyLabel="Saving…"
+        busy={busy}
+        onClick={onSnapshot}
+      >
+        <IconSnapshot />
+      </MaterialIconButton>
+      {typeof onToggleLarge === 'function' ? (
+        <MaterialIconButton
+          label={large ? 'Close full screen' : 'View full screen'}
+          busyLabel={large ? 'Close full screen' : 'View full screen'}
+          busy=""
+          onClick={onToggleLarge}
+          tone="accent"
+        >
+          <IconFullscreen />
+        </MaterialIconButton>
+      ) : null}
+    </div>
+  );
+
   const lightbox =
     large && typeof document !== 'undefined'
       ? createPortal(
@@ -214,29 +298,7 @@ function MaterialBody({ item, large, onToggleLarge }) {
                 {renderMedia('h-full w-full object-contain')}
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950 sm:px-4">
-                <button
-                  type="button"
-                  onClick={onDownload}
-                  disabled={!!busy}
-                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {busy === 'download' ? 'Saving…' : 'Save file'}
-                </button>
-                <button
-                  type="button"
-                  onClick={onSnapshot}
-                  disabled={!!busy}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  {busy === 'snapshot' ? 'Saving…' : 'Save snapshot'}
-                </button>
-                <button
-                  type="button"
-                  onClick={onToggleLarge}
-                  className="ml-auto rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
-                >
-                  Close full screen
-                </button>
+                {actions}
               </div>
             </div>
           </div>,
@@ -245,41 +307,17 @@ function MaterialBody({ item, large, onToggleLarge }) {
       : null;
 
   return (
-    <div className="space-y-3" ref={previewRef}>
-      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-        {item.originalName || 'Handout'}
-        {item.size ? ` · ${Math.max(1, Math.round(item.size / 1024))} KB` : ''}
-      </p>
+    <div className="space-y-2.5" ref={previewRef}>
+      {!compact ? (
+        <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          {item.originalName || 'Handout'}
+          {item.size ? ` · ${Math.max(1, Math.round(item.size / 1024))} KB` : ''}
+        </p>
+      ) : null}
       <div className="h-64 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
         {renderMedia('h-full w-full object-contain')}
       </div>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onDownload}
-          disabled={!!busy}
-          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {busy === 'download' ? 'Saving…' : 'Save file'}
-        </button>
-        <button
-          type="button"
-          onClick={onSnapshot}
-          disabled={!!busy}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
-        >
-          {busy === 'snapshot' ? 'Saving…' : 'Save snapshot'}
-        </button>
-        {typeof onToggleLarge === 'function' ? (
-          <button
-            type="button"
-            onClick={onToggleLarge}
-            className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
-          >
-            {large ? 'Close full screen' : 'View full screen'}
-          </button>
-        ) : null}
-      </div>
+      {actions}
       {message ? <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{message}</p> : null}
       {lightbox}
     </div>
@@ -358,11 +396,17 @@ export default function StudentInbox({
                     {isMaterial ? (item.title || preview) : isSetPrompt ? setPrompt.title : preview}
                   </p>
                 </div>
-                <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
-                  {open ? 'Close' : 'Open'}
-                </span>
+                {!open ? (
+                  <span className="shrink-0 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                    Open
+                  </span>
+                ) : null}
               </button>
-              {!open && typeof onDismiss === 'function' ? (
+              {open ? (
+                <div className="flex items-center pr-1.5">
+                  <CloseButton onClick={() => onToggle(item.id)} aria-label="Close" title="Close" />
+                </div>
+              ) : typeof onDismiss === 'function' ? (
                 <RemoveButton onClick={() => onDismiss(item.id)} aria-label="Dismiss" title="Dismiss" />
               ) : null}
             </div>
@@ -380,9 +424,6 @@ export default function StudentInbox({
                   />
                 ) : isBroadcast ? (
                   <>
-                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                      Class exemplars — names are not shown.
-                    </p>
                     {(item.exemplars || []).map((ex, i) => (
                       (() => {
                         const materialItem = ex.image_url || ex.file_url ? broadcastMaterialItem(item, ex, i) : null;
@@ -399,6 +440,7 @@ export default function StudentInbox({
                               <div className="mt-2">
                                 <MaterialBody
                                   item={materialItem}
+                                  compact
                                   large={largeMaterialId === materialItem.id}
                                   onToggleLarge={
                                     typeof onToggleMaterialLarge === 'function'

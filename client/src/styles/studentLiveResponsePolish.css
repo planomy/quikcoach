@@ -29,7 +29,7 @@ html.iboard-student-workspace.iboard-student-respond-alert
 
 /* On full desktop screens, give the writing surface a little more visual weight. */
 @media (min-width: 1280px) {
-  html.iboard-student-workspace main > div {
+  html.iboard-student-workspace main > .iboard-student-workspace-grid {
     grid-template-columns: minmax(0, 5fr) minmax(21rem, 3fr) !important;
   }
 }

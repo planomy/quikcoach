@@ -8,6 +8,22 @@ html.iboard-student-workspace #root {
   background-color: var(--iboard-canvas, #f1f0f8) !important;
 }
 
+/* Breakouts: lock the student shell to one viewport so peers stay on-screen. */
+html.iboard-student-workspace.iboard-student-breakouts,
+html.iboard-student-workspace.iboard-student-breakouts body,
+html.iboard-student-workspace.iboard-student-breakouts #root {
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+html.iboard-student-workspace.iboard-student-breakouts .iboard-student-canvas {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Header utilities must sit above the support rail when its menu is open. */
 html.iboard-student-workspace header {
   position: relative;
@@ -229,7 +245,7 @@ html.iboard-student-workspace .iboard-question-pulse {
      the student's work simply because effective CSS width is under 1280px. */
   .iboard-student-workspace header > div,
   .iboard-student-workspace main,
-  .iboard-student-workspace main > div {
+  .iboard-student-workspace main > .iboard-student-workspace-grid {
     max-width: none !important;
   }
 
@@ -239,7 +255,7 @@ html.iboard-student-workspace .iboard-question-pulse {
     padding-left: clamp(0.75rem, 1.8vw, 3rem);
   }
 
-  .iboard-student-workspace main > div {
+  .iboard-student-workspace main > .iboard-student-workspace-grid {
     display: grid !important;
     grid-template-columns: minmax(0, 3fr) minmax(15rem, 2fr) !important;
     align-items: start !important;
@@ -248,12 +264,12 @@ html.iboard-student-workspace .iboard-question-pulse {
 
   /* StudentView's Tailwind column placement starts at xl. Place the two direct
      workspace children explicitly so tablets and laptops use the same arrangement. */
-  .iboard-student-workspace main > div > aside {
+  .iboard-student-workspace main > .iboard-student-workspace-grid > aside {
     grid-column: 2;
     grid-row: 1;
   }
 
-  .iboard-student-workspace main > div > section {
+  .iboard-student-workspace main > .iboard-student-workspace-grid > section {
     grid-column: 1;
     grid-row: 1;
   }
@@ -262,7 +278,7 @@ html.iboard-student-workspace .iboard-question-pulse {
      Tab badges float above the tab label; keep enough top padding inside the nav
      so the rose count chips are not clipped by the aside's overflow:hidden
      (needed so long Pulse sets cannot stretch the whole page). */
-  .iboard-student-workspace main > div > aside {
+  .iboard-student-workspace main > .iboard-student-workspace-grid > aside {
     position: sticky;
     top: 1rem;
     align-self: start;
@@ -271,7 +287,6 @@ html.iboard-student-workspace .iboard-question-pulse {
     display: flex;
     flex-direction: column;
     padding-bottom: 0.25rem;
-    scrollbar-width: thin;
   }
 
   .iboard-student-workspace nav[aria-label='Student tools'] {
@@ -289,8 +304,16 @@ html.iboard-student-workspace .iboard-question-pulse {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
+    /* Match app-wide hidden scrollbars (wheel/trackpad still work). */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .iboard-student-workspace .iboard-student-support-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   .iboard-student-pulse-dock {
@@ -315,13 +338,212 @@ html.iboard-student-workspace .iboard-question-pulse {
     max-width: none;
     margin-right: 0;
     margin-left: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .iboard-student-workspace main [role='textbox'][contenteditable='true']::-webkit-scrollbar,
+  .iboard-student-workspace main [role='textbox'][contenteditable='false']::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* Breakouts: pin peers under writing+inbox; long Broadcast must not push them off-screen. */
+  .iboard-student-workspace.iboard-student-breakouts main {
+    display: flex !important;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding-top: 0.65rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts main > .iboard-student-workspace-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch !important;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts main > .iboard-student-workspace-grid > aside {
+    position: relative;
+    top: auto;
+    align-self: stretch;
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts .iboard-student-support-scroll {
+    max-height: none;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts main > .iboard-student-workspace-grid > .iboard-student-writing-col {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts .iboard-student-writing-pane {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts .iboard-student-writing-pane > div {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts .iboard-student-writing-pane > div > .relative:has([role='textbox']) {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Nested Broadcast / exemplar panes should not show a second inbox scrollbar. */
+  .iboard-student-workspace.iboard-student-breakouts .iboard-student-support-scroll,
+  .iboard-student-workspace.iboard-student-breakouts .iboard-student-support-scroll * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts .iboard-student-support-scroll::-webkit-scrollbar,
+  .iboard-student-workspace.iboard-student-breakouts .iboard-student-support-scroll *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .iboard-student-workspace.iboard-student-breakouts main [role='textbox'][contenteditable='true'],
+  .iboard-student-workspace.iboard-student-breakouts main [role='textbox'][contenteditable='false'] {
+    min-height: 0;
+    max-height: none;
+    flex: 1 1 auto;
+    overflow-y: auto;
   }
 }
 
 @media (min-width: 1024px) {
   /* Give laptop/desktop support panels more breathing room once the viewport allows it. */
-  .iboard-student-workspace main > div {
+  .iboard-student-workspace main > .iboard-student-workspace-grid {
     grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr) !important;
     gap: clamp(1rem, 1.6vw, 2.5rem) !important;
   }
+}
+
+/* Breakout peers: full-width quarters — square cards for present peers only (max 4). */
+.iboard-breakout-peers {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0;
+  background: transparent;
+  flex: 0 0 auto;
+}
+
+.iboard-breakout-peers__head {
+  margin-bottom: 0.4rem;
+}
+
+.iboard-breakout-peers__head h3 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #3c3c45;
+}
+
+.iboard-breakout-peers__grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.65rem;
+  width: 100%;
+  align-items: start;
+}
+
+.iboard-breakout-peers__slot {
+  min-width: 0;
+  width: min(100%, 34vh);
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  max-height: 34vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.75rem;
+  border: 1px solid #e4e4ea;
+  background: #ffffff;
+  padding: 0.6rem 0.7rem;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+
+.iboard-breakout-peers__name {
+  margin: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: #3c3c45;
+}
+
+.iboard-breakout-peers__image {
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+  max-height: 28%;
+  width: 100%;
+  border-radius: 0.4rem;
+  background: #f8fafc;
+  object-fit: contain;
+}
+
+.iboard-breakout-peers__body {
+  margin-top: 0.35rem;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #475569;
+  /* Hidden scrollbar chrome — wheel/trackpad/touch still scroll. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.iboard-breakout-peers__body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.iboard-breakout-peers__empty-copy {
+  font-style: italic;
+  color: #94a3b8;
+}
+
+html.dark .iboard-breakout-peers__head h3,
+html.dark .iboard-breakout-peers__name {
+  color: #e2e8f0;
+}
+
+html.dark .iboard-breakout-peers__slot {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+html.dark .iboard-breakout-peers__body {
+  color: #cbd5e1;
 }

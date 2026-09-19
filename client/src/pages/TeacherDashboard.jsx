@@ -250,6 +250,7 @@ function normalizeStudentFromServer(s) {
     updated_at: s.updated_at,
     created_at: s.created_at || null,
     class_group: s.class_group != null ? String(s.class_group) : '',
+    breakout_room_id: s.breakout_room_id != null ? String(s.breakout_room_id) : '',
     year_level: s.year_level != null ? String(s.year_level) : '',
     image_url: s.image_url || null,
     teacher_markup_url: s.teacher_markup_url || null,
@@ -294,6 +295,12 @@ function TeacherDashboardInner() {
   const [joined, setJoined] = useState(false);
   const [room, setRoom] = useState(null);
   const [students, setStudents] = useState([]);
+  const [breakouts, setBreakouts] = useState({ active: false, rooms: [], roomCount: 0 });
+  const [breakoutBusy, setBreakoutBusy] = useState(false);
+  const [breakoutRoomCountDraft, setBreakoutRoomCountDraft] = useState(1);
+  const [breakoutSetupMode, setBreakoutSetupMode] = useState('auto'); // 'auto' | 'manual'
+  /** @type {[Record<string, string>, Function]} studentId -> room id or '' */
+  const [breakoutDraftAssign, setBreakoutDraftAssign] = useState({});
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState('');
   const [socketConnected, setSocketConnected] = useState(true);
@@ -357,6 +364,9 @@ function TeacherDashboardInner() {
   const addCardPanelRef = useRef(null);
   const settingsButtonRef = useRef(null);
   const settingsPanelRef = useRef(null);
+  const settingsChromeRef = useRef(null);
+  const breakoutAssignPanelRef = useRef(null);
+  const [settingsChromeHeight, setSettingsChromeHeight] = useState(44);
   const [teacherToolsTop, setTeacherToolsTop] = useState(0);
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
@@ -749,6 +759,15 @@ function TeacherDashboardInner() {
       setRoom(payload.room);
       setStudents((payload.students || []).map(normalizeStudentFromServer));
       setPosts(Array.isArray(payload.posts) ? payload.posts : []);
+      setBreakouts(
+        payload.breakouts && typeof payload.breakouts === 'object'
+          ? {
+              active: !!payload.breakouts.active,
+              roomCount: Number(payload.breakouts.roomCount) || (payload.breakouts.rooms || []).length || 0,
+              rooms: Array.isArray(payload.breakouts.rooms) ? payload.breakouts.rooms : [],
+            }
+          : { active: !!payload.room?.breakouts_active, roomCount: Number(payload.room?.breakout_count) || 0, rooms: [] }
+      );
       const r = payload.room;
       if (!modalOpen && r?.feedback_toggles) {
         hydrateFeedbackStateFromRoom(r);
@@ -775,6 +794,7 @@ function TeacherDashboardInner() {
           cur.updated_at === row.updated_at &&
           cur.name === row.name &&
           cur.class_group === row.class_group &&
+          cur.breakout_room_id === row.breakout_room_id &&
           cur.year_level === row.year_level &&
           cur.image_url === row.image_url &&
           cur.teacher_markup_url === row.teacher_markup_url
@@ -1055,6 +1075,164 @@ function TeacherDashboardInner() {
       }),
     [orderedStudents, monitoredIds, attentionFocus, awayByStudentId, activityNow]
   );
+
+  const breakoutsActive = !!breakouts?.active;
+
+  useEffect(() => {
+    if (!breakoutsActive) return;
+    const n = Number(breakouts.roomCount) || (breakouts.rooms || []).length || 1;
+    setBreakoutRoomCountDraft(n);
+  }, [breakoutsActive, breakouts.roomCount, breakouts.rooms]);
+
+  useEffect(() => {
+    const max = Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)));
+    setBreakoutDraftAssign((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [key, roomId] of Object.entries(next)) {
+        const n = Number(roomId);
+        if (roomId && (!Number.isFinite(n) || n < 1 || n > max)) {
+          next[key] = '';
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [breakoutRoomCountDraft]);
+
+  const breakoutRoomOptions = useMemo(() => {
+    const fromMeta = (breakouts.rooms || []).map((r) => String(r.id));
+    if (fromMeta.length) return fromMeta;
+    const count = Number(breakouts.roomCount) || 0;
+    return Array.from({ length: count }, (_, i) => String(i + 1));
+  }, [breakouts]);
+
+  const boardRows = useMemo(() => {
+    if (!breakoutsActive) {
+      return visibleStudents.map((student) => ({ type: 'card', student }));
+    }
+    const byId = new Map(visibleStudents.map((s) => [Number(s.id), s]));
+    const used = new Set();
+    const rows = [];
+    for (const roomMeta of breakouts.rooms || []) {
+      const members = (roomMeta.memberIds || [])
+        .map((id) => byId.get(Number(id)))
+        .filter(Boolean);
+      for (const s of members) used.add(Number(s.id));
+      rows.push({
+        type: 'header',
+        id: String(roomMeta.id),
+        label: roomMeta.label || `Room ${roomMeta.id}`,
+        count: members.length,
+      });
+      for (const student of members) {
+        rows.push({ type: 'card', student });
+      }
+    }
+    const rest = visibleStudents.filter((s) => !used.has(Number(s.id)));
+    if (rest.length) {
+      rows.push({ type: 'header', id: 'unassigned', label: 'Unassigned', count: rest.length });
+      for (const student of rest) rows.push({ type: 'card', student });
+    }
+    return rows;
+  }, [breakoutsActive, breakouts, visibleStudents]);
+
+  function startBreakoutsAuto() {
+    if (!socket || breakoutBusy) return;
+    setBreakoutBusy(true);
+    socket.emit('teacher:breakouts-start', { mode: 'auto' }, (ack) => {
+      setBreakoutBusy(false);
+      if (!ack?.ok) setError(ack?.error || 'Could not start breakouts');
+    });
+  }
+
+  function startBreakoutsManual() {
+    if (!socket || breakoutBusy) return;
+    const roomCount = Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)));
+    const assignments = orderedStudents.map((student) => ({
+      studentId: Number(student.id),
+      breakout_room_id: String(breakoutDraftAssign[String(student.id)] || ''),
+    }));
+    setBreakoutBusy(true);
+    socket.emit('teacher:breakouts-start', { mode: 'manual', roomCount, assignments }, (ack) => {
+      setBreakoutBusy(false);
+      if (!ack?.ok) {
+        setError(ack?.error || 'Could not start breakouts');
+        return;
+      }
+      setBreakoutSetupMode('auto');
+    });
+  }
+
+  const MAX_BREAKOUT_ROOM = 5; // self + 4 peers on student screen
+
+  function countDraftInRoom(roomId, exceptStudentId = null) {
+    const room = String(roomId || '');
+    if (!room) return 0;
+    return Object.entries(breakoutDraftAssign).filter(
+      ([id, assigned]) =>
+        String(assigned) === room &&
+        (exceptStudentId == null || String(id) !== String(exceptStudentId))
+    ).length;
+  }
+
+  function setDraftBreakoutRoom(studentId, roomId) {
+    const key = String(studentId);
+    const nextRoom = roomId ? String(roomId) : '';
+    if (nextRoom) {
+      const already = countDraftInRoom(nextRoom, key);
+      if (already >= MAX_BREAKOUT_ROOM) {
+        setError(`Room ${nextRoom} is full (max ${MAX_BREAKOUT_ROOM})`);
+        return;
+      }
+    }
+    setBreakoutDraftAssign((prev) => {
+      if ((prev[key] || '') === nextRoom) return prev;
+      return { ...prev, [key]: nextRoom };
+    });
+  }
+
+  function endBreakouts() {
+    if (!socket || breakoutBusy) return;
+    setBreakoutBusy(true);
+    socket.emit('teacher:breakouts-end', {}, (ack) => {
+      setBreakoutBusy(false);
+      if (!ack?.ok) setError(ack?.error || 'Could not end breakouts');
+    });
+  }
+
+  function setBreakoutCount(nextCount) {
+    if (!socket || !breakoutsActive || breakoutBusy) return;
+    const roomCount = Math.max(1, Math.min(40, Math.floor(Number(nextCount) || 1)));
+    setBreakoutBusy(true);
+    socket.emit('teacher:breakouts-set-count', { roomCount }, (ack) => {
+      setBreakoutBusy(false);
+      if (!ack?.ok) setError(ack?.error || 'Could not change room count');
+    });
+  }
+
+  function moveStudentBreakout(studentId, breakoutRoomId) {
+    if (!socket || !breakoutsActive) return;
+    const room = String(breakoutRoomId || '');
+    if (room) {
+      const already = students.filter(
+        (s) =>
+          Number(s.id) !== Number(studentId) &&
+          String(s.breakout_room_id || '') === room
+      ).length;
+      if (already >= MAX_BREAKOUT_ROOM) {
+        setError(`Room ${room} is full (max ${MAX_BREAKOUT_ROOM})`);
+        return;
+      }
+    }
+    socket.emit(
+      'teacher:breakouts-update',
+      { studentId: Number(studentId), breakout_room_id: room },
+      (ack) => {
+        if (!ack?.ok) setError(ack?.error || 'Could not move student');
+      }
+    );
+  }
 
   useEffect(() => {
     setMonitoredIds(readMonitoredIdsForRoom(codeInput));
@@ -1398,6 +1576,9 @@ function TeacherDashboardInner() {
       if (settingsOpen) {
         if (settingsButtonRef.current?.contains(target)) return;
         if (settingsPanelRef.current?.contains(target)) return;
+        if (breakoutAssignPanelRef.current?.contains(target)) return;
+        // Native <select> menus are often outside the React tree; don't close while interacting.
+        if (target?.closest?.('select') || document.activeElement?.tagName === 'SELECT') return;
       }
       if (toolsPanelOpen) {
         setToolsPanelOpen(false);
@@ -1486,6 +1667,17 @@ function TeacherDashboardInner() {
     }
     return map;
   }, [livePulse.students]);
+
+  useEffect(() => {
+    if (!settingsOpen) return undefined;
+    function measureChrome() {
+      const h = settingsChromeRef.current?.offsetHeight;
+      if (h && Number.isFinite(h)) setSettingsChromeHeight(h);
+    }
+    measureChrome();
+    window.addEventListener('resize', measureChrome);
+    return () => window.removeEventListener('resize', measureChrome);
+  }, [settingsOpen]);
 
   const headerDockStyle = useMemo(
     () => ({
@@ -1707,6 +1899,7 @@ function TeacherDashboardInner() {
   function closeSettings() {
     setSettingsOpen(false);
     setClearFixedArmed(false);
+    setBreakoutSetupMode('auto');
   }
 
   function toggleSettings() {
@@ -3142,7 +3335,23 @@ function TeacherDashboardInner() {
               Waiting for students to join…
             </div>
           )}
-          {visibleStudents.map((s) => {
+          {boardRows.map((row) => {
+            if (row.type === 'header') {
+              return (
+                <div
+                  key={`breakout-${row.id}`}
+                  className="col-span-full mt-1 flex items-baseline justify-between gap-2 border-b border-[#e4e4ea] pb-1.5 first:mt-0 dark:border-slate-700"
+                >
+                  <h3 className="text-[13px] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-100">
+                    {row.label}
+                  </h3>
+                  <span className="text-[11px] font-medium text-[#8a8a96] dark:text-slate-400">
+                    {row.count} student{row.count === 1 ? '' : 's'}
+                  </span>
+                </div>
+              );
+            }
+            const s = row.student;
             const displayText = s.text || '';
             const wc = wordCount(s.text);
             const st = activityStatus(s.updated_at, activityNow);
@@ -3243,6 +3452,23 @@ function TeacherDashboardInner() {
                           {gradeShortLabel(s.year_level)}
                         </span>
                       )}
+                      {breakoutsActive ? (
+                        <label className="ml-auto shrink-0" onClick={(event) => event.stopPropagation()}>
+                          <span className="sr-only">Breakout room for {s.name}</span>
+                          <select
+                            value={String(s.breakout_room_id || '')}
+                            onChange={(event) => moveStudentBreakout(s.id, event.target.value)}
+                            className="rounded-md border border-[#e2e2e8] bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[#3c3c45] outline-none focus:border-[#5a5fc3] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                          >
+                            <option value="">—</option>
+                            {breakoutRoomOptions.map((id) => (
+                              <option key={id} value={id}>
+                                Room {id}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : null}
                       {isAway ? (
                         <span
                           title="Tab or app in background"
@@ -4135,6 +4361,123 @@ function TeacherDashboardInner() {
         </div>
       )}
 
+      {settingsOpen && !breakoutsActive && breakoutSetupMode === 'manual' && (
+        <div
+          ref={breakoutAssignPanelRef}
+          className="iboard-breakout-assign fixed z-[60]"
+          style={{
+            top: teacherToolsTop + settingsChromeHeight,
+            maxHeight: `calc(100dvh - ${teacherToolsTop + settingsChromeHeight}px)`,
+            right: 'min(22rem, 100vw)',
+          }}
+          role="dialog"
+          aria-modal="false"
+          aria-label="Assign breakout rooms"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <div className="iboard-breakout-assign__chrome">
+            <h2>Assign rooms</h2>
+            <span className="iboard-breakout-assign__meta">
+              {Object.values(breakoutDraftAssign).filter(Boolean).length}/{orderedStudents.length} placed
+            </span>
+          </div>
+                          <div className="iboard-breakout-assign__toolbar">
+            <label className="iboard-breakout-assign__rooms">
+              <span>Rooms</span>
+              <div className="iboard-breakout-assign__stepper">
+                <button
+                  type="button"
+                  aria-label="Fewer rooms"
+                  disabled={Math.floor(Number(breakoutRoomCountDraft) || 1) <= 1}
+                  onClick={() => {
+                    setBreakoutRoomCountDraft((n) => Math.max(1, Math.floor(Number(n) || 1) - 1));
+                  }}
+                >
+                  −
+                </button>
+                <span className="iboard-breakout-assign__stepper-value" aria-live="polite">
+                  {Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)))}
+                </span>
+                <button
+                  type="button"
+                  aria-label="More rooms"
+                  disabled={
+                    Math.floor(Number(breakoutRoomCountDraft) || 1) >=
+                    Math.max(1, Math.min(40, orderedStudents.length || 1))
+                  }
+                  onClick={() => {
+                    const maxRooms = Math.max(1, Math.min(40, orderedStudents.length || 1));
+                    setBreakoutRoomCountDraft((n) => Math.min(maxRooms, Math.floor(Number(n) || 1) + 1));
+                  }}
+                >
+                  +
+                </button>
+              </div>
+            </label>
+            <p className="iboard-breakout-assign__hint">Tap a room number on each student</p>
+          </div>
+          <div className="iboard-breakout-assign__body scrollbar-thin">
+            {!orderedStudents.length ? (
+              <p className="px-3 py-4 text-[12px] font-medium text-[#8a8a96]">Waiting for students…</p>
+            ) : (
+              <ul className="iboard-breakout-assign__list">
+                {orderedStudents.map((student) => {
+                  const selected = String(breakoutDraftAssign[String(student.id)] || '');
+                  const roomCount = Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)));
+                  return (
+                    <li key={student.id} className="iboard-breakout-assign__row">
+                      <span className="iboard-breakout-assign__name" title={student.name}>
+                        {student.name}
+                      </span>
+                      <div className="iboard-breakout-assign__chips" role="group" aria-label={`Room for ${student.name}`}>
+                        <button
+                          type="button"
+                          aria-pressed={selected === ''}
+                          className="iboard-breakout-assign__chip"
+                          onClick={() => setDraftBreakoutRoom(student.id, '')}
+                          title="Unassigned"
+                        >
+                          —
+                        </button>
+                        {Array.from({ length: roomCount }, (_, index) => {
+                          const id = String(index + 1);
+                          const selectedHere = selected === id;
+                          const full =
+                            !selectedHere && countDraftInRoom(id, student.id) >= MAX_BREAKOUT_ROOM;
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              aria-pressed={selectedHere}
+                              disabled={full}
+                              title={full ? `Room ${id} is full (max ${MAX_BREAKOUT_ROOM})` : `Room ${id}`}
+                              className="iboard-breakout-assign__chip"
+                              onClick={() => setDraftBreakoutRoom(student.id, id)}
+                            >
+                              {id}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <div className="iboard-breakout-assign__footer">
+            <button
+              type="button"
+              disabled={breakoutBusy || !orderedStudents.length}
+              onClick={startBreakoutsManual}
+              className="iboard-room-settings__primary"
+            >
+              Start breakouts
+            </button>
+          </div>
+        </div>
+      )}
+
       {settingsOpen && (
         <div
           ref={settingsPanelRef}
@@ -4144,7 +4487,7 @@ function TeacherDashboardInner() {
           aria-modal="false"
           aria-label="Room settings"
         >
-          <div className="iboard-room-settings__chrome">
+          <div className="iboard-room-settings__chrome" ref={settingsChromeRef}>
             <h2>Room settings</h2>
             <div className="iboard-room-settings__chrome-close">
               <CloseButton onClick={closeSettings} label="Close" />
@@ -4320,6 +4663,104 @@ function TeacherDashboardInner() {
                     })}
                   </div>
                 ) : null}
+              </div>
+            </section>
+
+            <section className="iboard-room-settings__section">
+              <h3 className="iboard-room-settings__label">Breakouts</h3>
+              <div className="iboard-room-settings__card iboard-room-settings__card-pad">
+                {breakoutsActive ? (
+                  <div className="space-y-2.5">
+                    <div className="iboard-room-settings__field-row flex-wrap items-center gap-2">
+                      <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#3c3c45] dark:text-slate-200">
+                        Rooms
+                        <input
+                          type="number"
+                          min={1}
+                          max={40}
+                          value={breakoutRoomCountDraft}
+                          onChange={(event) => {
+                            const n = Math.max(1, Math.min(40, Math.floor(Number(event.target.value) || 1)));
+                            setBreakoutRoomCountDraft(n);
+                          }}
+                          onBlur={() => setBreakoutCount(breakoutRoomCountDraft)}
+                          className="iboard-room-settings__mini w-14"
+                          aria-label="Number of breakout rooms"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={breakoutBusy}
+                        onClick={() => {
+                          const next = Math.min(40, (Number(breakoutRoomCountDraft) || 1) + 1);
+                          setBreakoutRoomCountDraft(next);
+                          setBreakoutCount(next);
+                        }}
+                        className="iboard-room-settings__mini-ghost"
+                      >
+                        Add room
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={breakoutBusy}
+                        onClick={startBreakoutsAuto}
+                        className="iboard-room-settings__secondary"
+                      >
+                        Reshuffle (~4)
+                      </button>
+                      <button
+                        type="button"
+                        disabled={breakoutBusy}
+                        onClick={endBreakouts}
+                        className="iboard-room-settings__secondary"
+                      >
+                        End breakouts
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    <div className="iboard-breakout-mode" role="group" aria-label="Breakout setup mode">
+                      <button
+                        type="button"
+                        aria-pressed={breakoutSetupMode === 'auto'}
+                        onClick={() => setBreakoutSetupMode('auto')}
+                        className="iboard-breakout-mode__btn"
+                      >
+                        Auto
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={breakoutSetupMode === 'manual'}
+                        onClick={() => setBreakoutSetupMode('manual')}
+                        className="iboard-breakout-mode__btn"
+                      >
+                        Manual
+                      </button>
+                    </div>
+                    {breakoutSetupMode === 'auto' ? (
+                      <>
+                        <p className="text-[12px] font-medium text-[#52525c] dark:text-slate-300">
+                          Split into rooms of about 4. Ask stays whole-class.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={breakoutBusy || !students.length}
+                          onClick={startBreakoutsAuto}
+                          className="iboard-room-settings__primary"
+                        >
+                          Start breakouts
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-[12px] font-medium text-[#52525c] dark:text-slate-300">
+                        Choose rooms and assign students in the panel on the left, then Start there.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </section>
 
