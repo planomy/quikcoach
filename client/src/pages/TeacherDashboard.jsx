@@ -431,9 +431,15 @@ function TeacherDashboardInner() {
   const sessionDirtyRef = useRef(false);
   const sessionHydratedRef = useRef(false);
   const sessionFileInputRef = useRef(null);
+  const saveStatusClearRef = useRef(null);
 
   const markSaved = useCallback(() => {
     setSaveStatus('saved');
+    if (saveStatusClearRef.current) clearTimeout(saveStatusClearRef.current);
+    saveStatusClearRef.current = setTimeout(() => {
+      setSaveStatus((current) => (current === 'saved' ? 'idle' : current));
+      saveStatusClearRef.current = null;
+    }, 2000);
   }, []);
 
   const markSessionDirty = useCallback(() => {
@@ -483,13 +489,30 @@ function TeacherDashboardInner() {
   useEffect(() => {
     const onStatus = (event) => {
       const next = event.detail?.status;
-      if (next === 'saving') setSaveStatus('saving');
-      else if (next === 'error') setSaveStatus('error');
-      else if (next === 'saved') markSaved();
+      if (next === 'saving') {
+        if (saveStatusClearRef.current) {
+          clearTimeout(saveStatusClearRef.current);
+          saveStatusClearRef.current = null;
+        }
+        setSaveStatus('saving');
+      } else if (next === 'error') {
+        if (saveStatusClearRef.current) {
+          clearTimeout(saveStatusClearRef.current);
+          saveStatusClearRef.current = null;
+        }
+        setSaveStatus('error');
+      } else if (next === 'saved') markSaved();
     };
     window.addEventListener('iboard:teacher-save-status', onStatus);
     return () => window.removeEventListener('iboard:teacher-save-status', onStatus);
   }, [markSaved]);
+
+  useEffect(
+    () => () => {
+      if (saveStatusClearRef.current) clearTimeout(saveStatusClearRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     socket.connect();
@@ -3013,7 +3036,7 @@ function TeacherDashboardInner() {
               onClick={openTimerSettings}
               onFinishedClick={() => controlRoomTimer('end')}
             />
-            {joined && <SaveStatusChip status={saveStatus === 'idle' ? 'saved' : saveStatus} plain />}
+            {joined && <SaveStatusChip status={saveStatus} plain />}
             <button
               type="button"
               disabled={draftTrailBusy || !socketConnected || !joined}
