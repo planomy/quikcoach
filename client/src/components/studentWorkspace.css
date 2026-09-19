@@ -440,7 +440,7 @@ html.iboard-student-workspace .iboard-question-pulse {
   }
 }
 
-/* Breakout peers: full-width quarters — square cards for present peers only (max 4). */
+/* Breakout peers: capped squares, fixed gap, centered row (snug on tablet, not sparse on wide). */
 .iboard-breakout-peers {
   width: 100%;
   margin-top: 0.5rem;
@@ -462,20 +462,22 @@ html.iboard-student-workspace .iboard-question-pulse {
 }
 
 .iboard-breakout-peers__grid {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 0.65rem;
+  --peer-gap: 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--peer-gap);
   width: 100%;
-  align-items: start;
+  align-items: stretch;
 }
 
 .iboard-breakout-peers__slot {
+  /* Fill up to 4 across when space is tight; cap size so wide laptops stay dense. */
+  --peer-size: min(15.75rem, 30vh, calc((100% - (3 * var(--peer-gap))) / 4));
+  flex: 0 0 var(--peer-size);
+  width: var(--peer-size);
+  height: var(--peer-size);
   min-width: 0;
-  width: min(100%, 34vh);
-  max-width: 100%;
-  aspect-ratio: 1 / 1;
-  height: auto;
-  max-height: 34vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
