@@ -69,7 +69,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
         <button type="button" className={buttonClass} disabled={busy} onClick={() => setRefresh(n => n + 1)}>Refresh</button>
       </div>
       {error && <p role="alert" className="text-sm text-red-600 dark:text-red-300">{error}</p>}
-      {busy ? <p role="status">Loading…</p> : !event ? <p className="py-8 text-sm">No trail captured yet. Use “Record drafting evidence” in the teacher header to begin.</p> : <>
+      {busy ? <p role="status">Loading…</p> : !event ? <p className="py-8 text-sm">No drafting evidence captured yet. Use “Record drafting evidence” in the teacher header to begin.</p> : <>
         <p className="text-sm font-semibold">{trail.name} · {labels[event.type]}</p>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{new Date(event.at).toLocaleString()} · Event {index + 1} of {trail.events.length}</p>
         <div className="my-4 flex items-center gap-3">

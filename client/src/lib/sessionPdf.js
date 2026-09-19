@@ -182,7 +182,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   paragraph(`${people.length} student${people.length === 1 ? '' : 's'} | ${detailed ? 'Sampled drafting evidence checkpoints (up to 20 text changes)' : 'Drafting evidence summary (3 revision extracts)'}`, { size: 10 });
   paragraph(`Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Writing reflects the latest version received by iBoard when this report was captured; it may not be a final submission.`, { size: 9, colour: [90, 102, 117] });
   heading('Reading this report');
-  paragraph('Drafting evidence shows how writing developed. They do not verify identity or prove independent authorship. Pasted text may be legitimate. Inline comments appear only when a later recorded edit overlaps their uniquely matched passage. This shows sequence, not proof that feedback caused or successfully guided the change.');
+  paragraph('Drafting evidence shows how writing developed. It does not verify identity or prove independent authorship. Pasted text may be legitimate. Inline comments appear only when a later recorded edit overlaps their uniquely matched passage. This shows sequence, not proof that feedback caused or successfully guided the change.');
   paragraph('Recording begins at the baseline. Paused and disconnected intervals are not continuous observation. This PDF is a readable report; retain the .iboard session file to reopen the lesson and explore its trails.');
   if (pack.draftTrail?.reason) paragraph(pack.draftTrail.reason, { colour: [150, 60, 30] });
   heading('Included students');
