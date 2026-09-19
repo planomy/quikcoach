@@ -4604,6 +4604,43 @@ function TeacherDashboardInner() {
                   )}
                 </button>
               </div>
+              {fixedCommentCount > 0 && (
+                <div className="iboard-room-settings__cleanup">
+                  {!clearFixedArmed ? (
+                    <button type="button" onClick={() => setClearFixedArmed(true)}>
+                      <span>Clear fixed comments</span>
+                      <span className="iboard-room-settings__cleanup-badge">{fixedCommentCount}</span>
+                    </button>
+                  ) : (
+                    <div className="iboard-room-settings__cleanup-confirm">
+                      <p>
+                        Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={clearFixedBusy}
+                          onClick={() => {
+                            window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
+                            setClearFixedArmed(false);
+                            closeSettings();
+                          }}
+                          className="iboard-room-settings__mini flex-1"
+                        >
+                          {clearFixedBusy ? 'Clearing…' : 'Clear'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setClearFixedArmed(false)}
+                          className="iboard-room-settings__mini-ghost"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <section className="iboard-room-settings__section">
@@ -4761,35 +4798,37 @@ function TeacherDashboardInner() {
               <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                 {breakoutsActive ? (
                   <div className="space-y-2.5">
-                    <div className="iboard-room-settings__field-row flex-wrap items-center gap-2">
-                      <label className="flex items-center gap-1.5 text-[12px] font-semibold text-[#3c3c45] dark:text-slate-200">
-                        Rooms
-                        <input
-                          type="number"
-                          min={1}
-                          max={40}
-                          value={breakoutRoomCountDraft}
-                          onChange={(event) => {
-                            const n = Math.max(1, Math.min(40, Math.floor(Number(event.target.value) || 1)));
-                            setBreakoutRoomCountDraft(n);
+                    <div className="iboard-room-settings__field-row items-center gap-2">
+                      <span className="text-[12px] font-semibold text-[#3c3c45] dark:text-slate-200">Rooms</span>
+                      <div className="iboard-breakout-assign__stepper" role="group" aria-label="Number of breakout rooms">
+                        <button
+                          type="button"
+                          aria-label="Fewer rooms"
+                          disabled={breakoutBusy || Math.floor(Number(breakoutRoomCountDraft) || 1) <= 1}
+                          onClick={() => {
+                            const next = Math.max(1, Math.floor(Number(breakoutRoomCountDraft) || 1) - 1);
+                            setBreakoutRoomCountDraft(next);
+                            setBreakoutCount(next);
                           }}
-                          onBlur={() => setBreakoutCount(breakoutRoomCountDraft)}
-                          className="iboard-room-settings__mini w-14"
-                          aria-label="Number of breakout rooms"
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        disabled={breakoutBusy}
-                        onClick={() => {
-                          const next = Math.min(40, (Number(breakoutRoomCountDraft) || 1) + 1);
-                          setBreakoutRoomCountDraft(next);
-                          setBreakoutCount(next);
-                        }}
-                        className="iboard-room-settings__mini-ghost"
-                      >
-                        Add room
-                      </button>
+                        >
+                          −
+                        </button>
+                        <span className="iboard-breakout-assign__stepper-value" aria-live="polite">
+                          {Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)))}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label="More rooms"
+                          disabled={breakoutBusy || Math.floor(Number(breakoutRoomCountDraft) || 1) >= 40}
+                          onClick={() => {
+                            const next = Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1) + 1);
+                            setBreakoutRoomCountDraft(next);
+                            setBreakoutCount(next);
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -4887,43 +4926,6 @@ function TeacherDashboardInner() {
                   </div>
                 </div>
               </div>
-              {fixedCommentCount > 0 && (
-                <div className="iboard-room-settings__cleanup">
-                  {!clearFixedArmed ? (
-                    <button type="button" onClick={() => setClearFixedArmed(true)}>
-                      <span>Clear fixed comments</span>
-                      <span className="iboard-room-settings__cleanup-badge">{fixedCommentCount}</span>
-                    </button>
-                  ) : (
-                    <div className="iboard-room-settings__cleanup-confirm">
-                      <p>
-                        Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          disabled={clearFixedBusy}
-                          onClick={() => {
-                            window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
-                            setClearFixedArmed(false);
-                            closeSettings();
-                          }}
-                          className="iboard-room-settings__mini flex-1"
-                        >
-                          {clearFixedBusy ? 'Clearing…' : 'Clear'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setClearFixedArmed(false)}
-                          className="iboard-room-settings__mini-ghost"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </section>
 
             <section className="iboard-room-settings__section">
