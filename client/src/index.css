@@ -444,7 +444,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   gap: 1.5rem;
 }
 
-/* Header mirrors shell columns: logo caps the rail, meta starts at the board */
+/* Header mirrors shell columns: logo caps the rail, meta starts at the board.
+   No column rules — continuous header chrome. */
 .iboard-teacher-header-bar {
   display: grid;
   grid-template-columns: 4.75rem 15.5rem minmax(0, 1fr);
@@ -462,8 +463,6 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   place-items: center;
   min-width: 0;
   height: 100%;
-  border-right: 1px solid #e2e8ef;
-  background: #ffffff;
 }
 
 .iboard-teacher-header-rail .iboard-brand-logo {
@@ -474,13 +473,6 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 .iboard-teacher-header-gutter {
   min-width: 0;
   height: 100%;
-  background: #ffffff;
-  border-right: 1px solid #e2e8ef;
-}
-
-.iboard-app-header.is-teacher-hidden .iboard-teacher-header-gutter {
-  border-right: 0;
-  background: transparent;
 }
 
 .iboard-teacher-header-main {
@@ -489,17 +481,6 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   gap: 0.75rem;
   min-width: 0;
   padding: 0.45rem 1rem 0.45rem 1rem;
-}
-
-html.dark .iboard-teacher-header-rail,
-html.dark .iboard-teacher-header-gutter {
-  background: #20262d;
-  border-right-color: #334155;
-}
-
-html.dark .iboard-app-header.is-teacher-hidden .iboard-teacher-header-gutter {
-  background: transparent;
-  border-right: 0;
 }
 
 .iboard-teacher-shell {
@@ -518,12 +499,32 @@ html.dark .iboard-app-header.is-teacher-hidden .iboard-teacher-header-gutter {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.55rem;
+  justify-content: stretch;
+  gap: 0;
   background: #ffffff;
   border-right: 1px solid #e2e8ef;
-  padding: 0.55rem 0 0.75rem;
+  padding: 0.45rem 0 0.45rem;
   min-height: 0;
+}
+
+.iboard-arr-rail__tools {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 0;
+  width: 100%;
+}
+
+.iboard-arr-rail__foot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding-top: 0.35rem;
 }
 
 .iboard-arr-btn {

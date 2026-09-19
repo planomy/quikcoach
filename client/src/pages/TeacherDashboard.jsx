@@ -2942,26 +2942,6 @@ function TeacherDashboardInner() {
                 )}
               </button>
             </HintWrap>
-            <HintWrap hint="Room settings" prefer="below">
-              <button
-                ref={settingsButtonRef}
-                type="button"
-                onClick={toggleSettings}
-                aria-expanded={settingsOpen}
-                data-active={settingsOpen ? 'true' : 'false'}
-                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
-                aria-label="Room settings"
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  <path d="M4 7h10" />
-                  <path d="M18 7h2" />
-                  <circle cx="16" cy="7" r="2" />
-                  <path d="M4 17h2" />
-                  <path d="M10 17h10" />
-                  <circle cx="8" cy="17" r="2" />
-                </svg>
-              </button>
-            </HintWrap>
           </div>
           </div>
 
@@ -3211,37 +3191,63 @@ function TeacherDashboardInner() {
       ) : null}
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
-          {TEACHER_TOOLS_TABS.map((tab) => {
-            const active = toolsPanelOpen && toolsTab === tab.id;
-            const badge = tab.id === 'respond'
-              ? pendingQuestionCount
-              : tab.id === 'responses' && livePulse.activity
-                ? liveResponseCount
-                : 0;
-            return (
+          <div className="iboard-arr-rail__tools">
+            {TEACHER_TOOLS_TABS.map((tab) => {
+              const active = toolsPanelOpen && toolsTab === tab.id;
+              const badge = tab.id === 'respond'
+                ? pendingQuestionCount
+                : tab.id === 'responses' && livePulse.activity
+                  ? liveResponseCount
+                  : 0;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    if (toolsPanelOpen && toolsTab === tab.id) closeTeacherTools();
+                    else openTeacherTools(tab.id);
+                  }}
+                  aria-current={active ? 'page' : undefined}
+                  data-active={active ? 'true' : 'false'}
+                  className="iboard-arr-btn relative"
+                  title={tab.label}
+                  aria-label={tab.label}
+                >
+                  <img src={tab.icon} alt="" />
+                  <span className="iboard-arr-label">{tab.label}</span>
+                  {badge ? (
+                    <span className="absolute right-1 top-1 z-[2] grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-black tabular-nums leading-none text-white shadow-sm">
+                      {badge}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          <div className="iboard-arr-rail__foot">
+            <HintWrap hint="Room settings" prefer="right">
               <button
-                key={tab.id}
+                ref={settingsButtonRef}
                 type="button"
-                onClick={() => {
-                  if (toolsPanelOpen && toolsTab === tab.id) closeTeacherTools();
-                  else openTeacherTools(tab.id);
-                }}
-                aria-current={active ? 'page' : undefined}
-                data-active={active ? 'true' : 'false'}
-                className="iboard-arr-btn relative"
-                title={tab.label}
-                aria-label={tab.label}
+                onClick={toggleSettings}
+                aria-expanded={settingsOpen}
+                data-active={settingsOpen ? 'true' : 'false'}
+                className="iboard-arr-btn"
+                title="Room settings"
+                aria-label="Room settings"
               >
-                <img src={tab.icon} alt="" />
-                <span className="iboard-arr-label">{tab.label}</span>
-                {badge ? (
-                  <span className="absolute right-1 top-1 z-[2] grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-black tabular-nums leading-none text-white shadow-sm">
-                    {badge}
-                  </span>
-                ) : null}
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M4 7h10" />
+                  <path d="M18 7h2" />
+                  <circle cx="16" cy="7" r="2" />
+                  <path d="M4 17h2" />
+                  <path d="M10 17h10" />
+                  <circle cx="8" cy="17" r="2" />
+                </svg>
+                <span className="iboard-arr-label">Settings</span>
               </button>
-            );
-          })}
+            </HintWrap>
+          </div>
         </nav>
 
         <div className="iboard-teacher-panel-wrap">
