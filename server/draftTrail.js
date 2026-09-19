@@ -65,7 +65,7 @@ function append(room, student, event) {
   const bytes = Buffer.byteLength(JSON.stringify(event));
   if (room.bytes + bytes > MAX_ROOM_BYTES || totalBytes + bytes > MAX_TOTAL_BYTES || student.events.length >= 3000) {
     room.active = false;
-    room.reason = 'Draft Trail storage limit reached. Save this session before resetting the class board.';
+    room.reason = 'Drafting evidence storage limit reached. Save this session before resetting the class board.';
     room.changed = Date.now();
     return false;
   }
@@ -81,7 +81,7 @@ function ensureStudent(room, row, type = 'baseline', at = Date.now()) {
   if (!student) {
     if (room.students.size >= 500) {
       room.active = false;
-      room.reason = 'Draft Trail student limit reached. Save this session before resetting the class board.';
+      room.reason = 'Drafting evidence student limit reached. Save this session before resetting the class board.';
       return null;
     }
     student = { id: key, name: String(row.name || '').slice(0, 160), text: String(row.text || '').slice(0, 50000), pending: null, events: [] };
@@ -210,35 +210,35 @@ export function exportTrails(code, idToExport) {
 }
 export function validateTrails(raw) {
   if (raw == null) return;
-  if (raw.version !== 1 || !Array.isArray(raw.students) || raw.students.length > 500 || Buffer.byteLength(JSON.stringify(raw)) > MAX_ROOM_BYTES + 256000) throw new Error('Invalid or oversized Draft Trail');
+  if (raw.version !== 1 || !Array.isArray(raw.students) || raw.students.length > 500 || Buffer.byteLength(JSON.stringify(raw)) > MAX_ROOM_BYTES + 256000) throw new Error('Invalid or oversized Drafting evidence');
   const identities = new Set();
   let eventBytes = 0;
   for (const student of raw.students) {
     if (student.exportId != null) {
-      if (typeof student.exportId !== 'string' || identities.has(student.exportId)) throw new Error('Duplicate or invalid Draft Trail identity');
+      if (typeof student.exportId !== 'string' || identities.has(student.exportId)) throw new Error('Duplicate or invalid Drafting evidence identity');
       identities.add(student.exportId);
     }
-    if (!Array.isArray(student.events) || student.events.length > 3000) throw new Error('Invalid Draft Trail events');
+    if (!Array.isArray(student.events) || student.events.length > 3000) throw new Error('Invalid Drafting evidence events');
     let text = '', lastAt = 0;
-    if (student.events.length && student.events[0].type !== 'baseline') throw new Error('Draft Trail must begin with a baseline');
+    if (student.events.length && student.events[0].type !== 'baseline') throw new Error('Drafting evidence must begin with a baseline');
     for (const e of student.events) {
       eventBytes += Buffer.byteLength(JSON.stringify(e));
-      if (eventBytes > MAX_ROOM_BYTES) throw new Error('Oversized Draft Trail events');
-      if (!Number.isFinite(e.at) || e.at < lastAt) throw new Error('Invalid Draft Trail timestamp');
+      if (eventBytes > MAX_ROOM_BYTES) throw new Error('Oversized Drafting evidence events');
+      if (!Number.isFinite(e.at) || e.at < lastAt) throw new Error('Invalid Drafting evidence timestamp');
       lastAt = e.at;
       if (['baseline', 'resume', 'gap'].includes(e.type)) {
-        if (typeof e.text !== 'string' || e.text.length > 50000) throw new Error('Invalid Draft Trail baseline');
+        if (typeof e.text !== 'string' || e.text.length > 50000) throw new Error('Invalid Drafting evidence baseline');
         text = e.text;
       } else if (['change', 'paste'].includes(e.type)) {
-        if (!Number.isInteger(e.start) || !Number.isInteger(e.removed) || e.start < 0 || e.removed < 0 || e.start + e.removed > text.length || typeof e.inserted !== 'string') throw new Error('Invalid Draft Trail change');
+        if (!Number.isInteger(e.start) || !Number.isInteger(e.removed) || e.start < 0 || e.removed < 0 || e.start + e.removed > text.length || typeof e.inserted !== 'string') throw new Error('Invalid Drafting evidence change');
         text = text.slice(0, e.start) + e.inserted + text.slice(e.start + e.removed);
-        if (text.length > 50000) throw new Error('Oversized Draft Trail text');
+        if (text.length > 50000) throw new Error('Oversized Drafting evidence text');
       } else if (e.type === 'feedback') {
-        if (typeof e.text !== 'string' || e.text.length > 5000) throw new Error('Invalid Draft Trail feedback');
-      } else if (e.type !== 'stop') throw new Error('Unknown Draft Trail event');
+        if (typeof e.text !== 'string' || e.text.length > 5000) throw new Error('Invalid Drafting evidence feedback');
+      } else if (e.type !== 'stop') throw new Error('Unknown Drafting evidence event');
     }
   }
-  if (totalBytes + Buffer.byteLength(JSON.stringify(raw)) > MAX_TOTAL_BYTES) throw new Error('Draft Trail memory limit reached');
+  if (totalBytes + Buffer.byteLength(JSON.stringify(raw)) > MAX_TOTAL_BYTES) throw new Error('Drafting evidence memory limit reached');
 }
 export function importTrails(code, raw, exportToId) {
   clearTrail(code);

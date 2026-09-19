@@ -1651,8 +1651,8 @@ export default function StudentView() {
                     {room?.draftTrail?.active ? (
                       <span
                         role="status"
-                        title="Draft Trail is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)."
-                        aria-label="Draft Trail is on"
+                        title="Drafting evidence is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)."
+                        aria-label="Drafting evidence is on"
                         className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-600"
                       />
                     ) : null}

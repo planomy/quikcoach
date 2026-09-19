@@ -2881,16 +2881,16 @@ function TeacherDashboardInner() {
               aria-pressed={!!room?.draftTrail?.active}
               aria-label={
                 draftTrailBusy
-                  ? 'Updating Draft Trail'
+                  ? 'Updating drafting evidence'
                   : room?.draftTrail?.active
-                    ? (room?.draftTrail?.label ? `Stop Draft Trail · ${room.draftTrail.label}` : 'Stop Draft Trail')
-                    : 'Record draft trail'
+                    ? (room?.draftTrail?.label ? `Stop drafting evidence · ${room.draftTrail.label}` : 'Stop drafting evidence')
+                    : 'Record drafting evidence'
               }
               title={
                 room?.draftTrail?.reason
                 || (room?.draftTrail?.active
-                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Draft Trail recording — click to stop')
-                  : 'Record draft trail — writing changes only, not screen or audio')
+                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Drafting evidence recording — click to stop')
+                  : 'Record drafting evidence — writing changes only, not screen or audio')
               }
               className={`iboard-header-rec relative z-10 inline-flex items-center text-[11px] font-bold uppercase tracking-[0.13em] transition disabled:opacity-50 ${
                 room?.draftTrail?.active ? 'is-recording text-[#dc2626]' : 'text-[#8b8b96]'
@@ -3076,7 +3076,7 @@ function TeacherDashboardInner() {
               </div>
             ) : draftTrailSaveHint && !room?.draftTrail?.active ? (
               <div className="pointer-events-auto inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-3 text-white shadow-sm">
-                <span className="truncate text-[11px] font-black">Save Draft Trail</span>
+                <span className="truncate text-[11px] font-black">Save drafting evidence</span>
                 <button
                   type="button"
                   disabled={sessionBusy || !joined}
@@ -3113,7 +3113,7 @@ function TeacherDashboardInner() {
       {draftTrailLabelOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900" role="dialog" aria-labelledby="draft-trail-label-title">
-            <h2 id="draft-trail-label-title" className="font-display text-lg font-black text-slate-950 dark:text-white">Start Draft Trail</h2>
+            <h2 id="draft-trail-label-title" className="font-display text-lg font-black text-slate-950 dark:text-white">Start drafting evidence</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Optional name for this recording (e.g. Period 3 narrative).</p>
             <input
               value={draftTrailLabelDraft}
@@ -3568,8 +3568,8 @@ function TeacherDashboardInner() {
                       {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(s.id)) ? (
                         <button
                           type="button"
-                          title="Open Draft Trail"
-                          aria-label={`Open Draft Trail for ${s.name}`}
+                          title="Open drafting evidence"
+                          aria-label={`Open drafting evidence for ${s.name}`}
                           onClick={(event) => {
                             event.stopPropagation();
                             setDraftTrailFocusId(s.id);
@@ -4899,7 +4899,7 @@ function TeacherDashboardInner() {
                   ) : null}
                 </button>
                 <button type="button" onClick={() => { closeSettings(); setDraftTrailOpen(true); }}>
-                  Draft trail
+                  Drafting evidence
                 </button>
                 <button type="button" onClick={() => openLibrary('feedback')}>
                   AI feedback
@@ -5072,8 +5072,8 @@ function TeacherDashboardInner() {
                 {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(focusedStudent.id)) ? (
                   <button
                     type="button"
-                    title="Open Draft Trail"
-                    aria-label={`Open Draft Trail for ${focusedStudent.name}`}
+                    title="Open drafting evidence"
+                    aria-label={`Open drafting evidence for ${focusedStudent.name}`}
                     onClick={() => {
                       setDraftTrailFocusId(focusedStudent.id);
                       setDraftTrailOpen(true);

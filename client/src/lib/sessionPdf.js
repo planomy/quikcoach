@@ -145,7 +145,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   pdf.addFileToVFS('DejaVuSans.ttf', fontData);
   pdf.addFont('DejaVuSans.ttf', 'Report', 'normal');
   pdf.setFont('Report');
-  pdf.setProperties({ title: `iBoard session report - Room ${pack.sourceRoomCode}`, subject: 'Student writing, feedback and Draft Trails', author: 'iBoard' });
+  pdf.setProperties({ title: `iBoard session report - Room ${pack.sourceRoomCode}`, subject: 'Student writing, feedback and drafting evidence', author: 'iBoard' });
   const glyphs = pdf.getFont().metadata?.cmap?.unicode?.codeMap;
   let escapedGlyphs = false;
   function safe(value) {
@@ -179,10 +179,10 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   pdf.addPage = (...args) => { pageNames.set(pdf.getNumberOfPages(), studentName); return addPage(...args); };
   paragraph('iBoard | Session report', { size: 22, colour: [25, 59, 89], gap: 5 });
   paragraph(`Room ${pack.sourceRoomCode || ''} | Captured ${when(pack.exportedAt)}`, { size: 10 });
-  paragraph(`${people.length} student${people.length === 1 ? '' : 's'} | ${detailed ? 'Sampled Draft Trail checkpoints (up to 20 text changes)' : 'Draft Trail summary (3 revision extracts)'}`, { size: 10 });
+  paragraph(`${people.length} student${people.length === 1 ? '' : 's'} | ${detailed ? 'Sampled drafting evidence checkpoints (up to 20 text changes)' : 'Drafting evidence summary (3 revision extracts)'}`, { size: 10 });
   paragraph(`Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Writing reflects the latest version received by iBoard when this report was captured; it may not be a final submission.`, { size: 9, colour: [90, 102, 117] });
   heading('Reading this report');
-  paragraph('Draft Trails provide evidence of writing development. They do not verify identity or prove independent authorship. Pasted text may be legitimate. Inline comments appear only when a later recorded edit overlaps their uniquely matched passage. This shows sequence, not proof that feedback caused or successfully guided the change.');
+  paragraph('Drafting evidence shows how writing developed. They do not verify identity or prove independent authorship. Pasted text may be legitimate. Inline comments appear only when a later recorded edit overlaps their uniquely matched passage. This shows sequence, not proof that feedback caused or successfully guided the change.');
   paragraph('Recording begins at the baseline. Paused and disconnected intervals are not continuous observation. This PDF is a readable report; retain the .iboard session file to reopen the lesson and explore its trails.');
   if (pack.draftTrail?.reason) paragraph(pack.draftTrail.reason, { colour: [150, 60, 30] });
   heading('Included students');
@@ -213,8 +213,8 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
         pdf.addImage(url, props.fileType, 18, y, imageWidth, imageHeight); y += imageHeight + 5;
       } catch { paragraph('Image could not be included. It remains in the .iboard session file.'); }
     }
-    heading('Draft Trail');
-    if (!events.length) { paragraph('No Draft Trail was captured for this student. This does not indicate misconduct.'); continue; }
+    heading('Drafting evidence');
+    if (!events.length) { paragraph('No drafting evidence was captured for this student. This does not indicate misconduct.'); continue; }
     const revisions = events.filter(e => ['change', 'paste'].includes(e.type));
     const pastes = events.filter(e => e.type === 'paste');
     paragraph(`${events.length} recorded events | ${revisions.length} text-change checkpoints | ${pastes.length} browser-reported pastes | ${events.filter(e => ['gap', 'resume'].includes(e.type)).length} unrecorded intervals`);
@@ -227,7 +227,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
         ? `Showing ${shownRevisions} of ${revisions.length} text changes plus milestones. Meaningful revisions are prioritised. Each entry shows the edit, not a full reprint of the draft (full writing is above).`
         : 'Up to three selected revision extracts plus recording milestones. Rewording, deletions and revisions following inline feedback are prioritised. Full writing is above; the .iboard file keeps the complete trail.'
     );
-    if (!journeyEvents.length) paragraph('No Draft Trail events were recorded after the baseline.');
+    if (!journeyEvents.length) paragraph('No drafting evidence events were recorded after the baseline.');
     for (const event of journeyEvents) {
       space(12);
       paragraph(`${when(event.at)} | ${labels[event.type]}`, { size: 9, colour: [29, 74, 116], gap: 1 });
