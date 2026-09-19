@@ -2827,13 +2827,19 @@ function TeacherDashboardInner() {
         onChange={onSessionFileChosen}
       />
       <div className="shrink-0">
-      <header ref={teacherHeaderRef} className="iboard-app-header relative z-50 shrink-0 border-b backdrop-blur">
-        <div className="relative flex w-full flex-wrap items-center gap-3 px-3 py-2 sm:px-4">
-          <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
+      <header
+        ref={teacherHeaderRef}
+        className={`iboard-app-header relative z-50 shrink-0 border-b backdrop-blur${teacherPanelHidden ? ' is-teacher-hidden' : ''}`}
+      >
+        <div className="iboard-teacher-header-bar relative">
+          <div className="iboard-teacher-header-rail">
             <div className="iboard-brand shrink-0" aria-label="TUIT">
               <img src="/brand/tuit-logo.png" alt="TUIT" className="iboard-brand-logo" />
             </div>
-            <div className="iboard-header-meta flex flex-wrap items-center gap-2.5 text-sm">
+          </div>
+          <div className="iboard-teacher-header-gutter" aria-hidden="true" />
+          <div className="iboard-teacher-header-main">
+            <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5 text-sm">
               <span>
                 Room <b className="iboard-header-code font-mono">{codeInput}</b>
               </span>
@@ -2861,6 +2867,102 @@ function TeacherDashboardInner() {
                 </span>
               )}
             </div>
+
+            <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
+            <RoomTimerPill
+              timer={room?.timer}
+              onClick={openTimerSettings}
+              onFinishedClick={() => controlRoomTimer('end')}
+            />
+            {joined && <SaveStatusChip status={saveStatus} plain />}
+            <button
+              type="button"
+              disabled={draftTrailBusy || !socketConnected || !joined}
+              aria-pressed={!!room?.draftTrail?.active}
+              aria-label={
+                draftTrailBusy
+                  ? 'Updating Draft Trail'
+                  : room?.draftTrail?.active
+                    ? (room?.draftTrail?.label ? `Stop Draft Trail · ${room.draftTrail.label}` : 'Stop Draft Trail')
+                    : 'Record draft trail'
+              }
+              title={
+                room?.draftTrail?.reason
+                || (room?.draftTrail?.active
+                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Draft Trail recording — click to stop')
+                  : 'Record draft trail — writing changes only, not screen or audio')
+              }
+              className={`iboard-header-rec relative z-10 inline-flex items-center text-[11px] font-bold uppercase tracking-[0.13em] transition disabled:opacity-50 ${
+                room?.draftTrail?.active ? 'is-recording text-[#dc2626]' : 'text-[#8b8b96]'
+              }`}
+              onClick={() => {
+                if (room?.draftTrail?.active) {
+                  setDraftTrailRecording(false);
+                  return;
+                }
+                setDraftTrailLabelDraft(room?.draftTrail?.label || '');
+                setDraftTrailLabelOpen(true);
+              }}
+            >
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 shrink-0 rounded-full ${
+                  draftTrailBusy
+                    ? 'bg-amber-400'
+                    : room?.draftTrail?.active
+                      ? 'bg-[#ef4444]'
+                      : 'bg-[#b0b0ba]'
+                }`}
+              />
+              <span aria-hidden="true">{draftTrailBusy ? '…' : 'REC'}</span>
+            </button>
+            <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
+              <button
+                type="button"
+                onClick={() => void toggleBrowserFullscreen()}
+                aria-pressed={browserFullscreen}
+                data-active={browserFullscreen ? 'true' : 'false'}
+                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
+                aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              >
+                {browserFullscreen ? (
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9 3v6H3" />
+                    <path d="M15 3v6h6" />
+                    <path d="M9 21v-6H3" />
+                    <path d="M15 21v-6h6" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 9V3h6" />
+                    <path d="M21 9V3h-6" />
+                    <path d="M3 15v6h6" />
+                    <path d="M21 15v6h-6" />
+                  </svg>
+                )}
+              </button>
+            </HintWrap>
+            <HintWrap hint="Room settings" prefer="below">
+              <button
+                ref={settingsButtonRef}
+                type="button"
+                onClick={toggleSettings}
+                aria-expanded={settingsOpen}
+                data-active={settingsOpen ? 'true' : 'false'}
+                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
+                aria-label="Room settings"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M4 7h10" />
+                  <path d="M18 7h2" />
+                  <circle cx="16" cy="7" r="2" />
+                  <path d="M4 17h2" />
+                  <path d="M10 17h10" />
+                  <circle cx="8" cy="17" r="2" />
+                </svg>
+              </button>
+            </HintWrap>
+          </div>
           </div>
 
           <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(22rem,calc(100vw-11rem))] -translate-x-1/2 items-center">
@@ -3024,102 +3126,6 @@ function TeacherDashboardInner() {
                 {room.draftTrail.reason}
               </div>
             ) : null}
-          </div>
-
-          <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
-            <RoomTimerPill
-              timer={room?.timer}
-              onClick={openTimerSettings}
-              onFinishedClick={() => controlRoomTimer('end')}
-            />
-            {joined && <SaveStatusChip status={saveStatus} plain />}
-            <button
-              type="button"
-              disabled={draftTrailBusy || !socketConnected || !joined}
-              aria-pressed={!!room?.draftTrail?.active}
-              aria-label={
-                draftTrailBusy
-                  ? 'Updating Draft Trail'
-                  : room?.draftTrail?.active
-                    ? (room?.draftTrail?.label ? `Stop Draft Trail · ${room.draftTrail.label}` : 'Stop Draft Trail')
-                    : 'Record draft trail'
-              }
-              title={
-                room?.draftTrail?.reason
-                || (room?.draftTrail?.active
-                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Draft Trail recording — click to stop')
-                  : 'Record draft trail — writing changes only, not screen or audio')
-              }
-              className={`iboard-header-rec relative z-10 inline-flex items-center text-[11px] font-bold uppercase tracking-[0.13em] transition disabled:opacity-50 ${
-                room?.draftTrail?.active ? 'is-recording text-[#dc2626]' : 'text-[#8b8b96]'
-              }`}
-              onClick={() => {
-                if (room?.draftTrail?.active) {
-                  setDraftTrailRecording(false);
-                  return;
-                }
-                setDraftTrailLabelDraft(room?.draftTrail?.label || '');
-                setDraftTrailLabelOpen(true);
-              }}
-            >
-              <span
-                aria-hidden="true"
-                className={`h-2 w-2 shrink-0 rounded-full ${
-                  draftTrailBusy
-                    ? 'bg-amber-400'
-                    : room?.draftTrail?.active
-                      ? 'bg-[#ef4444]'
-                      : 'bg-[#b0b0ba]'
-                }`}
-              />
-              <span aria-hidden="true">{draftTrailBusy ? '…' : 'REC'}</span>
-            </button>
-            <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
-              <button
-                type="button"
-                onClick={() => void toggleBrowserFullscreen()}
-                aria-pressed={browserFullscreen}
-                data-active={browserFullscreen ? 'true' : 'false'}
-                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
-                aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              >
-                {browserFullscreen ? (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M9 3v6H3" />
-                    <path d="M15 3v6h6" />
-                    <path d="M9 21v-6H3" />
-                    <path d="M15 21v-6h6" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M3 9V3h6" />
-                    <path d="M21 9V3h-6" />
-                    <path d="M3 15v6h6" />
-                    <path d="M21 15v6h-6" />
-                  </svg>
-                )}
-              </button>
-            </HintWrap>
-            <HintWrap hint="Room settings" prefer="below">
-              <button
-                ref={settingsButtonRef}
-                type="button"
-                onClick={toggleSettings}
-                aria-expanded={settingsOpen}
-                data-active={settingsOpen ? 'true' : 'false'}
-                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
-                aria-label="Room settings"
-              >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  <path d="M4 7h10" />
-                  <path d="M18 7h2" />
-                  <circle cx="16" cy="7" r="2" />
-                  <path d="M4 17h2" />
-                  <path d="M10 17h10" />
-                  <circle cx="8" cy="17" r="2" />
-                </svg>
-              </button>
-            </HintWrap>
           </div>
         </div>
       </header>

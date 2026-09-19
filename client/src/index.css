@@ -444,6 +444,64 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   gap: 1.5rem;
 }
 
+/* Header mirrors shell columns: logo caps the rail, meta starts at the board */
+.iboard-teacher-header-bar {
+  display: grid;
+  grid-template-columns: 4.75rem 15.5rem minmax(0, 1fr);
+  align-items: center;
+  min-height: 3.25rem;
+  transition: grid-template-columns 210ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-app-header.is-teacher-hidden .iboard-teacher-header-bar {
+  grid-template-columns: 4.75rem 2.05rem minmax(0, 1fr);
+}
+
+.iboard-teacher-header-rail {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 100%;
+  border-right: 1px solid #e2e8ef;
+  background: #ffffff;
+}
+
+.iboard-teacher-header-rail .iboard-brand-logo {
+  height: 1.05rem;
+  max-width: min(4.1rem, 78%);
+}
+
+.iboard-teacher-header-gutter {
+  min-width: 0;
+  height: 100%;
+  background: #ffffff;
+  border-right: 1px solid #e2e8ef;
+}
+
+.iboard-app-header.is-teacher-hidden .iboard-teacher-header-gutter {
+  border-right: 0;
+  background: transparent;
+}
+
+.iboard-teacher-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.45rem 1rem 0.45rem 1rem;
+}
+
+html.dark .iboard-teacher-header-rail,
+html.dark .iboard-teacher-header-gutter {
+  background: #20262d;
+  border-right-color: #334155;
+}
+
+html.dark .iboard-app-header.is-teacher-hidden .iboard-teacher-header-gutter {
+  background: transparent;
+  border-right: 0;
+}
+
 .iboard-teacher-shell {
   display: grid;
   grid-template-columns: 4.75rem 15.5rem minmax(0, 1fr);
@@ -460,11 +518,11 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  background: #f0f4f8;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  background: #ffffff;
   border-right: 1px solid #e2e8ef;
-  padding: 0.75rem 0;
+  padding: 0.55rem 0 0.75rem;
   min-height: 0;
 }
 
@@ -2043,6 +2101,7 @@ html.dark .iboard-workspace-scrim {
   .iboard-teacher-panel-wrap,
   .iboard-teacher-panel,
   .iboard-teacher-panel-reveal,
+  .iboard-teacher-header-bar,
   .iboard-header-dock--rail {
     transition: none;
     animation: none;
