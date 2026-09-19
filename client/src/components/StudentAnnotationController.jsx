@@ -296,7 +296,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             setActionError('');
             setOpenMarker(marker);
           }}
-          className={`fixed z-[50] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/70 text-xs font-black text-white shadow-md transition ${
+          className={`fixed z-[50] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${
             marker.annotation.status === 'fixed'
               ? 'bg-emerald-500/55 hover:bg-emerald-500/85'
               : 'bg-indigo-600/55 hover:bg-indigo-600/85'

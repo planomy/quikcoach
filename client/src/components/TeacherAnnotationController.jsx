@@ -1201,7 +1201,7 @@ export default function TeacherAnnotationController() {
           setReviewError('');
           setOpenMarker(marker);
         }}
-        className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10] flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/70 text-xs font-black text-white shadow-md transition ${
+        className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${
           marker.annotation.status === 'fixed'
             ? 'bg-emerald-500/55 hover:bg-emerald-500/85'
             : 'bg-[#5a5fc3]/55 hover:bg-[#5a5fc3]/85'
