@@ -492,9 +492,9 @@ export default function SavedSetsPanel({
                     value={setNameDraft}
                     onChange={(event) => setSetNameDraft(event.target.value.slice(0, 80))}
                     placeholder="Name this set…"
-                    className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                   />
-                  <button type="button" onClick={saveQueueAsSet} className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black text-white">
+                  <button type="button" onClick={saveQueueAsSet} className="rounded-lg bg-[#5a5fc3] px-2.5 py-1.5 text-[10px] font-black text-white">
                     Save queue as set
                   </button>
                 </div>
@@ -610,17 +610,17 @@ export default function SavedSetsPanel({
                   key={set.id}
                   className={`flex min-w-0 items-center gap-1.5 rounded-xl border p-1.5 transition ${
                     isActive || selectedSetIds.includes(set.id)
-                      ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-300 dark:border-indigo-500 dark:bg-indigo-950/40 dark:ring-indigo-700'
-                      : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/35 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20'
+                      ? 'border-[#cfcce8] bg-[#ebeaf8] ring-1 ring-[#cfcce8] dark:border-indigo-500 dark:bg-indigo-950/40 dark:ring-indigo-700'
+                      : 'border-slate-200 bg-white hover:border-[#cfcce8] hover:bg-[#ebeaf8]/70 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/20'
                   }`}
                 >
-                  <input type="checkbox" checked={selectedSetIds.includes(set.id)} disabled={sending} onChange={() => toggleSet(set.id)} aria-label={`Select ${set.name}`} className="ml-1 h-4 w-4 shrink-0 accent-indigo-600" />
+                  <input type="checkbox" checked={selectedSetIds.includes(set.id)} disabled={sending} onChange={() => toggleSet(set.id)} aria-label={`Select ${set.name}`} className="ml-1 h-4 w-4 shrink-0 accent-[#5a5fc3]" />
                   <button
                     type="button"
                     onClick={(event) => toggleFavourite(set.id, event)}
                     className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${
                       isFavourite
-                        ? 'text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40'
+                        ? 'text-[#5a5fc3] hover:bg-[#ebeaf8] dark:text-indigo-400 dark:hover:bg-indigo-950/40'
                         : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300'
                     }`}
                     aria-label={isFavourite ? `Unfavourite ${set.name}` : `Favourite ${set.name}`}
@@ -632,21 +632,21 @@ export default function SavedSetsPanel({
                   <button
                     type="button"
                     onClick={() => openPreview(set)}
-                    className="group min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="group min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3]"
                     aria-label={`Preview ${set.name}`}
                     aria-current={isActive ? 'true' : undefined}
                   >
-                    <p className="truncate text-sm font-black text-slate-900 group-hover:text-indigo-950 dark:text-white dark:group-hover:text-indigo-100">{set.name}</p>
+                    <p className="truncate text-sm font-black text-slate-900 group-hover:text-[#3c3c45] dark:text-white dark:group-hover:text-indigo-100">{set.name}</p>
                     <p className="mt-0.5 truncate text-[10px] font-bold text-slate-400">
                       {!set.bank && (
                         <>
-                          <span className="text-indigo-500">Yours</span>
+                          <span className="text-[#5a5fc3]">Yours</span>
                           <span aria-hidden="true"> · </span>
                         </>
                       )}
                       {set.overridden && (
                         <>
-                          <span className="text-indigo-500">Edited</span>
+                          <span className="text-[#5a5fc3]">Edited</span>
                           <span aria-hidden="true"> · </span>
                         </>
                       )}
@@ -669,7 +669,7 @@ export default function SavedSetsPanel({
       {mode === 'preview' && previewOpen && previewFlyout && typeof document !== 'undefined' && createPortal(
         <aside
           data-iboard-sets-preview="true"
-          className="sets-question-preview sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          className="sets-question-preview sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-[#cfcce8] bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{
             top: previewFlyout.top,
             left: previewFlyout.left,
@@ -682,7 +682,7 @@ export default function SavedSetsPanel({
         >
           <div className="preview-heading flex shrink-0 items-start justify-between gap-3 px-4 pt-4 pb-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Preview</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#5a5fc3]">Preview</p>
               <h4 className="mt-0.5 text-base font-bold text-slate-950 dark:text-white">{activeSet.name}</h4>
               <p className="mt-0.5 text-[11px] font-bold text-slate-400">{formatSetMeta(activeSet)}</p>
             </div>
@@ -711,10 +711,10 @@ export default function SavedSetsPanel({
           <div className="preview-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
             <div className="flex items-center justify-between gap-2">
             <label className="mr-auto flex items-center gap-2 px-1 text-xs font-bold text-slate-700 dark:text-slate-200">
-              <input type="checkbox" checked={selectedSetIds.includes(activeSet.id)} disabled={sending} onChange={() => toggleSet(activeSet.id)} className="h-4 w-4 accent-indigo-600" />
+              <input type="checkbox" checked={selectedSetIds.includes(activeSet.id)} disabled={sending} onChange={() => toggleSet(activeSet.id)} className="h-4 w-4 accent-[#5a5fc3]" />
               Select set
             </label>
-            <button type="button" disabled={sending} onClick={() => chooseRecipients([activeSet])} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-40">Select students</button>
+            <button type="button" disabled={sending} onClick={() => chooseRecipients([activeSet])} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-40">Select students</button>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-3">
             <button type="button" onClick={() => openEdit(activeSet)} className="rounded px-1 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
@@ -741,7 +741,7 @@ export default function SavedSetsPanel({
 
       {mode === 'recipients' && previewFlyout && createPortal(
         <aside data-iboard-sets-preview="true" role="dialog" aria-label="Select students"
-          className="sets-recipient-panel sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          className="sets-recipient-panel sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-[#cfcce8] bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
           style={{ top: previewFlyout.top, left: previewFlyout.left, height: 'auto', maxHeight: `calc(100dvh - ${previewFlyout.top + 8}px)`, width: previewFlyout.width }}>
           <div className="recipient-heading shrink-0 px-4 pt-4 pb-2">
             <div className="flex items-center justify-between gap-3">
@@ -754,16 +754,16 @@ export default function SavedSetsPanel({
           <div className="recipient-all flex shrink-0 items-center justify-between px-4 py-2">
             <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
               <input type="checkbox" disabled={sending || !recipientChoices.length} checked={recipientChoices.length > 0 && validRecipientIds.length === recipientChoices.length}
-                onChange={e => setRecipientIds(e.target.checked ? recipientChoices.map(s => Number(s.id)) : [])} className="h-4 w-4 accent-indigo-600" />
+                onChange={e => setRecipientIds(e.target.checked ? recipientChoices.map(s => Number(s.id)) : [])} className="h-4 w-4 accent-[#5a5fc3]" />
               All students
             </label>
             <span className="text-xs text-slate-500">{validRecipientIds.length} selected</span>
           </div>
           <div className="recipient-names min-h-0 flex-[0_1_auto] overflow-y-auto mx-3 mb-3 p-2 rounded-md">
             <div className="sets-recipient-grid" style={{ '--recipient-columns': 2 }}>
-            {recipientChoices.map(student => <label key={student.id} className="sets-recipient-row flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 text-xs font-semibold text-slate-800 hover:bg-indigo-50 dark:text-slate-100 dark:hover:bg-slate-800">
+            {recipientChoices.map(student => <label key={student.id} className="sets-recipient-row flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 text-xs font-semibold text-slate-800 hover:bg-[#ebeaf8] dark:text-slate-100 dark:hover:bg-slate-800">
               <input type="checkbox" disabled={sending} checked={validRecipientIds.includes(Number(student.id))}
-                onChange={e => setRecipientIds(ids => e.target.checked ? [...ids, Number(student.id)] : ids.filter(id => id !== Number(student.id)))} className="h-3.5 w-3.5 shrink-0 accent-indigo-600" />
+                onChange={e => setRecipientIds(ids => e.target.checked ? [...ids, Number(student.id)] : ids.filter(id => id !== Number(student.id)))} className="h-3.5 w-3.5 shrink-0 accent-[#5a5fc3]" />
               <span title={student.name} className="min-w-0 flex-1 truncate">{student.name}</span>
               {student.connected === false && <span className="text-[10px] font-normal text-slate-400">Offline</span>}
             </label>)}
@@ -773,8 +773,8 @@ export default function SavedSetsPanel({
           <div className="recipient-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
             {recipientQuestionCount > 60 && <p className="mb-2 text-xs text-amber-700">Ask supports up to 60 questions. Send these sets to inbox instead.</p>}
             <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={sending || !validRecipientIds.length || recipientQuestionCount > 60} onClick={() => sendSelected('ask')} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Ask now</button>
-              <button type="button" disabled={sending || !validRecipientIds.length} onClick={() => sendSelected('inbox')} className="recipient-inbox rounded-lg border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
+              <button type="button" disabled={sending || !validRecipientIds.length || recipientQuestionCount > 60} onClick={() => sendSelected('ask')} className="rounded-lg bg-[#5a5fc3] px-4 py-2 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-40">Ask now</button>
+              <button type="button" disabled={sending || !validRecipientIds.length} onClick={() => sendSelected('inbox')} className="recipient-inbox rounded-lg border border-[#cfcce8] px-4 py-2 text-xs font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
             </div>
             {sendStatus && <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-300">{sendStatus}</p>}
           </div>
@@ -786,14 +786,14 @@ export default function SavedSetsPanel({
           <div className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#5a5fc3]">
                   {mode === 'create' ? 'New set' : 'Edit set'}
                 </p>
                 <input
                   value={draftName}
                   onChange={(event) => setDraftName(event.target.value.slice(0, 80))}
                   placeholder="Set name…"
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
               </div>
               <CloseButton onClick={closeSetEditor} label="Close set editor" />
@@ -808,7 +808,7 @@ export default function SavedSetsPanel({
                       <textarea
                         value={question.prompt}
                         onChange={(event) => updateDraftPrompt(index, event.target.value)}
-                        className="min-h-[3rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                        className="min-h-[3rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                       />
                       <RemoveButton onClick={() => removeDraftPrompt(index)} label={`Remove question ${index + 1}`} />
                     </div>
@@ -817,12 +817,12 @@ export default function SavedSetsPanel({
                 <button
                   type="button"
                   onClick={() => setDraftQuestions((items) => [...items, { id: newId('q'), type: 'short', prompt: '', options: [], correctAnswer: '' }].slice(0, 12))}
-                  className="mt-3 text-xs font-black text-indigo-700"
+                  className="mt-3 text-xs font-black text-[#5a5fc3]"
                 >
                   + Add question
                 </button>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" onClick={saveEditedSet} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Save set</button>
+                  <button type="button" onClick={saveEditedSet} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white">Save set</button>
                   <button type="button" onClick={closeSetEditor} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 dark:border-slate-700">Cancel</button>
                 </div>
               </>
@@ -835,10 +835,10 @@ export default function SavedSetsPanel({
                   value={draftPaste}
                   onChange={(event) => setDraftPaste(event.target.value.slice(0, 6000))}
                   placeholder={'What information does the source contain?\nWho created it and when?\nWhy was it created?'}
-                  className="mt-2 min-h-[12rem] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="mt-2 min-h-[12rem] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" onClick={savePastedSet} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Save set</button>
+                  <button type="button" onClick={savePastedSet} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white">Save set</button>
                   <button type="button" onClick={closeSetEditor} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 dark:border-slate-700">Cancel</button>
                 </div>
               </>
