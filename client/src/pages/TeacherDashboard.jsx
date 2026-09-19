@@ -4797,57 +4797,23 @@ function TeacherDashboardInner() {
               <h3 className="iboard-room-settings__label">Breakouts</h3>
               <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                 {breakoutsActive ? (
-                  <div className="space-y-2.5">
-                    <div className="iboard-room-settings__field-row items-center gap-2">
-                      <span className="text-[12px] font-semibold text-[#3c3c45] dark:text-slate-200">Rooms</span>
-                      <div className="iboard-breakout-assign__stepper" role="group" aria-label="Number of breakout rooms">
-                        <button
-                          type="button"
-                          aria-label="Fewer rooms"
-                          disabled={breakoutBusy || Math.floor(Number(breakoutRoomCountDraft) || 1) <= 1}
-                          onClick={() => {
-                            const next = Math.max(1, Math.floor(Number(breakoutRoomCountDraft) || 1) - 1);
-                            setBreakoutRoomCountDraft(next);
-                            setBreakoutCount(next);
-                          }}
-                        >
-                          −
-                        </button>
-                        <span className="iboard-breakout-assign__stepper-value" aria-live="polite">
-                          {Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)))}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label="More rooms"
-                          disabled={breakoutBusy || Math.floor(Number(breakoutRoomCountDraft) || 1) >= 40}
-                          onClick={() => {
-                            const next = Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1) + 1);
-                            setBreakoutRoomCountDraft(next);
-                            setBreakoutCount(next);
-                          }}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        disabled={breakoutBusy}
-                        onClick={startBreakoutsAuto}
-                        className="iboard-room-settings__secondary"
-                      >
-                        Reshuffle (~4)
-                      </button>
-                      <button
-                        type="button"
-                        disabled={breakoutBusy}
-                        onClick={endBreakouts}
-                        className="iboard-room-settings__secondary"
-                      >
-                        End breakouts
-                      </button>
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={breakoutBusy}
+                      onClick={startBreakoutsAuto}
+                      className="iboard-room-settings__secondary"
+                    >
+                      Shuffle students
+                    </button>
+                    <button
+                      type="button"
+                      disabled={breakoutBusy}
+                      onClick={endBreakouts}
+                      className="iboard-room-settings__secondary"
+                    >
+                      Close rooms
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
@@ -4870,19 +4836,14 @@ function TeacherDashboardInner() {
                       </button>
                     </div>
                     {breakoutSetupMode === 'auto' ? (
-                      <>
-                        <p className="text-[12px] font-medium text-[#52525c] dark:text-slate-300">
-                          Split into rooms of about 4. Ask stays whole-class.
-                        </p>
-                        <button
-                          type="button"
-                          disabled={breakoutBusy || !students.length}
-                          onClick={startBreakoutsAuto}
-                          className="iboard-room-settings__primary"
-                        >
-                          Start breakouts
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        disabled={breakoutBusy || !students.length}
+                        onClick={startBreakoutsAuto}
+                        className="iboard-room-settings__primary"
+                      >
+                        Start breakouts
+                      </button>
                     ) : null}
                   </div>
                 )}
