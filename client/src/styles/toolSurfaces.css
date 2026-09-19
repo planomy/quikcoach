@@ -33,7 +33,7 @@ html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-stud
 
 /* Quiet Slate / Graphite: shared neutral surfaces, with semantic colours intact. */
 html:not(.dark) {
-  --iboard-canvas: #f1f0f8;
+  --iboard-canvas: #fafaf8;
   --iboard-paper: #ffffff;
   --iboard-tool-surface: #f6f5fb;
   --iboard-tool-strip: #eeedf6;
@@ -54,12 +54,14 @@ html :is(.iboard-teacher-canvas, .iboard-student-canvas) {
   /* Beat Tailwind body utilities (bg-slate-50) so the canvas tint is edge-to-edge. */
   background-color: var(--iboard-canvas) !important;
 }
-/* Teacher / student LZ header wins over the generic tool-surfaces masthead. */
+/* Teacher / student header: white chrome + whisper shadow (wins over generic tool masthead). */
 html:not(.dark) .iboard-teacher-canvas .iboard-app-header,
 html:not(.dark) .iboard-student-canvas .iboard-app-header {
-  background: rgba(255, 255, 255, 0.86) !important;
-  border-bottom-color: #e2e2ea !important;
-  box-shadow: none !important;
+  background: #ffffff !important;
+  border-bottom-color: #e2e8ef !important;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.035),
+    0 4px 14px rgba(15, 23, 42, 0.05) !important;
 }
 html.dark .iboard-app-header {
   background: #20262d !important;
