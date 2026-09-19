@@ -3816,18 +3816,18 @@ function TeacherDashboardInner() {
           <section className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-                Proof of learning for this room — save writing now, browse lesson packs or each student&apos;s portfolio.
+                Proof of learning for this room — snapshot writing now, or browse lesson packs and student portfolios.
               </p>
               <button type="button" onClick={openEvidenceModal} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
-                Save current evidence
+                Snapshot writing
               </button>
             </div>
 
             {snapshots.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-emerald-300 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-slate-900">
-                <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">No saves yet</h3>
+                <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">No snapshots yet</h3>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-                  Save student drafts once to unlock lesson packs and individual portfolios.
+                  Snapshot student drafts once to unlock lesson packs and individual portfolios.
                 </p>
               </div>
             ) : (
@@ -4921,9 +4921,6 @@ function TeacherDashboardInner() {
             <section className="iboard-room-settings__section">
               <h3 className="iboard-room-settings__label">Evidence</h3>
               <div className="iboard-room-settings__card iboard-room-settings__list">
-                <button type="button" onClick={() => { closeSettings(); openEvidenceModal(); }}>
-                  Save current student content
-                </button>
                 <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
                   <span>Saved student content</span>
                   {snapshots.length > 0 ? (
@@ -4970,10 +4967,6 @@ function TeacherDashboardInner() {
                 <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }}>
                   Download participant list
                 </button>
-                <a href={`/pulse/teacher?code=${encodeURIComponent(codeInput)}`}>
-                  <span>Open Ask-only window</span>
-                  <span aria-hidden="true">↗</span>
-                </a>
               </div>
             </section>
 
