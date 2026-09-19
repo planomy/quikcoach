@@ -4381,7 +4381,7 @@ function TeacherDashboardInner() {
               {Object.values(breakoutDraftAssign).filter(Boolean).length}/{orderedStudents.length} placed
             </span>
           </div>
-                          <div className="iboard-breakout-assign__toolbar">
+          <div className="iboard-breakout-assign__toolbar">
             <label className="iboard-breakout-assign__rooms">
               <span>Rooms</span>
               <div className="iboard-breakout-assign__stepper">
@@ -4414,7 +4414,20 @@ function TeacherDashboardInner() {
                 </button>
               </div>
             </label>
-            <p className="iboard-breakout-assign__hint">Tap a room number on each student</p>
+            <button
+              type="button"
+              disabled={
+                breakoutBusy ||
+                !orderedStudents.length ||
+                !Object.values(breakoutDraftAssign).some(Boolean)
+              }
+              onClick={startBreakoutsManual}
+              className={`iboard-breakout-assign__start${
+                Object.values(breakoutDraftAssign).some(Boolean) ? ' is-ready' : ''
+              }`}
+            >
+              Start breakouts
+            </button>
           </div>
           <div className="iboard-breakout-assign__body scrollbar-thin">
             {!orderedStudents.length ? (
@@ -4464,16 +4477,6 @@ function TeacherDashboardInner() {
                 })}
               </ul>
             )}
-          </div>
-          <div className="iboard-breakout-assign__footer">
-            <button
-              type="button"
-              disabled={breakoutBusy || !orderedStudents.length}
-              onClick={startBreakoutsManual}
-              className="iboard-room-settings__primary"
-            >
-              Start breakouts
-            </button>
           </div>
         </div>
       )}
@@ -4754,11 +4757,7 @@ function TeacherDashboardInner() {
                           Start breakouts
                         </button>
                       </>
-                    ) : (
-                      <p className="text-[12px] font-medium text-[#52525c] dark:text-slate-300">
-                        Choose rooms and assign students in the panel on the left, then Start there.
-                      </p>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </div>

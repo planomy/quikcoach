@@ -48,6 +48,65 @@ function looksLikeMaterialFilename(text) {
   return /^[^/\\\n]{1,160}\.(?:pdf|jpe?g|png|webp)$/i.test(String(text || '').trim());
 }
 
+function downloadBlob(blob, fileName) {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+async function imageBlobToPngFile(blob, fileName) {
+  if (typeof createImageBitmap !== 'function') {
+    return new File([blob], fileName, { type: blob.type || 'image/png' });
+  }
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('canvas');
+    ctx.drawImage(bitmap, 0, 0);
+    const pngBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob((next) => (next ? resolve(next) : reject(new Error('png'))), 'image/png');
+    });
+    return new File([pngBlob], fileName, { type: 'image/png' });
+  } finally {
+    bitmap.close?.();
+  }
+}
+
+async function shareOrDownloadFile(file) {
+  if (typeof navigator !== 'undefined' && typeof navigator.canShare === 'function') {
+    try {
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: file.name });
+        return 'shared';
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return 'cancelled';
+    }
+  }
+  downloadBlob(file, file.name);
+  return 'downloaded';
+}
+
+async function saveImageSnapshot(item) {
+  const response = await fetch(item.url);
+  if (!response.ok) throw new Error('fetch');
+  const blob = await response.blob();
+  const base = String(item.title || item.originalName || 'exemplar')
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[^\w.-]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'exemplar';
+  const file = await imageBlobToPngFile(blob, `${base}-snapshot.png`);
+  return shareOrDownloadFile(file);
+}
+
 async function downloadMaterial(item) {
   const url = String(item.url || '');
   if (!url) throw new Error('missing url');
@@ -55,14 +114,7 @@ async function downloadMaterial(item) {
   const response = await fetch(downloadUrl);
   if (!response.ok) throw new Error('download failed');
   const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = objectUrl;
-  anchor.download = item.originalName || 'handout';
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(objectUrl);
+  downloadBlob(blob, item.originalName || 'handout');
 }
 
 function saveSnapshotCard(item) {
@@ -88,31 +140,24 @@ function saveSnapshotCard(item) {
   ctx.fillText(new Date(item.at || Date.now()).toLocaleString(), 40, 290);
   ctx.fillText('Ask your teacher if you also need the original file.', 40, 360);
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
+    canvas.toBlob(async (blob) => {
       if (!blob) {
         reject(new Error('snapshot failed'));
         return;
       }
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = `${String(item.title || 'handout').replace(/[^\w.-]+/g, '_')}-snapshot.png`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(objectUrl);
-      resolve();
+      try {
+        const fileName = `${String(item.title || 'handout').replace(/[^\w.-]+/g, '_')}-snapshot.png`;
+        const file = new File([blob], fileName, { type: 'image/png' });
+        await shareOrDownloadFile(file);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
     }, 'image/png');
   });
 }
 
-function MaterialIconButton({ label, busyLabel, busy, onClick, children, tone = 'neutral' }) {
-  const toneClass =
-    tone === 'primary'
-      ? 'border-indigo-200 bg-indigo-600 text-white hover:bg-indigo-700 dark:border-indigo-700'
-      : tone === 'accent'
-        ? 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200'
-        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200';
+function MaterialIconButton({ label, busyLabel, busy, onClick, children }) {
   return (
     <button
       type="button"
@@ -120,7 +165,7 @@ function MaterialIconButton({ label, busyLabel, busy, onClick, children, tone = 
       disabled={!!busy}
       title={busy ? busyLabel : label}
       aria-label={busy ? busyLabel : label}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${toneClass}`}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
     >
       {children}
     </button>
@@ -196,21 +241,14 @@ function MaterialBody({ item, large, onToggleLarge, compact = false }) {
     setMessage('');
     try {
       if (image && item.url) {
-        const response = await fetch(item.url);
-        if (!response.ok) throw new Error('fetch');
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = objectUrl;
-        anchor.download = item.originalName || 'handout.jpg';
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(objectUrl);
+        const result = await saveImageSnapshot(item);
+        if (result === 'cancelled') setMessage('');
+        else if (result === 'shared') setMessage('Shared — save to Photos or Files');
+        else setMessage('Snapshot saved');
       } else {
         await saveSnapshotCard(item);
+        setMessage('Snapshot saved');
       }
-      setMessage('Snapshot saved');
     } catch {
       setMessage('Could not save a snapshot — use your device screenshot');
     } finally {
@@ -247,7 +285,6 @@ function MaterialBody({ item, large, onToggleLarge, compact = false }) {
         busyLabel="Saving…"
         busy={busy}
         onClick={onDownload}
-        tone="primary"
       >
         <IconDownload />
       </MaterialIconButton>
@@ -265,7 +302,6 @@ function MaterialBody({ item, large, onToggleLarge, compact = false }) {
           busyLabel={large ? 'Close full screen' : 'View full screen'}
           busy=""
           onClick={onToggleLarge}
-          tone="accent"
         >
           <IconFullscreen />
         </MaterialIconButton>
