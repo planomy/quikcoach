@@ -14,7 +14,7 @@ body,
 html:fullscreen,
 html:-webkit-full-screen {
   height: 100%;
-  background: #f1f0f8;
+  background: #eef1f6;
 }
 
 html.dark:fullscreen,
@@ -138,7 +138,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 .iboard-student-canvas {
   width: 100%;
   min-width: 100%;
-  background: #eef4fa;
+  background: #eef1f6;
 }
 
 .iboard-student-canvas {
@@ -147,17 +147,19 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
   max-height: 100dvh;
 }
 
-/* LZ-inspired teacher shell (light): cool blue-grey → purply-blue (MS LZ wash) */
+/* Teacher shell (light): cool neutral field — chrome sits above, rooms nest below */
 html:not(.dark) .iboard-teacher-canvas {
-  background: #eff4fd;
-  background-image: linear-gradient(105deg, #eff4fd 0%, #f7f0ff 100%);
+  background: #eef1f6;
+  background-image: none;
   color: #3c3c45;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-app-header {
   background: #ffffff;
-  border-bottom-color: #e0e0e0;
-  box-shadow: none;
+  border-bottom-color: #e4e7ec;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.04),
+    0 4px 14px rgba(15, 23, 42, 0.055);
   backdrop-filter: blur(8px);
 }
 
@@ -311,17 +313,19 @@ html.dark .iboard-inbox-answer-chip:hover {
   max-width: min(7.5rem, 36vw);
 }
 
-/* LZ-inspired student shell (light): match teacher quiet chrome */
+/* Student shell (light): match teacher cool field */
 html:not(.dark) .iboard-student-canvas {
-  background: #eff4fd;
-  background-image: linear-gradient(105deg, #eff4fd 0%, #f7f0ff 100%);
+  background: #eef1f6;
+  background-image: none;
   color: #3c3c45;
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header {
   background: #ffffff;
-  border-bottom-color: #e0e0e0;
-  box-shadow: none;
+  border-bottom-color: #e4e7ec;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.04),
+    0 4px 14px rgba(15, 23, 42, 0.055);
   backdrop-filter: blur(8px);
 }
 
@@ -458,8 +462,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  background: #f7fafe;
-  border-right: 1px solid #e5ebf2;
+  background: #e9edf3;
+  border-right: 1px solid #dde3eb;
   padding: 0.75rem 0;
   min-height: 0;
 }
@@ -538,27 +542,29 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  padding: 0.75rem 0 0.75rem 1.125rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   transition: padding 210ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-teacher-shell.is-teacher-hidden .iboard-teacher-panel-wrap {
-  padding: 0.75rem 0.15rem 0.75rem 0.3rem;
+  padding: 0.55rem 0.2rem 0.55rem 0.2rem;
 }
 
 .iboard-teacher-panel {
   height: 100%;
   min-height: 0;
-  min-width: 13.75rem;
+  min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #ffffff;
-  border: 1px solid #dedee6;
-  border-radius: 0.75rem;
-  box-shadow: 0 3px 3px -2px rgba(15, 23, 42, 0.22);
+  border: 0;
+  border-right: 1px solid #dde3eb;
+  border-radius: 0;
+  box-shadow: none;
   opacity: 1;
   transform: translateX(0);
   transition:
@@ -649,23 +655,81 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 .iboard-student-board {
   min-width: 0;
   overflow: auto;
-  padding: 0.75rem 0.9rem 0.9rem 1.125rem;
+  padding: 0.75rem 0.9rem 0.9rem 1rem;
+}
+
+.iboard-student-board-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 0;
+}
+
+.iboard-room-tray {
+  background: #e4e9f0;
+  border: 1px solid rgba(15, 23, 42, 0.045);
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.8rem 0.85rem;
+}
+
+.iboard-room-tray--solo {
+  background: #e7ebf1;
+}
+
+.iboard-room-tray__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+  padding: 0 0.1rem 0.05rem;
+}
+
+.iboard-room-tray__head h3 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #3c3c45;
+}
+
+.iboard-room-tray__meta {
+  font-size: 0.6875rem;
+  font-weight: 550;
+  color: #7a8494;
+}
+
+html.dark .iboard-room-tray {
+  background: #1a222c;
+  border-color: #334155;
+}
+
+html.dark .iboard-room-tray--solo {
+  background: #171e27;
+}
+
+html.dark .iboard-room-tray__head h3 {
+  color: #e2e8f0;
+}
+
+html.dark .iboard-room-tray__meta {
+  color: #94a3b8;
 }
 
 .iboard-teacher-panel-reveal {
   position: absolute;
-  top: 0.75rem;
-  left: 0.3rem;
+  top: 0.55rem;
+  left: 0.2rem;
   z-index: 2;
   display: grid;
   place-items: center;
   width: 1.65rem;
   height: 1.65rem;
-  border: 1px solid #dedee6;
-  border-radius: 0.65rem;
+  border: 1px solid #dde3eb;
+  border-radius: 0.5rem;
   background: #ffffff;
   color: #5a5fc3;
-  box-shadow: 0 3px 3px -2px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
   cursor: pointer;
   padding: 0;
   opacity: 0;
@@ -1873,7 +1937,8 @@ html.dark .iboard-arr-btn[data-active='true'] {
 html.dark .iboard-teacher-panel {
   background: #252b32;
   border-color: #444e5b;
-  box-shadow: 0 3px 3px -2px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid #444e5b;
+  box-shadow: none;
 }
 
 html.dark .iboard-teacher-panel-head h2,

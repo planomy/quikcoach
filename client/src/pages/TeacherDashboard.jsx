@@ -1130,9 +1130,9 @@ function TeacherDashboardInner() {
     return Array.from({ length: count }, (_, i) => String(i + 1));
   }, [breakouts]);
 
-  const boardRows = useMemo(() => {
+  const boardSections = useMemo(() => {
     if (!breakoutsActive) {
-      return visibleStudents.map((student) => ({ type: 'card', student }));
+      return [{ id: 'class', label: null, count: visibleStudents.length, students: visibleStudents }];
     }
     const byId = new Map(visibleStudents.map((s) => [Number(s.id), s]));
     const rankStudent = (student) => {
@@ -1152,28 +1152,24 @@ function TeacherDashboardInner() {
         return Number(a.id) - Number(b.id);
       });
     const used = new Set();
-    const rows = [];
+    const sections = [];
     for (const roomMeta of breakouts.rooms || []) {
       const members = sortMembers(
         (roomMeta.memberIds || []).map((id) => byId.get(Number(id))).filter(Boolean)
       );
       for (const s of members) used.add(Number(s.id));
-      rows.push({
-        type: 'header',
+      sections.push({
         id: String(roomMeta.id),
         label: roomMeta.label || `Room ${roomMeta.id}`,
         count: members.length,
+        students: members,
       });
-      for (const student of members) {
-        rows.push({ type: 'card', student });
-      }
     }
     const rest = sortMembers(visibleStudents.filter((s) => !used.has(Number(s.id))));
     if (rest.length) {
-      rows.push({ type: 'header', id: 'unassigned', label: 'Unassigned', count: rest.length });
-      for (const student of rest) rows.push({ type: 'card', student });
+      sections.push({ id: 'unassigned', label: 'Unassigned', count: rest.length, students: rest });
     }
-    return rows;
+    return sections;
   }, [
     breakoutsActive,
     breakouts,
@@ -3380,29 +3376,28 @@ function TeacherDashboardInner() {
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
 
               <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
-        <div className={`grid ${cardView === 'overview' ? 'gap-3' : 'gap-4'} ${studentGridClass}`}>
+        <div className="iboard-student-board-stack">
           {orderedStudents.length === 0 && (
-            <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
+            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
               Waiting for students to join…
             </div>
           )}
-          {boardRows.map((row) => {
-            if (row.type === 'header') {
-              return (
-                <div
-                  key={`breakout-${row.id}`}
-                  className="col-span-full mt-1 flex items-baseline justify-between gap-2 border-b border-[#e4e4ea] pb-1.5 first:mt-0 dark:border-slate-700"
-                >
-                  <h3 className="text-[13px] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-100">
-                    {row.label}
-                  </h3>
-                  <span className="text-[11px] font-medium text-[#8a8a96] dark:text-slate-400">
-                    {row.count} student{row.count === 1 ? '' : 's'}
+          {orderedStudents.length > 0 && boardSections.map((section) => (
+            <section
+              key={`breakout-${section.id}`}
+              className={`iboard-room-tray${section.label ? '' : ' iboard-room-tray--solo'}`}
+              aria-label={section.label || 'Class board'}
+            >
+              {section.label ? (
+                <div className="iboard-room-tray__head">
+                  <h3>{section.label}</h3>
+                  <span className="iboard-room-tray__meta">
+                    {section.count} student{section.count === 1 ? '' : 's'}
                   </span>
                 </div>
-              );
-            }
-            const s = row.student;
+              ) : null}
+              <div className={`grid ${cardView === 'overview' ? 'gap-3' : 'gap-4'} ${studentGridClass}`}>
+          {section.students.map((s) => {
             const displayText = s.text || '';
             const wc = wordCount(s.text);
             const st = activityStatus(s.updated_at, activityNow);
@@ -3727,6 +3722,9 @@ function TeacherDashboardInner() {
               </article>
             );
           })}
+              </div>
+            </section>
+          ))}
         </div>
               </div>
       </main>
