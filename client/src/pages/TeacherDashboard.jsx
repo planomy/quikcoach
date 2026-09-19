@@ -3385,13 +3385,13 @@ function TeacherDashboardInner() {
           {orderedStudents.length > 0 && boardSections.map((section) => (
             <section
               key={`breakout-${section.id}`}
-              className={`iboard-room-tray${section.label ? '' : ' iboard-room-tray--solo'}`}
+              className={section.label ? 'iboard-room-section' : undefined}
               aria-label={section.label || 'Class board'}
             >
               {section.label ? (
-                <div className="iboard-room-tray__head">
+                <div className="iboard-room-section__head">
                   <h3>{section.label}</h3>
-                  <span className="iboard-room-tray__meta">
+                  <span className="iboard-room-section__meta">
                     {section.count} student{section.count === 1 ? '' : 's'}
                   </span>
                 </div>

@@ -665,60 +665,44 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
   min-height: 0;
 }
 
-.iboard-room-tray {
-  background: #e8eef4;
-  border: 1px solid rgba(15, 40, 70, 0.04);
-  border-radius: 0.75rem;
-  padding: 0.7rem 0.8rem 0.85rem;
-}
-
-/* No tray when breakouts are off — cards sit on canvas like student BOR */
-.iboard-room-tray--solo {
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-}
-
-.iboard-room-tray__head {
+/* Breakout rooms: title + hairline only (no tray box) */
+.iboard-room-section__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.65rem;
-  padding: 0 0.1rem 0.05rem;
+  margin: 0.15rem 0 0;
+  padding: 0 0.1rem 0.4rem;
+  border-bottom: 1px solid #e2e8ef;
 }
 
-.iboard-room-tray__head h3 {
+.iboard-room-section:first-child .iboard-room-section__head {
+  margin-top: 0;
+}
+
+.iboard-room-section__head h3 {
   margin: 0;
   font-size: 0.8125rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: #3c3c45;
 }
 
-.iboard-room-tray__meta {
+.iboard-room-section__meta {
   font-size: 0.6875rem;
-  font-weight: 550;
-  color: #6b7a8c;
+  font-weight: 500;
+  color: #8a8a96;
 }
 
-html.dark .iboard-room-tray {
-  background: #1a222c;
-  border-color: #334155;
+html.dark .iboard-room-section__head {
+  border-bottom-color: #334155;
 }
 
-html.dark .iboard-room-tray--solo {
-  background: transparent;
-  border: 0;
-  padding: 0;
-}
-
-html.dark .iboard-room-tray__head h3 {
+html.dark .iboard-room-section__head h3 {
   color: #e2e8f0;
 }
 
-html.dark .iboard-room-tray__meta {
+html.dark .iboard-room-section__meta {
   color: #94a3b8;
 }
 
