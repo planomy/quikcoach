@@ -2221,24 +2221,24 @@ function TeacherDashboardInner() {
   async function openSessionFilePicker() {
     closeSettings();
     if (!joinedRef.current || codeInput.length !== 4) {
-      setError('Open a room before opening a session');
+      setError('Open a room before loading a session');
       return;
     }
     if (sessionDirtyRef.current) {
       const ok = await confirmDialog({
         title: 'Replace the live board?',
         message:
-          'Opening a session replaces the live board in this room (cards, responses, Pulse, notes).\n\nUnsaved changes on the board will be lost.',
-        confirmLabel: 'Open session',
+          'Loading a session replaces the live board in this room (cards, responses, Pulse, notes).\n\nUnsaved changes on the board will be lost.',
+        confirmLabel: 'Load session',
         tone: 'danger',
       });
       if (!ok) return;
     } else {
       const ok = await confirmDialog({
-        title: 'Open a saved session?',
+        title: 'Load a saved session?',
         message:
           'This replaces the live board (cards, responses, Pulse, notes) with the file contents.',
-        confirmLabel: 'Open session',
+        confirmLabel: 'Load session',
         tone: 'brand',
       });
       if (!ok) return;
@@ -4567,6 +4567,14 @@ function TeacherDashboardInner() {
               <div className="iboard-room-settings__row">
                 <button
                   type="button"
+                  disabled={sessionBusy}
+                  onClick={openSessionFilePicker}
+                  className="iboard-room-settings__secondary"
+                >
+                  {sessionBusy ? 'Loading…' : 'Load session'}
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     const v = !frozen;
                     setRoom((r) => (r ? { ...r, freeze_class: v } : r));
@@ -4574,7 +4582,7 @@ function TeacherDashboardInner() {
                   }}
                   className="iboard-room-settings__secondary"
                 >
-                  {frozen ? 'Unfreeze class' : 'Freeze class'}
+                  {frozen ? 'Unfreeze board' : 'Freeze board'}
                 </button>
                 <button
                   type="button"
@@ -4948,9 +4956,6 @@ function TeacherDashboardInner() {
                 </button>
                 <button type="button" onClick={openLessonReport}>
                   Engagement
-                </button>
-                <button type="button" disabled={sessionBusy} onClick={openSessionFilePicker}>
-                  Open .iboard
                 </button>
                 <button type="button" onClick={() => openLibrary('reports')}>
                   Student reports
