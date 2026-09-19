@@ -5,7 +5,7 @@
 html.iboard-student-workspace,
 html.iboard-student-workspace body,
 html.iboard-student-workspace #root {
-  background-color: var(--iboard-canvas, #ebeff4) !important;
+  background-color: var(--iboard-canvas, #f1f0f8) !important;
 }
 
 /* Breakouts: lock the student shell to one viewport so peers stay on-screen. */

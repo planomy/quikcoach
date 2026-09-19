@@ -33,7 +33,7 @@ html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-stud
 
 /* Quiet Slate / Graphite: shared neutral surfaces, with semantic colours intact. */
 html:not(.dark) {
-  --iboard-canvas: #ebeff4;
+  --iboard-canvas: #f1f0f8;
   --iboard-paper: #ffffff;
   --iboard-tool-surface: #f6f5fb;
   --iboard-tool-strip: #eeedf6;

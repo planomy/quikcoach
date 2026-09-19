@@ -14,7 +14,7 @@ body,
 html:fullscreen,
 html:-webkit-full-screen {
   height: 100%;
-  background: #ebeff4;
+  background: #f1f0f8;
 }
 
 html.dark:fullscreen,
@@ -138,7 +138,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 .iboard-student-canvas {
   width: 100%;
   min-width: 100%;
-  background: #ebeff4;
+  background: #f1f0f8;
 }
 
 .iboard-student-canvas {
@@ -149,7 +149,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 
 /* Teacher shell (light): cool ice-blue field — indigo accents stay brand */
 html:not(.dark) .iboard-teacher-canvas {
-  background: #ebeff4;
+  background: #f1f0f8;
   background-image: none;
   color: #3c3c45;
 }
@@ -315,7 +315,7 @@ html.dark .iboard-inbox-answer-chip:hover {
 
 /* Student shell (light): match teacher ice-blue field */
 html:not(.dark) .iboard-student-canvas {
-  background: #ebeff4;
+  background: #f1f0f8;
   background-image: none;
   color: #3c3c45;
 }
@@ -2110,11 +2110,11 @@ html.dark .iboard-workspace-scrim {
 }
 
 /* Hidden scrollbars — wheel/trackpad scroll still works. */
-.scrollbar-thin {
+  .scrollbar-thin {
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
-.scrollbar-thin::-webkit-scrollbar {
+  }
+  .scrollbar-thin::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
   display: none;
