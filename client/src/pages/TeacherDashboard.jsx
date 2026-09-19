@@ -3391,9 +3391,6 @@ function TeacherDashboardInner() {
               {section.label ? (
                 <div className="iboard-room-section__head">
                   <h3>{section.label}</h3>
-                  <span className="iboard-room-section__meta">
-                    {section.count} student{section.count === 1 ? '' : 's'}
-                  </span>
                 </div>
               ) : null}
               <div className={`grid ${cardView === 'overview' ? 'gap-3' : 'gap-4'} ${studentGridClass}`}>

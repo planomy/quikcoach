@@ -665,15 +665,12 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
   min-height: 0;
 }
 
-/* Breakout rooms: title + hairline only (no tray box) */
+/* Breakout rooms: title only */
 .iboard-room-section__head {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0.15rem 0 0;
-  padding: 0 0.1rem 0.4rem;
-  border-bottom: 1px solid #e2e8ef;
+  margin: 0.15rem 0 0.35rem;
+  padding: 0 0.1rem;
 }
 
 .iboard-room-section:first-child .iboard-room-section__head {
@@ -688,22 +685,8 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
   color: #3c3c45;
 }
 
-.iboard-room-section__meta {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: #8a8a96;
-}
-
-html.dark .iboard-room-section__head {
-  border-bottom-color: #334155;
-}
-
 html.dark .iboard-room-section__head h3 {
   color: #e2e8f0;
-}
-
-html.dark .iboard-room-section__meta {
-  color: #94a3b8;
 }
 
 .iboard-teacher-panel-reveal {
