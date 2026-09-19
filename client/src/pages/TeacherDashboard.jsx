@@ -4426,7 +4426,7 @@ function TeacherDashboardInner() {
           style={{
             top: teacherToolsTop + settingsChromeHeight,
             maxHeight: `calc(100dvh - ${teacherToolsTop + settingsChromeHeight}px)`,
-            right: 'min(22rem, 100vw)',
+            left: 'calc(4.75rem + min(22rem, calc(100vw - 4.75rem)))',
           }}
           role="dialog"
           aria-modal="false"

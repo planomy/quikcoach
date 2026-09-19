@@ -1644,16 +1644,16 @@ html.dark .iboard-room-settings__danger:hover {
 }
 
 .iboard-breakout-assign {
-  /* Top is set inline: dock top + Room settings chrome height */
+  /* Top/left set inline: beside left-docked Room settings */
   bottom: 0;
-  width: min(24rem, calc(100vw - 22rem));
+  width: min(24rem, calc(100vw - 4.75rem - 22rem));
   display: flex;
   flex-direction: column;
-  border-left: 1px solid #e8e8ee;
+  border-right: 1px solid #e8e8ee;
   border-top: 1px solid #e8e8ee;
-  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
   background: #f7f7f9;
-  box-shadow: -12px 0 32px -18px rgba(15, 23, 42, 0.28);
+  box-shadow: 12px 0 32px -18px rgba(15, 23, 42, 0.28);
 }
 
 .iboard-breakout-assign__chrome {
@@ -1845,10 +1845,10 @@ html.dark .iboard-room-settings__danger:hover {
 }
 
 html.dark .iboard-breakout-assign {
-  border-left-color: #334155;
+  border-right-color: #334155;
   border-top-color: #334155;
   background: #0f172a;
-  box-shadow: -12px 0 32px -18px rgba(0, 0, 0, 0.45);
+  box-shadow: 12px 0 32px -18px rgba(0, 0, 0, 0.45);
 }
 
 html.dark .iboard-breakout-assign__chrome {
