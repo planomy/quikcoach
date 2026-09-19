@@ -2667,7 +2667,7 @@ function TeacherDashboardInner() {
               </a>
             </div>
             {copyToast && (
-              <p className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-400">{copyToast}</p>
+              <p className="mt-3 text-sm font-medium text-[#5a5fc3] dark:text-indigo-300">{copyToast}</p>
             )}
           </div>
         </div>
@@ -2825,7 +2825,7 @@ function TeacherDashboardInner() {
               <div
                 role="status"
                 aria-live="polite"
-                className="pointer-events-auto inline-flex h-8 max-w-full items-center truncate rounded-lg bg-emerald-500 px-3 text-[11px] font-black text-emerald-950 shadow-sm"
+                className="pointer-events-auto inline-flex h-8 max-w-full items-center truncate rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 text-[11px] font-black text-[#5a5fc3] shadow-sm dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200"
                 title={copyToast}
               >
                 {copyToast}
@@ -2839,13 +2839,13 @@ function TeacherDashboardInner() {
                     closeSettings();
                     setSendToMenuOpen((open) => !open);
                   }}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-amber-950 shadow-sm hover:bg-amber-400"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-3 text-white shadow-sm hover:bg-[#4b50b0]"
                   aria-expanded={sendToMenuOpen}
                   aria-haspopup="menu"
                   aria-label={`Send ${Math.min(6, broadcastPickCount)} selected cards`}
                 >
                   <span className="text-[11px] font-black uppercase tracking-[0.12em]">Send to</span>
-                  <span className="rounded-md bg-amber-950/15 px-1.5 py-0.5 text-[11px] font-black tabular-nums">
+                  <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[11px] font-black tabular-nums">
                     {Math.min(6, broadcastPickCount)}
                   </span>
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 opacity-70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3406,7 +3406,7 @@ function TeacherDashboardInner() {
                           : showPulseState
                           ? pulseMeta.className
                           : notStarted
-                          ? 'border border-amber-200/90 dark:border-amber-800/70'
+                          ? 'border border-[#d4d4dc] dark:border-slate-600'
                           : 'border border-[#dedee6] dark:border-slate-700/80'
                       }`
                 }`}
@@ -3479,7 +3479,7 @@ function TeacherDashboardInner() {
                       ) : notStarted ? (
                         <span
                           title="No writing yet"
-                          className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+                          className="shrink-0 rounded-md bg-[#f1f1f5] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6b76] dark:bg-slate-800 dark:text-slate-300"
                         >
                           Not started
                         </span>

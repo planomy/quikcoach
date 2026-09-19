@@ -764,7 +764,7 @@ function WhiteboardInner() {
       {(!socketConnected || backOnline) && (
         <div
           className={`fixed inset-x-0 top-0 z-50 px-3 py-2 text-center text-sm font-semibold ${
-            !socketConnected ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 text-white'
+            !socketConnected ? 'bg-slate-700 text-slate-100' : 'bg-[#5a5fc3] text-white'
           }`}
         >
           {!socketConnected ? 'Connection lost — reconnecting…' : 'Back online'}

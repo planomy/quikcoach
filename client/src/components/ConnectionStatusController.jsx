@@ -98,8 +98,8 @@ export default function ConnectionStatusController() {
   const config = state === 'online'
     ? {
         label: 'Back online',
-        classes: 'border-emerald-200 bg-white text-emerald-700 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-300',
-        dot: 'bg-emerald-500',
+        classes: 'border-[#cfcce8] bg-white text-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300',
+        dot: 'bg-[#5a5fc3]',
       }
     : state === 'offline'
       ? {
@@ -109,8 +109,8 @@ export default function ConnectionStatusController() {
         }
       : {
           label: 'Reconnecting…',
-          classes: 'border-amber-200 bg-white text-amber-700 dark:border-amber-800 dark:bg-slate-900 dark:text-amber-300',
-          dot: 'bg-amber-400 animate-pulse',
+          classes: 'border-slate-200 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300',
+          dot: 'bg-[#5a5fc3] animate-pulse',
         };
 
   return (
