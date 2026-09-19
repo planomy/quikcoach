@@ -18,14 +18,22 @@ function studentSocket() {
 function findStartButton() {
   return [...document.querySelectorAll('button')].find((button) => {
     const text = button.textContent?.trim();
-    return text === 'Clear board & start' || text === 'Start new class' || text === 'Starting…';
+    return (
+      text === 'Reset board' ||
+      text === 'Reset class board' ||
+      text === 'Clear board & start' ||
+      text === 'Start new class' ||
+      text === 'Resetting…' ||
+      text === 'Starting…'
+    );
   }) || null;
 }
 
 function closeConfirmationDialog() {
-  const keepButton = [...document.querySelectorAll('button')].find(
-    (button) => button.textContent?.trim() === 'Keep current class'
-  );
+  const keepButton = [...document.querySelectorAll('button')].find((button) => {
+    const text = button.textContent?.trim();
+    return text === 'Keep board' || text === 'Keep current class';
+  });
   keepButton?.click();
 }
 
@@ -139,7 +147,9 @@ export default function ClassResetController({ role }) {
     const polish = () => {
       const button = findStartButton();
       if (!button || button.dataset.iboardClassResetBusy === 'true') return;
-      if (button.textContent?.trim() === 'Clear board & start') button.textContent = 'Start new class';
+      if (button.textContent?.trim() === 'Reset board' || button.textContent?.trim() === 'Clear board & start') {
+        button.textContent = 'Reset class board';
+      }
       button.dataset.iboardClassReset = 'true';
     };
     const schedulePolish = () => {
@@ -163,21 +173,21 @@ export default function ClassResetController({ role }) {
 
       button.dataset.iboardClassResetBusy = 'true';
       button.disabled = true;
-      button.textContent = 'Starting…';
+      button.textContent = 'Resetting…';
       setMessage('');
 
       socket.emit('teacher:start-new-class', {}, (ack) => {
         button.dataset.iboardClassResetBusy = 'false';
         button.disabled = false;
-        button.textContent = 'Start new class';
+        button.textContent = 'Reset class board';
 
         if (!ack?.ok) {
-          setMessage(ack?.error || 'Could not start a new class');
+          setMessage(ack?.error || 'Could not reset the class board');
           return;
         }
 
         closeConfirmationDialog();
-        setMessage('New class ready');
+        setMessage('Board reset');
         setTimeout(() => setMessage(''), 1800);
       });
     };

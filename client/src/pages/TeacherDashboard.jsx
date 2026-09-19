@@ -2586,7 +2586,7 @@ function TeacherDashboardInner() {
       setLibraryPanel(null);
       setNewClassConfirmOpen(false);
       clearSessionDirty();
-      setCopyToast('Board cleared — ready for a new class');
+      setCopyToast('Board reset — ready for a fresh lesson');
       setTimeout(() => setCopyToast(''), 3000);
       const code = String(codeInput || '').replace(/\D/g, '').slice(0, 4);
       if (code.length === 4) {
@@ -4255,10 +4255,10 @@ function TeacherDashboardInner() {
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Room action</p>
                 <h2 id="new-class-confirm-title" className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">
-                  Start a new class?
+                  Reset class board?
                 </h2>
                 <p id="new-class-confirm-description" className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  This removes every student card and teacher card from Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again. Save a session (.iboard) or download the class engagement report first if you want to keep this lesson.
+                  This clears every student card and teacher card in Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again. Skip this if the class is still working on a draft — the board persists until you reset. Save a session (.iboard) or download the class engagement report first if you want to keep this lesson.
                 </p>
               </div>
             </div>
@@ -4293,7 +4293,7 @@ function TeacherDashboardInner() {
                 onClick={closeNewClassConfirmation}
                 className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                Keep current class
+                Keep board
               </button>
               <button
                 type="button"
@@ -4301,7 +4301,7 @@ function TeacherDashboardInner() {
                 onClick={startNewClass}
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white shadow-sm hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
               >
-                {newClassBusy ? 'Starting…' : 'Clear board & start'}
+                {newClassBusy ? 'Resetting…' : 'Reset board'}
               </button>
             </div>
           </div>
@@ -4943,7 +4943,7 @@ function TeacherDashboardInner() {
               onClick={() => { closeSettings(); openNewClassConfirmation(); }}
               className="iboard-room-settings__danger"
             >
-              Start new class
+              Reset class board
             </button>
           </div>
         </div>

@@ -663,9 +663,9 @@ function WhiteboardInner() {
 
   async function clearAllCards() {
     const ok = await confirmDialog({
-      title: 'Start a new class?',
-      message: 'This clears the board — every student card and teacher card will be removed. Students will need to join again.',
-      confirmLabel: 'Clear board',
+      title: 'Reset class board?',
+      message: 'This clears the board — every student card and teacher card will be removed. Students will need to join again. Skip this if the class is still working on a draft.',
+      confirmLabel: 'Reset board',
       tone: 'danger',
     });
     if (!ok) return;
@@ -678,7 +678,7 @@ function WhiteboardInner() {
       setStudents([]);
       setPosts([]);
       setBroadcastPick({});
-      setToast('Board cleared — ready for a new class');
+      setToast('Board reset — ready for a fresh lesson');
       setTimeout(() => setToast(''), 3000);
       bumpChrome();
     });
@@ -901,9 +901,9 @@ function WhiteboardInner() {
             onClick={clearAllCards}
             disabled={ordered.length === 0 && posts.length === 0}
             className="rounded-lg bg-red-700/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
-            title="Clear the board for a new class"
+            title="Reset the class board — students will need to join again"
           >
-            New class
+            Reset board
           </button>
           <button
             type="button"

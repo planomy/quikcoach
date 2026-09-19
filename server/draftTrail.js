@@ -65,7 +65,7 @@ function append(room, student, event) {
   const bytes = Buffer.byteLength(JSON.stringify(event));
   if (room.bytes + bytes > MAX_ROOM_BYTES || totalBytes + bytes > MAX_TOTAL_BYTES || student.events.length >= 3000) {
     room.active = false;
-    room.reason = 'Draft Trail storage limit reached. Save this session before starting a new class.';
+    room.reason = 'Draft Trail storage limit reached. Save this session before resetting the class board.';
     room.changed = Date.now();
     return false;
   }
@@ -81,7 +81,7 @@ function ensureStudent(room, row, type = 'baseline', at = Date.now()) {
   if (!student) {
     if (room.students.size >= 500) {
       room.active = false;
-      room.reason = 'Draft Trail student limit reached. Save this session before starting a new class.';
+      room.reason = 'Draft Trail student limit reached. Save this session before resetting the class board.';
       return null;
     }
     student = { id: key, name: String(row.name || '').slice(0, 160), text: String(row.text || '').slice(0, 50000), pending: null, events: [] };

@@ -31,7 +31,7 @@ export function dismissInboxItem(code, studentId, itemId) {
   }
 }
 
-/** Clear locally dismissed inbox items when the teacher starts a new class. */
+/** Clear locally dismissed inbox items when the teacher resets the class board. */
 export function clearDismissedInboxIds(code, studentId) {
   const key = keyFor(code, studentId);
   if (!key) return;

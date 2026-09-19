@@ -87,7 +87,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
           <section><h3 className="mb-2 text-sm font-bold">{changed ? 'After · added text' : 'Recorded draft'}</h3><div className="min-h-40 whitespace-pre-wrap break-words rounded-lg border border-slate-200 p-4 text-base dark:border-slate-700">{changed ? <>{view.text.slice(0, event.start)}<ins className="bg-emerald-100 text-emerald-950 no-underline">{event.inserted}</ins>{view.text.slice(event.start + event.inserted.length)}</> : view.text || '—'}</div></section>
         </div>
       </>}
-      <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">Save session (.iboard) to keep these named trails. Unsaved trails are held in server memory and expire after 24 hours without changes, on a server restart, or when you start a new class. Captures writing received by iBoard, not screens, audio or video.</p>
+      <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">Save session (.iboard) to keep these named trails. Unsaved trails are held in server memory and expire after 24 hours without changes, on a server restart, or when you reset the class board. Captures writing received by iBoard, not screens, audio or video.</p>
     </dialog>
   );
 }
