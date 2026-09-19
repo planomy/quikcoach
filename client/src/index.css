@@ -14,7 +14,7 @@ body,
 html:fullscreen,
 html:-webkit-full-screen {
   height: 100%;
-  background: #f3f5f8;
+  background: #fafaf8;
 }
 
 html.dark:fullscreen,
@@ -138,7 +138,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 .iboard-student-canvas {
   width: 100%;
   min-width: 100%;
-  background: #f3f5f8;
+  background: #fafaf8;
 }
 
 .iboard-student-canvas {
@@ -149,7 +149,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 
 /* Teacher shell (light): cool ice-blue field — indigo accents stay brand */
 html:not(.dark) .iboard-teacher-canvas {
-  background: #f3f5f8;
+  background: #fafaf8;
   background-image: none;
   color: #3c3c45;
 }
@@ -315,7 +315,7 @@ html.dark .iboard-inbox-answer-chip:hover {
 
 /* Student shell (light): match teacher ice-blue field */
 html:not(.dark) .iboard-student-canvas {
-  background: #f3f5f8;
+  background: #fafaf8;
   background-image: none;
   color: #3c3c45;
 }
