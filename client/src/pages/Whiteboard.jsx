@@ -948,7 +948,7 @@ function WhiteboardInner() {
         <div className="pointer-events-none fixed left-1/2 top-3 z-50 flex -translate-x-1/2 items-center px-3">
           <div
             className={`inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg px-3 text-[11px] font-black shadow-sm ${
-              error ? 'bg-red-500 text-red-950' : 'bg-emerald-500 text-emerald-950'
+              error ? 'bg-red-500 text-white' : 'border border-[#cfcce8] bg-[#ebeaf8] text-[#5a5fc3]'
             }`}
           >
             {error || toast}
