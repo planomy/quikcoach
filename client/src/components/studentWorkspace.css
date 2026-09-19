@@ -445,7 +445,7 @@ html.iboard-student-workspace .iboard-question-pulse {
    content cannot stretch the cards (min-height:auto was blowing long drafts). */
 .iboard-breakout-peers {
   --peer-gap: 0.65rem;
-  --peer-size: clamp(10rem, 24dvh, 15rem);
+  --peer-size: clamp(15rem, 36dvh, 22.5rem);
   width: 100%;
   margin-top: 0.5rem;
   padding: 0;
