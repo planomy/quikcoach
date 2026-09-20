@@ -675,7 +675,7 @@ export default function LiveResponseTeacher({
   const panelMeta = effectivePanelTab ? PANEL_TAB_LABELS[effectivePanelTab] : null;
 
   const awarenessStrip = (
-    <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
+    <div className="shrink-0 border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-black text-slate-900 dark:text-white">Class engagement</h3>
@@ -988,7 +988,16 @@ export default function LiveResponseTeacher({
       </nav>
       )}
 
-      <div className={`min-h-0 flex-1 ${activeView === 'prepared' && (!usingPanelTabs || effectivePanelTab === 'ask') ? 'overflow-hidden' : 'overflow-y-auto'} ${overlay ? '' : 'min-h-[260px]'}`}>
+      <div
+        className={`min-h-0 flex-1 ${
+          (activeView === 'prepared' && (!usingPanelTabs || effectivePanelTab === 'ask'))
+          || (usingPanelTabs && effectivePanelTab === 'responses')
+            ? 'overflow-hidden'
+            : 'overflow-y-auto'
+        } ${
+          usingPanelTabs && effectivePanelTab === 'responses' ? 'flex flex-col' : ''
+        } ${overlay ? '' : 'min-h-[260px]'}`}
+      >
 
 
         {(!usingPanelTabs || effectivePanelTab === 'respond') && activeView === 'student' && selectedStudent && <div className="p-4"><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Student check-in</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{selectedStudent.name}</h3><p className="mt-1 text-xs text-slate-500">{studentTileMeta(selectedStudent).title}</p></div><CloseButton onClick={returnToPrimaryView} label="Close" /></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={!selectedStudent.connected} onClick={() => nudge(selectedStudent.id)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Send private check-in</button>{selectedStudent.engagement_status && selectedStudent.engagement_status !== 'ready' && <button type="button" onClick={() => acknowledge(selectedStudent.id)} className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-black text-amber-950">Clear alert</button>}{pendingByStudent[Number(selectedStudent.id)] > 0 && <button type="button" onClick={() => setActiveView('qna')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Review questions</button>}</div></div>}

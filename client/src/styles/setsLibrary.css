@@ -132,6 +132,41 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   display: none;
 }
 
+/* Lock chits + response controls; only the lower answer names scroll. */
+.iboard-header-dock--rail:has([aria-label="Responses"]) {
+  height: min(max-content, calc(100dvh - 1.25rem));
+  max-height: calc(100dvh - 1.25rem);
+  overflow: hidden;
+}
+
+.iboard-header-dock--start:has([aria-label="Responses"]) > section {
+  display: flex;
+  height: auto;
+  max-height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.iboard-header-dock--start:has([aria-label="Responses"])
+  > section
+  > div:has(> .iboard-engagement-chits) {
+  flex-shrink: 0;
+}
+
+.iboard-header-dock--start:has([aria-label="Responses"]) > section > div.min-h-0.flex-1 {
+  display: flex;
+  flex: 1 1 0%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.iboard-header-dock--start:has([aria-label="Responses"]) [aria-label="Responses"] {
+  flex: 1 1 0%;
+  min-height: 0;
+}
+
 /* The awareness strip is just status + student chits now. */
 .iboard-header-dock--start
   > section
