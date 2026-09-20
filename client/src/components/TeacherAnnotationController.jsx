@@ -1585,19 +1585,12 @@ export default function TeacherAnnotationController() {
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
-            <div className="mb-1 flex items-start justify-between gap-2">
-              {openMarker.annotation.status === 'fixed' ? (
-                <span className="sr-only">Student marked fixed</span>
-              ) : (
-                <p className="text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3] dark:text-indigo-300">
-                  Your inline comment
-                </p>
-              )}
-              <HintWrap hint="Close">
-                <CloseButton onClick={() => setOpenMarker(null)} aria-label="Close" title="" className={openMarker.annotation.status === 'fixed' ? 'ml-auto' : undefined} />
-              </HintWrap>
-            </div>
-            <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100">
+            {openMarker.annotation.status !== 'fixed' && (
+              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3] dark:text-indigo-300">
+                Your inline comment
+              </p>
+            )}
+            <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100">
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
             {openMarker.detached ? (
@@ -1639,9 +1632,9 @@ export default function TeacherAnnotationController() {
                   type="button"
                   disabled={reviewBusyId === openMarker.annotation.id}
                   onClick={() => reviewFixedComment(openMarker, 'reopen')}
-                  className="min-w-0 flex-1 rounded-lg border border-[#d5d4e4] bg-white px-2 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                  className="min-w-0 flex-1 whitespace-nowrap rounded-lg border border-[#d5d4e4] bg-white px-2 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                 >
-                  Needs another look
+                  Check again
                 </button>
                 {renderCommentChrome({
                   onEdit: () => editComment(openMarker),
