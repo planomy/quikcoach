@@ -672,7 +672,7 @@ export default function TeacherAnswerRail({
                             WebkitBoxOrient: 'vertical',
                           }}
                         >
-                          “{formatLiveAnswer(response.value)}”
+                          {formatLiveAnswer(response.value)}
                         </p>
                         {!activity.anonymous && (
                           <p className={`mt-2 shrink-0 truncate font-black text-indigo-300 ${presentNameTextClass(presentSlotCount)}`}>
