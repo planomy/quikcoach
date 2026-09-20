@@ -366,7 +366,7 @@ export default function TeacherAnswerRail({
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Responses</p>
               <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">
-                {isVerbal ? `Verbal check · Q${questionNumber}` : activity.prompt}
+                {isVerbal ? `Q${questionNumber}` : activity.prompt}
               </p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">
                 {responded} in{onlineCount ? ` · ${onlineCount} online` : ''}
@@ -600,7 +600,7 @@ export default function TeacherAnswerRail({
                       {isVerbal ? 'Watch mode' : 'Responses'}
                     </p>
                     <h2 className="font-display text-2xl font-black leading-tight sm:text-4xl">
-                      {isVerbal ? `Verbal check · Q${questionNumber}` : activity.prompt}
+                      {isVerbal ? `Q${questionNumber}` : activity.prompt}
                     </h2>
                   </div>
                   <p className="pb-1 text-sm font-bold text-indigo-200">
