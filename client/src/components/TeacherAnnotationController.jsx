@@ -1154,7 +1154,7 @@ export default function TeacherAnnotationController() {
 
   function renderCommentChrome({ onEdit, onDelete }) {
     return (
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex shrink-0 items-center gap-0.5">
         <HintWrap hint="Edit">
           <button
             type="button"
@@ -1588,17 +1588,15 @@ export default function TeacherAnnotationController() {
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
             <div className="mb-1 flex items-start justify-between gap-2">
-              <p
-                className={`text-[10px] font-black uppercase tracking-[0.13em] ${
-                  openMarker.annotation.status === 'fixed'
-                    ? 'text-emerald-700 dark:text-emerald-300'
-                    : 'text-[#5a5fc3] dark:text-indigo-300'
-                }`}
-              >
-                {openMarker.annotation.status === 'fixed' ? 'Student marked fixed' : 'Your inline comment'}
-              </p>
+              {openMarker.annotation.status === 'fixed' ? (
+                <span className="sr-only">Student marked fixed</span>
+              ) : (
+                <p className="text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3] dark:text-indigo-300">
+                  Your inline comment
+                </p>
+              )}
               <HintWrap hint="Close">
-                <CloseButton onClick={() => setOpenMarker(null)} aria-label="Close" title="" />
+                <CloseButton onClick={() => setOpenMarker(null)} aria-label="Close" title="" className={openMarker.annotation.status === 'fixed' ? 'ml-auto' : undefined} />
               </HintWrap>
             </div>
             <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100">
@@ -1630,25 +1628,23 @@ export default function TeacherAnnotationController() {
           </div>
           <div className="shrink-0 border-t border-[#e4e4ea] bg-[#fafafc] px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
             {openMarker.annotation.status === 'fixed' ? (
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    disabled={reviewBusyId === openMarker.annotation.id}
-                    onClick={() => reviewFixedComment(openMarker, 'confirm')}
-                    className="rounded-lg bg-[#5a5fc3] px-2.5 py-2 text-[11px] font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
-                  >
-                    Confirm fixed
-                  </button>
-                  <button
-                    type="button"
-                    disabled={reviewBusyId === openMarker.annotation.id}
-                    onClick={() => reviewFixedComment(openMarker, 'reopen')}
-                    className="rounded-lg border border-[#d5d4e4] bg-white px-2.5 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                  >
-                    Needs another look
-                  </button>
-                </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={reviewBusyId === openMarker.annotation.id}
+                  onClick={() => reviewFixedComment(openMarker, 'confirm')}
+                  className="min-w-0 flex-1 rounded-lg bg-[#5a5fc3] px-2 py-2 text-[11px] font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                >
+                  Confirm fixed
+                </button>
+                <button
+                  type="button"
+                  disabled={reviewBusyId === openMarker.annotation.id}
+                  onClick={() => reviewFixedComment(openMarker, 'reopen')}
+                  className="min-w-0 flex-1 rounded-lg border border-[#d5d4e4] bg-white px-2 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                >
+                  Needs another look
+                </button>
                 {renderCommentChrome({
                   onEdit: () => editComment(openMarker),
                   onDelete: () => deleteComment(openMarker),
