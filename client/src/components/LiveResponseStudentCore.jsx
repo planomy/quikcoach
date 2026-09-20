@@ -229,11 +229,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
   function scheduleCollapse() {
     if (typeof onCollapse !== 'function') return;
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-    collapseTimerRef.current = setTimeout(() => {
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
       collapseTimerRef.current = null;
-      onCollapse();
-    }, 900);
+    }
+    onCollapse();
   }
 
   function submit(value, { skipConfidence = false } = {}) {
