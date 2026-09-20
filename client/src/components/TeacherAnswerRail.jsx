@@ -1,5 +1,6 @@
 import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import HintWrap from './HintWrap.jsx';
 import ThinkingTrigger from './ThinkingTrigger.jsx';
 import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
@@ -165,6 +166,7 @@ export default function TeacherAnswerRail({
   activity,
   responses = [],
   classStudentIds = [],
+  onlineStudentIds = null,
   subjectAssist = 'general',
   highlightStudentId = null,
   onClearHighlight,
@@ -174,13 +176,16 @@ export default function TeacherAnswerRail({
   const listRef = useRef(null);
   const panelRef = useRef(null);
   const [presenting, setPresenting] = useState(false);
+  const prevActivityIdRef = useRef('');
+  const prevRespondedRef = useRef(0);
+  const watchDismissedRef = useRef(false);
   const isShort = activity?.type === 'short';
   const isSet = activity?.type === 'set';
   const setQuestions = isSet ? normalizeSetQuestions(activity?.questions) : [];
   const responded = (responses || []).length;
   const sorted = useMemo(() => {
     return [...(responses || [])].sort(
-      (a, b) => Number(b.submittedAt || 0) - Number(a.submittedAt || 0)
+      (a, b) => Number(a.submittedAt || 0) - Number(b.submittedAt || 0)
     );
   }, [responses]);
   const thinkingClassIds = useMemo(() => {
@@ -188,9 +193,43 @@ export default function TeacherAnswerRail({
     if (fromProp.length) return [...new Set(fromProp)];
     return [...new Set((responses || []).map((r) => Number(r.studentId)).filter((id) => id > 0))];
   }, [classStudentIds, responses]);
-  const expectedCount = Math.max(thinkingClassIds.length, responded);
-  const allAnswered = expectedCount > 0 && responded >= expectedCount;
+  const onlineCount = useMemo(() => {
+    if (Array.isArray(onlineStudentIds)) {
+      return new Set(onlineStudentIds.map((id) => Number(id)).filter((id) => id > 0)).size;
+    }
+    return thinkingClassIds.length;
+  }, [onlineStudentIds, thinkingClassIds]);
   const isVerbal = activity?.prompt === 'Verbal question' && activity?.type === 'short';
+  const questionNumber = Math.max(1, Number(activity?.questionNumber) || 1);
+
+  // Round watch: first answer of a verbal round opens Present; new rounds swap the wall.
+  // Back dismisses until the next round (new activity id).
+  useEffect(() => {
+    const id = activity?.id ? String(activity.id) : '';
+    if (!isVerbal || !id) {
+      if (!id) {
+        prevActivityIdRef.current = '';
+        prevRespondedRef.current = 0;
+      }
+      return;
+    }
+    const activityChanged = id !== prevActivityIdRef.current;
+    if (activityChanged) {
+      watchDismissedRef.current = false;
+      prevRespondedRef.current = 0;
+      prevActivityIdRef.current = id;
+    }
+    const crossedFirstAnswer = responded > 0 && prevRespondedRef.current === 0;
+    prevRespondedRef.current = responded;
+    if (crossedFirstAnswer && !watchDismissedRef.current) {
+      setPresenting(true);
+    }
+  }, [activity?.id, isVerbal, responded]);
+
+  function exitPresent() {
+    setPresenting(false);
+    watchDismissedRef.current = true;
+  }
 
   useEffect(() => {
     if (!open || highlightStudentId == null) return undefined;
@@ -254,7 +293,7 @@ export default function TeacherAnswerRail({
     socket.emit('teacher:live-realert', {});
   }
 
-  if (!activity) {
+  if (!activity && !presenting) {
     if (embedded) {
       return (
         <div className="grid place-items-center px-6 py-10 text-center">
@@ -275,6 +314,30 @@ export default function TeacherAnswerRail({
       );
     }
     return null;
+  }
+
+  if (!activity && presenting) {
+    return createPortal(
+      <div className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
+        <button
+          type="button"
+          onClick={exitPresent}
+          className="absolute right-4 top-4 z-10 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl"
+        >
+          Back
+        </button>
+        <div className="grid flex-1 place-items-center px-6 text-center">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Watch mode</p>
+            <h2 className="mt-2 font-display text-3xl font-black">Waiting for the next answer…</h2>
+            <p className="mt-3 text-sm font-semibold text-indigo-200">
+              Ask aloud — Present updates when the first + Answer lands.
+            </p>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
   }
 
   const panelClass = embedded
@@ -298,9 +361,11 @@ export default function TeacherAnswerRail({
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300">Responses</p>
               <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">
-                {activity.prompt === 'Verbal question' ? 'Verbal check' : activity.prompt}
+                {isVerbal ? `Verbal check · Q${questionNumber}` : activity.prompt}
               </p>
-              <p className="mt-1 text-[11px] font-semibold text-slate-500">{responded} response{responded === 1 ? '' : 's'}</p>
+              <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                {responded} in{onlineCount ? ` · ${onlineCount} online` : ''}
+              </p>
             </div>
             {!embedded && (
               <HintWrap hint="Hide">
@@ -313,7 +378,14 @@ export default function TeacherAnswerRail({
             <ControlIcon label="Repeat this question" hint="Repeat" onClick={repeatQuestion}>
               <RepeatIcon />
             </ControlIcon>
-            <ControlIcon label="Present answers on screen" hint="Present" onClick={() => setPresenting(true)}>
+            <ControlIcon
+              label="Present answers on screen"
+              hint="Present"
+              onClick={() => {
+                watchDismissedRef.current = false;
+                setPresenting(true);
+              }}
+            >
               <PresentIcon />
             </ControlIcon>
             {typeof onOpenAsk === 'function' && (
@@ -509,120 +581,118 @@ export default function TeacherAnswerRail({
         </div>
       </PanelTag>
 
-      {presenting && (
-        <div className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
-          <button
-            type="button"
-            onClick={() => setPresenting(false)}
-            className="absolute right-4 top-4 z-10 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl"
-          >
-            Back
-          </button>
-          <header className="shrink-0 px-6 pb-2 pt-5 sm:px-10 sm:pt-6">
-            <div className="flex flex-wrap items-end gap-x-4 gap-y-1 pr-24">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Responses</p>
-                <h2 className="font-display text-2xl font-black leading-tight sm:text-4xl">
-                  {isVerbal ? 'Verbal check' : activity.prompt}
-                </h2>
-              </div>
-              <p className="pb-1 text-sm font-bold text-indigo-200">
-                {responded}
-                {expectedCount ? ` / ${expectedCount}` : ''} response{responded === 1 ? '' : 's'}
-                {allAnswered ? ' · All in' : ''}
-              </p>
-            </div>
-            {allAnswered ? (
-              <p className="mt-2 inline-flex rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-200 ring-1 ring-emerald-300/40">
-                Everyone answered
-              </p>
-            ) : null}
-          </header>
-          <div className="min-h-0 flex-1 px-4 pb-4 sm:px-8 sm:pb-6">
-            {!sorted.length ? (
-              <div className="grid h-full place-items-center">
-                <p className="text-xl font-semibold text-indigo-200 sm:text-2xl">Waiting for answers…</p>
-              </div>
-            ) : isSet ? (
-              <div
-                className="grid h-full gap-3 overflow-hidden"
-                style={{
-                  gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${sorted.length <= 4 ? '16rem' : sorted.length <= 9 ? '12rem' : '9rem'}), 1fr))`,
-                  gridAutoRows: 'minmax(0, 1fr)',
-                }}
+      {presenting && activity
+        ? createPortal(
+            <div className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
+              <button
+                type="button"
+                onClick={exitPresent}
+                className="absolute right-4 top-4 z-10 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl"
               >
-                {sorted.map((response) => (
-                  <article
-                    key={`${response.studentId}-${response.submittedAt || response.value}`}
-                    className="flex min-h-0 flex-col overflow-hidden rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 sm:p-4"
-                  >
-                    {!activity.anonymous && (
-                      <p className="mb-2 shrink-0 truncate text-xs font-black text-indigo-300 sm:text-sm">
-                        {response.name || 'Student'}
-                      </p>
-                    )}
-                    <div className="min-h-0 flex-1 space-y-2 overflow-hidden">
-                      {getSetAnswerPairs(response.value, setQuestions).map((pair) => (
-                        <div key={pair.id} className="min-h-0">
-                          <p className="truncate text-[11px] font-semibold text-indigo-200/80">{pair.prompt}</p>
-                          <p className="mt-0.5 line-clamp-4 text-sm font-bold leading-snug text-white sm:text-base">
-                            {pair.answer}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : isShort ? (
-              <div
-                className="grid h-full gap-3 overflow-hidden"
-                style={{
-                  gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${sorted.length <= 4 ? '18rem' : sorted.length <= 9 ? '13rem' : sorted.length <= 16 ? '10rem' : '8rem'}), 1fr))`,
-                  gridAutoRows: 'minmax(0, 1fr)',
-                }}
-              >
-                {sorted.map((response) => (
-                  <article
-                    key={`${response.studentId}-${response.submittedAt || response.value}`}
-                    className="flex min-h-0 flex-col justify-center overflow-hidden rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 sm:p-5"
-                  >
-                    <p
-                      className={`min-h-0 overflow-hidden font-bold leading-snug text-white ${
-                        sorted.length <= 4
-                          ? 'text-2xl sm:text-4xl'
-                          : sorted.length <= 9
-                            ? 'text-xl sm:text-2xl'
-                            : sorted.length <= 16
-                              ? 'text-lg sm:text-xl'
-                              : 'text-base'
-                      }`}
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: sorted.length <= 6 ? 6 : sorted.length <= 12 ? 4 : 3,
-                        WebkitBoxOrient: 'vertical',
-                      }}
-                    >
-                      “{formatLiveAnswer(response.value)}”
+                Back
+              </button>
+              <header className="shrink-0 px-6 pb-2 pt-5 sm:px-10 sm:pt-6">
+                <div className="flex flex-wrap items-end gap-x-4 gap-y-1 pr-24">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">
+                      {isVerbal ? 'Watch mode' : 'Responses'}
                     </p>
-                    {!activity.anonymous && (
-                      <p className="mt-2 shrink-0 truncate text-xs font-black text-indigo-300 sm:text-sm">
-                        {response.name || 'Student'}
-                      </p>
-                    )}
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="grid h-full place-items-center overflow-hidden">
-                <div className="w-full max-w-4xl">
-                  <ChoiceBars activity={activity} responses={responses} display />
+                    <h2 className="font-display text-2xl font-black leading-tight sm:text-4xl">
+                      {isVerbal ? `Verbal check · Q${questionNumber}` : activity.prompt}
+                    </h2>
+                  </div>
+                  <p className="pb-1 text-sm font-bold text-indigo-200">
+                    {responded} in{onlineCount ? ` · ${onlineCount} online` : ''}
+                  </p>
                 </div>
+              </header>
+              <div className="min-h-0 flex-1 px-4 pb-4 sm:px-8 sm:pb-6">
+                {!sorted.length ? (
+                  <div className="grid h-full place-items-center">
+                    <p className="text-xl font-semibold text-indigo-200 sm:text-2xl">Waiting for answers…</p>
+                  </div>
+                ) : isSet ? (
+                  <div
+                    className="grid h-full gap-3 overflow-hidden"
+                    style={{
+                      gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${sorted.length <= 4 ? '16rem' : sorted.length <= 9 ? '12rem' : '9rem'}), 1fr))`,
+                      gridAutoRows: 'minmax(0, 1fr)',
+                    }}
+                  >
+                    {sorted.map((response) => (
+                      <article
+                        key={`${response.studentId}-${response.submittedAt || response.value}`}
+                        className="flex min-h-0 flex-col overflow-hidden rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 sm:p-4"
+                      >
+                        {!activity.anonymous && (
+                          <p className="mb-2 shrink-0 truncate text-xs font-black text-indigo-300 sm:text-sm">
+                            {response.name || 'Student'}
+                          </p>
+                        )}
+                        <div className="min-h-0 flex-1 space-y-2 overflow-hidden">
+                          {getSetAnswerPairs(response.value, setQuestions).map((pair) => (
+                            <div key={pair.id} className="min-h-0">
+                              <p className="truncate text-[11px] font-semibold text-indigo-200/80">{pair.prompt}</p>
+                              <p className="mt-0.5 line-clamp-4 text-sm font-bold leading-snug text-white sm:text-base">
+                                {pair.answer}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : isShort ? (
+                  <div
+                    className="grid h-full gap-3 overflow-hidden"
+                    style={{
+                      gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${sorted.length <= 4 ? '18rem' : sorted.length <= 9 ? '13rem' : sorted.length <= 16 ? '10rem' : '8rem'}), 1fr))`,
+                      gridAutoRows: 'minmax(0, 1fr)',
+                    }}
+                  >
+                    {sorted.map((response) => (
+                      <article
+                        key={`${response.studentId}-${response.submittedAt || response.value}`}
+                        className="flex min-h-0 flex-col justify-center overflow-hidden rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 sm:p-5"
+                      >
+                        <p
+                          className={`min-h-0 overflow-hidden font-bold leading-snug text-white ${
+                            sorted.length <= 4
+                              ? 'text-2xl sm:text-4xl'
+                              : sorted.length <= 9
+                                ? 'text-xl sm:text-2xl'
+                                : sorted.length <= 16
+                                  ? 'text-lg sm:text-xl'
+                                  : 'text-base'
+                          }`}
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: sorted.length <= 6 ? 6 : sorted.length <= 12 ? 4 : 3,
+                            WebkitBoxOrient: 'vertical',
+                          }}
+                        >
+                          “{formatLiveAnswer(response.value)}”
+                        </p>
+                        {!activity.anonymous && (
+                          <p className="mt-2 shrink-0 truncate text-xs font-black text-indigo-300 sm:text-sm">
+                            {response.name || 'Student'}
+                          </p>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid h-full place-items-center overflow-hidden">
+                    <div className="w-full max-w-4xl">
+                      <ChoiceBars activity={activity} responses={responses} display />
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-      )}
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }
