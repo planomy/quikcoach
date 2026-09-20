@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import HintWrap from './HintWrap.jsx';
 
 const baseQuestion = {
   correctAnswer: '',
@@ -272,12 +273,12 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
   }
 
   const cardClass = compact
-    ? 'group relative flex min-h-[3.75rem] w-full flex-col items-center justify-center rounded-lg border border-indigo-200 bg-white px-1.5 py-1.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
-    : 'group relative flex min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-indigo-200 bg-white px-2 py-2.5 text-center text-indigo-700 shadow-sm transition hover:border-indigo-400 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
+    ? 'group relative flex min-h-[3.75rem] w-full flex-col items-center justify-center rounded-lg border border-[#cfcce8] bg-white px-1.5 py-1.5 text-center text-[#5a5fc3] shadow-sm transition hover:border-[#5a5fc3] hover:bg-[#ebeaf8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#cfcce8] dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
+    : 'group relative flex min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-[#cfcce8] bg-white px-2 py-2.5 text-center text-[#5a5fc3] shadow-sm transition hover:border-[#5a5fc3] hover:bg-[#ebeaf8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#cfcce8] dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
 
   function renderCard(card) {
     const isChoice = card.id === 'choice';
-    return (
+    const button = (
       <button
         key={card.id}
         ref={isChoice ? choiceAnchorRef : undefined}
@@ -287,11 +288,12 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
           else onLaunch(card.question);
         }}
         className={cardClass}
-        title={card.hint}
+        title=""
+        aria-label={`${card.label}. ${card.hint}`}
         aria-expanded={isChoice ? choiceOpen : undefined}
         aria-haspopup={isChoice ? 'dialog' : undefined}
       >
-        <span className={`grid place-items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
+        <span className={`grid place-items-center rounded-lg bg-[#ebeaf8] text-[#5a5fc3] dark:bg-indigo-950 dark:text-indigo-300 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
           <QuikPulseIcon name={card.icon} />
         </span>
         <span className={`font-black leading-tight text-slate-950 dark:text-white ${compact ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>
@@ -304,6 +306,11 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
         )}
       </button>
     );
+    return compact ? (
+      <HintWrap key={card.id} hint={card.hint} prefer="below" className="w-full">
+        {button}
+      </HintWrap>
+    ) : button;
   }
 
   const picker = (

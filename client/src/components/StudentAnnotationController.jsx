@@ -298,8 +298,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           }}
           className={`fixed z-[50] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${
             marker.annotation.status === 'fixed'
-              ? 'bg-emerald-500/55 hover:bg-emerald-500/85'
-              : 'bg-indigo-600/55 hover:bg-indigo-600/85'
+              ? 'bg-emerald-500/80 hover:bg-emerald-500'
+              : 'bg-[#5a5fc3]/80 hover:bg-[#5a5fc3]'
           }`}
           style={{ top: marker.top, left: marker.left }}
           title={marker.annotation.status === 'fixed' ? 'Marked fixed — waiting for teacher' : 'Teacher comment'}
