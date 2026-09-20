@@ -322,26 +322,38 @@ export default function TeacherAnswerRail({
   }
 
   if (!activity && presenting) {
-    return createPortal(
-      <div className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
-        <button
-          type="button"
-          onClick={exitPresent}
-          className="absolute right-4 top-4 z-10 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl"
-        >
-          Back
-        </button>
-        <div className="grid flex-1 place-items-center px-6 text-center">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Watch mode</p>
-            <h2 className="mt-2 font-display text-3xl font-black">Waiting for the next answer…</h2>
-            <p className="mt-3 text-sm font-semibold text-indigo-200">
-              Ask aloud — Present updates when the first + Answer lands.
+    return (
+      <>
+        {embedded ? (
+          <div className="grid place-items-center px-6 py-10 text-center">
+            <p className="text-sm font-semibold text-[#3c3c45] dark:text-slate-100">No live question right now</p>
+            <p className="mt-1 text-xs text-[#6b6b78] dark:text-slate-400">
+              Send one from Ask, or ask aloud and let students tap + Answer.
             </p>
           </div>
-        </div>
-      </div>,
-      document.body
+        ) : null}
+        {createPortal(
+          <div className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
+            <button
+              type="button"
+              onClick={exitPresent}
+              className="absolute right-4 top-4 z-10 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl"
+            >
+              Back
+            </button>
+            <div className="grid flex-1 place-items-center px-6 text-center">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Watch mode</p>
+                <h2 className="mt-2 font-display text-3xl font-black">Waiting for the next answer…</h2>
+                <p className="mt-3 text-sm font-semibold text-indigo-200">
+                  Ask aloud — Present updates when the first + Answer lands.
+                </p>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </>
     );
   }
 
