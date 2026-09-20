@@ -843,7 +843,6 @@ export default function TeacherAnnotationController() {
           return;
         }
         setOpenMarker(null);
-        setSaveNotice(action === 'confirm' ? 'Fix confirmed' : 'Comment reopened for the student');
       }
     );
   }
