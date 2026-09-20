@@ -209,10 +209,10 @@ export default function ClassResetController({ role }) {
   return (
     <div
       role="status"
-      className={`fixed left-1/2 top-3 z-[100] inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] -translate-x-1/2 items-center truncate rounded-lg px-3 text-[11px] font-black shadow-sm ${
-        message === 'New class ready'
-          ? 'bg-emerald-500 text-emerald-950'
-          : 'bg-red-500 text-red-950'
+      className={`fixed left-1/2 top-3 z-[100] inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] -translate-x-1/2 items-center truncate rounded-lg border px-3 text-[11px] font-black shadow-sm ${
+        message === 'Board reset' || message === 'New class ready'
+          ? 'border-[#cfcce8] bg-[#ebeaf8] text-[#5a5fc3] dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200'
+          : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200'
       }`}
     >
       {message}

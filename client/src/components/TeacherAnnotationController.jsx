@@ -1671,7 +1671,7 @@ export default function TeacherAnnotationController() {
           aria-live="polite"
           className="pointer-events-none fixed left-1/2 top-3 z-[80] flex -translate-x-1/2 items-center"
         >
-          <div className="inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg bg-emerald-500 px-3 text-[11px] font-black text-emerald-950 shadow-sm">
+          <div className="inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 text-[11px] font-black text-[#5a5fc3] shadow-sm dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200">
             {saveNotice}
           </div>
         </div>
