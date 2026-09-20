@@ -1,6 +1,7 @@
 import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
+import QnaShareMenu from './QnaShareMenu.jsx';
 import { activeTeacherRoomCode, ensureTeacherRoom } from '../lib/teacherRoom.js';
 
 function currentTeacherConnection() {
@@ -255,13 +256,11 @@ export default function TeacherLiveQuestionIndicators() {
           {message && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-200">{message}</p>}
 
           <div className="relative z-10 mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 overflow-visible border-t border-slate-100 pt-3 dark:border-slate-800">
-            <details className="relative">
-              <summary className="list-none cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300 [&::-webkit-details-marker]:hidden">Share ▾</summary>
-              <div className="absolute left-0 top-full z-50 mt-1 min-w-32 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); shareToClass(false); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Named</button>
-                <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); shareToClass(true); }} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Anonymous</button>
-              </div>
-            </details>
+            <QnaShareMenu
+              summaryClassName="text-xs font-bold text-slate-600 dark:text-slate-300"
+              anonymityLocked={!!selectedQuestion.anonymousRequested}
+              onShare={(anonymous) => shareToClass(anonymous)}
+            />
             <button type="button" onClick={finishQuestion} className="text-xs font-bold text-slate-600 dark:text-slate-300" title="Clear without a private reply">
               Dismiss
             </button>

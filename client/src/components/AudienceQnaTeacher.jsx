@@ -1,6 +1,7 @@
 import { CloseButton } from './PanelActions.jsx';
 import { useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
+import QnaShareMenu from './QnaShareMenu.jsx';
 import { isUnknownAnswer } from '../lib/liveResponseUnknown.js';
 
 function sortQuestions(items) {
@@ -104,34 +105,13 @@ export default function AudienceQnaTeacher({
   }
 
   function ShareMenu({ question, disabled = false }) {
-    const anonymityLocked = !!question.anonymousRequested;
-    const chooseShare = (event, anonymous) => {
-      if (!anonymous && anonymityLocked) return;
-      event.currentTarget.closest('details')?.removeAttribute('open');
-      shareToClass(question, anonymous);
-    };
     return (
-      <details className="relative z-20">
-        <summary className={`${TEXT_ACTION} list-none cursor-pointer [&::-webkit-details-marker]:hidden ${disabled ? 'pointer-events-none opacity-40' : ''}`}>
-          Share ▾
-        </summary>
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-32 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-          <button
-            type="button"
-            disabled={anonymityLocked}
-            title={anonymityLocked ? 'Student asked to stay anonymous if shared' : 'Share with the student named'}
-            onClick={(event) => chooseShare(event, false)}
-            className={`block w-full rounded-md px-3 py-2 text-left text-xs font-bold ${
-              anonymityLocked
-                ? 'cursor-not-allowed text-slate-300 dark:text-slate-600'
-                : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800'
-            }`}
-          >
-            Named
-          </button>
-          <button type="button" onClick={(event) => chooseShare(event, true)} className="block w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Anonymous</button>
-        </div>
-      </details>
+      <QnaShareMenu
+        disabled={disabled}
+        anonymityLocked={!!question.anonymousRequested}
+        summaryClassName={TEXT_ACTION}
+        onShare={(anonymous) => shareToClass(question, anonymous)}
+      />
     );
   }
 
