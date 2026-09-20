@@ -676,7 +676,7 @@ export default function LiveResponseTeacher({
           </p>
         </div>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="iboard-engagement-chits">
         {students.map((student) => {
           const tile = studentTileMeta(student);
           const questionCount = pendingByStudent[Number(student.id)] || 0;
@@ -684,12 +684,12 @@ export default function LiveResponseTeacher({
           const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
           const focused = Number(engagementFocus?.id) === Number(student.id);
           return (
-            <div key={student.id} className="relative w-[70px] shrink-0">
+            <div key={student.id} className="iboard-engagement-chit relative">
               <button
                 type="button"
                 onClick={() => selectEngagementStudent(student)}
                 title={`${student.name} · ${tile.title}`}
-                className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900 ${focused ? 'ring-2 ring-indigo-500' : ''}`}
+                className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900 ${focused ? 'ring-2 ring-[#5a5fc3]' : ''}`}
               >
                 <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
                 <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
@@ -700,7 +700,7 @@ export default function LiveResponseTeacher({
                   type="button"
                   onClick={() => { setSelectedStudentId(student.id); switchPanelTab('respond'); setActiveView('qna'); }}
                   aria-label={`Question ${queuePosition} from ${student.name}`}
-                  className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-indigo-600 px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900"
+                  className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-[#5a5fc3] px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900"
                 >
                   {queuePosition}
                 </button>
@@ -708,7 +708,7 @@ export default function LiveResponseTeacher({
             </div>
           );
         })}
-        {!students.length && <p className="py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
+        {!students.length && <p className="col-span-full py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
       </div>
       {engagementFocusStudent && (
         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
@@ -863,24 +863,24 @@ export default function LiveResponseTeacher({
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div><h3 className="text-sm font-black text-slate-900 dark:text-white">Class engagement</h3><p className="text-[10px] text-slate-500">{connectedCount} online{attention.length ? ` · ${attention.length} need attention` : ''}{pendingQuestions.length ? ` · ${pendingQuestions.length} question${pendingQuestions.length === 1 ? '' : 's'} waiting` : ''}</p></div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="iboard-engagement-chits">
           {students.map((student) => {
             const tile = studentTileMeta(student);
             const questionCount = pendingByStudent[Number(student.id)] || 0;
             const queuePosition = firstPendingPositionByStudent[Number(student.id)] || 0;
             const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
             return (
-              <div key={student.id} className="relative w-[70px] shrink-0">
+              <div key={student.id} className="iboard-engagement-chit relative">
                 <button type="button" onClick={() => openStudent(student)} title={`${student.name} · ${tile.title}`} className="flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900">
                   <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
                   <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
                 </button>
                 {needsAttention && <span title={STATUS_LABELS[student.engagement_status] || student.engagement_status} className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>}
-                {questionCount > 0 && <button type="button" onClick={() => { setSelectedStudentId(student.id); setActiveView('qna'); }} aria-label={`Question ${queuePosition} in the queue from ${student.name}${questionCount > 1 ? ` · ${questionCount} questions waiting` : ''}`} title={`Question ${queuePosition} in the queue`} className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-indigo-600 px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">{queuePosition}</button>}
+                {questionCount > 0 && <button type="button" onClick={() => { setSelectedStudentId(student.id); setActiveView('qna'); }} aria-label={`Question ${queuePosition} in the queue from ${student.name}${questionCount > 1 ? ` · ${questionCount} questions waiting` : ''}`} title={`Question ${queuePosition} in the queue`} className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-[#5a5fc3] px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">{queuePosition}</button>}
               </div>
             );
           })}
-          {!students.length && <p className="py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
+          {!students.length && <p className="col-span-full py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
         </div>
       </div>
       )}

@@ -114,7 +114,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 
 /* Responses dock: remove the redundant title row but keep the close control. */
 .iboard-header-dock--start
-  > section:has(> div:nth-child(2) > div.flex.gap-2.overflow-x-auto)
+  > section:has(.iboard-engagement-chits)
   > div:first-child {
   position: absolute;
   top: 0.25rem;
@@ -126,7 +126,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 }
 
 .iboard-header-dock--start
-  > section:has(> div:nth-child(2) > div.flex.gap-2.overflow-x-auto)
+  > section:has(.iboard-engagement-chits)
   > div:first-child
   > div:first-child {
   display: none;
@@ -135,13 +135,13 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 /* The awareness strip is just status + student chits now. */
 .iboard-header-dock--start
   > section
-  > div:has(> div.flex.gap-2.overflow-x-auto) {
+  > div:has(> .iboard-engagement-chits) {
   padding: 0.5rem 0.55rem 0.6rem;
 }
 
 .iboard-header-dock--start
   > section
-  > div:has(> div.flex.gap-2.overflow-x-auto)
+  > div:has(> .iboard-engagement-chits)
   > div:first-child {
   margin-bottom: 0.35rem;
   padding-right: 2rem;
@@ -149,49 +149,21 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 
 .iboard-header-dock--start
   > section
-  > div:has(> div.flex.gap-2.overflow-x-auto)
+  > div:has(> .iboard-engagement-chits)
   > div:first-child h3 {
   display: none;
 }
 
-/* Fill left-to-right first: 1–8 on row one, 9–16 on row two.
-   Further blocks continue horizontally rather than creating a third row. */
-.iboard-header-dock--start
-  > section
-  > div:has(> div.flex.gap-2.overflow-x-auto)
-  > div.flex.gap-2.overflow-x-auto {
+/* Fit every student: as many columns as the dock allows, then wrap down. */
+.iboard-engagement-chits {
   display: grid;
-  grid-template-columns: repeat(8, minmax(46px, 1fr));
-  grid-template-rows: repeat(2, auto);
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(46px, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(3.15rem, 1fr));
   gap: 0.4rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 0.15rem;
+  overflow: visible;
+  padding-bottom: 0.1rem;
 }
 
-.iboard-header-dock--start
-  > section
-  > div:has(> div.flex.gap-2.overflow-x-auto)
-  > div.flex.gap-2.overflow-x-auto
-  > :is(:nth-child(16n + 1), :nth-child(16n + 2), :nth-child(16n + 3), :nth-child(16n + 4), :nth-child(16n + 5), :nth-child(16n + 6), :nth-child(16n + 7), :nth-child(16n + 8)) {
-  grid-row: 1;
-}
-
-.iboard-header-dock--start
-  > section
-  > div:has(> div.flex.gap-2.overflow-x-auto)
-  > div.flex.gap-2.overflow-x-auto
-  > :is(:nth-child(16n + 9), :nth-child(16n + 10), :nth-child(16n + 11), :nth-child(16n + 12), :nth-child(16n + 13), :nth-child(16n + 14), :nth-child(16n + 15), :nth-child(16n + 16)) {
-  grid-row: 2;
-}
-
-.iboard-header-dock--start
-  > section
-  > div:has(> div.flex.gap-2.overflow-x-auto)
-  > div.flex.gap-2.overflow-x-auto
-  > div.relative {
+.iboard-engagement-chit {
   width: auto;
   min-width: 0;
 }
