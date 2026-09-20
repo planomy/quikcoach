@@ -539,7 +539,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   align-items: center;
   justify-content: center;
   gap: 0.2rem;
-  color: #3f4656;
+  color: #555b69;
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
@@ -557,6 +557,16 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   transition: filter 160ms ease, transform 160ms ease;
 }
 
+.iboard-arr-btn__glyph {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #555b69;
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
 .iboard-arr-label {
   display: block;
   width: 100%;
@@ -565,7 +575,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: 0.01em;
-  color: #3f4656;
+  color: #555b69;
   white-space: nowrap;
 }
 
@@ -589,6 +599,15 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 .iboard-arr-btn[data-active='true'] img {
   filter: grayscale(1) sepia(1) saturate(6) hue-rotate(195deg);
   transform: scale(1.025);
+}
+
+.iboard-arr-btn[data-active='true'] .iboard-arr-btn__glyph {
+  color: #5a5fc3;
+  transform: scale(1.025);
+}
+
+.iboard-arr-btn[data-active='true'] .iboard-arr-label {
+  color: #5a5fc3;
 }
 
 .iboard-arr-btn:focus-visible {
