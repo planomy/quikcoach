@@ -994,32 +994,23 @@ export default function LiveResponseTeacher({
           />
         )}
 
-        {usingPanelTabs && (
-          <div
-            className={
-              effectivePanelTab === 'responses'
-                ? 'flex min-h-0 flex-1 flex-col'
-                : 'pointer-events-none absolute h-0 w-0 overflow-visible opacity-0'
-            }
-            aria-hidden={effectivePanelTab !== 'responses'}
-          >
-            <TeacherAnswerRail
-              embedded
-              open={effectivePanelTab === 'responses'}
-              activity={activity}
-              responses={responses}
-              classStudentIds={(live.students || []).map((student) => student.id)}
-              onlineStudentIds={(live.students || [])
-                .filter((student) => student.connected && !student.away)
-                .map((student) => student.id)}
-              subjectAssist={subjectAssist}
-              highlightStudentId={highlightStudentId}
-              onClearHighlight={onClearHighlight}
-              onOpenAsk={() => switchPanelTab('ask')}
-              onClose={onClose}
-              onThinkingSent={onThinkingSent}
-            />
-          </div>
+        {usingPanelTabs && effectivePanelTab === 'responses' && (
+          <TeacherAnswerRail
+            embedded
+            open
+            activity={activity}
+            responses={responses}
+            classStudentIds={(live.students || []).map((student) => student.id)}
+            onlineStudentIds={(live.students || [])
+              .filter((student) => student.connected && !student.away)
+              .map((student) => student.id)}
+            subjectAssist={subjectAssist}
+            highlightStudentId={highlightStudentId}
+            onClearHighlight={onClearHighlight}
+            onOpenAsk={() => switchPanelTab('ask')}
+            onClose={onClose}
+            onThinkingSent={onThinkingSent}
+          />
         )}
 
         {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'quik' && (
