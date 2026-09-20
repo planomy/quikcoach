@@ -410,7 +410,6 @@ function TeacherDashboardInner() {
   const [draftTrailFocusId, setDraftTrailFocusId] = useState(null);
   const [draftTrailLabelOpen, setDraftTrailLabelOpen] = useState(false);
   const [draftTrailLabelDraft, setDraftTrailLabelDraft] = useState('');
-  const [draftTrailSaveHint, setDraftTrailSaveHint] = useState(false);
   const [addCardTitle, setAddCardTitle] = useState('Teacher');
   const [addCardText, setAddCardText] = useState('');
   const [addCardImage, setAddCardImage] = useState('');
@@ -2190,11 +2189,16 @@ function TeacherDashboardInner() {
     setEvidenceModalOpen(true);
   }
 
-  async function saveSessionFile() {
-    closeSettings();
+  async function saveSessionFile(options = {}) {
+    const {
+      fromAuto = false,
+      label = '',
+      successToast = 'Session saved — keep the .iboard file to reopen later',
+    } = options;
+    if (!fromAuto) closeSettings();
     if (!joinedRef.current || codeInput.length !== 4) {
-      setError('Open a room before saving a session');
-      return;
+      if (!fromAuto) setError('Open a room before saving a session');
+      return { ok: false };
     }
     setSessionBusy(true);
     setError('');
@@ -2203,16 +2207,19 @@ function TeacherDashboardInner() {
       if (!ack?.ok || !ack.pack) {
         throw new Error(ack?.error || 'Could not save session');
       }
-      const result = await downloadSessionPack(ack.pack, codeInput);
+      const result = await downloadSessionPack(ack.pack, codeInput, label);
       if (result.method === 'cancelled') {
-        setCopyToast('Save cancelled');
-      } else {
-        clearSessionDirty();
-        setCopyToast('Session saved — keep the .iboard file to reopen later');
+        setCopyToast(fromAuto ? 'Save cancelled — drafting evidence still live until you save' : 'Save cancelled');
+        setTimeout(() => setCopyToast(''), 3500);
+        return { ok: false, cancelled: true };
       }
+      clearSessionDirty();
+      setCopyToast(successToast);
       setTimeout(() => setCopyToast(''), 3500);
+      return { ok: true };
     } catch (e) {
       setError(e?.message || 'Could not save session');
+      return { ok: false };
     } finally {
       setSessionBusy(false);
     }
@@ -2327,8 +2334,13 @@ function TeacherDashboardInner() {
       }
       setRoom((prev) => ({ ...prev, draftTrail: ack.status }));
       markSessionDirty();
-      if (!active) setDraftTrailSaveHint(true);
-      else setDraftTrailSaveHint(false);
+      if (!active) {
+        void saveSessionFile({
+          fromAuto: true,
+          label: 'drafting',
+          successToast: 'Drafting evidence saved — keep the .iboard file',
+        });
+      }
     });
   }
 
@@ -2567,10 +2579,29 @@ function TeacherDashboardInner() {
     setTimeout(() => setCopyToast(''), 3000);
   }
 
-  function startNewClass() {
+  async function startNewClass() {
     if (newClassBusy) return;
     setNewClassBusy(true);
     setError('');
+    try {
+      if (room?.draftTrail?.active && socket) {
+        await new Promise((resolve) => {
+          socket.timeout(10000).emit('teacher:draft-trail-control', { active: false, label: '' }, (err, ack) => {
+            if (!err && ack?.ok) {
+              setRoom((prev) => ({ ...prev, draftTrail: ack.status }));
+            }
+            resolve();
+          });
+        });
+      }
+      await saveSessionFile({
+        fromAuto: true,
+        label: 'before-reset',
+        successToast: 'Session saved before reset — keep the .iboard file',
+      });
+    } catch {
+      // Still reset; teacher can recover from an earlier save if this one failed.
+    }
     socket.emit('teacher:clear-cards', {}, (ack) => {
       setNewClassBusy(false);
       if (!ack?.ok) {
@@ -3070,29 +3101,6 @@ function TeacherDashboardInner() {
                   className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-white/80 hover:bg-white/15 hover:text-white"
                   aria-label="Clear monitor list"
                   title="Clear monitor list"
-                >
-                  ×
-                </button>
-              </div>
-            ) : draftTrailSaveHint && !room?.draftTrail?.active ? (
-              <div className="pointer-events-auto inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-3 text-white shadow-sm">
-                <span className="truncate text-[11px] font-black">Save drafting evidence</span>
-                <button
-                  type="button"
-                  disabled={sessionBusy || !joined}
-                  onClick={() => {
-                    setDraftTrailSaveHint(false);
-                    saveSessionFile();
-                  }}
-                  className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide hover:bg-white/30 disabled:opacity-50"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDraftTrailSaveHint(false)}
-                  className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-white/80 hover:bg-white/15 hover:text-white"
-                  aria-label="Dismiss"
                 >
                   ×
                 </button>
@@ -4258,7 +4266,7 @@ function TeacherDashboardInner() {
                   Reset class board?
                 </h2>
                 <p id="new-class-confirm-description" className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  This clears every student card and teacher card in Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again. Skip this if the class is still working on a draft — the board persists until you reset. Save a session (.iboard) or download the class engagement report first if you want to keep this lesson.
+                  This clears every student card and teacher card in Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again. Skip this if the class is still working on a draft — the board persists until you reset. A session file (.iboard) downloads automatically before the board clears so drafting evidence is kept.
                 </p>
               </div>
             </div>
