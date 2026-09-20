@@ -280,7 +280,6 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
     const isChoice = card.id === 'choice';
     const button = (
       <button
-        key={card.id}
         ref={isChoice ? choiceAnchorRef : undefined}
         type="button"
         onClick={() => {
@@ -310,7 +309,11 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
       <HintWrap key={card.id} hint={card.hint} prefer="below" className="w-full">
         {button}
       </HintWrap>
-    ) : button;
+    ) : (
+      <span key={card.id} className="contents">
+        {button}
+      </span>
+    );
   }
 
   const picker = (
