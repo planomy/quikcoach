@@ -2779,10 +2779,10 @@ function TeacherDashboardInner() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Could not build report');
       downloadLessonReportHtml(data);
-      setCopyToast('Class engagement report downloaded');
+      setCopyToast('Participation report downloaded');
       setTimeout(() => setCopyToast(''), 2500);
     } catch (e) {
-      setError(e.message || 'Could not download class engagement report');
+      setError(e.message || 'Could not download participation report');
     }
   }
 
@@ -3815,7 +3815,11 @@ function TeacherDashboardInner() {
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
               <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
-                {libraryPanel === 'feedback' ? 'AI feedback' : 'Evidence'}
+                {libraryPanel === 'feedback'
+                  ? 'AI feedback'
+                  : evidenceHubTab === 'students'
+                    ? 'Student portfolios'
+                    : 'Lesson saves'}
               </h2>
               <CloseButton onClick={() => setLibraryPanel(null)} aria-label="Close" />
             </div>
@@ -3865,7 +3869,7 @@ function TeacherDashboardInner() {
                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
-                    By student · {evidenceStudents.length || '…'}
+                    Portfolios · {evidenceStudents.length || '…'}
                   </button>
                 </div>
 
@@ -3908,7 +3912,7 @@ function TeacherDashboardInner() {
                 <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                   <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                     <div>
-                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">By student</h3>
+                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Portfolios</h3>
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose a name; their saved writing across lessons appears on the right.</p>
                     </div>
                     <button
@@ -4290,7 +4294,7 @@ function TeacherDashboardInner() {
                 onClick={downloadLessonReportQuick}
                 className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200"
               >
-                Download class engagement report
+                Download participation report
               </button>
             </div>
             <div className="flex flex-col-reverse gap-2 bg-slate-50 px-5 py-4 dark:bg-slate-950 sm:flex-row sm:justify-end">
@@ -4901,7 +4905,7 @@ function TeacherDashboardInner() {
               <h3 className="iboard-room-settings__label">Evidence</h3>
               <div className="iboard-room-settings__card iboard-room-settings__list">
                 <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
-                  <span>Saved student content</span>
+                  <span>Lesson saves &amp; portfolios</span>
                   {snapshots.length > 0 ? (
                     <span className="iboard-room-settings__badge">{snapshots.length}</span>
                   ) : null}
@@ -4916,20 +4920,20 @@ function TeacherDashboardInner() {
             </section>
 
             <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">Files &amp; reports</h3>
-              <div className="iboard-room-settings__card iboard-room-settings__grid">
+              <h3 className="iboard-room-settings__label">Reports &amp; exports</h3>
+              <div className="iboard-room-settings__card iboard-room-settings__list">
+                <button type="button" onClick={openLessonReport}>
+                  Participation report
+                </button>
+                <button type="button" onClick={() => openLibrary('reports')}>
+                  Student portfolios
+                </button>
                 <button
                   type="button"
                   disabled={sessionBusy}
                   onClick={() => { closeSettings(); setSessionPdfOpen(true); }}
                 >
                   Export PDF
-                </button>
-                <button type="button" onClick={openLessonReport}>
-                  Engagement
-                </button>
-                <button type="button" onClick={() => openLibrary('reports')}>
-                  Student reports
                 </button>
               </div>
             </section>
