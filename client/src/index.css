@@ -1974,6 +1974,10 @@ html.dark .iboard-arr-btn {
   color: #c7d0dc;
 }
 
+html.dark .iboard-arr-btn__glyph {
+  color: #c7d0dc;
+}
+
 html.dark .iboard-arr-label {
   color: #c7d0dc;
 }
@@ -1983,6 +1987,11 @@ html.dark .iboard-arr-btn[data-active='true'] {
   background: #292f37;
   border-color: #4b5664;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.28);
+}
+
+html.dark .iboard-arr-btn[data-active='true'] .iboard-arr-btn__glyph,
+html.dark .iboard-arr-btn[data-active='true'] .iboard-arr-label {
+  color: #a5a8e8;
 }
 
 html.dark .iboard-teacher-panel {
