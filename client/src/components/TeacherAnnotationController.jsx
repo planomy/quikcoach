@@ -15,6 +15,7 @@ import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
 import HintWrap from './HintWrap.jsx';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
+const REOPEN_HIGHLIGHT_NAME = 'iboard-teacher-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-teacher-awaiting-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
@@ -25,6 +26,14 @@ const MAX_FAVOURITES = 8;
 const MAX_BANKS = 12;
 const MAX_BANK_COMMENTS = 40;
 const PENDING_WIDTH = 400;
+
+/** open | reopen | fixed | resolved — reopen = teacher Check again */
+function commentTone(annotation) {
+  if (annotation?.status === 'resolved') return 'resolved';
+  if (annotation?.status === 'fixed') return 'fixed';
+  if (annotation?.student_fixed_at) return 'reopen';
+  return 'open';
+}
 /** Max scrollable panel height — not the height used for initial placement. */
 const PENDING_MAX_HEIGHT = 440;
 /** Compact type-first composer; grows when Quick tray opens. */
@@ -503,6 +512,7 @@ export default function TeacherAnnotationController() {
     if (selectingInPaneRef.current) return;
 
     const ranges = [];
+    const reopenRanges = [];
     const awaitingRanges = [];
     const resolvedRanges = [];
     const nextMarkers = [];
@@ -516,7 +526,7 @@ export default function TeacherAnnotationController() {
       const paneRect = card.textPane.getBoundingClientRect();
       let detachedCount = 0;
       for (const annotation of annotations || []) {
-        const status = annotation.status === 'fixed' || annotation.status === 'resolved' ? annotation.status : 'open';
+        const tone = commentTone(annotation);
         const resolved = resolveAnnotation(annotation, fullText);
         const range = resolved.detached ? null : rangeForPlainOffsets(writingRoot, resolved.start, resolved.end);
         if (!range) {
@@ -536,8 +546,9 @@ export default function TeacherAnnotationController() {
           }
           continue;
         }
-        if (status === 'resolved') resolvedRanges.push(range);
-        else if (status === 'fixed') awaitingRanges.push(range);
+        if (tone === 'resolved') resolvedRanges.push(range);
+        else if (tone === 'fixed') awaitingRanges.push(range);
+        else if (tone === 'reopen') reopenRanges.push(range);
         else ranges.push(range);
         const position = markerPosition(range, card);
         if (!position) continue;
@@ -555,6 +566,8 @@ export default function TeacherAnnotationController() {
     if (globalThis.CSS?.highlights && typeof globalThis.Highlight !== 'undefined') {
       if (ranges.length) globalThis.CSS.highlights.set(HIGHLIGHT_NAME, new globalThis.Highlight(...ranges));
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
+      if (reopenRanges.length) globalThis.CSS.highlights.set(REOPEN_HIGHLIGHT_NAME, new globalThis.Highlight(...reopenRanges));
+      else globalThis.CSS.highlights.delete(REOPEN_HIGHLIGHT_NAME);
       if (awaitingRanges.length) globalThis.CSS.highlights.set(AWAITING_HIGHLIGHT_NAME, new globalThis.Highlight(...awaitingRanges));
       else globalThis.CSS.highlights.delete(AWAITING_HIGHLIGHT_NAME);
       if (resolvedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
@@ -661,6 +674,7 @@ export default function TeacherAnnotationController() {
       if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
       moveFrameRef.current = null;
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(FIXED_HIGHLIGHT_NAME);
     };
@@ -1239,16 +1253,15 @@ export default function TeacherAnnotationController() {
   }
 
   function renderMarkerButton(marker) {
-    const status =
-      marker.annotation.status === 'fixed' || marker.annotation.status === 'resolved'
-        ? marker.annotation.status
-        : 'open';
+    const tone = commentTone(marker.annotation);
     const toneClass =
-      status === 'resolved'
+      tone === 'resolved'
         ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
-        : status === 'fixed'
+        : tone === 'fixed'
           ? 'bg-[#6b6b78]/35 hover:bg-[#6b6b78]/55'
-          : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50';
+          : tone === 'reopen'
+            ? 'bg-rose-400/35 hover:bg-rose-400/55'
+            : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50';
     const button = (
       <button
         key={`${marker.studentId}-${marker.annotation.id}`}
@@ -1261,23 +1274,27 @@ export default function TeacherAnnotationController() {
         className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${toneClass}`}
         style={{ top: marker.top, left: marker.left }}
         title={
-          status === 'resolved'
+          tone === 'resolved'
             ? 'Confirmed fixed'
-            : status === 'fixed'
+            : tone === 'fixed'
               ? `Waiting for review: ${typeof marker.annotation.note === 'string' ? marker.annotation.note : ''}`
-              : typeof marker.annotation.note === 'string'
-                ? marker.annotation.note
-                : 'Open inline teacher comment'
+              : tone === 'reopen'
+                ? 'Asked student to check again'
+                : typeof marker.annotation.note === 'string'
+                  ? marker.annotation.note
+                  : 'Open inline teacher comment'
         }
         aria-label={
-          status === 'resolved'
+          tone === 'resolved'
             ? 'Confirmed fixed comment'
-            : status === 'fixed'
+            : tone === 'fixed'
               ? 'Review student fix'
-              : 'Open inline teacher comment'
+              : tone === 'reopen'
+                ? 'Check again pending'
+                : 'Open inline teacher comment'
         }
       >
-        {status === 'open' ? '💬' : '✓'}
+        {tone === 'open' || tone === 'reopen' ? '💬' : '✓'}
       </button>
     );
 
@@ -1293,6 +1310,7 @@ export default function TeacherAnnotationController() {
     <>
       <style>{`
         ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.18); text-decoration: underline 2px #5a5fc3; text-underline-offset: 2px; }
+        ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.18); text-decoration: underline 2px #f87171; text-underline-offset: 2px; }
         ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.2); text-decoration: underline 2px #6b6b78; text-underline-offset: 2px; }
         ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
       `}</style>
@@ -1621,6 +1639,10 @@ export default function TeacherAnnotationController() {
             ) : openMarker.annotation.status === 'fixed' ? (
               <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#6b6b78]">
                 Waiting for your review
+              </p>
+            ) : openMarker.annotation.student_fixed_at ? (
+              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-rose-500">
+                Asked to check again
               </p>
             ) : (
               <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3] dark:text-indigo-300">

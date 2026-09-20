@@ -9,6 +9,7 @@ import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
+const REOPEN_HIGHLIGHT_NAME = 'iboard-student-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
 const MARKER_SIZE = 28;
@@ -33,8 +34,12 @@ function editorElement() {
   return document.querySelector('[role="textbox"][contenteditable]');
 }
 
-function annotationStatus(annotation) {
-  return annotation?.status === 'fixed' || annotation?.status === 'resolved' ? annotation.status : 'open';
+/** open | reopen | fixed | resolved — reopen = teacher Check again */
+function commentTone(annotation) {
+  if (annotation?.status === 'resolved') return 'resolved';
+  if (annotation?.status === 'fixed') return 'fixed';
+  if (annotation?.student_fixed_at) return 'reopen';
+  return 'open';
 }
 
 function markerPosition(rangeRect) {
@@ -91,15 +96,19 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const [openMarker, setOpenMarker] = useState(null);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [editorTextTick, setEditorTextTick] = useState(0);
   const moveFrameRef = useRef(null);
   const autoFixQueuedRef = useRef(new Set());
   const autoFixTimersRef = useRef(new Map());
+  const checkAgainSnapshotRef = useRef(new Map());
+  const prevToneRef = useRef(new Map());
 
   const refreshHighlights = useCallback(() => {
     if (typeof document === 'undefined') return;
     const editor = editorElement();
     if (!editor) {
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(RESOLVED_HIGHLIGHT_NAME);
       setMarkers([]);
@@ -107,6 +116,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     }
     const text = plainTextFromElement(editor);
     const ranges = [];
+    const reopenRanges = [];
     const awaitingRanges = [];
     const resolvedRanges = [];
     const nextMarkers = [];
@@ -119,8 +129,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       editorRect.right > vp.left &&
       editorRect.left < vp.left + vp.width;
     for (const annotation of annotations || []) {
-      const status =
-        annotation.status === 'fixed' || annotation.status === 'resolved' ? annotation.status : 'open';
+      const tone = commentTone(annotation);
       const resolved = resolveAnnotation(annotation, text);
       const range = resolved.detached ? null : rangeForPlainOffsets(editor, resolved.start, resolved.end);
       if (!range) {
@@ -136,8 +145,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         }
         continue;
       }
-      if (status === 'resolved') resolvedRanges.push(range);
-      else if (status === 'fixed') awaitingRanges.push(range);
+      if (tone === 'resolved') resolvedRanges.push(range);
+      else if (tone === 'fixed') awaitingRanges.push(range);
+      else if (tone === 'reopen') reopenRanges.push(range);
       else ranges.push(range);
       const rect = range.getBoundingClientRect();
       if (rect.width || rect.height) {
@@ -153,6 +163,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     if (globalThis.CSS?.highlights && typeof globalThis.Highlight !== 'undefined') {
       if (ranges.length) globalThis.CSS.highlights.set(HIGHLIGHT_NAME, new globalThis.Highlight(...ranges));
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
+      if (reopenRanges.length) {
+        globalThis.CSS.highlights.set(REOPEN_HIGHLIGHT_NAME, new globalThis.Highlight(...reopenRanges));
+      } else globalThis.CSS.highlights.delete(REOPEN_HIGHLIGHT_NAME);
       if (awaitingRanges.length) {
         globalThis.CSS.highlights.set(AWAITING_HIGHLIGHT_NAME, new globalThis.Highlight(...awaitingRanges));
       } else globalThis.CSS.highlights.delete(AWAITING_HIGHLIGHT_NAME);
@@ -161,6 +174,32 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       } else globalThis.CSS.highlights.delete(RESOLVED_HIGHLIGHT_NAME);
     }
     setMarkers(nextMarkers);
+  }, [annotations]);
+
+  useEffect(() => {
+    const editor = editorElement();
+    const text = editor ? plainTextFromElement(editor) : '';
+    const seen = new Set();
+    for (const annotation of annotations || []) {
+      const id = Number(annotation.id);
+      if (!id) continue;
+      seen.add(id);
+      const tone = commentTone(annotation);
+      const prev = prevToneRef.current.get(id);
+      if (tone === 'reopen' && prev !== 'reopen') {
+        autoFixQueuedRef.current.delete(id);
+        checkAgainSnapshotRef.current.set(id, text);
+      }
+      if (tone !== 'reopen') checkAgainSnapshotRef.current.delete(id);
+      prevToneRef.current.set(id, tone);
+    }
+    for (const id of [...prevToneRef.current.keys()]) {
+      if (!seen.has(id)) {
+        prevToneRef.current.delete(id);
+        checkAgainSnapshotRef.current.delete(id);
+        autoFixQueuedRef.current.delete(id);
+      }
+    }
   }, [annotations]);
 
   const markCommentFixed = useCallback(
@@ -197,12 +236,16 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     if (!socket) return;
     const timers = autoFixTimersRef.current;
     const queued = autoFixQueuedRef.current;
+    const editor = editorElement();
+    const liveText = editor ? plainTextFromElement(editor) : '';
     for (const marker of markers) {
       const id = Number(marker.annotation?.id);
       if (!id) continue;
-      const status = annotationStatus(marker.annotation);
+      const tone = commentTone(marker.annotation);
+      const snapshot = checkAgainSnapshotRef.current.get(id);
       const shouldAuto =
-        marker.detached && status === 'open' && !marker.annotation.student_fixed_at;
+        (tone === 'open' && marker.detached) ||
+        (tone === 'reopen' && snapshot != null && liveText !== snapshot);
       if (!shouldAuto) {
         const pending = timers.get(id);
         if (pending) {
@@ -223,7 +266,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       );
     }
     return undefined;
-  }, [markers, socket, markCommentFixed]);
+  }, [markers, socket, markCommentFixed, annotations, editorTextTick]);
 
   useEffect(() => {
     if (!socket) return;
@@ -313,7 +356,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       schedule();
     };
     const onInput = (event) => {
-      if (event.target?.matches?.('[role="textbox"][contenteditable]')) schedule();
+      if (event.target?.matches?.('[role="textbox"][contenteditable]')) {
+        schedule();
+        setEditorTextTick((n) => n + 1);
+      }
     };
     document.addEventListener('input', onInput, true);
     const unsubscribe = subscribeViewportChanges(schedule);
@@ -329,6 +375,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
       moveFrameRef.current = null;
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(RESOLVED_HIGHLIGHT_NAME);
     };
@@ -386,27 +433,34 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     setActionBusy(false);
   }
 
-  const openStatus = annotationStatus(openMarker?.annotation);
+  const openTone = commentTone(openMarker?.annotation);
   const showChangedPassage = !!openMarker?.detached;
+  const openLiveText = editorElement() ? plainTextFromElement(editorElement()) : '';
+  const reopenSnapshot = openMarker
+    ? checkAgainSnapshotRef.current.get(Number(openMarker.annotation?.id))
+    : null;
   const needsManualCheck =
-    openStatus === 'open' &&
-    (!openMarker?.detached || !!openMarker?.annotation?.student_fixed_at);
+    (openTone === 'open' && !openMarker?.detached) ||
+    (openTone === 'reopen' && (reopenSnapshot == null || openLiveText === reopenSnapshot));
 
   return (
     <>
       <style>{`
         ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.18); text-decoration: underline 2px #5a5fc3; text-underline-offset: 2px; }
+        ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.18); text-decoration: underline 2px #f87171; text-underline-offset: 2px; }
         ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.2); text-decoration: underline 2px #6b6b78; text-underline-offset: 2px; }
         ::highlight(${RESOLVED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
       `}</style>
       {markers.map((marker) => {
-        const status = annotationStatus(marker.annotation);
+        const tone = commentTone(marker.annotation);
         const toneClass =
-          status === 'resolved'
+          tone === 'resolved'
             ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
-            : status === 'fixed'
+            : tone === 'fixed'
               ? 'bg-[#6b6b78]/35 hover:bg-[#6b6b78]/55'
-              : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50';
+              : tone === 'reopen'
+                ? 'bg-rose-400/35 hover:bg-rose-400/55'
+                : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50';
         return (
           <button
             key={marker.annotation.id}
@@ -419,21 +473,25 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             className={`fixed z-[50] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${toneClass}`}
             style={{ top: marker.top, left: marker.left }}
             title={
-              status === 'resolved'
+              tone === 'resolved'
                 ? 'Teacher confirmed fixed'
-                : status === 'fixed'
+                : tone === 'fixed'
                   ? 'Waiting for your teacher'
-                  : 'Teacher comment'
+                  : tone === 'reopen'
+                    ? 'Check this again'
+                    : 'Teacher comment'
             }
             aria-label={
-              status === 'resolved'
+              tone === 'resolved'
                 ? 'Confirmed fixed'
-                : status === 'fixed'
+                : tone === 'fixed'
                   ? 'Waiting for teacher review'
-                  : 'Open teacher comment'
+                  : tone === 'reopen'
+                    ? 'Check this comment again'
+                    : 'Open teacher comment'
             }
           >
-            {status === 'open' ? '💬' : '✓'}
+            {tone === 'open' || tone === 'reopen' ? '💬' : '✓'}
           </button>
         );
       })}
@@ -448,12 +506,12 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
-            {openStatus === 'resolved' ? (
+            {openTone === 'resolved' ? (
               <p className="mb-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                 Teacher confirmed fixed
               </p>
-            ) : openStatus === 'fixed' ? null : openMarker.annotation.student_fixed_at ? (
-              <p className="mb-1.5 text-sm font-semibold text-[#3c3c45] dark:text-slate-100">
+            ) : openTone === 'fixed' ? null : openTone === 'reopen' ? (
+              <p className="mb-1.5 text-sm font-semibold text-rose-600 dark:text-rose-300">
                 Check this again please
               </p>
             ) : (
@@ -461,14 +519,14 @@ export default function StudentAnnotationController({ socket, studentId: supplie
                 Teacher comment
               </p>
             )}
-            {openStatus === 'open' && !openMarker.detached && (
+            {(openTone === 'open' || openTone === 'reopen') && !openMarker.detached && (
               <p className="line-clamp-3 text-xs italic text-[#52525c] dark:text-slate-400">
                 “{openMarker.annotation.quote}”
               </p>
             )}
             <p
               className={`${
-                openStatus === 'open' && !openMarker.detached ? 'mt-2' : ''
+                (openTone === 'open' || openTone === 'reopen') && !openMarker.detached ? 'mt-2' : ''
               } whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100`}
             >
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
@@ -488,11 +546,11 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
           </div>
           <div className="shrink-0 border-t border-[#e4e4ea] bg-[#fafafc] p-3 dark:border-slate-700 dark:bg-slate-950/40">
-            {openStatus === 'resolved' ? (
+            {openTone === 'resolved' ? (
               <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
                 Confirmed fixed
               </p>
-            ) : openStatus === 'fixed' ? (
+            ) : openTone === 'fixed' ? (
               <p className="rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] px-3 py-2 text-xs font-semibold text-[#5c5c68] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 Waiting for your teacher
               </p>
