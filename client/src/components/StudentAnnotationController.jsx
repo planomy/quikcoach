@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { plainTextFromElement, rangeForPlainOffsets, resolveAnnotation } from '../lib/annotations.js';
+import {
+  inferReplacementPassage,
+  plainTextFromElement,
+  rangeForPlainOffsets,
+  resolveAnnotation,
+} from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 
@@ -11,6 +16,7 @@ const MARKER_MARGIN = 6;
 const POPUP_WIDTH = 320;
 /** Placement budget — keep the action button visible on short iPad viewports. */
 const POPUP_HEIGHT = 360;
+const AUTO_FIX_DELAY_MS = 700;
 
 function currentStudentId() {
   if (typeof window === 'undefined') return 0;
@@ -25,6 +31,10 @@ function currentStudentId() {
 
 function editorElement() {
   return document.querySelector('[role="textbox"][contenteditable]');
+}
+
+function annotationStatus(annotation) {
+  return annotation?.status === 'fixed' || annotation?.status === 'resolved' ? annotation.status : 'open';
 }
 
 function markerPosition(rangeRect) {
@@ -82,6 +92,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState('');
   const moveFrameRef = useRef(null);
+  const autoFixQueuedRef = useRef(new Set());
+  const autoFixTimersRef = useRef(new Map());
 
   const refreshHighlights = useCallback(() => {
     if (typeof document === 'undefined') return;
@@ -151,6 +163,68 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     setMarkers(nextMarkers);
   }, [annotations]);
 
+  const markCommentFixed = useCallback(
+    (annotationId, { closePopup = false } = {}) => {
+      const id = Number(annotationId);
+      if (!socket || !id) return;
+      setAnnotations((prev) =>
+        prev.map((item) =>
+          Number(item.id) === id
+            ? {
+                ...item,
+                status: 'fixed',
+                student_fixed_at: item.student_fixed_at || new Date().toISOString(),
+              }
+            : item
+        )
+      );
+      if (closePopup) setOpenMarker(null);
+      socket.emit('student:annotation-fixed', { annotationId: id }, (ack) => {
+        if (ack?.ok) return;
+        setActionError(ack?.error || 'Could not mark this comment as fixed');
+        autoFixQueuedRef.current.delete(id);
+        socket.emit('student:annotations-sync', {}, (syncAck) => {
+          if (syncAck?.ok && Array.isArray(syncAck.annotations)) {
+            setAnnotations(syncAck.annotations);
+          }
+        });
+      });
+    },
+    [socket]
+  );
+
+  useEffect(() => {
+    if (!socket) return;
+    const timers = autoFixTimersRef.current;
+    const queued = autoFixQueuedRef.current;
+    for (const marker of markers) {
+      const id = Number(marker.annotation?.id);
+      if (!id) continue;
+      const status = annotationStatus(marker.annotation);
+      const shouldAuto =
+        marker.detached && status === 'open' && !marker.annotation.student_fixed_at;
+      if (!shouldAuto) {
+        const pending = timers.get(id);
+        if (pending) {
+          clearTimeout(pending);
+          timers.delete(id);
+        }
+        continue;
+      }
+      if (queued.has(id) || timers.has(id)) continue;
+      timers.set(
+        id,
+        setTimeout(() => {
+          timers.delete(id);
+          if (queued.has(id)) return;
+          queued.add(id);
+          markCommentFixed(id);
+        }, AUTO_FIX_DELAY_MS)
+      );
+    }
+    return undefined;
+  }, [markers, socket, markCommentFixed]);
+
   useEffect(() => {
     if (!socket) return;
     let cancelled = false;
@@ -199,6 +273,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      for (const timer of autoFixTimersRef.current.values()) clearTimeout(timer);
+      autoFixTimersRef.current.clear();
       socket.off('teacher-annotations:mine', onMine);
       socket.off('teacher-annotations:update', onUpdate);
       socket.off('room:state', onRoomState);
@@ -267,7 +343,12 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       setOpenMarker(null);
       return;
     }
-    if (current.top !== openMarker.top || current.left !== openMarker.left) {
+    if (
+      current.top !== openMarker.top ||
+      current.left !== openMarker.left ||
+      current.detached !== openMarker.detached ||
+      current.annotation?.status !== openMarker.annotation?.status
+    ) {
       setOpenMarker(current);
     }
   }, [markers, openMarker]);
@@ -276,6 +357,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     () => (openMarker ? commentPopupPosition(openMarker) : null),
     [openMarker]
   );
+
+  const openMarkerChange = useMemo(() => {
+    if (!openMarker?.detached || !openMarker.annotation) return null;
+    const editor = editorElement();
+    if (!editor) return null;
+    return inferReplacementPassage(openMarker.annotation, plainTextFromElement(editor));
+  }, [openMarker]);
 
   useEffect(() => {
     if (!openMarker) return undefined;
@@ -289,23 +377,20 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [openMarker]);
 
-  function markCommentFixed(marker) {
-    if (!socket || !marker?.annotation?.id || actionBusy) return;
+  function markCommentFixedManual(marker) {
+    if (!marker?.annotation?.id || actionBusy) return;
     setActionBusy(true);
     setActionError('');
-    socket.emit('student:annotation-fixed', { annotationId: marker.annotation.id }, (ack) => {
-      setActionBusy(false);
-      if (!ack?.ok) {
-        setActionError(ack?.error || 'Could not mark this comment as fixed');
-        return;
-      }
-      setOpenMarker(null);
-    });
+    autoFixQueuedRef.current.add(Number(marker.annotation.id));
+    markCommentFixed(marker.annotation.id, { closePopup: true });
+    setActionBusy(false);
   }
 
-  function annotationStatus(annotation) {
-    return annotation?.status === 'fixed' || annotation?.status === 'resolved' ? annotation.status : 'open';
-  }
+  const openStatus = annotationStatus(openMarker?.annotation);
+  const showChangedPassage = !!(openMarker?.detached && openMarkerChange);
+  const needsManualCheck =
+    openStatus === 'open' &&
+    (!openMarker?.detached || !!openMarker?.annotation?.student_fixed_at);
 
   return (
     <>
@@ -363,12 +448,11 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
-            {annotationStatus(openMarker.annotation) === 'resolved' ? (
+            {openStatus === 'resolved' ? (
               <p className="mb-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                 Teacher confirmed fixed
               </p>
-            ) : annotationStatus(openMarker.annotation) === 'fixed' ? null : openMarker.annotation
-                .student_fixed_at ? (
+            ) : openStatus === 'fixed' ? null : openMarker.annotation.student_fixed_at ? (
               <p className="mb-1.5 text-sm font-semibold text-[#3c3c45] dark:text-slate-100">
                 Check this again please
               </p>
@@ -377,43 +461,54 @@ export default function StudentAnnotationController({ socket, studentId: supplie
                 Teacher comment
               </p>
             )}
-            {annotationStatus(openMarker.annotation) === 'open' && (
+            {openStatus === 'open' && !openMarker.detached && (
               <p className="line-clamp-3 text-xs italic text-[#52525c] dark:text-slate-400">
                 “{openMarker.annotation.quote}”
               </p>
             )}
             <p
               className={`${
-                annotationStatus(openMarker.annotation) === 'open' ? 'mt-2' : ''
+                openStatus === 'open' && !openMarker.detached ? 'mt-2' : ''
               } whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100`}
             >
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
-            {openMarker.detached && annotationStatus(openMarker.annotation) === 'open' && (
-              <div className="mt-2.5 rounded-xl border border-[#cfcce8] bg-[#ebeaf8] px-2.5 py-2 text-xs font-semibold text-[#3c3c45] dark:border-indigo-900 dark:bg-indigo-950/35 dark:text-indigo-100">
-                Your edit changed the highlighted passage. Check the comment, then mark it when you are happy.
+            {showChangedPassage && (
+              <div className="mt-2.5 rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] px-2.5 py-2 text-xs font-semibold text-[#3c3c45] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">
+                  You changed it to
+                </p>
+                <p className="mt-0.5 whitespace-pre-wrap break-words font-medium leading-snug">
+                  {openMarkerChange?.after?.trim()
+                    ? `“${openMarkerChange.after.trim()}”`
+                    : 'Passage removed or could not be located'}
+                </p>
               </div>
             )}
             {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
           </div>
           <div className="shrink-0 border-t border-[#e4e4ea] bg-[#fafafc] p-3 dark:border-slate-700 dark:bg-slate-950/40">
-            {annotationStatus(openMarker.annotation) === 'resolved' ? (
+            {openStatus === 'resolved' ? (
               <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
                 Confirmed fixed
               </p>
-            ) : annotationStatus(openMarker.annotation) === 'fixed' ? (
+            ) : openStatus === 'fixed' ? (
               <p className="rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] px-3 py-2 text-xs font-semibold text-[#5c5c68] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 Waiting for your teacher
               </p>
-            ) : (
+            ) : needsManualCheck ? (
               <button
                 type="button"
                 disabled={actionBusy}
-                onClick={() => markCommentFixed(openMarker)}
+                onClick={() => markCommentFixedManual(openMarker)}
                 className="w-full rounded-xl bg-[#6b6b78] px-3 py-2.5 text-sm font-bold text-white hover:bg-[#5a5a66] disabled:opacity-50"
               >
                 {actionBusy ? 'Saving…' : 'I’ve checked this'}
               </button>
+            ) : (
+              <p className="rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] px-3 py-2 text-xs font-semibold text-[#5c5c68] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                Marking as checked…
+              </p>
             )}
           </div>
         </div>
