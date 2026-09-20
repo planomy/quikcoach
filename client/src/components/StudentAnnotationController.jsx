@@ -387,7 +387,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }
 
   const openStatus = annotationStatus(openMarker?.annotation);
-  const showChangedPassage = !!(openMarker?.detached && openMarkerChange);
+  const showChangedPassage = !!openMarker?.detached;
   const needsManualCheck =
     openStatus === 'open' &&
     (!openMarker?.detached || !!openMarker?.annotation?.student_fixed_at);
