@@ -2,6 +2,7 @@ import { RemoveButton, CloseButton } from './PanelActions.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  inferReplacementPassage,
   plainTextFromElement,
   rangeForPlainOffsets,
   resolveAnnotation,
@@ -11,6 +12,7 @@ import {
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
+import HintWrap from './HintWrap.jsx';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
@@ -1141,6 +1143,39 @@ export default function TeacherAnnotationController() {
       })
     : null;
 
+  const openMarkerChange = useMemo(() => {
+    if (!openMarker?.detached || !openMarker.annotation) return null;
+    const card = cardForStudent(openMarker.studentId);
+    if (!card) return null;
+    const writingRoot = contentRootForPane(card.textPane) || card.textPane;
+    const fullText = plainTextFromElement(writingRoot);
+    return inferReplacementPassage(openMarker.annotation, fullText);
+  }, [openMarker]);
+
+  function renderCommentChrome({ onEdit, onDelete }) {
+    return (
+      <div className="flex items-center justify-end gap-1">
+        <HintWrap hint="Edit">
+          <button
+            type="button"
+            title=""
+            aria-label="Edit comment"
+            onClick={onEdit}
+            className="grid h-8 w-8 place-items-center rounded-lg text-[#5a5fc3] hover:bg-[#ebeaf8] dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </button>
+        </HintWrap>
+        <HintWrap hint="Delete">
+          <RemoveButton onClick={onDelete} aria-label="Delete comment" title="" className="!h-8 !w-8" />
+        </HintWrap>
+      </div>
+    );
+  }
+
   function renderChitChip(comment, { pinned }) {
     const selected = quickStack.includes(comment);
     const pinBlocked = !pinned && activeFavourites.length >= MAX_FAVOURITES;
@@ -1557,54 +1592,78 @@ export default function TeacherAnnotationController() {
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
-            <CloseButton onClick={() => setOpenMarker(null)} label="Close" className="float-right" />
-            <p className={`text-[10px] font-black uppercase tracking-[0.13em] ${
-              openMarker.annotation.status === 'fixed'
-                ? 'text-emerald-600 dark:text-emerald-300'
-                : 'text-[#5a5fc3] dark:text-indigo-300'
-            }`}>
-              {openMarker.annotation.status === 'fixed' ? 'Student marked fixed' : 'Your inline comment'}
-            </p>
-            <p className="mt-1 line-clamp-2 text-xs italic text-[#52525c] dark:text-slate-400">“{openMarker.annotation.quote}”</p>
-            <p className="mt-2 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100">
+            <div className="mb-1 flex items-start justify-between gap-2">
+              <p
+                className={`text-[10px] font-black uppercase tracking-[0.13em] ${
+                  openMarker.annotation.status === 'fixed'
+                    ? 'text-emerald-700 dark:text-emerald-300'
+                    : 'text-[#5a5fc3] dark:text-indigo-300'
+                }`}
+              >
+                {openMarker.annotation.status === 'fixed' ? 'Student marked fixed' : 'Your inline comment'}
+              </p>
+              <HintWrap hint="Close">
+                <CloseButton onClick={() => setOpenMarker(null)} aria-label="Close" title="" />
+              </HintWrap>
+            </div>
+            <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100">
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
-            {openMarker.detached && (
-              <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-                The student changed the original highlighted passage.
+            {openMarker.detached ? (
+              <div className="mt-2.5 space-y-1.5 rounded-xl border border-[#e4e4ea] bg-[#f6f5fb] p-2.5 dark:border-slate-700 dark:bg-slate-950/60">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Was</p>
+                  <p className="mt-0.5 text-xs leading-snug text-[#52525c] line-through decoration-[#c4c4ce] dark:text-slate-400">
+                    {openMarkerChange?.before || openMarker.annotation.quote || '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#5a5fc3]">Now</p>
+                  <p className="mt-0.5 text-xs font-semibold leading-snug text-[#3c3c45] dark:text-slate-100">
+                    {openMarkerChange?.after?.trim()
+                      ? openMarkerChange.after
+                      : 'Passage removed or could not be located'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-2 line-clamp-3 text-xs italic text-[#52525c] dark:text-slate-400">
+                “{openMarker.annotation.quote}”
               </p>
             )}
             {reviewError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{reviewError}</p>}
           </div>
-          <div className="shrink-0 border-t border-[#d5d4e4] bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+          <div className="shrink-0 border-t border-[#e4e4ea] bg-[#fafafc] px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
             {openMarker.annotation.status === 'fixed' ? (
               <div className="space-y-2">
-                <button
-                  type="button"
-                  disabled={reviewBusyId === openMarker.annotation.id}
-                  onClick={() => reviewFixedComment(openMarker, 'confirm')}
-                  className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  Confirm fixed
-                </button>
-                <button
-                  type="button"
-                  disabled={reviewBusyId === openMarker.annotation.id}
-                  onClick={() => reviewFixedComment(openMarker, 'reopen')}
-                  className="w-full rounded-lg bg-amber-100 px-3 py-2 text-xs font-black text-amber-900 hover:bg-amber-200 disabled:opacity-50"
-                >
-                  Needs another look
-                </button>
-                <div className="flex gap-2 pt-1">
-                  <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-[#ebeaf8] px-3 py-1.5 text-xs font-bold text-[#5a5fc3] hover:bg-[#e0dff5] dark:bg-indigo-950 dark:text-indigo-200">Edit</button>
-                  <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={reviewBusyId === openMarker.annotation.id}
+                    onClick={() => reviewFixedComment(openMarker, 'confirm')}
+                    className="rounded-lg bg-[#5a5fc3] px-2.5 py-2 text-[11px] font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                  >
+                    Confirm fixed
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewBusyId === openMarker.annotation.id}
+                    onClick={() => reviewFixedComment(openMarker, 'reopen')}
+                    className="rounded-lg border border-[#d5d4e4] bg-white px-2.5 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Needs another look
+                  </button>
                 </div>
+                {renderCommentChrome({
+                  onEdit: () => editComment(openMarker),
+                  onDelete: () => deleteComment(openMarker),
+                })}
               </div>
             ) : (
-              <div className="flex gap-2">
-                <button type="button" onClick={() => editComment(openMarker)} className="rounded-lg bg-[#ebeaf8] px-3 py-1.5 text-xs font-bold text-[#5a5fc3] hover:bg-[#e0dff5] dark:bg-indigo-950 dark:text-indigo-200">Edit</button>
-                <button type="button" onClick={() => deleteComment(openMarker)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300">Delete</button>
-              </div>
+              renderCommentChrome({
+                onEdit: () => editComment(openMarker),
+                onDelete: () => deleteComment(openMarker),
+              })
             )}
           </div>
         </div>

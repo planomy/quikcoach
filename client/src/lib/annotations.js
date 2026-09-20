@@ -58,6 +58,47 @@ export function resolveAnnotation(annotation, rawText) {
   return { ...annotation, detached: false, start: best, end: best + quote.length };
 }
 
+/** When a quote can no longer be found, recover what sits between its stored prefix/suffix now. */
+export function inferReplacementPassage(annotation, rawText) {
+  const text = normalise(rawText);
+  const quote = normalise(annotation?.quote || '');
+  const prefix = normalise(annotation?.prefix_context || '');
+  const suffix = normalise(annotation?.suffix_context || '');
+  const expectedStart = Math.max(0, Number(annotation?.start_offset) || 0);
+  if (!quote) return null;
+
+  let start = expectedStart;
+  if (prefix) {
+    let best = -1;
+    let bestDist = Infinity;
+    let cursor = 0;
+    while (cursor <= text.length - prefix.length) {
+      const index = text.indexOf(prefix, cursor);
+      if (index === -1) break;
+      const afterPrefix = index + prefix.length;
+      const dist = Math.abs(afterPrefix - expectedStart);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = afterPrefix;
+      }
+      cursor = index + 1;
+    }
+    if (best < 0) return { before: quote, after: '' };
+    start = best;
+  }
+
+  let end = Math.min(text.length, start + Math.max(quote.length * 3, 48));
+  if (suffix) {
+    const index = text.indexOf(suffix, start);
+    if (index === -1) return { before: quote, after: text.slice(start, end).trim() };
+    end = index;
+  }
+
+  const after = text.slice(start, end);
+  if (after === quote) return null;
+  return { before: quote, after };
+}
+
 function fragmentToPlainText(fragment) {
   if (!fragment || typeof document === 'undefined') return '';
   const holder = document.createElement('div');

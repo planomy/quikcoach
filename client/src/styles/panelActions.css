@@ -15,7 +15,7 @@ html button.iboard-icon-action {
   cursor: pointer;
 }
 html button.iboard-icon-action:hover:not(:disabled) { background: #64748b1a; color: #334155; }
-html button.iboard-icon-action:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+html button.iboard-icon-action:focus-visible { outline: 2px solid #5a5fc3; outline-offset: 2px; }
 html button.iboard-icon-action:disabled { opacity: .4; cursor: not-allowed; }
 html.dark button.iboard-icon-action { color: #b8c4d2; }
 html.dark button.iboard-icon-action:hover:not(:disabled) { background: #ffffff14; color: #f1f5f9; }

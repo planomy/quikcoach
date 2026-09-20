@@ -1,4 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
+import HintWrap from './HintWrap.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { plainTextFromElement, rangeForPlainOffsets, resolveAnnotation } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
@@ -319,7 +320,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pb-2">
-            <CloseButton onClick={() => setOpenMarker(null)} aria-label="Close teacher comment" title="Close comment" className="float-right" />
+            <HintWrap hint="Close">
+              <CloseButton onClick={() => setOpenMarker(null)} aria-label="Close teacher comment" title="" className="float-right" />
+            </HintWrap>
             <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${
               openMarker.annotation.status === 'fixed'
                 ? 'text-emerald-600 dark:text-emerald-300'
