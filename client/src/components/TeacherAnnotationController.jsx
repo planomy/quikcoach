@@ -1047,7 +1047,6 @@ export default function TeacherAnnotationController() {
     const raw = typeof noteOverride === 'string' ? noteOverride : draftNote;
     const note = String(raw || '').trim();
     if (!socket || !pending || !note) return;
-    const quotedText = pending.quote;
     setCommentError('');
     socket.emit(
       'teacher:annotation-add',
@@ -1066,7 +1065,6 @@ export default function TeacherAnnotationController() {
           return;
         }
         closePending();
-        setSaveNotice(`Inline comment saved for “${quotedText}”`);
         window.getSelection?.()?.removeAllRanges?.();
       }
     );
