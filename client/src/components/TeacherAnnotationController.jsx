@@ -1203,8 +1203,8 @@ export default function TeacherAnnotationController() {
         }}
         className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${
           marker.annotation.status === 'fixed'
-            ? 'bg-emerald-500/80 hover:bg-emerald-500'
-            : 'bg-[#5a5fc3]/80 hover:bg-[#5a5fc3]'
+            ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
+            : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50'
         }`}
         style={{ top: marker.top, left: marker.left }}
         title={
