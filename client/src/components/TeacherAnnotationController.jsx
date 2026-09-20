@@ -1568,14 +1568,9 @@ export default function TeacherAnnotationController() {
               {commentError}
             </p>
           )}
-          <div className="mt-1.5 flex shrink-0 items-center justify-end gap-2">
-            <p className="mr-auto text-[9px] font-semibold text-slate-400">
-              {quickTrayOpen ? 'Tap chit to send · Shift+tap stacks' : 'Return to send · Esc cancel'}
-            </p>
-            <div className="flex gap-1.5">
-              <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-[#52525c] hover:bg-[#ebeaf8] dark:hover:bg-slate-800">Cancel</button>
-              <button type="button" disabled={!draftNote.trim()} onClick={() => addComment()} className="rounded-md bg-[#5a5fc3] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40">Add comment</button>
-            </div>
+          <div className="mt-1.5 flex shrink-0 items-center justify-end gap-1.5">
+            <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-[#52525c] hover:bg-[#ebeaf8] dark:hover:bg-slate-800">Cancel</button>
+            <button type="button" disabled={!draftNote.trim()} onClick={() => addComment()} className="rounded-md bg-[#5a5fc3] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40">Add comment</button>
           </div>
         </div>
       )}
