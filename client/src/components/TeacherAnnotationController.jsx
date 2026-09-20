@@ -660,6 +660,9 @@ export default function TeacherAnnotationController() {
       const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
       if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
       selectingInPaneRef.current = !!target?.closest?.('[data-student-writing-pane]');
+      // Review/open marker cards dismiss on outside click (bubble buttons keep data-teacher-annotation-ui).
+      setOpenMarker(null);
+      setReviewError('');
     }
     function onMouseUp(event) {
       const wasSelecting = selectingInPaneRef.current;
@@ -677,6 +680,7 @@ export default function TeacherAnnotationController() {
       const selection = window.getSelection?.();
       if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) {
         setPending(null);
+        setOpenMarker(null);
         setQuickStack([]);
         draftNoteLatestRef.current = '';
         quickPrefixRef.current = '';
