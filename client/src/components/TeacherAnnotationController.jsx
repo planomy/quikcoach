@@ -1594,7 +1594,7 @@ export default function TeacherAnnotationController() {
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
             {openMarker.detached ? (
-              <div className="mt-2.5 space-y-1.5 rounded-xl border border-[#e4e4ea] bg-[#f6f5fb] p-2.5 dark:border-slate-700 dark:bg-slate-950/60">
+              <div className="mt-2.5 space-y-1.5 rounded-xl border border-[#cfcce8] bg-[#ebeaf8] p-2.5 dark:border-indigo-900 dark:bg-indigo-950/35">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Was</p>
                   <p className="mt-0.5 text-xs leading-snug text-[#52525c] line-through decoration-[#c4c4ce] dark:text-slate-400">
