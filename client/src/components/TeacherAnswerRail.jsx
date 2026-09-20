@@ -158,6 +158,35 @@ function DoneIcon() {
   );
 }
 
+function presentGridLayout(slotCount) {
+  const n = Math.max(1, Number(slotCount) || 1);
+  let cols = 1;
+  if (n <= 2) cols = n;
+  else if (n <= 4) cols = 2;
+  else if (n <= 6) cols = 3;
+  else if (n <= 9) cols = 3;
+  else if (n <= 12) cols = 4;
+  else if (n <= 16) cols = 4;
+  else if (n <= 20) cols = 5;
+  else if (n <= 25) cols = 5;
+  else cols = 6;
+  return { cols, rows: Math.ceil(n / cols), n };
+}
+
+function presentAnswerTextClass(slotCount) {
+  if (slotCount <= 4) return 'text-3xl sm:text-5xl md:text-6xl';
+  if (slotCount <= 9) return 'text-2xl sm:text-4xl md:text-5xl';
+  if (slotCount <= 16) return 'text-xl sm:text-3xl md:text-4xl';
+  if (slotCount <= 25) return 'text-lg sm:text-2xl md:text-3xl';
+  return 'text-base sm:text-xl md:text-2xl';
+}
+
+function presentNameTextClass(slotCount) {
+  if (slotCount <= 9) return 'text-sm sm:text-base';
+  if (slotCount <= 16) return 'text-xs sm:text-sm';
+  return 'text-[11px] sm:text-xs';
+}
+
 /** Live pulse answers — side rail on the board, or embedded inside the Responses panel. */
 export default function TeacherAnswerRail({
   open,
@@ -176,9 +205,6 @@ export default function TeacherAnswerRail({
   const listRef = useRef(null);
   const panelRef = useRef(null);
   const [presenting, setPresenting] = useState(false);
-  const prevActivityIdRef = useRef('');
-  const prevRespondedRef = useRef(0);
-  const watchDismissedRef = useRef(false);
   const isShort = activity?.type === 'short';
   const isSet = activity?.type === 'set';
   const setQuestions = isSet ? normalizeSetQuestions(activity?.questions) : [];
@@ -199,36 +225,15 @@ export default function TeacherAnswerRail({
     }
     return thinkingClassIds.length;
   }, [onlineStudentIds, thinkingClassIds]);
+  // Reserve equal slots for the class we expect — never let 1 answer blow up full-screen.
+  const presentSlotCount = Math.max(onlineCount, thinkingClassIds.length, responded, 1);
+  const presentLayout = presentGridLayout(presentSlotCount);
+  const presentPlaceholders = Math.max(0, presentLayout.n - sorted.length);
   const isVerbal = activity?.prompt === 'Verbal question' && activity?.type === 'short';
   const questionNumber = Math.max(1, Number(activity?.questionNumber) || 1);
 
-  // Round watch: first answer of a verbal round opens Present; new rounds swap the wall.
-  // Back dismisses until the next round (new activity id).
-  useEffect(() => {
-    const id = activity?.id ? String(activity.id) : '';
-    if (!isVerbal || !id) {
-      if (!id) {
-        prevActivityIdRef.current = '';
-        prevRespondedRef.current = 0;
-      }
-      return;
-    }
-    const activityChanged = id !== prevActivityIdRef.current;
-    if (activityChanged) {
-      watchDismissedRef.current = false;
-      prevRespondedRef.current = 0;
-      prevActivityIdRef.current = id;
-    }
-    const crossedFirstAnswer = responded > 0 && prevRespondedRef.current === 0;
-    prevRespondedRef.current = responded;
-    if (crossedFirstAnswer && !watchDismissedRef.current) {
-      setPresenting(true);
-    }
-  }, [activity?.id, isVerbal, responded]);
-
   function exitPresent() {
     setPresenting(false);
-    watchDismissedRef.current = true;
   }
 
   useEffect(() => {
@@ -381,10 +386,7 @@ export default function TeacherAnswerRail({
             <ControlIcon
               label="Present answers on screen"
               hint="Present"
-              onClick={() => {
-                watchDismissedRef.current = false;
-                setPresenting(true);
-              }}
+              onClick={() => setPresenting(true)}
             >
               <PresentIcon />
             </ControlIcon>
@@ -607,16 +609,16 @@ export default function TeacherAnswerRail({
                 </div>
               </header>
               <div className="min-h-0 flex-1 px-4 pb-4 sm:px-8 sm:pb-6">
-                {!sorted.length ? (
+                {!sorted.length && !presentPlaceholders ? (
                   <div className="grid h-full place-items-center">
                     <p className="text-xl font-semibold text-indigo-200 sm:text-2xl">Waiting for answers…</p>
                   </div>
                 ) : isSet ? (
                   <div
-                    className="grid h-full gap-3 overflow-hidden"
+                    className="grid h-full gap-3 overflow-hidden sm:gap-4"
                     style={{
-                      gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${sorted.length <= 4 ? '16rem' : sorted.length <= 9 ? '12rem' : '9rem'}), 1fr))`,
-                      gridAutoRows: 'minmax(0, 1fr)',
+                      gridTemplateColumns: `repeat(${presentLayout.cols}, minmax(0, 1fr))`,
+                      gridTemplateRows: `repeat(${presentLayout.rows}, minmax(0, 1fr))`,
                     }}
                   >
                     {sorted.map((response) => (
@@ -625,15 +627,15 @@ export default function TeacherAnswerRail({
                         className="flex min-h-0 flex-col overflow-hidden rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 sm:p-4"
                       >
                         {!activity.anonymous && (
-                          <p className="mb-2 shrink-0 truncate text-xs font-black text-indigo-300 sm:text-sm">
+                          <p className={`mb-2 shrink-0 truncate font-black text-indigo-300 ${presentNameTextClass(presentSlotCount)}`}>
                             {response.name || 'Student'}
                           </p>
                         )}
                         <div className="min-h-0 flex-1 space-y-2 overflow-hidden">
                           {getSetAnswerPairs(response.value, setQuestions).map((pair) => (
                             <div key={pair.id} className="min-h-0">
-                              <p className="truncate text-[11px] font-semibold text-indigo-200/80">{pair.prompt}</p>
-                              <p className="mt-0.5 line-clamp-4 text-sm font-bold leading-snug text-white sm:text-base">
+                              <p className="truncate text-xs font-semibold text-indigo-200/80 sm:text-sm">{pair.prompt}</p>
+                              <p className={`mt-0.5 line-clamp-4 font-bold leading-snug text-white ${presentAnswerTextClass(presentSlotCount)}`}>
                                 {pair.answer}
                               </p>
                             </div>
@@ -641,13 +643,20 @@ export default function TeacherAnswerRail({
                         </div>
                       </article>
                     ))}
+                    {Array.from({ length: presentPlaceholders }, (_, index) => (
+                      <div
+                        key={`present-slot-${index}`}
+                        className="min-h-0 rounded-2xl border border-dashed border-white/20 bg-white/[0.04]"
+                        aria-hidden="true"
+                      />
+                    ))}
                   </div>
                 ) : isShort ? (
                   <div
-                    className="grid h-full gap-3 overflow-hidden"
+                    className="grid h-full gap-3 overflow-hidden sm:gap-4"
                     style={{
-                      gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${sorted.length <= 4 ? '18rem' : sorted.length <= 9 ? '13rem' : sorted.length <= 16 ? '10rem' : '8rem'}), 1fr))`,
-                      gridAutoRows: 'minmax(0, 1fr)',
+                      gridTemplateColumns: `repeat(${presentLayout.cols}, minmax(0, 1fr))`,
+                      gridTemplateRows: `repeat(${presentLayout.rows}, minmax(0, 1fr))`,
                     }}
                   >
                     {sorted.map((response) => (
@@ -656,29 +665,28 @@ export default function TeacherAnswerRail({
                         className="flex min-h-0 flex-col justify-center overflow-hidden rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 sm:p-5"
                       >
                         <p
-                          className={`min-h-0 overflow-hidden font-bold leading-snug text-white ${
-                            sorted.length <= 4
-                              ? 'text-2xl sm:text-4xl'
-                              : sorted.length <= 9
-                                ? 'text-xl sm:text-2xl'
-                                : sorted.length <= 16
-                                  ? 'text-lg sm:text-xl'
-                                  : 'text-base'
-                          }`}
+                          className={`min-h-0 overflow-hidden font-black leading-snug text-white ${presentAnswerTextClass(presentSlotCount)}`}
                           style={{
                             display: '-webkit-box',
-                            WebkitLineClamp: sorted.length <= 6 ? 6 : sorted.length <= 12 ? 4 : 3,
+                            WebkitLineClamp: presentSlotCount <= 6 ? 5 : presentSlotCount <= 12 ? 4 : 3,
                             WebkitBoxOrient: 'vertical',
                           }}
                         >
                           “{formatLiveAnswer(response.value)}”
                         </p>
                         {!activity.anonymous && (
-                          <p className="mt-2 shrink-0 truncate text-xs font-black text-indigo-300 sm:text-sm">
+                          <p className={`mt-2 shrink-0 truncate font-black text-indigo-300 ${presentNameTextClass(presentSlotCount)}`}>
                             {response.name || 'Student'}
                           </p>
                         )}
                       </article>
+                    ))}
+                    {Array.from({ length: presentPlaceholders }, (_, index) => (
+                      <div
+                        key={`present-slot-${index}`}
+                        className="min-h-0 rounded-2xl border border-dashed border-white/20 bg-white/[0.04]"
+                        aria-hidden="true"
+                      />
                     ))}
                   </div>
                 ) : (
