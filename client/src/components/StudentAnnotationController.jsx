@@ -1,5 +1,3 @@
-import { CloseButton } from './PanelActions.jsx';
-import HintWrap from './HintWrap.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { plainTextFromElement, rangeForPlainOffsets, resolveAnnotation } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
@@ -268,6 +266,18 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     [openMarker]
   );
 
+  useEffect(() => {
+    if (!openMarker) return undefined;
+    function onMouseDown(event) {
+      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
+      if (target?.closest?.('[data-teacher-annotation-ui]')) return;
+      setOpenMarker(null);
+      setActionError('');
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [openMarker]);
+
   function markCommentFixed(marker) {
     if (!socket || !marker?.annotation?.id || actionBusy) return;
     setActionBusy(true);
@@ -312,48 +322,51 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       {openMarker && openPopupPosition && (
         <div
           data-teacher-annotation-ui
-          className="fixed z-[70] flex w-[320px] flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
+          className="fixed z-[70] flex w-[320px] flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
           style={{
             top: openPopupPosition.top,
             left: openPopupPosition.left,
             maxHeight: commentPopupMaxHeight(),
           }}
         >
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pb-2">
-            <HintWrap hint="Close">
-              <CloseButton onClick={() => setOpenMarker(null)} aria-label="Close teacher comment" title="" className="float-right" />
-            </HintWrap>
-            <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${
-              openMarker.annotation.status === 'fixed'
-                ? 'text-emerald-600 dark:text-emerald-300'
-                : 'text-indigo-600 dark:text-indigo-300'
-            }`}>
-              {openMarker.annotation.status === 'fixed' ? 'Marked as fixed' : 'Teacher comment'}
-            </p>
-            <p className="mt-1 line-clamp-2 text-xs italic text-slate-500 dark:text-slate-400">“{openMarker.annotation.quote}”</p>
-            <p className="mt-3 whitespace-pre-wrap break-words text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
+            {openMarker.annotation.status === 'fixed' ? null : openMarker.annotation.student_fixed_at ? (
+              <p className="mb-1.5 text-sm font-semibold text-[#3c3c45] dark:text-slate-100">
+                Check this again please
+              </p>
+            ) : (
+              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3] dark:text-indigo-300">
+                Teacher comment
+              </p>
+            )}
+            {openMarker.annotation.status !== 'fixed' && (
+              <p className="line-clamp-3 text-xs italic text-[#52525c] dark:text-slate-400">
+                “{openMarker.annotation.quote}”
+              </p>
+            )}
+            <p className={`${openMarker.annotation.status === 'fixed' ? '' : 'mt-2'} whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100`}>
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
             {openMarker.detached && openMarker.annotation.status !== 'fixed' && (
-              <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-                Your edit changed the highlighted passage. Check the teacher comment, then mark it fixed when you are happy.
-              </p>
+              <div className="mt-2.5 rounded-xl border border-[#cfcce8] bg-[#ebeaf8] px-2.5 py-2 text-xs font-semibold text-[#3c3c45] dark:border-indigo-900 dark:bg-indigo-950/35 dark:text-indigo-100">
+                Your edit changed the highlighted passage. Check the comment, then mark it when you are happy.
+              </div>
             )}
             {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
           </div>
-          <div className="shrink-0 border-t border-indigo-100 bg-white p-3 dark:border-indigo-900 dark:bg-slate-900">
+          <div className="shrink-0 border-t border-[#e4e4ea] bg-[#fafafc] p-3 dark:border-slate-700 dark:bg-slate-950/40">
             {openMarker.annotation.status === 'fixed' ? (
-              <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
-                Your teacher can now check the change.
+              <p className="rounded-xl border border-[#cfcce8] bg-[#ebeaf8] px-3 py-2 text-xs font-semibold text-[#5a5fc3] dark:border-indigo-900 dark:bg-indigo-950/35 dark:text-indigo-200">
+                Waiting for your teacher
               </p>
             ) : (
               <button
                 type="button"
                 disabled={actionBusy}
                 onClick={() => markCommentFixed(openMarker)}
-                className="w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                {actionBusy ? 'Marking…' : 'I’ve fixed this'}
+                {actionBusy ? 'Saving…' : 'I’ve checked this'}
               </button>
             )}
           </div>
