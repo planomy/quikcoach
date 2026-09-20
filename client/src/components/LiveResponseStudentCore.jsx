@@ -601,7 +601,26 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             </div>
           ) : activity.type === 'short' ? (
             <div className={compact ? 'mt-2' : quietAlerts ? 'mt-3' : 'mt-5'}>
-              <textarea value={draft} onChange={(event) => setDraft(event.target.value.slice(0, 500))} disabled={answersClosed || isUnknownAnswer(response?.value)} placeholder="Type a short answer…" className={`w-full rounded-xl border bg-white text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${quietAlerts ? 'border-slate-200' : 'border-2 border-slate-200 bg-slate-50 focus:border-indigo-500'} ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`} />
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value.slice(0, 500))}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    if (!answersClosed && draft.trim() && !isUnknownAnswer(response?.value)) {
+                      submit(draft);
+                    }
+                  }
+                }}
+                disabled={answersClosed || isUnknownAnswer(response?.value)}
+                placeholder="Type a short answer…"
+                className={`w-full rounded-xl border bg-white text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white ${quietAlerts ? 'border-slate-200' : 'border-2 border-slate-200 bg-slate-50 focus:border-indigo-500'} ${compact ? 'min-h-16 p-2 text-sm' : 'min-h-28 p-4 text-base'}`}
+              />
+              {!answersClosed && !isUnknownAnswer(response?.value) ? (
+                <p className={`font-semibold text-slate-400 dark:text-slate-500 ${compact || quietAlerts ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>
+                  Enter sends · Shift+Enter new line
+                </p>
+              ) : null}
               {!isUnknownAnswer(response?.value) && renderConfidenceControls(false)}
               <div className={`flex flex-col gap-2 ${quietAlerts ? 'mt-3' : 'mt-3'}`}>
                 <button type="button" disabled={answersClosed || !draft.trim()} onClick={() => submit(draft)} className={`rounded-xl bg-indigo-600 font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 ${quietAlerts ? 'w-full px-4 py-2.5 text-sm' : `w-full rounded-2xl font-black ${compact ? 'px-3 py-2 text-sm' : 'px-5 py-3 text-base'}`}`}>Send answer</button>
