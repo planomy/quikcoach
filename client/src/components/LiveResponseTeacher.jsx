@@ -1010,6 +1010,10 @@ export default function LiveResponseTeacher({
             liveActivity={activity}
             liveResponses={responses}
             onClose={usingPanelTabs ? undefined : returnToPrimaryView}
+            onShared={() => {
+              onQuestionLaunched?.();
+              switchPanelTab('responses');
+            }}
           />
         )}
 

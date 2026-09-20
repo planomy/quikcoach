@@ -114,6 +114,16 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       setMessage('');
       document.documentElement.classList.remove('iboard-student-respond-alert');
       document.documentElement.classList.add('iboard-student-respond-alert');
+      // Unified Inbox no longer has a Respond tab — ping the Inbox rail instead.
+      try {
+        window.dispatchEvent(
+          new CustomEvent('iboard:live-inbox-alert', {
+            detail: { activityId: nextActivity.id, questionNumber: number, force: !!force },
+          })
+        );
+      } catch {
+        /* ignore */
+      }
     }
     if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
     if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
@@ -126,13 +136,14 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     if (!quietAlerts) {
       setArrival(nextActivity);
       arrivalTimerRef.current = setTimeout(() => setArrival(null), 2600);
-      setTimeout(() => bringStudentPanelIntoView(panelRef.current), 120);
       if (!document.title.startsWith('🔔')) originalTitleRef.current = document.title || 'iBOARD';
       document.title = `🔔 Question ${number} — iBOARD`;
       titleTimerRef.current = setTimeout(() => {
         document.title = originalTitleRef.current;
       }, 7000);
     }
+    // Always bring the live card into the Inbox rail (shared questions land here).
+    setTimeout(() => bringStudentPanelIntoView(panelRef.current), 120);
 
     if (soundOn) playQuestionChime();
     return isNew;
@@ -172,6 +183,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         setDraft('');
         setSetDrafts({});
         setConfidenceChoice('');
+        try {
+          window.dispatchEvent(new CustomEvent('iboard:live-inbox-clear'));
+        } catch {
+          /* ignore */
+        }
       }
     };
     const onMine = (payload) => {
@@ -187,7 +203,22 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       } else if (nextActivity?.id) {
         activityIdRef.current = nextActivity.id;
       }
-      setResponse(payload?.response || null);
+      const nextResponse = payload?.response || null;
+      setResponse(nextResponse);
+      if (nextResponse) {
+        try {
+          window.dispatchEvent(new CustomEvent('iboard:live-inbox-clear'));
+        } catch {
+          /* ignore */
+        }
+      }
+      if (!nextActivity) {
+        try {
+          window.dispatchEvent(new CustomEvent('iboard:live-inbox-clear'));
+        } catch {
+          /* ignore */
+        }
+      }
       if (nextActivity?.type === 'set') {
         setSetDrafts(parseSetAnswers(payload?.response?.value));
         setDraft('');
@@ -265,6 +296,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       setMessage(ack?.ok ? (isUnknownAnswer(payloadValue) ? 'Sent ✓' : 'Answer sent ✓') : ack?.error || 'Could not send');
       if (ack?.ok) {
         setResponse({ value: payloadValue, confidence: selectedConfidence });
+        try {
+          window.dispatchEvent(new CustomEvent('iboard:live-inbox-clear'));
+        } catch {
+          /* ignore */
+        }
         if (activity.type === 'set') {
           setSetDrafts(parseSetAnswers(payloadValue));
         } else {

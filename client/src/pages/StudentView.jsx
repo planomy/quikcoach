@@ -134,6 +134,7 @@ export default function StudentView() {
   const [inboxExpandedId, setInboxExpandedId] = useState(null);
   const [inboxUnreadIds, setInboxUnreadIds] = useState(() => new Set());
   const [dismissedInboxIds, setDismissedInboxIds] = useState(() => new Set());
+  const [liveInboxAlert, setLiveInboxAlert] = useState(false);
   const [largeMaterialId, setLargeMaterialId] = useState(null);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
@@ -194,6 +195,23 @@ export default function StudentView() {
     if (!joined) return undefined;
     document.documentElement.classList.add('iboard-student-workspace');
     return () => document.documentElement.classList.remove('iboard-student-workspace');
+  }, [joined]);
+
+  // Shared / Ask live questions land in the Inbox rail (Respond tab was removed).
+  useEffect(() => {
+    if (!joined) return undefined;
+    const onLiveAlert = () => {
+      setLiveInboxAlert(true);
+      const scroller = document.querySelector('.iboard-student-support-scroll');
+      scroller?.scrollTo?.({ top: 0, behavior: 'smooth' });
+    };
+    const onClear = () => setLiveInboxAlert(false);
+    window.addEventListener('iboard:live-inbox-alert', onLiveAlert);
+    window.addEventListener('iboard:live-inbox-clear', onClear);
+    return () => {
+      window.removeEventListener('iboard:live-inbox-alert', onLiveAlert);
+      window.removeEventListener('iboard:live-inbox-clear', onClear);
+    };
   }, [joined]);
 
   useEffect(() => {
@@ -1177,7 +1195,7 @@ export default function StudentView() {
       .filter((item) => !dismissedInboxIds.has(item.id) && !dismissedInboxIds.has(String(item.id)))
       .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
   }, [feedbackInbox, broadcastHistory, materialHistory, inboxUnreadIds, dismissedInboxIds]);
-  const inboxTabCount = inboxUnreadIds.size;
+  const inboxTabCount = inboxUnreadIds.size + (liveInboxAlert ? 1 : 0);
 
   if (removedByTeacher) {
     const roomLabel = String(removedByTeacher.code || '').replace(/\D/g, '').slice(0, 4);
@@ -1540,13 +1558,20 @@ export default function StudentView() {
             data-iboard-student-support
             className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1"
           >
-            <div className="iboard-inbox-head">
+            <div className={`iboard-inbox-head ${liveInboxAlert ? 'iboard-inbox-head--live-alert' : ''}`}>
               <div className="iboard-inbox-head__row">
                 <div className="iboard-inbox-head__title-wrap">
                   <span className="iboard-inbox-head__mark" aria-hidden="true" />
                   <h2 className="iboard-inbox-head__title">Inbox</h2>
                   {inboxTabCount ? (
-                    <span className="iboard-inbox-head__count" aria-label={`${inboxTabCount} unread`}>
+                    <span
+                      className={`iboard-inbox-head__count ${liveInboxAlert ? 'iboard-inbox-head__count--live' : ''}`}
+                      aria-label={
+                        liveInboxAlert
+                          ? `${inboxTabCount} waiting, including a live question`
+                          : `${inboxTabCount} unread`
+                      }
+                    >
                       {inboxTabCount}
                     </span>
                   ) : null}

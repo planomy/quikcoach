@@ -2,6 +2,7 @@ import { CloseButton } from './PanelActions.jsx';
 import { useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
 import QnaShareMenu from './QnaShareMenu.jsx';
+import { ensureTeacherRoom } from '../lib/teacherRoom.js';
 import { isUnknownAnswer } from '../lib/liveResponseUnknown.js';
 
 function sortQuestions(items) {
@@ -17,6 +18,7 @@ export default function AudienceQnaTeacher({
   liveActivity = null,
   liveResponses = [],
   onClose,
+  onShared,
 }) {
   const [presenting, setPresenting] = useState(false);
   const [message, setMessage] = useState('');
@@ -69,11 +71,22 @@ export default function AudienceQnaTeacher({
     const fallbackAnonymous = question.status === 'published' || question.status === 'answered'
       ? question.publishedAnonymous
       : question.anonymousRequested;
-    socket.emit('teacher:qna-ask-room', {
-      questionId: question.id,
-      anonymous: anonymous ?? fallbackAnonymous,
-    }, (ack) => {
-      if (!ack?.ok) setMessage(ack?.error || 'Could not share with the class.');
+    ensureTeacherRoom(socket, (joinAck) => {
+      if (!joinAck?.ok) {
+        setMessage(joinAck?.error || 'Open the room as teacher first');
+        return;
+      }
+      socket.emit('teacher:qna-ask-room', {
+        questionId: question.id,
+        anonymous: anonymous ?? fallbackAnonymous,
+      }, (ack) => {
+        if (!ack?.ok) {
+          setMessage(ack?.error || 'Could not share with the class.');
+          return;
+        }
+        setMessage('Shared — classmates answer at the top of Inbox');
+        onShared?.(ack.activity || null);
+      });
     });
   }
 
@@ -217,7 +230,17 @@ export default function AudienceQnaTeacher({
           ) : null}
         </div>
 
-        {message ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-200">{message}</p> : null}
+        {message ? (
+          <p
+            className={`mt-3 rounded-lg px-3 py-2 text-xs font-bold ${
+              /Shared —/.test(message)
+                ? 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200'
+                : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-200'
+            }`}
+          >
+            {message}
+          </p>
+        ) : null}
 
         <div className="mt-3 space-y-3">
           {pending.map((question) => <QuestionCard key={question.id} question={question} mode="pending" />)}

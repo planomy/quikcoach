@@ -182,7 +182,11 @@ export default function TeacherLiveQuestionIndicators() {
         'teacher:qna-ask-room',
         { questionId: selectedQuestion.id, anonymous: !!anonymous },
         (ack) => {
-          if (!ack?.ok) setMessage(ack?.error || 'Could not share with the class.');
+          if (!ack?.ok) {
+            setMessage(ack?.error || 'Could not share with the class.');
+            return;
+          }
+          setMessage('Shared — classmates answer at the top of Inbox');
         }
       );
     });

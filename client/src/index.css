@@ -273,6 +273,16 @@ html:not(.dark) .iboard-teacher-canvas .iboard-brand-logo {
   line-height: 1;
 }
 
+.iboard-inbox-head__count--live,
+html.iboard-student-workspace.iboard-student-respond-alert .iboard-inbox-head__count {
+  background: #e11d48;
+}
+
+.iboard-inbox-head--live-alert .iboard-inbox-head__mark {
+  background: #e11d48;
+  box-shadow: 0 0 0 4px rgb(225 29 72 / 0.18);
+}
+
 .iboard-inbox-answer-chip {
   border: 1px solid #d5d4e4;
   background: #ffffff;
