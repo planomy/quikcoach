@@ -170,6 +170,8 @@ export default function StudentView() {
   const lastBroadcastAtRef = useRef(null);
   const materialBootstrappedRef = useRef(false);
   const lastMaterialAtRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const focusNameAfterDismissRef = useRef(false);
 
   useEffect(() => {
     studentRef.current = student;
@@ -947,6 +949,12 @@ export default function StudentView() {
     return recentStudentSessionForRoom(code);
   }, [codeInput, recentDismissedCode]);
 
+  useEffect(() => {
+    if (!focusNameAfterDismissRef.current || recentRoomSession) return;
+    focusNameAfterDismissRef.current = false;
+    nameInputRef.current?.focus();
+  }, [recentRoomSession]);
+
   function continueRecentRoom() {
     const saved = recentRoomSession;
     if (!saved) return;
@@ -1277,6 +1285,7 @@ export default function StudentView() {
                   <button
                     type="button"
                     onClick={() => {
+                      focusNameAfterDismissRef.current = true;
                       setRecentDismissedCode(recentRoomSession.code);
                       setNameInput('');
                     }}
@@ -1288,6 +1297,7 @@ export default function StudentView() {
               ) : (
                 <>
                   <input
+                    ref={nameInputRef}
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
                     onKeyDown={(e) => {
