@@ -157,7 +157,13 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         setDraft('');
         setSetDrafts({});
         setConfidenceChoice('');
-        drawAttention(nextActivity);
+        // Verbal checks are opt-in via + Answer — don't alert/open every inbox
+        // when one classmate starts a round.
+        if (isVerbalLiveActivity(nextActivity)) {
+          activityIdRef.current = nextActivity.id;
+        } else {
+          drawAttention(nextActivity);
+        }
       }
       if (!nextActivity) {
         if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
@@ -172,7 +178,15 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       syncClock(payload);
       const nextActivity = payload?.activity || null;
       setActivity(nextActivity);
-      if (nextActivity?.id && nextActivity.id !== activityIdRef.current) drawAttention(nextActivity);
+      if (
+        nextActivity?.id &&
+        nextActivity.id !== activityIdRef.current &&
+        !isVerbalLiveActivity(nextActivity)
+      ) {
+        drawAttention(nextActivity);
+      } else if (nextActivity?.id) {
+        activityIdRef.current = nextActivity.id;
+      }
       setResponse(payload?.response || null);
       if (nextActivity?.type === 'set') {
         setSetDrafts(parseSetAnswers(payload?.response?.value));
@@ -187,7 +201,11 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     const onRealert = (payload) => {
       if (payload?.activity) {
         setActivity(payload.activity);
-        drawAttention(payload.activity, true);
+        if (isVerbalLiveActivity(payload.activity)) {
+          activityIdRef.current = payload.activity.id;
+        } else {
+          drawAttention(payload.activity, true);
+        }
       }
     };
     const onFeatured = () => {
@@ -330,6 +348,10 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   }
 
   if (collapsed) {
+    // Verbal unanswered: stay out of the Inbox — students opt in with + Answer only.
+    if (isVerbalLiveActivity(activity) && !response && !nudge && !featuredNotice) {
+      return null;
+    }
     const needsAnswer = !!activity && !response && !activity.locked && secondsLeft !== 0;
     let label = 'Pulse ready';
     let detail = 'Waiting for a question';
@@ -396,6 +418,10 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
 
   const theme = QUESTION_THEMES[themeIndex];
   const answersClosed = activity?.locked || secondsLeft === 0;
+  // Same rule when expanded somehow: don't force a verbal compose card — + Answer owns that.
+  if (isVerbalLiveActivity(activity) && !response && !nudge) {
+    return collapseButton || null;
+  }
   const statusMessage = quietAlerts && message && !/^(Sending|Answer sent|Could not)/.test(message) ? '' : message;
   const optionButtonClass = (selected, correct) => {
     if (quietAlerts) {

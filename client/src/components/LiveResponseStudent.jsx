@@ -95,7 +95,8 @@ function TabbedStudentResponse({ socket, ...props }) {
       if (nextId !== previousId) {
         clearCollapse();
         setResponse(null);
-        setCollapsed(false);
+        const verbal = nextActivity?.type === 'short' && nextActivity?.prompt === 'Verbal question';
+        setCollapsed(!!verbal);
         setCatchupActivityId('');
         catchupActivityIdRef.current = '';
         catchupReturnTabRef.current = '';
@@ -291,7 +292,9 @@ function UnifiedInboxPulse({ socket, ...props }) {
       }
       if (id !== activityIdRef.current) {
         activityIdRef.current = id;
-        setCollapsed(false);
+        const verbal = next?.type === 'short' && next?.prompt === 'Verbal question';
+        // Verbal rounds stay rolled up until this student uses + Answer.
+        setCollapsed(verbal ? true : false);
       }
     };
     const onMine = (payload) => {
@@ -299,12 +302,16 @@ function UnifiedInboxPulse({ socket, ...props }) {
       const nextResponse = payload?.response || null;
       if (next?.id) activityIdRef.current = String(next.id);
       if (nextResponse) setCollapsed(true);
-      else if (next?.id) setCollapsed(false);
+      else if (next?.id) {
+        const verbal = next?.type === 'short' && next?.prompt === 'Verbal question';
+        setCollapsed(verbal ? true : false);
+      }
     };
     const onRealert = (payload) => {
       if (!payload?.activity?.id) return;
       activityIdRef.current = String(payload.activity.id);
-      setCollapsed(false);
+      const verbal = payload.activity?.type === 'short' && payload.activity?.prompt === 'Verbal question';
+      setCollapsed(verbal ? true : false);
     };
 
     socket.on('live:activity', onActivity);
