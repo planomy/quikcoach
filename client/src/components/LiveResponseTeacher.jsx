@@ -182,11 +182,20 @@ export default function LiveResponseTeacher({
   selectedStudentIds = [],
   rosterStudentIds = [],
   onClearStudentSelection,
+  /** Seed from teacher board live:teacher cache so Responses doesn’t flash empty on open. */
+  initialLive = null,
 }) {
   const [internalPanelTab, setInternalPanelTab] = useState('ask');
   const effectivePanelTab = panelTab ?? (panelTabs ? internalPanelTab : null);
   const usingPanelTabs = effectivePanelTab != null;
-  const [live, setLive] = useState({ activity: null, responses: [], students: [] });
+  const [live, setLive] = useState(() =>
+    initialLive && typeof initialLive === 'object'
+      ? initialLive
+      : { activity: null, responses: [], students: [] }
+  );
+  const [liveHydrated, setLiveHydrated] = useState(
+    () => !!(initialLive && typeof initialLive === 'object')
+  );
   const [type, setType] = useState('choice');
   const [prompt, setPrompt] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);
@@ -240,6 +249,7 @@ export default function LiveResponseTeacher({
         clockOffsetRef.current = serverNow - Date.now();
       }
       setLive(payload || { activity: null, responses: [], students: [] });
+      setLiveHydrated(true);
     };
     socket.on('live:teacher', onLive);
     socket.emit('teacher:live-sync', {});
@@ -994,7 +1004,7 @@ export default function LiveResponseTeacher({
           />
         )}
 
-        {usingPanelTabs && effectivePanelTab === 'responses' && (
+        {usingPanelTabs && effectivePanelTab === 'responses' && liveHydrated && (
           <TeacherAnswerRail
             embedded
             open

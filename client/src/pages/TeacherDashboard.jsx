@@ -3181,6 +3181,7 @@ function TeacherDashboardInner() {
             selectedStudentIds={orderedStudents.filter((s) => broadcastPick[s.id]).map((s) => s.id)}
             rosterStudentIds={orderedStudents.map((s) => s.id)}
             onClearStudentSelection={() => setBroadcastPick({})}
+            initialLive={livePulse}
             onThinkingSent={({ count, recipients }) => {
               setCopyToast(
                 recipients > 1

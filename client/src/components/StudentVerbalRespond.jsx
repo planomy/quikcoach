@@ -96,10 +96,18 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
           maxLength={500}
           rows={compact || chip ? 3 : 4}
           onChange={(event) => setDraft(event.target.value.slice(0, 500))}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              submit(event);
+            }
+          }}
           placeholder="Type your answer…"
           className="w-full resize-none rounded-xl border border-[#d5d4e4] bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
-        <div className="flex flex-wrap gap-1.5">
+        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+          Enter sends · Shift+Enter new line
+        </p>        <div className="flex flex-wrap gap-1.5">
           {CONFIDENCE_OPTIONS.map(([value, label]) => (
             <button
               key={value}
