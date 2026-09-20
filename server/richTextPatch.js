@@ -133,12 +133,12 @@ const selectStudent = richDb.prepare('SELECT * FROM students WHERE id = ?');
 const saveRichText = richDb.prepare('UPDATE students SET rich_text_html = ? WHERE id = ?');
 const listAnnotationsForStudentStmt = richDb.prepare(
   `SELECT * FROM teacher_annotations
-   WHERE student_id = ? AND status != 'resolved'
+   WHERE student_id = ?
    ORDER BY id ASC`
 );
 const listAnnotationsForRoomStmt = richDb.prepare(
   `SELECT * FROM teacher_annotations
-   WHERE room_code = ? AND status != 'resolved'
+   WHERE room_code = ?
    ORDER BY student_id ASC, id ASC`
 );
 const selectAnnotationStmt = richDb.prepare(
@@ -173,14 +173,12 @@ const reopenAnnotationStmt = richDb.prepare(
 );
 const deleteAnnotationStmt = richDb.prepare(`DELETE FROM teacher_annotations WHERE id = ?`);
 const bulkResolveFixedForRoomStmt = richDb.prepare(
-  `UPDATE teacher_annotations
-   SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now')
-   WHERE room_code = ? AND status = 'fixed'`
+  `DELETE FROM teacher_annotations
+   WHERE room_code = ? AND status IN ('fixed', 'resolved')`
 );
 const bulkResolveFixedForStudentStmt = richDb.prepare(
-  `UPDATE teacher_annotations
-   SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now')
-   WHERE room_code = ? AND student_id = ? AND status = 'fixed'`
+  `DELETE FROM teacher_annotations
+   WHERE room_code = ? AND student_id = ? AND status IN ('fixed', 'resolved')`
 );
 
 function listAnnotationsForStudent(studentId) {
@@ -491,7 +489,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
         } else {
           const studentRows = richDb
             .prepare(
-              `SELECT DISTINCT student_id FROM teacher_annotations WHERE room_code = ? AND status = 'fixed'`
+              `SELECT DISTINCT student_id FROM teacher_annotations WHERE room_code = ? AND status IN ('fixed', 'resolved')`
             )
             .all(roomCode);
           result = bulkResolveFixedForRoomStmt.run(roomCode);

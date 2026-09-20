@@ -15,6 +15,7 @@ import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
 import HintWrap from './HintWrap.jsx';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
+const AWAITING_HIGHLIGHT_NAME = 'iboard-teacher-awaiting-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
 const FAVOURITE_COMMENTS_KEY = 'iboard-teacher-favourite-inline-comments';
@@ -485,7 +486,11 @@ export default function TeacherAnnotationController() {
   const fixedCount = useMemo(
     () =>
       Object.values(byStudent).reduce(
-        (n, list) => n + (Array.isArray(list) ? list.filter((item) => item.status === 'fixed').length : 0),
+        (n, list) =>
+          n +
+          (Array.isArray(list)
+            ? list.filter((item) => item.status === 'fixed' || item.status === 'resolved').length
+            : 0),
         0
       ),
     [byStudent]
@@ -498,7 +503,8 @@ export default function TeacherAnnotationController() {
     if (selectingInPaneRef.current) return;
 
     const ranges = [];
-    const fixedRanges = [];
+    const awaitingRanges = [];
+    const resolvedRanges = [];
     const nextMarkers = [];
 
     for (const [studentKey, annotations] of Object.entries(byStudent)) {
@@ -510,7 +516,7 @@ export default function TeacherAnnotationController() {
       const paneRect = card.textPane.getBoundingClientRect();
       let detachedCount = 0;
       for (const annotation of annotations || []) {
-        const fixed = annotation.status === 'fixed';
+        const status = annotation.status === 'fixed' || annotation.status === 'resolved' ? annotation.status : 'open';
         const resolved = resolveAnnotation(annotation, fullText);
         const range = resolved.detached ? null : rangeForPlainOffsets(writingRoot, resolved.start, resolved.end);
         if (!range) {
@@ -530,7 +536,9 @@ export default function TeacherAnnotationController() {
           }
           continue;
         }
-        (fixed ? fixedRanges : ranges).push(range);
+        if (status === 'resolved') resolvedRanges.push(range);
+        else if (status === 'fixed') awaitingRanges.push(range);
+        else ranges.push(range);
         const position = markerPosition(range, card);
         if (!position) continue;
         nextMarkers.push({
@@ -547,7 +555,9 @@ export default function TeacherAnnotationController() {
     if (globalThis.CSS?.highlights && typeof globalThis.Highlight !== 'undefined') {
       if (ranges.length) globalThis.CSS.highlights.set(HIGHLIGHT_NAME, new globalThis.Highlight(...ranges));
       else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
-      if (fixedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...fixedRanges));
+      if (awaitingRanges.length) globalThis.CSS.highlights.set(AWAITING_HIGHLIGHT_NAME, new globalThis.Highlight(...awaitingRanges));
+      else globalThis.CSS.highlights.delete(AWAITING_HIGHLIGHT_NAME);
+      if (resolvedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
       else globalThis.CSS.highlights.delete(FIXED_HIGHLIGHT_NAME);
     }
     setMarkers((prev) => (markersMatch(prev, nextMarkers) ? prev : nextMarkers));
@@ -651,6 +661,7 @@ export default function TeacherAnnotationController() {
       if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
       moveFrameRef.current = null;
       globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(FIXED_HIGHLIGHT_NAME);
     };
   }, [refreshHighlights]);
@@ -1228,6 +1239,16 @@ export default function TeacherAnnotationController() {
   }
 
   function renderMarkerButton(marker) {
+    const status =
+      marker.annotation.status === 'fixed' || marker.annotation.status === 'resolved'
+        ? marker.annotation.status
+        : 'open';
+    const toneClass =
+      status === 'resolved'
+        ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
+        : status === 'fixed'
+          ? 'bg-[#6b6b78]/35 hover:bg-[#6b6b78]/55'
+          : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50';
     const button = (
       <button
         key={`${marker.studentId}-${marker.annotation.id}`}
@@ -1237,22 +1258,26 @@ export default function TeacherAnnotationController() {
           setReviewError('');
           setOpenMarker(marker);
         }}
-        className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${
-          marker.annotation.status === 'fixed'
-            ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
-            : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50'
-        }`}
+        className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${toneClass}`}
         style={{ top: marker.top, left: marker.left }}
         title={
-          marker.annotation.status === 'fixed'
-            ? `Student marked fixed: ${typeof marker.annotation.note === 'string' ? marker.annotation.note : ''}`
-            : typeof marker.annotation.note === 'string'
-              ? marker.annotation.note
+          status === 'resolved'
+            ? 'Confirmed fixed'
+            : status === 'fixed'
+              ? `Waiting for review: ${typeof marker.annotation.note === 'string' ? marker.annotation.note : ''}`
+              : typeof marker.annotation.note === 'string'
+                ? marker.annotation.note
+                : 'Open inline teacher comment'
+        }
+        aria-label={
+          status === 'resolved'
+            ? 'Confirmed fixed comment'
+            : status === 'fixed'
+              ? 'Review student fix'
               : 'Open inline teacher comment'
         }
-        aria-label={marker.annotation.status === 'fixed' ? 'Review student fix' : 'Open inline teacher comment'}
       >
-        {marker.annotation.status === 'fixed' ? '✓' : '💬'}
+        {status === 'open' ? '💬' : '✓'}
       </button>
     );
 
@@ -1268,6 +1293,7 @@ export default function TeacherAnnotationController() {
     <>
       <style>{`
         ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.18); text-decoration: underline 2px #5a5fc3; text-underline-offset: 2px; }
+        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.2); text-decoration: underline 2px #6b6b78; text-underline-offset: 2px; }
         ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
       `}</style>
 
@@ -1588,7 +1614,15 @@ export default function TeacherAnnotationController() {
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
-            {openMarker.annotation.status !== 'fixed' && (
+            {openMarker.annotation.status === 'resolved' ? (
+              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-emerald-600 dark:text-emerald-400">
+                Confirmed fixed
+              </p>
+            ) : openMarker.annotation.status === 'fixed' ? (
+              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#6b6b78]">
+                Waiting for your review
+              </p>
+            ) : (
               <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3] dark:text-indigo-300">
                 Your inline comment
               </p>
@@ -1639,6 +1673,14 @@ export default function TeacherAnnotationController() {
                 >
                   Check again
                 </button>
+                {renderCommentChrome({
+                  onEdit: () => editComment(openMarker),
+                  onDelete: () => deleteComment(openMarker),
+                })}
+              </div>
+            ) : openMarker.annotation.status === 'resolved' ? (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">Confirmed fixed</p>
                 {renderCommentChrome({
                   onEdit: () => editComment(openMarker),
                   onDelete: () => deleteComment(openMarker),
