@@ -256,8 +256,18 @@ export default function LiveResponseTeacher({
     return () => socket.off('live:teacher', onLive);
   }, [socket]);
 
+  const qnaHydratedRef = useRef(false);
+  const prevPendingCountRef = useRef(0);
+
   useEffect(() => {
-    const onQna = (payload) => setQnaQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
+    const onQna = (payload) => {
+      const questions = Array.isArray(payload?.questions) ? payload.questions : [];
+      if (!qnaHydratedRef.current) {
+        qnaHydratedRef.current = true;
+        prevPendingCountRef.current = questions.filter((question) => question.status === 'pending').length;
+      }
+      setQnaQuestions(questions);
+    };
     socket.on('qna:teacher', onQna);
     socket.emit('teacher:qna-sync', {});
     return () => socket.off('qna:teacher', onQna);
@@ -321,15 +331,19 @@ export default function LiveResponseTeacher({
     }
   }
 
-  const prevPendingCountRef = useRef(0);
   useEffect(() => {
     const count = pendingQuestions.length;
-    if (count > prevPendingCountRef.current && count > 0) {
-      switchPanelTab('respond');
-      setActiveView('qna');
-    }
+    // Opening the rail (Ask / Responses) remounts this panel and syncs Q&A.
+    // Treat that first payload as existing work, not a new question.
+    if (!qnaHydratedRef.current) return;
+    const arrived = count > prevPendingCountRef.current && count > 0;
     prevPendingCountRef.current = count;
-  }, [pendingQuestions.length]);
+    if (!arrived) return;
+    // Teacher console rail: leave the tab the teacher opened. Reply already badges.
+    if (overlay || panelTab != null) return;
+    switchPanelTab('respond');
+    setActiveView('qna');
+  }, [pendingQuestions.length, overlay, panelTab]);
 
   useEffect(() => {
     onLiveSummary?.({
