@@ -42,10 +42,10 @@ const OPEN_WIDTH = 320;
 /** Placement budget for the open-comment card; CSS max-height lets it grow with the note. */
 const OPEN_PLACE_HEIGHT = 280;
 const OPEN_MAX_HEIGHT = 480;
-const MARKER_SIZE = 12;
-const INLINE_MARKER_SIZE = 10;
+const MARKER_SIZE = 18;
+const INLINE_MARKER_SIZE = 14;
 const MARKER_MARGIN = 4;
-const GUTTER_INSET = 14;
+const GUTTER_INSET = 16;
 
 const CHIT_CATEGORIES = [
   { id: 'fix', label: 'Fix' },

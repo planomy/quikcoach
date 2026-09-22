@@ -539,10 +539,10 @@ export function writingRootForPane(textPane) {
 }
 
 export const COMMENT_HOVER_WASH = {
-  open: 'rgba(90, 95, 195, 0.28)',
-  reopen: 'rgba(244, 63, 94, 0.26)',
-  fixed: 'rgba(107, 107, 120, 0.26)',
-  resolved: 'rgba(16, 185, 129, 0.28)',
+  open: 'rgba(90, 95, 195, 0.5)',
+  reopen: 'rgba(244, 63, 94, 0.46)',
+  fixed: 'rgba(107, 107, 120, 0.46)',
+  resolved: 'rgba(16, 185, 129, 0.48)',
 };
 
 export function rangeContainsPoint(range, x, y) {

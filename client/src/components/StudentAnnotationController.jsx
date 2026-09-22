@@ -18,7 +18,7 @@ const REOPEN_HIGHLIGHT_NAME = 'iboard-student-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
 const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
-const MARKER_SIZE = 12;
+const MARKER_SIZE = 18;
 const MARKER_MARGIN = 6;
 const POPUP_WIDTH = 320;
 /** Placement budget — keep the action button visible on short iPad viewports. */
@@ -50,7 +50,7 @@ function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
 }
 
 function markerPosition(rangeRect, editorRect) {
-  const gutterRight = (editorRect?.right || rangeRect.right + 40) - 14;
+  const gutterRight = (editorRect?.right || rangeRect.right + 40) - 16;
   const left = rangeRect.left;
   const width = Math.max(MARKER_SIZE, gutterRight - left);
   return clampOnScreen({
