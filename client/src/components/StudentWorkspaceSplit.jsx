@@ -19,10 +19,30 @@ function shareFromPointer(event, grid) {
   return clampInboxShare(inboxShare);
 }
 
-/**
- * Drag gutter between writing and Inbox. Side-by-side from tablet up;
- * stacked (Inbox above writing) on phones.
- */
+function SplitChevron({ dir }) {
+  const left = dir === 'left';
+  return (
+    <svg
+      className={`iboard-student-split__arrow iboard-student-split__arrow--${dir}`}
+      viewBox="0 0 12 16"
+      width="8"
+      height="14"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d={left ? 'M8.2 2.2 3.4 8l4.8 5.8' : 'M3.8 2.2 8.6 8l-4.8 5.8'}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Drag gutter between writing and Inbox. */
 export default function StudentWorkspaceSplit({ share, onShare, gridRef }) {
   const draggingRef = useRef(false);
 
@@ -92,7 +112,11 @@ export default function StudentWorkspaceSplit({ share, onShare, gridRef }) {
         onPointerDown={startDrag}
         onKeyDown={onKeyDown}
       >
-        <span className="iboard-student-split__bar" />
+        <span className="iboard-student-split__glyph">
+          <SplitChevron dir="left" />
+          <span className="iboard-student-split__bar" />
+          <SplitChevron dir="right" />
+        </span>
       </button>
     </div>
   );

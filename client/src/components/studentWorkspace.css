@@ -258,11 +258,26 @@ html.iboard-student-workspace .iboard-question-pulse {
   cursor: row-resize;
 }
 
+.iboard-student-split__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  pointer-events: none;
+}
+
 .iboard-student-split__bar {
   display: block;
+  flex-shrink: 0;
   border-radius: 999px;
   background: #cfcce8;
   box-shadow: 0 0 0 1px rgba(90, 95, 195, 0.12);
+}
+
+.iboard-student-split__arrow {
+  display: block;
+  flex-shrink: 0;
+  color: #b4b4bf;
 }
 
 .iboard-student-split__hit:hover .iboard-student-split__bar,
@@ -271,44 +286,30 @@ html.iboard-student-splitting .iboard-student-split__bar {
   background: #5a5fc3;
 }
 
-.iboard-inbox-head__split {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-top: 0.55rem;
-  min-width: 0;
-}
-
-.iboard-inbox-head__split-label {
-  flex-shrink: 0;
-  font-size: 0.625rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #6b6b78;
-}
-
-.iboard-inbox-head__split input[type='range'] {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 1.35rem;
-  margin: 0;
-  accent-color: #5a5fc3;
-  cursor: pointer;
-}
-
-html.dark .iboard-inbox-head__split-label {
-  color: #94a3b8;
+.iboard-student-split__hit:hover .iboard-student-split__arrow,
+.iboard-student-split__hit:focus-visible .iboard-student-split__arrow,
+html.iboard-student-splitting .iboard-student-split__arrow {
+  color: #9a9ab0;
 }
 
 html.dark .iboard-student-split__bar {
   background: #475569;
 }
 
+html.dark .iboard-student-split__arrow {
+  color: #64748b;
+}
+
 html.dark .iboard-student-split__hit:hover .iboard-student-split__bar,
 html.dark .iboard-student-split__hit:focus-visible .iboard-student-split__bar,
 html.dark.iboard-student-splitting .iboard-student-split__bar {
   background: #818cf8;
+}
+
+html.dark .iboard-student-split__hit:hover .iboard-student-split__arrow,
+html.dark .iboard-student-split__hit:focus-visible .iboard-student-split__arrow,
+html.dark.iboard-student-splitting .iboard-student-split__arrow {
+  color: #94a3b8;
 }
 
 .iboard-inbox-material-preview {
@@ -353,13 +354,17 @@ html.iboard-student-splitting iframe {
   }
 
   .iboard-student-split {
-    height: 1.15rem;
+    height: 1.35rem;
     order: 1;
   }
 
   .iboard-student-split__hit {
     width: 100%;
-    height: 1.15rem;
+    height: 1.35rem;
+  }
+
+  .iboard-student-split__glyph {
+    transform: rotate(90deg);
   }
 
   .iboard-student-split__bar {
@@ -402,10 +407,11 @@ html.iboard-student-splitting iframe {
     display: grid !important;
     grid-template-columns:
       minmax(11rem, var(--student-writing-track, 0.6fr))
-      0.85rem
+      1.65rem
       minmax(11rem, var(--student-inbox-track, 0.4fr)) !important;
     align-items: stretch !important;
     gap: 0 !important;
+    min-height: calc(100dvh - 7rem);
   }
 
   html.iboard-student-splitting,
@@ -417,11 +423,11 @@ html.iboard-student-splitting iframe {
     grid-column: 2;
     grid-row: 1;
     align-self: stretch;
-    width: 0.85rem;
+    width: 1.65rem;
   }
 
   .iboard-student-split__hit {
-    width: 0.85rem;
+    width: 1.65rem;
     height: 100%;
     min-height: 12rem;
     cursor: col-resize;
@@ -499,11 +505,41 @@ html.iboard-student-splitting iframe {
     background: transparent;
   }
 
-  /* Use viewport height for the student's main task, scaled by the writing split
-     so a large Inbox still leaves a usable (smaller) typing field. */
+  .iboard-student-workspace main > .iboard-student-workspace-grid > .iboard-student-writing-col {
+    min-height: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Narrower writing column → taller card so there is still room to type. */
+  .iboard-student-workspace .iboard-student-writing-pane {
+    flex: 1 1 auto;
+    min-height: max(18rem, calc((1.16 - var(--student-writing-fr, 0.6)) * (100dvh - 5.5rem)));
+    display: flex;
+    flex-direction: column;
+  }
+
+  .iboard-student-workspace .iboard-student-writing-pane > div {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .iboard-student-workspace .iboard-student-writing-pane > div > .relative:has([role='textbox']) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   .iboard-student-workspace main [role='textbox'][contenteditable='true'],
   .iboard-student-workspace main [role='textbox'][contenteditable='false'] {
-    min-height: max(10rem, calc(var(--student-writing-fr, 0.6) * (100vh - 12rem)));
+    min-height: 0;
+    flex: 1 1 auto;
+    height: 100%;
     width: 100%;
     max-width: none;
     margin-right: 0;
@@ -606,7 +642,7 @@ html.iboard-student-splitting iframe {
   .iboard-student-workspace main > .iboard-student-workspace-grid {
     grid-template-columns:
       minmax(14rem, var(--student-writing-track, 0.6fr))
-      0.85rem
+      1.65rem
       minmax(16rem, var(--student-inbox-track, 0.4fr)) !important;
   }
 }

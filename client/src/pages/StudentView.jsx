@@ -20,7 +20,7 @@ import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import StudentWorkspaceSplit from '../components/StudentWorkspaceSplit.jsx';
-import { clampInboxShare, persistInboxShare, readInboxShare, INBOX_SHARE_MAX, INBOX_SHARE_MIN } from '../lib/studentSplit.js';
+import { persistInboxShare, readInboxShare } from '../lib/studentSplit.js';
 import '../components/studentWorkspace.css';
 import { plainTextToRichHtml } from '../lib/richText.js';
 import { safeFilePart, stampForFilename } from '../lib/exportRoom.js';
@@ -1593,19 +1593,6 @@ export default function StudentView() {
                   ) : null}
                 </div>
                 <StudentVerbalRespond socket={socket} variant="chip" />
-              </div>
-              <div className="iboard-inbox-head__split">
-                <span className="iboard-inbox-head__split-label">Write</span>
-                <input
-                  type="range"
-                  min={Math.round(INBOX_SHARE_MIN * 100)}
-                  max={Math.round(INBOX_SHARE_MAX * 100)}
-                  value={Math.round(clampInboxShare(inboxShare) * 100)}
-                  onChange={(event) => setInboxShareAndSave(Number(event.target.value) / 100)}
-                  aria-label="Inbox size"
-                  title="Drag to make Inbox bigger or writing smaller"
-                />
-                <span className="iboard-inbox-head__split-label">Inbox</span>
               </div>
             </div>
 
