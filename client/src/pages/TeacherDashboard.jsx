@@ -186,6 +186,13 @@ function RailTimerLabel({ timer }) {
   return formatTimer(seconds);
 }
 
+function timerKeepsRailLit(timer) {
+  if (!timer?.active) return false;
+  if (timer.finishedAt) return false;
+  if (timer.running) return true;
+  return Number(timer.remainingSeconds) > 0;
+}
+
 const TEACHER_TOOLS_TABS = [
   { id: 'ask', label: 'Ask the class', rail: 'Ask', hint: 'Ask the class a question' },
   { id: 'responses', label: 'Responses', rail: 'Responses', hint: 'See class answers' },
@@ -3347,7 +3354,7 @@ function TeacherDashboardInner() {
                 type="button"
                 onClick={openTimerDock}
                 aria-expanded={timerOpen}
-                data-active={timerOpen || room?.timer?.active ? 'true' : 'false'}
+                data-active={timerOpen || timerKeepsRailLit(room?.timer) ? 'true' : 'false'}
                 className="iboard-arr-btn"
                 aria-label="Timer"
               >
