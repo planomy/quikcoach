@@ -250,16 +250,22 @@ function primaryRangeClientRect(range) {
   return fallback.width || fallback.height ? fallback : null;
 }
 
+function markerSizeFor(marker) {
+  return marker?.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE;
+}
+
 function markerViewportBox(marker) {
   if (!marker) return null;
+  const size = markerSizeFor(marker);
+  const width = marker.width || size;
   if (marker.position === 'fixed') {
     return {
       top: marker.top,
-      left: marker.left,
-      right: marker.left + MARKER_SIZE,
-      bottom: marker.top + MARKER_SIZE,
-      width: MARKER_SIZE,
-      height: MARKER_SIZE,
+      left: marker.left + width - size,
+      right: marker.left + width,
+      bottom: marker.top + size,
+      width: size,
+      height: size,
     };
   }
   const card = cardForStudent(marker.studentId);
@@ -269,13 +275,14 @@ function markerViewportBox(marker) {
   const scale = clientLayoutScale(pane);
   const top = paneRect.top + (marker.top - (pane.scrollTop || 0)) * scale;
   const left = paneRect.left + (marker.left - (pane.scrollLeft || 0)) * scale;
+  const pipLeft = left + (width - size) * scale;
   return {
     top,
-    left,
-    right: left + MARKER_SIZE,
-    bottom: top + MARKER_SIZE,
-    width: MARKER_SIZE,
-    height: MARKER_SIZE,
+    left: pipLeft,
+    right: pipLeft + size * scale,
+    bottom: top + size * scale,
+    width: size * scale,
+    height: size * scale,
   };
 }
 function isRangeVisibleInPane(rangeRect, paneRect) {
@@ -288,7 +295,7 @@ function isRangeVisibleInPane(rangeRect, paneRect) {
   );
 }
 
-function cardUsesInlinePip(card) {
+function cardUsesCompactPip(card) {
   return !!card?.article?.classList.contains('iboard-student-card--overview');
 }
 
@@ -307,75 +314,60 @@ function markerPosition(range, card) {
   // markers inside the selectable text tree make RTL drags jump.
   const paneWidth = pane.scrollWidth || pane.clientWidth || pane.offsetWidth;
   const paneHeight = pane.scrollHeight || pane.clientHeight || pane.offsetHeight;
+  const compact = cardUsesCompactPip(card);
+  const size = compact ? INLINE_MARKER_SIZE : MARKER_SIZE;
   const minLeft = MARKER_MARGIN;
   const minTop = MARKER_MARGIN;
-  const inline = cardUsesInlinePip(card);
-  const size = inline ? INLINE_MARKER_SIZE : MARKER_SIZE;
   const maxLeft = paneWidth - size - MARKER_MARGIN;
   const maxTop = paneHeight - size - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
-  // Content-box coords (scroll origin + pinch-zoom undone) so Overview/Reading
-  // overflow:auto panes keep the tick with the word while the card scrolls.
+  // Highlight already underlines the quote. Continue that rule to a margin bubble.
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  const top = Math.max(minTop, Math.min(maxTop, local.top + (local.height - size) / 2));
-  let left;
-  let layout;
-  if (inline) {
-    left = local.right + 2;
-    layout = 'inline';
-    if (left > maxLeft) {
-      left = maxLeft;
-      layout = 'gutter';
-    }
-  } else {
-    left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - MARKER_SIZE - 6;
-    layout = 'gutter';
-  }
-  left = Math.max(minLeft, Math.min(maxLeft, left));
-
-  return { top, left, layout, position: 'absolute', root: pane };
+  const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - 6;
+  const left = Math.max(minLeft, Math.min(gutterLeft, local.right - 2));
+  const width = Math.max(size, gutterLeft + size - left);
+  const top = Math.max(minTop, Math.min(maxTop, local.bottom - size / 2 - 1));
+  return {
+    top,
+    left,
+    width,
+    layout: compact ? 'compact' : 'gutter',
+    position: 'absolute',
+    root: pane,
+  };
 }
 
-function detachedMarkerPosition(pane, index) {
+function detachedMarkerPosition(pane, index, compact = false) {
   if (!pane) return null;
   const paneRect = pane.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
+  const size = compact ? INLINE_MARKER_SIZE : MARKER_SIZE;
   // Keep orphaned ticks in the visible corner of the writing pane.
-  const top = (pane.scrollTop || 0) + MARKER_MARGIN + index * (MARKER_SIZE + 4);
-  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - MARKER_SIZE - MARKER_MARGIN;
-  const maxTop = (pane.scrollTop || 0) + (pane.clientHeight || paneRect.height) - MARKER_SIZE - MARKER_MARGIN;
+  const top = (pane.scrollTop || 0) + MARKER_MARGIN + index * (size + 4);
+  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - MARKER_MARGIN;
+  const maxTop = (pane.scrollTop || 0) + (pane.clientHeight || paneRect.height) - size - MARKER_MARGIN;
   if (top > maxTop) return null;
-  return { top, left, layout: 'gutter', position: 'absolute', root: pane };
+  return { top, left, width: size, layout: 'orphan', position: 'absolute', root: pane };
 }
 
 function stackGutterMarkers(markers) {
   const groups = new Map();
   for (const marker of markers) {
-    const layout = marker.layout || 'gutter';
-    const axis = layout === 'inline' ? Math.round(marker.top / 4) : Math.round(marker.left / 4);
-    const key = `${marker.studentId}:${layout}:${axis}`;
+    const key = `${marker.studentId}:${Math.round((marker.top || 0) / 10)}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(marker);
   }
   const next = [];
   for (const group of groups.values()) {
-    const inline = (group[0]?.layout || 'gutter') === 'inline';
-    group.sort((a, b) => (inline ? a.left - b.left : a.top - b.top));
+    group.sort((a, b) => a.left - b.left);
     let last = -Infinity;
-    const gap = inline ? INLINE_MARKER_SIZE + 2 : MARKER_SIZE + 2;
     for (const marker of group) {
-      if (inline) {
-        let left = marker.left;
-        if (left < last + gap) left = last + gap;
-        last = left;
-        next.push(left === marker.left ? marker : { ...marker, left });
-      } else {
-        let top = marker.top;
-        if (top < last + gap) top = last + gap;
-        last = top;
-        next.push(top === marker.top ? marker : { ...marker, top });
-      }
+      const gap = (marker.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 2;
+      let top = marker.top;
+      if (top < last + gap) top = last + gap;
+      last = top;
+      next.push(top === marker.top ? marker : { ...marker, top });
     }
   }
   return next;
@@ -394,7 +386,8 @@ function markersMatch(a, b) {
       left.position !== right.position ||
       left.layout !== right.layout ||
       Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
-      Math.abs((left.left || 0) - (right.left || 0)) > 0.5
+      Math.abs((left.left || 0) - (right.left || 0)) > 0.5 ||
+      Math.abs((left.width || 0) - (right.width || 0)) > 0.5
     ) {
       return false;
     }
@@ -583,7 +576,7 @@ export default function TeacherAnnotationController() {
         const tone = commentTone(annotation, resolved.detached);
         if (!range) {
           if (paneIsOnScreen(paneRect)) {
-            const position = detachedMarkerPosition(card.textPane, detachedCount);
+            const position = detachedMarkerPosition(card.textPane, detachedCount, cardUsesCompactPip(card));
             if (position) {
               nextMarkers.push({
                 studentId,
@@ -592,6 +585,7 @@ export default function TeacherAnnotationController() {
                 top: position.top,
                 left: position.left,
                 layout: position.layout || 'gutter',
+                width: position.width,
                 position: position.position,
               });
               detachedCount += 1;
@@ -612,6 +606,7 @@ export default function TeacherAnnotationController() {
           top: position.top,
           left: position.left,
           layout: position.layout || 'gutter',
+          width: position.width,
           position: position.position,
         });
       }
@@ -1401,13 +1396,13 @@ export default function TeacherAnnotationController() {
       <AnnotationMark
         key={`${marker.studentId}-${marker.annotation.id}`}
         tone={tone}
-        layout={marker.layout || 'gutter'}
+        layout={marker.layout === 'orphan' ? 'orphan' : marker.layout === 'compact' ? 'compact' : 'gutter'}
         onClick={() => {
           setReviewError('');
           setOpenMarker(marker);
         }}
         className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10]`}
-        style={{ top: marker.top, left: marker.left }}
+        style={{ top: marker.top, left: marker.left, width: marker.width || undefined }}
         title={
           tone === 'resolved'
             ? 'Confirmed fixed'

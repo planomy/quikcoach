@@ -36,21 +36,22 @@ function editorElement() {
 }
 
 function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
-  const maxTop = (typeof window !== 'undefined' ? window.innerHeight : 800) - height - padding;
-  const maxLeft = (typeof window !== 'undefined' ? window.innerWidth : 1200) - width - padding;
-  return {
-    top: Math.max(padding, Math.min(maxTop, top)),
-    left: Math.max(padding, Math.min(maxLeft, left)),
-  };
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const nextTop = Math.max(padding, Math.min(vh - height - padding, top));
+  const nextLeft = Math.max(padding, left);
+  const nextWidth = Math.max(height, Math.min(width, vw - padding - nextLeft));
+  return { top: nextTop, left: nextLeft, width: nextWidth };
 }
 
 function markerPosition(rangeRect, editorRect) {
-  const top = rangeRect.top + (rangeRect.height - MARKER_SIZE) / 2;
-  const left = (editorRect?.right || rangeRect.right + 8) - MARKER_SIZE - 8;
+  const gutterRight = (editorRect?.right || rangeRect.right + 40) - 8;
+  const left = rangeRect.right + 1;
+  const width = Math.max(MARKER_SIZE, gutterRight - left);
   return clampOnScreen({
-    top,
+    top: rangeRect.bottom - MARKER_SIZE / 2 - 1,
     left,
-    width: MARKER_SIZE,
+    width,
     height: MARKER_SIZE,
   });
 }
@@ -74,8 +75,8 @@ function commentPopupPosition(marker) {
   return placementNearAnchor({
     anchor: {
       top: marker.top,
-      left: marker.left,
-      right: marker.left + MARKER_SIZE,
+      left: marker.left + (marker.width || MARKER_SIZE) - MARKER_SIZE,
+      right: marker.left + (marker.width || MARKER_SIZE),
       bottom: marker.top + MARKER_SIZE,
       width: MARKER_SIZE,
       height: MARKER_SIZE,
@@ -137,6 +138,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             detached: true,
             top: pos.top,
             left: pos.left,
+            width: pos.width,
           });
           detachedCount += 1;
         }
@@ -146,7 +148,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       else if (tone === 'fixed') awaitingRanges.push(range);
       else if (tone === 'reopen') reopenRanges.push(range);
       else ranges.push(range);
-      const rect = range.getBoundingClientRect();
+      const rects = Array.from(range.getClientRects()).filter((item) => item.width || item.height);
+      const rect = rects[rects.length - 1] || range.getBoundingClientRect();
       if (rect.width || rect.height) {
         const pos = markerPosition(rect, editorRect);
         nextMarkers.push({
@@ -154,6 +157,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           detached: resolved.detached,
           top: pos.top,
           left: pos.left,
+          width: pos.width,
         });
       }
     }
@@ -454,13 +458,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           <AnnotationMark
             key={marker.annotation.id}
             tone={tone}
-            layout="gutter"
+            layout={marker.detached ? 'orphan' : 'gutter'}
             onClick={() => {
               setActionError('');
               setOpenMarker(marker);
             }}
             className="fixed z-[50]"
-            style={{ top: marker.top, left: marker.left }}
+            style={{ top: marker.top, left: marker.left, width: marker.width || undefined }}
             title={
               tone === 'resolved'
                 ? 'Teacher confirmed fixed'

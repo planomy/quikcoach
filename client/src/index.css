@@ -2673,39 +2673,47 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
-  width: 20px;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  min-width: 20px;
   height: 20px;
   padding: 0;
   border: 0;
   background: transparent;
   color: #5a5fc3;
   cursor: pointer;
-  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.16));
-  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  filter: none;
 }
 
-.iboard-ann-mark:hover {
-  transform: scale(1.06);
+.iboard-ann-mark:hover .iboard-ann-mark__pip {
+  transform: scale(1.08);
 }
 
-.iboard-ann-mark:active {
+.iboard-ann-mark:active .iboard-ann-mark__pip {
   transform: scale(0.96);
 }
 
 .iboard-ann-mark:focus-visible {
+  outline: none;
+}
+
+.iboard-ann-mark:focus-visible .iboard-ann-mark__pip {
   outline: 2px solid #5a5fc3;
   outline-offset: 2px;
-  border-radius: 8px;
 }
 
 .iboard-ann-mark__pip {
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
   width: 13px;
   height: 13px;
   border-radius: 999px;
   background: currentColor;
+  pointer-events: auto;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.16));
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-ann-mark__pip svg {
@@ -2716,24 +2724,25 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 }
 
 .iboard-ann-mark__stem {
-  width: 6px;
-  height: 1.5px;
+  flex: 1 1 auto;
+  min-width: 8px;
+  height: 2px;
   margin-right: -1px;
   border-radius: 1px;
   background: currentColor;
 }
 
-.iboard-ann-mark--inline {
+.iboard-ann-mark--compact {
+  min-width: 12px;
+  height: 12px;
+}
+
+.iboard-ann-mark--compact .iboard-ann-mark__pip {
   width: 11px;
   height: 11px;
 }
 
-.iboard-ann-mark--inline .iboard-ann-mark__pip {
-  width: 11px;
-  height: 11px;
-}
-
-.iboard-ann-mark--inline .iboard-ann-mark__stem {
+.iboard-ann-mark--orphan .iboard-ann-mark__stem {
   display: none;
 }
 
