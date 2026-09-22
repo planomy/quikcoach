@@ -589,11 +589,21 @@ function highlightSignature(ranges) {
   }).join('|');
 }
 
-export function setNamedHighlight(name, ranges) {
+export function clearNamedHighlight(name) {
+  highlightSignatureCache.delete(name);
+  globalThis.CSS?.highlights?.delete?.(name);
+}
+
+export function clearNamedHighlights(names) {
+  for (const name of names || []) clearNamedHighlight(name);
+}
+
+export function setNamedHighlight(name, ranges, { force = false } = {}) {
   if (!globalThis.CSS?.highlights || typeof globalThis.Highlight === 'undefined') return;
   const list = Array.isArray(ranges) ? ranges.filter(Boolean) : ranges ? [ranges] : [];
   const signature = highlightSignature(list);
-  if (highlightSignatureCache.get(name) === signature) return;
+  const registered = globalThis.CSS.highlights.has(name);
+  if (!force && highlightSignatureCache.get(name) === signature && registered) return;
   highlightSignatureCache.set(name, signature);
   if (list.length) globalThis.CSS.highlights.set(name, new globalThis.Highlight(...list));
   else globalThis.CSS.highlights.delete(name);
@@ -614,7 +624,23 @@ export function rangeContainsPoint(range, x, y, pad = 3) {
 }
 
 export function setCommentHoverHighlight(name, range) {
-  setNamedHighlight(name, range ? [range] : []);
+  setNamedHighlight(name, range ? [range] : [], { force: true });
+}
+
+export function hoverRangeBoxes(range) {
+  if (!range) return [];
+  try {
+    return Array.from(range.getClientRects())
+      .filter((rect) => rect.width || rect.height)
+      .map((rect) => ({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      }));
+  } catch {
+    return [];
+  }
 }
 
 /** Keep same-line margin bubbles from sitting on top of each other. */

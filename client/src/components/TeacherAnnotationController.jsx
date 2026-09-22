@@ -12,6 +12,7 @@ import {
   rangeContainsPoint,
   rangeForPlainOffsets,
   selectionOffsetsWithin,
+  clearNamedHighlights,
   setCommentHoverHighlight,
   setNamedHighlight,
   stackGutterMarkers,
@@ -459,6 +460,9 @@ export default function TeacherAnnotationController() {
     setOpenMarker(null);
     setPopupPinned(false);
     setReviewError('');
+    hoveredKeyRef.current = null;
+    setHoveredKey(null);
+    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
   }
 
   function pinCommentPopup(marker) {
@@ -750,11 +754,13 @@ export default function TeacherAnnotationController() {
       window.removeEventListener('iboard:teacher-layout', onMove);
       if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
       moveFrameRef.current = null;
-      globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(FIXED_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(HOVER_HIGHLIGHT_NAME);
+      clearNamedHighlights([
+        HIGHLIGHT_NAME,
+        REOPEN_HIGHLIGHT_NAME,
+        AWAITING_HIGHLIGHT_NAME,
+        FIXED_HIGHLIGHT_NAME,
+        HOVER_HIGHLIGHT_NAME,
+      ]);
     };
   }, [refreshHighlights]);
 
@@ -774,12 +780,25 @@ export default function TeacherAnnotationController() {
         hoverCloseTimerRef.current = null;
       }
     };
+    const applyHover = (key) => {
+      hoveredKeyRef.current = key;
+      setHoveredKey((prev) => (prev === key ? prev : key));
+      const hit = hoverTargetsRef.current.find((item) => item.key === key);
+      if (!key) {
+        setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
+        return;
+      }
+      if (!hit?.range) return;
+      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hit.range);
+    };
     const scheduleClose = () => {
       if (popupPinnedRef.current) return;
       cancelClose();
       hoverCloseTimerRef.current = setTimeout(() => {
         hoverCloseTimerRef.current = null;
-        if (!popupPinnedRef.current) setOpenMarker(null);
+        if (popupPinnedRef.current) return;
+        setOpenMarker(null);
+        applyHover(null);
       }, 160);
     };
     const openFromMark = (key) => {
@@ -787,16 +806,6 @@ export default function TeacherAnnotationController() {
       const marker = markersRef.current.find((item) => teacherMarkerKey(item) === key);
       if (!marker) return;
       setOpenMarker((prev) => (teacherMarkerKey(prev) === key ? prev : marker));
-    };
-    const applyHover = (key) => {
-      hoveredKeyRef.current = key;
-      const hit = hoverTargetsRef.current.find((item) => item.key === key);
-      if (key && !hit?.range) {
-        setHoveredKey((prev) => (prev === key ? prev : key));
-        return;
-      }
-      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hit?.range || null);
-      setHoveredKey((prev) => (prev === key ? prev : key));
     };
     const onMove = (event) => {
       if (selectingInPaneRef.current) return;
@@ -812,14 +821,18 @@ export default function TeacherAnnotationController() {
       }
       if (overPopup) {
         cancelClose();
+        applyHover(hoveredKeyRef.current);
         return;
       }
       const hit = hoverTargetsRef.current.find((item) => rangeContainsPoint(item.range, x, y));
-      applyHover(hit?.key || null);
+      if (hit?.key) {
+        cancelClose();
+        applyHover(hit.key);
+        return;
+      }
       scheduleClose();
     };
     const onLeave = () => {
-      applyHover(null);
       scheduleClose();
     };
     document.addEventListener('pointermove', onMove, { passive: true });

@@ -8,6 +8,8 @@ import {
   locateAnnotationRange,
   plainTextFromElement,
   rangeContainsPoint,
+  clearNamedHighlights,
+  hoverRangeBoxes,
   setCommentHoverHighlight,
   setNamedHighlight,
   stackGutterMarkers,
@@ -116,6 +118,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const [actionError, setActionError] = useState('');
   const [editorTextTick, setEditorTextTick] = useState(0);
   const [hoveredId, setHoveredId] = useState(null);
+  const [hoverWash, setHoverWash] = useState(null);
   const moveFrameRef = useRef(null);
   const hoverTargetsRef = useRef([]);
   const hoveredIdRef = useRef(null);
@@ -133,6 +136,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     setOpenMarker(null);
     setPopupPinned(false);
     setActionError('');
+    hoveredIdRef.current = null;
+    setHoveredId(null);
+    setHoverWash(null);
+    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
   }
 
   function pinCommentPopup(marker) {
@@ -146,13 +153,16 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     if (typeof document === 'undefined') return;
     const editor = editorElement();
     if (!editor) {
-      globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(RESOLVED_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(HOVER_HIGHLIGHT_NAME);
+      clearNamedHighlights([
+        HIGHLIGHT_NAME,
+        REOPEN_HIGHLIGHT_NAME,
+        AWAITING_HIGHLIGHT_NAME,
+        RESOLVED_HIGHLIGHT_NAME,
+        HOVER_HIGHLIGHT_NAME,
+      ]);
       hoverTargetsRef.current = [];
       setMarkers([]);
+      setHoverWash(null);
       return;
     }
     const text = plainTextFromElement(editor);
@@ -214,8 +224,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     setNamedHighlight(RESOLVED_HIGHLIGHT_NAME, resolvedRanges);
     hoverTargetsRef.current = hoverTargets;
     const lit = hoverTargets.find((item) => item.key === hoveredIdRef.current);
-    if (lit?.range) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit.range);
-    else if (!hoveredIdRef.current) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
+    if (lit?.range) {
+      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit.range);
+      setHoverWash({ key: lit.key, tone: lit.tone, boxes: hoverRangeBoxes(lit.range) });
+    } else if (!hoveredIdRef.current) {
+      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
+      setHoverWash(null);
+    }
     const stacked = stackGutterMarkers(nextMarkers, () => MARKER_SIZE + 6);
     setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
   }, [annotations]);
@@ -420,11 +435,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       window.removeEventListener('iboard:room-state', attachObserver);
       if (moveFrameRef.current != null) cancelAnimationFrame(moveFrameRef.current);
       moveFrameRef.current = null;
-      globalThis.CSS?.highlights?.delete?.(HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(RESOLVED_HIGHLIGHT_NAME);
-      globalThis.CSS?.highlights?.delete?.(HOVER_HIGHLIGHT_NAME);
+      clearNamedHighlights([
+        HIGHLIGHT_NAME,
+        REOPEN_HIGHLIGHT_NAME,
+        AWAITING_HIGHLIGHT_NAME,
+        RESOLVED_HIGHLIGHT_NAME,
+        HOVER_HIGHLIGHT_NAME,
+      ]);
     };
   }, [refreshHighlights]);
 
@@ -444,12 +461,27 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         hoverCloseTimerRef.current = null;
       }
     };
+    const applyHover = (key) => {
+      hoveredIdRef.current = key;
+      setHoveredId((prev) => (prev === key ? prev : key));
+      const hit = hoverTargetsRef.current.find((item) => item.key === key);
+      if (!key) {
+        setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
+        setHoverWash(null);
+        return;
+      }
+      if (!hit?.range) return;
+      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hit.range);
+      setHoverWash({ key, tone: hit.tone, boxes: hoverRangeBoxes(hit.range) });
+    };
     const scheduleClose = () => {
       if (popupPinnedRef.current) return;
       cancelClose();
       hoverCloseTimerRef.current = setTimeout(() => {
         hoverCloseTimerRef.current = null;
-        if (!popupPinnedRef.current) setOpenMarker(null);
+        if (popupPinnedRef.current) return;
+        setOpenMarker(null);
+        applyHover(null);
       }, 160);
     };
     const openFromMark = (key) => {
@@ -457,16 +489,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const marker = markersRef.current.find((item) => studentMarkerKey(item) === key);
       if (!marker) return;
       setOpenMarker((prev) => (studentMarkerKey(prev) === key ? prev : marker));
-    };
-    const applyHover = (key) => {
-      hoveredIdRef.current = key;
-      const hit = hoverTargetsRef.current.find((item) => item.key === key);
-      if (key && !hit?.range) {
-        setHoveredId((prev) => (prev === key ? prev : key));
-        return;
-      }
-      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hit?.range || null);
-      setHoveredId((prev) => (prev === key ? prev : key));
     };
     const onMove = (event) => {
       const { clientX: x, clientY: y } = event;
@@ -481,14 +503,18 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       }
       if (overPopup) {
         cancelClose();
+        applyHover(hoveredIdRef.current);
         return;
       }
       const hit = hoverTargetsRef.current.find((item) => rangeContainsPoint(item.range, x, y));
-      applyHover(hit?.key || null);
+      if (hit?.key) {
+        cancelClose();
+        applyHover(hit.key);
+        return;
+      }
       scheduleClose();
     };
     const onLeave = () => {
-      applyHover(null);
       scheduleClose();
     };
     document.addEventListener('pointermove', onMove, { passive: true });
@@ -574,6 +600,19 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         ::highlight(${RESOLVED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
         ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
       `}</style>
+      {(hoverWash?.boxes || []).map((box, index) => (
+        <span
+          key={`wash-${hoverWash.key}-${index}`}
+          className="iboard-ann-hover-wash"
+          style={{
+            top: box.top,
+            left: box.left,
+            width: box.width,
+            height: box.height,
+            background: COMMENT_HOVER_WASH[hoverWash.tone] || COMMENT_HOVER_WASH.open,
+          }}
+        />
+      ))}
       {markers.map((marker) => {
         const live =
           annotations.find((item) => Number(item.id) === Number(marker.annotation.id)) || marker.annotation;
