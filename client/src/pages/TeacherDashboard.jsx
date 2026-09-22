@@ -1569,24 +1569,68 @@ function TeacherDashboardInner() {
   }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, viewOpen, addCardBusy]);
 
   useLayoutEffect(() => {
-    if ((!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen && !viewOpen) || !teacherHeaderRef.current) return undefined;
+    if (!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
 
-    function alignHeaderDockToHeader() {
-      const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
-      if (Number.isFinite(headerBottom)) setTeacherToolsTop(Math.max(0, Math.round(headerBottom)));
+    function currentDockAnchor() {
+      if (viewOpen) return viewButtonRef.current;
+      if (timerOpen) return timerButtonRef.current;
+      if (settingsOpen) return settingsButtonRef.current;
+      if (addCardOpen) {
+        return document.querySelector('[data-iboard-add-card-trigger][data-active="true"]')
+          || addCardButtonRef.current;
+      }
+      if (toolsPanelOpen) {
+        return teacherToolsNavRef.current?.querySelector('.iboard-arr-rail__tools [data-active="true"]');
+      }
+      return null;
     }
 
-    alignHeaderDockToHeader();
+    function currentDockPanel() {
+      if (viewOpen) return viewPanelRef.current;
+      if (timerOpen) return timerPanelRef.current;
+      if (settingsOpen) return settingsPanelRef.current;
+      if (addCardOpen) return addCardPanelRef.current;
+      if (toolsPanelOpen) return teacherToolsPanelRef.current;
+      return null;
+    }
+
+    function alignDockToRailButton() {
+      const button = currentDockAnchor();
+      const panel = currentDockPanel();
+      const viewport = window.innerHeight;
+      const margin = 8;
+      if (!button) {
+        setTeacherToolsTop(margin);
+        return;
+      }
+      const buttonBox = button.getBoundingClientRect();
+      const panelHeight = panel
+        ? [...panel.children].reduce(
+            (sum, child) => sum + Math.max(child.scrollHeight, child.offsetHeight),
+            0
+          ) || Math.max(panel.scrollHeight, panel.getBoundingClientRect().height)
+        : 0;
+      const maxHeight = Math.max(120, viewport - margin * 2);
+      const usedHeight = panelHeight ? Math.min(panelHeight, maxHeight) : Math.min(240, maxHeight);
+      const centered = buttonBox.top + buttonBox.height / 2 - usedHeight / 2;
+      const maxTop = viewport - margin - usedHeight;
+      setTeacherToolsTop(Math.round(Math.min(Math.max(margin, centered), Math.max(margin, maxTop))));
+    }
+
+    alignDockToRailButton();
     const resizeObserver = typeof ResizeObserver === 'function'
-      ? new ResizeObserver(alignHeaderDockToHeader)
+      ? new ResizeObserver(alignDockToRailButton)
       : null;
-    resizeObserver?.observe(teacherHeaderRef.current);
-    window.addEventListener('resize', alignHeaderDockToHeader);
+    const button = currentDockAnchor();
+    const panel = currentDockPanel();
+    if (button) resizeObserver?.observe(button);
+    if (panel) resizeObserver?.observe(panel);
+    window.addEventListener('resize', alignDockToRailButton);
     return () => {
       resizeObserver?.disconnect();
-      window.removeEventListener('resize', alignHeaderDockToHeader);
+      window.removeEventListener('resize', alignDockToRailButton);
     };
-  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, viewOpen]);
+  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, viewOpen, toolsTab, addCardMode, cardView]);
 
   const pendingQuestionCount = useMemo(
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
@@ -1644,7 +1688,7 @@ function TeacherDashboardInner() {
   const headerDockStyle = useMemo(
     () => ({
       top: teacherToolsTop,
-      maxHeight: `calc(100dvh - ${teacherToolsTop}px)`,
+      maxHeight: `calc(100dvh - ${teacherToolsTop}px - 8px)`,
     }),
     [teacherToolsTop]
   );
@@ -3069,7 +3113,8 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && (
         <div
           ref={teacherToolsPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
+          style={headerDockStyle}
           role="dialog"
           aria-label={`${
             toolsTab === 'responses'
@@ -4332,7 +4377,7 @@ function TeacherDashboardInner() {
         <div
           ref={addCardPanelRef}
           data-iboard-add-card-panel="true"
-          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
@@ -4465,76 +4510,64 @@ function TeacherDashboardInner() {
       {viewOpen && (
         <div
           ref={viewPanelRef}
-          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(20rem,calc(100vw-4.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail fixed z-[60] w-auto max-w-[min(22rem,calc(100vw-5.25rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
           aria-labelledby="card-view-title"
         >
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <div>
-              <h2 id="card-view-title" className="font-display text-base font-black text-slate-950 dark:text-white">View</h2>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">How student cards sit on the board</p>
-            </div>
-            <CloseButton onClick={() => setViewOpen(false)} label="Close" />
+          <h2 id="card-view-title" className="sr-only">View</h2>
+          <div className="flex items-stretch gap-0.5 p-1.5" role="group" aria-label="Card view">
+            {CARD_VIEWS.map((view) => {
+              const active = cardView === view.id;
+              return (
+                <button
+                  key={view.id}
+                  type="button"
+                  onClick={() => setCardView(view.id)}
+                  aria-pressed={active}
+                  title={view.label}
+                  className={`flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold leading-tight transition ${
+                    active
+                      ? 'bg-[#5a5fc3] text-white shadow-sm'
+                      : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <CardViewIcon id={view.id} className="h-4 w-4 shrink-0" />
+                  <span>{view.id === 'full' ? 'Full' : view.label}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="space-y-3 px-4 py-3">
-            <div className="space-y-1" role="group" aria-label="Card view">
-              {CARD_VIEWS.map((view) => {
-                const active = cardView === view.id;
+          {cardView === 'overview' ? (
+            <div className="flex items-center justify-center gap-1 border-t border-slate-200 px-2 py-1.5 dark:border-slate-700" role="group" aria-label="Overview columns">
+              {OVERVIEW_COLUMN_OPTIONS.map((count) => {
+                const active = overviewColumns === count;
                 return (
                   <button
-                    key={view.id}
+                    key={count}
                     type="button"
-                    onClick={() => setCardView(view.id)}
                     aria-pressed={active}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${
+                    onClick={() => setOverviewColumns(count)}
+                    className={`min-w-[1.75rem] rounded-md px-1.5 py-1 text-[11px] font-black tabular-nums transition ${
                       active
                         ? 'bg-[#5a5fc3] text-white shadow-sm'
-                        : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+                        : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <CardViewIcon id={view.id} className="h-5 w-5 shrink-0" />
-                    <span>{view.label}</span>
+                    {count}
                   </button>
                 );
               })}
             </div>
-            {cardView === 'overview' ? (
-              <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                  Overview columns
-                </p>
-                <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Overview columns">
-                  {OVERVIEW_COLUMN_OPTIONS.map((count) => {
-                    const active = overviewColumns === count;
-                    return (
-                      <button
-                        key={count}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => setOverviewColumns(count)}
-                        className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
-                          active
-                            ? 'bg-[#5a5fc3] text-white shadow-sm'
-                            : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {count}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       )}
 
       {timerOpen && (
         <div
           ref={timerPanelRef}
-          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(20rem,calc(100vw-4.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail fixed z-[60] w-[min(20rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
@@ -4752,7 +4785,7 @@ function TeacherDashboardInner() {
       {settingsOpen && (
         <div
           ref={settingsPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-room-settings fixed z-[60] w-[min(22rem,calc(100vw-4.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail iboard-room-settings fixed z-[60] w-[min(22rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"

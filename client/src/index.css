@@ -1023,6 +1023,13 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
   }
 }
 
+/* Slide out beside the clicked rail button, not from the top of the board. */
+.iboard-header-dock--start.iboard-header-dock--from-rail {
+  left: 4.75rem;
+  transform: none;
+  animation: iboard-rail-dock-in-top 180ms ease-out;
+}
+
 html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-600 {
   background-color: #5a5fc3 !important;
 }
