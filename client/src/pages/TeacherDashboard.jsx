@@ -44,18 +44,14 @@ import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
+import ConversationModal, { ChatIcon } from '../components/ConversationModal.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
-import { placementNearAnchor } from '../lib/clampPopup.js';
-import { subscribeViewportChanges } from '../lib/viewport.js';
 import { lastTeacherRoomCode, rememberTeacherRoomCode } from '../lib/teacherRoom.js';
 import {
   downloadSessionPack,
   emitAck,
   readSessionFile,
 } from '../lib/iboardSession.js';
-
-const NOTE_COMPOSER_WIDTH = 384;
-const NOTE_COMPOSER_EST_HEIGHT = 360;
 
 const MODE_LABELS = {
   writing: 'Writing',
@@ -324,18 +320,9 @@ function TeacherDashboardInner() {
   const [copyToast, setCopyToast] = useState('');
   const [copiedStudentId, setCopiedStudentId] = useState(null);
   const [noteTarget, setNoteTarget] = useState(null);
-  const [noteDraft, setNoteDraft] = useState('');
-  const [noteUrgent, setNoteUrgent] = useState(false);
-  const [noteError, setNoteError] = useState('');
-  const [noteSending, setNoteSending] = useState(false);
   const [noteReceiptByStudentId, setNoteReceiptByStudentId] = useState({});
   const [noteReplyByStudentId, setNoteReplyByStudentId] = useState({});
   const noteReplyByStudentIdRef = useRef({});
-  const [noteAnchorRect, setNoteAnchorRect] = useState(null);
-  const [noteBox, setNoteBox] = useState(null);
-  const noteComposerRef = useRef(null);
-  const noteDraftRef = useRef(null);
-  const noteFocusTargetRef = useRef(null);
   const [broadcastPick, setBroadcastPick] = useState({});
   const [sendToMenuOpen, setSendToMenuOpen] = useState(false);
   const [sendRecipientPick, setSendRecipientPick] = useState({});
@@ -1504,100 +1491,6 @@ function TeacherDashboardInner() {
   }, [livePulse.activity?.id]);
 
   useEffect(() => {
-    if (!noteTarget) {
-      setNoteBox(null);
-      return undefined;
-    }
-
-    const place = () => {
-      const height = noteComposerRef.current?.offsetHeight || NOTE_COMPOSER_EST_HEIGHT;
-      const width = noteComposerRef.current?.offsetWidth || NOTE_COMPOSER_WIDTH;
-      if (noteAnchorRect) {
-        setNoteBox(placementNearAnchor({
-          anchor: noteAnchorRect,
-          width,
-          height,
-          gap: 8,
-          padding: 12,
-          prefer: 'below-left',
-        }));
-        return;
-      }
-      const vv = typeof window !== 'undefined' ? window.visualViewport : null;
-      const vw = vv?.width ?? window.innerWidth;
-      const vh = vv?.height ?? window.innerHeight;
-      const topOffset = vv?.offsetTop ?? 0;
-      const leftOffset = vv?.offsetLeft ?? 0;
-      setNoteBox({
-        top: topOffset + Math.max(12, (vh - height) / 2),
-        left: leftOffset + Math.max(12, (vw - width) / 2),
-      });
-    };
-
-    place();
-    const frame = requestAnimationFrame(place);
-    const unsubscribe = subscribeViewportChanges(place);
-    return () => {
-      cancelAnimationFrame(frame);
-      unsubscribe();
-    };
-  }, [noteTarget, noteAnchorRect, noteDraft, noteError]);
-
-  useLayoutEffect(() => {
-    const targetId = noteTarget?.id;
-    if (!targetId) {
-      noteFocusTargetRef.current = null;
-      return undefined;
-    }
-    if (!noteBox || noteFocusTargetRef.current === targetId) return undefined;
-
-    noteFocusTargetRef.current = targetId;
-    let cancelled = false;
-    const focusDraft = () => {
-      if (cancelled) return;
-      const field = noteDraftRef.current;
-      if (!field) return;
-      field.focus({ preventScroll: true });
-      field.setSelectionRange(field.value.length, field.value.length);
-    };
-
-    // The note popup is initially hidden while its position is measured, so
-    // autofocus can happen too early. Focus again once it is actually visible.
-    focusDraft();
-    const frame = window.requestAnimationFrame(focusDraft);
-    const timer = window.setTimeout(focusDraft, 60);
-    return () => {
-      cancelled = true;
-      window.cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
-    };
-  }, [noteTarget?.id, !!noteBox]);
-
-  useEffect(() => {
-    if (!noteTarget) return undefined;
-
-    function onPointerDown(event) {
-      if (noteSending) return;
-      const target = event.target;
-      if (noteComposerRef.current?.contains(target)) return;
-      if (target?.closest?.('[aria-label^="Note "]')) return;
-      if (target?.closest?.('button')?.textContent?.trim() === 'Send note') return;
-      closeNoteComposer();
-    }
-
-    function onKeyDown(event) {
-      if (event.key === 'Escape') closeNoteComposer();
-    }
-
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [noteTarget, noteSending]);
-
-  useEffect(() => {
     if (!toolsPanelOpen && !addCardOpen && !settingsOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
@@ -1769,25 +1662,9 @@ function TeacherDashboardInner() {
   }
 
   function openNoteForStudent(student, event) {
-    const trigger = event?.currentTarget;
-    const rect = trigger?.getBoundingClientRect?.();
+    event?.stopPropagation?.();
     const studentId = Number(student.id);
-    setNoteAnchorRect(rect
-      ? {
-          top: rect.top,
-          left: rect.left,
-          right: rect.right,
-          bottom: rect.bottom,
-          width: rect.width,
-          height: rect.height,
-        }
-      : null);
-    setNoteBox(null);
     setNoteTarget({ id: studentId, name: String(student.name || 'Student') });
-    setNoteDraft('');
-    setNoteUrgent(false);
-    setNoteError('');
-    setNoteSending(false);
     if (studentId && noteReplyByStudentId[studentId]) {
       socket.emit('teacher:note-reply-seen', { studentId });
       setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'seen' }));
@@ -1799,21 +1676,7 @@ function TeacherDashboardInner() {
     }
   }
 
-  const noteClosePending = useRef(false);
-  async function closeNoteComposer() {
-    if (noteSending || noteClosePending.current) return;
-    if (noteDraft.trim()) {
-      noteClosePending.current = true;
-      const discard = await confirmDialog({ title: 'Discard private note?', message: 'This note has not been sent.', confirmLabel: 'Discard note', cancelLabel: 'Keep writing' });
-      noteClosePending.current = false;
-      if (!discard) return;
-    }
-    setNoteTarget(null);
-    setNoteDraft('');
-    setNoteUrgent(false);
-    setNoteError('');
-    setNoteAnchorRect(null);
-    setNoteBox(null);
+  function closeNoteComposer() {
     if (noteTarget?.id) {
       setNoteReplyByStudentId((current) => {
         if (!current[noteTarget.id]) return current;
@@ -1822,51 +1685,24 @@ function TeacherDashboardInner() {
         return next;
       });
     }
+    setNoteTarget(null);
   }
 
-  function sendNoteToStudent() {
-    if (!noteTarget || noteSending) return;
-    const text = noteDraft.trim();
-    if (!text) {
-      setNoteError('Write a note before sending.');
-      return;
-    }
-
-    const target = noteTarget;
-    const urgent = !!noteUrgent;
-    setNoteError('');
-    setNoteSending(true);
-    window.__iboardPendingNoteStudentId = target.id;
-    socket.emit('teacher:distribute', { items: [{ studentId: target.id, text, urgent }] }, (ack) => {
-      setNoteSending(false);
-      if (!ack?.ok) {
-        setNoteError(ack?.error || 'Could not send this note.');
-        return;
-      }
-      setNoteReceiptByStudentId((current) => ({ ...current, [target.id]: 'waiting' }));
-      window.dispatchEvent(
-        new CustomEvent('iboard:note-send-status', {
-          detail: { studentId: target.id, status: 'waiting' },
-        })
-      );
-      setNoteReplyByStudentId((current) => {
-        if (!current[target.id]) return current;
-        const next = { ...current };
-        delete next[target.id];
-        return next;
-      });
-      setNoteTarget(null);
-      setNoteDraft('');
-      setNoteUrgent(false);
-      setNoteAnchorRect(null);
-      setNoteBox(null);
-      setCopyToast(
-        urgent
-          ? `Urgent note sent to ${target.name}`
-          : `Note sent to ${target.name}`
-      );
-      setTimeout(() => setCopyToast(''), 2500);
+  function handleTeacherChatSent({ studentId, urgent, name }) {
+    setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'waiting' }));
+    window.dispatchEvent(
+      new CustomEvent('iboard:note-send-status', {
+        detail: { studentId, status: 'waiting' },
+      })
+    );
+    setNoteReplyByStudentId((current) => {
+      if (!current[studentId]) return current;
+      const next = { ...current };
+      delete next[studentId];
+      return next;
     });
+    setCopyToast(urgent ? `Urgent message sent to ${name}` : `Message sent to ${name}`);
+    setTimeout(() => setCopyToast(''), 2500);
   }
 
   function toggleBroadcastCard(key) {
@@ -3611,51 +3447,53 @@ function TeacherDashboardInner() {
                       </p>
                     ) : null}
                   </div>
+                  <HintWrap
+                    hint={
+                      noteReceiptByStudentId[s.id] === 'replied'
+                        ? 'Student replied — open chat'
+                        : noteReceiptByStudentId[s.id] === 'seen'
+                          ? 'Message seen'
+                          : noteReceiptByStudentId[s.id] === 'waiting'
+                            ? 'Sent — waiting'
+                            : 'Chat'
+                    }
+                  >
+                    <button
+                      type="button"
+                      data-note-student-id={s.id}
+                      data-note-student-name={s.name}
+                      data-note-status={noteReceiptByStudentId[s.id] || undefined}
+                      onClick={(event) => openNoteForStudent(s, event)}
+                      className={`relative mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                        noteReceiptByStudentId[s.id] === 'replied'
+                          ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
+                          : noteReceiptByStudentId[s.id] === 'seen'
+                            ? 'text-green-500 hover:text-green-600 dark:text-green-400'
+                            : noteReceiptByStudentId[s.id] === 'waiting'
+                              ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                              : 'text-slate-500 hover:text-indigo-700 dark:text-slate-300 dark:hover:text-indigo-300'
+                      }`}
+                      aria-label={
+                        noteReceiptByStudentId[s.id] === 'replied'
+                          ? `Chat with ${s.name} — they replied`
+                          : noteReceiptByStudentId[s.id] === 'seen'
+                            ? `Chat with ${s.name} — seen`
+                            : noteReceiptByStudentId[s.id] === 'waiting'
+                              ? `Chat with ${s.name} — waiting`
+                              : `Chat with ${s.name}`
+                      }
+                    >
+                      <ChatIcon className="h-4 w-4" />
+                      {noteReceiptByStudentId[s.id] === 'replied' ? (
+                        <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                      ) : null}
+                    </button>
+                  </HintWrap>
                   <div
                     className="iboard-student-card-actions ml-auto flex shrink-0 items-center gap-0.5"
                     data-open={studentActionMenuId === s.id ? 'true' : 'false'}
                     onClick={(event) => event.stopPropagation()}
                   >
-                    {/* Keep every action out of the student-name row; the tray appears on card hover/focus. */}
-                    <HintWrap hint={
-                      noteReceiptByStudentId[s.id] === 'replied'
-                        ? 'Student replied — open to read'
-                        : noteReceiptByStudentId[s.id] === 'seen'
-                          ? 'Note seen'
-                          : noteReceiptByStudentId[s.id] === 'waiting'
-                            ? 'Note sent — waiting'
-                            : 'Send note'
-                    }>
-                      <button
-                        type="button"
-                        data-note-student-id={s.id}
-                        data-note-student-name={s.name}
-                        data-note-status={noteReceiptByStudentId[s.id] || undefined}
-                        onClick={(event) => openNoteForStudent(s, event)}
-                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                          noteReceiptByStudentId[s.id] === 'replied'
-                            ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
-                            : noteReceiptByStudentId[s.id] === 'seen'
-                              ? 'text-green-500 hover:text-green-600 dark:text-green-400'
-                              : noteReceiptByStudentId[s.id] === 'waiting'
-                                ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
-                                : 'text-slate-500 hover:text-indigo-700 dark:text-slate-300 dark:hover:text-indigo-300'
-                        }`}
-                        aria-label={
-                          noteReceiptByStudentId[s.id] === 'replied'
-                            ? `${s.name} replied to your note`
-                            : noteReceiptByStudentId[s.id] === 'seen'
-                              ? `Note to ${s.name} seen`
-                              : noteReceiptByStudentId[s.id] === 'waiting'
-                                ? `Note sent to ${s.name} — waiting for them to open it`
-                                : `Note ${s.name}`
-                        }
-                      >
-                        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={noteReceiptByStudentId[s.id] ? 2.6 : 2} strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                        </svg>
-                      </button>
-                    </HintWrap>
                     <div className="flex items-center gap-0.5">
                       <ThinkingTrigger
                         socket={socket}
@@ -5119,8 +4957,8 @@ function TeacherDashboardInner() {
                     <span className="text-[13px] font-black leading-none">A+</span>
                   </button>
                 </HintWrap>
-                <button type="button" onClick={(event) => { const button = event.currentTarget; setFocusedStudentId(null); openNoteForStudent(focusedStudent, { currentTarget: button }); }} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
-                  Send note
+                <button type="button" onClick={() => { setFocusedStudentId(null); openNoteForStudent(focusedStudent); }} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
+                  Chat
                 </button>
                 {focusedStudent.image_url && (
                   <button type="button" onClick={() => setDrawingMarkupTarget(focusedStudent)} className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-black text-white hover:bg-indigo-700">
@@ -5233,99 +5071,17 @@ function TeacherDashboardInner() {
         />
       )}
 
-      {noteTarget && (
-        <form
-          ref={noteComposerRef}
-          className="fixed z-[70] w-[min(24rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
-          style={{
-            top: noteBox ? noteBox.top : -9999,
-            left: noteBox ? noteBox.left : -9999,
-            visibility: noteBox ? 'visible' : 'hidden',
-          }}
-          role="dialog"
-          aria-modal="false"
-          aria-labelledby="private-note-title"
-          onSubmit={(event) => {
-            event.preventDefault();
-            sendNoteToStudent();
-          }}
-        >
-          <div className="flex items-center justify-between gap-3 px-4 pt-3">
-            <h2 id="private-note-title" className="min-w-0 truncate font-display text-sm font-bold text-ink-900 dark:text-slate-100">
-              Note for {noteTarget.name}
-            </h2>
-            <CloseButton disabled={noteSending} onClick={closeNoteComposer} aria-label="Close private note" />
-          </div>
-          <div className="px-4 py-2.5">
-            {noteReplyByStudentId[noteTarget.id] ? (
-              <div className="mb-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
-                  Their reply
-                </p>
-                {noteReplyByStudentId[noteTarget.id].parentText ? (
-                  <p className="mt-1 text-[11px] italic leading-snug text-amber-800/80 dark:text-amber-200/80">
-                    Re: “{noteReplyByStudentId[noteTarget.id].parentText}”
-                  </p>
-                ) : null}
-                <p className="mt-1.5 whitespace-pre-wrap text-sm font-semibold leading-relaxed text-amber-950 dark:text-amber-50">
-                  {noteReplyByStudentId[noteTarget.id].text}
-                </p>
-              </div>
-            ) : null}
-            <textarea
-              id="private-note-text"
-              ref={noteDraftRef}
-              aria-labelledby="private-note-title"
-              autoFocus
-              rows={4}
-              maxLength={5000}
-              value={noteDraft}
-              onChange={(event) => setNoteDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  sendNoteToStudent();
-                }
-                if (event.key === 'Escape') closeNoteComposer();
-              }}
-              placeholder="Private note…"
-              className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none ring-indigo-500 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            />
-            {noteError ? <p className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-300">{noteError}</p> : null}
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3">
-            <label
-              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300"
-              title="Shows a toast over their draft"
-            >
-              <input
-                type="checkbox"
-                checked={noteUrgent}
-                onChange={(event) => setNoteUrgent(event.target.checked)}
-                className="h-3.5 w-3.5 accent-indigo-600"
-              />
-              Urgent
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={noteSending}
-                onClick={closeNoteComposer}
-                className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={noteSending || !noteDraft.trim()}
-                className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-40"
-              >
-                {noteSending ? 'Sending…' : noteUrgent ? 'Send urgent' : 'Send'}
-              </button>
-            </div>
-          </div>
-        </form>
-      )}
+      <ConversationModal
+        open={!!noteTarget}
+        onClose={closeNoteComposer}
+        socket={socket}
+        role="teacher"
+        studentId={noteTarget?.id}
+        title={noteTarget?.name || 'Student'}
+        subtitle="Private"
+        allowUrgent
+        onTeacherSent={handleTeacherChatSent}
+      />
 
       {evidenceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">

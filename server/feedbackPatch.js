@@ -51,6 +51,22 @@ feedbackDb.exec(
    ON student_note_replies(feedback_id)`
 );
 
+feedbackDb.exec(`
+  CREATE TABLE IF NOT EXISTS student_chat_outbound (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_code TEXT NOT NULL,
+    student_id INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    teacher_seen_at TEXT,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+  )
+`);
+feedbackDb.exec(
+  `CREATE INDEX IF NOT EXISTS idx_student_chat_outbound_student
+   ON student_chat_outbound(student_id, room_code)`
+);
+
 function normaliseRoomCode(code) {
   return String(code ?? '')
     .replace(/\D/g, '')
@@ -148,7 +164,8 @@ function noteReplyForClient(row) {
 }
 
 function listUnreadNoteReplies(roomCode) {
-  return feedbackDb
+  const code = normaliseRoomCode(roomCode);
+  const replies = feedbackDb
     .prepare(
       `SELECT r.*, s.name AS student_name, f.text AS parent_text
        FROM student_note_replies r
@@ -158,9 +175,119 @@ function listUnreadNoteReplies(roomCode) {
        ORDER BY r.id ASC
        LIMIT 200`
     )
-    .all(normaliseRoomCode(roomCode))
+    .all(code)
     .map(noteReplyForClient)
     .filter(Boolean);
+  const outbound = feedbackDb
+    .prepare(
+      `SELECT o.*, s.name AS student_name
+       FROM student_chat_outbound o
+       JOIN students s ON s.id = o.student_id
+       WHERE o.room_code = ? AND o.teacher_seen_at IS NULL
+       ORDER BY o.id ASC
+       LIMIT 200`
+    )
+    .all(code)
+    .map((row) => ({
+      replyId: 0,
+      outboundId: Number(row.id),
+      feedbackId: 0,
+      studentId: Number(row.student_id),
+      studentName: String(row.student_name || '').trim().slice(0, 80),
+      text: String(row.text || ''),
+      parentText: '',
+      createdAt: row.created_at || '',
+      at: parseSqliteUtcMs(row.created_at) || Date.now(),
+      teacherSeenAt: row.teacher_seen_at || null,
+    }));
+  return [...replies, ...outbound];
+}
+
+function chatMessageFromTeacherNote(item) {
+  if (!item) return null;
+  return {
+    id: `teacher-${item.feedbackId}`,
+    from: 'teacher',
+    text: item.text,
+    at: item.at,
+    createdAt: item.createdAt,
+    urgent: !!item.urgent,
+    studentId: item.studentId,
+    feedbackId: item.feedbackId,
+  };
+}
+
+function chatMessageFromStudentReply(item) {
+  if (!item) return null;
+  return {
+    id: item.replyId ? `student-reply-${item.replyId}` : `student-out-${item.outboundId || item.at}`,
+    from: 'student',
+    text: item.text,
+    at: item.at,
+    createdAt: item.createdAt,
+    studentId: item.studentId,
+    replyId: item.replyId || undefined,
+    outboundId: item.outboundId || undefined,
+  };
+}
+
+function conversationForStudent(roomCode, studentId) {
+  const code = normaliseRoomCode(roomCode);
+  const sid = Number(studentId);
+  if (code.length !== 4 || !sid) return [];
+
+  const notes = feedbackDb
+    .prepare(
+      `SELECT * FROM teacher_feedback_messages
+       WHERE room_code = ? AND student_id = ? AND kind = 'note'
+       ORDER BY id ASC`
+    )
+    .all(code, sid)
+    .map(feedbackForClient)
+    .map(chatMessageFromTeacherNote)
+    .filter(Boolean);
+
+  const replies = feedbackDb
+    .prepare(
+      `SELECT r.*, s.name AS student_name, f.text AS parent_text
+       FROM student_note_replies r
+       JOIN students s ON s.id = r.student_id
+       JOIN teacher_feedback_messages f ON f.id = r.feedback_id
+       WHERE r.room_code = ? AND r.student_id = ?
+       ORDER BY r.id ASC`
+    )
+    .all(code, sid)
+    .map(noteReplyForClient)
+    .map(chatMessageFromStudentReply)
+    .filter(Boolean);
+
+  const outbound = feedbackDb
+    .prepare(
+      `SELECT * FROM student_chat_outbound
+       WHERE room_code = ? AND student_id = ?
+       ORDER BY id ASC`
+    )
+    .all(code, sid)
+    .map((row) => ({
+      id: `student-out-${row.id}`,
+      from: 'student',
+      text: String(row.text || ''),
+      at: parseSqliteUtcMs(row.created_at) || Date.now(),
+      createdAt: row.created_at,
+      studentId: Number(row.student_id),
+      outboundId: Number(row.id),
+    }));
+
+  return [...notes, ...replies, ...outbound].sort(
+    (a, b) => Number(a.at || 0) - Number(b.at || 0) || String(a.id).localeCompare(String(b.id))
+  );
+}
+
+function emitChat(io, roomCode, studentId, message) {
+  if (!message) return;
+  const payload = { studentId: Number(studentId) || Number(message.studentId) || 0, message };
+  io.to(teacherSocketName(roomCode)).emit('feedback:chat', payload);
+  if (payload.studentId) io.to(`student:${payload.studentId}`).emit('feedback:chat', payload);
 }
 
 function emitUnreadNoteReplies(io, socket) {
@@ -316,7 +443,8 @@ function saveStudentNoteReply(io, socket, payload = {}, cb) {
     }
 
     io.to(teacherSocketName(roomCode)).emit('feedback:note-reply', { item });
-    cb?.({ ok: true, item });
+    emitChat(io, roomCode, studentId, chatMessageFromStudentReply(item));
+    cb?.({ ok: true, item, message: chatMessageFromStudentReply(item) });
   } catch (error) {
     console.error('Could not save student note reply', error);
     cb?.({ ok: false, error: 'Could not send reply' });
@@ -344,6 +472,13 @@ function markNoteReplySeen(io, socket, payload = {}, cb) {
       feedbackDb
         .prepare(
           `UPDATE student_note_replies
+           SET teacher_seen_at = datetime('now')
+           WHERE student_id = ? AND room_code = ? AND teacher_seen_at IS NULL`
+        )
+        .run(studentId, roomCode);
+      feedbackDb
+        .prepare(
+          `UPDATE student_chat_outbound
            SET teacher_seen_at = datetime('now')
            WHERE student_id = ? AND room_code = ? AND teacher_seen_at IS NULL`
         )
@@ -405,6 +540,7 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       const targetCount = io.sockets.adapter.rooms.get(targetRoom)?.size || 0;
       if (targetCount > 0) reachedStudents.add(studentId);
       io.to(targetRoom).emit('feedback:batch', { items: [item] });
+      if (kind === 'note') emitChat(io, roomCode, studentId, chatMessageFromTeacherNote(item));
     }
 
     if (rawItems.length > 0 && saved.length === 0) {
@@ -475,6 +611,116 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
       }
     });
     socket.on('teacher:note-reply-seen', (payload, cb) => markNoteReplySeen(io, socket, payload, cb));
+    socket.on('teacher:chat-sync', (payload, cb) => {
+      const roomCode = normaliseRoomCode(socket.data.roomCode);
+      const studentId = Number(payload?.studentId);
+      if (socket.data.role !== 'teacher' || roomCode.length !== 4 || !studentId) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      try {
+        markNoteReplySeen(io, socket, { studentId });
+        cb?.({ ok: true, items: conversationForStudent(roomCode, studentId) });
+      } catch (error) {
+        console.error('Could not load teacher chat', error);
+        cb?.({ ok: false, error: 'Could not load conversation' });
+      }
+    });
+    socket.on('student:chat-sync', (_payload, cb) => {
+      const roomCode = normaliseRoomCode(socket.data.roomCode);
+      const studentId = Number(socket.data.studentId);
+      if (socket.data.role !== 'student' || roomCode.length !== 4 || !studentId) {
+        cb?.({ ok: false, error: 'Join the room as a student first' });
+        return;
+      }
+      try {
+        const unseen = feedbackDb
+          .prepare(
+            `SELECT id FROM teacher_feedback_messages
+             WHERE student_id = ? AND room_code = ? AND kind = 'note' AND seen_at IS NULL`
+          )
+          .all(studentId, roomCode);
+        if (unseen.length) {
+          feedbackDb
+            .prepare(
+              `UPDATE teacher_feedback_messages
+               SET seen_at = datetime('now')
+               WHERE student_id = ? AND room_code = ? AND kind = 'note' AND seen_at IS NULL`
+            )
+            .run(studentId, roomCode);
+          const seenAt = new Date().toISOString();
+          for (const row of unseen.slice(0, 80)) {
+            io.to(teacherSocketName(roomCode)).emit('feedback:seen', {
+              feedbackId: Number(row.id),
+              studentId,
+              seenAt,
+            });
+          }
+        }
+        cb?.({ ok: true, items: conversationForStudent(roomCode, studentId) });
+      } catch (error) {
+        console.error('Could not load student chat', error);
+        cb?.({ ok: false, error: 'Could not load conversation' });
+      }
+    });
+    socket.on('student:chat-send', (payload, cb) => {
+      const roomCode = normaliseRoomCode(socket.data.roomCode);
+      const studentId = Number(socket.data.studentId);
+      const text = String(payload?.text || '').trim().slice(0, 2000);
+      if (socket.data.role !== 'student' || roomCode.length !== 4 || !studentId) {
+        cb?.({ ok: false, error: 'Join the room as a student first' });
+        return;
+      }
+      if (!text) {
+        cb?.({ ok: false, error: 'Write a message first' });
+        return;
+      }
+      try {
+        const latestNote = feedbackDb
+          .prepare(
+            `SELECT id FROM teacher_feedback_messages
+             WHERE student_id = ? AND room_code = ? AND kind = 'note'
+             ORDER BY id DESC LIMIT 1`
+          )
+          .get(studentId, roomCode);
+        if (latestNote?.id) {
+          saveStudentNoteReply(io, socket, { feedbackId: latestNote.id, text }, cb);
+          return;
+        }
+        const result = feedbackDb
+          .prepare(
+            `INSERT INTO student_chat_outbound (room_code, student_id, text) VALUES (?, ?, ?)`
+          )
+          .run(roomCode, studentId, text);
+        const row = feedbackDb
+          .prepare(
+            `SELECT o.*, s.name AS student_name
+             FROM student_chat_outbound o
+             JOIN students s ON s.id = o.student_id
+             WHERE o.id = ?`
+          )
+          .get(Number(result.lastInsertRowid));
+        const item = {
+          replyId: 0,
+          outboundId: Number(row.id),
+          feedbackId: 0,
+          studentId,
+          studentName: String(row.student_name || '').trim().slice(0, 80),
+          text: String(row.text || ''),
+          parentText: '',
+          createdAt: row.created_at || '',
+          at: parseSqliteUtcMs(row.created_at) || Date.now(),
+          teacherSeenAt: null,
+        };
+        const message = chatMessageFromStudentReply(item);
+        io.to(teacherSocketName(roomCode)).emit('feedback:note-reply', { item });
+        emitChat(io, roomCode, studentId, message);
+        cb?.({ ok: true, item, message });
+      } catch (error) {
+        console.error('Could not send student chat', error);
+        cb?.({ ok: false, error: 'Could not send' });
+      }
+    });
 
     const originalSocketOn = socket.on;
     socket.on = function interceptCoreHandler(name, handler) {

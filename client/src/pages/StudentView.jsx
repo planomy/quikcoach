@@ -10,7 +10,7 @@ import SupaCoachLink from '../components/SupaCoachLink.jsx';
 import PulseLink from '../components/PulseLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
-import StudentHandRaise from '../components/StudentHandRaise.jsx';
+import StudentChatButton from '../components/StudentChatButton.jsx';
 import StudentInbox from '../components/StudentInbox.jsx';
 import StudentVerbalRespond from '../components/StudentVerbalRespond.jsx';
 import RoomTimerPill from '../components/RoomTimerPill.jsx';
@@ -1694,9 +1694,22 @@ export default function StudentView() {
                 disabled={frozen}
                 maxWords={enforce && wt > 0 ? wt : 0}
                 placeholder="Write here… or paste an image"
+                headerEndActions={
+                  student?.id ? (
+                    <StudentChatButton
+                      socket={socket}
+                      studentId={student.id}
+                      unread={inboxItems.some((item) => item.type === 'note' && item.unread)}
+                      onOpen={() => {
+                        for (const item of inboxItems) {
+                          if (item.type === 'note' && item.unread) markFeedbackSeen(item.id);
+                        }
+                      }}
+                    />
+                  ) : null
+                }
                 headerActions={
                   <>
-                    {student?.id ? <StudentHandRaise socket={socket} compact /> : null}
                     <span
                       role="status"
                       title={draftSaveState === 'offline' ? 'Your device has a local backup. iBOARD will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}

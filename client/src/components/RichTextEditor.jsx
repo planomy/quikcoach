@@ -101,6 +101,7 @@ export default function RichTextEditor({
   maxWords = 0,
   placeholder = 'Write here…',
   headerActions = null,
+  headerEndActions = null,
 }) {
   const editorRef = useRef(null);
   const lastAcceptedHtmlRef = useRef('');
@@ -425,6 +426,7 @@ export default function RichTextEditor({
             title="Draw or show your working"
             onClick={() => setDrawMode(true)}
           />
+          {headerEndActions}
           {toolbarHint && (
             <span
               role="status"

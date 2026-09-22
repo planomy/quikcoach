@@ -25,14 +25,14 @@ export default function NoteSendStatusControl() {
       button.setAttribute(
         'aria-label',
         nextStatus === 'waiting'
-          ? `Note sent to ${name} — waiting for them to open it`
+          ? `Chat with ${name} — waiting for them to open it`
           : nextStatus === 'seen'
-            ? `Note to ${name} seen`
+            ? `Chat with ${name} — seen`
             : nextStatus === 'replied'
-              ? `${name} replied to your note`
+              ? `${name} replied — open chat`
               : nextStatus === 'failed'
-                ? `Note to ${name} failed — click to retry`
-                : `Sending note to ${name}`
+                ? `Chat with ${name} failed — click to retry`
+                : `Sending message to ${name}`
       );
       button.title =
         nextStatus === 'waiting'
@@ -40,7 +40,7 @@ export default function NoteSendStatusControl() {
           : nextStatus === 'seen'
             ? 'Seen by student'
             : nextStatus === 'replied'
-              ? 'Student replied — open to read'
+              ? 'Student replied — open chat'
               : nextStatus === 'failed'
                 ? 'Failed to send'
                 : 'Sending…';

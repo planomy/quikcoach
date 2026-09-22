@@ -1,0 +1,259 @@
+.iboard-chat-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 0.85rem;
+  background: rgb(15 23 42 / 0.42);
+}
+
+.iboard-chat-phone {
+  display: flex;
+  flex-direction: column;
+  width: min(24.5rem, 100%);
+  height: min(40.5rem, calc(100dvh - 1.7rem));
+  overflow: hidden;
+  border-radius: 1.7rem;
+  background: #eef0f6;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.5) inset,
+    0 22px 55px rgb(15 23 42 / 0.28);
+}
+
+html.dark .iboard-chat-phone {
+  background: #121826;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.04) inset,
+    0 22px 55px rgb(0 0 0 / 0.5);
+}
+
+.iboard-chat-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem 0.65rem;
+  border-bottom: 1px solid #e2e4ec;
+  background: rgb(255 255 255 / 0.9);
+  backdrop-filter: blur(14px);
+}
+
+html.dark .iboard-chat-head {
+  border-bottom-color: #243044;
+  background: rgb(17 24 39 / 0.92);
+}
+
+.iboard-chat-avatar {
+  display: grid;
+  flex-shrink: 0;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #5a5fc3;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.iboard-chat-head-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.iboard-chat-head-copy h2 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: #1f1f24;
+}
+
+.iboard-chat-head-copy p {
+  margin: 0.05rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b6b76;
+}
+
+html.dark .iboard-chat-head-copy h2 {
+  color: #f1f5f9;
+}
+
+html.dark .iboard-chat-head-copy p {
+  color: #94a3b8;
+}
+
+.iboard-chat-thread {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-height: 0;
+  padding: 0.85rem 0.75rem 1rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.iboard-chat-thread::-webkit-scrollbar {
+  display: none;
+}
+
+.iboard-chat-empty {
+  margin: auto;
+  max-width: 16rem;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #8b8b96;
+}
+
+.iboard-chat-time {
+  align-self: center;
+  margin: 0.45rem 0 0.2rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #8a8a96;
+  text-transform: uppercase;
+}
+
+.iboard-chat-row {
+  display: flex;
+  width: 100%;
+}
+
+.iboard-chat-row--mine {
+  justify-content: flex-end;
+}
+
+.iboard-chat-row--theirs {
+  justify-content: flex-start;
+}
+
+.iboard-chat-bubble {
+  max-width: 82%;
+  padding: 0.48rem 0.78rem;
+  font-size: 0.9rem;
+  line-height: 1.38;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.iboard-chat-bubble--mine {
+  border-radius: 1.15rem 1.15rem 0.32rem 1.15rem;
+  background: #5a5fc3;
+  color: #fff;
+}
+
+.iboard-chat-bubble--theirs {
+  border-radius: 1.15rem 1.15rem 1.15rem 0.32rem;
+  background: #fff;
+  color: #1f1f24;
+  box-shadow: 0 1px 0 rgb(15 23 42 / 0.04);
+}
+
+html.dark .iboard-chat-bubble--theirs {
+  background: #1e293b;
+  color: #e2e8f0;
+  box-shadow: none;
+}
+
+.iboard-chat-urgent {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+
+.iboard-chat-compose {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-end;
+  gap: 0.4rem;
+  padding: 0.55rem 0.65rem 0.8rem;
+  border-top: 1px solid #e2e4ec;
+  background: #fff;
+}
+
+html.dark .iboard-chat-compose {
+  border-top-color: #243044;
+  background: #0f172a;
+}
+
+.iboard-chat-compose textarea {
+  flex: 1 1 auto;
+  min-height: 2.4rem;
+  max-height: 7.5rem;
+  resize: none;
+  border: 0;
+  border-radius: 1.15rem;
+  background: #f1f2f7;
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #1f1f24;
+  outline: none;
+}
+
+html.dark .iboard-chat-compose textarea {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.iboard-chat-send,
+.iboard-chat-urgent-toggle {
+  display: grid;
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: #5a5fc3;
+  color: #fff;
+  cursor: pointer;
+}
+
+.iboard-chat-send:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.iboard-chat-urgent-toggle {
+  background: #f1f2f7;
+  color: #64748b;
+}
+
+.iboard-chat-urgent-toggle[aria-pressed='true'] {
+  background: #f59e0b;
+  color: #fff;
+}
+
+html.dark .iboard-chat-urgent-toggle {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+html.dark .iboard-chat-urgent-toggle[aria-pressed='true'] {
+  background: #d97706;
+  color: #fff;
+}
+
+.iboard-chat-error {
+  padding: 0 0.85rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #dc2626;
+}
