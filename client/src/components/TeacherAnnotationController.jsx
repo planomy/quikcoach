@@ -1924,9 +1924,9 @@ export default function TeacherAnnotationController() {
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#5a5fc3]">Now</p>
                   <p className="mt-0.5 text-xs font-semibold leading-snug text-[#3c3c45] dark:text-slate-100">
-                    {openMarkerChange?.after?.trim()
-                      ? openMarkerChange.after
-                      : 'Passage removed or could not be located'}
+                    {openMarkerChange?.removed || !openMarkerChange?.after?.trim()
+                      ? 'Removed'
+                      : openMarkerChange.after}
                   </p>
                 </div>
               </div>

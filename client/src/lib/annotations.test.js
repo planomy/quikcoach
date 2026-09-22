@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { annotationMarkersMatch, commentGutterLane, commentTone, documentAnnotationChange, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
+import { annotationMarkersMatch, commentGutterLane, commentTone, documentAnnotationChange, inferDeletedPassage, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
 
 const spelling = {
   quote: 'recieve',
@@ -56,6 +56,25 @@ test('deleting hyphens around the quote keeps the bubble on the same word', () =
   const change = documentAnnotationChange(annotation, after);
   assert.equal(change.before, '-birds-');
   assert.equal(change.after, 'birds');
+});
+
+test('deleting a marked word is recorded as removed', () => {
+  const annotation = {
+    quote: 'really',
+    start_offset: 2,
+    prefix_context: 'a ',
+    suffix_context: ' big war',
+  };
+  const text = 'a big war';
+  const deleted = inferDeletedPassage(annotation, text);
+  assert.equal(deleted.removed, true);
+  assert.equal(deleted.before, 'really');
+  assert.equal(deleted.after, '');
+  const resolved = resolveAnnotation(annotation, text);
+  assert.equal(resolved.replacement.removed, true);
+  const change = documentAnnotationChange(annotation, text);
+  assert.equal(change.removed, true);
+  assert.equal(change.before, 'really');
 });
 
 test('wholesale paste does not steal the highlight or invent a replacement', () => {

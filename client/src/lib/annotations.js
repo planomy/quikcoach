@@ -141,6 +141,18 @@ export function resolveAnnotation(annotation, rawText) {
   if (located != null) {
     return { ...annotation, detached: false, start: located, end: located + quote.length };
   }
+  const deleted = inferDeletedPassage(annotation, text);
+  if (deleted) {
+    const pin = Math.min(text.length, Math.max(0, deleted.start));
+    const pinEnd = Math.min(text.length, pin + (text[pin] ? 1 : 0));
+    return {
+      ...annotation,
+      detached: true,
+      start: pin,
+      end: Math.max(pin, pinEnd),
+      replacement: deleted,
+    };
+  }
   const replacement = inferReplacementPassage(annotation, text);
   if (replacement?.after?.trim() && replacement.end > replacement.start) {
     return {
@@ -158,7 +170,10 @@ export function resolveAnnotation(annotation, rawText) {
 export function locateAnnotationRange(root, annotation, rawText) {
   const text = normalise(rawText);
   const resolved = resolveAnnotation(annotation, text);
-  const canHighlight = !resolved.detached || Boolean(resolved.replacement?.after?.trim());
+  const canHighlight =
+    !resolved.detached ||
+    Boolean(resolved.replacement?.after?.trim()) ||
+    Boolean(resolved.replacement?.removed);
   const liveQuote = canHighlight ? text.slice(resolved.start, resolved.end) : '';
   const range =
     canHighlight && liveQuote
@@ -286,6 +301,25 @@ function tokenStartBefore(text, end, count) {
   return i;
 }
 
+/** Prefix and suffix now touch — the student deleted the marked word. */
+export function inferDeletedPassage(annotation, rawText) {
+  const text = normalise(rawText);
+  const quote = normalise(annotation?.quote || '');
+  const prefix = normalise(annotation?.prefix_context || '');
+  const suffix = normalise(annotation?.suffix_context || '');
+  const expectedStart = Math.max(0, Number(annotation?.start_offset) || 0);
+  if (!quote || !prefix || !suffix) return null;
+  if (locateQuote(text, quote, expectedStart, prefix, suffix) != null) return null;
+  const start = findPrefixEnd(text, prefix, expectedStart);
+  if (start < 0) return null;
+  const suffixAt = text.indexOf(suffix, Math.max(0, start - 4));
+  if (suffixAt < 0) return null;
+  const between = suffixAt >= start ? text.slice(start, suffixAt) : '';
+  if (between.trim() !== '' || between.length > 2) return null;
+  const join = Math.max(start, suffixAt);
+  return { before: quote, after: '', removed: true, start: join, end: join };
+}
+
 /** When a quote can no longer be found, recover only the word or phrase that replaced it. */
 export function inferReplacementPassage(annotation, rawText) {
   const text = normalise(rawText);
@@ -342,6 +376,8 @@ function wrappingPunct(value, edge) {
 /** Was / Now for a student edit: replaced words, or wrapping punctuation they deleted. */
 export function documentAnnotationChange(annotation, rawText) {
   const text = normalise(rawText);
+  const deleted = inferDeletedPassage(annotation, text);
+  if (deleted) return deleted;
   const replacement = inferReplacementPassage(annotation, text);
   if (replacement?.after?.trim() && replacement.after !== replacement.before) {
     return replacement;

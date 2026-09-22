@@ -698,9 +698,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Now</p>
                   <p className="mt-0.5 font-semibold leading-snug text-[#3c3c45] dark:text-slate-100">
-                    {openMarkerChange?.after?.trim()
-                      ? openMarkerChange.after.trim()
-                      : 'Passage removed or could not be located'}
+                    {openMarkerChange?.removed || !openMarkerChange?.after?.trim()
+                      ? 'Removed'
+                      : openMarkerChange.after.trim()}
                   </p>
                 </div>
               </div>
