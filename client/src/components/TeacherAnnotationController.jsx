@@ -442,6 +442,8 @@ export default function TeacherAnnotationController() {
   const markersRef = useRef([]);
   const pendingRef = useRef(null);
   const hoverCloseTimerRef = useRef(null);
+  const openPlaceSideRef = useRef(null);
+  const openPlaceKeyRef = useRef('');
   const selectingInPaneRef = useRef(false);
   const selectionSettleRef = useRef(null);
   const draftNoteRef = useRef(null);
@@ -900,6 +902,7 @@ export default function TeacherAnnotationController() {
         left: placed.left,
         width: panelWidth,
         maxHeight,
+        placeSide: placed.side,
         anchor: {
           top: rect.top,
           bottom: rect.bottom,
@@ -1041,24 +1044,26 @@ export default function TeacherAnnotationController() {
             height: measured,
             prefer: 'below',
             padding: 8,
+            lock: pending.placeSide || null,
           })
-        : clampFixedBox({
+        : { ...clampFixedBox({
             top: pending.top,
             left: pending.left,
             width,
             height: measured,
             padding: 8,
-          });
+          }), side: pending.placeSide || 'below' };
       setPending((prev) => {
         if (!prev) return prev;
         if (
           Math.abs(next.top - prev.top) <= 1
           && Math.abs(next.left - prev.left) <= 1
+          && prev.placeSide === next.side
           && Math.abs((prev.maxHeight || 0) - maxHeight) <= 1
         ) {
           return prev;
         }
-        return { ...prev, top: next.top, left: next.left, width, maxHeight };
+        return { ...prev, top: next.top, left: next.left, width, maxHeight, placeSide: next.side };
       });
     };
     const frame = requestAnimationFrame(place);
@@ -1418,14 +1423,24 @@ export default function TeacherAnnotationController() {
     200,
     Math.min(OPEN_MAX_HEIGHT, viewportBox().height - 24)
   );
+  const openPlaceKey = openMarker ? teacherMarkerKey(openMarker) : '';
+  if (openPlaceKey !== openPlaceKeyRef.current) {
+    openPlaceKeyRef.current = openPlaceKey;
+    openPlaceSideRef.current = null;
+  }
   const openMarkerPos = openMarkerAnchor
-    ? placementNearAnchor({
-        anchor: openMarkerAnchor,
-        width: OPEN_WIDTH,
-        height: Math.min(OPEN_PLACE_HEIGHT, openMarkerMaxHeight),
-        gap: 10,
-        prefer: 'below',
-      })
+    ? (() => {
+        const next = placementNearAnchor({
+          anchor: openMarkerAnchor,
+          width: OPEN_WIDTH,
+          height: Math.min(OPEN_PLACE_HEIGHT, openMarkerMaxHeight),
+          gap: 10,
+          prefer: 'below',
+          lock: openPlaceSideRef.current,
+        });
+        openPlaceSideRef.current = next.side;
+        return next;
+      })()
     : null;
 
   const openMarkerChange = useMemo(() => {

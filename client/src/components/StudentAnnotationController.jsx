@@ -90,7 +90,7 @@ function commentPopupMaxHeight() {
   return Math.max(220, Math.min(POPUP_HEIGHT, vp.height - 24));
 }
 
-function commentPopupPosition(marker) {
+function commentPopupPosition(marker, lock = null) {
   const height = commentPopupMaxHeight();
   return placementNearAnchor({
     anchor: {
@@ -105,6 +105,7 @@ function commentPopupPosition(marker) {
     height,
     gap: 10,
     prefer: 'below',
+    lock,
   });
 }
 
@@ -125,6 +126,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const popupPinnedRef = useRef(false);
   const markersRef = useRef([]);
   const hoverCloseTimerRef = useRef(null);
+  const openPlaceSideRef = useRef(null);
+  const openPlaceKeyRef = useRef('');
   const autoFixQueuedRef = useRef(new Set());
   const autoFixTimersRef = useRef(new Map());
   const checkAgainSnapshotRef = useRef(new Map());
@@ -548,10 +551,17 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     }
   }, [markers, openMarker]);
 
-  const openPopupPosition = useMemo(
-    () => (openMarker ? commentPopupPosition(openMarker) : null),
-    [openMarker]
-  );
+  const openPopupPosition = useMemo(() => {
+    if (!openMarker) return null;
+    const key = studentMarkerKey(openMarker);
+    if (openPlaceKeyRef.current !== key) {
+      openPlaceKeyRef.current = key;
+      openPlaceSideRef.current = null;
+    }
+    const next = commentPopupPosition(openMarker, openPlaceSideRef.current);
+    openPlaceSideRef.current = next.side;
+    return next;
+  }, [openMarker]);
 
   const openMarkerChange = useMemo(() => {
     if (!openMarker?.detached || !openMarker.annotation) return null;

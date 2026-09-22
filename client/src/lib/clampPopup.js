@@ -17,8 +17,33 @@ export function clampFixedBox({ top, left, width, height, padding = 10 }) {
 }
 
 /**
+ * Choose above/below once, and stay there unless the locked side overflows
+ * by more than hysteresis. Stops bottom-edge flip loops.
+ */
+export function pickPopupSide({
+  spaceBelow,
+  spaceAbove,
+  prefer = 'below',
+  lock = null,
+  hysteresis = 16,
+}) {
+  const fits = (space) => space >= 0;
+  const keep = (space) => space >= -hysteresis;
+  if (lock === 'below' && keep(spaceBelow)) return 'below';
+  if (lock === 'above' && keep(spaceAbove)) return 'above';
+  if (prefer === 'above') {
+    if (fits(spaceAbove)) return 'above';
+    if (fits(spaceBelow)) return 'below';
+  } else {
+    if (fits(spaceBelow)) return 'below';
+    if (fits(spaceAbove)) return 'above';
+  }
+  return spaceBelow >= spaceAbove ? 'below' : 'above';
+}
+
+/**
  * Pick popup placement beside or below an anchor rect.
- * @param {{ anchor: DOMRect, width: number, height: number, gap?: number, padding?: number, prefer?: 'above'|'below'|'below-left'|'right' }} opts
+ * @param {{ anchor: DOMRect, width: number, height: number, gap?: number, padding?: number, prefer?: 'above'|'below'|'below-left'|'right', lock?: 'above'|'below'|null, hysteresis?: number }} opts
  */
 export function placementNearAnchor({
   anchor,
@@ -27,57 +52,44 @@ export function placementNearAnchor({
   gap = 8,
   padding = 10,
   prefer = 'above',
+  lock = null,
+  hysteresis = 16,
 }) {
   const vp = viewportBox();
-  const candidates = [];
-
   const aboveTop = anchor.top - gap - height;
   const belowTop = anchor.bottom + gap;
+  const spaceBelow = vp.top + vp.height - padding - belowTop - height;
+  const spaceAbove = aboveTop - (vp.top + padding);
+  const verticalPrefer = prefer === 'above' ? 'above' : 'below';
+  const side = pickPopupSide({
+    spaceBelow,
+    spaceAbove,
+    prefer: verticalPrefer,
+    lock,
+    hysteresis,
+  });
+  const top = side === 'below' ? belowTop : aboveTop;
+
+  const centerX = anchor.left + anchor.width / 2 - width / 2;
   const rightLeft = anchor.right + gap;
   const leftLeft = anchor.left - gap - width;
-  const centerX = anchor.left + anchor.width / 2 - width / 2;
-  // Align the panel's right edge with the anchor (opens under + to the left).
   const belowLeft = anchor.right - width;
+  const leftCandidates = prefer === 'below-left'
+    ? [belowLeft, centerX, leftLeft]
+    : prefer === 'right'
+      ? [rightLeft, leftLeft, centerX]
+      : [centerX, rightLeft, leftLeft];
 
-  if (prefer === 'above') {
-    candidates.push({ top: aboveTop, left: centerX });
-    candidates.push({ top: belowTop, left: centerX });
-  } else if (prefer === 'below') {
-    candidates.push({ top: belowTop, left: centerX });
-    candidates.push({ top: aboveTop, left: centerX });
-  } else if (prefer === 'below-left') {
-    candidates.push({ top: belowTop, left: belowLeft });
-    candidates.push({ top: belowTop, left: centerX });
-    candidates.push({ top: aboveTop, left: belowLeft });
-    candidates.push({ top: aboveTop, left: centerX });
-    candidates.push({ top: belowTop, left: leftLeft });
-  } else {
-    candidates.push({ top: anchor.top, left: rightLeft });
-    candidates.push({ top: anchor.top, left: leftLeft });
+  let left = leftCandidates[0];
+  for (const candidate of leftCandidates) {
+    if (
+      candidate >= vp.left + padding
+      && candidate + width <= vp.left + vp.width - padding
+    ) {
+      left = candidate;
+      break;
+    }
   }
 
-  candidates.push({ top: belowTop, left: rightLeft });
-  candidates.push({ top: anchor.top - height / 2, left: rightLeft });
-  candidates.push({ top: belowTop, left: leftLeft });
-
-  const fitsUnclamped = (candidate) => (
-    candidate.top >= vp.top + padding
-    && candidate.top + height <= vp.top + vp.height - padding
-    && candidate.left >= vp.left + padding
-    && candidate.left + width <= vp.left + vp.width - padding
-  );
-
-  // Prefer a placement that already fits without sliding away from the anchor.
-  for (const candidate of candidates) {
-    if (fitsUnclamped(candidate)) return candidate;
-  }
-
-  // Fall back to the nearest in-viewport clamp (usually below the anchor).
-  return clampFixedBox({
-    top: anchor.bottom + gap,
-    left: centerX,
-    width,
-    height,
-    padding,
-  });
+  return { ...clampFixedBox({ top, left, width, height, padding }), side };
 }
