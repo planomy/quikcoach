@@ -188,7 +188,7 @@ function RailTimerLabel({ timer }) {
 
 const TEACHER_TOOLS_TABS = [
   { id: 'ask', label: 'Ask the class', rail: 'Ask', hint: 'Ask the class a question' },
-  { id: 'responses', label: 'Responses', rail: 'Answers', hint: 'See class answers' },
+  { id: 'responses', label: 'Responses', rail: 'Responses', hint: 'See class answers' },
 ];
 
 const ADD_CARD_ACTIONS = [
