@@ -48,7 +48,7 @@ const MARKER_SIZE = 18;
 const INLINE_MARKER_SIZE = 13;
 const MARKER_MARGIN = 4;
 const GUTTER_INSET = 8;
-const LANE_GAP = 4;
+const LANE_GAP = 10;
 const COMPACT_GUTTER_INSET = 5;
 const COMPACT_LANE_GAP = 3;
 
@@ -230,13 +230,14 @@ function cardForStudent(studentId) {
   const id = Number(studentId);
   if (!id) return null;
 
-  const modalArticle = document.querySelector(
-    `[role="dialog"][aria-modal="true"] article[data-student-id="${id}"]`
-  );
+  const modalArticle =
+    document.querySelector(`[data-full-draft="true"][data-student-id="${id}"]`) ||
+    document.querySelector(`article[role="dialog"][data-student-id="${id}"]`) ||
+    document.querySelector(`[role="dialog"][aria-modal="true"][data-student-id="${id}"]`);
   if (modalArticle) {
     const modalPane =
-      modalArticle.querySelector('[data-student-writing-pane]') ||
-      modalArticle.querySelector('div.max-h-52');
+      modalArticle.querySelector('[data-full-draft-pane]') ||
+      modalArticle.querySelector('[data-student-writing-pane]');
     if (modalPane) return { article: modalArticle, textPane: modalPane, studentId: id };
   }
 
@@ -307,7 +308,7 @@ function isRangeVisibleInPane(rangeRect, paneRect) {
 }
 
 function cardUsesCompactPip(card) {
-  return !!card?.article?.classList.contains('iboard-student-card--overview');
+  return !card?.article?.matches?.('[role="dialog"]');
 }
 
 function gutterLaneInset(compact, lane, size) {

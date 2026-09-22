@@ -699,6 +699,13 @@ function TeacherDashboardInner() {
     return () => cancelAnimationFrame(frame);
   }, [teacherPanelHidden]);
 
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusedStudentId]);
+
   useEffect(() => () => {
     if (teacherRevealTimerRef.current) window.clearTimeout(teacherRevealTimerRef.current);
   }, []);
@@ -5238,6 +5245,7 @@ function TeacherDashboardInner() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center">
           <article
             data-student-id={focusedStudent.id}
+            data-full-draft="true"
             className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             role="dialog"
             aria-modal="true"
@@ -5286,9 +5294,37 @@ function TeacherDashboardInner() {
                     <span className="text-[13px] font-black leading-none">A+</span>
                   </button>
                 </HintWrap>
-                <button type="button" onClick={() => { setFocusedStudentId(null); openNoteForStudent(focusedStudent); }} className="rounded-xl border border-indigo-200 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-950/40">
-                  Chat
-                </button>
+                <HintWrap
+                  hint={
+                    noteReceiptByStudentId[focusedStudent.id] === 'replied'
+                      ? 'Student replied — open chat'
+                      : noteReceiptByStudentId[focusedStudent.id] === 'seen'
+                        ? 'Message seen'
+                        : noteReceiptByStudentId[focusedStudent.id] === 'waiting'
+                          ? 'Sent — waiting'
+                          : 'Chat'
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() => { setFocusedStudentId(null); openNoteForStudent(focusedStudent); }}
+                    className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800 ${
+                      noteReceiptByStudentId[focusedStudent.id] === 'replied'
+                        ? 'text-amber-500'
+                        : noteReceiptByStudentId[focusedStudent.id] === 'seen'
+                          ? 'text-green-500'
+                          : noteReceiptByStudentId[focusedStudent.id] === 'waiting'
+                            ? 'text-blue-600'
+                            : 'text-slate-600 dark:text-slate-300'
+                    }`}
+                    aria-label={`Chat with ${focusedStudent.name}`}
+                  >
+                    <ChatIcon className="h-4 w-4" />
+                    {noteReceiptByStudentId[focusedStudent.id] === 'replied' ? (
+                      <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                    ) : null}
+                  </button>
+                </HintWrap>
                 {focusedStudent.image_url && (
                   <button type="button" onClick={() => setDrawingMarkupTarget(focusedStudent)} className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-black text-white hover:bg-indigo-700">
                     ✎ Mark up drawing
@@ -5299,9 +5335,10 @@ function TeacherDashboardInner() {
             </div>
             <div
               data-student-writing-pane
+              data-full-draft-pane="true"
               data-card-font="true"
               style={{ fontSize: `${cardFontRem(cardFontById, focusedStudent.id)}rem` }}
-              className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-12 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
+              className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-14 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
             >
               {focusedStudent.image_url && (
                 <AnnotatedStudentImage
