@@ -26,7 +26,8 @@ import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
 import SaveStatusChip from '../components/SaveStatusChip.jsx';
-import RoomTimerPill from '../components/RoomTimerPill.jsx';
+import RoomTimerPill, { formatTimer } from '../components/RoomTimerPill.jsx';
+import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
 import QuestionInboxReply from '../components/QuestionInboxReply.jsx';
@@ -141,10 +142,10 @@ function cardFontRem(map, studentId) {
   return CARD_FONT_REMS[cardFontIndex(map, studentId)];
 }
 
-function CardViewIcon({ id }) {
+function CardViewIcon({ id, className = 'h-5 w-5' }) {
   if (id === 'overview') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg aria-hidden="true" viewBox="0 0 20 20" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2.5" y="2.5" width="6" height="6" rx="1.2" />
         <rect x="11.5" y="2.5" width="6" height="6" rx="1.2" />
         <rect x="2.5" y="11.5" width="6" height="6" rx="1.2" />
@@ -154,7 +155,7 @@ function CardViewIcon({ id }) {
   }
   if (id === 'reading') {
     return (
-      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg aria-hidden="true" viewBox="0 0 20 20" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2.5" y="3" width="6.5" height="14" rx="1.2" />
         <rect x="11" y="3" width="6.5" height="14" rx="1.2" />
         <path d="M4.2 6.5h3M4.2 9.2h3M4.2 11.9h2.2M12.7 6.5h3M12.7 9.2h3M12.7 11.9h2.2" />
@@ -162,11 +163,22 @@ function CardViewIcon({ id }) {
     );
   }
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" viewBox="0 0 20 20" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4.5" y="2.5" width="11" height="15" rx="1.4" />
       <path d="M7 6.5h6M7 9.5h6M7 12.5h4" />
     </svg>
   );
+}
+
+function RailTimerLabel({ timer }) {
+  const running = !!timer?.active && !!timer?.running && !!timer?.endsAt;
+  const liveSeconds = useEndsAtCountdown(timer?.endsAt, { enabled: running });
+  if (!timer?.active) return 'Timer';
+  const seconds = running && liveSeconds != null
+    ? liveSeconds
+    : Math.max(0, Number(timer.remainingSeconds) || 0);
+  if (seconds === 0) return 'Time up';
+  return formatTimer(seconds);
 }
 
 const TEACHER_TOOLS_TABS = [
@@ -356,6 +368,8 @@ function TeacherDashboardInner() {
   const addCardPanelRef = useRef(null);
   const settingsButtonRef = useRef(null);
   const settingsPanelRef = useRef(null);
+  const timerButtonRef = useRef(null);
+  const timerPanelRef = useRef(null);
   const settingsChromeRef = useRef(null);
   const breakoutAssignPanelRef = useRef(null);
   const [settingsChromeHeight, setSettingsChromeHeight] = useState(44);
@@ -388,6 +402,7 @@ function TeacherDashboardInner() {
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [addCardMode, setAddCardMode] = useState('document');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [timerOpen, setTimerOpen] = useState(false);
   const [teacherPanelHidden, setTeacherPanelHidden] = useState(() => {
     try {
       return localStorage.getItem(TEACHER_PANEL_HIDDEN_KEY) === '1';
@@ -644,8 +659,8 @@ function TeacherDashboardInner() {
   }, [overviewColumnsOpen]);
 
   useEffect(() => {
-    if (!settingsOpen) setOverviewColumnsOpen(false);
-  }, [settingsOpen]);
+    if (settingsOpen || timerOpen) setOverviewColumnsOpen(false);
+  }, [settingsOpen, timerOpen]);
 
   useEffect(() => {
     function syncFullscreen() {
@@ -849,10 +864,13 @@ function TeacherDashboardInner() {
     });
   }
 
-  function openTimerSettings() {
-    closeTeacherTools();
+  function openTimerDock() {
+    closeSettings();
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
     setAddCardOpen(false);
-    setSettingsOpen(true);
+    setOverviewColumnsOpen(false);
+    setTimerOpen((open) => !open);
   }
 
   useEffect(() => {
@@ -1497,7 +1515,7 @@ function TeacherDashboardInner() {
   }, [livePulse.activity?.id]);
 
   useEffect(() => {
-    if (!toolsPanelOpen && !addCardOpen && !settingsOpen) return undefined;
+    if (!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
       const target = event.target;
@@ -1522,12 +1540,17 @@ function TeacherDashboardInner() {
         // Native <select> menus are often outside the React tree; don't close while interacting.
         if (target?.closest?.('select') || document.activeElement?.tagName === 'SELECT') return;
       }
+      if (timerOpen) {
+        if (timerButtonRef.current?.contains(target)) return;
+        if (timerPanelRef.current?.contains(target)) return;
+      }
       if (toolsPanelOpen) {
         setToolsPanelOpen(false);
         setToolsHighlightStudentId(null);
       }
       if (addCardOpen && !addCardBusy) setAddCardOpen(false);
       if (settingsOpen) closeSettings();
+      if (timerOpen) setTimerOpen(false);
     }
 
     function closeHeaderPanelsOnEscape(event) {
@@ -1538,6 +1561,7 @@ function TeacherDashboardInner() {
       }
       if (addCardOpen && !addCardBusy) setAddCardOpen(false);
       if (settingsOpen) closeSettings();
+      if (timerOpen) setTimerOpen(false);
     }
 
     document.addEventListener('pointerdown', closeHeaderPanelsIfOutside);
@@ -1546,10 +1570,10 @@ function TeacherDashboardInner() {
       document.removeEventListener('pointerdown', closeHeaderPanelsIfOutside);
       document.removeEventListener('keydown', closeHeaderPanelsOnEscape);
     };
-  }, [toolsPanelOpen, addCardOpen, settingsOpen, addCardBusy]);
+  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, addCardBusy]);
 
   useLayoutEffect(() => {
-    if ((!toolsPanelOpen && !addCardOpen && !settingsOpen) || !teacherHeaderRef.current) return undefined;
+    if ((!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen) || !teacherHeaderRef.current) return undefined;
 
     function alignHeaderDockToHeader() {
       const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
@@ -1566,7 +1590,7 @@ function TeacherDashboardInner() {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', alignHeaderDockToHeader);
     };
-  }, [toolsPanelOpen, addCardOpen, settingsOpen]);
+  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen]);
 
   const pendingQuestionCount = useMemo(
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
@@ -1795,6 +1819,7 @@ function TeacherDashboardInner() {
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
+    setTimerOpen(false);
     setClearFixedArmed(false);
     setSettingsOpen(true);
   }
@@ -1802,6 +1827,7 @@ function TeacherDashboardInner() {
   function openAddCard(mode = 'document') {
     const next = ADD_CARD_ACTIONS.some((action) => action.id === mode) ? mode : 'document';
     closeSettings();
+    setTimerOpen(false);
     if (addCardOpen && addCardMode === next) {
       closeAddCard();
       return;
@@ -2619,6 +2645,7 @@ function TeacherDashboardInner() {
   function openTeacherTools(tab = 'ask', { highlightStudentId = null } = {}) {
     closeSettings();
     setAddCardOpen(false);
+    setTimerOpen(false);
     setToolsTab(tab);
     setToolsPanelOpen(true);
     setToolsHighlightStudentId(highlightStudentId != null ? Number(highlightStudentId) : null);
@@ -2707,7 +2734,7 @@ function TeacherDashboardInner() {
   ]
     .filter(Boolean)
     .join(' · ');
-  const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen;
+  const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen || timerOpen;
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -2763,7 +2790,7 @@ function TeacherDashboardInner() {
             <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
             <RoomTimerPill
               timer={room?.timer}
-              onClick={openTimerSettings}
+              onClick={openTimerDock}
               onFinishedClick={() => controlRoomTimer('end')}
             />
             {joined && <SaveStatusChip status={saveStatus} plain />}
@@ -3143,6 +3170,69 @@ function TeacherDashboardInner() {
                 </button>
               );
             })}
+          </div>
+          <div className="iboard-arr-rail__board" aria-label="Board view and timer">
+            {CARD_VIEWS.map((view) => {
+              const active = cardView === view.id;
+              const railLabel = view.id === 'full' ? 'Full' : view.label;
+              return (
+                <HintWrap
+                  key={view.id}
+                  hint={view.id === 'overview' ? 'Overview · tap again for columns' : view.label}
+                  prefer="right"
+                >
+                  <button
+                    type="button"
+                    data-overview-columns-menu={view.id === 'overview' ? 'true' : undefined}
+                    onClick={() => {
+                      setTimerOpen(false);
+                      if (view.id === 'overview') {
+                        if (cardView === 'overview') {
+                          setOverviewColumnsOpen((open) => !open);
+                        } else {
+                          setCardView('overview');
+                          setOverviewColumnsOpen(false);
+                        }
+                        return;
+                      }
+                      setOverviewColumnsOpen(false);
+                      setCardView(view.id);
+                    }}
+                    aria-pressed={active}
+                    aria-expanded={view.id === 'overview' ? overviewColumnsOpen : undefined}
+                    aria-haspopup={view.id === 'overview' ? 'menu' : undefined}
+                    data-active={active ? 'true' : 'false'}
+                    className="iboard-arr-btn"
+                    title={view.id === 'overview' ? `${view.label} · columns` : view.label}
+                    aria-label={view.id === 'overview' ? `${view.label}, choose columns` : view.label}
+                  >
+                    <CardViewIcon id={view.id} className="iboard-arr-btn__glyph" />
+                    <span className="iboard-arr-label">{railLabel}</span>
+                  </button>
+                </HintWrap>
+              );
+            })}
+            <HintWrap hint="Class timer" prefer="right">
+              <button
+                ref={timerButtonRef}
+                type="button"
+                onClick={openTimerDock}
+                aria-expanded={timerOpen}
+                data-active={timerOpen || room?.timer?.active ? 'true' : 'false'}
+                className="iboard-arr-btn"
+                title="Timer"
+                aria-label="Timer"
+              >
+                <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="13" r="7.25" />
+                  <path d="M9.2 3.6h5.6" />
+                  <path d="M12 3.6v2.1" />
+                  <path d="M12 13V9.8" />
+                  <path d="M12 13l2.4 1.6" />
+                </svg>
+                <span className="iboard-arr-label"><RailTimerLabel timer={room?.timer} /></span>
+              </button>
+            </HintWrap>
           </div>
           <div className="iboard-arr-rail__foot">
             <HintWrap hint="Room settings" prefer="right">
@@ -4369,6 +4459,143 @@ function TeacherDashboardInner() {
         </div>
       )}
 
+      {overviewColumnsOpen && cardView === 'overview' ? (
+        <div
+          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(16rem,calc(100vw-4.75rem))]"
+          style={headerDockStyle}
+          role="menu"
+          aria-label="Overview columns"
+          data-overview-columns-menu="true"
+        >
+          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <h2 className="font-display text-base font-black text-slate-950 dark:text-white">Overview columns</h2>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">How many student cards across</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+            {OVERVIEW_COLUMN_OPTIONS.map((count) => {
+              const active = overviewColumns === count;
+              return (
+                <button
+                  key={count}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={active}
+                  onClick={() => {
+                    setOverviewColumns(count);
+                    setOverviewColumnsOpen(false);
+                  }}
+                  className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
+                    active
+                      ? 'bg-[#5a5fc3] text-white shadow-sm'
+                      : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {count}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {timerOpen && (
+        <div
+          ref={timerPanelRef}
+          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(20rem,calc(100vw-4.75rem))]"
+          style={headerDockStyle}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="room-timer-title"
+        >
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <div>
+              <h2 id="room-timer-title" className="font-display text-base font-black text-slate-950 dark:text-white">Timer</h2>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {room?.timer?.active ? 'Visible to the class' : 'Count down for the whole room'}
+              </p>
+            </div>
+            <CloseButton onClick={() => setTimerOpen(false)} label="Close" />
+          </div>
+          <div className="px-4 py-3">
+            {!room?.timer?.active ? (
+              <div className="iboard-room-settings__field-row">
+                <span className="iboard-room-settings__timer-label">Minutes</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  inputMode="numeric"
+                  value={timerMinutes}
+                  onFocus={() => setTimerMinutes('')}
+                  onChange={(event) => {
+                    const raw = event.target.value;
+                    if (raw === '') {
+                      setTimerMinutes('');
+                      return;
+                    }
+                    const next = Math.floor(Number(raw));
+                    if (!Number.isFinite(next)) return;
+                    setTimerMinutes(String(Math.max(1, Math.min(120, next))));
+                  }}
+                  onBlur={() => {
+                    if (timerMinutes === '' || !Number(timerMinutes)) setTimerMinutes('5');
+                  }}
+                  aria-label="Timer minutes"
+                />
+                <button
+                  type="button"
+                  disabled={timerBusy || !Number(timerMinutes)}
+                  onClick={() =>
+                    controlRoomTimer('start', {
+                      seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
+                    })
+                  }
+                  className="iboard-room-settings__mini"
+                >
+                  Start
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="iboard-room-settings__timer-head">
+                  <span>Running</span>
+                  <RoomTimerPill
+                    timer={room?.timer}
+                    onFinishedClick={() => controlRoomTimer('end')}
+                  />
+                </div>
+                <div className="iboard-room-settings__field-row flex-wrap">
+                  <button
+                    type="button"
+                    disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
+                    onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
+                    className="iboard-room-settings__mini-ghost"
+                  >
+                    {room.timer.running ? 'Pause' : 'Resume'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={timerBusy}
+                    onClick={() => controlRoomTimer('add', { seconds: 60 })}
+                    className="iboard-room-settings__mini-ghost"
+                  >
+                    +1m
+                  </button>
+                  <button
+                    type="button"
+                    disabled={timerBusy}
+                    onClick={() => controlRoomTimer('end')}
+                    className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
+                  >
+                    End
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {settingsOpen && !breakoutsActive && breakoutSetupMode === 'manual' && (
         <div
           ref={breakoutAssignPanelRef}
@@ -4592,156 +4819,6 @@ function TeacherDashboardInner() {
                 </div>
               )}
             </div>
-
-            <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">Board</h3>
-              <div className="iboard-room-settings__card iboard-room-settings__card-pad">
-                <div className="iboard-room-settings__board">
-                  <div
-                    className="iboard-room-settings__seg relative"
-                    role="group"
-                    aria-label="Card view"
-                    data-overview-columns-menu
-                  >
-                    {CARD_VIEWS.map((view) => (
-                      <button
-                        key={view.id}
-                        type="button"
-                        onClick={() => {
-                          if (view.id === 'overview') {
-                            if (cardView === 'overview') {
-                              setOverviewColumnsOpen((open) => !open);
-                            } else {
-                              setCardView('overview');
-                              setOverviewColumnsOpen(false);
-                            }
-                            return;
-                          }
-                          setOverviewColumnsOpen(false);
-                          setCardView(view.id);
-                        }}
-                        title={view.id === 'overview' ? `${view.label} · columns` : view.label}
-                        aria-label={view.id === 'overview' ? `${view.label}, choose columns` : view.label}
-                        aria-pressed={cardView === view.id}
-                        aria-expanded={view.id === 'overview' ? overviewColumnsOpen : undefined}
-                        aria-haspopup={view.id === 'overview' ? 'menu' : undefined}
-                        className="iboard-room-settings__seg-btn"
-                      >
-                        <CardViewIcon id={view.id} />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="iboard-room-settings__board-timer">
-                    {!room?.timer?.active ? (
-                      <div className="iboard-room-settings__field-row">
-                        <span className="iboard-room-settings__timer-label">Timer</span>
-                        <input
-                          type="number"
-                          min="1"
-                          max="120"
-                          inputMode="numeric"
-                          value={timerMinutes}
-                          onFocus={() => setTimerMinutes('')}
-                          onChange={(event) => {
-                            const raw = event.target.value;
-                            if (raw === '') {
-                              setTimerMinutes('');
-                              return;
-                            }
-                            const next = Math.floor(Number(raw));
-                            if (!Number.isFinite(next)) return;
-                            setTimerMinutes(String(Math.max(1, Math.min(120, next))));
-                          }}
-                          onBlur={() => {
-                            if (timerMinutes === '' || !Number(timerMinutes)) setTimerMinutes('5');
-                          }}
-                          aria-label="Timer minutes"
-                        />
-                        <button
-                          type="button"
-                          disabled={timerBusy || !Number(timerMinutes)}
-                          onClick={() =>
-                            controlRoomTimer('start', {
-                              seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
-                            })
-                          }
-                          className="iboard-room-settings__mini"
-                        >
-                          Start
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="min-w-0 flex-1">
-                        <div className="iboard-room-settings__timer-head">
-                          <span>Timer</span>
-                          <RoomTimerPill
-                            timer={room?.timer}
-                            onFinishedClick={() => controlRoomTimer('end')}
-                          />
-                        </div>
-                        <div className="iboard-room-settings__field-row flex-wrap">
-                          <button
-                            type="button"
-                            disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
-                            onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
-                            className="iboard-room-settings__mini-ghost"
-                          >
-                            {room.timer.running ? 'Pause' : 'Resume'}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={timerBusy}
-                            onClick={() => controlRoomTimer('add', { seconds: 60 })}
-                            className="iboard-room-settings__mini-ghost"
-                          >
-                            +1m
-                          </button>
-                          <button
-                            type="button"
-                            disabled={timerBusy}
-                            onClick={() => controlRoomTimer('end')}
-                            className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
-                          >
-                            End
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {overviewColumnsOpen && cardView === 'overview' ? (
-                  <div
-                    className="iboard-room-settings__columns"
-                    role="menu"
-                    aria-label="Overview columns"
-                    data-overview-columns-menu
-                  >
-                    {OVERVIEW_COLUMN_OPTIONS.map((count) => {
-                      const active = overviewColumns === count;
-                      return (
-                        <button
-                          key={count}
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={active}
-                          onClick={() => {
-                            setOverviewColumns(count);
-                            setOverviewColumnsOpen(false);
-                          }}
-                          className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
-                            active
-                              ? 'bg-[#5a5fc3] text-white shadow-sm'
-                              : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          {count}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            </section>
 
             <section className="iboard-room-settings__section">
               <h3 className="iboard-room-settings__label">Breakouts</h3>

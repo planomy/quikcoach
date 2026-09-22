@@ -1,6 +1,6 @@
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 
-function formatTimer(totalSeconds) {
+export function formatTimer(totalSeconds) {
   const seconds = Math.max(0, Number(totalSeconds) || 0);
   const minutes = Math.floor(seconds / 60);
   return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
@@ -53,7 +53,7 @@ export default function RoomTimerPill({ timer, onClick, onFinishedClick, classNa
         aria-label={
           finished
             ? 'Time up. Clear timer for the class.'
-            : `Timer ${label}. Open timer settings.`
+            : `Timer ${label}. Open the timer.`
         }
         title={finished ? 'Clear timer for the class' : undefined}
       >
