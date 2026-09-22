@@ -39,7 +39,7 @@ import {
   buildStudentPortfolioText,
 } from '../lib/exportRoom.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
-import { studentTileMeta } from '../lib/liveResponseMeta.js';
+import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
@@ -3679,20 +3679,13 @@ function TeacherDashboardInner() {
             const st = activityStatus(s.updated_at, activityNow);
             const pulseStudent = liveStudentById.get(Number(s.id));
             const inQuestion = !!livePulse.activity;
-            const pulseMeta = pulseStudent ? studentTileMeta(pulseStudent) : null;
-            const showPulseState = pulseMeta && (inQuestion || (pulseStudent.engagement_status && pulseStudent.engagement_status !== 'ready'));
-            const light =
-              showPulseState
-                ? pulseStudent?.hasResponded
-                  ? 'bg-indigo-500'
-                  : pulseStudent?.connected
-                    ? 'bg-amber-500'
-                    : 'bg-slate-200'
-                : st === 'live'
-                  ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.55)]'
-                  : st === 'warm'
-                    ? 'bg-amber-400'
-                    : 'bg-slate-300';
+            const askedIn = inQuestion && !!pulseStudent?.hasResponded;
+            const engagementKey = String(pulseStudent?.engagement_status || '');
+            const engagementLabel =
+              engagementKey && engagementKey !== 'ready'
+                ? LIVE_STATUS_LABELS[engagementKey] || engagementKey
+                : '';
+            const writingNow = st === 'live';
             const handQuestions = pendingHandByStudentId.get(Number(s.id)) || [];
             const handUp = handQuestions.length > 0;
             const monitoring = monitoredIds.has(Number(s.id));
@@ -3706,7 +3699,7 @@ function TeacherDashboardInner() {
                 key={s.id}
                 data-student-id={s.id}
                 data-inbox-waiting={inboxWaiting ? 'true' : undefined}
-                title={handUp ? `${s.name} has a question — tap to open` : (showPulseState ? pulseMeta.title : undefined)}
+                title={handUp ? `${s.name} has a question — tap to open` : undefined}
                 role={handUp ? 'button' : undefined}
                 tabIndex={handUp ? 0 : undefined}
                 onClick={handUp ? () => setHandQuestionTarget({ student: s, questions: handQuestions }) : undefined}
@@ -3728,8 +3721,6 @@ function TeacherDashboardInner() {
                           ? 'border border-indigo-400 ring-2 ring-indigo-200 dark:border-indigo-500 dark:ring-indigo-900/70'
                           : monitoring
                           ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : showPulseState
-                          ? pulseMeta.className
                           : notStarted
                           ? 'border border-[#d4d4dc] dark:border-slate-600'
                           : 'border border-[#dedee6] dark:border-slate-700/80'
@@ -3800,21 +3791,31 @@ function TeacherDashboardInner() {
                           Away
                         </span>
                       ) : null}
-                      {showPulseState || st === 'live' || st === 'warm' ? (
-                      <span
-                        title={
-                          showPulseState
-                            ? pulseMeta.title
-                            : isAway
-                              ? 'Away — tab or app in background'
-                              : 'Writing activity'
-                        }
-                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                          isAway && !showPulseState
-                            ? 'bg-[#5a5fc3] ring-1 ring-[#d5d4e4] dark:ring-indigo-900'
-                            : light
-                        }`}
-                      />
+                      {engagementLabel ? (
+                        <span
+                          title={engagementLabel}
+                          className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
+                        >
+                          {engagementLabel}
+                        </span>
+                      ) : null}
+                      {writingNow ? (
+                        <span
+                          title="Writing now"
+                          aria-label="Writing now"
+                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.55)]"
+                        />
+                      ) : null}
+                      {askedIn ? (
+                        <span
+                          title="Answered"
+                          aria-label="Answered"
+                          className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#5a5fc3] dark:text-indigo-300"
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m5 12 4.5 4.5L19 7" />
+                          </svg>
+                        </span>
                       ) : null}
                       {monitoring ? (
                         <span

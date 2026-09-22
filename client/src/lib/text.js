@@ -46,7 +46,7 @@ export function parseServerDateMs(value) {
   return Number.isFinite(ms) ? ms : NaN;
 }
 
-/** Activity dot: `live` (recent save), `warm`, or `idle`. */
+/** Writing recency: `live` (last ~20s), `warm` (last ~2 min), or `idle`. Teacher cards only light `live`. */
 export function activityStatus(updatedAt, nowMs = Date.now()) {
   if (!updatedAt) return 'idle';
   const ms = parseServerDateMs(updatedAt);
