@@ -175,6 +175,12 @@ const TEACHER_TOOLS_TABS = [
   { id: 'responses', label: 'Responses', icon: '/rail/responses-icon.png' },
 ];
 
+const ADD_CARD_ACTIONS = [
+  { id: 'document', label: 'Doc', title: 'Add document', hint: 'PDF for Inbox or the board' },
+  { id: 'image', label: 'Image', title: 'Add image', hint: 'Photo or screenshot' },
+  { id: 'text', label: 'Text', title: 'Add text', hint: 'A note on the board or Inbox' },
+];
+
 function csvCell(value) {
   const text = String(value ?? '');
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -381,6 +387,7 @@ function TeacherDashboardInner() {
   const [studentActionMenuAnchor, setStudentActionMenuAnchor] = useState(null);
   const studentActionMenuBtnRefs = useRef(new Map());
   const [addCardOpen, setAddCardOpen] = useState(false);
+  const [addCardMode, setAddCardMode] = useState('document');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [teacherPanelHidden, setTeacherPanelHidden] = useState(() => {
     try {
@@ -1507,6 +1514,7 @@ function TeacherDashboardInner() {
       if (addCardOpen) {
         if (addCardButtonRef.current?.contains(target)) return;
         if (addCardPanelRef.current?.contains(target)) return;
+        if (target?.closest?.('[data-iboard-add-card-trigger="true"]')) return;
       }
       if (settingsOpen) {
         if (settingsButtonRef.current?.contains(target)) return;
@@ -1792,22 +1800,23 @@ function TeacherDashboardInner() {
     setSettingsOpen(true);
   }
 
-  function openAddCard() {
+  function openAddCard(mode = 'document') {
+    const next = ADD_CARD_ACTIONS.some((action) => action.id === mode) ? mode : 'document';
     closeSettings();
-    if (addCardOpen) {
+    if (addCardOpen && addCardMode === next) {
       closeAddCard();
       return;
     }
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
+    setAddCardMode(next);
     setAddCardTitle('Teacher');
     setAddCardText('');
     setAddCardImage('');
     setAddCardFile(null);
     setAddCardSendInbox(true);
+    setAddCardPlaceOnBoard(true);
     setAddCardError('');
-    setAddCardPlaceOnBoard(true);
-    setAddCardPlaceOnBoard(true);
     setAddCardOpen(true);
   }
 
@@ -1876,9 +1885,21 @@ function TeacherDashboardInner() {
       return;
     }
     const name = String(file.name || '').toLowerCase();
-    const okExt = /\.(pdf|jpe?g|png|webp)$/.test(name);
-    const okMime = /^(application\/pdf|image\/(jpeg|jpg|png|webp))$/i.test(file.type || '');
-    if (!okExt && !okMime) {
+    const imageExt = /\.(jpe?g|png|webp)$/.test(name);
+    const imageMime = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type || '');
+    const pdfExt = /\.pdf$/.test(name);
+    const pdfMime = /^application\/pdf$/i.test(file.type || '');
+    if (addCardMode === 'image') {
+      if (!imageExt && !imageMime) {
+        setAddCardError('Use a JPG, PNG, or WebP image');
+        return;
+      }
+    } else if (addCardMode === 'document') {
+      if (!pdfExt && !pdfMime) {
+        setAddCardError('Use a PDF — Word and PowerPoint can’t preview in class');
+        return;
+      }
+    } else if (!pdfExt && !pdfMime && !imageExt && !imageMime) {
       setAddCardError('Use a PDF or image — Word/PowerPoint can’t preview in class');
       return;
     }
@@ -1974,7 +1995,13 @@ function TeacherDashboardInner() {
 
     const text = addCardText.trim();
     if (!text) {
-      setAddCardError('Attach a PDF/DOC, paste an image, or type some text');
+      setAddCardError(
+        addCardMode === 'image'
+          ? 'Choose or paste an image first'
+          : addCardMode === 'document'
+            ? 'Attach a PDF first'
+            : 'Write some text first'
+      );
       return;
     }
     setAddCardBusy(true);
@@ -3036,6 +3063,47 @@ function TeacherDashboardInner() {
       ) : null}
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
+          <div className="iboard-arr-rail__add" aria-label="Add to class">
+            {ADD_CARD_ACTIONS.map((action) => {
+              const active = addCardOpen && addCardMode === action.id;
+              return (
+                <HintWrap key={action.id} hint={action.hint} prefer="right">
+                  <button
+                    type="button"
+                    data-iboard-add-card-trigger="true"
+                    onClick={() => openAddCard(action.id)}
+                    aria-expanded={active}
+                    data-active={active ? 'true' : 'false'}
+                    className="iboard-arr-btn"
+                    title={action.title}
+                    aria-label={action.title}
+                  >
+                    {action.id === 'document' ? (
+                      <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M7 3.75h7.2L18.5 8v12.25H7z" />
+                        <path d="M14.1 3.75V8h4.4" />
+                        <path d="M9.4 12.2h5.2" />
+                        <path d="M9.4 15.4h5.2" />
+                      </svg>
+                    ) : action.id === 'image' ? (
+                      <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="4.5" y="5.5" width="15" height="13" rx="2" />
+                        <circle cx="9.2" cy="10.1" r="1.35" />
+                        <path d="m6.6 16.2 3.6-3.5 2.4 2.2 2.2-2.1 2.6 3.4" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M5.5 6.5h13" />
+                        <path d="M5.5 12h13" />
+                        <path d="M5.5 17.5h8.5" />
+                      </svg>
+                    )}
+                    <span className="iboard-arr-label">{action.label}</span>
+                  </button>
+                </HintWrap>
+              );
+            })}
+          </div>
           <div className="iboard-arr-rail__tools">
             {TEACHER_TOOLS_TABS.map((tab) => {
               const active = toolsPanelOpen && toolsTab === tab.id;
@@ -3130,7 +3198,8 @@ function TeacherDashboardInner() {
                 ref={addCardButtonRef}
                 type="button"
                 className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
-                onClick={openAddCard}
+                data-iboard-add-card-trigger="true"
+                onClick={() => openAddCard(addCardMode || 'document')}
                 aria-expanded={addCardOpen}
                 aria-label="Add teacher card"
                 title="Add"
@@ -4178,8 +4247,16 @@ function TeacherDashboardInner() {
           >
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
               <div>
-                <h2 id="add-teacher-card-title" className="font-display text-base font-black text-slate-950 dark:text-white">Add card or handout</h2>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">PDF or image to Inbox for this lesson</p>
+                <h2 id="add-teacher-card-title" className="font-display text-base font-black text-slate-950 dark:text-white">
+                  {addCardMode === 'image' ? 'Add image' : addCardMode === 'text' ? 'Add text' : 'Add document'}
+                </h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  {addCardMode === 'image'
+                    ? 'Photo or screenshot for Inbox or the board'
+                    : addCardMode === 'text'
+                      ? 'A short note for the board, and Inbox if you want'
+                      : 'PDF for Inbox or the board'}
+                </p>
               </div>
               <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
             </div>
@@ -4193,33 +4270,48 @@ function TeacherDashboardInner() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 placeholder="Title"
               />
-              <label className="flex cursor-pointer flex-col gap-1 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/60 px-3 py-3 text-sm dark:border-indigo-800 dark:bg-indigo-950/30">
-                <span className="font-bold text-indigo-900 dark:text-indigo-200">Attach PDF or image</span>
-                <span className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">Up to 5 MB · previews in student Inbox (Word/PPT not supported)</span>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
-                  className="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white dark:text-slate-300"
-                  onChange={handleAddCardFileChange}
-                  disabled={addCardBusy}
-                />
-              </label>
+              {addCardMode !== 'text' ? (
+                <label
+                  className="flex cursor-pointer flex-col gap-1 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/60 px-3 py-3 text-sm dark:border-indigo-800 dark:bg-indigo-950/30"
+                  onPaste={addCardMode === 'image' ? handleAddCardPaste : undefined}
+                >
+                  <span className="font-bold text-indigo-900 dark:text-indigo-200">
+                    {addCardMode === 'image' ? 'Choose or paste an image' : 'Attach a PDF'}
+                  </span>
+                  <span className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">
+                    {addCardMode === 'image'
+                      ? 'Up to 5 MB · JPG, PNG, or WebP'
+                      : 'Up to 5 MB · export Word or PowerPoint as PDF to preview in class'}
+                  </span>
+                  <input
+                    type="file"
+                    accept={
+                      addCardMode === 'image'
+                        ? '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
+                        : '.pdf,application/pdf'
+                    }
+                    className="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white dark:text-slate-300"
+                    onChange={handleAddCardFileChange}
+                    disabled={addCardBusy}
+                  />
+                </label>
+              ) : null}
               {addCardFile && (
                 <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950/40">
                   <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">{addCardFile.name}</p>
                   <button type="button" onClick={() => setAddCardFile(null)} className="shrink-0 text-xs font-bold text-indigo-600 dark:text-indigo-400">Clear</button>
                 </div>
               )}
-              <textarea
-                value={addCardText}
-                onChange={(event) => setAddCardText(event.target.value)}
-                onPaste={handleAddCardPaste}
-                rows={4}
-                disabled={!!addCardImage || !!addCardFile}
-                aria-label="Card text"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 disabled:opacity-45 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                placeholder="Or write text / paste a screenshot…"
-              />
+              {addCardMode === 'text' ? (
+                <textarea
+                  value={addCardText}
+                  onChange={(event) => setAddCardText(event.target.value)}
+                  rows={5}
+                  aria-label="Card text"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  placeholder="Write the note…"
+                />
+              ) : null}
               {addCardImage && (
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/30">
                   <img src={addCardImage} alt="Pasted card preview" className="max-h-48 w-full object-contain" />
@@ -4242,7 +4334,7 @@ function TeacherDashboardInner() {
                 />
                 <span>Send to Inbox</span>
               </label>
-              {(addCardFile || addCardImage) && (
+              {(addCardMode === 'document' || addCardMode === 'image') && (
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                   <input
                     type="checkbox"

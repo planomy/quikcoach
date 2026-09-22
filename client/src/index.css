@@ -517,6 +517,18 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   min-height: 0;
 }
 
+.iboard-arr-rail__add {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0 0 0.4rem;
+  margin-bottom: 0.15rem;
+  border-bottom: 1px solid #e2e8ef;
+}
+
 .iboard-arr-rail__tools {
   flex: 1 1 auto;
   display: flex;
@@ -1978,6 +1990,10 @@ html.dark .iboard-header-dock--end {
 html.dark .iboard-arr-rail {
   background: #181d25;
   border-right-color: #343c46;
+}
+
+html.dark .iboard-arr-rail__add {
+  border-bottom-color: #343c46;
 }
 
 html.dark .iboard-arr-btn {
