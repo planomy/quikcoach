@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  commentTone,
   inferReplacementPassage,
+  locateAnnotationRange,
   plainTextFromElement,
-  rangeForPlainOffsets,
-  resolveAnnotation,
 } from '../lib/annotations.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
@@ -32,14 +32,6 @@ function currentStudentId() {
 
 function editorElement() {
   return document.querySelector('[role="textbox"][contenteditable]');
-}
-
-/** open | reopen | fixed | resolved — reopen = teacher Check again */
-function commentTone(annotation) {
-  if (annotation?.status === 'resolved') return 'resolved';
-  if (annotation?.status === 'fixed') return 'fixed';
-  if (annotation?.student_fixed_at) return 'reopen';
-  return 'open';
 }
 
 function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
@@ -135,9 +127,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       editorRect.right > vp.left &&
       editorRect.left < vp.left + vp.width;
     for (const annotation of annotations || []) {
-      const tone = commentTone(annotation);
-      const resolved = resolveAnnotation(annotation, text);
-      const range = resolved.detached ? null : rangeForPlainOffsets(editor, resolved.start, resolved.end, resolved.quote);
+      const { resolved, range } = locateAnnotationRange(editor, annotation, text);
+      const tone = commentTone(annotation, resolved.detached);
       if (!range) {
         if (editorVisible) {
           const pos = detachedMarkerPosition(editorRect, detachedCount);
@@ -160,7 +151,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         const pos = markerPosition(rect);
         nextMarkers.push({
           annotation,
-          detached: false,
+          detached: resolved.detached,
           top: pos.top,
           left: pos.left,
         });
@@ -247,11 +238,11 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     for (const marker of markers) {
       const id = Number(marker.annotation?.id);
       if (!id) continue;
-      const tone = commentTone(marker.annotation);
+      const persisted = commentTone(marker.annotation);
       const snapshot = checkAgainSnapshotRef.current.get(id);
       const shouldAuto =
-        (tone === 'open' && marker.detached) ||
-        (tone === 'reopen' && snapshot != null && liveText !== snapshot);
+        (persisted === 'open' && marker.detached) ||
+        (persisted === 'reopen' && snapshot != null && liveText !== snapshot);
       if (!shouldAuto) {
         const pending = timers.get(id);
         if (pending) {
@@ -439,7 +430,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     setActionBusy(false);
   }
 
-  const openTone = commentTone(openMarker?.annotation);
+  const openTone = commentTone(openMarker?.annotation, openMarker?.detached);
   const showChangedPassage = !!openMarker?.detached;
   const openLiveText = editorElement() ? plainTextFromElement(editorElement()) : '';
   const reopenSnapshot = openMarker
@@ -458,7 +449,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         ::highlight(${RESOLVED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
       `}</style>
       {markers.map((marker) => {
-        const tone = commentTone(marker.annotation);
+        const tone = commentTone(marker.annotation, marker.detached);
         const toneClass =
           tone === 'resolved'
             ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
@@ -538,15 +529,21 @@ export default function StudentAnnotationController({ socket, studentId: supplie
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
             {showChangedPassage && (
-              <div className="mt-2.5 rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] px-2.5 py-2 text-xs font-semibold text-[#3c3c45] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">
-                  You changed it to
-                </p>
-                <p className="mt-0.5 whitespace-pre-wrap break-words font-medium leading-snug">
-                  {openMarkerChange?.after?.trim()
-                    ? `“${openMarkerChange.after.trim()}”`
-                    : 'Passage removed or could not be located'}
-                </p>
+              <div className="mt-2.5 space-y-1.5 rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] p-2.5 text-xs dark:border-slate-600 dark:bg-slate-800">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Was</p>
+                  <p className="mt-0.5 font-medium leading-snug text-[#52525c] line-through decoration-[#c4c4ce] dark:text-slate-400">
+                    {openMarkerChange?.before || openMarker.annotation.quote || '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Now</p>
+                  <p className="mt-0.5 font-semibold leading-snug text-[#3c3c45] dark:text-slate-100">
+                    {openMarkerChange?.after?.trim()
+                      ? openMarkerChange.after.trim()
+                      : 'Passage removed or could not be located'}
+                  </p>
+                </div>
               </div>
             )}
             {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
@@ -571,7 +568,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
               </button>
             ) : (
               <p className="rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] px-3 py-2 text-xs font-semibold text-[#5c5c68] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                Marking as checked…
+                Waiting for your teacher
               </p>
             )}
           </div>

@@ -90,13 +90,84 @@ export function resolveAnnotation(annotation, rawText) {
     annotation?.prefix_context || '',
     annotation?.suffix_context || ''
   );
-  if (located == null) {
-    return { ...annotation, detached: true, start: expectedStart, end: expectedEnd };
+  if (located != null) {
+    return { ...annotation, detached: false, start: located, end: located + quote.length };
   }
-  return { ...annotation, detached: false, start: located, end: located + quote.length };
+  const replacement = inferReplacementPassage(annotation, text);
+  if (replacement?.after?.trim() && replacement.end > replacement.start) {
+    return {
+      ...annotation,
+      detached: true,
+      start: replacement.start,
+      end: replacement.end,
+      replacement,
+    };
+  }
+  return { ...annotation, detached: true, start: expectedStart, end: expectedEnd };
 }
 
-/** When a quote can no longer be found, recover what sits between its stored prefix/suffix now. */
+/** Highlight the original quote, or the tight replacement once that quote is gone. */
+export function locateAnnotationRange(root, annotation, rawText) {
+  const text = normalise(rawText);
+  const resolved = resolveAnnotation(annotation, text);
+  const canHighlight = !resolved.detached || Boolean(resolved.replacement?.after?.trim());
+  const liveQuote = canHighlight ? text.slice(resolved.start, resolved.end) : '';
+  const range =
+    canHighlight && liveQuote
+      ? rangeForPlainOffsets(root, resolved.start, resolved.end, liveQuote)
+      : null;
+  return { resolved, range };
+}
+
+/** open | reopen | fixed | resolved — reopen = teacher Check again */
+export function commentTone(annotation, detached = false) {
+  if (annotation?.status === 'resolved') return 'resolved';
+  if (annotation?.status === 'fixed') return 'fixed';
+  if (annotation?.student_fixed_at) return 'reopen';
+  if (detached) return 'fixed';
+  return 'open';
+}
+
+function tokenCount(value) {
+  return String(value || '').trim().split(/\s+/).filter(Boolean).length;
+}
+
+function tokenEnd(text, start) {
+  const source = String(text || '');
+  let i = Math.max(0, Math.min(source.length, start));
+  if (i >= source.length) return i;
+  if (!isWordChar(source[i])) {
+    if (/\s/.test(source[i])) return i;
+    while (i < source.length && !isWordChar(source[i]) && !/\s/.test(source[i])) i += 1;
+    return i;
+  }
+  while (i < source.length && isWordChar(source[i])) i += 1;
+  return i;
+}
+
+function spanTokens(text, start, count) {
+  const source = String(text || '');
+  let i = Math.max(0, start);
+  let n = 0;
+  while (i < source.length && n < count) {
+    if (/\s/.test(source[i])) {
+      i += 1;
+      continue;
+    }
+    const next = tokenEnd(source, i);
+    if (next === i) break;
+    i = next;
+    n += 1;
+  }
+  return i;
+}
+
+function tightReplacementEnd(text, start, quote) {
+  const tokens = Math.max(1, tokenCount(quote));
+  return tokenCount(quote) <= 1 ? tokenEnd(text, start) : spanTokens(text, start, tokens);
+}
+
+/** When a quote can no longer be found, recover only the word or phrase that replaced it. */
 export function inferReplacementPassage(annotation, rawText) {
   const text = normalise(rawText);
   const quote = normalise(annotation?.quote || '');
@@ -105,7 +176,7 @@ export function inferReplacementPassage(annotation, rawText) {
   const expectedStart = Math.max(0, Number(annotation?.start_offset) || 0);
   if (!quote) return null;
 
-  let start = expectedStart;
+  let start = Math.min(expectedStart, text.length);
   if (prefix) {
     let best = -1;
     let bestDist = Infinity;
@@ -121,20 +192,29 @@ export function inferReplacementPassage(annotation, rawText) {
       }
       cursor = index + 1;
     }
-    if (best < 0) return { before: quote, after: '' };
-    start = best;
+    if (best >= 0) start = best;
   }
 
-  let end = Math.min(text.length, start + Math.max(quote.length * 3, 48));
+  let end = tightReplacementEnd(text, start, quote);
   if (suffix) {
     const index = text.indexOf(suffix, start);
-    if (index === -1) return { before: quote, after: text.slice(start, end).trim() };
-    end = index;
+    if (index >= start) {
+      const between = text.slice(start, index);
+      const originalTokens = Math.max(1, tokenCount(quote));
+      const betweenTokens = tokenCount(between);
+      if (
+        betweenTokens > 0 &&
+        betweenTokens <= originalTokens + 1 &&
+        between.length <= Math.max(quote.length * 3, 24)
+      ) {
+        end = index;
+      }
+    }
   }
 
   const after = text.slice(start, end);
   if (after === quote) return null;
-  return { before: quote, after };
+  return { before: quote, after, start, end };
 }
 
 function fragmentToPlainText(fragment) {

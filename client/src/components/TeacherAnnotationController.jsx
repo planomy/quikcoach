@@ -2,10 +2,11 @@ import { RemoveButton, CloseButton } from './PanelActions.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  commentTone,
   inferReplacementPassage,
+  locateAnnotationRange,
   plainTextFromElement,
   rangeForPlainOffsets,
-  resolveAnnotation,
   selectionOffsetsWithin,
   writingRootForPane,
 } from '../lib/annotations.js';
@@ -27,13 +28,6 @@ const MAX_BANKS = 12;
 const MAX_BANK_COMMENTS = 40;
 const PENDING_WIDTH = 400;
 
-/** open | reopen | fixed | resolved — reopen = teacher Check again */
-function commentTone(annotation) {
-  if (annotation?.status === 'resolved') return 'resolved';
-  if (annotation?.status === 'fixed') return 'fixed';
-  if (annotation?.student_fixed_at) return 'reopen';
-  return 'open';
-}
 /** Max scrollable panel height — not the height used for initial placement. */
 const PENDING_MAX_HEIGHT = 440;
 /** Compact type-first composer; grows when Quick tray opens. */
@@ -533,9 +527,8 @@ export default function TeacherAnnotationController() {
       const paneRect = card.textPane.getBoundingClientRect();
       let detachedCount = 0;
       for (const annotation of annotations || []) {
-        const tone = commentTone(annotation);
-        const resolved = resolveAnnotation(annotation, fullText);
-        const range = resolved.detached ? null : rangeForPlainOffsets(writingRoot, resolved.start, resolved.end, resolved.quote);
+        const { resolved, range } = locateAnnotationRange(writingRoot, annotation, fullText);
+        const tone = commentTone(annotation, resolved.detached);
         if (!range) {
           if (paneIsOnScreen(paneRect)) {
             const position = detachedMarkerPosition(card.textPane, detachedCount);
@@ -562,7 +555,7 @@ export default function TeacherAnnotationController() {
         nextMarkers.push({
           studentId,
           annotation,
-          detached: false,
+          detached: resolved.detached,
           top: position.top,
           left: position.left,
           position: position.position,
@@ -1269,6 +1262,9 @@ export default function TeacherAnnotationController() {
     const fullText = plainTextFromElement(writingRoot);
     return inferReplacementPassage(openMarker.annotation, fullText);
   }, [openMarker]);
+  const openMarkerTone = openMarker
+    ? commentTone(openMarker.annotation, openMarker.detached)
+    : null;
 
   function renderCommentChrome({ onEdit, onDelete }) {
     return (
@@ -1345,7 +1341,7 @@ export default function TeacherAnnotationController() {
   }
 
   function renderMarkerButton(marker) {
-    const tone = commentTone(marker.annotation);
+    const tone = commentTone(marker.annotation, marker.detached);
     const toneClass =
       tone === 'resolved'
         ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
@@ -1724,15 +1720,15 @@ export default function TeacherAnnotationController() {
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
-            {openMarker.annotation.status === 'resolved' ? (
+            {openMarkerTone === 'resolved' ? (
               <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-emerald-600 dark:text-emerald-400">
                 Confirmed fixed
               </p>
-            ) : openMarker.annotation.status === 'fixed' ? (
+            ) : openMarkerTone === 'fixed' ? (
               <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#6b6b78]">
                 Waiting for your review
               </p>
-            ) : openMarker.annotation.student_fixed_at ? (
+            ) : openMarkerTone === 'reopen' ? (
               <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-rose-500">
                 Asked to check again
               </p>
@@ -1769,7 +1765,7 @@ export default function TeacherAnnotationController() {
             {reviewError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{reviewError}</p>}
           </div>
           <div className="shrink-0 border-t border-[#e4e4ea] bg-[#fafafc] px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
-            {openMarker.annotation.status === 'fixed' ? (
+            {openMarkerTone === 'fixed' ? (
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
