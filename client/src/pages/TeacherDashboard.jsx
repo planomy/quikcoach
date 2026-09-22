@@ -3677,7 +3677,7 @@ function TeacherDashboardInner() {
               ) : null}
               <div className={`grid ${cardView === 'overview' ? 'gap-3' : 'gap-4'} ${studentGridClass}`}>
           {section.students.map((s) => {
-            const displayText = s.text || '';
+            const displayText = String(s.text || '').trim();
             const wc = wordCount(s.text);
             const st = activityStatus(s.updated_at, activityNow);
             const pulseStudent = liveStudentById.get(Number(s.id));
@@ -3981,7 +3981,7 @@ function TeacherDashboardInner() {
                   data-student-writing-pane
                   data-card-font="true"
                   style={{ fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 leading-relaxed scrollbar-thin ${studentWritingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 leading-relaxed scrollbar-thin ${cardEmpty ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">

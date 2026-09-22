@@ -627,7 +627,8 @@ export default function TeacherAnnotationController() {
     setNamedHighlight(FIXED_HIGHLIGHT_NAME, resolvedRanges);
     hoverTargetsRef.current = hoverTargets;
     const lit = hoverTargets.find((item) => item.key === hoveredKeyRef.current);
-    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit?.range || null);
+    if (lit?.range) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit.range);
+    else if (!hoveredKeyRef.current) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
     const stacked = stackGutterMarkers(nextMarkers, (marker) => (
       (marker.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 6
     ));
@@ -747,20 +748,22 @@ export default function TeacherAnnotationController() {
     const applyHover = (key) => {
       hoveredKeyRef.current = key;
       const hit = hoverTargetsRef.current.find((item) => item.key === key);
+      if (key && !hit?.range) {
+        setHoveredKey((prev) => (prev === key ? prev : key));
+        return;
+      }
       setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hit?.range || null);
       setHoveredKey((prev) => (prev === key ? prev : key));
     };
     const onMove = (event) => {
       if (selectingInPaneRef.current) return;
-      const mark = event.target?.closest?.('.iboard-ann-mark');
-      const fromMark = mark?.dataset?.annKey;
+      const { clientX: x, clientY: y } = event;
+      const fromMark = document.elementFromPoint(x, y)?.closest?.('.iboard-ann-mark')?.dataset?.annKey;
       if (fromMark) {
         applyHover(fromMark);
         return;
       }
-      const hit = hoverTargetsRef.current.find((item) => (
-        rangeContainsPoint(item.range, event.clientX, event.clientY)
-      ));
+      const hit = hoverTargetsRef.current.find((item) => rangeContainsPoint(item.range, x, y));
       applyHover(hit?.key || null);
     };
     document.addEventListener('pointermove', onMove, { passive: true });
