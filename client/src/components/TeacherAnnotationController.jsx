@@ -1938,7 +1938,7 @@ export default function TeacherAnnotationController() {
             {reviewError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{reviewError}</p>}
           </div>
           <div className="shrink-0 border-t border-[#e4e4ea] bg-[#fafafc] px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
-            {openMarkerTone === 'fixed' ? (
+            {openMarkerTone === 'fixed' || openMarkerTone === 'reopen' ? (
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
@@ -1948,14 +1948,16 @@ export default function TeacherAnnotationController() {
                 >
                   Confirm fixed
                 </button>
-                <button
-                  type="button"
-                  disabled={reviewBusyId === openMarker.annotation.id}
-                  onClick={() => reviewFixedComment(openMarker, 'reopen')}
-                  className="min-w-0 flex-1 whitespace-nowrap rounded-lg border border-[#d5d4e4] bg-white px-2 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                >
-                  Check again
-                </button>
+                {openMarkerTone === 'fixed' ? (
+                  <button
+                    type="button"
+                    disabled={reviewBusyId === openMarker.annotation.id}
+                    onClick={() => reviewFixedComment(openMarker, 'reopen')}
+                    className="min-w-0 flex-1 whitespace-nowrap rounded-lg border border-[#d5d4e4] bg-white px-2 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Check again
+                  </button>
+                ) : null}
                 {renderCommentChrome({
                   onEdit: () => editComment(openMarker),
                   onDelete: () => deleteComment(openMarker),
