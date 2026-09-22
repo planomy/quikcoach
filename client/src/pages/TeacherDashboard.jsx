@@ -341,6 +341,11 @@ function TeacherDashboardInner() {
 
   const [pasteBox, setPasteBox] = useState('');
   const [copyToast, setCopyToast] = useState('');
+  const [joinWhisper, setJoinWhisper] = useState('');
+  const joinWhisperTokenRef = useRef(0);
+  const rosterReadyRef = useRef(false);
+  const seenStudentIdsRef = useRef(new Set());
+  const firstJoinToldRef = useRef(false);
   const [copiedStudentId, setCopiedStudentId] = useState(null);
   const [noteTarget, setNoteTarget] = useState(null);
   const [noteReceiptByStudentId, setNoteReceiptByStudentId] = useState({});
@@ -466,6 +471,15 @@ function TeacherDashboardInner() {
 
   const clearSessionDirty = useCallback(() => {
     sessionDirtyRef.current = false;
+  }, []);
+
+  const showJoinWhisper = useCallback((message, ms = 2000) => {
+    const token = joinWhisperTokenRef.current + 1;
+    joinWhisperTokenRef.current = token;
+    setJoinWhisper(message);
+    window.setTimeout(() => {
+      if (joinWhisperTokenRef.current === token) setJoinWhisper('');
+    }, ms);
   }, []);
 
   const pushSettings = useCallback(
@@ -1084,6 +1098,42 @@ function TeacherDashboardInner() {
     () => [...students].sort((a, b) => a.id - b.id),
     [students]
   );
+
+  useEffect(() => {
+    if (!joined) {
+      rosterReadyRef.current = false;
+      seenStudentIdsRef.current = new Set();
+      firstJoinToldRef.current = false;
+      return;
+    }
+    const rows = students.filter((student) => Number(student.id));
+    const ids = rows.map((student) => Number(student.id));
+    if (!rosterReadyRef.current) {
+      seenStudentIdsRef.current = new Set(ids);
+      rosterReadyRef.current = true;
+      firstJoinToldRef.current = ids.length > 0;
+      return;
+    }
+    if (ids.length === 0) {
+      seenStudentIdsRef.current = new Set();
+      firstJoinToldRef.current = false;
+      return;
+    }
+    const newcomers = rows.filter((student) => !seenStudentIdsRef.current.has(Number(student.id)));
+    seenStudentIdsRef.current = new Set(ids);
+    if (!newcomers.length) return;
+    const name = String(newcomers[0].name || 'A student').trim() || 'A student';
+    if (!firstJoinToldRef.current) {
+      firstJoinToldRef.current = true;
+      showJoinWhisper(`${name} joined — each card is a student writing live.`, 4200);
+      return;
+    }
+    if (newcomers.length === 1) {
+      showJoinWhisper(`${name} joined`, 2000);
+      return;
+    }
+    showJoinWhisper(`${name} +${newcomers.length - 1} joined`, 2000);
+  }, [joined, students, showJoinWhisper]);
 
   const pendingHandByStudentId = useMemo(() => {
     const map = new Map();
@@ -2852,23 +2902,27 @@ function TeacherDashboardInner() {
           </div>
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
           <div className="iboard-teacher-header-main">
-            <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5 text-sm">
-              <span>
-                Room <b className="iboard-header-code font-mono tabular-nums">{codeInput}</b>
-              </span>
+            <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
+              <HintWrap hint="Copy student join link" prefer="below">
+                <button
+                  type="button"
+                  className="iboard-header-room"
+                  onClick={() => void copyStudentJoinLink()}
+                  aria-label={`Room ${codeInput}. Copy student join link`}
+                >
+                  <span className="iboard-header-room__label">Room</span>
+                  <span className="iboard-header-code">{codeInput}</span>
+                </button>
+              </HintWrap>
               <span className="iboard-header-meta__dot" aria-hidden="true" />
-              <span>
+              <span className="iboard-header-meta__online">
                 <b className="tabular-nums">{orderedStudents.length}</b> online
               </span>
               {attentionSummary ? (
                 <button
                   type="button"
                   onClick={() => setAttentionFocus((on) => !on)}
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold transition ${
-                    attentionFocus
-                      ? 'bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-900'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                  className={`iboard-header-pill iboard-header-pill--attention${attentionFocus ? ' is-on' : ''}`}
                   title={attentionFocus ? 'Show all cards' : 'Bring away / not started cards to the top'}
                   aria-pressed={attentionFocus}
                 >
@@ -2890,11 +2944,7 @@ function TeacherDashboardInner() {
                       return next;
                     });
                   }}
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold transition ${
-                    inboxFocus
-                      ? 'bg-[#5a5fc3] text-white dark:bg-indigo-300 dark:text-indigo-950'
-                      : 'bg-[#ebeaf8] text-[#5a5fc3] hover:bg-[#dcdbf3] dark:bg-indigo-950 dark:text-indigo-200 dark:hover:bg-indigo-900'
-                  }`}
+                  className={`iboard-header-pill iboard-header-pill--inbox${inboxFocus ? ' is-on' : ''}`}
                   title={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'}
                   aria-pressed={inboxFocus}
                 >
@@ -2902,7 +2952,7 @@ function TeacherDashboardInner() {
                 </button>
               ) : null}
               {frozen && (
-                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                <span className="iboard-header-pill iboard-header-pill--frozen">
                   Frozen
                 </span>
               )}
@@ -2979,15 +3029,15 @@ function TeacherDashboardInner() {
           </div>
           </div>
 
-          <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(22rem,calc(100vw-11rem))] -translate-x-1/2 items-center">
-            {!socketConnected ? null : copyToast ? (
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(32rem,calc(100vw-12rem))] -translate-x-1/2 items-center">
+            {!socketConnected ? null : copyToast || joinWhisper ? (
               <div
                 role="status"
                 aria-live="polite"
-                className="pointer-events-auto inline-flex h-8 max-w-full items-center truncate rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 text-[11px] font-black text-[#5a5fc3] shadow-sm dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200"
-                title={copyToast}
+                className="iboard-header-whisper pointer-events-auto"
+                title={copyToast || joinWhisper}
               >
-                {copyToast}
+                {copyToast || joinWhisper}
               </div>
             ) : broadcastPickCount > 0 ? (
               <div className="pointer-events-auto flex items-center gap-2">
@@ -3594,8 +3644,17 @@ function TeacherDashboardInner() {
               <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
         <div className="iboard-student-board-stack">
           {orderedStudents.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 p-10 text-center text-slate-500 dark:text-slate-400">
-              Waiting for students to join…
+            <div className="iboard-board-empty">
+              <p className="iboard-board-empty__kicker">Share this room</p>
+              <button
+                type="button"
+                className="iboard-board-empty__code"
+                onClick={() => void copyStudentJoinLink()}
+                aria-label={`Copy student join link for room ${codeInput}`}
+              >
+                {codeInput}
+              </button>
+              <p className="iboard-board-empty__hint">Cards appear as students join and write.</p>
             </div>
           )}
           {orderedStudents.length > 0 && boardSections.map((section) => (
