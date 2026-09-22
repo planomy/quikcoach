@@ -2693,8 +2693,8 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   align-items: center;
   justify-content: flex-end;
   box-sizing: border-box;
-  min-width: 14px;
-  height: 14px;
+  min-width: 12px;
+  height: 12px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -2706,6 +2706,10 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 
 .iboard-ann-mark:hover .iboard-ann-mark__pip {
   transform: scale(1.08);
+}
+
+.iboard-ann-mark:hover .iboard-ann-mark__stem {
+  border-top-color: #6f6f7a;
 }
 
 .iboard-ann-mark:active .iboard-ann-mark__pip {
@@ -2721,12 +2725,16 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   outline-offset: 2px;
 }
 
+.iboard-ann-mark:focus-visible .iboard-ann-mark__stem {
+  border-top-color: #6f6f7a;
+}
+
 .iboard-ann-mark__pip {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 13px;
-  height: 13px;
+  width: 11px;
+  height: 11px;
   border-radius: 999px;
   background: currentColor;
   pointer-events: auto;
@@ -2734,32 +2742,46 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.iboard-ann-mark--open .iboard-ann-mark__pip,
+.iboard-ann-mark--reopen .iboard-ann-mark__pip {
+  width: 10px;
+  height: 10px;
+}
+
 .iboard-ann-mark__pip svg {
   display: block;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   color: #ffffff;
+}
+
+.iboard-ann-mark--open .iboard-ann-mark__pip svg,
+.iboard-ann-mark--reopen .iboard-ann-mark__pip svg {
+  width: 6px;
+  height: 6px;
 }
 
 .iboard-ann-mark__stem {
   flex: 1 1 auto;
   align-self: center;
   min-width: 4px;
-  height: 1px;
-  margin-right: -1px;
+  height: 0;
+  margin-right: 3px;
   border: 0;
+  border-top: 1.5px dotted #c5c5ce;
   border-radius: 0;
-  background: currentColor;
+  background: none;
+  transition: border-color 160ms ease;
 }
 
 .iboard-ann-mark--compact {
-  min-width: 12px;
-  height: 12px;
+  min-width: 10px;
+  height: 10px;
 }
 
 .iboard-ann-mark--compact .iboard-ann-mark__pip {
-  width: 11px;
-  height: 11px;
+  width: 9px;
+  height: 9px;
 }
 
 .iboard-ann-mark--orphan .iboard-ann-mark__stem {
@@ -2770,6 +2792,15 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 .iboard-ann-mark--fixed { color: #6b6b78; }
 .iboard-ann-mark--reopen { color: #f43f5e; }
 .iboard-ann-mark--resolved { color: #10b981; }
+
+html.dark .iboard-ann-mark__stem {
+  border-top-color: #5c5c68;
+}
+
+html.dark .iboard-ann-mark:hover .iboard-ann-mark__stem,
+html.dark .iboard-ann-mark:focus-visible .iboard-ann-mark__stem {
+  border-top-color: #b4b4be;
+}
 
 .iboard-workspace-scrim {
   background: rgba(15, 23, 42, 0.34);

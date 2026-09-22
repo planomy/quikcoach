@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { commentTone, inferReplacementPassage, locateQuote, resolveAnnotation } from './annotations.js';
+import { commentTone, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
 
 const spelling = {
   quote: 'recieve',
@@ -49,4 +49,16 @@ test('a full rewrite with no leftover quote detaches', () => {
   assert.equal(resolved.detached, true);
   assert.equal(resolved.replacement, undefined);
   assert.equal(inferReplacementPassage(spelling, 'Completely different sentences about the weekend.'), null);
+});
+
+test('same-line gutter bubbles stack instead of overlapping', () => {
+  const stacked = stackGutterMarkers(
+    [
+      { id: 1, top: 100, left: 40 },
+      { id: 2, top: 102, left: 80 },
+      { id: 3, top: 104, left: 120 },
+    ],
+    () => 18,
+  );
+  assert.deepEqual(stacked.map((marker) => marker.top), [100, 118, 136]);
 });

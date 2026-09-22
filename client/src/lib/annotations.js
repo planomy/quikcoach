@@ -537,3 +537,30 @@ export function writingRootForPane(textPane) {
     textPane
   );
 }
+
+/** Keep same-line margin bubbles from sitting on top of each other. */
+export function stackGutterMarkers(markers, gapFor = () => 18) {
+  const orphans = [];
+  const groups = new Map();
+  for (const marker of markers || []) {
+    if (marker.layout === 'orphan' || marker.detached) {
+      orphans.push(marker);
+      continue;
+    }
+    const key = marker.studentId != null ? String(marker.studentId) : 'self';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(marker);
+  }
+  const next = [];
+  for (const group of groups.values()) {
+    group.sort((a, b) => (a.top - b.top) || (a.left - b.left));
+    let last = -Infinity;
+    for (const marker of group) {
+      const gap = Number(gapFor(marker)) || 18;
+      const top = marker.top < last + gap ? last + gap : marker.top;
+      last = top;
+      next.push(top === marker.top ? marker : { ...marker, top });
+    }
+  }
+  return next.concat(orphans);
+}

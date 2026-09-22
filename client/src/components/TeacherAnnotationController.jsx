@@ -8,6 +8,7 @@ import {
   plainTextFromElement,
   rangeForPlainOffsets,
   selectionOffsetsWithin,
+  stackGutterMarkers,
   writingRootForPane,
 } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
@@ -37,8 +38,8 @@ const OPEN_WIDTH = 320;
 /** Placement budget for the open-comment card; CSS max-height lets it grow with the note. */
 const OPEN_PLACE_HEIGHT = 280;
 const OPEN_MAX_HEIGHT = 480;
-const MARKER_SIZE = 14;
-const INLINE_MARKER_SIZE = 12;
+const MARKER_SIZE = 12;
+const INLINE_MARKER_SIZE = 10;
 const MARKER_MARGIN = 4;
 const GUTTER_INSET = 14;
 
@@ -353,28 +354,6 @@ function detachedMarkerPosition(pane, index, compact = false) {
   return { top, left, width: size, layout: 'orphan', position: 'absolute', root: pane };
 }
 
-function stackGutterMarkers(markers) {
-  const groups = new Map();
-  for (const marker of markers) {
-    const key = `${marker.studentId}:${Math.round((marker.top || 0) / 10)}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(marker);
-  }
-  const next = [];
-  for (const group of groups.values()) {
-    group.sort((a, b) => a.left - b.left);
-    let last = -Infinity;
-    for (const marker of group) {
-      const gap = (marker.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 2;
-      let top = marker.top;
-      if (top < last + gap) top = last + gap;
-      last = top;
-      next.push(top === marker.top ? marker : { ...marker, top });
-    }
-  }
-  return next;
-}
-
 function markersMatch(a, b) {
   if (a === b) return true;
   if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
@@ -624,7 +603,9 @@ export default function TeacherAnnotationController() {
       if (resolvedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
       else globalThis.CSS.highlights.delete(FIXED_HIGHLIGHT_NAME);
     }
-    const stacked = stackGutterMarkers(nextMarkers);
+    const stacked = stackGutterMarkers(nextMarkers, (marker) => (
+      (marker.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 6
+    ));
     setMarkers((prev) => (markersMatch(prev, stacked) ? prev : stacked));
     setOpenMarker((previous) => {
       if (!previous) return previous;

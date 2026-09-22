@@ -4,6 +4,7 @@ import {
   inferReplacementPassage,
   locateAnnotationRange,
   plainTextFromElement,
+  stackGutterMarkers,
 } from '../lib/annotations.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
@@ -13,7 +14,7 @@ const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const REOPEN_HIGHLIGHT_NAME = 'iboard-student-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
-const MARKER_SIZE = 14;
+const MARKER_SIZE = 12;
 const MARKER_MARGIN = 6;
 const POPUP_WIDTH = 320;
 /** Placement budget — keep the action button visible on short iPad viewports. */
@@ -174,7 +175,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         globalThis.CSS.highlights.set(RESOLVED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
       } else globalThis.CSS.highlights.delete(RESOLVED_HIGHLIGHT_NAME);
     }
-    setMarkers(nextMarkers);
+    setMarkers(stackGutterMarkers(nextMarkers, () => MARKER_SIZE + 6));
   }, [annotations]);
 
   useEffect(() => {
