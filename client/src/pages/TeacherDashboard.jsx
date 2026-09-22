@@ -169,6 +169,13 @@ function CardViewIcon({ id, className = 'h-5 w-5' }) {
   );
 }
 
+function studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId) {
+  const id = Number(student?.id);
+  if (!id) return false;
+  if ((pendingHandByStudentId.get(id) || []).length > 0) return true;
+  return noteReceiptByStudentId[id] === 'replied';
+}
+
 function RailTimerLabel({ timer }) {
   const running = !!timer?.active && !!timer?.running && !!timer?.endsAt;
   const liveSeconds = useEndsAtCountdown(timer?.endsAt, { enabled: running });
@@ -396,6 +403,8 @@ function TeacherDashboardInner() {
   const [awayByStudentId, setAwayByStudentId] = useState(() => new Map());
   /** Pin attention cards (away / not started) to the top when true. */
   const [attentionFocus, setAttentionFocus] = useState(false);
+  /** Pin students who asked a question or replied to a teacher message to the top. */
+  const [inboxFocus, setInboxFocus] = useState(false);
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
   const [studentActionMenuAnchor, setStudentActionMenuAnchor] = useState(null);
   const studentActionMenuBtnRefs = useRef(new Map());
@@ -922,11 +931,7 @@ function TeacherDashboardInner() {
           detail: { studentId, status: 'replied' },
         })
       );
-      if (!replay) {
-        const name = String(item.studentName || 'Student').trim() || 'Student';
-        setCopyToast(`${name} replied to your note`);
-        setTimeout(() => setCopyToast(''), 3200);
-      }
+      // Persistent header pill + card sort handle off-screen replies.
     };
     const onNoteReply = (payload = {}) => ingestReply(payload.item);
     const onNoteReplyBatch = (payload = {}) => {
@@ -1080,12 +1085,33 @@ function TeacherDashboardInner() {
     [students]
   );
 
+  const pendingHandByStudentId = useMemo(() => {
+    const map = new Map();
+    for (const question of audienceQuestions) {
+      if (question.status !== 'pending') continue;
+      const sid = Number(question.studentId);
+      if (!sid) continue;
+      const list = map.get(sid) || [];
+      list.push(question);
+      map.set(sid, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => Number(a.id) - Number(b.id));
+    }
+    return map;
+  }, [audienceQuestions]);
+
   const visibleStudents = useMemo(
     () =>
       [...orderedStudents].sort((a, b) => {
         const aMonitored = monitoredIds.has(Number(a.id)) ? 0 : 1;
         const bMonitored = monitoredIds.has(Number(b.id)) ? 0 : 1;
         if (aMonitored !== bMonitored) return aMonitored - bMonitored;
+        if (inboxFocus) {
+          const aInbox = studentHasInboxWait(a, pendingHandByStudentId, noteReceiptByStudentId) ? 0 : 1;
+          const bInbox = studentHasInboxWait(b, pendingHandByStudentId, noteReceiptByStudentId) ? 0 : 1;
+          if (aInbox !== bInbox) return aInbox - bInbox;
+        }
         if (attentionFocus) {
           const aAttention =
             awayByStudentId.get(Number(a.id)) || isNotStarted(a, activityNow) ? 0 : 1;
@@ -1095,7 +1121,7 @@ function TeacherDashboardInner() {
         }
         return Number(a.id) - Number(b.id);
       }),
-    [orderedStudents, monitoredIds, attentionFocus, awayByStudentId, activityNow]
+    [orderedStudents, monitoredIds, inboxFocus, pendingHandByStudentId, noteReceiptByStudentId, attentionFocus, awayByStudentId, activityNow]
   );
 
   const breakoutsActive = !!breakouts?.active;
@@ -1142,7 +1168,12 @@ function TeacherDashboardInner() {
         (awayByStudentId.get(Number(student.id)) || isNotStarted(student, activityNow))
           ? 0
           : 1;
-      return monitored * 10 + attention;
+      const inbox =
+        inboxFocus &&
+        studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId)
+          ? 0
+          : 1;
+      return inbox * 100 + monitored * 10 + attention;
     };
     const sortMembers = (list) =>
       [...list].sort((a, b) => {
@@ -1175,6 +1206,9 @@ function TeacherDashboardInner() {
     visibleStudents,
     monitoredIds,
     attentionFocus,
+    inboxFocus,
+    pendingHandByStudentId,
+    noteReceiptByStudentId,
     awayByStudentId,
     activityNow,
   ]);
@@ -1634,22 +1668,6 @@ function TeacherDashboardInner() {
     };
   }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen, toolsTab, cardView]);
 
-  const pendingHandByStudentId = useMemo(() => {
-    const map = new Map();
-    for (const question of audienceQuestions) {
-      if (question.status !== 'pending') continue;
-      const sid = Number(question.studentId);
-      if (!sid) continue;
-      const list = map.get(sid) || [];
-      list.push(question);
-      map.set(sid, list);
-    }
-    for (const list of map.values()) {
-      list.sort((a, b) => Number(a.id) - Number(b.id));
-    }
-    return map;
-  }, [audienceQuestions]);
-
   useEffect(() => {
     if (!handQuestionTarget) return;
     const sid = Number(handQuestionTarget.student?.id);
@@ -1663,6 +1681,14 @@ function TeacherDashboardInner() {
       return { ...current, questions: next };
     });
   }, [pendingHandByStudentId, handQuestionTarget?.student?.id]);
+
+  useEffect(() => {
+    if (!inboxFocus) return;
+    const waiting = orderedStudents.some((student) => (
+      studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId)
+    ));
+    if (!waiting) setInboxFocus(false);
+  }, [inboxFocus, orderedStudents, pendingHandByStudentId, noteReceiptByStudentId]);
 
   const liveStudentById = useMemo(() => {
     const map = new Map();
@@ -2795,6 +2821,13 @@ function TeacherDashboardInner() {
   ]
     .filter(Boolean)
     .join(' · ');
+  const messageWaitCount = orderedStudents.reduce(
+    (n, student) => n + (studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId) ? 1 : 0),
+    0
+  );
+  const inboxSummary = messageWaitCount > 0
+    ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
+    : '';
   const headerDockOpen = toolsPanelOpen || settingsOpen || timerOpen || viewOpen;
 
   return (
@@ -2839,6 +2872,32 @@ function TeacherDashboardInner() {
                   aria-pressed={attentionFocus}
                 >
                   {attentionSummary}
+                </button>
+              ) : null}
+              {inboxSummary ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInboxFocus((on) => {
+                      const next = !on;
+                      if (next) {
+                        window.requestAnimationFrame(() => {
+                          document.querySelector('[data-inbox-waiting="true"]')
+                            ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        });
+                      }
+                      return next;
+                    });
+                  }}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold transition ${
+                    inboxFocus
+                      ? 'bg-[#5a5fc3] text-white dark:bg-indigo-300 dark:text-indigo-950'
+                      : 'bg-[#ebeaf8] text-[#5a5fc3] hover:bg-[#dcdbf3] dark:bg-indigo-950 dark:text-indigo-200 dark:hover:bg-indigo-900'
+                  }`}
+                  title={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'}
+                  aria-pressed={inboxFocus}
+                >
+                  {inboxSummary}
                 </button>
               ) : null}
               {frozen && (
@@ -3584,10 +3643,12 @@ function TeacherDashboardInner() {
             const monitoring = monitoredIds.has(Number(s.id));
             const isAway = awayByStudentId.get(Number(s.id)) === true;
             const notStarted = isNotStarted(s, activityNow);
+            const inboxWaiting = studentHasInboxWait(s, pendingHandByStudentId, noteReceiptByStudentId);
             return (
               <article
                 key={s.id}
                 data-student-id={s.id}
+                data-inbox-waiting={inboxWaiting ? 'true' : undefined}
                 title={handUp ? `${s.name} has a question — tap to open` : (showPulseState ? pulseMeta.title : undefined)}
                 role={handUp ? 'button' : undefined}
                 tabIndex={handUp ? 0 : undefined}
