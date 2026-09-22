@@ -36,7 +36,6 @@ import {
   buildEvidenceHtml,
   evidenceFilenames,
   buildStudentEvidenceText,
-  buildStudentPortfolioHtml,
   buildStudentPortfolioText,
 } from '../lib/exportRoom.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
@@ -354,6 +353,7 @@ function TeacherDashboardInner() {
   const [reportMergeKeys, setReportMergeKeys] = useState([]);
   const [reportMergeCanonicalKey, setReportMergeCanonicalKey] = useState('');
   const [reportMergeBusy, setReportMergeBusy] = useState(false);
+  const [portfolioDownloadKind, setPortfolioDownloadKind] = useState('');
   const [snapshotViewer, setSnapshotViewer] = useState(null);
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
@@ -2320,17 +2320,36 @@ function TeacherDashboardInner() {
     setTimeout(() => setCopyToast(''), 3000);
   }
 
-  function downloadStudentPortfolio() {
-    if (!selectedEvidenceStudent) return;
-    const html = buildStudentPortfolioHtml({
-      roomCode: codeInput,
-      studentName: selectedEvidenceStudent.name,
-      entries: selectedEvidenceStudent.entries,
-    });
-    const names = evidenceFilenames(codeInput, `${selectedEvidenceStudent.name}-portfolio`);
-    downloadTextFile(names.html, html, 'text/html;charset=utf-8');
-    setCopyToast(`Downloaded ${selectedEvidenceStudent.name}’s portfolio`);
-    setTimeout(() => setCopyToast(''), 3000);
+  async function downloadStudentPortfolio() {
+    if (!selectedEvidenceStudent || portfolioDownloadKind) return;
+    setPortfolioDownloadKind('one');
+    setError('');
+    try {
+      const { downloadPortfolioPdf } = await import('../lib/portfolioPdf.js');
+      await downloadPortfolioPdf({ roomCode: codeInput, student: selectedEvidenceStudent });
+      setCopyToast(`Downloaded ${selectedEvidenceStudent.name}’s portfolio PDF`);
+      setTimeout(() => setCopyToast(''), 3000);
+    } catch (e) {
+      setError(e?.message || 'Could not download that portfolio');
+    } finally {
+      setPortfolioDownloadKind('');
+    }
+  }
+
+  async function downloadAllPortfolioPdfs() {
+    if (!evidenceStudents.length || portfolioDownloadKind) return;
+    setPortfolioDownloadKind('all');
+    setError('');
+    try {
+      const { downloadPortfolioZip } = await import('../lib/portfolioPdf.js');
+      const result = await downloadPortfolioZip({ roomCode: codeInput, students: evidenceStudents });
+      setCopyToast(`Downloaded ${result.count} portfolio PDF${result.count === 1 ? '' : 's'} as a zip`);
+      setTimeout(() => setCopyToast(''), 4000);
+    } catch (e) {
+      setError(e?.message || 'Could not download class portfolios');
+    } finally {
+      setPortfolioDownloadKind('');
+    }
   }
 
   function applyEvidenceProfiles(nextProfiles, preferredKey = '') {
@@ -3892,26 +3911,36 @@ function TeacherDashboardInner() {
                   <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                     <div>
                       <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Portfolios</h3>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose a name; their saved writing across lessons appears on the right.</p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose a name for one PDF, or download the class as a zip of separate files.</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (reportMergeMode) cancelReportMerge();
-                        else {
-                          setReportMergeMode(true);
-                          setReportMergeKeys([]);
-                          setReportMergeCanonicalKey('');
-                        }
-                      }}
-                      className={`rounded-xl px-3 py-2 text-xs font-black transition ${
-                        reportMergeMode
-                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
-                          : 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200'
-                      }`}
-                    >
-                      {reportMergeMode ? 'Cancel combining' : 'Combine names'}
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={!!portfolioDownloadKind || !evidenceStudents.length}
+                        onClick={downloadAllPortfolioPdfs}
+                        className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        {portfolioDownloadKind === 'all' ? 'Preparing PDFs…' : 'Download all PDFs (zip)'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (reportMergeMode) cancelReportMerge();
+                          else {
+                            setReportMergeMode(true);
+                            setReportMergeKeys([]);
+                            setReportMergeCanonicalKey('');
+                          }
+                        }}
+                        className={`rounded-xl px-3 py-2 text-xs font-black transition ${
+                          reportMergeMode
+                            ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                            : 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200'
+                        }`}
+                      >
+                        {reportMergeMode ? 'Cancel combining' : 'Combine names'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid min-h-[34rem] border-t border-indigo-100 dark:border-slate-700 md:grid-cols-[17rem_minmax(0,1fr)]">
@@ -4056,7 +4085,7 @@ function TeacherDashboardInner() {
                                 </button>
                               )}
                               <button type="button" onClick={copyStudentPortfolio} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">Copy all</button>
-                              <button type="button" onClick={downloadStudentPortfolio} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700">Download portfolio</button>
+                              <button type="button" disabled={!!portfolioDownloadKind} onClick={downloadStudentPortfolio} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50">{portfolioDownloadKind === 'one' ? 'Preparing PDF…' : 'Download PDF'}</button>
                             </div>
                           </div>
                           <div className="mt-3 max-h-[34rem] space-y-3 overflow-y-auto pr-1 scrollbar-thin">

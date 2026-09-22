@@ -264,7 +264,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
 }
 
 let fontPromise;
-export async function downloadSessionPdf(pack, options) {
+export async function loadReportFont() {
   if (!fontPromise) fontPromise = fetch('/fonts/DejaVuSans.ttf').then(async response => {
     if (!response.ok) throw new Error('Could not load the report font. Check your connection and retry.');
     const bytes = new Uint8Array(await response.arrayBuffer());
@@ -272,7 +272,11 @@ export async function downloadSessionPdf(pack, options) {
     for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
     return btoa(binary);
   }).catch(error => { fontPromise = null; throw error; });
-  const fontData = await fontPromise;
+  return fontPromise;
+}
+
+export async function downloadSessionPdf(pack, options) {
+  const fontData = await loadReportFont();
   const pdf = buildSessionPdf(pack, { ...options, fontData });
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
   pdf.save(`iBoard-session-${pack.sourceRoomCode || 'report'}-${stamp}.pdf`);
