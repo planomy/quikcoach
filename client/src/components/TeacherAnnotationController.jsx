@@ -373,6 +373,11 @@ function detachedMarkerPosition(pane, index, compact = false, lane = 'done') {
   return { top, left, width: size, layout: 'orphan', position: 'absolute', root: pane };
 }
 
+function teacherMarkerKey(marker) {
+  if (!marker?.annotation?.id) return '';
+  return `${marker.studentId}:${marker.annotation.id}`;
+}
+
 function patchAnnotationInMap(byStudent, annotationId, patch) {
   const id = Number(annotationId);
   if (!id) return byStudent;
@@ -421,6 +426,7 @@ export default function TeacherAnnotationController() {
   const [saveNoticeBox, setSaveNoticeBox] = useState(null);
   const saveNoticeRef = useRef(null);
   const [openMarker, setOpenMarker] = useState(null);
+  const [popupPinned, setPopupPinned] = useState(false);
   const [markers, setMarkers] = useState([]);
   const [reviewBusyId, setReviewBusyId] = useState(null);
   const [reviewError, setReviewError] = useState('');
@@ -431,6 +437,10 @@ export default function TeacherAnnotationController() {
   const moveFrameRef = useRef(null);
   const hoverTargetsRef = useRef([]);
   const hoveredKeyRef = useRef(null);
+  const popupPinnedRef = useRef(false);
+  const markersRef = useRef([]);
+  const pendingRef = useRef(null);
+  const hoverCloseTimerRef = useRef(null);
   const selectingInPaneRef = useRef(false);
   const selectionSettleRef = useRef(null);
   const draftNoteRef = useRef(null);
@@ -441,6 +451,22 @@ export default function TeacherAnnotationController() {
   const quickHoverCloseRef = useRef(null);
   /** Click/tap keeps the tray open; hover alone auto-closes on leave. */
   const quickPinnedOpenRef = useRef(false);
+  markersRef.current = markers;
+  pendingRef.current = pending;
+  popupPinnedRef.current = popupPinned;
+
+  function dismissCommentPopup() {
+    setOpenMarker(null);
+    setPopupPinned(false);
+    setReviewError('');
+  }
+
+  function pinCommentPopup(marker) {
+    if (!marker) return;
+    setOpenMarker(marker);
+    setPopupPinned(true);
+    setReviewError('');
+  }
 
   const activeBankId = bankState.activeId || DEFAULT_BANK_ID;
   const isDefaultBank = activeBankId === DEFAULT_BANK_ID;
@@ -737,6 +763,31 @@ export default function TeacherAnnotationController() {
   }, [hoveredKey]);
 
   useEffect(() => {
+    if (openMarker) return;
+    setPopupPinned(false);
+  }, [openMarker]);
+
+  useEffect(() => {
+    const cancelClose = () => {
+      if (hoverCloseTimerRef.current != null) {
+        clearTimeout(hoverCloseTimerRef.current);
+        hoverCloseTimerRef.current = null;
+      }
+    };
+    const scheduleClose = () => {
+      if (popupPinnedRef.current) return;
+      cancelClose();
+      hoverCloseTimerRef.current = setTimeout(() => {
+        hoverCloseTimerRef.current = null;
+        if (!popupPinnedRef.current) setOpenMarker(null);
+      }, 160);
+    };
+    const openFromMark = (key) => {
+      if (pendingRef.current || selectingInPaneRef.current || popupPinnedRef.current) return;
+      const marker = markersRef.current.find((item) => teacherMarkerKey(item) === key);
+      if (!marker) return;
+      setOpenMarker((prev) => (teacherMarkerKey(prev) === key ? prev : marker));
+    };
     const applyHover = (key) => {
       hoveredKeyRef.current = key;
       const hit = hoverTargetsRef.current.find((item) => item.key === key);
@@ -750,17 +801,33 @@ export default function TeacherAnnotationController() {
     const onMove = (event) => {
       if (selectingInPaneRef.current) return;
       const { clientX: x, clientY: y } = event;
-      const fromMark = document.elementFromPoint(x, y)?.closest?.('.iboard-ann-mark')?.dataset?.annKey;
+      const under = document.elementFromPoint(x, y);
+      const fromMark = under?.closest?.('.iboard-ann-mark')?.dataset?.annKey;
+      const overPopup = !!under?.closest?.('[data-comment-popup]');
       if (fromMark) {
+        cancelClose();
         applyHover(fromMark);
+        openFromMark(fromMark);
+        return;
+      }
+      if (overPopup) {
+        cancelClose();
         return;
       }
       const hit = hoverTargetsRef.current.find((item) => rangeContainsPoint(item.range, x, y));
       applyHover(hit?.key || null);
+      scheduleClose();
+    };
+    const onLeave = () => {
+      applyHover(null);
+      scheduleClose();
     };
     document.addEventListener('pointermove', onMove, { passive: true });
+    document.documentElement.addEventListener('pointerleave', onLeave);
     return () => {
       document.removeEventListener('pointermove', onMove);
+      document.documentElement.removeEventListener('pointerleave', onLeave);
+      cancelClose();
       setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
     };
   }, []);
@@ -770,7 +837,7 @@ export default function TeacherAnnotationController() {
   useEffect(() => {
     function clearPendingComposer() {
       setPending(null);
-      setOpenMarker(null);
+      dismissCommentPopup();
       setQuickStack([]);
       draftNoteLatestRef.current = '';
       quickPrefixRef.current = '';
@@ -829,7 +896,7 @@ export default function TeacherAnnotationController() {
           height: rect.height,
         },
       });
-      setOpenMarker(null);
+      dismissCommentPopup();
     }
 
     function onMouseDown(event) {
@@ -837,8 +904,7 @@ export default function TeacherAnnotationController() {
       if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
       selectingInPaneRef.current = !!target?.closest?.('[data-student-writing-pane]');
       // Review/open marker cards dismiss on outside click (bubble buttons keep data-teacher-annotation-ui).
-      setOpenMarker(null);
-      setReviewError('');
+      dismissCommentPopup();
     }
     let lastPointerUpAt = 0;
     function onPointerUp(event) {
@@ -1037,7 +1103,7 @@ export default function TeacherAnnotationController() {
     setReviewBusyId(annotationId);
     setReviewError('');
     setByStudent((prev) => patchAnnotationInMap(prev, annotationId, patch));
-    setOpenMarker(null);
+    dismissCommentPopup();
     socket.emit(
       'teacher:annotation-status',
       { annotationId, action },
@@ -1292,13 +1358,13 @@ export default function TeacherAnnotationController() {
     const note = String(next).trim();
     if (!note) return;
     socket.emit('teacher:annotation-update', { annotationId: marker.annotation.id, note });
-    setOpenMarker(null);
+    dismissCommentPopup();
   }
 
   async function deleteComment(marker) {
     if (!socket) return;
     socket.emit('teacher:annotation-delete', { annotationId: marker.annotation.id });
-    setOpenMarker(null);
+    dismissCommentPopup();
   }
 
   const bulkConfirmFixed = useCallback((studentId = 0) => {
@@ -1313,7 +1379,7 @@ export default function TeacherAnnotationController() {
           setSaveNotice(ack?.error || 'Could not clear fixed comments');
           return;
         }
-        setOpenMarker(null);
+        dismissCommentPopup();
         const cleared = ack.count || fixedCount;
         setSaveNotice(`Cleared ${cleared} fixed comment${cleared === 1 ? '' : 's'}`);
       }
@@ -1447,23 +1513,9 @@ export default function TeacherAnnotationController() {
         layout={marker.layout === 'orphan' ? 'orphan' : marker.layout === 'compact' ? 'compact' : 'gutter'}
         lit={hoveredKey === `${marker.studentId}:${marker.annotation.id}`}
         data-ann-key={`${marker.studentId}:${marker.annotation.id}`}
-        onClick={() => {
-          setReviewError('');
-          setOpenMarker(marker);
-        }}
+        onClick={() => pinCommentPopup(marker)}
         className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10]`}
         style={{ top: marker.top, left: marker.left, width: marker.width || undefined }}
-        title={
-          tone === 'resolved'
-            ? 'Confirmed fixed'
-            : tone === 'fixed'
-              ? `Waiting for review: ${typeof marker.annotation.note === 'string' ? marker.annotation.note : ''}`
-              : tone === 'reopen'
-                ? 'Asked student to check again'
-                : typeof marker.annotation.note === 'string'
-                  ? marker.annotation.note
-                  : 'Open inline teacher comment'
-        }
         aria-label={
           tone === 'resolved'
             ? 'Confirmed fixed comment'
@@ -1802,6 +1854,8 @@ export default function TeacherAnnotationController() {
       {openMarker && openMarkerPos && (
         <div
           data-teacher-annotation-ui
+          data-comment-popup
+          onPointerDown={() => pinCommentPopup(openMarker)}
           className="fixed z-[70] flex flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
           style={{
             top: openMarkerPos.top,
