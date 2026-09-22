@@ -170,9 +170,8 @@ function CardViewIcon({ id }) {
 }
 
 const TEACHER_TOOLS_TABS = [
-  { id: 'ask', label: 'Ask', icon: '/rail/ask-icon.png' },
+  { id: 'ask', label: 'Ask the class' },
   { id: 'respond', label: 'Reply', icon: '/rail/reply-icon.png' },
-  { id: 'responses', label: 'Responses', icon: '/rail/responses-icon.png' },
 ];
 
 const ADD_CARD_ACTIONS = [
@@ -2708,7 +2707,6 @@ function TeacherDashboardInner() {
   ]
     .filter(Boolean)
     .join(' · ');
-  const liveResponseCount = (livePulse.responses || []).length;
   const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen;
 
   return (
@@ -3028,7 +3026,11 @@ function TeacherDashboardInner() {
           ref={teacherToolsPanelRef}
           className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
           role="dialog"
-          aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
+          aria-label={`${
+            toolsTab === 'responses'
+              ? 'Ask the class'
+              : TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'
+          } panel`}
         >
           <LiveResponseTeacher
             socket={socket}
@@ -3106,18 +3108,16 @@ function TeacherDashboardInner() {
           </div>
           <div className="iboard-arr-rail__tools">
             {TEACHER_TOOLS_TABS.map((tab) => {
-              const active = toolsPanelOpen && toolsTab === tab.id;
-              const badge = tab.id === 'respond'
-                ? pendingQuestionCount
-                : tab.id === 'responses' && livePulse.activity
-                  ? liveResponseCount
-                  : 0;
+              const askOpen = toolsPanelOpen && (toolsTab === 'ask' || toolsTab === 'responses');
+              const active = tab.id === 'ask' ? askOpen : toolsPanelOpen && toolsTab === tab.id;
+              const badge = tab.id === 'respond' ? pendingQuestionCount : 0;
               return (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => {
-                    if (toolsPanelOpen && toolsTab === tab.id) closeTeacherTools();
+                    if (tab.id === 'ask' && askOpen) closeTeacherTools();
+                    else if (toolsPanelOpen && toolsTab === tab.id) closeTeacherTools();
                     else openTeacherTools(tab.id);
                   }}
                   aria-current={active ? 'page' : undefined}
@@ -3126,7 +3126,14 @@ function TeacherDashboardInner() {
                   title={tab.label}
                   aria-label={tab.label}
                 >
-                  <img src={tab.icon} alt="" />
+                  {tab.id === 'ask' ? (
+                    <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M21.6 3.4 3.2 10.6l8.1 2.1 2.1 8.1 8.2-17.4Z" />
+                      <path d="M11.3 12.7 21.6 3.4" />
+                    </svg>
+                  ) : (
+                    <img src={tab.icon} alt="" />
+                  )}
                   <span className="iboard-arr-label">{tab.label}</span>
                   {badge ? (
                     <span className="absolute right-1 top-1 z-[2] grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-black tabular-nums leading-none text-white shadow-sm">

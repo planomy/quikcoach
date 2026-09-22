@@ -598,7 +598,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   line-height: 1.15;
   letter-spacing: 0.01em;
   color: #555b69;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .iboard-arr-btn:hover {

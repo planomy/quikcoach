@@ -46,7 +46,7 @@ function readSavedAskTab() {
 }
 
 const PANEL_TAB_LABELS = {
-  ask: { title: 'Ask', hint: 'Send a question to your class' },
+  ask: { title: 'Ask the class', hint: 'Send a question to your class' },
   respond: { title: 'Reply', hint: 'Questions waiting from students' },
   responses: { title: 'Responses', hint: 'Answers coming back from your live question' },
 };
