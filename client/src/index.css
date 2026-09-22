@@ -2768,13 +2768,13 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 }
 
 .iboard-ann-mark--compact {
-  min-width: 14px;
-  height: 14px;
+  min-width: 13px;
+  height: 13px;
 }
 
 .iboard-ann-mark--compact .iboard-ann-mark__pip {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .iboard-ann-mark--orphan .iboard-ann-mark__stem {

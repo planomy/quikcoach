@@ -45,10 +45,12 @@ const OPEN_WIDTH = 320;
 const OPEN_PLACE_HEIGHT = 280;
 const OPEN_MAX_HEIGHT = 480;
 const MARKER_SIZE = 18;
-const INLINE_MARKER_SIZE = 14;
+const INLINE_MARKER_SIZE = 13;
 const MARKER_MARGIN = 4;
-const GUTTER_INSET = 16;
-const LANE_GAP = 8;
+const GUTTER_INSET = 8;
+const LANE_GAP = 4;
+const COMPACT_GUTTER_INSET = 5;
+const COMPACT_LANE_GAP = 3;
 
 const CHIT_CATEGORIES = [
   { id: 'fix', label: 'Fix' },
@@ -308,6 +310,12 @@ function cardUsesCompactPip(card) {
   return !!card?.article?.classList.contains('iboard-student-card--overview');
 }
 
+function gutterLaneInset(compact, lane, size) {
+  const inset = compact ? COMPACT_GUTTER_INSET : GUTTER_INSET;
+  if (lane !== 'attention') return inset;
+  return inset + size + (compact ? COMPACT_LANE_GAP : LANE_GAP);
+}
+
 function markerPosition(range, card, lane = 'done') {
   if (typeof window === 'undefined' || !card?.textPane) return null;
 
@@ -333,7 +341,7 @@ function markerPosition(range, card, lane = 'done') {
 
   // One hairline from the start of the quote on this line out to the margin bubble.
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  const laneInset = compact || lane !== 'attention' ? GUTTER_INSET : GUTTER_INSET + size + LANE_GAP;
+  const laneInset = gutterLaneInset(compact, lane, size);
   const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - laneInset;
   const left = Math.max(minLeft, Math.min(gutterLeft, local.left));
   const width = Math.max(size, gutterLeft + size - left);
@@ -354,7 +362,7 @@ function detachedMarkerPosition(pane, index, compact = false, lane = 'done') {
   const paneRect = pane.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
   const size = compact ? INLINE_MARKER_SIZE : MARKER_SIZE;
-  const laneInset = compact || lane !== 'attention' ? GUTTER_INSET : GUTTER_INSET + size + LANE_GAP;
+  const laneInset = gutterLaneInset(compact, lane, size);
   // Keep orphaned ticks in the visible corner of the writing pane.
   const top = (pane.scrollTop || 0) + MARKER_MARGIN + index * (size + 4);
   const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - laneInset;
@@ -570,7 +578,7 @@ export default function TeacherAnnotationController() {
       for (const annotation of annotations || []) {
         const { resolved, range } = locateAnnotationRange(writingRoot, annotation, fullText);
         const tone = commentTone(annotation, resolved.detached);
-        const lane = compact ? 'done' : commentGutterLane(tone);
+        const lane = commentGutterLane(tone);
         if (!range) {
           if (paneIsOnScreen(paneRect)) {
             const position = detachedMarkerPosition(card.textPane, detachedCount[lane], compact, lane);
