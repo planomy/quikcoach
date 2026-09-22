@@ -433,8 +433,12 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     );
   }
 
-  const collapseButton = compact && onCollapse ? (
+  const canCollapse = typeof onCollapse === 'function';
+  const collapseButton = compact && canCollapse ? (
     <CloseButton onClick={onCollapse} aria-label="Close Pulse panel" className="mb-0" />
+  ) : null;
+  const inboxCloseButton = !compact && canCollapse ? (
+    <CloseButton onClick={onCollapse} aria-label="Close" title="Close" />
   ) : null;
 
   if (!activity && !nudge) {
@@ -555,6 +559,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                 {soundOn ? 'Sound on' : 'Sound off'}
               </button>
               {headerTrailing}
+              {inboxCloseButton}
               {!quietAlerts && !compact && (
                 <span className={`rounded-full px-3 py-1 text-xs font-bold ${answersClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                   {answersClosed ? 'Answers locked' : response ? 'You can change your answer' : 'Answer now'}
