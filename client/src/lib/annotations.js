@@ -192,6 +192,7 @@ export function locateAnnotationRange(root, annotation, rawText) {
 /** open | reopen | fixed | resolved — reopen = teacher Check again */
 export function commentTone(annotation, detached = false) {
   if (annotation?.status === 'resolved') return 'resolved';
+  if (annotation?.status === 'reopen') return 'reopen';
   if (annotation?.status === 'fixed') return 'fixed';
   if (annotation?.student_fixed_at) return 'reopen';
   if (detached) return 'fixed';

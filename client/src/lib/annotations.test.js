@@ -31,6 +31,8 @@ test('resolveAnnotation highlights the replacement once the quote is gone', () =
   assert.equal(resolved.detached, true);
   assert.equal(text.slice(resolved.start, resolved.end), 'receive');
   assert.equal(commentTone({ status: 'open' }, true), 'fixed');
+  assert.equal(commentTone({ status: 'reopen' }, true), 'reopen');
+  assert.equal(commentTone({ status: 'fixed' }, true), 'fixed');
   assert.equal(commentTone({ status: 'open', student_fixed_at: '2026-09-22' }, true), 'reopen');
   assert.equal(commentTone({ status: 'resolved' }, true), 'resolved');
 });
@@ -122,6 +124,15 @@ test('unread bubbles keep their own gutter column from reviewed ones', () => {
   assert.equal(byId[1], 100);
   assert.equal(byId[2], 102);
   assert.equal(byId[3], 120);
+});
+
+test('comment colours follow unseen, dealt with, check again, dealt with again, confirmed', () => {
+  assert.equal(commentTone({ status: 'open' }), 'open');
+  assert.equal(commentTone({ status: 'fixed' }), 'fixed');
+  assert.equal(commentTone({ status: 'reopen' }), 'reopen');
+  assert.equal(commentTone({ status: 'reopen' }, true), 'reopen');
+  assert.equal(commentTone({ status: 'fixed' }, true), 'fixed');
+  assert.equal(commentTone({ status: 'resolved' }), 'resolved');
 });
 
 test('confirming a grey bubble rematches so the pip can turn green', () => {

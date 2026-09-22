@@ -121,7 +121,7 @@ function annotationForClient(row) {
     note: String(row.note || ''),
     prefix_context: String(row.prefix_context || ''),
     suffix_context: String(row.suffix_context || ''),
-    status: ['open', 'fixed', 'resolved'].includes(String(row.status)) ? String(row.status) : 'open',
+    status: ['open', 'fixed', 'resolved', 'reopen'].includes(String(row.status)) ? String(row.status) : 'open',
     student_fixed_at: row.student_fixed_at || '',
     resolved_at: row.resolved_at || '',
     created_at: row.created_at || '',
@@ -168,7 +168,7 @@ const resolveAnnotationStmt = richDb.prepare(
 );
 const reopenAnnotationStmt = richDb.prepare(
   `UPDATE teacher_annotations
-   SET status = 'open', resolved_at = NULL, updated_at = datetime('now')
+   SET status = 'reopen', resolved_at = NULL, updated_at = datetime('now')
    WHERE id = ?`
 );
 const deleteAnnotationStmt = richDb.prepare(`DELETE FROM teacher_annotations WHERE id = ?`);
