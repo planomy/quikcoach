@@ -188,8 +188,8 @@ function RailTimerLabel({ timer }) {
 }
 
 const TEACHER_TOOLS_TABS = [
-  { id: 'ask', label: 'Ask the class', hint: 'Ask the class a question' },
-  { id: 'responses', label: 'Responses', hint: 'See class answers' },
+  { id: 'ask', label: 'Ask the class', rail: 'Ask', hint: 'Ask the class a question' },
+  { id: 'responses', label: 'Responses', rail: 'Answers', hint: 'See class answers' },
 ];
 
 const ADD_CARD_ACTIONS = [
@@ -2854,10 +2854,11 @@ function TeacherDashboardInner() {
           <div className="iboard-teacher-header-main">
             <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5 text-sm">
               <span>
-                Room <b className="iboard-header-code font-mono">{codeInput}</b>
+                Room <b className="iboard-header-code font-mono tabular-nums">{codeInput}</b>
               </span>
+              <span className="iboard-header-meta__dot" aria-hidden="true" />
               <span>
-                Online <b>{orderedStudents.length}</b>
+                <b className="tabular-nums">{orderedStudents.length}</b> online
               </span>
               {attentionSummary ? (
                 <button
@@ -2931,9 +2932,7 @@ function TeacherDashboardInner() {
                   ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Drafting evidence recording — click to stop')
                   : 'Record drafting evidence — writing changes only, not screen or audio')
               }
-              className={`iboard-header-rec relative z-10 inline-flex items-center text-[11px] font-bold uppercase tracking-[0.13em] transition disabled:opacity-50 ${
-                room?.draftTrail?.active ? 'is-recording text-[#dc2626]' : 'text-[#8b8b96]'
-              }`}
+              className={`iboard-rec-switch${room?.draftTrail?.active ? ' is-on' : ''}${draftTrailBusy ? ' is-busy' : ''}`}
               onClick={() => {
                 if (room?.draftTrail?.active) {
                   setDraftTrailRecording(false);
@@ -2943,17 +2942,13 @@ function TeacherDashboardInner() {
                 setDraftTrailLabelOpen(true);
               }}
             >
-              <span
-                aria-hidden="true"
-                className={`h-2 w-2 shrink-0 rounded-full ${
-                  draftTrailBusy
-                    ? 'bg-amber-400'
-                    : room?.draftTrail?.active
-                      ? 'bg-[#ef4444]'
-                      : 'bg-[#b0b0ba]'
-                }`}
-              />
-              <span aria-hidden="true">{draftTrailBusy ? '…' : 'REC'}</span>
+              <span className="iboard-rec-switch__word">{draftTrailBusy ? '…' : 'REC'}</span>
+              <span className="iboard-rec-switch__track" aria-hidden="true">
+                <span className="iboard-rec-switch__knob">
+                  <span className="iboard-rec-switch__dot" />
+                </span>
+                <span className="iboard-rec-switch__on">ON</span>
+              </span>
             </button>
             <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
               <button
@@ -2961,7 +2956,7 @@ function TeacherDashboardInner() {
                 onClick={() => void toggleBrowserFullscreen()}
                 aria-pressed={browserFullscreen}
                 data-active={browserFullscreen ? 'true' : 'false'}
-                className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
+                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                 aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
                 {browserFullscreen ? (
@@ -3278,7 +3273,7 @@ function TeacherDashboardInner() {
                         <path d="M20 17V8" />
                       </svg>
                     )}
-                    <span className="iboard-arr-label">{tab.label}</span>
+                    <span className="iboard-arr-label">{tab.rail || tab.label}</span>
                   </button>
                 </HintWrap>
               );
@@ -3593,7 +3588,7 @@ function TeacherDashboardInner() {
           </aside>
         </div>
 
-      <main className="iboard-student-board relative flex min-h-0 flex-col overflow-y-auto">
+      <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
 
               <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
@@ -3644,6 +3639,8 @@ function TeacherDashboardInner() {
             const isAway = awayByStudentId.get(Number(s.id)) === true;
             const notStarted = isNotStarted(s, activityNow);
             const inboxWaiting = studentHasInboxWait(s, pendingHandByStudentId, noteReceiptByStudentId);
+            const cardEmpty = !displayText && !s.image_url;
+            const noteStatus = noteReceiptByStudentId[s.id] || '';
             return (
               <article
                 key={s.id}
@@ -3661,10 +3658,12 @@ function TeacherDashboardInner() {
                 } : undefined}
                 className={`iboard-student-card group/student-card relative flex flex-col overflow-visible rounded-xl p-3 ${
                   cardView === 'overview' ? 'iboard-student-card--overview' : ''
+                } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${
+                  broadcastPick[s.id] ? 'is-picked' : ''
                 } ${
                   handUp
                     ? 'cursor-pointer border border-[#5a5fc3] bg-[#ebeaf8] shadow-[inset_4px_0_0_0_#5a5fc3] dark:border-indigo-400 dark:bg-indigo-950/70 dark:shadow-[inset_4px_0_0_0_#818cf8] dark:ring-1 dark:ring-indigo-500/40'
-                    : `bg-white dark:bg-slate-900 ${
+                    : `${cardEmpty ? '' : 'bg-white dark:bg-slate-900'} ${
                         broadcastPick[s.id]
                           ? 'border border-indigo-400 ring-2 ring-indigo-200 dark:border-indigo-500 dark:ring-indigo-900/70'
                           : monitoring
@@ -3680,7 +3679,7 @@ function TeacherDashboardInner() {
                 <div className="group/card-head flex min-w-0 items-start gap-1.5">
                   <HintWrap hint="Include this card">
                     <label
-                      className="mt-0.5 flex shrink-0 cursor-pointer items-center"
+                      className="iboard-student-card__pick mt-0.5 flex shrink-0 cursor-pointer items-center"
                       onClick={(event) => event.stopPropagation()}
                     >
                       <input
@@ -3695,8 +3694,8 @@ function TeacherDashboardInner() {
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-1">
                       <h2
-                        className={`min-w-0 truncate font-semibold text-[#52525c] dark:text-slate-100 ${
-                          cardView === 'overview' ? 'text-[12px]' : 'text-[14px]'
+                        className={`iboard-student-card__name min-w-0 truncate ${
+                          cardView === 'overview' ? 'text-[13px]' : 'text-[14px]'
                         } ${
                           handUp || inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''
                         }`}
@@ -3742,14 +3741,8 @@ function TeacherDashboardInner() {
                         >
                           Away
                         </span>
-                      ) : notStarted ? (
-                        <span
-                          title="No writing yet"
-                          className="shrink-0 rounded-md bg-[#f1f1f5] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6b76] dark:bg-slate-800 dark:text-slate-300"
-                        >
-                          Not started
-                        </span>
                       ) : null}
+                      {showPulseState || st === 'live' || st === 'warm' ? (
                       <span
                         title={
                           showPulseState
@@ -3764,6 +3757,7 @@ function TeacherDashboardInner() {
                             : light
                         }`}
                       />
+                      ) : null}
                       {monitoring ? (
                         <span
                           className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#5a5fc3] dark:text-indigo-300"
@@ -3808,7 +3802,7 @@ function TeacherDashboardInner() {
                         </button>
                       </HintWrap>
                     ) : !showPulseState || !inQuestion ? (
-                      <p className="mt-0.5 text-[10px] font-medium tabular-nums leading-none text-slate-400 dark:text-slate-500">
+                      <p className="iboard-student-card__meta mt-0.5 text-[11px] font-medium tabular-nums leading-none text-slate-400 dark:text-slate-500">
                         {wc}w
                       </p>
                     ) : null}
@@ -3828,14 +3822,14 @@ function TeacherDashboardInner() {
                       type="button"
                       data-note-student-id={s.id}
                       data-note-student-name={s.name}
-                      data-note-status={noteReceiptByStudentId[s.id] || undefined}
+                      data-note-status={noteStatus || undefined}
                       onClick={(event) => openNoteForStudent(s, event)}
-                      className={`relative mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
-                        noteReceiptByStudentId[s.id] === 'replied'
+                      className={`iboard-student-card__chat relative mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                        noteStatus === 'replied'
                           ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
-                          : noteReceiptByStudentId[s.id] === 'seen'
+                          : noteStatus === 'seen'
                             ? 'text-green-500 hover:text-green-600 dark:text-green-400'
-                            : noteReceiptByStudentId[s.id] === 'waiting'
+                            : noteStatus === 'waiting'
                               ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
                               : 'text-slate-500 hover:text-indigo-700 dark:text-slate-300 dark:hover:text-indigo-300'
                       }`}
@@ -3921,7 +3915,7 @@ function TeacherDashboardInner() {
                   data-student-writing-pane
                   data-card-font="true"
                   style={{ fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl bg-white p-2.5 leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${studentWritingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl p-2.5 leading-relaxed scrollbar-thin ${studentWritingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
@@ -3938,7 +3932,7 @@ function TeacherDashboardInner() {
                       <RichTextDisplay html={s.rich_text_html} text={displayText} />
                     </div>
                   ) : !s.image_url ? (
-                    <span className="italic text-slate-400 dark:text-slate-500">No text yet</span>
+                    <span className="iboard-student-card__empty-copy">No writing yet</span>
                   ) : null}
                 </div>
               </article>

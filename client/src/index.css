@@ -176,8 +176,15 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b {
-  color: #52525c;
-  font-weight: 550;
+  color: #3c3c45;
+  font-weight: 650;
+}
+
+.iboard-header-meta__dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: #c4c4ce;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-brand {
@@ -412,42 +419,32 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-status-saved {
   border-radius: 0;
 }
 
-html:not(.dark) .iboard-teacher-canvas .iboard-header-rec {
-  border: 0;
+html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button {
+  border-color: transparent;
   background: transparent;
   box-shadow: none;
-  color: #8b8b96;
-  gap: 0.4rem;
-  padding: 0;
-  height: auto;
-  border-radius: 0;
-}
-
-html:not(.dark) .iboard-teacher-canvas .iboard-header-rec.is-recording {
-  color: #dc2626;
-}
-
-html:not(.dark) .iboard-teacher-canvas .iboard-header-rec:hover {
-  background: transparent;
-  opacity: 0.85;
-}
-
-html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button {
-  border-color: #e2e2ea;
-  background: #ffffff;
-  color: #475569;
+  color: #6b6b78;
+  cursor: pointer;
+  transition:
+    background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button:hover {
-  border-color: #c9cbd6;
-  background: #fafafa;
-  color: #334155;
+  border-color: transparent;
+  background: #5a5fc3;
+  color: #ffffff;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button:active {
+  transform: scale(0.98);
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button[data-active='true'] {
-  border-color: #c9c2ff;
-  background: #eceefc;
-  color: #5a5fc3;
+  border-color: transparent;
+  background: #5a5fc3;
+  color: #ffffff;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
@@ -524,9 +521,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   align-items: center;
   gap: 0.2rem;
   width: 100%;
-  padding: 0 0 0.4rem;
-  margin-bottom: 0.15rem;
-  border-bottom: 1px solid #e2e8ef;
+  padding: 0 0 0.55rem;
+  margin-bottom: 0.2rem;
 }
 
 .iboard-arr-rail__tools {
@@ -547,9 +543,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   align-items: center;
   gap: 0.2rem;
   width: 100%;
-  padding-top: 0.35rem;
-  margin-top: 0.15rem;
-  border-top: 1px solid #e2e8ef;
+  padding-top: 0.55rem;
+  margin-top: 0.2rem;
 }
 
 .iboard-arr-rail__foot {
@@ -576,8 +571,9 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   color: #555b69;
   transition:
     background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 160ms ease,
-    color 160ms ease;
+    border-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-arr-btn img {
@@ -604,13 +600,15 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   display: block;
   width: 100%;
   text-align: center;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: 0.01em;
   color: #555b69;
-  white-space: normal;
-  transition: color 160ms ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-arr-btn:hover,
@@ -637,8 +635,12 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   transform: scale(1.06);
 }
 
+.iboard-arr-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .iboard-arr-btn:focus-visible {
-  outline: 2px solid #818cf8;
+  outline: 2px solid #5a5fc3;
   outline-offset: 2px;
 }
 
@@ -879,7 +881,77 @@ html.dark .iboard-teacher-panel-reveal:hover {
 }
 
 .iboard-student-card {
-  box-shadow: 0 3px 3px -2px rgba(15, 23, 42, 0.22);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 22px -14px rgba(15, 23, 42, 0.16);
+  transition:
+    box-shadow 210ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 210ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 210ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-student-card:hover {
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.05),
+    0 16px 28px -14px rgba(15, 23, 42, 0.2);
+}
+
+.iboard-student-card--empty {
+  background: #f4f4f8;
+  box-shadow: none;
+}
+
+.iboard-student-card--empty:hover {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.iboard-student-card__name {
+  font-weight: 650;
+  color: #3c3c45;
+  letter-spacing: -0.015em;
+}
+
+.iboard-student-card--empty .iboard-student-card__name {
+  color: #8b8b96;
+  font-weight: 600;
+}
+
+.iboard-student-card__empty-copy {
+  color: #a0a0ab;
+  font-style: italic;
+  font-size: 0.92em;
+}
+
+.iboard-student-card__pick,
+.iboard-student-card__chat:not([data-note-status]) {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-student-card:hover .iboard-student-card__pick,
+.iboard-student-card:focus-within .iboard-student-card__pick,
+.iboard-student-card.is-picked .iboard-student-card__pick,
+.iboard-student-board.is-picking .iboard-student-card__pick,
+.iboard-student-card:hover .iboard-student-card__chat,
+.iboard-student-card:focus-within .iboard-student-card__chat,
+.iboard-student-card__chat[data-note-status] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.iboard-student-card--overview .iboard-student-card__meta {
+  height: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.iboard-student-card--overview:hover .iboard-student-card__meta,
+.iboard-student-card--overview:focus-within .iboard-student-card__meta {
+  height: auto;
+  margin-top: 0.125rem;
+  opacity: 1;
 }
 
 /* Overview (compact): square tiles that auto-pack across the board width. */
@@ -897,8 +969,9 @@ html.dark .iboard-teacher-panel-reveal:hover {
 }
 
 .iboard-writing-surface {
-  background: #f6f9fc;
-  box-shadow: inset 0 0 0 1px rgba(214, 224, 235, 0.78);
+  background: transparent;
+  color: #3c3c45;
+  box-shadow: none;
 }
 
 .iboard-student-card .iboard-writing-surface {
@@ -2029,12 +2102,29 @@ html.dark .iboard-arr-rail {
   border-right-color: #343c46;
 }
 
-html.dark .iboard-arr-rail__add {
-  border-bottom-color: #343c46;
+html.dark .iboard-student-card,
+html.dark .iboard-student-card:hover {
+  box-shadow: none;
 }
 
-html.dark .iboard-arr-rail__board {
-  border-top-color: #343c46;
+html.dark .iboard-student-card--empty {
+  background: #151b24;
+}
+
+html.dark .iboard-student-card__name {
+  color: #e2e8f0;
+}
+
+html.dark .iboard-student-card--empty .iboard-student-card__name {
+  color: #94a3b8;
+}
+
+html.dark .iboard-student-card__empty-copy {
+  color: #64748b;
+}
+
+html.dark .iboard-writing-surface {
+  color: #cbd5e1;
 }
 
 html.dark .iboard-arr-btn {
@@ -2139,7 +2229,233 @@ html.dark .iboard-student-card-actions {
     transform: none;
     pointer-events: auto;
   }
+
+  .iboard-student-card__pick,
+  .iboard-student-card__chat {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .iboard-student-card--overview .iboard-student-card__meta {
+    height: auto;
+    margin-top: 0.125rem;
+    opacity: 1;
+  }
 }
+
+.iboard-rec-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 1.85rem;
+  padding: 0.12rem 0.12rem 0.12rem 0.55rem;
+  border: 1px solid #e2e2ea;
+  border-radius: 999px;
+  background: #f4f4f8;
+  cursor: pointer;
+  color: #8b8b96;
+  transition:
+    background-color 210ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 210ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-rec-switch:hover:not(:disabled) {
+  border-color: #d5d5de;
+  background: #efeff4;
+}
+
+.iboard-rec-switch:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.iboard-rec-switch:focus-visible {
+  outline: 2px solid #5a5fc3;
+  outline-offset: 2px;
+}
+
+.iboard-rec-switch:disabled,
+.iboard-rec-switch.is-busy {
+  opacity: 0.55;
+}
+
+.iboard-rec-switch__word {
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  color: #8b8b96;
+}
+
+.iboard-rec-switch__track {
+  position: relative;
+  width: 3.15rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: #e4e4ea;
+  overflow: hidden;
+}
+
+.iboard-rec-switch__on {
+  position: absolute;
+  right: 0.38rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #9a9aa6;
+  transition: color 210ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-rec-switch__knob {
+  position: absolute;
+  top: 0.16rem;
+  left: 0.16rem;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.18rem;
+  height: 1.18rem;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+  transform: translateX(0);
+  transition: transform 210ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-rec-switch__dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: #d4d4dc;
+}
+
+.iboard-rec-switch.is-on {
+  background: #fdecec;
+  border-color: #f3c4c4;
+}
+
+.iboard-rec-switch.is-on .iboard-rec-switch__word,
+.iboard-rec-switch.is-on .iboard-rec-switch__on {
+  color: #dc2626;
+}
+
+.iboard-rec-switch.is-on .iboard-rec-switch__track {
+  background: #f6cfcf;
+}
+
+.iboard-rec-switch.is-on .iboard-rec-switch__knob {
+  transform: translateX(1.65rem);
+}
+
+.iboard-rec-switch.is-on .iboard-rec-switch__dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+  animation: iboardRecPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes iboardRecPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16); }
+  50% { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.08); }
+}
+
+html.dark .iboard-rec-switch {
+  background: #1e2530;
+  border-color: #3a4452;
+  color: #94a3b8;
+}
+
+html.dark .iboard-rec-switch:hover:not(:disabled) {
+  background: #252d3a;
+  border-color: #4b5664;
+}
+
+html.dark .iboard-rec-switch__word,
+html.dark .iboard-rec-switch__on {
+  color: #94a3b8;
+}
+
+html.dark .iboard-rec-switch__track {
+  background: #2a3340;
+}
+
+html.dark .iboard-rec-switch__knob {
+  background: #e2e8f0;
+}
+
+html.dark .iboard-rec-switch.is-on {
+  background: #3f1d1d;
+  border-color: #7f1d1d;
+}
+
+html.dark .iboard-rec-switch.is-on .iboard-rec-switch__word,
+html.dark .iboard-rec-switch.is-on .iboard-rec-switch__on {
+  color: #fca5a5;
+}
+
+html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
+  background: #7f1d1d;
+}
+
+.iboard-ann-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #5a5fc3;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.18));
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-ann-mark:hover {
+  transform: scale(1.06);
+}
+
+.iboard-ann-mark:active {
+  transform: scale(0.96);
+}
+
+.iboard-ann-mark:focus-visible {
+  outline: 2px solid #5a5fc3;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.iboard-ann-mark__pip {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.iboard-ann-mark__pip svg {
+  display: block;
+  width: 9px;
+  height: 9px;
+  color: #ffffff;
+}
+
+.iboard-ann-mark__stem {
+  width: 1.5px;
+  height: 8px;
+  margin-top: -1px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.iboard-ann-mark--open { color: #5a5fc3; }
+.iboard-ann-mark--fixed { color: #6b6b78; }
+.iboard-ann-mark--reopen { color: #f43f5e; }
+.iboard-ann-mark--resolved { color: #10b981; }
 
 .iboard-workspace-scrim {
   background: rgba(15, 23, 42, 0.34);
@@ -2212,8 +2528,16 @@ html.dark .iboard-workspace-scrim {
   }
 
   .iboard-arr-btn img,
-  .iboard-arr-btn__glyph {
+  .iboard-arr-btn__glyph,
+  .iboard-arr-btn,
+  .iboard-rec-switch,
+  .iboard-rec-switch__knob,
+  .iboard-ann-mark {
     transform: none !important;
+  }
+
+  .iboard-rec-switch.is-on .iboard-rec-switch__dot {
+    animation: none;
   }
 }
 

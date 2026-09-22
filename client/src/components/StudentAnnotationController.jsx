@@ -7,6 +7,7 @@ import {
 } from '../lib/annotations.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
+import AnnotationMark from './AnnotationMark.jsx';
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const REOPEN_HIGHLIGHT_NAME = 'iboard-student-reopen-comments';
@@ -450,24 +451,15 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       `}</style>
       {markers.map((marker) => {
         const tone = commentTone(marker.annotation, marker.detached);
-        const toneClass =
-          tone === 'resolved'
-            ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
-            : tone === 'fixed'
-              ? 'bg-[#6b6b78]/35 hover:bg-[#6b6b78]/55'
-              : tone === 'reopen'
-                ? 'bg-rose-400/35 hover:bg-rose-400/55'
-                : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50';
         return (
-          <button
+          <AnnotationMark
             key={marker.annotation.id}
-            data-teacher-annotation-ui
-            type="button"
+            tone={tone}
             onClick={() => {
               setActionError('');
               setOpenMarker(marker);
             }}
-            className={`fixed z-[50] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${toneClass}`}
+            className="fixed z-[50]"
             style={{ top: marker.top, left: marker.left }}
             title={
               tone === 'resolved'
@@ -487,9 +479,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
                     ? 'Check this comment again'
                     : 'Open teacher comment'
             }
-          >
-            {tone === 'open' || tone === 'reopen' ? '💬' : '✓'}
-          </button>
+          />
         );
       })}
       {openMarker && openPopupPosition && (

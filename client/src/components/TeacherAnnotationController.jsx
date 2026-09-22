@@ -14,6 +14,7 @@ import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
 import { clientLayoutScale, rectRelativeToScrollElement, subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
 import HintWrap from './HintWrap.jsx';
+import AnnotationMark from './AnnotationMark.jsx';
 
 const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const REOPEN_HIGHLIGHT_NAME = 'iboard-teacher-reopen-comments';
@@ -1344,24 +1345,15 @@ export default function TeacherAnnotationController() {
 
   function renderMarkerButton(marker) {
     const tone = commentTone(marker.annotation, marker.detached);
-    const toneClass =
-      tone === 'resolved'
-        ? 'bg-emerald-500/30 hover:bg-emerald-500/50'
-        : tone === 'fixed'
-          ? 'bg-[#6b6b78]/35 hover:bg-[#6b6b78]/55'
-          : tone === 'reopen'
-            ? 'bg-rose-400/35 hover:bg-rose-400/55'
-            : 'bg-[#5a5fc3]/30 hover:bg-[#5a5fc3]/50';
     const button = (
-      <button
+      <AnnotationMark
         key={`${marker.studentId}-${marker.annotation.id}`}
-        data-teacher-annotation-ui
-        type="button"
+        tone={tone}
         onClick={() => {
           setReviewError('');
           setOpenMarker(marker);
         }}
-        className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10] flex h-7 w-7 items-center justify-center rounded-full text-xs font-black text-white shadow-md transition ${toneClass}`}
+        className={`${marker.position === 'fixed' ? 'fixed' : 'absolute'} z-[10]`}
         style={{ top: marker.top, left: marker.left }}
         title={
           tone === 'resolved'
@@ -1383,9 +1375,7 @@ export default function TeacherAnnotationController() {
                 ? 'Check again pending'
                 : 'Open inline teacher comment'
         }
-      >
-        {tone === 'open' || tone === 'reopen' ? '💬' : '✓'}
-      </button>
+      />
     );
 
     if (marker.position === 'fixed') return button;
