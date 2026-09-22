@@ -5,12 +5,14 @@ import {
   commentTone,
   inferReplacementPassage,
   COMMENT_HOVER_WASH,
+  commentGutterLane,
   locateAnnotationRange,
   plainTextFromElement,
   rangeContainsPoint,
   rangeForPlainOffsets,
   selectionOffsetsWithin,
   setCommentHoverHighlight,
+  setNamedHighlight,
   stackGutterMarkers,
   writingRootForPane,
 } from '../lib/annotations.js';
@@ -46,6 +48,7 @@ const MARKER_SIZE = 18;
 const INLINE_MARKER_SIZE = 14;
 const MARKER_MARGIN = 4;
 const GUTTER_INSET = 16;
+const LANE_GAP = 8;
 
 const CHIT_CATEGORIES = [
   { id: 'fix', label: 'Fix' },
@@ -305,7 +308,7 @@ function cardUsesCompactPip(card) {
   return !!card?.article?.classList.contains('iboard-student-card--overview');
 }
 
-function markerPosition(range, card) {
+function markerPosition(range, card, lane = 'done') {
   if (typeof window === 'undefined' || !card?.textPane) return null;
 
   const rangeRect = primaryRangeClientRect(range);
@@ -330,7 +333,8 @@ function markerPosition(range, card) {
 
   // One hairline from the start of the quote on this line out to the margin bubble.
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - GUTTER_INSET;
+  const laneInset = compact || lane !== 'attention' ? GUTTER_INSET : GUTTER_INSET + size + LANE_GAP;
+  const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - laneInset;
   const left = Math.max(minLeft, Math.min(gutterLeft, local.left));
   const width = Math.max(size, gutterLeft + size - left);
   const underlineY = local.top + local.height - 3;
@@ -345,14 +349,15 @@ function markerPosition(range, card) {
   };
 }
 
-function detachedMarkerPosition(pane, index, compact = false) {
+function detachedMarkerPosition(pane, index, compact = false, lane = 'done') {
   if (!pane) return null;
   const paneRect = pane.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
   const size = compact ? INLINE_MARKER_SIZE : MARKER_SIZE;
+  const laneInset = compact || lane !== 'attention' ? GUTTER_INSET : GUTTER_INSET + size + LANE_GAP;
   // Keep orphaned ticks in the visible corner of the writing pane.
   const top = (pane.scrollTop || 0) + MARKER_MARGIN + index * (size + 4);
-  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - GUTTER_INSET;
+  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - laneInset;
   const maxTop = (pane.scrollTop || 0) + (pane.clientHeight || paneRect.height) - size - MARKER_MARGIN;
   if (top > maxTop) return null;
   return { top, left, width: size, layout: 'orphan', position: 'absolute', root: pane };
@@ -370,6 +375,7 @@ function markersMatch(a, b) {
       left.detached !== right.detached ||
       left.position !== right.position ||
       left.layout !== right.layout ||
+      left.lane !== right.lane ||
       Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
       Math.abs((left.left || 0) - (right.left || 0)) > 0.5 ||
       Math.abs((left.width || 0) - (right.width || 0)) > 0.5
@@ -423,6 +429,7 @@ export default function TeacherAnnotationController() {
   const [hoveredKey, setHoveredKey] = useState(null);
   const moveFrameRef = useRef(null);
   const hoverTargetsRef = useRef([]);
+  const hoveredKeyRef = useRef(null);
   const selectingInPaneRef = useRef(false);
   const selectionSettleRef = useRef(null);
   const draftNoteRef = useRef(null);
@@ -558,25 +565,28 @@ export default function TeacherAnnotationController() {
       const writingRoot = contentRootForPane(card.textPane) || card.textPane;
       const fullText = plainTextFromElement(writingRoot);
       const paneRect = card.textPane.getBoundingClientRect();
-      let detachedCount = 0;
+      const detachedCount = { attention: 0, done: 0 };
+      const compact = cardUsesCompactPip(card);
       for (const annotation of annotations || []) {
         const { resolved, range } = locateAnnotationRange(writingRoot, annotation, fullText);
         const tone = commentTone(annotation, resolved.detached);
+        const lane = compact ? 'done' : commentGutterLane(tone);
         if (!range) {
           if (paneIsOnScreen(paneRect)) {
-            const position = detachedMarkerPosition(card.textPane, detachedCount, cardUsesCompactPip(card));
+            const position = detachedMarkerPosition(card.textPane, detachedCount[lane], compact, lane);
             if (position) {
               nextMarkers.push({
                 studentId,
                 annotation,
                 detached: true,
+                lane,
                 top: position.top,
                 left: position.left,
                 layout: position.layout || 'gutter',
                 width: position.width,
                 position: position.position,
               });
-              detachedCount += 1;
+              detachedCount[lane] += 1;
             }
           }
           continue;
@@ -586,12 +596,13 @@ export default function TeacherAnnotationController() {
         else if (tone === 'reopen') reopenRanges.push(range);
         else ranges.push(range);
         hoverTargets.push({ key: `${studentId}:${annotation.id}`, range, tone });
-        const position = markerPosition(range, card);
+        const position = markerPosition(range, card, lane);
         if (!position) continue;
         nextMarkers.push({
           studentId,
           annotation,
           detached: resolved.detached,
+          lane,
           top: position.top,
           left: position.left,
           layout: position.layout || 'gutter',
@@ -601,17 +612,13 @@ export default function TeacherAnnotationController() {
       }
     }
 
-    if (globalThis.CSS?.highlights && typeof globalThis.Highlight !== 'undefined') {
-      if (ranges.length) globalThis.CSS.highlights.set(HIGHLIGHT_NAME, new globalThis.Highlight(...ranges));
-      else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
-      if (reopenRanges.length) globalThis.CSS.highlights.set(REOPEN_HIGHLIGHT_NAME, new globalThis.Highlight(...reopenRanges));
-      else globalThis.CSS.highlights.delete(REOPEN_HIGHLIGHT_NAME);
-      if (awaitingRanges.length) globalThis.CSS.highlights.set(AWAITING_HIGHLIGHT_NAME, new globalThis.Highlight(...awaitingRanges));
-      else globalThis.CSS.highlights.delete(AWAITING_HIGHLIGHT_NAME);
-      if (resolvedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
-      else globalThis.CSS.highlights.delete(FIXED_HIGHLIGHT_NAME);
-    }
+    setNamedHighlight(HIGHLIGHT_NAME, ranges);
+    setNamedHighlight(REOPEN_HIGHLIGHT_NAME, reopenRanges);
+    setNamedHighlight(AWAITING_HIGHLIGHT_NAME, awaitingRanges);
+    setNamedHighlight(FIXED_HIGHLIGHT_NAME, resolvedRanges);
     hoverTargetsRef.current = hoverTargets;
+    const lit = hoverTargets.find((item) => item.key === hoveredKeyRef.current);
+    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit?.range || null);
     const stacked = stackGutterMarkers(nextMarkers, (marker) => (
       (marker.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 6
     ));
@@ -724,30 +731,37 @@ export default function TeacherAnnotationController() {
   }, [refreshHighlights]);
 
   useEffect(() => {
+    hoveredKeyRef.current = hoveredKey;
+  }, [hoveredKey]);
+
+  useEffect(() => {
+    const applyHover = (key) => {
+      hoveredKeyRef.current = key;
+      const hit = hoverTargetsRef.current.find((item) => item.key === key);
+      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hit?.range || null);
+      setHoveredKey((prev) => (prev === key ? prev : key));
+    };
     const onMove = (event) => {
       if (selectingInPaneRef.current) return;
       const mark = event.target?.closest?.('.iboard-ann-mark');
       const fromMark = mark?.dataset?.annKey;
       if (fromMark) {
-        setHoveredKey((prev) => (prev === fromMark ? prev : fromMark));
+        applyHover(fromMark);
         return;
       }
       const hit = hoverTargetsRef.current.find((item) => (
         rangeContainsPoint(item.range, event.clientX, event.clientY)
       ));
-      const next = hit?.key || null;
-      setHoveredKey((prev) => (prev === next ? prev : next));
+      applyHover(hit?.key || null);
     };
     document.addEventListener('pointermove', onMove, { passive: true });
-    return () => document.removeEventListener('pointermove', onMove);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
+    };
   }, []);
 
   const hoveredTarget = hoverTargetsRef.current.find((item) => item.key === hoveredKey) || null;
-
-  useEffect(() => {
-    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hoveredTarget?.range || null);
-    return () => setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
-  }, [hoveredKey, hoveredTarget?.range]);
 
   useEffect(() => {
     function clearPendingComposer() {

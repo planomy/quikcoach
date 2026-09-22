@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   COMMENT_HOVER_WASH,
+  commentGutterLane,
   commentTone,
   inferReplacementPassage,
   locateAnnotationRange,
   plainTextFromElement,
   rangeContainsPoint,
   setCommentHoverHighlight,
+  setNamedHighlight,
   stackGutterMarkers,
 } from '../lib/annotations.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
@@ -20,6 +22,7 @@ const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
 const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
 const MARKER_SIZE = 18;
 const MARKER_MARGIN = 6;
+const LANE_GAP = 8;
 const POPUP_WIDTH = 320;
 /** Placement budget — keep the action button visible on short iPad viewports. */
 const POPUP_HEIGHT = 360;
@@ -49,8 +52,12 @@ function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
   return { top: nextTop, left: nextLeft, width: nextWidth };
 }
 
-function markerPosition(rangeRect, editorRect) {
-  const gutterRight = (editorRect?.right || rangeRect.right + 40) - 16;
+function laneShift(lane) {
+  return lane === 'attention' ? MARKER_SIZE + LANE_GAP : 0;
+}
+
+function markerPosition(rangeRect, editorRect, lane = 'done') {
+  const gutterRight = (editorRect?.right || rangeRect.right + 40) - 16 - laneShift(lane);
   const left = rangeRect.left;
   const width = Math.max(MARKER_SIZE, gutterRight - left);
   return clampOnScreen({
@@ -61,13 +68,33 @@ function markerPosition(rangeRect, editorRect) {
   });
 }
 
-function detachedMarkerPosition(editorRect, index) {
+function detachedMarkerPosition(editorRect, index, lane = 'done') {
   return clampOnScreen({
     top: editorRect.top + 8 + index * (MARKER_SIZE + 4),
-    left: editorRect.right - MARKER_SIZE - 6,
+    left: editorRect.right - MARKER_SIZE - 6 - laneShift(lane),
     width: MARKER_SIZE,
     height: MARKER_SIZE,
   });
+}
+
+function studentMarkersMatch(a, b) {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+    if (
+      Number(left.annotation?.id) !== Number(right.annotation?.id) ||
+      left.detached !== right.detached ||
+      left.lane !== right.lane ||
+      Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
+      Math.abs((left.left || 0) - (right.left || 0)) > 0.5 ||
+      Math.abs((left.width || 0) - (right.width || 0)) > 0.5
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function commentPopupMaxHeight() {
@@ -104,6 +131,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const [hoveredId, setHoveredId] = useState(null);
   const moveFrameRef = useRef(null);
   const hoverTargetsRef = useRef([]);
+  const hoveredIdRef = useRef(null);
   const autoFixQueuedRef = useRef(new Set());
   const autoFixTimersRef = useRef(new Map());
   const checkAgainSnapshotRef = useRef(new Map());
@@ -129,7 +157,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     const resolvedRanges = [];
     const nextMarkers = [];
     const hoverTargets = [];
-    let detachedCount = 0;
+    const detachedCount = { attention: 0, done: 0 };
     const editorRect = editor.getBoundingClientRect();
     const vp = viewportBox();
     const editorVisible =
@@ -140,17 +168,19 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     for (const annotation of annotations || []) {
       const { resolved, range } = locateAnnotationRange(editor, annotation, text);
       const tone = commentTone(annotation, resolved.detached);
+      const lane = commentGutterLane(tone);
       if (!range) {
         if (editorVisible) {
-          const pos = detachedMarkerPosition(editorRect, detachedCount);
+          const pos = detachedMarkerPosition(editorRect, detachedCount[lane], lane);
           nextMarkers.push({
             annotation,
             detached: true,
+            lane,
             top: pos.top,
             left: pos.left,
             width: pos.width,
           });
-          detachedCount += 1;
+          detachedCount[lane] += 1;
         }
         continue;
       }
@@ -162,31 +192,26 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const rects = Array.from(range.getClientRects()).filter((item) => item.width || item.height);
       const rect = rects[rects.length - 1] || range.getBoundingClientRect();
       if (rect.width || rect.height) {
-        const pos = markerPosition(rect, editorRect);
+        const pos = markerPosition(rect, editorRect, lane);
         nextMarkers.push({
           annotation,
           detached: resolved.detached,
+          lane,
           top: pos.top,
           left: pos.left,
           width: pos.width,
         });
       }
     }
-    if (globalThis.CSS?.highlights && typeof globalThis.Highlight !== 'undefined') {
-      if (ranges.length) globalThis.CSS.highlights.set(HIGHLIGHT_NAME, new globalThis.Highlight(...ranges));
-      else globalThis.CSS.highlights.delete(HIGHLIGHT_NAME);
-      if (reopenRanges.length) {
-        globalThis.CSS.highlights.set(REOPEN_HIGHLIGHT_NAME, new globalThis.Highlight(...reopenRanges));
-      } else globalThis.CSS.highlights.delete(REOPEN_HIGHLIGHT_NAME);
-      if (awaitingRanges.length) {
-        globalThis.CSS.highlights.set(AWAITING_HIGHLIGHT_NAME, new globalThis.Highlight(...awaitingRanges));
-      } else globalThis.CSS.highlights.delete(AWAITING_HIGHLIGHT_NAME);
-      if (resolvedRanges.length) {
-        globalThis.CSS.highlights.set(RESOLVED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
-      } else globalThis.CSS.highlights.delete(RESOLVED_HIGHLIGHT_NAME);
-    }
+    setNamedHighlight(HIGHLIGHT_NAME, ranges);
+    setNamedHighlight(REOPEN_HIGHLIGHT_NAME, reopenRanges);
+    setNamedHighlight(AWAITING_HIGHLIGHT_NAME, awaitingRanges);
+    setNamedHighlight(RESOLVED_HIGHLIGHT_NAME, resolvedRanges);
     hoverTargetsRef.current = hoverTargets;
-    setMarkers(stackGutterMarkers(nextMarkers, () => MARKER_SIZE + 6));
+    const lit = hoverTargets.find((item) => item.key === hoveredIdRef.current);
+    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit?.range || null);
+    const stacked = stackGutterMarkers(nextMarkers, () => MARKER_SIZE + 6);
+    setMarkers((prev) => (studentMarkersMatch(prev, stacked) ? prev : stacked));
   }, [annotations]);
 
   useEffect(() => {
@@ -396,29 +421,36 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }, [refreshHighlights]);
 
   useEffect(() => {
+    hoveredIdRef.current = hoveredId;
+  }, [hoveredId]);
+
+  useEffect(() => {
+    const applyHover = (key) => {
+      hoveredIdRef.current = key;
+      const hit = hoverTargetsRef.current.find((item) => item.key === key);
+      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hit?.range || null);
+      setHoveredId((prev) => (prev === key ? prev : key));
+    };
     const onMove = (event) => {
       const mark = event.target?.closest?.('.iboard-ann-mark');
       const fromMark = mark?.dataset?.annKey;
       if (fromMark) {
-        setHoveredId((prev) => (prev === fromMark ? prev : fromMark));
+        applyHover(fromMark);
         return;
       }
       const hit = hoverTargetsRef.current.find((item) => (
         rangeContainsPoint(item.range, event.clientX, event.clientY)
       ));
-      const next = hit?.key || null;
-      setHoveredId((prev) => (prev === next ? prev : next));
+      applyHover(hit?.key || null);
     };
     document.addEventListener('pointermove', onMove, { passive: true });
-    return () => document.removeEventListener('pointermove', onMove);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
+    };
   }, []);
 
   const hoveredTarget = hoverTargetsRef.current.find((item) => item.key === hoveredId) || null;
-
-  useEffect(() => {
-    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hoveredTarget?.range || null);
-    return () => setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
-  }, [hoveredId, hoveredTarget?.range]);
 
   useEffect(() => {
     if (!openMarker) return;

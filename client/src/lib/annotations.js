@@ -168,6 +168,11 @@ export function commentTone(annotation, detached = false) {
   return 'open';
 }
 
+/** Unread / check-again sit in the left gutter; reviewed sit to the right. */
+export function commentGutterLane(tone) {
+  return tone === 'open' || tone === 'reopen' ? 'attention' : 'done';
+}
+
 function tokenCount(value) {
   return String(value || '').trim().split(/\s+/).filter(Boolean).length;
 }
@@ -545,11 +550,36 @@ export const COMMENT_HOVER_WASH = {
   resolved: 'rgba(16, 185, 129, 0.48)',
 };
 
-export function rangeContainsPoint(range, x, y) {
+const highlightSignatureCache = new Map();
+
+function highlightSignature(ranges) {
+  if (!ranges?.length) return '';
+  return ranges.map((range) => {
+    try {
+      return `${range.startOffset}:${range.endOffset}:${range.toString()}`;
+    } catch {
+      return 'x';
+    }
+  }).join('|');
+}
+
+export function setNamedHighlight(name, ranges) {
+  if (!globalThis.CSS?.highlights || typeof globalThis.Highlight === 'undefined') return;
+  const list = Array.isArray(ranges) ? ranges.filter(Boolean) : ranges ? [ranges] : [];
+  const signature = highlightSignature(list);
+  if (highlightSignatureCache.get(name) === signature) return;
+  highlightSignatureCache.set(name, signature);
+  if (list.length) globalThis.CSS.highlights.set(name, new globalThis.Highlight(...list));
+  else globalThis.CSS.highlights.delete(name);
+}
+
+export function rangeContainsPoint(range, x, y, pad = 3) {
   if (!range) return false;
   try {
     for (const rect of range.getClientRects()) {
-      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return true;
+      if (x >= rect.left - pad && x <= rect.right + pad && y >= rect.top - pad && y <= rect.bottom + pad) {
+        return true;
+      }
     }
   } catch {
     return false;
@@ -558,9 +588,7 @@ export function rangeContainsPoint(range, x, y) {
 }
 
 export function setCommentHoverHighlight(name, range) {
-  if (!globalThis.CSS?.highlights || typeof globalThis.Highlight === 'undefined') return;
-  if (range) globalThis.CSS.highlights.set(name, new globalThis.Highlight(range));
-  else globalThis.CSS.highlights.delete(name);
+  setNamedHighlight(name, range ? [range] : []);
 }
 
 /** Keep same-line margin bubbles from sitting on top of each other. */
@@ -572,7 +600,7 @@ export function stackGutterMarkers(markers, gapFor = () => 18) {
       orphans.push(marker);
       continue;
     }
-    const key = marker.studentId != null ? String(marker.studentId) : 'self';
+    const key = `${marker.studentId != null ? marker.studentId : 'self'}:${marker.lane || 'done'}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(marker);
   }

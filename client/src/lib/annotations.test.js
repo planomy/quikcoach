@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { commentTone, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
+import { commentGutterLane, commentTone, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
 
 const spelling = {
   quote: 'recieve',
@@ -61,4 +61,23 @@ test('same-line gutter bubbles stack instead of overlapping', () => {
     () => 18,
   );
   assert.deepEqual(stacked.map((marker) => marker.top), [100, 118, 136]);
+});
+
+test('unread bubbles keep their own gutter column from reviewed ones', () => {
+  assert.equal(commentGutterLane('open'), 'attention');
+  assert.equal(commentGutterLane('reopen'), 'attention');
+  assert.equal(commentGutterLane('fixed'), 'done');
+  assert.equal(commentGutterLane('resolved'), 'done');
+  const stacked = stackGutterMarkers(
+    [
+      { id: 1, top: 100, left: 40, lane: 'attention' },
+      { id: 2, top: 102, left: 80, lane: 'done' },
+      { id: 3, top: 104, left: 90, lane: 'done' },
+    ],
+    () => 18,
+  );
+  const byId = Object.fromEntries(stacked.map((marker) => [marker.id, marker.top]));
+  assert.equal(byId[1], 100);
+  assert.equal(byId[2], 102);
+  assert.equal(byId[3], 120);
 });

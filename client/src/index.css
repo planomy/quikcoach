@@ -597,7 +597,7 @@ html:not(.dark) .iboard-student-canvas footer {
   padding-top: 1.15rem;
   padding-bottom: 1.75rem;
   padding-left: clamp(1.15rem, 3.5%, 2rem);
-  padding-right: max(2.25rem, calc(100% - 66ch - clamp(1.15rem, 3.5%, 2rem)));
+  padding-right: max(4rem, calc(100% - 66ch - clamp(1.15rem, 3.5%, 2rem)));
   font-size: 16px;
 }
 
@@ -2753,7 +2753,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   border-top: var(--ann-stem-width) dotted var(--ann-stem);
   border-radius: 0;
   background: none;
-  pointer-events: auto;
+  pointer-events: none;
   transition: border-color 160ms ease;
 }
 
@@ -2764,6 +2764,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   right: 0;
   top: -8px;
   height: 16px;
+  pointer-events: none;
 }
 
 .iboard-ann-mark--compact {

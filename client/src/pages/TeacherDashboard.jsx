@@ -5301,7 +5301,7 @@ function TeacherDashboardInner() {
               data-student-writing-pane
               data-card-font="true"
               style={{ fontSize: `${cardFontRem(cardFontById, focusedStudent.id)}rem` }}
-              className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-14 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
+              className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-16 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
             >
               {focusedStudent.image_url && (
                 <AnnotatedStudentImage
