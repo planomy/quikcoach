@@ -182,11 +182,11 @@ function RailTimerLabel({ timer }) {
 
 const TEACHER_TOOLS_TABS = [
   { id: 'ask', label: 'Ask the class' },
-  { id: 'respond', label: 'Reply', icon: '/rail/reply-icon.png' },
+  { id: 'responses', label: 'Responses' },
 ];
 
 const ADD_CARD_ACTIONS = [
-  { id: 'document', label: 'Doc', title: 'Add document', hint: 'PDF for Inbox or the board' },
+  { id: 'document', label: 'PDF', title: 'Add PDF', hint: 'PDF for Inbox or the board' },
   { id: 'image', label: 'Image', title: 'Add image', hint: 'Photo or screenshot' },
   { id: 'text', label: 'Text', title: 'Add text', hint: 'A note on the board or Inbox' },
 ];
@@ -364,7 +364,6 @@ function TeacherDashboardInner() {
   const teacherHeaderRef = useRef(null);
   const teacherToolsNavRef = useRef(null);
   const teacherToolsPanelRef = useRef(null);
-  const addCardButtonRef = useRef(null);
   const addCardPanelRef = useRef(null);
   const settingsButtonRef = useRef(null);
   const settingsPanelRef = useRef(null);
@@ -420,7 +419,7 @@ function TeacherDashboardInner() {
   const [draftTrailFocusId, setDraftTrailFocusId] = useState(null);
   const [draftTrailLabelOpen, setDraftTrailLabelOpen] = useState(false);
   const [draftTrailLabelDraft, setDraftTrailLabelDraft] = useState('');
-  const [addCardTitle, setAddCardTitle] = useState('Teacher');
+  const [addCardTitle, setAddCardTitle] = useState('');
   const [addCardText, setAddCardText] = useState('');
   const [addCardImage, setAddCardImage] = useState('');
   const [addCardFile, setAddCardFile] = useState(null);
@@ -1505,7 +1504,7 @@ function TeacherDashboardInner() {
   }, [livePulse.activity?.id]);
 
   useEffect(() => {
-    if (!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
+    if (!toolsPanelOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
       const target = event.target;
@@ -1517,11 +1516,6 @@ function TeacherDashboardInner() {
         // outside-click handler closes the dock on pointerdown before its buttons'
         // click handlers get a chance to run.
         if (target?.closest?.('[data-iboard-sets-preview="true"]')) return;
-      }
-      if (addCardOpen) {
-        if (addCardButtonRef.current?.contains(target)) return;
-        if (addCardPanelRef.current?.contains(target)) return;
-        if (target?.closest?.('[data-iboard-add-card-trigger="true"]')) return;
       }
       if (settingsOpen) {
         if (settingsButtonRef.current?.contains(target)) return;
@@ -1542,7 +1536,6 @@ function TeacherDashboardInner() {
         setToolsPanelOpen(false);
         setToolsHighlightStudentId(null);
       }
-      if (addCardOpen && !addCardBusy) setAddCardOpen(false);
       if (settingsOpen) closeSettings();
       if (timerOpen) setTimerOpen(false);
       if (viewOpen) setViewOpen(false);
@@ -1554,7 +1547,6 @@ function TeacherDashboardInner() {
         setToolsPanelOpen(false);
         setToolsHighlightStudentId(null);
       }
-      if (addCardOpen && !addCardBusy) setAddCardOpen(false);
       if (settingsOpen) closeSettings();
       if (timerOpen) setTimerOpen(false);
       if (viewOpen) setViewOpen(false);
@@ -1566,19 +1558,30 @@ function TeacherDashboardInner() {
       document.removeEventListener('pointerdown', closeHeaderPanelsIfOutside);
       document.removeEventListener('keydown', closeHeaderPanelsOnEscape);
     };
-  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, viewOpen, addCardBusy]);
+  }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen]);
+
+  useEffect(() => {
+    if (!addCardOpen) return undefined;
+    function rollUpComposerOnEscape(event) {
+      if (event.key === 'Escape' && !addCardBusy) setAddCardOpen(false);
+    }
+    document.addEventListener('keydown', rollUpComposerOnEscape);
+    return () => document.removeEventListener('keydown', rollUpComposerOnEscape);
+  }, [addCardOpen, addCardBusy]);
+
+  useEffect(() => {
+    if (!addCardOpen) return;
+    const titleField = addCardPanelRef.current?.querySelector('input[aria-label="Card title"]');
+    titleField?.focus();
+  }, [addCardOpen, addCardMode]);
 
   useLayoutEffect(() => {
-    if (!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
+    if (!toolsPanelOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
 
     function currentDockAnchor() {
       if (viewOpen) return viewButtonRef.current;
       if (timerOpen) return timerButtonRef.current;
       if (settingsOpen) return settingsButtonRef.current;
-      if (addCardOpen) {
-        return document.querySelector('[data-iboard-add-card-trigger][data-active="true"]')
-          || addCardButtonRef.current;
-      }
       if (toolsPanelOpen) {
         return teacherToolsNavRef.current?.querySelector('.iboard-arr-rail__tools [data-active="true"]');
       }
@@ -1589,7 +1592,6 @@ function TeacherDashboardInner() {
       if (viewOpen) return viewPanelRef.current;
       if (timerOpen) return timerPanelRef.current;
       if (settingsOpen) return settingsPanelRef.current;
-      if (addCardOpen) return addCardPanelRef.current;
       if (toolsPanelOpen) return teacherToolsPanelRef.current;
       return null;
     }
@@ -1630,12 +1632,8 @@ function TeacherDashboardInner() {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', alignDockToRailButton);
     };
-  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, viewOpen, toolsTab, addCardMode, cardView]);
+  }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen, toolsTab, cardView]);
 
-  const pendingQuestionCount = useMemo(
-    () => audienceQuestions.filter((question) => question.status === 'pending').length,
-    [audienceQuestions]
-  );
   const pendingHandByStudentId = useMemo(() => {
     const map = new Map();
     for (const question of audienceQuestions) {
@@ -1870,14 +1868,15 @@ function TeacherDashboardInner() {
     closeSettings();
     setTimerOpen(false);
     setViewOpen(false);
-    if (addCardOpen && addCardMode === next) {
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+    if (addCardOpen && addCardMode === next && !teacherPanelHidden) {
       closeAddCard();
       return;
     }
-    setToolsPanelOpen(false);
-    setToolsHighlightStudentId(null);
+    setTeacherPanelHidden(false);
     setAddCardMode(next);
-    setAddCardTitle('Teacher');
+    setAddCardTitle('');
     setAddCardText('');
     setAddCardImage('');
     setAddCardFile(null);
@@ -1982,7 +1981,7 @@ function TeacherDashboardInner() {
   }
 
   function submitTeacherCard() {
-    const title = String(addCardTitle || 'Teacher').trim() || 'Teacher';
+    const title = String(addCardTitle || '').trim() || 'Handout';
     const finish = (ack, message) => {
       setAddCardBusy(false);
       if (!ack?.ok) {
@@ -2796,7 +2795,7 @@ function TeacherDashboardInner() {
   ]
     .filter(Boolean)
     .join(' · ');
-  const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen || timerOpen || viewOpen;
+  const headerDockOpen = toolsPanelOpen || settingsOpen || timerOpen || viewOpen;
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -3116,11 +3115,7 @@ function TeacherDashboardInner() {
           className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
-          aria-label={`${
-            toolsTab === 'responses'
-              ? 'Ask the class'
-              : TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'
-          } panel`}
+          aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
         >
           <LiveResponseTeacher
             socket={socket}
@@ -3198,16 +3193,13 @@ function TeacherDashboardInner() {
           </div>
           <div className="iboard-arr-rail__tools">
             {TEACHER_TOOLS_TABS.map((tab) => {
-              const askOpen = toolsPanelOpen && (toolsTab === 'ask' || toolsTab === 'responses');
-              const active = tab.id === 'ask' ? askOpen : toolsPanelOpen && toolsTab === tab.id;
-              const badge = tab.id === 'respond' ? pendingQuestionCount : 0;
+              const active = toolsPanelOpen && toolsTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => {
-                    if (tab.id === 'ask' && askOpen) closeTeacherTools();
-                    else if (toolsPanelOpen && toolsTab === tab.id) closeTeacherTools();
+                    if (active) closeTeacherTools();
                     else openTeacherTools(tab.id);
                   }}
                   aria-current={active ? 'page' : undefined}
@@ -3222,14 +3214,14 @@ function TeacherDashboardInner() {
                       <path d="M11.3 12.7 21.6 3.4" />
                     </svg>
                   ) : (
-                    <img src={tab.icon} alt="" />
+                    <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M5 17V10" />
+                      <path d="M10 17V6" />
+                      <path d="M15 17v-5" />
+                      <path d="M20 17V8" />
+                    </svg>
                   )}
                   <span className="iboard-arr-label">{tab.label}</span>
-                  {badge ? (
-                    <span className="absolute right-1 top-1 z-[2] grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-black tabular-nums leading-none text-white shadow-sm">
-                      {badge}
-                    </span>
-                  ) : null}
                 </button>
               );
             })}
@@ -3328,24 +3320,137 @@ function TeacherDashboardInner() {
                   <path d="M15 6 9 12l6 6" />
                 </svg>
               </button>
-              <h2>Teacher</h2>
-              <button
-                ref={addCardButtonRef}
-                type="button"
-                className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
-                data-iboard-add-card-trigger="true"
-                onClick={() => openAddCard(addCardMode || 'document')}
-                aria-expanded={addCardOpen}
-                aria-label="Add teacher card"
-                title="Add"
-              >
-                <span aria-hidden="true">+</span>
-              </button>
+            </div>
+            <div
+              ref={addCardPanelRef}
+              className={`iboard-teacher-composer${addCardOpen ? ' is-open' : ''}`}
+              data-iboard-add-card-panel="true"
+              inert={!addCardOpen ? true : undefined}
+            >
+              <div className="iboard-teacher-composer__inner">
+                <form
+                  className="iboard-teacher-composer__form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    submitTeacherCard();
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h2 id="add-teacher-card-title" className="text-[13px] font-black text-slate-950 dark:text-white">
+                        {addCardMode === 'image' ? 'Add image' : addCardMode === 'text' ? 'Add text' : 'Add PDF'}
+                      </h2>
+                      <p className="mt-0.5 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+                        {addCardMode === 'image'
+                          ? 'Photo or screenshot'
+                          : addCardMode === 'text'
+                            ? 'A short note'
+                            : 'For Inbox or the board'}
+                      </p>
+                    </div>
+                    <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
+                  </div>
+                  <input
+                    autoFocus={addCardOpen}
+                    value={addCardTitle}
+                    onChange={(event) => setAddCardTitle(event.target.value)}
+                    maxLength={80}
+                    aria-label="Card title"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    placeholder="Title"
+                  />
+                  {addCardMode !== 'text' ? (
+                    <label
+                      className="flex cursor-pointer flex-col gap-1 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/60 px-2.5 py-2 text-sm dark:border-indigo-800 dark:bg-indigo-950/30"
+                      onPaste={addCardMode === 'image' ? handleAddCardPaste : undefined}
+                    >
+                      <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                        {addCardMode === 'image' ? 'Choose or paste an image' : 'Attach a PDF'}
+                      </span>
+                      <span className="text-[10px] leading-snug text-indigo-700/80 dark:text-indigo-300/80">
+                        {addCardMode === 'image'
+                          ? 'Up to 5 MB · JPG, PNG, or WebP'
+                          : 'Up to 5 MB · export Word or PowerPoint as PDF'}
+                      </span>
+                      <input
+                        type="file"
+                        accept={
+                          addCardMode === 'image'
+                            ? '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
+                            : '.pdf,application/pdf'
+                        }
+                        className="mt-1 block w-full text-[11px] text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-indigo-600 file:px-2 file:py-1 file:text-[11px] file:font-bold file:text-white dark:text-slate-300"
+                        onChange={handleAddCardFileChange}
+                        disabled={addCardBusy}
+                      />
+                    </label>
+                  ) : null}
+                  {addCardFile && (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-950/40">
+                      <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">{addCardFile.name}</p>
+                      <button type="button" onClick={() => setAddCardFile(null)} className="shrink-0 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Clear</button>
+                    </div>
+                  )}
+                  {addCardMode === 'text' ? (
+                    <textarea
+                      value={addCardText}
+                      onChange={(event) => setAddCardText(event.target.value)}
+                      rows={4}
+                      aria-label="Card text"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                      placeholder="Write the note…"
+                    />
+                  ) : null}
+                  {addCardImage && (
+                    <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-1.5 dark:border-slate-700 dark:bg-slate-950/30">
+                      <img src={addCardImage} alt="Pasted card preview" className="max-h-28 w-full object-contain" />
+                      <button type="button" onClick={() => setAddCardImage('')} className="mt-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Clear image</button>
+                    </div>
+                  )}
+                  {addCardError && <p className="text-xs font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
+                  <label
+                    data-iboard-add-card-send-option="true"
+                    className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"
+                  >
+                    <input
+                      type="checkbox"
+                      data-iboard-send-inbox="true"
+                      checked={addCardSendInbox}
+                      onChange={(event) => setAddCardSendInbox(event.target.checked)}
+                      className="h-3.5 w-3.5 accent-indigo-600"
+                    />
+                    <span>Send to Inbox</span>
+                  </label>
+                  {(addCardMode === 'document' || addCardMode === 'image') && (
+                    <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={addCardPlaceOnBoard}
+                        onChange={(event) => setAddCardPlaceOnBoard(event.target.checked)}
+                        className="h-3.5 w-3.5 accent-indigo-600"
+                      />
+                      <span>Place on this board</span>
+                    </label>
+                  )}
+                  <div className="flex justify-end gap-1.5 pt-1">
+                    <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
+                      className="rounded-md bg-indigo-600 px-3 py-1 text-[11px] font-black text-white hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      {addCardBusy ? 'Sending…' : addCardFile || addCardImage ? 'Send' : 'Add card'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
             <div className="iboard-teacher-panel-list">
-              {posts.length === 0 && (
+              {posts.length === 0 && !addCardOpen && (
                 <p className="px-1 py-6 text-center text-xs font-semibold text-slate-400">
-                  No teacher cards yet — use +
+                  No cards yet — add a PDF, image, or text from the rail
                 </p>
               )}
               {posts.map((post) => (
@@ -4370,140 +4475,6 @@ function TeacherDashboardInner() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {addCardOpen && (
-        <div
-          ref={addCardPanelRef}
-          data-iboard-add-card-panel="true"
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
-          style={headerDockStyle}
-          role="dialog"
-          aria-modal="false"
-          aria-labelledby="add-teacher-card-title"
-        >
-          <form
-            className="flex flex-col"
-            onSubmit={(event) => {
-              event.preventDefault();
-              submitTeacherCard();
-            }}
-          >
-            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-              <div>
-                <h2 id="add-teacher-card-title" className="font-display text-base font-black text-slate-950 dark:text-white">
-                  {addCardMode === 'image' ? 'Add image' : addCardMode === 'text' ? 'Add text' : 'Add document'}
-                </h2>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  {addCardMode === 'image'
-                    ? 'Photo or screenshot for Inbox or the board'
-                    : addCardMode === 'text'
-                      ? 'A short note for the board, and Inbox if you want'
-                      : 'PDF for Inbox or the board'}
-                </p>
-              </div>
-              <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
-            </div>
-            <div className="space-y-3 px-4 py-3">
-              <input
-                autoFocus
-                value={addCardTitle}
-                onChange={(event) => setAddCardTitle(event.target.value)}
-                maxLength={80}
-                aria-label="Card title"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                placeholder="Title"
-              />
-              {addCardMode !== 'text' ? (
-                <label
-                  className="flex cursor-pointer flex-col gap-1 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/60 px-3 py-3 text-sm dark:border-indigo-800 dark:bg-indigo-950/30"
-                  onPaste={addCardMode === 'image' ? handleAddCardPaste : undefined}
-                >
-                  <span className="font-bold text-indigo-900 dark:text-indigo-200">
-                    {addCardMode === 'image' ? 'Choose or paste an image' : 'Attach a PDF'}
-                  </span>
-                  <span className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">
-                    {addCardMode === 'image'
-                      ? 'Up to 5 MB · JPG, PNG, or WebP'
-                      : 'Up to 5 MB · export Word or PowerPoint as PDF to preview in class'}
-                  </span>
-                  <input
-                    type="file"
-                    accept={
-                      addCardMode === 'image'
-                        ? '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
-                        : '.pdf,application/pdf'
-                    }
-                    className="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white dark:text-slate-300"
-                    onChange={handleAddCardFileChange}
-                    disabled={addCardBusy}
-                  />
-                </label>
-              ) : null}
-              {addCardFile && (
-                <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950/40">
-                  <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">{addCardFile.name}</p>
-                  <button type="button" onClick={() => setAddCardFile(null)} className="shrink-0 text-xs font-bold text-indigo-600 dark:text-indigo-400">Clear</button>
-                </div>
-              )}
-              {addCardMode === 'text' ? (
-                <textarea
-                  value={addCardText}
-                  onChange={(event) => setAddCardText(event.target.value)}
-                  rows={5}
-                  aria-label="Card text"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                  placeholder="Write the note…"
-                />
-              ) : null}
-              {addCardImage && (
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/30">
-                  <img src={addCardImage} alt="Pasted card preview" className="max-h-48 w-full object-contain" />
-                  <button type="button" onClick={() => setAddCardImage('')} className="mt-2 text-xs font-bold text-indigo-600 dark:text-indigo-400">Clear image</button>
-                </div>
-              )}
-              {addCardError && <p className="text-sm font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
-            </div>
-            <div className="flex shrink-0 flex-col gap-2 border-t border-slate-200 px-4 py-3 dark:border-slate-700">
-              <label
-                data-iboard-add-card-send-option="true"
-                className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200"
-              >
-                <input
-                  type="checkbox"
-                  data-iboard-send-inbox="true"
-                  checked={addCardSendInbox}
-                  onChange={(event) => setAddCardSendInbox(event.target.checked)}
-                  className="h-4 w-4 accent-indigo-600"
-                />
-                <span>Send to Inbox</span>
-              </label>
-              {(addCardMode === 'document' || addCardMode === 'image') && (
-                <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={addCardPlaceOnBoard}
-                    onChange={(event) => setAddCardPlaceOnBoard(event.target.checked)}
-                    className="h-4 w-4 accent-indigo-600"
-                  />
-                  <span>Place on this board</span>
-                </label>
-              )}
-            </div>
-            <div className="flex shrink-0 justify-end gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
-              <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {addCardBusy ? 'Sending…' : addCardFile || addCardImage ? 'Send' : 'Add card'}
-              </button>
-            </div>
-          </form>
         </div>
       )}
 
