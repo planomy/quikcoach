@@ -27,9 +27,12 @@ html.iboard-student-workspace.iboard-student-respond-alert
   }
 }
 
-/* On full desktop screens, give the writing surface a little more visual weight. */
+/* Wide screens keep the student-chosen split; only bump the Inbox floor. */
 @media (min-width: 1280px) {
   html.iboard-student-workspace main > .iboard-student-workspace-grid {
-    grid-template-columns: minmax(0, 5fr) minmax(21rem, 3fr) !important;
+    grid-template-columns:
+      minmax(16rem, var(--student-writing-track, 0.6fr))
+      0.85rem
+      minmax(18rem, var(--student-inbox-track, 0.4fr)) !important;
   }
 }

@@ -239,6 +239,149 @@ html.iboard-student-workspace .iboard-question-pulse {
   }
 }
 
+.iboard-student-split {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.iboard-student-split__hit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: row-resize;
+}
+
+.iboard-student-split__bar {
+  display: block;
+  border-radius: 999px;
+  background: #cfcce8;
+  box-shadow: 0 0 0 1px rgba(90, 95, 195, 0.12);
+}
+
+.iboard-student-split__hit:hover .iboard-student-split__bar,
+.iboard-student-split__hit:focus-visible .iboard-student-split__bar,
+html.iboard-student-splitting .iboard-student-split__bar {
+  background: #5a5fc3;
+}
+
+.iboard-inbox-head__split {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+  min-width: 0;
+}
+
+.iboard-inbox-head__split-label {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b6b78;
+}
+
+.iboard-inbox-head__split input[type='range'] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.35rem;
+  margin: 0;
+  accent-color: #5a5fc3;
+  cursor: pointer;
+}
+
+html.dark .iboard-inbox-head__split-label {
+  color: #94a3b8;
+}
+
+html.dark .iboard-student-split__bar {
+  background: #475569;
+}
+
+html.dark .iboard-student-split__hit:hover .iboard-student-split__bar,
+html.dark .iboard-student-split__hit:focus-visible .iboard-student-split__bar,
+html.dark.iboard-student-splitting .iboard-student-split__bar {
+  background: #818cf8;
+}
+
+.iboard-inbox-material-preview {
+  height: clamp(16rem, calc(var(--student-inbox-fr, 0.4) * 100dvh - 8rem), 76dvh);
+}
+
+html.iboard-student-splitting,
+html.iboard-student-splitting * {
+  cursor: row-resize !important;
+  user-select: none !important;
+}
+
+html.iboard-student-splitting iframe {
+  pointer-events: none !important;
+}
+
+@media (max-width: 767px) {
+  .iboard-student-workspace main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  .iboard-student-workspace main > .iboard-student-workspace-grid {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: calc(100dvh - 7.5rem);
+  }
+
+  .iboard-student-workspace main > .iboard-student-workspace-grid > aside {
+    flex: var(--student-inbox-fr, 0.4) 1 7.5rem;
+    min-height: 7.5rem;
+    overflow: hidden;
+  }
+
+  .iboard-student-workspace main > .iboard-student-workspace-grid > .iboard-student-writing-col {
+    flex: var(--student-writing-fr, 0.6) 1 8rem;
+    min-height: 8rem;
+    overflow: hidden;
+  }
+
+  .iboard-student-split {
+    height: 1.15rem;
+    order: 1;
+  }
+
+  .iboard-student-split__hit {
+    width: 100%;
+    height: 1.15rem;
+  }
+
+  .iboard-student-split__bar {
+    width: 3.25rem;
+    height: 0.28rem;
+  }
+
+  .iboard-student-workspace .iboard-student-writing-pane {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .iboard-student-workspace .iboard-student-writing-pane > div,
+  .iboard-student-workspace .iboard-student-writing-pane [role='textbox'] {
+    min-height: 0 !important;
+    flex: 1 1 auto;
+  }
+}
+
 @media (min-width: 768px) {
   /* Keep the writing surface and support rail side-by-side from tablet size up.
      This avoids device-brand/browser quirks deciding whether feedback falls below
@@ -257,15 +400,42 @@ html.iboard-student-workspace .iboard-question-pulse {
 
   .iboard-student-workspace main > .iboard-student-workspace-grid {
     display: grid !important;
-    grid-template-columns: minmax(0, 3fr) minmax(15rem, 2fr) !important;
-    align-items: start !important;
-    gap: clamp(0.75rem, 1.4vw, 2.5rem) !important;
+    grid-template-columns:
+      minmax(11rem, var(--student-writing-track, 0.6fr))
+      0.85rem
+      minmax(11rem, var(--student-inbox-track, 0.4fr)) !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+  }
+
+  html.iboard-student-splitting,
+  html.iboard-student-splitting * {
+    cursor: col-resize !important;
+  }
+
+  .iboard-student-split {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: stretch;
+    width: 0.85rem;
+  }
+
+  .iboard-student-split__hit {
+    width: 0.85rem;
+    height: 100%;
+    min-height: 12rem;
+    cursor: col-resize;
+  }
+
+  .iboard-student-split__bar {
+    width: 0.28rem;
+    height: 3.25rem;
   }
 
   /* StudentView's Tailwind column placement starts at xl. Place the two direct
      workspace children explicitly so tablets and laptops use the same arrangement. */
   .iboard-student-workspace main > .iboard-student-workspace-grid > aside {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 1;
   }
 
@@ -329,11 +499,11 @@ html.iboard-student-workspace .iboard-question-pulse {
     background: transparent;
   }
 
-  /* Use viewport height for the student's main task; fill the writing column
-     so ultrawide monitors do not leave empty gutters beside a 100ch box. */
+  /* Use viewport height for the student's main task, scaled by the writing split
+     so a large Inbox still leaves a usable (smaller) typing field. */
   .iboard-student-workspace main [role='textbox'][contenteditable='true'],
   .iboard-student-workspace main [role='textbox'][contenteditable='false'] {
-    min-height: max(22rem, calc(100vh - 16rem));
+    min-height: max(10rem, calc(var(--student-writing-fr, 0.6) * (100vh - 12rem)));
     width: 100%;
     max-width: none;
     margin-right: 0;
@@ -433,10 +603,11 @@ html.iboard-student-workspace .iboard-question-pulse {
 }
 
 @media (min-width: 1024px) {
-  /* Give laptop/desktop support panels more breathing room once the viewport allows it. */
   .iboard-student-workspace main > .iboard-student-workspace-grid {
-    grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr) !important;
-    gap: clamp(1rem, 1.6vw, 2.5rem) !important;
+    grid-template-columns:
+      minmax(14rem, var(--student-writing-track, 0.6fr))
+      0.85rem
+      minmax(16rem, var(--student-inbox-track, 0.4fr)) !important;
   }
 }
 

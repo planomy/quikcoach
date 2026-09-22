@@ -350,7 +350,7 @@ function MaterialBody({ item, large, onToggleLarge, compact = false }) {
           {item.size ? ` · ${Math.max(1, Math.round(item.size / 1024))} KB` : ''}
         </p>
       ) : null}
-      <div className="h-64 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+      <div className="iboard-inbox-material-preview overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
         {renderMedia('h-full w-full object-contain')}
       </div>
       {actions}

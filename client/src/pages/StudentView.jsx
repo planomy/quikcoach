@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import { truncateToWordLimit } from '../lib/text.js';
@@ -19,6 +19,8 @@ import RichTextEditor from '../components/RichTextEditor.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
+import StudentWorkspaceSplit from '../components/StudentWorkspaceSplit.jsx';
+import { clampInboxShare, persistInboxShare, readInboxShare, INBOX_SHARE_MAX, INBOX_SHARE_MIN } from '../lib/studentSplit.js';
 import '../components/studentWorkspace.css';
 import { plainTextToRichHtml } from '../lib/richText.js';
 import { safeFilePart, stampForFilename } from '../lib/exportRoom.js';
@@ -136,6 +138,11 @@ export default function StudentView() {
   const [dismissedInboxIds, setDismissedInboxIds] = useState(() => new Set());
   const [liveInboxAlert, setLiveInboxAlert] = useState(false);
   const [largeMaterialId, setLargeMaterialId] = useState(null);
+  const [inboxShare, setInboxShare] = useState(readInboxShare);
+  const splitGridRef = useRef(null);
+  const setInboxShareAndSave = useCallback((next) => {
+    setInboxShare(persistInboxShare(next));
+  }, []);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [helpSeenToast, setHelpSeenToast] = useState(false);
@@ -1553,10 +1560,19 @@ export default function StudentView() {
         </div>
       </header>
       <main className="mx-auto flex w-full min-h-0 flex-1 flex-col px-4 py-6 sm:px-6">
-        <div className="iboard-student-workspace-grid mx-auto flex w-full min-h-0 flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:items-start xl:gap-6">
+        <div
+          ref={splitGridRef}
+          className="iboard-student-workspace-grid mx-auto flex w-full min-h-0 flex-col gap-4"
+          style={{
+            '--student-inbox-fr': inboxShare,
+            '--student-writing-fr': 1 - inboxShare,
+            '--student-inbox-track': `${inboxShare}fr`,
+            '--student-writing-track': `${1 - inboxShare}fr`,
+          }}
+        >
           <aside
             data-iboard-student-support
-            className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden xl:col-start-2 xl:row-start-1"
+            className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden"
           >
             <div className={`iboard-inbox-head ${liveInboxAlert ? 'iboard-inbox-head--live-alert' : ''}`}>
               <div className="iboard-inbox-head__row">
@@ -1577,6 +1593,19 @@ export default function StudentView() {
                   ) : null}
                 </div>
                 <StudentVerbalRespond socket={socket} variant="chip" />
+              </div>
+              <div className="iboard-inbox-head__split">
+                <span className="iboard-inbox-head__split-label">Write</span>
+                <input
+                  type="range"
+                  min={Math.round(INBOX_SHARE_MIN * 100)}
+                  max={Math.round(INBOX_SHARE_MAX * 100)}
+                  value={Math.round(clampInboxShare(inboxShare) * 100)}
+                  onChange={(event) => setInboxShareAndSave(Number(event.target.value) / 100)}
+                  aria-label="Inbox size"
+                  title="Drag to make Inbox bigger or writing smaller"
+                />
+                <span className="iboard-inbox-head__split-label">Inbox</span>
               </div>
             </div>
 
@@ -1611,7 +1640,13 @@ export default function StudentView() {
             </div>
           </aside>
 
-          <section className="iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4 xl:col-start-1 xl:row-start-1">
+          <StudentWorkspaceSplit
+            share={inboxShare}
+            onShare={setInboxShareAndSave}
+            gridRef={splitGridRef}
+          />
+
+          <section className="iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4">
             <p className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
               Tip: paste a screenshot into the box to add an image to your board card.
             </p>
