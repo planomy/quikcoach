@@ -181,8 +181,8 @@ function RailTimerLabel({ timer }) {
 }
 
 const TEACHER_TOOLS_TABS = [
-  { id: 'ask', label: 'Ask the class' },
-  { id: 'responses', label: 'Responses' },
+  { id: 'ask', label: 'Ask the class', hint: 'Ask the class a question' },
+  { id: 'responses', label: 'Responses', hint: 'See class answers' },
 ];
 
 const ADD_CARD_ACTIONS = [
@@ -3154,7 +3154,7 @@ function TeacherDashboardInner() {
             {ADD_CARD_ACTIONS.map((action) => {
               const active = addCardOpen && addCardMode === action.id;
               return (
-                <HintWrap key={action.id} hint={action.hint} prefer="right">
+                <HintWrap key={action.id} hint={action.hint} prefer="right" suppressed={active}>
                   <button
                     type="button"
                     data-iboard-add-card-trigger="true"
@@ -3162,7 +3162,6 @@ function TeacherDashboardInner() {
                     aria-expanded={active}
                     data-active={active ? 'true' : 'false'}
                     className="iboard-arr-btn"
-                    title={action.title}
                     aria-label={action.title}
                   >
                     {action.id === 'document' ? (
@@ -3195,39 +3194,39 @@ function TeacherDashboardInner() {
             {TEACHER_TOOLS_TABS.map((tab) => {
               const active = toolsPanelOpen && toolsTab === tab.id;
               return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    if (active) closeTeacherTools();
-                    else openTeacherTools(tab.id);
-                  }}
-                  aria-current={active ? 'page' : undefined}
-                  data-active={active ? 'true' : 'false'}
-                  className="iboard-arr-btn relative"
-                  title={tab.label}
-                  aria-label={tab.label}
-                >
-                  {tab.id === 'ask' ? (
-                    <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M21.6 3.4 3.2 10.6l8.1 2.1 2.1 8.1 8.2-17.4Z" />
-                      <path d="M11.3 12.7 21.6 3.4" />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M5 17V10" />
-                      <path d="M10 17V6" />
-                      <path d="M15 17v-5" />
-                      <path d="M20 17V8" />
-                    </svg>
-                  )}
-                  <span className="iboard-arr-label">{tab.label}</span>
-                </button>
+                <HintWrap key={tab.id} hint={tab.hint} prefer="right" suppressed={active}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (active) closeTeacherTools();
+                      else openTeacherTools(tab.id);
+                    }}
+                    aria-current={active ? 'page' : undefined}
+                    data-active={active ? 'true' : 'false'}
+                    className="iboard-arr-btn relative"
+                    aria-label={tab.label}
+                  >
+                    {tab.id === 'ask' ? (
+                      <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21.6 3.4 3.2 10.6l8.1 2.1 2.1 8.1 8.2-17.4Z" />
+                        <path d="M11.3 12.7 21.6 3.4" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M5 17V10" />
+                        <path d="M10 17V6" />
+                        <path d="M15 17v-5" />
+                        <path d="M20 17V8" />
+                      </svg>
+                    )}
+                    <span className="iboard-arr-label">{tab.label}</span>
+                  </button>
+                </HintWrap>
               );
             })}
           </div>
           <div className="iboard-arr-rail__board" aria-label="Board view and timer">
-            <HintWrap hint="Card view" prefer="right">
+            <HintWrap hint="Card view" prefer="right" suppressed={viewOpen}>
               <button
                 ref={viewButtonRef}
                 type="button"
@@ -3235,14 +3234,13 @@ function TeacherDashboardInner() {
                 aria-expanded={viewOpen}
                 data-active={viewOpen ? 'true' : 'false'}
                 className="iboard-arr-btn"
-                title="View"
                 aria-label="View"
               >
                 <CardViewIcon id={cardView} className="iboard-arr-btn__glyph" />
                 <span className="iboard-arr-label">View</span>
               </button>
             </HintWrap>
-            <HintWrap hint="Class timer" prefer="right">
+            <HintWrap hint="Class timer" prefer="right" suppressed={timerOpen}>
               <button
                 ref={timerButtonRef}
                 type="button"
@@ -3250,7 +3248,6 @@ function TeacherDashboardInner() {
                 aria-expanded={timerOpen}
                 data-active={timerOpen || room?.timer?.active ? 'true' : 'false'}
                 className="iboard-arr-btn"
-                title="Timer"
                 aria-label="Timer"
               >
                 <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -3265,7 +3262,7 @@ function TeacherDashboardInner() {
             </HintWrap>
           </div>
           <div className="iboard-arr-rail__foot">
-            <HintWrap hint="Room settings" prefer="right">
+            <HintWrap hint="Room settings" prefer="right" suppressed={settingsOpen}>
               <button
                 ref={settingsButtonRef}
                 type="button"
@@ -3273,7 +3270,6 @@ function TeacherDashboardInner() {
                 aria-expanded={settingsOpen}
                 data-active={settingsOpen ? 'true' : 'false'}
                 className="iboard-arr-btn"
-                title="Room settings"
                 aria-label="Room settings"
               >
                 <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" aria-hidden="true">

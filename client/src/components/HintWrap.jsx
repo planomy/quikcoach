@@ -29,7 +29,7 @@ function measureAndPlace(wrapEl, tipEl, hint, prefer) {
 }
 
 /** Fast hover/focus hint chip — brand accent, flips below when there isn’t room above. */
-export default function HintWrap({ hint, children, className = '', prefer = 'above', multiline = false, tone: _tone = 'brand' }) {
+export default function HintWrap({ hint, children, className = '', prefer = 'above', multiline = false, tone: _tone = 'brand', suppressed = false }) {
   const wrapRef = useRef(null);
   const tipRef = useRef(null);
   const hoverTimerRef = useRef(null);
@@ -44,7 +44,15 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
     }
   };
 
+  const hideNow = () => {
+    clearHoverTimer();
+    if (openedByHoverRef.current) fastHoverUntil = Date.now() + FOLLOW_ON_GRACE_PERIOD;
+    openedByHoverRef.current = false;
+    setOpen(false);
+  };
+
   const openFromHover = () => {
+    if (suppressed) return;
     clearHoverTimer();
     const delay = Date.now() < fastHoverUntil ? FOLLOW_ON_HOVER_DELAY : FIRST_HOVER_DELAY;
     hoverTimerRef.current = window.setTimeout(() => {
@@ -55,19 +63,21 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
   };
 
   const closeFromHover = () => {
-    clearHoverTimer();
-    if (openedByHoverRef.current) fastHoverUntil = Date.now() + FOLLOW_ON_GRACE_PERIOD;
-    openedByHoverRef.current = false;
-    setOpen(false);
+    hideNow();
   };
 
   const openFromFocus = () => {
+    if (suppressed) return;
     clearHoverTimer();
     openedByHoverRef.current = false;
     setOpen(true);
   };
 
   useEffect(() => () => clearHoverTimer(), []);
+
+  useEffect(() => {
+    if (suppressed) hideNow();
+  }, [suppressed]);
 
   useEffect(() => {
     if (!open || !hint) {
@@ -96,9 +106,11 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
       className={`relative inline-flex ${className}`}
       onMouseEnter={openFromHover}
       onMouseLeave={closeFromHover}
+      onPointerDownCapture={hideNow}
+      onClickCapture={hideNow}
       onFocusCapture={openFromFocus}
       onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        if (!event.currentTarget.contains(event.relatedTarget)) hideNow();
       }}
     >
       {children}
