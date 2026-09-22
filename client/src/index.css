@@ -589,6 +589,24 @@ html:not(.dark) .iboard-student-canvas footer {
     0 10px 22px -14px rgba(15, 23, 42, 0.16);
 }
 
+/* Same readable measure on every pane width: 66ch when it fits, full page when it does not.
+   Right slack is the comment gutter. Toolbar stays full-card; only the prose is padded. */
+.iboard-student-writing-page {
+  box-sizing: border-box;
+  width: 100%;
+  padding-top: 1.15rem;
+  padding-bottom: 1.75rem;
+  padding-left: clamp(1.15rem, 3.5%, 2rem);
+  padding-right: max(2.25rem, calc(100% - 66ch - clamp(1.15rem, 3.5%, 2rem)));
+  font-size: 16px;
+}
+
+.iboard-student-writing-placeholder {
+  top: 1.15rem;
+  left: clamp(1.15rem, 3.5%, 2rem);
+  font-size: 16px;
+}
+
 html.dark .iboard-student-writing-card {
   box-shadow: none;
 }

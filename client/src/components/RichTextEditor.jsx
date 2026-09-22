@@ -438,7 +438,7 @@ export default function RichTextEditor({
         </div>
         <div className="relative">
           {empty && !focused && (
-            <div className="pointer-events-none absolute left-4 top-4 text-sm text-slate-400 dark:text-slate-500">
+            <div className="iboard-student-writing-placeholder pointer-events-none absolute text-slate-400 dark:text-slate-500">
               {disabled ? 'Class is frozen by your teacher.' : placeholder}
             </div>
           )}
@@ -457,7 +457,7 @@ export default function RichTextEditor({
               setFocused(false);
               commitFromDom({ normaliseDom: true });
             }}
-            className={`min-h-[280px] whitespace-pre-wrap p-4 pr-8 text-sm leading-relaxed text-slate-800 outline-none [&_div+div]:mt-2 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:px-0.5 [&_mark]:text-slate-900 dark:text-slate-100 ${
+            className={`iboard-student-writing-page min-h-[280px] whitespace-pre-wrap leading-relaxed text-slate-800 outline-none [&_div+div]:mt-2 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:px-0.5 [&_mark]:text-slate-900 dark:text-slate-100 ${
               disabled ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''
             }`}
           />
