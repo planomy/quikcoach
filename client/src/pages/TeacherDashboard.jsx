@@ -3321,7 +3321,7 @@ function TeacherDashboardInner() {
             </HintWrap>
           </div>
           <div className="iboard-arr-rail__foot">
-            <HintWrap hint="Room settings" prefer="right" suppressed={settingsOpen}>
+            <HintWrap hint="Session" prefer="right" suppressed={settingsOpen}>
               <button
                 ref={settingsButtonRef}
                 type="button"
@@ -3329,7 +3329,7 @@ function TeacherDashboardInner() {
                 aria-expanded={settingsOpen}
                 data-active={settingsOpen ? 'true' : 'false'}
                 className="iboard-arr-btn"
-                aria-label="Room settings"
+                aria-label="Session"
               >
                 <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" aria-hidden="true">
                   <path d="M4 7h10" />
@@ -3339,7 +3339,7 @@ function TeacherDashboardInner() {
                   <path d="M10 17h10" />
                   <circle cx="8" cy="17" r="2" />
                 </svg>
-                <span className="iboard-arr-label">Settings</span>
+                <span className="iboard-arr-label">Session</span>
               </button>
             </HintWrap>
           </div>
@@ -4024,7 +4024,7 @@ function TeacherDashboardInner() {
                   ? 'AI feedback'
                   : evidenceHubTab === 'students'
                     ? 'Student portfolios'
-                    : 'Lesson saves'}
+                    : 'Lesson records'}
               </h2>
               <CloseButton onClick={() => setLibraryPanel(null)} aria-label="Close" />
             </div>
@@ -4037,6 +4037,37 @@ function TeacherDashboardInner() {
               </p>
               <button type="button" onClick={openEvidenceModal} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
                 Snapshot writing
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => { setLibraryPanel(null); setDraftTrailOpen(true); }}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Drafting evidence
+              </button>
+              <button
+                type="button"
+                onClick={() => setLibraryPanel('feedback')}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                AI feedback
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLibraryPanel(null); openLessonReport(); }}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Participation report
+              </button>
+              <button
+                type="button"
+                disabled={sessionBusy}
+                onClick={() => { setLibraryPanel(null); setSessionPdfOpen(true); }}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Export PDF
               </button>
             </div>
 
@@ -4817,10 +4848,10 @@ function TeacherDashboardInner() {
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
-          aria-label="Room settings"
+          aria-label="Session"
         >
           <div className="iboard-room-settings__chrome" ref={settingsChromeRef}>
-            <h2>Room settings</h2>
+            <h2>Session</h2>
             <div className="iboard-room-settings__chrome-close">
               <CloseButton onClick={closeSettings} label="Close" />
             </div>
@@ -5011,38 +5042,13 @@ function TeacherDashboardInner() {
             </section>
 
             <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">Evidence</h3>
+              <h3 className="iboard-room-settings__label">Records</h3>
               <div className="iboard-room-settings__card iboard-room-settings__list">
                 <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
-                  <span>Lesson saves &amp; portfolios</span>
+                  <span>Lesson records</span>
                   {snapshots.length > 0 ? (
                     <span className="iboard-room-settings__badge">{snapshots.length}</span>
                   ) : null}
-                </button>
-                <button type="button" onClick={() => { closeSettings(); setDraftTrailOpen(true); }}>
-                  Drafting evidence
-                </button>
-                <button type="button" onClick={() => openLibrary('feedback')}>
-                  AI feedback
-                </button>
-              </div>
-            </section>
-
-            <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">Reports &amp; exports</h3>
-              <div className="iboard-room-settings__card iboard-room-settings__list">
-                <button type="button" onClick={openLessonReport}>
-                  Participation report
-                </button>
-                <button type="button" onClick={() => openLibrary('reports')}>
-                  Student portfolios
-                </button>
-                <button
-                  type="button"
-                  disabled={sessionBusy}
-                  onClick={() => { closeSettings(); setSessionPdfOpen(true); }}
-                >
-                  Export PDF
                 </button>
               </div>
             </section>
