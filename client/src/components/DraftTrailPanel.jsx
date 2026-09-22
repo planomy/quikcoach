@@ -54,7 +54,12 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
   }, [trail, index]);
   const event = view.event;
   const changed = event && ['change', 'paste'].includes(event.type);
+  const isPaste = event?.type === 'paste';
   const empty = !busy && !error && !event;
+  const removedMarkClass = 'bg-blue-100 text-blue-950 line-through decoration-blue-700 dark:bg-blue-950/70 dark:text-blue-100 dark:decoration-blue-300';
+  const insertedMarkClass = isPaste
+    ? 'bg-red-200 text-red-950 no-underline dark:bg-red-950/70 dark:text-red-100'
+    : 'bg-emerald-100 text-emerald-950 no-underline dark:bg-emerald-950/60 dark:text-emerald-100';
 
   return (
     <dialog
@@ -131,8 +136,8 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
                   Next
                 </button>
               </div>
-              {event.type === 'paste' && (
-                <p className="mb-3 text-sm">
+              {isPaste && (
+                <p className="mb-3 text-sm font-semibold text-red-600 dark:text-red-400">
                   A paste is not evidence of cheating. Quotations, earlier drafts and assistive tools can all explain inserted text.
                 </p>
               )}
@@ -153,7 +158,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
                     {changed ? (
                       <>
                         {view.before.slice(0, event.start)}
-                        <del className="bg-red-100 text-red-900">{view.before.slice(event.start, event.start + event.removed)}</del>
+                        <del className={removedMarkClass}>{view.before.slice(event.start, event.start + event.removed)}</del>
                         {view.before.slice(event.start + event.removed)}
                       </>
                     ) : (
@@ -167,7 +172,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
                     {changed ? (
                       <>
                         {view.text.slice(0, event.start)}
-                        <ins className="bg-emerald-100 text-emerald-950 no-underline">{event.inserted}</ins>
+                        <ins className={insertedMarkClass}>{event.inserted}</ins>
                         {view.text.slice(event.start + event.inserted.length)}
                       </>
                     ) : (
