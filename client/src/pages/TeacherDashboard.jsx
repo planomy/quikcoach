@@ -370,6 +370,8 @@ function TeacherDashboardInner() {
   const settingsPanelRef = useRef(null);
   const timerButtonRef = useRef(null);
   const timerPanelRef = useRef(null);
+  const viewButtonRef = useRef(null);
+  const viewPanelRef = useRef(null);
   const settingsChromeRef = useRef(null);
   const breakoutAssignPanelRef = useRef(null);
   const [settingsChromeHeight, setSettingsChromeHeight] = useState(44);
@@ -386,7 +388,6 @@ function TeacherDashboardInner() {
   const [livePulse, setLivePulse] = useState({ activity: null, responses: [], students: [] });
   const [cardView, setCardView] = useState(initialCardView);
   const [overviewColumns, setOverviewColumns] = useState(initialOverviewColumns);
-  const [overviewColumnsOpen, setOverviewColumnsOpen] = useState(false);
   const [cardFontById, setCardFontById] = useState(readCardFontMap);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [focusedPostId, setFocusedPostId] = useState(null);
@@ -403,6 +404,7 @@ function TeacherDashboardInner() {
   const [addCardMode, setAddCardMode] = useState('document');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timerOpen, setTimerOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [teacherPanelHidden, setTeacherPanelHidden] = useState(() => {
     try {
       return localStorage.getItem(TEACHER_PANEL_HIDDEN_KEY) === '1';
@@ -627,7 +629,6 @@ function TeacherDashboardInner() {
     } catch {
       /* The view still works when browser storage is unavailable. */
     }
-    if (cardView !== 'overview') setOverviewColumnsOpen(false);
     const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
     return () => cancelAnimationFrame(frame);
   }, [cardView]);
@@ -641,26 +642,6 @@ function TeacherDashboardInner() {
     const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
     return () => cancelAnimationFrame(frame);
   }, [overviewColumns]);
-
-  useEffect(() => {
-    if (!overviewColumnsOpen) return undefined;
-    const closeOutside = (event) => {
-      if (!event.target?.closest?.('[data-overview-columns-menu]')) setOverviewColumnsOpen(false);
-    };
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setOverviewColumnsOpen(false);
-    };
-    document.addEventListener('pointerdown', closeOutside);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOutside);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [overviewColumnsOpen]);
-
-  useEffect(() => {
-    if (settingsOpen || timerOpen) setOverviewColumnsOpen(false);
-  }, [settingsOpen, timerOpen]);
 
   useEffect(() => {
     function syncFullscreen() {
@@ -869,8 +850,17 @@ function TeacherDashboardInner() {
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
-    setOverviewColumnsOpen(false);
+    setViewOpen(false);
     setTimerOpen((open) => !open);
+  }
+
+  function openViewDock() {
+    closeSettings();
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+    setAddCardOpen(false);
+    setTimerOpen(false);
+    setViewOpen((open) => !open);
   }
 
   useEffect(() => {
@@ -1515,7 +1505,7 @@ function TeacherDashboardInner() {
   }, [livePulse.activity?.id]);
 
   useEffect(() => {
-    if (!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen) return undefined;
+    if (!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
       const target = event.target;
@@ -1544,6 +1534,10 @@ function TeacherDashboardInner() {
         if (timerButtonRef.current?.contains(target)) return;
         if (timerPanelRef.current?.contains(target)) return;
       }
+      if (viewOpen) {
+        if (viewButtonRef.current?.contains(target)) return;
+        if (viewPanelRef.current?.contains(target)) return;
+      }
       if (toolsPanelOpen) {
         setToolsPanelOpen(false);
         setToolsHighlightStudentId(null);
@@ -1551,6 +1545,7 @@ function TeacherDashboardInner() {
       if (addCardOpen && !addCardBusy) setAddCardOpen(false);
       if (settingsOpen) closeSettings();
       if (timerOpen) setTimerOpen(false);
+      if (viewOpen) setViewOpen(false);
     }
 
     function closeHeaderPanelsOnEscape(event) {
@@ -1562,6 +1557,7 @@ function TeacherDashboardInner() {
       if (addCardOpen && !addCardBusy) setAddCardOpen(false);
       if (settingsOpen) closeSettings();
       if (timerOpen) setTimerOpen(false);
+      if (viewOpen) setViewOpen(false);
     }
 
     document.addEventListener('pointerdown', closeHeaderPanelsIfOutside);
@@ -1570,10 +1566,10 @@ function TeacherDashboardInner() {
       document.removeEventListener('pointerdown', closeHeaderPanelsIfOutside);
       document.removeEventListener('keydown', closeHeaderPanelsOnEscape);
     };
-  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, addCardBusy]);
+  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, viewOpen, addCardBusy]);
 
   useLayoutEffect(() => {
-    if ((!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen) || !teacherHeaderRef.current) return undefined;
+    if ((!toolsPanelOpen && !addCardOpen && !settingsOpen && !timerOpen && !viewOpen) || !teacherHeaderRef.current) return undefined;
 
     function alignHeaderDockToHeader() {
       const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
@@ -1590,7 +1586,7 @@ function TeacherDashboardInner() {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', alignHeaderDockToHeader);
     };
-  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen]);
+  }, [toolsPanelOpen, addCardOpen, settingsOpen, timerOpen, viewOpen]);
 
   const pendingQuestionCount = useMemo(
     () => audienceQuestions.filter((question) => question.status === 'pending').length,
@@ -1820,6 +1816,7 @@ function TeacherDashboardInner() {
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
     setTimerOpen(false);
+    setViewOpen(false);
     setClearFixedArmed(false);
     setSettingsOpen(true);
   }
@@ -1828,6 +1825,7 @@ function TeacherDashboardInner() {
     const next = ADD_CARD_ACTIONS.some((action) => action.id === mode) ? mode : 'document';
     closeSettings();
     setTimerOpen(false);
+    setViewOpen(false);
     if (addCardOpen && addCardMode === next) {
       closeAddCard();
       return;
@@ -2646,6 +2644,7 @@ function TeacherDashboardInner() {
     closeSettings();
     setAddCardOpen(false);
     setTimerOpen(false);
+    setViewOpen(false);
     setToolsTab(tab);
     setToolsPanelOpen(true);
     setToolsHighlightStudentId(highlightStudentId != null ? Number(highlightStudentId) : null);
@@ -2734,7 +2733,7 @@ function TeacherDashboardInner() {
   ]
     .filter(Boolean)
     .join(' · ');
-  const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen || timerOpen;
+  const headerDockOpen = toolsPanelOpen || addCardOpen || settingsOpen || timerOpen || viewOpen;
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -3172,46 +3171,21 @@ function TeacherDashboardInner() {
             })}
           </div>
           <div className="iboard-arr-rail__board" aria-label="Board view and timer">
-            {CARD_VIEWS.map((view) => {
-              const active = cardView === view.id;
-              const railLabel = view.id === 'full' ? 'Full' : view.label;
-              return (
-                <HintWrap
-                  key={view.id}
-                  hint={view.id === 'overview' ? 'Overview · tap again for columns' : view.label}
-                  prefer="right"
-                >
-                  <button
-                    type="button"
-                    data-overview-columns-menu={view.id === 'overview' ? 'true' : undefined}
-                    onClick={() => {
-                      setTimerOpen(false);
-                      if (view.id === 'overview') {
-                        if (cardView === 'overview') {
-                          setOverviewColumnsOpen((open) => !open);
-                        } else {
-                          setCardView('overview');
-                          setOverviewColumnsOpen(false);
-                        }
-                        return;
-                      }
-                      setOverviewColumnsOpen(false);
-                      setCardView(view.id);
-                    }}
-                    aria-pressed={active}
-                    aria-expanded={view.id === 'overview' ? overviewColumnsOpen : undefined}
-                    aria-haspopup={view.id === 'overview' ? 'menu' : undefined}
-                    data-active={active ? 'true' : 'false'}
-                    className="iboard-arr-btn"
-                    title={view.id === 'overview' ? `${view.label} · columns` : view.label}
-                    aria-label={view.id === 'overview' ? `${view.label}, choose columns` : view.label}
-                  >
-                    <CardViewIcon id={view.id} className="iboard-arr-btn__glyph" />
-                    <span className="iboard-arr-label">{railLabel}</span>
-                  </button>
-                </HintWrap>
-              );
-            })}
+            <HintWrap hint="Card view" prefer="right">
+              <button
+                ref={viewButtonRef}
+                type="button"
+                onClick={openViewDock}
+                aria-expanded={viewOpen}
+                data-active={viewOpen ? 'true' : 'false'}
+                className="iboard-arr-btn"
+                title="View"
+                aria-label="View"
+              >
+                <CardViewIcon id={cardView} className="iboard-arr-btn__glyph" />
+                <span className="iboard-arr-label">View</span>
+              </button>
+            </HintWrap>
             <HintWrap hint="Class timer" prefer="right">
               <button
                 ref={timerButtonRef}
@@ -4459,44 +4433,74 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      {overviewColumnsOpen && cardView === 'overview' ? (
+      {viewOpen && (
         <div
-          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(16rem,calc(100vw-4.75rem))]"
+          ref={viewPanelRef}
+          className="iboard-header-dock iboard-header-dock--start fixed z-[60] w-[min(20rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
-          role="menu"
-          aria-label="Overview columns"
-          data-overview-columns-menu="true"
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="card-view-title"
         >
-          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <h2 className="font-display text-base font-black text-slate-950 dark:text-white">Overview columns</h2>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">How many student cards across</p>
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+            <div>
+              <h2 id="card-view-title" className="font-display text-base font-black text-slate-950 dark:text-white">View</h2>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">How student cards sit on the board</p>
+            </div>
+            <CloseButton onClick={() => setViewOpen(false)} label="Close" />
           </div>
-          <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-            {OVERVIEW_COLUMN_OPTIONS.map((count) => {
-              const active = overviewColumns === count;
-              return (
-                <button
-                  key={count}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={active}
-                  onClick={() => {
-                    setOverviewColumns(count);
-                    setOverviewColumnsOpen(false);
-                  }}
-                  className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
-                    active
-                      ? 'bg-[#5a5fc3] text-white shadow-sm'
-                      : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {count}
-                </button>
-              );
-            })}
+          <div className="space-y-3 px-4 py-3">
+            <div className="space-y-1" role="group" aria-label="Card view">
+              {CARD_VIEWS.map((view) => {
+                const active = cardView === view.id;
+                return (
+                  <button
+                    key={view.id}
+                    type="button"
+                    onClick={() => setCardView(view.id)}
+                    aria-pressed={active}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${
+                      active
+                        ? 'bg-[#5a5fc3] text-white shadow-sm'
+                        : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <CardViewIcon id={view.id} className="h-5 w-5 shrink-0" />
+                    <span>{view.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {cardView === 'overview' ? (
+              <div>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                  Overview columns
+                </p>
+                <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Overview columns">
+                  {OVERVIEW_COLUMN_OPTIONS.map((count) => {
+                    const active = overviewColumns === count;
+                    return (
+                      <button
+                        key={count}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setOverviewColumns(count)}
+                        className={`min-w-[2.25rem] rounded-lg px-2.5 py-1.5 text-[12px] font-black tabular-nums transition ${
+                          active
+                            ? 'bg-[#5a5fc3] text-white shadow-sm'
+                            : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {count}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
-      ) : null}
+      )}
 
       {timerOpen && (
         <div
