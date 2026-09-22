@@ -120,11 +120,22 @@ function sanitizeSetPromptMeta(raw) {
   };
 }
 
+function feedbackKind(raw) {
+  const value = String(raw?.kind || raw?.channel || '').toLowerCase();
+  if (value === 'set-prompt') return 'set-prompt';
+  if (value === 'chat') return 'chat';
+  return 'note';
+}
+
+function isChatKind(kind) {
+  return String(kind || '') === 'chat';
+}
+
 function feedbackForClient(row) {
   if (!row) return null;
   const createdAt = row.created_at || '';
   const at = parseSqliteUtcMs(createdAt);
-  const kind = String(row.kind || 'note') === 'set-prompt' ? 'set-prompt' : 'note';
+  const kind = feedbackKind(row);
   const meta = parseMetaJson(row.meta_json);
   const item = {
     feedbackId: Number(row.id),
@@ -138,7 +149,7 @@ function feedbackForClient(row) {
     item.title = String(meta.title || '').trim().slice(0, 120) || 'Prompt set';
     item.questions = Array.isArray(meta.questions) ? meta.questions : [];
   }
-  if (kind === 'note' && meta.urgent) item.urgent = true;
+  if ((kind === 'note' || kind === 'chat') && meta.urgent) item.urgent = true;
   if (row.seen_at) {
     item.seenAt = row.seen_at;
     item.seenAtMs = parseSqliteUtcMs(row.seen_at) || undefined;
@@ -239,7 +250,7 @@ function conversationForStudent(roomCode, studentId) {
   const notes = feedbackDb
     .prepare(
       `SELECT * FROM teacher_feedback_messages
-       WHERE room_code = ? AND student_id = ? AND kind = 'note'
+       WHERE room_code = ? AND student_id = ? AND kind = 'chat'
        ORDER BY id ASC`
     )
     .all(code, sid)
@@ -253,7 +264,7 @@ function conversationForStudent(roomCode, studentId) {
        FROM student_note_replies r
        JOIN students s ON s.id = r.student_id
        JOIN teacher_feedback_messages f ON f.id = r.feedback_id
-       WHERE r.room_code = ? AND r.student_id = ?
+       WHERE r.room_code = ? AND r.student_id = ? AND f.kind = 'chat'
        ORDER BY r.id ASC`
     )
     .all(code, sid)
@@ -443,8 +454,9 @@ function saveStudentNoteReply(io, socket, payload = {}, cb) {
     }
 
     io.to(teacherSocketName(roomCode)).emit('feedback:note-reply', { item });
-    emitChat(io, roomCode, studentId, chatMessageFromStudentReply(item));
-    cb?.({ ok: true, item, message: chatMessageFromStudentReply(item) });
+    const message = isChatKind(parent.kind) ? chatMessageFromStudentReply(item) : null;
+    if (message) emitChat(io, roomCode, studentId, message);
+    cb?.({ ok: true, item, message });
   } catch (error) {
     console.error('Could not save student note reply', error);
     cb?.({ ok: false, error: 'Could not send reply' });
@@ -516,9 +528,9 @@ function deliverFeedback(io, socket, payload = {}, cb) {
         .get(studentId);
       if (!student || normaliseRoomCode(student.room_code) !== roomCode) continue;
 
-      const kind = String(raw?.kind || '') === 'set-prompt' ? 'set-prompt' : 'note';
+      const kind = feedbackKind(raw);
       const setMeta = kind === 'set-prompt' ? sanitizeSetPromptMeta(raw) : null;
-      const urgent = kind === 'note' && !!raw?.urgent;
+      const urgent = (kind === 'note' || kind === 'chat') && !!raw?.urgent;
       const metaJson = setMeta
         ? JSON.stringify(setMeta)
         : JSON.stringify(urgent ? { urgent: true } : {});
@@ -540,7 +552,7 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       const targetCount = io.sockets.adapter.rooms.get(targetRoom)?.size || 0;
       if (targetCount > 0) reachedStudents.add(studentId);
       io.to(targetRoom).emit('feedback:batch', { items: [item] });
-      if (kind === 'note') emitChat(io, roomCode, studentId, chatMessageFromTeacherNote(item));
+      if (isChatKind(kind)) emitChat(io, roomCode, studentId, chatMessageFromTeacherNote(item));
     }
 
     if (rawItems.length > 0 && saved.length === 0) {
@@ -637,7 +649,7 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
         const unseen = feedbackDb
           .prepare(
             `SELECT id FROM teacher_feedback_messages
-             WHERE student_id = ? AND room_code = ? AND kind = 'note' AND seen_at IS NULL`
+             WHERE student_id = ? AND room_code = ? AND kind = 'chat' AND seen_at IS NULL`
           )
           .all(studentId, roomCode);
         if (unseen.length) {
@@ -645,7 +657,7 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
             .prepare(
               `UPDATE teacher_feedback_messages
                SET seen_at = datetime('now')
-               WHERE student_id = ? AND room_code = ? AND kind = 'note' AND seen_at IS NULL`
+               WHERE student_id = ? AND room_code = ? AND kind = 'chat' AND seen_at IS NULL`
             )
             .run(studentId, roomCode);
           const seenAt = new Date().toISOString();
@@ -679,7 +691,7 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
         const latestNote = feedbackDb
           .prepare(
             `SELECT id FROM teacher_feedback_messages
-             WHERE student_id = ? AND room_code = ? AND kind = 'note'
+             WHERE student_id = ? AND room_code = ? AND kind = 'chat'
              ORDER BY id DESC LIMIT 1`
           )
           .get(studentId, roomCode);

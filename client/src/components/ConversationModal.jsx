@@ -112,45 +112,10 @@ export default function ConversationModal({
       if (role === 'teacher' && sid && next.studentId && next.studentId !== sid) return;
       setMessages((current) => mergeMessages(current, [next]));
     };
-    const onBatch = ({ items } = {}) => {
-      if (role !== 'student' || !Array.isArray(items)) return;
-      const mapped = items
-        .filter((item) => String(item?.kind || 'note') === 'note' && String(item?.text || '').trim())
-        .map((item) => ({
-          id: `teacher-${Number(item.feedbackId) || item.at || Date.now()}`,
-          from: 'teacher',
-          text: String(item.text || ''),
-          at: Number(item.at) || Date.now(),
-          urgent: !!item.urgent,
-          studentId: Number(item.studentId) || sid,
-        }));
-      if (mapped.length) setMessages((current) => mergeMessages(current, mapped));
-    };
-    const onReply = (payload = {}) => {
-      const item = payload.item;
-      if (!item) return;
-      const student = Number(item.studentId) || 0;
-      if (role === 'teacher' && sid && student && student !== sid) return;
-      setMessages((current) =>
-        mergeMessages(current, [
-          {
-            id: item.replyId ? `student-reply-${item.replyId}` : item.outboundId ? `student-out-${item.outboundId}` : `student-${item.at || Date.now()}`,
-            from: 'student',
-            text: String(item.text || ''),
-            at: Number(item.at) || Date.now(),
-            studentId: student,
-          },
-        ])
-      );
-    };
 
     socket.on('feedback:chat', onChat);
-    socket.on('feedback:batch', onBatch);
-    socket.on('feedback:note-reply', onReply);
     return () => {
       socket.off('feedback:chat', onChat);
-      socket.off('feedback:batch', onBatch);
-      socket.off('feedback:note-reply', onReply);
     };
   }, [open, socket, role, sid]);
 
@@ -208,7 +173,7 @@ export default function ConversationModal({
     setDraft('');
     if (role === 'teacher') {
       if (typeof window !== 'undefined') window.__iboardPendingNoteStudentId = sid;
-      socket.emit('teacher:distribute', { items: [{ studentId: sid, text, urgent: !!urgent }] }, (ack) => {
+      socket.emit('teacher:distribute', { items: [{ studentId: sid, text, urgent: !!urgent, kind: 'chat' }] }, (ack) => {
         setSending(false);
         if (!ack?.ok) {
           setDraft(text);

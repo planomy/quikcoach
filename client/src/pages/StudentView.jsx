@@ -42,7 +42,12 @@ function feedbackInboxItem(item, { fallbackAt = 0 } = {}) {
   const text = String(item?.text || '');
   const createdAt = String(item?.createdAt || '');
   const at = parseInboxAt(item) || fallbackAt;
-  const kind = String(item?.kind || '') === 'set-prompt' ? 'set-prompt' : 'note';
+  const kind =
+    String(item?.kind || '') === 'set-prompt'
+      ? 'set-prompt'
+      : String(item?.kind || '') === 'chat'
+        ? 'chat'
+        : 'note';
   const base = {
     id: feedbackId
       ? `feedback-${feedbackId}`
@@ -51,7 +56,7 @@ function feedbackInboxItem(item, { fallbackAt = 0 } = {}) {
     text,
     at,
     feedbackId: feedbackId || undefined,
-    urgent: kind === 'note' && !!item?.urgent,
+    urgent: (kind === 'note' || kind === 'chat') && !!item?.urgent,
   };
   if (kind === 'set-prompt') {
     base.title = String(item?.title || '').trim() || 'Prompt set';
@@ -643,10 +648,12 @@ export default function StudentView() {
         null
       );
       if (!newest) return;
-      // Quiet notes: badge only. Urgent notes: toast over the draft + open Inbox.
+      // Quiet notes: badge only. Urgent inbox notes: toast + open Inbox.
+      // Private chat stays in the phone panel — toast only, no inbox card.
       if (newest.urgent) {
         queueMicrotask(() => {
-          activateInbox(newest.id);
+          if (newest.type === 'chat') flagInboxUnread(newest.id);
+          else activateInbox(newest.id);
           setUrgentNoteToast({
             id: newest.id,
             feedbackId: Number(newest.feedbackId) || 0,
@@ -1176,10 +1183,12 @@ export default function StudentView() {
   const enforce = !!room?.enforce_word_count;
   const frozen = !!room?.freeze_class;
   const inboxItems = useMemo(() => {
-    const notes = feedbackInbox.map((item) => ({
-      ...item,
-      unread: inboxUnreadIds.has(item.id),
-    }));
+    const notes = feedbackInbox
+      .filter((item) => item.type !== 'chat')
+      .map((item) => ({
+        ...item,
+        unread: inboxUnreadIds.has(item.id),
+      }));
     const broadcasts = broadcastHistory
       .filter((entry) => Array.isArray(entry?.items) && entry.items.length)
       .map((entry) => {
@@ -1202,7 +1211,8 @@ export default function StudentView() {
       .filter((item) => !dismissedInboxIds.has(item.id) && !dismissedInboxIds.has(String(item.id)))
       .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
   }, [feedbackInbox, broadcastHistory, materialHistory, inboxUnreadIds, dismissedInboxIds]);
-  const inboxTabCount = inboxUnreadIds.size + (liveInboxAlert ? 1 : 0);
+  const inboxTabCount = inboxItems.filter((item) => item.unread).length + (liveInboxAlert ? 1 : 0);
+  const chatUnread = feedbackInbox.some((item) => item.type === 'chat' && inboxUnreadIds.has(item.id));
 
   if (removedByTeacher) {
     const roomLabel = String(removedByTeacher.code || '').replace(/\D/g, '').slice(0, 4);
@@ -1703,10 +1713,10 @@ export default function StudentView() {
                     <StudentChatButton
                       socket={socket}
                       studentId={student.id}
-                      unread={inboxItems.some((item) => item.type === 'note' && item.unread)}
+                      unread={chatUnread}
                       onOpen={() => {
-                        for (const item of inboxItems) {
-                          if (item.type === 'note' && item.unread) markFeedbackSeen(item.id);
+                        for (const item of feedbackInbox) {
+                          if (item.type === 'chat' && inboxUnreadIds.has(item.id)) markFeedbackSeen(item.id);
                         }
                       }}
                     />
