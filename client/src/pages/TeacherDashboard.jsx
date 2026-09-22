@@ -40,7 +40,6 @@ import {
 } from '../lib/exportRoom.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { studentTileMeta } from '../lib/liveResponseMeta.js';
-import { formatLiveAnswer } from '../lib/liveResponseUnknown.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
@@ -2819,15 +2818,6 @@ function TeacherDashboardInner() {
     }
   }
 
-  function openAnswerInRail(studentId) {
-    if (!livePulse.activity) {
-      openTeacherTools('ask');
-      return;
-    }
-    openTeacherTools('responses', { highlightStudentId: studentId });
-  }
-
-
   function openLibrary(panel, evidenceTab = 'lessons') {
     closeSettings();
     if (panel === 'reports') {
@@ -3684,9 +3674,6 @@ function TeacherDashboardInner() {
             const inQuestion = !!livePulse.activity;
             const pulseMeta = pulseStudent ? studentTileMeta(pulseStudent) : null;
             const showPulseState = pulseMeta && (inQuestion || (pulseStudent.engagement_status && pulseStudent.engagement_status !== 'ready'));
-            const liveResponse = inQuestion
-              ? (livePulse.responses || []).find((response) => Number(response.studentId) === Number(s.id))
-              : null;
             const light =
               showPulseState
                 ? pulseStudent?.hasResponded
@@ -3742,7 +3729,8 @@ function TeacherDashboardInner() {
                       }`
                 }`}
               >
-                <div className="group/card-head flex min-w-0 items-start gap-1.5">
+                <div className="iboard-student-card__head group/card-head">
+                  <div className="iboard-student-card__head-start">
                   <HintWrap hint="Include this card">
                     <label
                       className="iboard-student-card__pick mt-0.5 flex shrink-0 cursor-pointer items-center"
@@ -3763,17 +3751,14 @@ function TeacherDashboardInner() {
                         className={`iboard-student-card__name min-w-0 truncate ${
                           cardView === 'overview' ? 'text-[13px]' : 'text-[14px]'
                         } ${
-                          handUp || inQuestion ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''
+                          handUp ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''
                         }`}
                         aria-label={handUp ? `${s.name} has a question` : undefined}
                         title={handUp ? 'Open question' : undefined}
                         onClick={(event) => {
-                          if (handUp) {
-                            event.stopPropagation();
-                            setHandQuestionTarget({ student: s, questions: handQuestions });
-                            return;
-                          }
-                          if (inQuestion) openAnswerInRail(s.id);
+                          if (!handUp) return;
+                          event.stopPropagation();
+                          setHandQuestionTarget({ student: s, questions: handQuestions });
                         }}
                       >
                         {s.name}
@@ -3850,29 +3835,15 @@ function TeacherDashboardInner() {
                         />
                       ) : null}
                     </div>
-                    {showPulseState && inQuestion && pulseStudent?.hasResponded ? (
-                      <HintWrap
-                        hint={liveResponse ? formatLiveAnswer(liveResponse.value) : pulseMeta.title}
-                        prefer="below"
-                        multiline
-                        tone="brand"
-                        className="mt-0.5 block min-w-0"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => openAnswerInRail(s.id)}
-                          className="max-w-full truncate text-left text-[10px] font-medium text-indigo-700 hover:underline dark:text-indigo-300"
-                          aria-label={`Open ${s.name}'s answer: ${liveResponse ? formatLiveAnswer(liveResponse.value) : 'Answered'}`}
-                        >
-                          {liveResponse ? formatLiveAnswer(liveResponse.value) : 'Answered'}
-                        </button>
-                      </HintWrap>
-                    ) : !showPulseState || !inQuestion ? (
-                      <p className="iboard-student-card__meta mt-0.5 text-[11px] font-medium tabular-nums leading-none text-slate-400 dark:text-slate-500">
-                        {wc}w
-                      </p>
-                    ) : null}
                   </div>
+                  </div>
+                  <p
+                    className="iboard-student-card__wordcount"
+                    aria-label={`${wc} ${wc === 1 ? 'word' : 'words'}`}
+                  >
+                    {wc}w
+                  </p>
+                  <div className="iboard-student-card__head-end">
                   <HintWrap
                     hint={
                       noteReceiptByStudentId[s.id] === 'replied'
@@ -3975,6 +3946,7 @@ function TeacherDashboardInner() {
                         </HintWrap>
                       </div>
                     </div>
+                  </div>
                   </div>
                 </div>
                 <div
