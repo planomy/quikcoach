@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { annotationMarkersMatch, commentGutterLane, commentTone, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
+import { annotationMarkersMatch, commentGutterLane, commentTone, documentAnnotationChange, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
 
 const spelling = {
   quote: 'recieve',
@@ -33,6 +33,29 @@ test('resolveAnnotation highlights the replacement once the quote is gone', () =
   assert.equal(commentTone({ status: 'open' }, true), 'fixed');
   assert.equal(commentTone({ status: 'open', student_fixed_at: '2026-09-22' }, true), 'reopen');
   assert.equal(commentTone({ status: 'resolved' }, true), 'resolved');
+});
+
+test('deleting hyphens around the quote keeps the bubble on the same word', () => {
+  const quote = 'birds';
+  const before = 'became the dominant-birds-of the Triassic period';
+  const after = 'became the dominant birds of the Triassic period';
+  const start = before.indexOf(quote);
+  const annotation = {
+    quote,
+    start_offset: start,
+    prefix_context: 'dominant-',
+    suffix_context: '-of the',
+  };
+  assert.equal(
+    locateQuote(after, quote, start, annotation.prefix_context, annotation.suffix_context),
+    after.indexOf(quote)
+  );
+  const resolved = resolveAnnotation(annotation, after);
+  assert.equal(resolved.detached, false);
+  assert.equal(after.slice(resolved.start, resolved.end), 'birds');
+  const change = documentAnnotationChange(annotation, after);
+  assert.equal(change.before, '-birds-');
+  assert.equal(change.after, 'birds');
 });
 
 test('wholesale paste does not steal the highlight or invent a replacement', () => {

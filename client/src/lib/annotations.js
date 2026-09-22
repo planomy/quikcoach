@@ -49,14 +49,29 @@ function enoughNeighbour(stored, matchedLen) {
   return matchedLen >= Math.min(need, Math.max(2, Math.ceil(need * 0.35)));
 }
 
+/** Ignore wrapping punctuation so Delete on -birds- still matches birds. */
+function softenContext(value) {
+  return String(value || '')
+    .replace(/[^\p{L}\p{N}\s’']+/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** True when this occurrence still sits in the original sentence, not a fresh paste. */
 function quoteContextAgrees(source, index, needle, prefix, suffix) {
   const before = source.slice(Math.max(0, index - 48), index);
   const after = source.slice(index + needle.length, index + needle.length + 48);
   const prefixOk = enoughNeighbour(prefix, matchingPrefixLength(prefix, before));
   const suffixOk = enoughNeighbour(suffix, matchingSuffixLength(suffix, after));
-  if (prefix && suffix) return prefixOk || suffixOk;
-  return prefixOk && suffixOk;
+  if (prefix && suffix ? prefixOk || suffixOk : prefixOk && suffixOk) return true;
+  const softPrefix = softenContext(prefix);
+  const softSuffix = softenContext(suffix);
+  const softBefore = softenContext(before);
+  const softAfter = softenContext(after);
+  const softPrefixOk = enoughNeighbour(softPrefix, matchingPrefixLength(softPrefix, softBefore));
+  const softSuffixOk = enoughNeighbour(softSuffix, matchingSuffixLength(softSuffix, softAfter));
+  if (softPrefix && softSuffix) return softPrefixOk || softSuffixOk;
+  return softPrefixOk && softSuffixOk;
 }
 
 /** Prefer the occurrence whose neighbours match — never a same-spelled word in new text. */
@@ -312,6 +327,37 @@ export function inferReplacementPassage(annotation, rawText) {
   const after = text.slice(start, end);
   if (!after.trim() || after === quote) return null;
   return { before: quote, after, start, end };
+}
+
+function wrappingPunct(value, edge) {
+  const source = String(value || '');
+  if (edge === 'before') {
+    const match = source.match(/[^\p{L}\p{N}\s’']+$/u);
+    return match ? match[0] : '';
+  }
+  const match = source.match(/^[^\p{L}\p{N}\s’']+/u);
+  return match ? match[0] : '';
+}
+
+/** Was / Now for a student edit: replaced words, or wrapping punctuation they deleted. */
+export function documentAnnotationChange(annotation, rawText) {
+  const text = normalise(rawText);
+  const replacement = inferReplacementPassage(annotation, text);
+  if (replacement?.after?.trim() && replacement.after !== replacement.before) {
+    return replacement;
+  }
+  const resolved = resolveAnnotation(annotation, text);
+  const quote = normalise(annotation?.quote || '');
+  if (!quote || resolved.start == null || resolved.end <= resolved.start) return null;
+  const live = text.slice(resolved.start, resolved.end);
+  const wasBefore = wrappingPunct(annotation?.prefix_context, 'before');
+  const wasAfter = wrappingPunct(annotation?.suffix_context, 'after');
+  const nowBefore = wrappingPunct(text.slice(Math.max(0, resolved.start - 6), resolved.start), 'before');
+  const nowAfter = wrappingPunct(text.slice(resolved.end, resolved.end + 6), 'after');
+  const before = `${wasBefore}${quote}${wasAfter}`;
+  const after = `${nowBefore}${live}${nowAfter}`;
+  if (!before || before === after) return null;
+  return { before, after, start: resolved.start, end: resolved.end };
 }
 
 function fragmentToPlainText(fragment) {

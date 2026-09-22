@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import {
   annotationMarkersMatch,
   commentTone,
-  inferReplacementPassage,
+  documentAnnotationChange,
   COMMENT_HOVER_WASH,
   commentGutterLane,
   locateAnnotationRange,
@@ -1444,12 +1444,12 @@ export default function TeacherAnnotationController() {
     : null;
 
   const openMarkerChange = useMemo(() => {
-    if (!openMarker?.detached || !openMarker.annotation) return null;
+    if (!openMarker?.annotation) return null;
     const card = cardForStudent(openMarker.studentId);
     if (!card) return null;
     const writingRoot = contentRootForPane(card.textPane) || card.textPane;
     const fullText = plainTextFromElement(writingRoot);
-    return inferReplacementPassage(openMarker.annotation, fullText);
+    return documentAnnotationChange(openMarker.annotation, fullText);
   }, [openMarker]);
   const openMarkerTone = openMarker
     ? commentTone(openMarker.annotation, openMarker.detached)
@@ -1913,7 +1913,7 @@ export default function TeacherAnnotationController() {
             <p className="whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100">
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
-            {openMarker.detached ? (
+            {openMarkerChange ? (
               <div className="mt-2.5 space-y-1.5 rounded-xl border border-[#cfcce8] bg-[#ebeaf8] p-2.5 dark:border-indigo-900 dark:bg-indigo-950/35">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Was</p>

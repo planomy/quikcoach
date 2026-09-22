@@ -4,7 +4,7 @@ import {
   annotationMarkersMatch,
   commentGutterLane,
   commentTone,
-  inferReplacementPassage,
+  documentAnnotationChange,
   locateAnnotationRange,
   plainTextFromElement,
   rangeContainsPoint,
@@ -564,10 +564,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }, [openMarker]);
 
   const openMarkerChange = useMemo(() => {
-    if (!openMarker?.detached || !openMarker.annotation) return null;
+    if (!openMarker?.annotation) return null;
     const editor = editorElement();
     if (!editor) return null;
-    return inferReplacementPassage(openMarker.annotation, plainTextFromElement(editor));
+    return documentAnnotationChange(openMarker.annotation, plainTextFromElement(editor));
   }, [openMarker]);
 
   useEffect(() => {
@@ -592,7 +592,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }
 
   const openTone = commentTone(openMarker?.annotation, openMarker?.detached);
-  const showChangedPassage = !!openMarker?.detached;
+  const showChangedPassage = !!openMarkerChange;
   const openLiveText = editorElement() ? plainTextFromElement(editorElement()) : '';
   const reopenSnapshot = openMarker
     ? checkAgainSnapshotRef.current.get(Number(openMarker.annotation?.id))
