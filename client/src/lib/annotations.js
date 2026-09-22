@@ -43,16 +43,45 @@ export function includeMissedWordStart(text, start, end) {
   return { start: originalStart, end: nextEnd };
 }
 
-/** Prefer the occurrence whose neighbours match — never the next copy of the same word. */
+function enoughNeighbour(stored, matchedLen) {
+  const need = String(stored || '').length;
+  if (!need) return true;
+  return matchedLen >= Math.min(need, Math.max(2, Math.ceil(need * 0.35)));
+}
+
+/** True when this occurrence still sits in the original sentence, not a fresh paste. */
+function quoteContextAgrees(source, index, needle, prefix, suffix) {
+  const before = source.slice(Math.max(0, index - 48), index);
+  const after = source.slice(index + needle.length, index + needle.length + 48);
+  const prefixOk = enoughNeighbour(prefix, matchingPrefixLength(prefix, before));
+  const suffixOk = enoughNeighbour(suffix, matchingSuffixLength(suffix, after));
+  if (prefix && suffix) return prefixOk || suffixOk;
+  return prefixOk && suffixOk;
+}
+
+/** Prefer the occurrence whose neighbours match — never a same-spelled word in new text. */
 export function locateQuote(text, quote, hintStart, prefix = '', suffix = '') {
   const source = String(text || '');
   const needle = String(quote || '');
   if (!needle) return null;
   const hint = Math.max(0, Number(hintStart) || 0);
-  if (source.slice(hint, hint + needle.length) === needle) return hint;
+  const storedPrefix = String(prefix || '');
+  const storedSuffix = String(suffix || '');
+  if (
+    source.slice(hint, hint + needle.length) === needle &&
+    quoteContextAgrees(source, hint, needle, storedPrefix, storedSuffix)
+  ) {
+    return hint;
+  }
   for (const delta of [-1, 1, -2, 2]) {
     const at = hint + delta;
-    if (at >= 0 && source.slice(at, at + needle.length) === needle) return at;
+    if (
+      at >= 0 &&
+      source.slice(at, at + needle.length) === needle &&
+      quoteContextAgrees(source, at, needle, storedPrefix, storedSuffix)
+    ) {
+      return at;
+    }
   }
 
   const matches = [];
@@ -60,10 +89,14 @@ export function locateQuote(text, quote, hintStart, prefix = '', suffix = '') {
   while (cursor <= source.length - needle.length) {
     const index = source.indexOf(needle, cursor);
     if (index === -1) break;
+    if (!quoteContextAgrees(source, index, needle, storedPrefix, storedSuffix)) {
+      cursor = index + Math.max(1, needle.length);
+      continue;
+    }
     const before = source.slice(Math.max(0, index - 48), index);
     const after = source.slice(index + needle.length, index + needle.length + 48);
-    const prefixScore = matchingPrefixLength(prefix, before);
-    const suffixScore = matchingSuffixLength(suffix, after);
+    const prefixScore = matchingPrefixLength(storedPrefix, before);
+    const suffixScore = matchingSuffixLength(storedSuffix, after);
     const distance = Math.abs(index - hint);
     matches.push({
       index,
@@ -114,7 +147,14 @@ export function locateAnnotationRange(root, annotation, rawText) {
   const liveQuote = canHighlight ? text.slice(resolved.start, resolved.end) : '';
   const range =
     canHighlight && liveQuote
-      ? rangeForPlainOffsets(root, resolved.start, resolved.end, liveQuote)
+      ? rangeForPlainOffsets(
+          root,
+          resolved.start,
+          resolved.end,
+          liveQuote,
+          annotation?.prefix_context || '',
+          annotation?.suffix_context || ''
+        )
       : null;
   return { resolved, range };
 }
@@ -167,6 +207,39 @@ function tightReplacementEnd(text, start, quote) {
   return tokenCount(quote) <= 1 ? tokenEnd(text, start) : spanTokens(text, start, tokens);
 }
 
+function findPrefixEnd(text, prefix, expectedStart) {
+  let best = -1;
+  let bestDist = Infinity;
+  let cursor = 0;
+  while (cursor <= text.length - prefix.length) {
+    const index = text.indexOf(prefix, cursor);
+    if (index === -1) break;
+    const afterPrefix = index + prefix.length;
+    const dist = Math.abs(afterPrefix - expectedStart);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = afterPrefix;
+    }
+    cursor = index + 1;
+  }
+  return best;
+}
+
+function tokenStartBefore(text, end, count) {
+  const source = String(text || '');
+  let i = Math.max(0, Math.min(source.length, end));
+  let n = 0;
+  while (i > 0 && n < count) {
+    i -= 1;
+    if (/\s/.test(source[i])) continue;
+    while (i > 0 && isWordChar(source[i - 1])) i -= 1;
+    n += 1;
+    if (n >= count) return i;
+    while (i > 0 && /\s/.test(source[i - 1])) i -= 1;
+  }
+  return i;
+}
+
 /** When a quote can no longer be found, recover only the word or phrase that replaced it. */
 export function inferReplacementPassage(annotation, rawText) {
   const text = normalise(rawText);
@@ -176,23 +249,16 @@ export function inferReplacementPassage(annotation, rawText) {
   const expectedStart = Math.max(0, Number(annotation?.start_offset) || 0);
   if (!quote) return null;
 
-  let start = Math.min(expectedStart, text.length);
+  let start = -1;
   if (prefix) {
-    let best = -1;
-    let bestDist = Infinity;
-    let cursor = 0;
-    while (cursor <= text.length - prefix.length) {
-      const index = text.indexOf(prefix, cursor);
-      if (index === -1) break;
-      const afterPrefix = index + prefix.length;
-      const dist = Math.abs(afterPrefix - expectedStart);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = afterPrefix;
-      }
-      cursor = index + 1;
-    }
-    if (best >= 0) start = best;
+    start = findPrefixEnd(text, prefix, expectedStart);
+    if (start < 0) return null;
+  } else if (suffix) {
+    const suffixAt = text.indexOf(suffix);
+    if (suffixAt < 0) return null;
+    start = tokenStartBefore(text, suffixAt, Math.max(1, tokenCount(quote)));
+  } else {
+    return null;
   }
 
   let end = tightReplacementEnd(text, start, quote);
@@ -213,7 +279,7 @@ export function inferReplacementPassage(annotation, rawText) {
   }
 
   const after = text.slice(start, end);
-  if (after === quote) return null;
+  if (!after.trim() || after === quote) return null;
   return { before: quote, after, start, end };
 }
 
@@ -427,7 +493,7 @@ function nearestRealToken(tokens, index, direction) {
   return null;
 }
 
-export function rangeForPlainOffsets(root, start, end, quote = '') {
+export function rangeForPlainOffsets(root, start, end, quote = '', prefix = '', suffix = '') {
   if (!root || typeof document === 'undefined') return null;
   const tokens = mappedPlainTokens(root);
   if (!tokens.length) return null;
@@ -436,7 +502,7 @@ export function rangeForPlainOffsets(root, start, end, quote = '') {
   let to = Math.max(from, Number(end) || from);
   const needle = normalise(quote);
   if (needle && mappedText.slice(from, to) !== needle) {
-    const located = locateQuote(mappedText, needle, from);
+    const located = locateQuote(mappedText, needle, from, prefix, suffix);
     if (located != null) {
       from = located;
       to = from + needle.length;
