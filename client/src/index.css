@@ -1227,7 +1227,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card--overview .iboard-writing-surface {
   margin-top: 0.4rem;
-  padding: 0.45rem 1.75rem 0.45rem 0.55rem;
+  padding: 0.45rem 2.1rem 0.45rem 0.55rem;
   font-size: 0.78em;
   line-height: 1.35;
 }
@@ -1240,7 +1240,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card .iboard-writing-surface {
   box-shadow: none;
-  padding-right: 1.7rem;
+  padding-right: 2.1rem;
 }
 
 /* Descendants inherit the pane's inline rem size (do not override the pane itself). */
@@ -2675,8 +2675,8 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   align-items: center;
   justify-content: flex-end;
   box-sizing: border-box;
-  min-width: 20px;
-  height: 20px;
+  min-width: 14px;
+  height: 14px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -2712,7 +2712,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   border-radius: 999px;
   background: currentColor;
   pointer-events: auto;
-  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.16));
+  filter: none;
   transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -2725,10 +2725,12 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 
 .iboard-ann-mark__stem {
   flex: 1 1 auto;
-  min-width: 8px;
-  height: 2px;
+  align-self: center;
+  min-width: 4px;
+  height: 1px;
   margin-right: -1px;
-  border-radius: 1px;
+  border: 0;
+  border-radius: 0;
   background: currentColor;
 }
 

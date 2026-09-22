@@ -37,9 +37,10 @@ const OPEN_WIDTH = 320;
 /** Placement budget for the open-comment card; CSS max-height lets it grow with the note. */
 const OPEN_PLACE_HEIGHT = 280;
 const OPEN_MAX_HEIGHT = 480;
-const MARKER_SIZE = 20;
+const MARKER_SIZE = 14;
 const INLINE_MARKER_SIZE = 12;
 const MARKER_MARGIN = 4;
+const GUTTER_INSET = 14;
 
 const CHIT_CATEGORIES = [
   { id: 'fix', label: 'Fix' },
@@ -322,12 +323,13 @@ function markerPosition(range, card) {
   const maxTop = paneHeight - size - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
-  // Highlight already underlines the quote. Continue that rule to a margin bubble.
+  // One hairline from the start of the quote on this line out to the margin bubble.
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - 6;
-  const left = Math.max(minLeft, Math.min(gutterLeft, local.right - 2));
+  const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - GUTTER_INSET;
+  const left = Math.max(minLeft, Math.min(gutterLeft, local.left));
   const width = Math.max(size, gutterLeft + size - left);
-  const top = Math.max(minTop, Math.min(maxTop, local.bottom - size / 2 - 1));
+  const underlineY = local.top + local.height - 3;
+  const top = Math.max(minTop, Math.min(maxTop, underlineY - size / 2));
   return {
     top,
     left,
@@ -345,7 +347,7 @@ function detachedMarkerPosition(pane, index, compact = false) {
   const size = compact ? INLINE_MARKER_SIZE : MARKER_SIZE;
   // Keep orphaned ticks in the visible corner of the writing pane.
   const top = (pane.scrollTop || 0) + MARKER_MARGIN + index * (size + 4);
-  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - MARKER_MARGIN;
+  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - GUTTER_INSET;
   const maxTop = (pane.scrollTop || 0) + (pane.clientHeight || paneRect.height) - size - MARKER_MARGIN;
   if (top > maxTop) return null;
   return { top, left, width: size, layout: 'orphan', position: 'absolute', root: pane };
@@ -1437,10 +1439,10 @@ export default function TeacherAnnotationController() {
   return (
     <>
       <style>{`
-        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.18); text-decoration: underline 2px #5a5fc3; text-underline-offset: 2px; }
-        ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.18); text-decoration: underline 2px #f87171; text-underline-offset: 2px; }
-        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.2); text-decoration: underline 2px #6b6b78; text-underline-offset: 2px; }
-        ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
+        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.16); }
+        ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.16); }
+        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.16); }
+        ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
       `}</style>
 
       {markers.map((marker) => renderMarkerButton(marker))}

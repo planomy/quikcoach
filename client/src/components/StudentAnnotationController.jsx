@@ -13,7 +13,7 @@ const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const REOPEN_HIGHLIGHT_NAME = 'iboard-student-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
-const MARKER_SIZE = 20;
+const MARKER_SIZE = 14;
 const MARKER_MARGIN = 6;
 const POPUP_WIDTH = 320;
 /** Placement budget — keep the action button visible on short iPad viewports. */
@@ -45,11 +45,11 @@ function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
 }
 
 function markerPosition(rangeRect, editorRect) {
-  const gutterRight = (editorRect?.right || rangeRect.right + 40) - 8;
-  const left = rangeRect.right + 1;
+  const gutterRight = (editorRect?.right || rangeRect.right + 40) - 14;
+  const left = rangeRect.left;
   const width = Math.max(MARKER_SIZE, gutterRight - left);
   return clampOnScreen({
-    top: rangeRect.bottom - MARKER_SIZE / 2 - 1,
+    top: rangeRect.top + rangeRect.height - 3 - MARKER_SIZE / 2,
     left,
     width,
     height: MARKER_SIZE,
@@ -447,10 +447,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   return (
     <>
       <style>{`
-        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.18); text-decoration: underline 2px #5a5fc3; text-underline-offset: 2px; }
-        ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.18); text-decoration: underline 2px #f87171; text-underline-offset: 2px; }
-        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.2); text-decoration: underline 2px #6b6b78; text-underline-offset: 2px; }
-        ::highlight(${RESOLVED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.58); text-decoration: underline 2px rgb(16, 185, 129); text-underline-offset: 2px; }
+        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.16); }
+        ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.16); }
+        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.16); }
+        ::highlight(${RESOLVED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
       `}</style>
       {markers.map((marker) => {
         const tone = commentTone(marker.annotation, marker.detached);

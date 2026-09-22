@@ -3974,7 +3974,7 @@ function TeacherDashboardInner() {
                   data-student-writing-pane
                   data-card-font="true"
                   style={{ fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-8 leading-relaxed scrollbar-thin ${studentWritingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 leading-relaxed scrollbar-thin ${studentWritingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
@@ -5301,7 +5301,7 @@ function TeacherDashboardInner() {
               data-student-writing-pane
               data-card-font="true"
               style={{ fontSize: `${cardFontRem(cardFontById, focusedStudent.id)}rem` }}
-              className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-12 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
+              className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-14 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
             >
               {focusedStudent.image_url && (
                 <AnnotatedStudentImage
