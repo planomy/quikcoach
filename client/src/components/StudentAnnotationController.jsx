@@ -13,7 +13,7 @@ const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const REOPEN_HIGHLIGHT_NAME = 'iboard-student-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
-const MARKER_SIZE = 28;
+const MARKER_SIZE = 20;
 const MARKER_MARGIN = 6;
 const POPUP_WIDTH = 320;
 /** Placement budget — keep the action button visible on short iPad viewports. */
@@ -44,10 +44,9 @@ function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
   };
 }
 
-function markerPosition(rangeRect) {
-  let top = rangeRect.top - MARKER_SIZE + 10;
-  const left = rangeRect.right - MARKER_SIZE * 0.45;
-  if (top < MARKER_MARGIN) top = rangeRect.top - 4;
+function markerPosition(rangeRect, editorRect) {
+  const top = rangeRect.top + (rangeRect.height - MARKER_SIZE) / 2;
+  const left = (editorRect?.right || rangeRect.right + 8) - MARKER_SIZE - 8;
   return clampOnScreen({
     top,
     left,
@@ -149,7 +148,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       else ranges.push(range);
       const rect = range.getBoundingClientRect();
       if (rect.width || rect.height) {
-        const pos = markerPosition(rect);
+        const pos = markerPosition(rect, editorRect);
         nextMarkers.push({
           annotation,
           detached: resolved.detached,
@@ -455,6 +454,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           <AnnotationMark
             key={marker.annotation.id}
             tone={tone}
+            layout="gutter"
             onClick={() => {
               setActionError('');
               setOpenMarker(marker);

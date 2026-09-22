@@ -1,5 +1,6 @@
 export default function AnnotationMark({
   tone = 'open',
+  layout = 'gutter',
   className = '',
   children: _children,
   ...props
@@ -9,9 +10,10 @@ export default function AnnotationMark({
     <button
       type="button"
       data-teacher-annotation-ui
-      className={`iboard-ann-mark iboard-ann-mark--${tone} ${className}`.trim()}
+      className={`iboard-ann-mark iboard-ann-mark--${tone} iboard-ann-mark--${layout} ${className}`.trim()}
       {...props}
     >
+      <span className="iboard-ann-mark__stem" aria-hidden="true" />
       <span className="iboard-ann-mark__pip" aria-hidden="true">
         {icon === 'comment' ? (
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -23,7 +25,6 @@ export default function AnnotationMark({
           </svg>
         )}
       </span>
-      <span className="iboard-ann-mark__stem" aria-hidden="true" />
     </button>
   );
 }

@@ -37,8 +37,9 @@ const OPEN_WIDTH = 320;
 /** Placement budget for the open-comment card; CSS max-height lets it grow with the note. */
 const OPEN_PLACE_HEIGHT = 280;
 const OPEN_MAX_HEIGHT = 480;
-const MARKER_SIZE = 28;
-const MARKER_MARGIN = 6;
+const MARKER_SIZE = 20;
+const INLINE_MARKER_SIZE = 12;
+const MARKER_MARGIN = 4;
 
 const CHIT_CATEGORIES = [
   { id: 'fix', label: 'Fix' },
@@ -287,6 +288,10 @@ function isRangeVisibleInPane(rangeRect, paneRect) {
   );
 }
 
+function cardUsesInlinePip(card) {
+  return !!card?.article?.classList.contains('iboard-student-card--overview');
+}
+
 function markerPosition(range, card) {
   if (typeof window === 'undefined' || !card?.textPane) return null;
 
@@ -303,22 +308,33 @@ function markerPosition(range, card) {
   const paneWidth = pane.scrollWidth || pane.clientWidth || pane.offsetWidth;
   const paneHeight = pane.scrollHeight || pane.clientHeight || pane.offsetHeight;
   const minLeft = MARKER_MARGIN;
-  const maxLeft = paneWidth - MARKER_SIZE - MARKER_MARGIN;
   const minTop = MARKER_MARGIN;
-  const maxTop = paneHeight - MARKER_SIZE - MARKER_MARGIN;
+  const inline = cardUsesInlinePip(card);
+  const size = inline ? INLINE_MARKER_SIZE : MARKER_SIZE;
+  const maxLeft = paneWidth - size - MARKER_MARGIN;
+  const maxTop = paneHeight - size - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
-  // Sit on the top-right corner of the highlight so the bubble clears the next words.
   // Content-box coords (scroll origin + pinch-zoom undone) so Overview/Reading
-  // overflow:auto panes keep the bubble on the word while the card scrolls.
+  // overflow:auto panes keep the tick with the word while the card scrolls.
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  let left = local.right - MARKER_SIZE * 0.45;
-  let top = local.top - MARKER_SIZE + 10;
-  if (top < minTop) top = local.top - 4;
+  const top = Math.max(minTop, Math.min(maxTop, local.top + (local.height - size) / 2));
+  let left;
+  let layout;
+  if (inline) {
+    left = local.right + 2;
+    layout = 'inline';
+    if (left > maxLeft) {
+      left = maxLeft;
+      layout = 'gutter';
+    }
+  } else {
+    left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - MARKER_SIZE - 6;
+    layout = 'gutter';
+  }
   left = Math.max(minLeft, Math.min(maxLeft, left));
-  top = Math.max(minTop, Math.min(maxTop, top));
 
-  return { top, left, position: 'absolute', root: pane };
+  return { top, left, layout, position: 'absolute', root: pane };
 }
 
 function detachedMarkerPosition(pane, index) {
@@ -330,7 +346,39 @@ function detachedMarkerPosition(pane, index) {
   const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - MARKER_SIZE - MARKER_MARGIN;
   const maxTop = (pane.scrollTop || 0) + (pane.clientHeight || paneRect.height) - MARKER_SIZE - MARKER_MARGIN;
   if (top > maxTop) return null;
-  return { top, left, position: 'absolute', root: pane };
+  return { top, left, layout: 'gutter', position: 'absolute', root: pane };
+}
+
+function stackGutterMarkers(markers) {
+  const groups = new Map();
+  for (const marker of markers) {
+    const layout = marker.layout || 'gutter';
+    const axis = layout === 'inline' ? Math.round(marker.top / 4) : Math.round(marker.left / 4);
+    const key = `${marker.studentId}:${layout}:${axis}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(marker);
+  }
+  const next = [];
+  for (const group of groups.values()) {
+    const inline = (group[0]?.layout || 'gutter') === 'inline';
+    group.sort((a, b) => (inline ? a.left - b.left : a.top - b.top));
+    let last = -Infinity;
+    const gap = inline ? INLINE_MARKER_SIZE + 2 : MARKER_SIZE + 2;
+    for (const marker of group) {
+      if (inline) {
+        let left = marker.left;
+        if (left < last + gap) left = last + gap;
+        last = left;
+        next.push(left === marker.left ? marker : { ...marker, left });
+      } else {
+        let top = marker.top;
+        if (top < last + gap) top = last + gap;
+        last = top;
+        next.push(top === marker.top ? marker : { ...marker, top });
+      }
+    }
+  }
+  return next;
 }
 
 function markersMatch(a, b) {
@@ -344,6 +392,7 @@ function markersMatch(a, b) {
       Number(left.annotation?.id) !== Number(right.annotation?.id) ||
       left.detached !== right.detached ||
       left.position !== right.position ||
+      left.layout !== right.layout ||
       Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
       Math.abs((left.left || 0) - (right.left || 0)) > 0.5
     ) {
@@ -542,6 +591,7 @@ export default function TeacherAnnotationController() {
                 detached: true,
                 top: position.top,
                 left: position.left,
+                layout: position.layout || 'gutter',
                 position: position.position,
               });
               detachedCount += 1;
@@ -561,6 +611,7 @@ export default function TeacherAnnotationController() {
           detached: resolved.detached,
           top: position.top,
           left: position.left,
+          layout: position.layout || 'gutter',
           position: position.position,
         });
       }
@@ -576,7 +627,8 @@ export default function TeacherAnnotationController() {
       if (resolvedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
       else globalThis.CSS.highlights.delete(FIXED_HIGHLIGHT_NAME);
     }
-    setMarkers((prev) => (markersMatch(prev, nextMarkers) ? prev : nextMarkers));
+    const stacked = stackGutterMarkers(nextMarkers);
+    setMarkers((prev) => (markersMatch(prev, stacked) ? prev : stacked));
     setOpenMarker((previous) => {
       if (!previous) return previous;
       return (
@@ -1349,6 +1401,7 @@ export default function TeacherAnnotationController() {
       <AnnotationMark
         key={`${marker.studentId}-${marker.annotation.id}`}
         tone={tone}
+        layout={marker.layout || 'gutter'}
         onClick={() => {
           setReviewError('');
           setOpenMarker(marker);

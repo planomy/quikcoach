@@ -3974,7 +3974,7 @@ function TeacherDashboardInner() {
                   data-student-writing-pane
                   data-card-font="true"
                   style={{ fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl p-2.5 leading-relaxed scrollbar-thin ${studentWritingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-8 leading-relaxed scrollbar-thin ${studentWritingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
