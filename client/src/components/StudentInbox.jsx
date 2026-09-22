@@ -5,6 +5,7 @@ import RichTextDisplay from './RichTextDisplay.jsx';
 import StudentNoteReply from './StudentNoteReply.jsx';
 import { formatInboxTime } from '../lib/inboxTime.js';
 import { parseSetPromptForDisplay } from '../lib/liveResponseSets.js';
+import { isThinkingInboxNote } from '../lib/thinkingPrompts.js';
 
 function isImageMime(mime) {
   return String(mime || '').startsWith('image/');
@@ -528,7 +529,16 @@ export default function StudentInbox({
                       {item.text}
                     </div>
                     {item.type !== 'set-prompt' && Number(item.feedbackId) ? (
-                      <StudentNoteReply socket={socket} feedbackId={item.feedbackId} compact />
+                      <StudentNoteReply
+                        socket={socket}
+                        feedbackId={item.feedbackId}
+                        compact
+                        onSent={
+                          typeof onToggle === 'function' && isThinkingInboxNote(item.text)
+                            ? () => onToggle(item.id)
+                            : undefined
+                        }
+                      />
                     ) : null}
                   </div>
                 )}

@@ -225,6 +225,10 @@ export function buildThinkingInboxText(texts) {
   return `Push your thinking\n\n${lines.map((line, i) => `${i + 1}. ${line}`).join('\n')}`;
 }
 
+export function isThinkingInboxNote(text) {
+  return /^Push your thinking\b/i.test(String(text || '').trim());
+}
+
 /**
  * @param {import('socket.io-client').Socket | null | undefined} socket
  * @param {{ studentIds: Array<number|string>, texts: string[] }} payload
