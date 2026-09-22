@@ -11,7 +11,7 @@ import {
   writingRootForPane,
 } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
-import { rectRelativeToElement, subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
+import { clientLayoutScale, rectRelativeToScrollElement, subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
 import HintWrap from './HintWrap.jsx';
 
@@ -264,8 +264,9 @@ function markerViewportBox(marker) {
   const pane = card?.textPane;
   if (!pane) return null;
   const paneRect = pane.getBoundingClientRect();
-  const top = paneRect.top + marker.top;
-  const left = paneRect.left + marker.left;
+  const scale = clientLayoutScale(pane);
+  const top = paneRect.top + (marker.top - (pane.scrollTop || 0)) * scale;
+  const left = paneRect.left + (marker.left - (pane.scrollLeft || 0)) * scale;
   return {
     top,
     left,
@@ -298,8 +299,8 @@ function markerPosition(range, card) {
 
   // Position relative to the writing pane (portal target), not the text root —
   // markers inside the selectable text tree make RTL drags jump.
-  const paneWidth = pane.clientWidth || pane.offsetWidth;
-  const paneHeight = pane.clientHeight || pane.offsetHeight;
+  const paneWidth = pane.scrollWidth || pane.clientWidth || pane.offsetWidth;
+  const paneHeight = pane.scrollHeight || pane.clientHeight || pane.offsetHeight;
   const minLeft = MARKER_MARGIN;
   const maxLeft = paneWidth - MARKER_SIZE - MARKER_MARGIN;
   const minTop = MARKER_MARGIN;
@@ -307,8 +308,9 @@ function markerPosition(range, card) {
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
   // Sit on the top-right corner of the highlight so the bubble clears the next words.
-  // Divide by pinch-zoom scale so absolute left/top stay in the pane's layout box.
-  const local = rectRelativeToElement(pane, rangeRect);
+  // Content-box coords (scroll origin + pinch-zoom undone) so Overview/Reading
+  // overflow:auto panes keep the bubble on the word while the card scrolls.
+  const local = rectRelativeToScrollElement(pane, rangeRect);
   let left = local.right - MARKER_SIZE * 0.45;
   let top = local.top - MARKER_SIZE + 10;
   if (top < minTop) top = local.top - 4;
@@ -322,10 +324,10 @@ function detachedMarkerPosition(pane, index) {
   if (!pane) return null;
   const paneRect = pane.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
-  // Keep orphaned ticks inside the writing pane — never fixed to the viewport chrome.
-  const top = MARKER_MARGIN + index * (MARKER_SIZE + 4);
-  const left = paneRect.width - MARKER_SIZE - MARKER_MARGIN;
-  const maxTop = paneRect.height - MARKER_SIZE - MARKER_MARGIN;
+  // Keep orphaned ticks in the visible corner of the writing pane.
+  const top = (pane.scrollTop || 0) + MARKER_MARGIN + index * (MARKER_SIZE + 4);
+  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - MARKER_SIZE - MARKER_MARGIN;
+  const maxTop = (pane.scrollTop || 0) + (pane.clientHeight || paneRect.height) - MARKER_SIZE - MARKER_MARGIN;
   if (top > maxTop) return null;
   return { top, left, position: 'absolute', root: pane };
 }

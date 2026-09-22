@@ -52,3 +52,22 @@ export function rectRelativeToElement(el, clientRect) {
     height: clientRect.height / scale,
   };
 }
+
+/**
+ * Same as rectRelativeToElement, then shift into the scrollable content box.
+ * Absolute children of overflow:auto panes are positioned from scroll origin 0,
+ * not the visible padding edge — Overview / Reading cards scroll inside the card.
+ */
+export function rectRelativeToScrollElement(el, clientRect) {
+  const local = rectRelativeToElement(el, clientRect);
+  const scrollTop = el?.scrollTop || 0;
+  const scrollLeft = el?.scrollLeft || 0;
+  return {
+    top: local.top + scrollTop,
+    left: local.left + scrollLeft,
+    right: local.right + scrollLeft,
+    bottom: local.bottom + scrollTop,
+    width: local.width,
+    height: local.height,
+  };
+}
