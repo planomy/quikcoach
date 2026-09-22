@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   COMMENT_HOVER_WASH,
+  annotationMarkersMatch,
   commentGutterLane,
   commentTone,
   inferReplacementPassage,
@@ -77,25 +78,6 @@ function detachedMarkerPosition(editorRect, index, lane = 'done') {
   });
 }
 
-function studentMarkersMatch(a, b) {
-  if (a === b) return true;
-  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    const left = a[i];
-    const right = b[i];
-    if (
-      Number(left.annotation?.id) !== Number(right.annotation?.id) ||
-      left.detached !== right.detached ||
-      left.lane !== right.lane ||
-      Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
-      Math.abs((left.left || 0) - (right.left || 0)) > 0.5 ||
-      Math.abs((left.width || 0) - (right.width || 0)) > 0.5
-    ) {
-      return false;
-    }
-  }
-  return true;
-}
 
 function commentPopupMaxHeight() {
   const vp = viewportBox();
@@ -212,7 +194,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     if (lit?.range) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit.range);
     else if (!hoveredIdRef.current) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
     const stacked = stackGutterMarkers(nextMarkers, () => MARKER_SIZE + 6);
-    setMarkers((prev) => (studentMarkersMatch(prev, stacked) ? prev : stacked));
+    setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
   }, [annotations]);
 
   useEffect(() => {
@@ -248,11 +230,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       setAnnotations((prev) =>
         prev.map((item) =>
           Number(item.id) === id
-            ? {
-                ...item,
-                status: 'fixed',
-                student_fixed_at: item.student_fixed_at || new Date().toISOString(),
-              }
+            ? item.status === 'resolved'
+              ? item
+              : {
+                  ...item,
+                  status: 'fixed',
+                  student_fixed_at: item.student_fixed_at || new Date().toISOString(),
+                }
             : item
         )
       );
@@ -527,7 +511,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
       `}</style>
       {markers.map((marker) => {
-        const tone = commentTone(marker.annotation, marker.detached);
+        const live =
+          annotations.find((item) => Number(item.id) === Number(marker.annotation.id)) || marker.annotation;
+        const tone = commentTone(live, marker.detached);
         return (
           <AnnotationMark
             key={marker.annotation.id}

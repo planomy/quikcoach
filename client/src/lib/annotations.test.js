@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { commentGutterLane, commentTone, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
+import { annotationMarkersMatch, commentGutterLane, commentTone, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
 
 const spelling = {
   quote: 'recieve',
@@ -80,4 +80,23 @@ test('unread bubbles keep their own gutter column from reviewed ones', () => {
   assert.equal(byId[1], 100);
   assert.equal(byId[2], 102);
   assert.equal(byId[3], 120);
+});
+
+test('confirming a grey bubble rematches so the pip can turn green', () => {
+  const fixed = [{
+    studentId: 7,
+    annotation: { id: 12, status: 'fixed', student_fixed_at: '2026-09-22' },
+    detached: true,
+    lane: 'done',
+    layout: 'gutter',
+    top: 40,
+    left: 200,
+    width: 18,
+  }];
+  const confirmed = [{
+    ...fixed[0],
+    annotation: { ...fixed[0].annotation, status: 'resolved' },
+  }];
+  assert.equal(annotationMarkersMatch(fixed, fixed), true);
+  assert.equal(annotationMarkersMatch(fixed, confirmed), false);
 });

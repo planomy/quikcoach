@@ -173,6 +173,32 @@ export function commentGutterLane(tone) {
   return tone === 'open' || tone === 'reopen' ? 'attention' : 'done';
 }
 
+/** Keep cached gutter pips in lockstep with confirm/reopen — same lane is not enough. */
+export function annotationMarkersMatch(a, b) {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+    if (
+      Number(left.studentId || 0) !== Number(right.studentId || 0) ||
+      Number(left.annotation?.id) !== Number(right.annotation?.id) ||
+      String(left.annotation?.status || '') !== String(right.annotation?.status || '') ||
+      String(left.annotation?.student_fixed_at || '') !== String(right.annotation?.student_fixed_at || '') ||
+      left.detached !== right.detached ||
+      left.position !== right.position ||
+      left.layout !== right.layout ||
+      left.lane !== right.lane ||
+      Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
+      Math.abs((left.left || 0) - (right.left || 0)) > 0.5 ||
+      Math.abs((left.width || 0) - (right.width || 0)) > 0.5
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function tokenCount(value) {
   return String(value || '').trim().split(/\s+/).filter(Boolean).length;
 }

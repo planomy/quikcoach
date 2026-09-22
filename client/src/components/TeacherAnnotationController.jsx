@@ -2,6 +2,7 @@ import { RemoveButton, CloseButton } from './PanelActions.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  annotationMarkersMatch,
   commentTone,
   inferReplacementPassage,
   COMMENT_HOVER_WASH,
@@ -372,27 +373,18 @@ function detachedMarkerPosition(pane, index, compact = false, lane = 'done') {
   return { top, left, width: size, layout: 'orphan', position: 'absolute', root: pane };
 }
 
-function markersMatch(a, b) {
-  if (a === b) return true;
-  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    const left = a[i];
-    const right = b[i];
-    if (
-      Number(left.studentId) !== Number(right.studentId) ||
-      Number(left.annotation?.id) !== Number(right.annotation?.id) ||
-      left.detached !== right.detached ||
-      left.position !== right.position ||
-      left.layout !== right.layout ||
-      left.lane !== right.lane ||
-      Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
-      Math.abs((left.left || 0) - (right.left || 0)) > 0.5 ||
-      Math.abs((left.width || 0) - (right.width || 0)) > 0.5
-    ) {
-      return false;
-    }
+function patchAnnotationInMap(byStudent, annotationId, patch) {
+  const id = Number(annotationId);
+  if (!id) return byStudent;
+  let changed = false;
+  const next = { ...byStudent };
+  for (const [key, list] of Object.entries(byStudent)) {
+    if (!Array.isArray(list) || !list.some((item) => Number(item.id) === id)) continue;
+    next[key] = list.map((item) => (Number(item.id) === id ? { ...item, ...patch } : item));
+    changed = true;
+    break;
   }
-  return true;
+  return changed ? next : byStudent;
 }
 
 function paneIsOnScreen(paneRect) {
@@ -632,7 +624,7 @@ export default function TeacherAnnotationController() {
     const stacked = stackGutterMarkers(nextMarkers, (marker) => (
       (marker.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 6
     ));
-    setMarkers((prev) => (markersMatch(prev, stacked) ? prev : stacked));
+    setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
     setOpenMarker((previous) => {
       if (!previous) return previous;
       return (
@@ -1036,18 +1028,26 @@ export default function TeacherAnnotationController() {
 
   function reviewFixedComment(marker, action) {
     if (!socket || !marker?.annotation?.id || reviewBusyId) return;
-    setReviewBusyId(marker.annotation.id);
+    const annotationId = marker.annotation.id;
+    const now = new Date().toISOString();
+    const patch =
+      action === 'confirm'
+        ? { status: 'resolved', resolved_at: now }
+        : { status: 'open', resolved_at: '' };
+    setReviewBusyId(annotationId);
     setReviewError('');
+    setByStudent((prev) => patchAnnotationInMap(prev, annotationId, patch));
+    setOpenMarker(null);
     socket.emit(
       'teacher:annotation-status',
-      { annotationId: marker.annotation.id, action },
+      { annotationId, action },
       (ack) => {
         setReviewBusyId(null);
-        if (!ack?.ok) {
-          setReviewError(ack?.error || 'Could not update this comment');
-          return;
-        }
-        setOpenMarker(null);
+        if (ack?.ok) return;
+        setReviewError(ack?.error || 'Could not update this comment');
+        socket.emit('teacher:annotations-sync', {}, (syncAck) => {
+          if (syncAck?.ok) setByStudent(annotationMap(syncAck.byStudent));
+        });
       }
     );
   }
@@ -1436,7 +1436,10 @@ export default function TeacherAnnotationController() {
   }
 
   function renderMarkerButton(marker) {
-    const tone = commentTone(marker.annotation, marker.detached);
+    const live =
+      (byStudent[marker.studentId] || []).find((item) => Number(item.id) === Number(marker.annotation.id)) ||
+      marker.annotation;
+    const tone = commentTone(live, marker.detached);
     const button = (
       <AnnotationMark
         key={`${marker.studentId}-${marker.annotation.id}`}
