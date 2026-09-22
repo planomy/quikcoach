@@ -513,34 +513,48 @@ html:not(.dark) .iboard-student-canvas .iboard-app-header h1 {
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-code {
   color: #5a5fc3;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-meta {
-  color: #6b6b76;
-}
-
-html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-meta b {
-  color: #52525c;
-  font-weight: 550;
+  color: #6b6b78;
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-chip {
-  border-color: #e2e2ea;
-  background: #f6f6fb;
-  color: #52525c;
+  border-color: transparent;
+  background: #f4f4f8;
+  color: #6b6b78;
   box-shadow: none;
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button {
-  border-color: #e2e2ea;
-  background: #ffffff;
-  color: #475569;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: #6b6b78;
+  cursor: pointer;
+  transition:
+    background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button:hover {
-  border-color: #c9c8d8;
-  background: #f6f6fb;
-  color: #5a5fc3;
+  border-color: transparent;
+  background: #5a5fc3;
+  color: #ffffff;
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button:active {
+  transform: scale(0.98);
+}
+
+html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button[data-active='true'] {
+  border-color: transparent;
+  background: #5a5fc3;
+  color: #ffffff;
 }
 
 html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] {
@@ -567,6 +581,36 @@ html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button[
 html:not(.dark) .iboard-student-canvas footer {
   border-top-color: #e2e2ea;
   color: #8b8b96;
+}
+
+.iboard-student-writing-card {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 22px -14px rgba(15, 23, 42, 0.16);
+}
+
+html.dark .iboard-student-writing-card {
+  box-shadow: none;
+}
+
+html:not(.dark) .iboard-student-canvas header details .font-black {
+  font-weight: 650;
+}
+
+html:not(.dark) .iboard-student-canvas header details .bg-indigo-50,
+html:not(.dark) .iboard-student-canvas header details .hover\:bg-indigo-100:hover {
+  background-color: #ebeaf8;
+}
+
+html:not(.dark) .iboard-student-canvas header details .text-indigo-800,
+html:not(.dark) .iboard-student-canvas header details .text-indigo-700,
+html:not(.dark) .iboard-student-canvas header details .hover\:text-indigo-700:hover {
+  color: #5a5fc3;
+}
+
+html:not(.dark) .iboard-student-canvas header details .border-indigo-200,
+html:not(.dark) .iboard-student-canvas header details .hover\:border-indigo-300:hover {
+  border-color: #cfcce8;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-status-saved {
@@ -1302,7 +1346,7 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
   border-left: 0;
   border-radius: 0 1rem 1rem 0;
   transform: translateY(-50%);
-  animation: iboard-rail-dock-in 180ms ease-out;
+  animation: iboard-rail-dock-in 210ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
@@ -1338,30 +1382,36 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
 .iboard-header-dock--start.iboard-header-dock--from-rail {
   left: 4.75rem;
   transform: none;
-  animation: iboard-rail-dock-in-top 180ms ease-out;
+  animation: iboard-rail-dock-in-top 210ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-600 {
-  background-color: #5a5fc3 !important;
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .font-black {
+  font-weight: 650;
 }
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .hover\:bg-indigo-700:hover {
+
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .bg-indigo-600,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) [class*='from-indigo-'] {
+  background-color: #5a5fc3 !important;
+  background-image: none !important;
+}
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .hover\:bg-indigo-700:hover {
   background-color: #4f54b5 !important;
 }
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-600,
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-700,
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-800,
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-900,
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .text-indigo-950 {
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .text-indigo-600,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .text-indigo-700,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .text-indigo-800,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .text-indigo-900,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .text-indigo-950 {
   color: #5a5fc3 !important;
 }
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .border-indigo-100,
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .border-indigo-200,
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .border-indigo-300 {
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .border-indigo-100,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .border-indigo-200,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .border-indigo-300 {
   border-color: #cfcce8 !important;
 }
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50,
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50\/80,
-html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail .bg-indigo-50\/60 {
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .bg-indigo-50,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .bg-indigo-50\/80,
+html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .bg-indigo-50\/60 {
   background-color: #eceaf8 !important;
 }
 

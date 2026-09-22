@@ -100,15 +100,15 @@ html:not(.dark) :is(.iboard-writing-surface, [data-student-writing-pane], [conte
   background-color: var(--iboard-paper);
 }
 html.dark .iboard-app-header :is(.iboard-header-tab, .iboard-header-icon-button)[data-active="true"] {
-  background: #4f46e5;
+  background: #5a5fc3;
   color: #fff;
 }
 html.dark :is(button.bg-indigo-600, button.bg-indigo-700, button.bg-violet-600) {
-  background-color: #4f46e5;
+  background-color: #5a5fc3;
   color: #fff;
 }
 html.dark :is(button.bg-indigo-600, button.bg-indigo-700, button.bg-violet-600):hover {
-  background-color: #4338ca;
+  background-color: #4b50b0;
 }
 html.dark :is(.dark\:text-slate-400, .dark\:text-slate-500) {
   color: #aebac8;

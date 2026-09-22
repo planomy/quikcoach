@@ -1452,16 +1452,20 @@ export default function StudentView() {
         <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
             <IBoardWordmark />
-            <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5 text-sm">
-              {activeRoomCode && (
-                <span>
-                  Room <b className="iboard-header-code font-mono">{activeRoomCode}</b>
+            <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
+              {activeRoomCode ? (
+                <span className="iboard-header-room">
+                  <span className="iboard-header-room__label">Room</span>
+                  <span className="iboard-header-code">{activeRoomCode}</span>
                 </span>
-              )}
+              ) : null}
               {student?.name ? (
-                <span className="iboard-header-chip truncate rounded-full border px-2.5 py-0.5 text-xs font-semibold">
-                  {student.name}
-                </span>
+                <>
+                  <span className="iboard-header-meta__dot" aria-hidden="true" />
+                  <span className="iboard-header-chip truncate rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                    {student.name}
+                  </span>
+                </>
               ) : null}
             </div>
           </div>
@@ -1472,7 +1476,7 @@ export default function StudentView() {
               onClick={() => void toggleBrowserFullscreen()}
               aria-pressed={browserFullscreen}
               data-active={browserFullscreen ? 'true' : 'false'}
-              className="iboard-header-icon-button flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition dark:border-slate-500 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15 dark:hover:text-white"
+              className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
               aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               title={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'}
             >
@@ -1494,7 +1498,7 @@ export default function StudentView() {
             </button>
             <details className="group relative shrink-0">
               <summary
-                className="iboard-header-icon-button grid h-9 w-9 cursor-pointer list-none place-items-center rounded-xl border shadow-sm transition [&::-webkit-details-marker]:hidden"
+                className="iboard-header-icon-button grid h-8 w-8 cursor-pointer list-none place-items-center rounded-xl transition [&::-webkit-details-marker]:hidden"
                 aria-label="Student tools"
                 title="Student tools"
               >

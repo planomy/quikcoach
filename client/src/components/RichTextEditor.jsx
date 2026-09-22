@@ -85,7 +85,7 @@ function ToolbarButton({
       }}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className={`flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60 ${className}`}
+      className={`flex h-8 min-w-8 items-center justify-center rounded-lg border border-[#e8e8ef] bg-white px-2 text-sm font-semibold text-[#6b6b78] transition hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#5a5fc3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60 ${className}`}
     >
       {label}
     </button>
@@ -371,8 +371,8 @@ export default function RichTextEditor({
         />
       )}
 
-      <div className={`${drawMode ? 'hidden' : ''} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card dark:border-slate-600 dark:bg-slate-900`}>
-        <div className="relative flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
+      <div className={`${drawMode ? 'hidden' : ''} iboard-student-writing-card overflow-hidden rounded-2xl border border-[#e8e8ef] bg-white dark:border-slate-600 dark:bg-slate-900`}>
+        <div className="iboard-student-writing-tools relative flex flex-wrap items-center gap-1.5 border-b border-[#ececf2] bg-[#fafafa] px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
           {formattingEnabled ? (
             <div ref={formatMenuRef} className="relative">
               <button
@@ -383,7 +383,7 @@ export default function RichTextEditor({
                 aria-expanded={formatMenuOpen}
                 aria-label="Formatting tools"
                 title="Formatting tools"
-                className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-sm font-black text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60"
+                className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-[#e8e8ef] bg-white px-2 text-sm font-semibold text-[#6b6b78] transition hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#5a5fc3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60"
               >
                 Aa
               </button>

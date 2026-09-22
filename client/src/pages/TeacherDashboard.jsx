@@ -3437,7 +3437,7 @@ function TeacherDashboardInner() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h2 id="add-teacher-card-title" className="text-[13px] font-black text-slate-950 dark:text-white">
+                      <h2 id="add-teacher-card-title" className="text-[13px] font-semibold text-[#3c3c45] dark:text-white">
                         {addCardMode === 'image' ? 'Add image' : addCardMode === 'text' ? 'Add text' : 'Add PDF'}
                       </h2>
                       <p className="mt-0.5 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
@@ -3461,10 +3461,10 @@ function TeacherDashboardInner() {
                   />
                   {addCardMode !== 'text' ? (
                     <label
-                      className="flex cursor-pointer flex-col gap-1 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/60 px-2.5 py-2 text-sm dark:border-indigo-800 dark:bg-indigo-950/30"
+                      className="flex cursor-pointer flex-col gap-1 rounded-lg border border-dashed border-[#cfcce8] bg-[#ebeaf8]/70 px-2.5 py-2 text-sm dark:border-indigo-800 dark:bg-indigo-950/30"
                       onPaste={addCardMode === 'image' ? handleAddCardPaste : undefined}
                     >
-                      <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                      <span className="text-xs font-bold text-[#5a5fc3] dark:text-indigo-200">
                         {addCardMode === 'image' ? 'Choose or paste an image' : 'Attach a PDF'}
                       </span>
                       <span className="text-[10px] leading-snug text-indigo-700/80 dark:text-indigo-300/80">
@@ -3479,7 +3479,7 @@ function TeacherDashboardInner() {
                             ? '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
                             : '.pdf,application/pdf'
                         }
-                        className="mt-1 block w-full text-[11px] text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-indigo-600 file:px-2 file:py-1 file:text-[11px] file:font-bold file:text-white dark:text-slate-300"
+                        className="mt-1 block w-full text-[11px] text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-[#5a5fc3] file:px-2 file:py-1 file:text-[11px] file:font-bold file:text-white dark:text-slate-300"
                         onChange={handleAddCardFileChange}
                         disabled={addCardBusy}
                       />
@@ -3539,7 +3539,7 @@ function TeacherDashboardInner() {
                     <button
                       type="submit"
                       disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                      className="rounded-md bg-indigo-600 px-3 py-1 text-[11px] font-black text-white hover:bg-indigo-700 disabled:opacity-50"
+                      className="rounded-md bg-[#5a5fc3] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
                     >
                       {addCardBusy ? 'Sending…' : addCardFile || addCardImage ? 'Send' : 'Add card'}
                     </button>
@@ -4661,7 +4661,7 @@ function TeacherDashboardInner() {
                     type="button"
                     aria-pressed={active}
                     onClick={() => setOverviewColumns(count)}
-                    className={`min-w-[1.75rem] rounded-md px-1.5 py-1 text-[11px] font-black tabular-nums transition ${
+                    className={`min-w-[1.75rem] rounded-md px-1.5 py-1 text-[11px] font-semibold tabular-nums transition ${
                       active
                         ? 'bg-[#5a5fc3] text-white shadow-sm'
                         : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
@@ -4687,7 +4687,7 @@ function TeacherDashboardInner() {
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
             <div>
-              <h2 id="room-timer-title" className="font-display text-base font-black text-slate-950 dark:text-white">Timer</h2>
+              <h2 id="room-timer-title" className="text-base font-semibold text-[#3c3c45] dark:text-white">Timer</h2>
               <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                 {room?.timer?.active ? 'Visible to the class' : 'Count down for the whole room'}
               </p>

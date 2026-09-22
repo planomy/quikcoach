@@ -19,7 +19,7 @@ main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.'] 
   border: 0 !important;
   border-radius: 1rem !important;
   padding: 0.75rem 1rem !important;
-  background: rgb(79 70 229) !important;
+  background: #5a5fc3 !important;
   box-shadow: none !important;
   color: white !important;
 }
@@ -47,7 +47,7 @@ main .iboard-student-pulse-dock.is-collapsed button[aria-label^='Pulse ready.']:
   border-radius: 9999px;
   background: white;
   padding: 0.25rem 0.625rem;
-  color: rgb(55 48 163);
+  color: #5a5fc3;
   font-size: 0.6875rem;
   font-weight: 900;
   line-height: 1rem;
