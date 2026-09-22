@@ -575,10 +575,9 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   gap: 0.2rem;
   color: #555b69;
   transition:
-    background-color 160ms ease,
+    background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
+    color 160ms ease;
 }
 
 .iboard-arr-btn img {
@@ -588,7 +587,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   object-fit: contain;
   pointer-events: none;
   user-select: none;
-  transition: filter 160ms ease, transform 160ms ease;
+  transition: filter 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-arr-btn__glyph {
@@ -598,7 +597,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   color: #555b69;
   flex-shrink: 0;
   pointer-events: none;
-  transition: color 160ms ease, transform 160ms ease;
+  transition: color 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-arr-label {
@@ -611,37 +610,31 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   letter-spacing: 0.01em;
   color: #555b69;
   white-space: normal;
+  transition: color 160ms ease;
 }
 
-.iboard-arr-btn:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: #d8e2ee;
-  box-shadow:
-    0 2px 5px rgba(15, 23, 42, 0.07),
-    0 8px 18px -14px rgba(37, 99, 235, 0.3);
-  transform: translateY(-1px);
-}
-
+.iboard-arr-btn:hover,
 .iboard-arr-btn[data-active='true'] {
-  background: #ffffff;
-  border-color: #c9c7ee;
-  box-shadow:
-    0 2px 6px rgba(15, 23, 42, 0.09),
-    0 10px 22px -15px rgba(79, 70, 229, 0.38);
+  background: #5a5fc3;
+  border-color: transparent;
+  color: #ffffff;
 }
 
+.iboard-arr-btn:hover img,
 .iboard-arr-btn[data-active='true'] img {
-  filter: grayscale(1) sepia(1) saturate(6) hue-rotate(195deg);
-  transform: scale(1.025);
+  filter: brightness(0) invert(1);
 }
 
-.iboard-arr-btn[data-active='true'] .iboard-arr-btn__glyph {
-  color: #5a5fc3;
-  transform: scale(1.025);
-}
-
+.iboard-arr-btn:hover .iboard-arr-btn__glyph,
+.iboard-arr-btn[data-active='true'] .iboard-arr-btn__glyph,
+.iboard-arr-btn:hover .iboard-arr-label,
 .iboard-arr-btn[data-active='true'] .iboard-arr-label {
-  color: #5a5fc3;
+  color: #ffffff;
+}
+
+.iboard-arr-btn:hover:not([data-active='true']) img,
+.iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph {
+  transform: scale(1.06);
 }
 
 .iboard-arr-btn:focus-visible {
@@ -2058,14 +2051,17 @@ html.dark .iboard-arr-label {
 
 html.dark .iboard-arr-btn:hover,
 html.dark .iboard-arr-btn[data-active='true'] {
-  background: #292f37;
-  border-color: #4b5664;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.28);
+  background: #5a5fc3;
+  border-color: transparent;
+  box-shadow: none;
+  color: #ffffff;
 }
 
+html.dark .iboard-arr-btn:hover .iboard-arr-btn__glyph,
+html.dark .iboard-arr-btn:hover .iboard-arr-label,
 html.dark .iboard-arr-btn[data-active='true'] .iboard-arr-btn__glyph,
 html.dark .iboard-arr-btn[data-active='true'] .iboard-arr-label {
-  color: #a5a8e8;
+  color: #ffffff;
 }
 
 html.dark .iboard-teacher-panel {
@@ -2213,6 +2209,11 @@ html.dark .iboard-workspace-scrim {
   .iboard-header-dock--rail {
     transition: none;
     animation: none;
+  }
+
+  .iboard-arr-btn img,
+  .iboard-arr-btn__glyph {
+    transform: none !important;
   }
 }
 
