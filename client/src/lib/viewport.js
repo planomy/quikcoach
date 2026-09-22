@@ -27,3 +27,28 @@ export function viewportBox() {
     height: vv.height,
   };
 }
+
+/** Client pixels per layout/offset pixel. Safari pinch-zoom inflates getBoundingClientRect. */
+export function clientLayoutScale(el) {
+  if (!el) return 1;
+  const layout = el.offsetWidth || el.offsetHeight;
+  if (!layout) return 1;
+  const rect = el.getBoundingClientRect();
+  const client = el.offsetWidth ? rect.width : rect.height;
+  const scale = client / layout;
+  return Number.isFinite(scale) && scale > 0.05 ? scale : 1;
+}
+
+/** Map a client rect into an element's padding-box, undoing pinch-zoom scale. */
+export function rectRelativeToElement(el, clientRect) {
+  const box = el.getBoundingClientRect();
+  const scale = clientLayoutScale(el);
+  return {
+    top: (clientRect.top - box.top) / scale,
+    left: (clientRect.left - box.left) / scale,
+    right: (clientRect.right - box.left) / scale,
+    bottom: (clientRect.bottom - box.top) / scale,
+    width: clientRect.width / scale,
+    height: clientRect.height / scale,
+  };
+}

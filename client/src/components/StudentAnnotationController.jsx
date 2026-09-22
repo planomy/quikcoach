@@ -5,7 +5,7 @@ import {
   rangeForPlainOffsets,
   resolveAnnotation,
 } from '../lib/annotations.js';
-import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
+import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
@@ -42,27 +42,33 @@ function commentTone(annotation) {
   return 'open';
 }
 
+function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
+  const maxTop = (typeof window !== 'undefined' ? window.innerHeight : 800) - height - padding;
+  const maxLeft = (typeof window !== 'undefined' ? window.innerWidth : 1200) - width - padding;
+  return {
+    top: Math.max(padding, Math.min(maxTop, top)),
+    left: Math.max(padding, Math.min(maxLeft, left)),
+  };
+}
+
 function markerPosition(rangeRect) {
   let top = rangeRect.top - MARKER_SIZE + 10;
   const left = rangeRect.right - MARKER_SIZE * 0.45;
-  if (top < viewportBox().top + MARKER_MARGIN) top = rangeRect.top - 4;
-  return clampFixedBox({
+  if (top < MARKER_MARGIN) top = rangeRect.top - 4;
+  return clampOnScreen({
     top,
     left,
     width: MARKER_SIZE,
     height: MARKER_SIZE,
-    padding: MARKER_MARGIN,
   });
 }
 
 function detachedMarkerPosition(editorRect, index) {
-  const vp = viewportBox();
-  return clampFixedBox({
+  return clampOnScreen({
     top: editorRect.top + 8 + index * (MARKER_SIZE + 4),
     left: editorRect.right - MARKER_SIZE - 6,
     width: MARKER_SIZE,
     height: MARKER_SIZE,
-    padding: MARKER_MARGIN,
   });
 }
 
@@ -131,7 +137,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     for (const annotation of annotations || []) {
       const tone = commentTone(annotation);
       const resolved = resolveAnnotation(annotation, text);
-      const range = resolved.detached ? null : rangeForPlainOffsets(editor, resolved.start, resolved.end);
+      const range = resolved.detached ? null : rangeForPlainOffsets(editor, resolved.start, resolved.end, resolved.quote);
       if (!range) {
         if (editorVisible) {
           const pos = detachedMarkerPosition(editorRect, detachedCount);

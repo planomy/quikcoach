@@ -10,7 +10,7 @@ import {
   writingRootForPane,
 } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
-import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
+import { rectRelativeToElement, subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
 import HintWrap from './HintWrap.jsx';
 
@@ -304,16 +304,20 @@ function markerPosition(range, card) {
 
   // Position relative to the writing pane (portal target), not the text root —
   // markers inside the selectable text tree make RTL drags jump.
+  const paneWidth = pane.clientWidth || pane.offsetWidth;
+  const paneHeight = pane.clientHeight || pane.offsetHeight;
   const minLeft = MARKER_MARGIN;
-  const maxLeft = paneRect.width - MARKER_SIZE - MARKER_MARGIN;
+  const maxLeft = paneWidth - MARKER_SIZE - MARKER_MARGIN;
   const minTop = MARKER_MARGIN;
-  const maxTop = paneRect.height - MARKER_SIZE - MARKER_MARGIN;
+  const maxTop = paneHeight - MARKER_SIZE - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
   // Sit on the top-right corner of the highlight so the bubble clears the next words.
-  let left = rangeRect.right - paneRect.left - MARKER_SIZE * 0.45;
-  let top = rangeRect.top - paneRect.top - MARKER_SIZE + 10;
-  if (top < minTop) top = rangeRect.top - paneRect.top - 4;
+  // Divide by pinch-zoom scale so absolute left/top stay in the pane's layout box.
+  const local = rectRelativeToElement(pane, rangeRect);
+  let left = local.right - MARKER_SIZE * 0.45;
+  let top = local.top - MARKER_SIZE + 10;
+  if (top < minTop) top = local.top - 4;
   left = Math.max(minLeft, Math.min(maxLeft, left));
   top = Math.max(minTop, Math.min(maxTop, top));
 
@@ -383,6 +387,8 @@ export default function TeacherAnnotationController() {
   const [addingCustomComment, setAddingCustomComment] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
+  const [saveNoticeBox, setSaveNoticeBox] = useState(null);
+  const saveNoticeRef = useRef(null);
   const [openMarker, setOpenMarker] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [reviewBusyId, setReviewBusyId] = useState(null);
@@ -392,6 +398,7 @@ export default function TeacherAnnotationController() {
   const [quickTrayOpen, setQuickTrayOpen] = useState(false);
   const moveFrameRef = useRef(null);
   const selectingInPaneRef = useRef(false);
+  const selectionSettleRef = useRef(null);
   const draftNoteRef = useRef(null);
   const pendingPanelRef = useRef(null);
   const draftNoteLatestRef = useRef('');
@@ -528,7 +535,7 @@ export default function TeacherAnnotationController() {
       for (const annotation of annotations || []) {
         const tone = commentTone(annotation);
         const resolved = resolveAnnotation(annotation, fullText);
-        const range = resolved.detached ? null : rangeForPlainOffsets(writingRoot, resolved.start, resolved.end);
+        const range = resolved.detached ? null : rangeForPlainOffsets(writingRoot, resolved.start, resolved.end, resolved.quote);
         if (!range) {
           if (paneIsOnScreen(paneRect)) {
             const position = detachedMarkerPosition(card.textPane, detachedCount);
@@ -681,36 +688,20 @@ export default function TeacherAnnotationController() {
   }, [refreshHighlights]);
 
   useEffect(() => {
-    function onMouseDown(event) {
-      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
-      if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
-      selectingInPaneRef.current = !!target?.closest?.('[data-student-writing-pane]');
-      // Review/open marker cards dismiss on outside click (bubble buttons keep data-teacher-annotation-ui).
+    function clearPendingComposer() {
+      setPending(null);
       setOpenMarker(null);
-      setReviewError('');
+      setQuickStack([]);
+      draftNoteLatestRef.current = '';
+      quickPrefixRef.current = '';
+      setAddingCustomComment(false);
+      setCustomCommentDraft('');
     }
-    function onMouseUp(event) {
-      const wasSelecting = selectingInPaneRef.current;
-      selectingInPaneRef.current = false;
-      if (wasSelecting) {
-        requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
-      }
 
-      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
-      // Releasing the mouse on the comment popup must not be treated as a new text
-      // selection. In particular, closing the popup on Add comment removes the button
-      // before its click event can fire, so the annotation never reaches the server.
-      // Same for centred prompts (create/rename bank) — they live outside the panel.
-      if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
+    function capturePendingFromSelection({ allowCollapsedClear = true } = {}) {
       const selection = window.getSelection?.();
       if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) {
-        setPending(null);
-        setOpenMarker(null);
-        setQuickStack([]);
-        draftNoteLatestRef.current = '';
-        quickPrefixRef.current = '';
-        setAddingCustomComment(false);
-        setCustomCommentDraft('');
+        if (allowCollapsedClear) clearPendingComposer();
         return;
       }
       const range = selection.getRangeAt(0);
@@ -721,7 +712,8 @@ export default function TeacherAnnotationController() {
       const fullText = plainTextFromElement(writingRoot);
       const offsets = selectionOffsetsWithin(writingRoot, fullText);
       if (!offsets || offsets.quote.length > 1200) return;
-      const rect = range.getBoundingClientRect();
+      const highlightRange = rangeForPlainOffsets(writingRoot, offsets.start, offsets.end, offsets.quote) || range;
+      const rect = highlightRange.getBoundingClientRect();
       setDraftNote('');
       setQuickStack([]);
       draftNoteLatestRef.current = '';
@@ -759,11 +751,48 @@ export default function TeacherAnnotationController() {
       });
       setOpenMarker(null);
     }
+
+    function onMouseDown(event) {
+      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
+      if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
+      selectingInPaneRef.current = !!target?.closest?.('[data-student-writing-pane]');
+      // Review/open marker cards dismiss on outside click (bubble buttons keep data-teacher-annotation-ui).
+      setOpenMarker(null);
+      setReviewError('');
+    }
+    let lastPointerUpAt = 0;
+    function onPointerUp(event) {
+      const now = Date.now();
+      if (now - lastPointerUpAt < 40) return;
+      lastPointerUpAt = now;
+      const wasSelecting = selectingInPaneRef.current;
+      selectingInPaneRef.current = false;
+      if (wasSelecting) {
+        requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
+      }
+
+      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
+      // Releasing the mouse on the comment popup must not be treated as a new text
+      // selection. In particular, closing the popup on Add comment removes the button
+      // before its click event can fire, so the annotation never reaches the server.
+      // Same for centred prompts (create/rename bank) — they live outside the panel.
+      if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
+      capturePendingFromSelection({ allowCollapsedClear: true });
+      if (selectionSettleRef.current != null) window.clearTimeout(selectionSettleRef.current);
+      // iPad expands a tap-select to the whole word after the first pointerup.
+      selectionSettleRef.current = window.setTimeout(() => {
+        selectionSettleRef.current = null;
+        capturePendingFromSelection({ allowCollapsedClear: false });
+      }, 90);
+    }
     document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('touchend', onPointerUp, { passive: true });
     return () => {
       document.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('touchend', onPointerUp);
+      if (selectionSettleRef.current != null) window.clearTimeout(selectionSettleRef.current);
     };
   }, [refreshHighlights]);
 
@@ -772,6 +801,69 @@ export default function TeacherAnnotationController() {
     const timer = setTimeout(() => setSaveNotice(''), 3000);
     return () => clearTimeout(timer);
   }, [saveNotice]);
+
+  useEffect(() => {
+    if (!saveNotice) {
+      setSaveNoticeBox(null);
+      return undefined;
+    }
+
+    const place = () => {
+      const tip = saveNoticeRef.current;
+      const width = tip?.offsetWidth || Math.min(220, viewportBox().width - 16);
+      const height = tip?.offsetHeight || 32;
+      const panel = pendingPanelRef.current;
+      const panelRect = panel?.getBoundingClientRect();
+      if (panelRect && panelRect.width > 0) {
+        setSaveNoticeBox(placementNearAnchor({
+          anchor: panelRect,
+          width,
+          height,
+          gap: 8,
+          padding: 8,
+          prefer: 'above',
+        }));
+        return;
+      }
+      if (pending) {
+        const panelWidth = pending.width || PENDING_WIDTH;
+        setSaveNoticeBox(placementNearAnchor({
+          anchor: {
+            top: pending.top,
+            bottom: pending.top + 160,
+            left: pending.left,
+            right: pending.left + panelWidth,
+            width: panelWidth,
+            height: 160,
+          },
+          width,
+          height,
+          gap: 8,
+          padding: 8,
+          prefer: 'above',
+        }));
+        return;
+      }
+      const header = document.querySelector('.iboard-app-header');
+      const headerBottom = header?.getBoundingClientRect().bottom ?? 56;
+      const vp = viewportBox();
+      setSaveNoticeBox(clampFixedBox({
+        top: headerBottom + 12,
+        left: vp.left + vp.width / 2 - width / 2,
+        width,
+        height,
+        padding: 8,
+      }));
+    };
+
+    place();
+    const frame = requestAnimationFrame(place);
+    const unsubscribe = subscribeViewportChanges(place);
+    return () => {
+      cancelAnimationFrame(frame);
+      unsubscribe();
+    };
+  }, [saveNotice, pending]);
 
   useEffect(() => {
     if (!pending) return undefined;
@@ -1723,9 +1815,17 @@ export default function TeacherAnnotationController() {
           data-teacher-annotation-ui
           role="status"
           aria-live="polite"
-          className="pointer-events-none fixed left-1/2 top-3 z-[80] flex -translate-x-1/2 items-center"
+          className="pointer-events-none fixed z-[80] flex items-center"
+          style={{
+            top: saveNoticeBox ? saveNoticeBox.top : -9999,
+            left: saveNoticeBox ? saveNoticeBox.left : -9999,
+            visibility: saveNoticeBox ? 'visible' : 'hidden',
+          }}
         >
-          <div className="inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 text-[11px] font-black text-[#5a5fc3] shadow-sm dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200">
+          <div
+            ref={saveNoticeRef}
+            className="inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 text-[11px] font-black text-[#5a5fc3] shadow-sm dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200"
+          >
             {saveNotice}
           </div>
         </div>

@@ -24,6 +24,58 @@ function matchingSuffixLength(a, b) {
   return n;
 }
 
+function isWordChar(ch) {
+  return /[\p{L}\p{N}’']/u.test(ch || '');
+}
+
+/** Pull in a missed first letter when the browser started the range one character late. */
+export function includeMissedWordStart(text, start, end) {
+  const source = String(text || '');
+  const originalStart = Math.max(0, Number(start) || 0);
+  let nextStart = originalStart;
+  const nextEnd = Math.max(nextStart, Number(end) || nextStart);
+  while (nextStart > 0 && originalStart - nextStart < 2 && isWordChar(source[nextStart - 1])) {
+    nextStart -= 1;
+  }
+  if (nextStart < originalStart && (nextStart === 0 || !isWordChar(source[nextStart - 1]))) {
+    return { start: nextStart, end: nextEnd };
+  }
+  return { start: originalStart, end: nextEnd };
+}
+
+/** Prefer the occurrence whose neighbours match — never the next copy of the same word. */
+export function locateQuote(text, quote, hintStart, prefix = '', suffix = '') {
+  const source = String(text || '');
+  const needle = String(quote || '');
+  if (!needle) return null;
+  const hint = Math.max(0, Number(hintStart) || 0);
+  if (source.slice(hint, hint + needle.length) === needle) return hint;
+  for (const delta of [-1, 1, -2, 2]) {
+    const at = hint + delta;
+    if (at >= 0 && source.slice(at, at + needle.length) === needle) return at;
+  }
+
+  const matches = [];
+  let cursor = 0;
+  while (cursor <= source.length - needle.length) {
+    const index = source.indexOf(needle, cursor);
+    if (index === -1) break;
+    const before = source.slice(Math.max(0, index - 48), index);
+    const after = source.slice(index + needle.length, index + needle.length + 48);
+    const prefixScore = matchingPrefixLength(prefix, before);
+    const suffixScore = matchingSuffixLength(suffix, after);
+    const distance = Math.abs(index - hint);
+    matches.push({
+      index,
+      score: prefixScore * 20 + suffixScore * 20 - Math.min(distance, 1000) / 25,
+    });
+    cursor = index + Math.max(1, needle.length);
+  }
+  if (!matches.length) return null;
+  matches.sort((a, b) => b.score - a.score || Math.abs(a.index - hint) - Math.abs(b.index - hint));
+  return matches[0].index;
+}
+
 export function resolveAnnotation(annotation, rawText) {
   const text = normalise(rawText);
   const quote = normalise(annotation?.quote || '');
@@ -31,31 +83,17 @@ export function resolveAnnotation(annotation, rawText) {
   const expectedEnd = Math.max(expectedStart, Number(annotation?.end_offset) || expectedStart);
   if (!quote) return { ...annotation, detached: true, start: expectedStart, end: expectedEnd };
 
-  if (text.slice(expectedStart, expectedStart + quote.length) === quote) {
-    return { ...annotation, detached: false, start: expectedStart, end: expectedStart + quote.length };
-  }
-
-  const matches = [];
-  let cursor = 0;
-  while (cursor <= text.length - quote.length) {
-    const index = text.indexOf(quote, cursor);
-    if (index === -1) break;
-    const before = text.slice(Math.max(0, index - 48), index);
-    const after = text.slice(index + quote.length, index + quote.length + 48);
-    const prefixScore = matchingPrefixLength(annotation?.prefix_context || '', before);
-    const suffixScore = matchingSuffixLength(annotation?.suffix_context || '', after);
-    const distance = Math.abs(index - expectedStart);
-    matches.push({ index, score: prefixScore * 20 + suffixScore * 20 - Math.min(distance, 1000) / 25 });
-    cursor = index + Math.max(1, quote.length);
-  }
-
-  if (!matches.length) {
+  const located = locateQuote(
+    text,
+    quote,
+    expectedStart,
+    annotation?.prefix_context || '',
+    annotation?.suffix_context || ''
+  );
+  if (located == null) {
     return { ...annotation, detached: true, start: expectedStart, end: expectedEnd };
   }
-
-  matches.sort((a, b) => b.score - a.score || Math.abs(a.index - expectedStart) - Math.abs(b.index - expectedStart));
-  const best = matches[0].index;
-  return { ...annotation, detached: false, start: best, end: best + quote.length };
+  return { ...annotation, detached: false, start: located, end: located + quote.length };
 }
 
 /** When a quote can no longer be found, recover what sits between its stored prefix/suffix now. */
@@ -207,6 +245,11 @@ function tokenIndexForDomPoint(tokens, node, offset, preferEnd = false) {
         const token = tokens[i];
         if (!token.virtual && token.node === node && token.startOffset >= offset) return i;
       }
+      // Offset past the last mapped character of this node — start just after it.
+      for (let i = tokens.length - 1; i >= 0; i -= 1) {
+        const token = tokens[i];
+        if (!token.virtual && token.node === node) return i + 1;
+      }
     }
     return -1;
   }
@@ -248,16 +291,17 @@ export function selectionOffsetsWithin(root, rawExpectedText) {
   const range = selection.getRangeAt(0);
   if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return null;
 
-  const expectedText = normalise(rawExpectedText);
   const tokens = mappedPlainTokens(root);
   const mappedText = tokens.map((token) => token.char).join('');
+  const expectedText = normalise(rawExpectedText);
+  const sourceText = mappedText || expectedText;
   let mappedStart = tokenIndexForDomPoint(tokens, range.startContainer, range.startOffset, false);
   let mappedEnd = tokenIndexForDomPoint(tokens, range.endContainer, range.endOffset, true);
 
   const selectedRange = range.cloneRange();
   const selectedText = fragmentToPlainText(selectedRange.cloneContents());
   const rawQuote = normalise(selectedText);
-  const quote = rawQuote.trim();
+  let quote = rawQuote.trim();
   if (!quote) return null;
 
   if (mappedStart < 0 || mappedEnd < mappedStart) {
@@ -272,28 +316,25 @@ export function selectionOffsetsWithin(root, rawExpectedText) {
   const leadWs = rawQuote.length - rawQuote.trimStart().length;
   let start = mappedStart + leadWs;
   let end = start + quote.length;
-  const sourceText = mappedText === expectedText ? mappedText : expectedText;
-  if (sourceText.slice(start, end) !== quote) {
-    const nearest = [];
-    let cursor = 0;
-    while (cursor <= expectedText.length - quote.length) {
-      const index = expectedText.indexOf(quote, cursor);
-      if (index === -1) break;
-      nearest.push(index);
-      cursor = index + Math.max(1, quote.length);
-    }
-    if (!nearest.length) return null;
-    nearest.sort((a, b) => Math.abs(a - start) - Math.abs(b - start));
-    start = nearest[0];
-    end = start + quote.length;
-  }
+  const expanded = includeMissedWordStart(sourceText, start, end);
+  start = expanded.start;
+  end = expanded.end;
+  quote = sourceText.slice(start, end).trim() || quote;
+  end = start + quote.length;
+
+  const prefixHint = sourceText.slice(Math.max(0, start - 48), start);
+  const suffixHint = sourceText.slice(end, end + 48);
+  const located = locateQuote(sourceText, quote, start, prefixHint, suffixHint);
+  if (located == null) return null;
+  start = located;
+  end = start + quote.length;
 
   return {
     start,
     end,
     quote,
-    prefix: expectedText.slice(Math.max(0, start - 48), start),
-    suffix: expectedText.slice(end, end + 48),
+    prefix: sourceText.slice(Math.max(0, start - 48), start),
+    suffix: sourceText.slice(end, end + 48),
   };
 }
 
@@ -306,12 +347,23 @@ function nearestRealToken(tokens, index, direction) {
   return null;
 }
 
-export function rangeForPlainOffsets(root, start, end) {
+export function rangeForPlainOffsets(root, start, end, quote = '') {
   if (!root || typeof document === 'undefined') return null;
   const tokens = mappedPlainTokens(root);
   if (!tokens.length) return null;
-  const aIndex = Math.max(0, Math.min(tokens.length - 1, Number(start) || 0));
-  const bIndex = Math.max(0, Math.min(tokens.length - 1, Math.max(0, (Number(end) || 0) - 1)));
+  const mappedText = tokens.map((token) => token.char).join('');
+  let from = Math.max(0, Number(start) || 0);
+  let to = Math.max(from, Number(end) || from);
+  const needle = normalise(quote);
+  if (needle && mappedText.slice(from, to) !== needle) {
+    const located = locateQuote(mappedText, needle, from);
+    if (located != null) {
+      from = located;
+      to = from + needle.length;
+    }
+  }
+  const aIndex = Math.max(0, Math.min(tokens.length - 1, from));
+  const bIndex = Math.max(0, Math.min(tokens.length - 1, Math.max(0, to - 1)));
   const a = nearestRealToken(tokens, aIndex, 1) || nearestRealToken(tokens, aIndex, -1);
   const b = nearestRealToken(tokens, bIndex, -1) || nearestRealToken(tokens, bIndex, 1);
   if (!a?.node || !b?.node) return null;
@@ -327,9 +379,7 @@ export function rangeForPlainOffsets(root, start, end) {
 
 export function plainTextFromElement(element) {
   if (!element) return '';
-  const clone = element.cloneNode(true);
-  clone.querySelectorAll?.('[data-teacher-annotation-ui]').forEach((node) => node.remove());
-  return richHtmlToPlainText(clone.innerHTML);
+  return mappedPlainTokens(element).map((token) => token.char).join('');
 }
 
 /** Prefer the writing-content root so chrome (images, mark-up buttons) is excluded. */
