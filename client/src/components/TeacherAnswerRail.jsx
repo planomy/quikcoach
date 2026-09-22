@@ -20,6 +20,13 @@ function confidenceLabel(confidence) {
   return 'Answered';
 }
 
+function presentConfidenceTextClass(confidence) {
+  if (confidence === 'confident') return 'text-emerald-300';
+  if (confidence === 'unsure') return 'text-[#f0a818]';
+  if (confidence === 'guessed') return 'text-red-400';
+  return 'text-white';
+}
+
 function ChoiceBars({ activity, responses, display = false }) {
   const counts = useMemo(() => {
     const result = Object.fromEntries((activity?.options || []).map((option) => [option, 0]));
@@ -647,7 +654,10 @@ export default function TeacherAnswerRail({
                           {getSetAnswerPairs(response.value, setQuestions).map((pair) => (
                             <div key={pair.id} className="min-h-0">
                               <p className="truncate text-xs font-semibold text-indigo-200/80 sm:text-sm">{pair.prompt}</p>
-                              <p className={`mt-0.5 line-clamp-4 font-bold leading-snug text-white ${presentAnswerTextClass(presentSlotCount)}`}>
+                              <p
+                                className={`mt-0.5 line-clamp-4 font-bold leading-snug ${presentAnswerTextClass(presentSlotCount)} ${presentConfidenceTextClass(response.confidence)}`}
+                                aria-label={`${pair.answer}. ${confidenceLabel(response.confidence)}`}
+                              >
                                 {pair.answer}
                               </p>
                             </div>
@@ -677,12 +687,13 @@ export default function TeacherAnswerRail({
                         className="flex min-h-0 flex-col justify-center overflow-hidden rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 sm:p-5"
                       >
                         <p
-                          className={`min-h-0 overflow-hidden font-black leading-snug text-white ${presentAnswerTextClass(presentSlotCount)}`}
+                          className={`min-h-0 overflow-hidden font-black leading-snug ${presentAnswerTextClass(presentSlotCount)} ${presentConfidenceTextClass(response.confidence)}`}
                           style={{
                             display: '-webkit-box',
                             WebkitLineClamp: presentSlotCount <= 6 ? 5 : presentSlotCount <= 12 ? 4 : 3,
                             WebkitBoxOrient: 'vertical',
                           }}
+                          aria-label={`${formatLiveAnswer(response.value)}. ${confidenceLabel(response.confidence)}`}
                         >
                           {formatLiveAnswer(response.value)}
                         </p>
