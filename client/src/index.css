@@ -839,11 +839,11 @@ html.dark .iboard-board-empty__code {
 }
 
 .iboard-arr-btn {
-  width: 4rem;
+  width: 4.45rem;
   border: 1px solid transparent;
   background: transparent;
   border-radius: 0.85rem;
-  padding: 0.35rem 0.2rem 0.4rem;
+  padding: 0.35rem 0.1rem 0.4rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -882,10 +882,10 @@ html.dark .iboard-board-empty__code {
   display: block;
   width: 100%;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   font-weight: 600;
   line-height: 1.15;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   color: #555b69;
   white-space: nowrap;
   overflow: hidden;
