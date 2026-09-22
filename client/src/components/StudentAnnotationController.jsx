@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  COMMENT_HOVER_WASH,
   commentTone,
   inferReplacementPassage,
   locateAnnotationRange,
   plainTextFromElement,
+  rangeContainsPoint,
+  setCommentHoverHighlight,
   stackGutterMarkers,
 } from '../lib/annotations.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
@@ -14,6 +17,7 @@ const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const REOPEN_HIGHLIGHT_NAME = 'iboard-student-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
+const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
 const MARKER_SIZE = 12;
 const MARKER_MARGIN = 6;
 const POPUP_WIDTH = 320;
@@ -97,7 +101,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState('');
   const [editorTextTick, setEditorTextTick] = useState(0);
+  const [hoveredId, setHoveredId] = useState(null);
   const moveFrameRef = useRef(null);
+  const hoverTargetsRef = useRef([]);
   const autoFixQueuedRef = useRef(new Set());
   const autoFixTimersRef = useRef(new Map());
   const checkAgainSnapshotRef = useRef(new Map());
@@ -111,6 +117,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(RESOLVED_HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(HOVER_HIGHLIGHT_NAME);
+      hoverTargetsRef.current = [];
       setMarkers([]);
       return;
     }
@@ -120,6 +128,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     const awaitingRanges = [];
     const resolvedRanges = [];
     const nextMarkers = [];
+    const hoverTargets = [];
     let detachedCount = 0;
     const editorRect = editor.getBoundingClientRect();
     const vp = viewportBox();
@@ -149,6 +158,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       else if (tone === 'fixed') awaitingRanges.push(range);
       else if (tone === 'reopen') reopenRanges.push(range);
       else ranges.push(range);
+      hoverTargets.push({ key: String(annotation.id), range, tone });
       const rects = Array.from(range.getClientRects()).filter((item) => item.width || item.height);
       const rect = rects[rects.length - 1] || range.getBoundingClientRect();
       if (rect.width || rect.height) {
@@ -175,6 +185,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         globalThis.CSS.highlights.set(RESOLVED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
       } else globalThis.CSS.highlights.delete(RESOLVED_HIGHLIGHT_NAME);
     }
+    hoverTargetsRef.current = hoverTargets;
     setMarkers(stackGutterMarkers(nextMarkers, () => MARKER_SIZE + 6));
   }, [annotations]);
 
@@ -380,8 +391,34 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(RESOLVED_HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(HOVER_HIGHLIGHT_NAME);
     };
   }, [refreshHighlights]);
+
+  useEffect(() => {
+    const onMove = (event) => {
+      const mark = event.target?.closest?.('.iboard-ann-mark');
+      const fromMark = mark?.dataset?.annKey;
+      if (fromMark) {
+        setHoveredId((prev) => (prev === fromMark ? prev : fromMark));
+        return;
+      }
+      const hit = hoverTargetsRef.current.find((item) => (
+        rangeContainsPoint(item.range, event.clientX, event.clientY)
+      ));
+      const next = hit?.key || null;
+      setHoveredId((prev) => (prev === next ? prev : next));
+    };
+    document.addEventListener('pointermove', onMove, { passive: true });
+    return () => document.removeEventListener('pointermove', onMove);
+  }, []);
+
+  const hoveredTarget = hoverTargetsRef.current.find((item) => item.key === hoveredId) || null;
+
+  useEffect(() => {
+    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hoveredTarget?.range || null);
+    return () => setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
+  }, [hoveredId, hoveredTarget?.range]);
 
   useEffect(() => {
     if (!openMarker) return;
@@ -452,6 +489,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.16); }
         ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.16); }
         ::highlight(${RESOLVED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
+        ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
       `}</style>
       {markers.map((marker) => {
         const tone = commentTone(marker.annotation, marker.detached);
@@ -460,6 +498,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             key={marker.annotation.id}
             tone={tone}
             layout={marker.detached ? 'orphan' : 'gutter'}
+            lit={hoveredId === String(marker.annotation.id)}
+            data-ann-key={String(marker.annotation.id)}
             onClick={() => {
               setActionError('');
               setOpenMarker(marker);

@@ -4,10 +4,13 @@ import { createPortal } from 'react-dom';
 import {
   commentTone,
   inferReplacementPassage,
+  COMMENT_HOVER_WASH,
   locateAnnotationRange,
   plainTextFromElement,
+  rangeContainsPoint,
   rangeForPlainOffsets,
   selectionOffsetsWithin,
+  setCommentHoverHighlight,
   stackGutterMarkers,
   writingRootForPane,
 } from '../lib/annotations.js';
@@ -21,6 +24,7 @@ const HIGHLIGHT_NAME = 'iboard-teacher-inline-comments';
 const REOPEN_HIGHLIGHT_NAME = 'iboard-teacher-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-teacher-awaiting-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
+const HOVER_HIGHLIGHT_NAME = 'iboard-teacher-hover-comment';
 const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
 const FAVOURITE_COMMENTS_KEY = 'iboard-teacher-favourite-inline-comments';
 const COMMENT_BANKS_KEY = 'iboard-teacher-comment-banks-v1';
@@ -416,7 +420,9 @@ export default function TeacherAnnotationController() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [chitCategory, setChitCategory] = useState(null);
   const [quickTrayOpen, setQuickTrayOpen] = useState(false);
+  const [hoveredKey, setHoveredKey] = useState(null);
   const moveFrameRef = useRef(null);
+  const hoverTargetsRef = useRef([]);
   const selectingInPaneRef = useRef(false);
   const selectionSettleRef = useRef(null);
   const draftNoteRef = useRef(null);
@@ -543,6 +549,7 @@ export default function TeacherAnnotationController() {
     const awaitingRanges = [];
     const resolvedRanges = [];
     const nextMarkers = [];
+    const hoverTargets = [];
 
     for (const [studentKey, annotations] of Object.entries(byStudent)) {
       const studentId = Number(studentKey);
@@ -578,6 +585,7 @@ export default function TeacherAnnotationController() {
         else if (tone === 'fixed') awaitingRanges.push(range);
         else if (tone === 'reopen') reopenRanges.push(range);
         else ranges.push(range);
+        hoverTargets.push({ key: `${studentId}:${annotation.id}`, range, tone });
         const position = markerPosition(range, card);
         if (!position) continue;
         nextMarkers.push({
@@ -603,6 +611,7 @@ export default function TeacherAnnotationController() {
       if (resolvedRanges.length) globalThis.CSS.highlights.set(FIXED_HIGHLIGHT_NAME, new globalThis.Highlight(...resolvedRanges));
       else globalThis.CSS.highlights.delete(FIXED_HIGHLIGHT_NAME);
     }
+    hoverTargetsRef.current = hoverTargets;
     const stacked = stackGutterMarkers(nextMarkers, (marker) => (
       (marker.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 6
     ));
@@ -710,8 +719,35 @@ export default function TeacherAnnotationController() {
       globalThis.CSS?.highlights?.delete?.(REOPEN_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(AWAITING_HIGHLIGHT_NAME);
       globalThis.CSS?.highlights?.delete?.(FIXED_HIGHLIGHT_NAME);
+      globalThis.CSS?.highlights?.delete?.(HOVER_HIGHLIGHT_NAME);
     };
   }, [refreshHighlights]);
+
+  useEffect(() => {
+    const onMove = (event) => {
+      if (selectingInPaneRef.current) return;
+      const mark = event.target?.closest?.('.iboard-ann-mark');
+      const fromMark = mark?.dataset?.annKey;
+      if (fromMark) {
+        setHoveredKey((prev) => (prev === fromMark ? prev : fromMark));
+        return;
+      }
+      const hit = hoverTargetsRef.current.find((item) => (
+        rangeContainsPoint(item.range, event.clientX, event.clientY)
+      ));
+      const next = hit?.key || null;
+      setHoveredKey((prev) => (prev === next ? prev : next));
+    };
+    document.addEventListener('pointermove', onMove, { passive: true });
+    return () => document.removeEventListener('pointermove', onMove);
+  }, []);
+
+  const hoveredTarget = hoverTargetsRef.current.find((item) => item.key === hoveredKey) || null;
+
+  useEffect(() => {
+    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hoveredTarget?.range || null);
+    return () => setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
+  }, [hoveredKey, hoveredTarget?.range]);
 
   useEffect(() => {
     function clearPendingComposer() {
@@ -1380,6 +1416,8 @@ export default function TeacherAnnotationController() {
         key={`${marker.studentId}-${marker.annotation.id}`}
         tone={tone}
         layout={marker.layout === 'orphan' ? 'orphan' : marker.layout === 'compact' ? 'compact' : 'gutter'}
+        lit={hoveredKey === `${marker.studentId}:${marker.annotation.id}`}
+        data-ann-key={`${marker.studentId}:${marker.annotation.id}`}
         onClick={() => {
           setReviewError('');
           setOpenMarker(marker);
@@ -1424,6 +1462,7 @@ export default function TeacherAnnotationController() {
         ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.16); }
         ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.16); }
         ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
+        ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
       `}</style>
 
       {markers.map((marker) => renderMarkerButton(marker))}

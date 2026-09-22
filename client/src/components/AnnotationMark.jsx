@@ -1,6 +1,7 @@
 export default function AnnotationMark({
   tone = 'open',
   layout = 'gutter',
+  lit = false,
   className = '',
   children: _children,
   ...props
@@ -10,7 +11,7 @@ export default function AnnotationMark({
     <button
       type="button"
       data-teacher-annotation-ui
-      className={`iboard-ann-mark iboard-ann-mark--${tone} iboard-ann-mark--${layout} ${className}`.trim()}
+      className={`iboard-ann-mark iboard-ann-mark--${tone} iboard-ann-mark--${layout}${lit ? ' is-lit' : ''} ${className}`.trim()}
       {...props}
     >
       <span className="iboard-ann-mark__stem" aria-hidden="true" />

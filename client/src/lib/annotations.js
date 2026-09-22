@@ -538,6 +538,31 @@ export function writingRootForPane(textPane) {
   );
 }
 
+export const COMMENT_HOVER_WASH = {
+  open: 'rgba(90, 95, 195, 0.28)',
+  reopen: 'rgba(244, 63, 94, 0.26)',
+  fixed: 'rgba(107, 107, 120, 0.26)',
+  resolved: 'rgba(16, 185, 129, 0.28)',
+};
+
+export function rangeContainsPoint(range, x, y) {
+  if (!range) return false;
+  try {
+    for (const rect of range.getClientRects()) {
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+export function setCommentHoverHighlight(name, range) {
+  if (!globalThis.CSS?.highlights || typeof globalThis.Highlight === 'undefined') return;
+  if (range) globalThis.CSS.highlights.set(name, new globalThis.Highlight(range));
+  else globalThis.CSS.highlights.delete(name);
+}
+
 /** Keep same-line margin bubbles from sitting on top of each other. */
 export function stackGutterMarkers(markers, gapFor = () => 18) {
   const orphans = [];
