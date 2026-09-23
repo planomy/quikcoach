@@ -2969,41 +2969,46 @@ function TeacherDashboardInner() {
               onFinishedClick={() => controlRoomTimer('end')}
             />
             {joined && <SaveStatusChip status={saveStatus} plain />}
-            <button
-              type="button"
-              disabled={draftTrailBusy || !socketConnected || !joined}
-              aria-pressed={!!room?.draftTrail?.active}
-              aria-label={
-                draftTrailBusy
-                  ? 'Updating drafting evidence'
-                  : room?.draftTrail?.active
-                    ? (room?.draftTrail?.label ? `Stop drafting evidence · ${room.draftTrail.label}` : 'Stop drafting evidence')
-                    : 'Record drafting evidence'
-              }
-              title={
+            <HintWrap
+              hint={
                 room?.draftTrail?.reason
                 || (room?.draftTrail?.active
-                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Drafting evidence recording — click to stop')
-                  : 'Record drafting evidence — writing changes only, not screen or audio')
+                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Recording drafting evidence — click to stop')
+                  : 'Record drafting evidence — writing only, not screen or audio')
               }
-              className={`iboard-rec-switch${room?.draftTrail?.active ? ' is-on' : ''}${draftTrailBusy ? ' is-busy' : ''}`}
-              onClick={() => {
-                if (room?.draftTrail?.active) {
-                  setDraftTrailRecording(false);
-                  return;
-                }
-                setDraftTrailLabelDraft(room?.draftTrail?.label || '');
-                setDraftTrailLabelOpen(true);
-              }}
+              prefer="below"
+              multiline
             >
-              <span className="iboard-rec-switch__word">{draftTrailBusy ? '…' : 'REC'}</span>
-              <span className="iboard-rec-switch__track" aria-hidden="true">
-                <span className="iboard-rec-switch__knob">
-                  <span className="iboard-rec-switch__dot" />
+              <button
+                type="button"
+                disabled={draftTrailBusy || !socketConnected || !joined}
+                aria-pressed={!!room?.draftTrail?.active}
+                aria-label={
+                  draftTrailBusy
+                    ? 'Updating drafting evidence'
+                    : room?.draftTrail?.active
+                      ? (room?.draftTrail?.label ? `Stop drafting evidence · ${room.draftTrail.label}` : 'Stop drafting evidence')
+                      : 'Record drafting evidence'
+                }
+                className={`iboard-rec-switch${room?.draftTrail?.active ? ' is-on' : ''}${draftTrailBusy ? ' is-busy' : ''}`}
+                onClick={() => {
+                  if (room?.draftTrail?.active) {
+                    setDraftTrailRecording(false);
+                    return;
+                  }
+                  setDraftTrailLabelDraft(room?.draftTrail?.label || '');
+                  setDraftTrailLabelOpen(true);
+                }}
+              >
+                <span className="iboard-rec-switch__word">{draftTrailBusy ? '…' : 'REC'}</span>
+                <span className="iboard-rec-switch__track" aria-hidden="true">
+                  <span className="iboard-rec-switch__knob">
+                    <span className="iboard-rec-switch__dot" />
+                  </span>
+                  <span className="iboard-rec-switch__on">ON</span>
                 </span>
-                <span className="iboard-rec-switch__on">ON</span>
-              </span>
-            </button>
+              </button>
+            </HintWrap>
             <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
               <button
                 type="button"
