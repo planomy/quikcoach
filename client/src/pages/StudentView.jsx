@@ -7,7 +7,6 @@ import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import StudentGradeSelect from '../components/StudentGradeSelect.jsx';
 import SupaCoachLink from '../components/SupaCoachLink.jsx';
-import PulseLink from '../components/PulseLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import StudentChatButton from '../components/StudentChatButton.jsx';
@@ -1509,15 +1508,9 @@ export default function StudentView() {
                     className="w-full"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:text-slate-200">
-                    <span>Pulse</span>
-                    <PulseLink size="md" code={codeInput} studentId={student?.id} />
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:text-slate-200">
-                    <span>SupaCoach</span>
-                    <SupaCoachLink size="md" />
-                  </div>
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                  <span>SupaCoach</span>
+                  <SupaCoachLink size="md" />
                 </div>
                 <ThemeToggle className="w-full justify-center" />
                 <button

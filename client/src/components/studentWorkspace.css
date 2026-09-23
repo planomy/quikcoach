@@ -1,5 +1,5 @@
 /* Student workspace: use the available screen, preserve readable writing measure,
-   and keep reference material visible without letting Pulse dominate the page. */
+   and keep reference material visible beside the writing card. */
 
 /* Keep the light canvas tint edge-to-edge on ultrawide displays (body utilities are near-white). */
 html.iboard-student-workspace,
@@ -30,18 +30,7 @@ html.iboard-student-workspace header {
   z-index: 60;
 }
 
-/* In the compact student tools menu, Pulse and SupaCoach read as simple text links.
-   Keep their existing link behaviour/handoff logic, but remove the coloured letter badges. */
-html.iboard-student-workspace header details div.grid.grid-cols-2 > div {
-  padding: 0;
-  border: 0;
-}
-
-html.iboard-student-workspace header details div.grid.grid-cols-2 > div > span {
-  display: none;
-}
-
-html.iboard-student-workspace header details a[href^='/pulse'],
+/* In the compact student tools menu, SupaCoach reads as a simple text link. */
 html.iboard-student-workspace header details a[href*='supacoach'] {
   display: inline-flex;
   width: 100%;
@@ -58,28 +47,25 @@ html.iboard-student-workspace header details a[href*='supacoach'] {
   line-height: 1;
 }
 
-html.iboard-student-workspace header details a[href^='/pulse']::before {
-  content: 'Pulse';
-  font-size: 0.75rem;
-  font-weight: 800;
-}
-
 html.iboard-student-workspace header details a[href*='supacoach']::before {
   content: 'SupaCoach';
   font-size: 0.75rem;
   font-weight: 800;
 }
 
-html.dark.iboard-student-workspace header details a[href^='/pulse'],
+html.iboard-student-workspace header details div:has(> a[href*='supacoach']) {
+  padding: 0;
+  border: 0;
+}
+
+html.iboard-student-workspace header details div:has(> a[href*='supacoach']) > span {
+  display: none;
+}
+
 html.dark.iboard-student-workspace header details a[href*='supacoach'] {
   border-color: #475569;
   background: #0f172a !important;
   color: #c7d2fe !important;
-}
-
-.iboard-student-pulse-dock {
-  order: 99;
-  z-index: 35;
 }
 
 /* Draw mode replaces the main work surface. Keep the live card preview hidden until
@@ -88,155 +74,16 @@ html.iboard-student-workspace.iboard-student-draw-mode [data-student-image-previ
   display: none !important;
 }
 
-/* Prefer the red Respond/Inbox tab badge — never show the full-screen arrival splash. */
+/* Prefer the Inbox badge — never show the full-screen arrival splash. */
 html.iboard-student-workspace .iboard-question-arrival,
 html.iboard-student-workspace .iboard-featured-splash {
   display: none !important;
 }
 
-/* New questions alert via the Respond tab badge only — never pulse the panel chrome. */
 html.iboard-student-workspace .iboard-question-pulse {
   animation: none !important;
   transform: none !important;
   filter: none !important;
-}
-
-/* Legacy dock selector kept for older embeds. */
-.iboard-student-pulse-dock .iboard-question-arrival {
-  display: none !important;
-}
-
-/* Pulse should read as a crisp control, not a glowing card. Tailwind rings are
-   implemented as box-shadows, so clear both the ring and the large panel shadow
-   inside the embedded student workspace. */
-.iboard-student-pulse-dock.is-expanded {
-  position: relative;
-}
-
-.iboard-student-pulse-dock.is-collapsed > button,
-.iboard-student-pulse-dock.is-expanded > section,
-.iboard-student-pulse-dock.is-expanded > button[aria-label='Close Pulse panel'] {
-  box-shadow: none !important;
-  --tw-ring-offset-shadow: 0 0 #0000 !important;
-  --tw-ring-shadow: 0 0 #0000 !important;
-}
-
-/* Collapsed Pulse uses a flat status colour with a real one-pixel border.
-   Preserve the existing state palette, just remove the fuzzy gradient/ring. */
-.iboard-student-pulse-dock.is-collapsed > button {
-  border: 1px solid transparent;
-  background-image: none !important;
-}
-
-.iboard-student-pulse-dock.is-collapsed > button[class*='from-indigo-600'] {
-  border-color: #4549a8;
-  background-color: #5a5fc3 !important;
-}
-
-.iboard-student-pulse-dock.is-collapsed > button[class*='from-rose-600'] {
-  border-color: #9f1239;
-  background-color: #e11d48 !important;
-}
-
-.iboard-student-pulse-dock.is-collapsed > button[class*='from-amber-400'] {
-  border-color: #b45309;
-  background-color: #fbbf24 !important;
-}
-
-.iboard-student-pulse-dock.is-collapsed > button[class*='from-indigo-600'] {
-  border-color: #4549a8;
-  background-color: #5a5fc3 !important;
-}
-
-.iboard-student-pulse-dock.is-collapsed > button[class*='from-emerald-500'] {
-  border-color: #047857;
-  background-color: #10b981 !important;
-}
-
-.iboard-student-pulse-dock.is-collapsed > button[class*='from-slate-600'] {
-  border-color: #334155;
-  background-color: #475569 !important;
-}
-
-/* Expanded question card keeps the rotating question colour, but with one clean
-   edge rather than border + ring + shadow. */
-.iboard-student-pulse-dock.is-expanded > section {
-  border-width: 1px !important;
-}
-
-/* The option fields are intentionally flat too. Their existing selected/correct
-   colours remain untouched; only the heavy outline is reduced. */
-.iboard-student-pulse-dock.is-expanded > section button[class*='border-2'] {
-  border-width: 1px !important;
-  box-shadow: none !important;
-}
-
-/* Match Ask / Respond / Inbox: Open text link, not a pill. */
-.iboard-student-pulse-dock.is-collapsed > button > span:last-child {
-  display: inline;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  line-height: 1rem;
-}
-
-.iboard-student-pulse-dock.is-collapsed > button[class*='text-amber-950'] > span:last-child,
-.iboard-student-pulse-dock.is-collapsed > button[class*='from-amber-400'] > span:last-child {
-  color: rgb(120 53 15);
-}
-
-.iboard-student-pulse-dock.is-collapsed > button > span:last-child::before {
-  content: none;
-}
-
-/* Match Ask a question: Close text link in the header corner. */
-.iboard-student-pulse-dock.is-expanded > button[aria-label='Close Pulse panel'] {
-  position: absolute;
-  top: 1rem;
-  right: 0.75rem;
-  z-index: 10;
-  display: inline-flex;
-  width: auto;
-  height: auto;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #5a5fc3;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  line-height: 1rem;
-}
-
-.dark .iboard-student-pulse-dock.is-expanded > button[aria-label='Close Pulse panel'] {
-  color: #818cf8;
-}
-
-/* Reserve the close link's corner so it never sits on top of Pulse timer/sound controls. */
-.iboard-student-pulse-dock.is-expanded > section > div:first-child {
-  padding-right: 2.75rem;
-}
-
-/* Phones and genuinely narrow windows keep the single-column workspace and
-   floating Pulse. Tablet-sized viewports are wide enough for the working layout. */
-@media (max-width: 767px) {
-  .iboard-student-pulse-dock {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    max-height: none;
-    overflow: visible;
-    border-radius: 1rem;
-  }
 }
 
 .iboard-student-split {
@@ -495,19 +342,6 @@ html.iboard-student-splitting iframe {
     display: none;
     width: 0;
     height: 0;
-  }
-
-  .iboard-student-pulse-dock {
-    position: sticky;
-    bottom: 0;
-    margin-top: auto;
-    padding-top: 0.75rem;
-    padding-bottom: 0.125rem;
-    background: transparent;
-  }
-
-  .dark .iboard-student-pulse-dock {
-    background: transparent;
   }
 
   .iboard-student-workspace main > .iboard-student-workspace-grid > .iboard-student-writing-col {

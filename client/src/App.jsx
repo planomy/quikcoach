@@ -1,10 +1,8 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import Landing from './pages/Landing.jsx';
 import TeacherDashboard from './pages/TeacherDashboard.jsx';
 import StudentView from './pages/StudentView.jsx';
 import Whiteboard from './pages/Whiteboard.jsx';
-import PulseStudent from './pages/PulseStudent.jsx';
-import PulseTeacher from './pages/PulseTeacher.jsx';
 import TeacherAnnotationController from './components/TeacherAnnotationController.jsx';
 import NoteSendStatusControl from './components/NoteSendStatusControl.jsx';
 import TeacherPresenterDock from './components/TeacherPresenterDock.jsx';
@@ -46,6 +44,12 @@ function StudentConsole() {
   );
 }
 
+function RedirectWithCode({ to }) {
+  const [params] = useSearchParams();
+  const code = String(params.get('code') || '').replace(/\D/g, '').slice(0, 4);
+  return <Navigate to={code.length === 4 ? `${to}?code=${code}` : to} replace />;
+}
+
 export default function App() {
   return (
     <>
@@ -54,8 +58,8 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/teacher" element={<TeacherConsole />} />
         <Route path="/student" element={<StudentConsole />} />
-        <Route path="/pulse/teacher" element={<PulseTeacher />} />
-        <Route path="/pulse" element={<PulseStudent />} />
+        <Route path="/pulse/teacher" element={<RedirectWithCode to="/teacher" />} />
+        <Route path="/pulse" element={<RedirectWithCode to="/student" />} />
         <Route path="/iboard" element={<Whiteboard />} />
         <Route path="/board" element={<Whiteboard />} />
         <Route path="/whiteboard" element={<Navigate to="/iboard" replace />} />

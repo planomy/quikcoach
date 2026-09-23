@@ -2767,15 +2767,6 @@ function TeacherDashboardInner() {
               >
                 Copy student link
               </button>
-              <span aria-hidden className="text-slate-300 dark:text-slate-600">
-                ·
-              </span>
-              <a
-                href={codeInput.length === 4 ? `/pulse/teacher?code=${encodeURIComponent(codeInput)}` : '/pulse/teacher'}
-                className="font-medium text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline dark:text-slate-300"
-              >
-                Pulse only
-              </a>
             </div>
             {copyToast && (
               <p className="mt-3 text-sm font-medium text-[#5a5fc3] dark:text-indigo-300">{copyToast}</p>
