@@ -23,6 +23,7 @@ const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
 const NOTE_HEIGHT = 22;
 const NOTE_RAIL = 172;
 const MARKER_MARGIN = 6;
+const PIP_INSET = 22;
 const AUTO_FIX_DELAY_MS = 700;
 
 function currentStudentId() {
@@ -49,8 +50,20 @@ function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
   return { top: nextTop, left: nextLeft, width: nextWidth };
 }
 
+function writingCardRect(editorRect) {
+  const card = document.querySelector('.iboard-student-writing-card');
+  const rect = card?.getBoundingClientRect();
+  return rect?.width ? rect : editorRect;
+}
+
+function noteRightEdge(editorRect) {
+  const card = writingCardRect(editorRect);
+  const edge = Math.min(editorRect?.right || card.right, card.right);
+  return edge - PIP_INSET;
+}
+
 function markerPosition(rangeRect, editorRect) {
-  const right = (editorRect?.right || rangeRect.right + NOTE_RAIL) - 12;
+  const right = noteRightEdge(editorRect);
   const left = rangeRect.left;
   return clampOnScreen({
     top: rangeRect.bottom - NOTE_HEIGHT,
@@ -61,9 +74,10 @@ function markerPosition(rangeRect, editorRect) {
 }
 
 function detachedMarkerPosition(editorRect, index) {
+  const right = noteRightEdge(editorRect);
   return clampOnScreen({
     top: editorRect.top + 8 + index * (NOTE_HEIGHT + 4),
-    left: editorRect.right - NOTE_RAIL - 12,
+    left: right - NOTE_RAIL,
     width: NOTE_RAIL,
     height: NOTE_HEIGHT,
   });

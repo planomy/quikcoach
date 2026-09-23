@@ -369,7 +369,7 @@ export default function RichTextEditor({
         />
       )}
 
-      <div className={`${drawMode ? 'hidden' : ''} iboard-student-writing-card overflow-hidden rounded-2xl border border-[#e8e8ef] bg-white dark:border-slate-600 dark:bg-slate-900`}>
+      <div className={`${drawMode ? 'hidden' : ''} iboard-student-writing-card overflow-visible rounded-2xl border border-[#e8e8ef] bg-white dark:border-slate-600 dark:bg-slate-900`}>
         <div className="iboard-student-writing-tools relative flex flex-wrap items-center gap-1.5 border-b border-[#ececf2] bg-[#fafafa] px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
           {formattingEnabled ? (
             <div ref={formatMenuRef} className="relative">

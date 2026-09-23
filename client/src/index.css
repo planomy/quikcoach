@@ -593,18 +593,18 @@ html:not(.dark) .iboard-student-canvas footer {
 .iboard-student-writing-page {
   box-sizing: border-box;
   width: 100%;
-  max-width: calc(66ch + 10.75rem + clamp(1.15rem, 3.5%, 2rem));
+  max-width: calc(66ch + 11.5rem + clamp(1.15rem, 3.5%, 2rem));
   padding-top: 1.15rem;
   padding-bottom: 1.75rem;
   padding-left: clamp(1.15rem, 3.5%, 2rem);
-  padding-right: 10.75rem;
+  padding-right: 11.5rem;
   font-size: 16px;
 }
 
 @media (max-width: 767px) {
   .iboard-student-writing-page {
-    max-width: calc(66ch + 7.25rem + 1rem);
-    padding-right: 7.25rem;
+    max-width: calc(66ch + 8rem + 1rem);
+    padding-right: 8rem;
   }
 }
 
