@@ -94,6 +94,8 @@ export default function ConversationModal({
 }) {
   const threadRef = useRef(null);
   const inputRef = useRef(null);
+  const reactHoverRef = useRef(false);
+  const reactCloseTimerRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [urgent, setUrgent] = useState(false);
@@ -237,6 +239,48 @@ export default function ConversationModal({
     sendMessage(draft, { asUrgent: urgent });
   }
 
+  function keepReactOpen() {
+    reactHoverRef.current = true;
+    if (reactCloseTimerRef.current != null) {
+      window.clearTimeout(reactCloseTimerRef.current);
+      reactCloseTimerRef.current = null;
+    }
+    setReactOpen(true);
+  }
+
+  function scheduleReactClose() {
+    reactHoverRef.current = false;
+    if (reactCloseTimerRef.current != null) window.clearTimeout(reactCloseTimerRef.current);
+    reactCloseTimerRef.current = window.setTimeout(() => {
+      reactCloseTimerRef.current = null;
+      if (!reactHoverRef.current) setReactOpen(false);
+    }, 160);
+  }
+
+  function insertQuick(text) {
+    const chunk = String(text || '');
+    if (!chunk || sending) return;
+    const node = inputRef.current;
+    const start = node?.selectionStart ?? draft.length;
+    const end = node?.selectionEnd ?? draft.length;
+    const max = role === 'teacher' ? 5000 : 2000;
+    const next = `${draft.slice(0, start)}${chunk}${draft.slice(end)}`.slice(0, max);
+    const caret = Math.min(max, start + chunk.length);
+    setDraft(next);
+    requestAnimationFrame(() => {
+      node?.focus();
+      try {
+        node?.setSelectionRange(caret, caret);
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+
+  useEffect(() => () => {
+    if (reactCloseTimerRef.current != null) window.clearTimeout(reactCloseTimerRef.current);
+  }, []);
+
   const rows = useMemo(() => messages, [messages]);
 
   if (!open || typeof document === 'undefined') return null;
@@ -284,19 +328,26 @@ export default function ConversationModal({
         {error ? <p className="iboard-chat-error">{error}</p> : null}
         <div className="iboard-chat-dock">
           {reactOpen ? (
-            <div className="iboard-chat-react" role="listbox" aria-label="Quick replies">
+            <div
+              className="iboard-chat-react"
+              role="listbox"
+              aria-label="Quick replies"
+              onMouseEnter={keepReactOpen}
+              onMouseLeave={scheduleReactClose}
+            >
               {CHAT_QUICK.map((chip) => (
-                <button
-                  key={chip.id}
-                  type="button"
-                  role="option"
-                  className="iboard-chat-react__chip"
-                  disabled={sending}
-                  aria-label={chip.label}
-                  onClick={() => sendMessage(chip.text, { preserveDraft: true })}
-                >
-                  {chip.glyph || chip.text}
-                </button>
+                <HintWrap key={chip.id} hint={chip.label} prefer="above" className="w-full">
+                  <button
+                    type="button"
+                    role="option"
+                    className="iboard-chat-react__chip"
+                    disabled={sending}
+                    aria-label={chip.label}
+                    onClick={() => insertQuick(chip.text)}
+                  >
+                    {chip.glyph || chip.text}
+                  </button>
+                </HintWrap>
               ))}
             </div>
           ) : null}
@@ -321,19 +372,23 @@ export default function ConversationModal({
                 </button>
               </HintWrap>
             ) : null}
-            <button
-              type="button"
-              className="iboard-chat-react-toggle"
-              aria-expanded={reactOpen}
-              aria-label={reactOpen ? 'Hide quick replies' : 'Quick replies'}
-              onClick={() => setReactOpen((current) => !current)}
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M8.4 14.2c1.1 1.2 2.3 1.8 3.6 1.8s2.5-.6 3.6-1.8" />
-                <path d="M9 10.1h.01M15 10.1h.01" />
-              </svg>
-            </button>
+            <HintWrap hint="Quick replies" prefer="above" suppressed={reactOpen}>
+              <button
+                type="button"
+                className="iboard-chat-react-toggle"
+                aria-expanded={reactOpen}
+                aria-label={reactOpen ? 'Hide quick replies' : 'Quick replies'}
+                onMouseEnter={keepReactOpen}
+                onMouseLeave={scheduleReactClose}
+                onClick={() => setReactOpen((current) => !current)}
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M8.4 14.2c1.1 1.2 2.3 1.8 3.6 1.8s2.5-.6 3.6-1.8" />
+                  <path d="M9 10.1h.01M15 10.1h.01" />
+                </svg>
+              </button>
+            </HintWrap>
             <textarea
               ref={inputRef}
               rows={1}
