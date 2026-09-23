@@ -1321,7 +1321,7 @@ export default function TeacherAnnotationController() {
       <style>{`
         ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.16); }
         ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.16); }
-        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.16); }
+        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.16); }
         ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
         ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
         ::highlight(${PENDING_HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.4); }
