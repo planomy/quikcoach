@@ -56,6 +56,13 @@ function mergeMessages(current, incoming) {
   return [...byId.values()].sort((a, b) => Number(a.at || 0) - Number(b.at || 0) || String(a.id).localeCompare(String(b.id)));
 }
 
+function isEmojiOnly(text) {
+  const value = String(text || '').trim();
+  if (!value || value.length > 16) return false;
+  if (/\p{L}|\p{N}/u.test(value)) return false;
+  return /\p{Extended_Pictographic}/u.test(value);
+}
+
 const CHAT_QUICK = [
   { id: 'up', label: 'Thumbs up', text: '👍' },
   { id: 'smile', label: 'Smiley', text: '😊' },
@@ -315,7 +322,7 @@ export default function ConversationModal({
                 <div key={item.id}>
                   {time ? <p className="iboard-chat-time">{time}</p> : null}
                   <div className={`iboard-chat-row ${mineBubble ? 'iboard-chat-row--mine' : 'iboard-chat-row--theirs'}`}>
-                    <div className={`iboard-chat-bubble ${mineBubble ? 'iboard-chat-bubble--mine' : 'iboard-chat-bubble--theirs'}`}>
+                    <div className={`iboard-chat-bubble ${mineBubble ? 'iboard-chat-bubble--mine' : 'iboard-chat-bubble--theirs'}${isEmojiOnly(item.text) ? ' iboard-chat-bubble--emoji' : ''}`}>
                       {item.urgent ? <span className="iboard-chat-urgent">Urgent</span> : null}
                       {item.text}
                     </div>

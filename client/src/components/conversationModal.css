@@ -166,6 +166,12 @@ html.dark .iboard-chat-bubble--theirs {
   box-shadow: none;
 }
 
+.iboard-chat-bubble--emoji {
+  padding: 0.38rem 0.48rem;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
 .iboard-chat-urgent {
   display: block;
   margin-bottom: 0.2rem;
@@ -211,7 +217,7 @@ html.dark .iboard-chat-react {
   background: transparent;
   color: #1f1f24;
   cursor: pointer;
-  font-size: 1.25rem;
+  font-size: 1.6rem;
   line-height: 1;
 }
 
