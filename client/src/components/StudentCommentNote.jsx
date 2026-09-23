@@ -1,8 +1,17 @@
+import HintWrap from './HintWrap.jsx';
+
 const CHECK_LABEL = {
   open: 'Mark this comment as checked',
   reopen: 'Mark this comment as checked again',
   fixed: 'Waiting for your teacher',
   resolved: 'Teacher confirmed this',
+};
+
+const PIP_HINT = {
+  open: 'New comment',
+  fixed: 'Waiting for teacher',
+  reopen: 'Check again',
+  resolved: 'Confirmed',
 };
 
 function NoteIcon({ tone }) {
@@ -40,15 +49,17 @@ export default function StudentCommentNote({
     >
       <span className="iboard-student-note__stem" aria-hidden="true" />
       <span className="iboard-student-note__text">{label}</span>
-      <button
-        type="button"
-        className="iboard-student-note__check"
-        disabled={!canCheck || busy}
-        onClick={canCheck ? onCheck : undefined}
-        aria-label={CHECK_LABEL[tone] || CHECK_LABEL.open}
-      >
-        <NoteIcon tone={tone} />
-      </button>
+      <HintWrap hint={PIP_HINT[tone] || PIP_HINT.open} prefer="above" className="pointer-events-auto">
+        <button
+          type="button"
+          className="iboard-student-note__check"
+          disabled={!canCheck || busy}
+          onClick={canCheck ? onCheck : undefined}
+          aria-label={CHECK_LABEL[tone] || CHECK_LABEL.open}
+        >
+          <NoteIcon tone={tone} />
+        </button>
+      </HintWrap>
     </div>
   );
 }
