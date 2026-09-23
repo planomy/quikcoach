@@ -589,22 +589,20 @@ html:not(.dark) .iboard-student-canvas footer {
     0 10px 22px -14px rgba(15, 23, 42, 0.16);
 }
 
-/* 66ch prose, then a tight comment rail — extra card width stays empty, not in the stem. */
+/* Inset the prose so the comment + pip sit in the card, not past the edge. */
 .iboard-student-writing-page {
   box-sizing: border-box;
   width: 100%;
-  max-width: calc(66ch + 11.5rem + clamp(1.15rem, 3.5%, 2rem));
   padding-top: 1.15rem;
   padding-bottom: 1.75rem;
   padding-left: clamp(1.15rem, 3.5%, 2rem);
-  padding-right: 11.5rem;
+  padding-right: 13rem;
   font-size: 16px;
 }
 
 @media (max-width: 767px) {
   .iboard-student-writing-page {
-    max-width: calc(66ch + 8rem + 1rem);
-    padding-right: 8rem;
+    padding-right: 8.75rem;
   }
 }
 

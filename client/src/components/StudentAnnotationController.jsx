@@ -21,9 +21,9 @@ const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
 const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
 const NOTE_HEIGHT = 22;
-const NOTE_RAIL = 172;
+const NOTE_RAIL = 192;
 const MARKER_MARGIN = 6;
-const PIP_INSET = 22;
+const PIP_INSET = 16;
 const AUTO_FIX_DELAY_MS = 700;
 
 function currentStudentId() {
