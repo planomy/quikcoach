@@ -199,9 +199,9 @@ const TEACHER_TOOLS_TABS = [
 ];
 
 const ADD_CARD_ACTIONS = [
-  { id: 'document', label: 'PDF', title: 'Add PDF', hint: 'PDF for Inbox or the board' },
-  { id: 'image', label: 'Image', title: 'Add image', hint: 'Photo or screenshot' },
-  { id: 'text', label: 'Text', title: 'Add text', hint: 'A note on the board or Inbox' },
+  { id: 'document', label: 'PDF', title: 'Add PDF', hint: 'Send a PDF to student inboxes' },
+  { id: 'image', label: 'Image', title: 'Add image', hint: 'Send an image to student inboxes' },
+  { id: 'text', label: 'Text', title: 'Add text', hint: 'Send text to student inboxes' },
 ];
 
 function csvCell(value) {
