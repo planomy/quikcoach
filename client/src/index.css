@@ -1263,6 +1263,47 @@ html.dark .iboard-teacher-panel-reveal:hover {
   pointer-events: auto;
 }
 
+.iboard-teacher-card {
+  position: relative;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .iboard-teacher-card__head {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    left: 0.45rem;
+    z-index: 2;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .iboard-teacher-card:hover .iboard-teacher-card__head,
+  .iboard-teacher-card:focus-within .iboard-teacher-card__head,
+  .iboard-teacher-card.is-picked .iboard-teacher-card__head,
+  .iboard-teacher-panel-list.is-picking .iboard-teacher-card__head {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .iboard-teacher-card__pick,
+  .iboard-teacher-card__actions {
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 0.1rem;
+  }
+
+  html.dark .iboard-teacher-card__pick,
+  html.dark .iboard-teacher-card__actions {
+    background: rgba(15, 23, 42, 0.82);
+  }
+
+  .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-card-body {
+    margin-top: 0;
+  }
+}
+
 /* Overview (compact): square tiles that auto-pack across the board width. */
 .iboard-student-card--overview {
   aspect-ratio: 1 / 1;
@@ -2551,7 +2592,8 @@ html.dark .iboard-student-card-actions {
   }
 
   .iboard-student-card__pick,
-  .iboard-student-card__chat {
+  .iboard-student-card__chat,
+  .iboard-teacher-card__head {
     opacity: 1;
     pointer-events: auto;
   }

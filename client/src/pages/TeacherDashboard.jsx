@@ -3556,7 +3556,7 @@ function TeacherDashboardInner() {
                 </form>
               </div>
             </div>
-            <div className="iboard-teacher-panel-list">
+            <div className={`iboard-teacher-panel-list${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
               {posts.length === 0 && !addCardOpen && (
                 <p className="px-1 py-6 text-center text-xs font-semibold text-slate-400">
                   No cards yet — add a PDF, image, or text from the rail
@@ -3565,7 +3565,7 @@ function TeacherDashboardInner() {
               {posts.map((post) => (
             <article
               key={`post-${post.id}`}
-              className="iboard-teacher-card flex cursor-pointer flex-col rounded-xl border border-slate-300 bg-slate-100/80 p-3 transition hover:border-[#cfcce8] dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-indigo-500"
+              className={`iboard-teacher-card flex cursor-pointer flex-col rounded-xl border border-slate-300 bg-slate-100/80 p-3 transition hover:border-[#cfcce8] dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-indigo-500${broadcastPick[`post:${post.id}`] ? ' is-picked' : ''}`}
               onClick={() => openFocusedTeacherPost(post.id)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
@@ -3577,9 +3577,9 @@ function TeacherDashboardInner() {
               tabIndex={teacherPanelHidden ? -1 : 0}
               aria-label={`Open larger view of ${post.title || 'teacher card'}`}
             >
-              <div className="flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
+              <div className="iboard-teacher-card__head flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
                 <HintWrap hint="Include this card">
-                  <label className="flex shrink-0 cursor-pointer items-center">
+                  <label className="iboard-teacher-card__pick flex shrink-0 cursor-pointer items-center">
                     <input
                       type="checkbox"
                       checked={!!broadcastPick[`post:${post.id}`]}
@@ -3589,7 +3589,7 @@ function TeacherDashboardInner() {
                     <span className="sr-only">Include teacher card</span>
                   </label>
                 </HintWrap>
-                <div className="ml-auto flex shrink-0 items-center gap-0.5">
+                <div className="iboard-teacher-card__actions ml-auto flex shrink-0 items-center gap-0.5">
                   <HintWrap hint="Edit card">
                     <button
                       type="button"
