@@ -99,28 +99,28 @@ export default function StudentWorkspaceSplit({ share, onShare, gridRef }) {
 
   return (
     <div className="iboard-student-split" aria-hidden="false">
-      <HintWrap hint="Drag to make Inbox or writing bigger" prefer="right" className="iboard-student-split__hint">
-        <button
-          type="button"
-          className="iboard-student-split__hit"
-          role="slider"
-          aria-orientation="vertical"
-          aria-valuemin={Math.round(INBOX_SHARE_MIN * 100)}
-          aria-valuemax={Math.round(INBOX_SHARE_MAX * 100)}
-          aria-valuenow={percent}
-          aria-valuetext={`Inbox ${percent} percent, writing ${100 - percent} percent`}
-          aria-label="Resize Inbox and writing"
-          title=""
-          onPointerDown={startDrag}
-          onKeyDown={onKeyDown}
-        >
+      <button
+        type="button"
+        className="iboard-student-split__hit"
+        role="slider"
+        aria-orientation="vertical"
+        aria-valuemin={Math.round(INBOX_SHARE_MIN * 100)}
+        aria-valuemax={Math.round(INBOX_SHARE_MAX * 100)}
+        aria-valuenow={percent}
+        aria-valuetext={`Inbox ${percent} percent, writing ${100 - percent} percent`}
+        aria-label="Resize Inbox and writing"
+        title=""
+        onPointerDown={startDrag}
+        onKeyDown={onKeyDown}
+      >
+        <HintWrap hint="Drag to make Inbox or writing bigger" prefer="above" className="iboard-student-split__hint">
           <span className="iboard-student-split__glyph">
             <SplitChevron dir="left" />
             <span className="iboard-student-split__bar" />
             <SplitChevron dir="right" />
           </span>
-        </button>
-      </HintWrap>
+        </HintWrap>
+      </button>
     </div>
   );
 }
