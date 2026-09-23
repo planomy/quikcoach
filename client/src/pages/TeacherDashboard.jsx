@@ -195,7 +195,7 @@ function timerKeepsRailLit(timer) {
 
 const TEACHER_TOOLS_TABS = [
   { id: 'ask', label: 'Ask the class', rail: 'Ask', hint: 'Ask the class a question' },
-  { id: 'responses', label: 'Responses', rail: 'Responses', hint: 'See class answers' },
+  { id: 'responses', label: 'Responses', rail: 'Responses', hint: 'See class responses' },
 ];
 
 const ADD_CARD_ACTIONS = [
@@ -3330,7 +3330,7 @@ function TeacherDashboardInner() {
             })}
           </div>
           <div className="iboard-arr-rail__board" aria-label="Board view and timer">
-            <HintWrap hint="Card view" prefer="right" suppressed={viewOpen}>
+            <HintWrap hint="Student card view" prefer="right" suppressed={viewOpen}>
               <button
                 ref={viewButtonRef}
                 type="button"
@@ -3366,7 +3366,7 @@ function TeacherDashboardInner() {
             </HintWrap>
           </div>
           <div className="iboard-arr-rail__foot">
-            <HintWrap hint="Session" prefer="right" suppressed={settingsOpen}>
+            <HintWrap hint="Session functions" prefer="right" suppressed={settingsOpen}>
               <button
                 ref={settingsButtonRef}
                 type="button"
