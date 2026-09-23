@@ -19,6 +19,7 @@ import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import StudentWorkspaceSplit from '../components/StudentWorkspaceSplit.jsx';
+import HintWrap from '../components/HintWrap.jsx';
 import { persistInboxShare, readInboxShare } from '../lib/studentSplit.js';
 import '../components/studentWorkspace.css';
 import { plainTextToRichHtml } from '../lib/richText.js';
@@ -1457,6 +1458,7 @@ export default function StudentView() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <RoomTimerPill timer={room?.timer} />
+            <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
             <button
               type="button"
               onClick={() => void toggleBrowserFullscreen()}
@@ -1464,7 +1466,7 @@ export default function StudentView() {
               data-active={browserFullscreen ? 'true' : 'false'}
               className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
               aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              title={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'}
+              title=""
             >
               {browserFullscreen ? (
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1482,11 +1484,12 @@ export default function StudentView() {
                 </svg>
               )}
             </button>
+            </HintWrap>
             <details className="group relative shrink-0">
               <summary
                 className="iboard-header-icon-button grid h-8 w-8 cursor-pointer list-none place-items-center rounded-xl transition [&::-webkit-details-marker]:hidden"
                 aria-label="Student tools"
-                title="Student tools"
+                title=""
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M4 7h10" />
@@ -1700,21 +1703,29 @@ export default function StudentView() {
                 }
                 headerActions={
                   <>
+                    <HintWrap
+                      hint={draftSaveState === 'offline' ? 'Your device has a local backup. iBOARD will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}
+                      prefer="above"
+                      multiline
+                    >
                     <span
                       role="status"
-                      title={draftSaveState === 'offline' ? 'Your device has a local backup. iBOARD will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}
+                      title=""
                       className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-300'}`}
                     >
                       <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'saving' ? 'bg-indigo-500' : draftSaveState === 'error' ? 'bg-red-600' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                       {draftSaveState === 'saving' ? 'Saving…' : draftSaveState === 'error' ? 'Save failed · local copy kept' : draftSaveState === 'offline' ? 'Offline · local copy saved' : draftSaveState === 'local' ? 'Recovered local copy' : 'Saved'}
                     </span>
+                    </HintWrap>
                     {room?.draftTrail?.active ? (
+                      <HintWrap hint="Drafting evidence is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)." prefer="above" multiline>
                       <span
                         role="status"
-                        title="Drafting evidence is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)."
+                        title=""
                         aria-label="Drafting evidence is on"
                         className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-600"
                       />
+                      </HintWrap>
                     ) : null}
                   </>
                 }

@@ -3789,31 +3789,35 @@ function TeacherDashboardInner() {
                         </label>
                       ) : null}
                       {isAway ? (
+                        <HintWrap hint="Tab or app in background" prefer="above">
                         <span
-                          title="Tab or app in background"
+                          title=""
                           className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
                         >
                           Away
                         </span>
+                        </HintWrap>
                       ) : null}
                       {engagementLabel ? (
                         <span
-                          title={engagementLabel}
                           className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
                         >
                           {engagementLabel}
                         </span>
                       ) : null}
                       {writingNow ? (
+                        <HintWrap hint="Writing now" prefer="above">
                         <span
-                          title="Writing now"
+                          title=""
                           aria-label="Writing now"
                           className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.55)]"
                         />
+                        </HintWrap>
                       ) : null}
                       {askedIn ? (
+                        <HintWrap hint="Answered" prefer="above">
                         <span
-                          title="Answered"
+                          title=""
                           aria-label="Answered"
                           className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#5a5fc3] dark:text-indigo-300"
                         >
@@ -3821,11 +3825,13 @@ function TeacherDashboardInner() {
                             <path d="m5 12 4.5 4.5L19 7" />
                           </svg>
                         </span>
+                        </HintWrap>
                       ) : null}
                       {monitoring ? (
+                        <HintWrap hint="Monitoring" prefer="above">
                         <span
                           className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#5a5fc3] dark:text-indigo-300"
-                          title="Monitoring"
+                          title=""
                           aria-label="Monitoring"
                         >
                           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3833,11 +3839,13 @@ function TeacherDashboardInner() {
                             <circle cx="12" cy="12" r="2.5" />
                           </svg>
                         </span>
+                        </HintWrap>
                       ) : null}
                       {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(s.id)) ? (
+                        <HintWrap hint="Open drafting evidence" prefer="above">
                         <button
                           type="button"
-                          title="Open drafting evidence"
+                          title=""
                           aria-label={`Open drafting evidence for ${s.name}`}
                           onClick={(event) => {
                             event.stopPropagation();
@@ -3846,6 +3854,7 @@ function TeacherDashboardInner() {
                           }}
                           className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-600 ring-1 ring-red-200 hover:ring-red-300 dark:ring-red-900"
                         />
+                        </HintWrap>
                       ) : null}
                     </div>
                   </div>

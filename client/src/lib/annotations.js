@@ -204,6 +204,13 @@ export function commentGutterLane(_tone) {
   return 'gutter';
 }
 
+export const COMMENT_PIP_HINT = {
+  open: 'New comment',
+  fixed: 'Waiting for teacher',
+  reopen: 'Check again',
+  resolved: 'Confirmed',
+};
+
 /** Keep cached gutter pips in lockstep with confirm/reopen — same lane is not enough. */
 export function annotationMarkersMatch(a, b) {
   if (a === b) return true;

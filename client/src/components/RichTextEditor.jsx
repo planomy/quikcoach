@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { plainTextToRichHtml, richHtmlToPlainText, sanitizeRichHtml } from '../lib/richText.js';
 import StudentDrawPad from './StudentDrawPad.jsx';
+import HintWrap from './HintWrap.jsx';
 
 function countWords(value) {
   const text = String(value || '').trim();
@@ -71,24 +72,21 @@ function ToolbarButton({
   requiresSelection = false,
   hasSelection,
 }) {
+  const hint = requiresSelection && hasSelection && !hasSelection() ? 'Select text first' : title;
   return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      disabled={disabled}
-      onMouseEnter={(event) => {
-        event.currentTarget.title = requiresSelection && !hasSelection?.() ? 'Select text first' : title;
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.title = title;
-      }}
-      onMouseDown={(event) => event.preventDefault()}
-      onClick={onClick}
-      className={`flex h-8 min-w-8 items-center justify-center rounded-lg border border-[#e8e8ef] bg-white px-2 text-sm font-semibold text-[#6b6b78] transition hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#5a5fc3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60 ${className}`}
-    >
-      {label}
-    </button>
+    <HintWrap hint={hint} prefer="above">
+      <button
+        type="button"
+        title=""
+        aria-label={title}
+        disabled={disabled}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={onClick}
+        className={`flex h-8 min-w-8 items-center justify-center rounded-lg border border-[#e8e8ef] bg-white px-2 text-sm font-semibold text-[#6b6b78] transition hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#5a5fc3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60 ${className}`}
+      >
+        {label}
+      </button>
+    </HintWrap>
   );
 }
 
@@ -375,18 +373,20 @@ export default function RichTextEditor({
         <div className="iboard-student-writing-tools relative flex flex-wrap items-center gap-1.5 border-b border-[#ececf2] bg-[#fafafa] px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
           {formattingEnabled ? (
             <div ref={formatMenuRef} className="relative">
-              <button
-                type="button"
-                disabled={disabled}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => setFormatMenuOpen((open) => !open)}
-                aria-expanded={formatMenuOpen}
-                aria-label="Formatting tools"
-                title="Formatting tools"
-                className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-[#e8e8ef] bg-white px-2 text-sm font-semibold text-[#6b6b78] transition hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#5a5fc3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60"
-              >
-                Aa
-              </button>
+              <HintWrap hint="Formatting tools" prefer="above" suppressed={formatMenuOpen}>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setFormatMenuOpen((open) => !open)}
+                  aria-expanded={formatMenuOpen}
+                  aria-label="Formatting tools"
+                  title=""
+                  className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-[#e8e8ef] bg-white px-2 text-sm font-semibold text-[#6b6b78] transition hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#5a5fc3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60"
+                >
+                  Aa
+                </button>
+              </HintWrap>
               {formatMenuOpen && (
                 <div className="absolute left-0 top-full z-30 mt-2 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
                   <ToolbarButton disabled={disabled} label="B" title="Bold" requiresSelection hasSelection={hasSelectedText} onClick={() => runCommand('bold', null, true)} />

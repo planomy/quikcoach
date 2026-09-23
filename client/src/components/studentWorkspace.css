@@ -247,6 +247,12 @@ html.iboard-student-workspace .iboard-question-pulse {
   touch-action: none;
 }
 
+.iboard-student-split__hint {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
 .iboard-student-split__hit {
   display: flex;
   align-items: center;
@@ -289,7 +295,7 @@ html.iboard-student-splitting .iboard-student-split__bar {
 .iboard-student-split__hit:hover .iboard-student-split__arrow,
 .iboard-student-split__hit:focus-visible .iboard-student-split__arrow,
 html.iboard-student-splitting .iboard-student-split__arrow {
-  color: #9a9ab0;
+  color: #5a5fc3;
 }
 
 html.dark .iboard-student-split__bar {
@@ -309,7 +315,7 @@ html.dark.iboard-student-splitting .iboard-student-split__bar {
 html.dark .iboard-student-split__hit:hover .iboard-student-split__arrow,
 html.dark .iboard-student-split__hit:focus-visible .iboard-student-split__arrow,
 html.dark.iboard-student-splitting .iboard-student-split__arrow {
-  color: #94a3b8;
+  color: #818cf8;
 }
 
 .iboard-inbox-material-preview {
