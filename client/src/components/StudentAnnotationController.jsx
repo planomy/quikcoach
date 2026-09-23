@@ -131,6 +131,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const autoFixQueuedRef = useRef(new Set());
   const autoFixTimersRef = useRef(new Map());
   const checkAgainSnapshotRef = useRef(new Map());
+  const detachedSinceRef = useRef(new Map());
   const prevToneRef = useRef(new Map());
   markersRef.current = markers;
   popupPinnedRef.current = popupPinned;
@@ -265,7 +266,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }, [annotations]);
 
   const markCommentFixed = useCallback(
-    (annotationId, { closePopup = false } = {}) => {
+    (annotationId, { closePopup = false, showError = false } = {}) => {
       const id = Number(annotationId);
       if (!socket || !id) return;
       setAnnotations((prev) =>
@@ -284,7 +285,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       if (closePopup) setOpenMarker(null);
       socket.emit('student:annotation-fixed', { annotationId: id }, (ack) => {
         if (ack?.ok) return;
-        setActionError(ack?.error || 'Could not mark this comment as fixed');
+        if (showError) setActionError('Could not save this check. Try again.');
         autoFixQueuedRef.current.delete(id);
         socket.emit('student:annotations-sync', {}, (syncAck) => {
           if (syncAck?.ok && Array.isArray(syncAck.annotations)) {
@@ -307,8 +308,15 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       if (!id) continue;
       const persisted = commentTone(marker.annotation);
       const snapshot = checkAgainSnapshotRef.current.get(id);
+      if (persisted === 'open' && marker.detached) {
+        if (!detachedSinceRef.current.has(id)) detachedSinceRef.current.set(id, Date.now());
+      } else {
+        detachedSinceRef.current.delete(id);
+      }
+      const detachedLongEnough =
+        marker.detached && Date.now() - (detachedSinceRef.current.get(id) || Date.now()) >= 1500;
       const shouldAuto =
-        (persisted === 'open' && marker.detached) ||
+        (persisted === 'open' && detachedLongEnough) ||
         (persisted === 'reopen' && snapshot != null && liveText !== snapshot);
       if (!shouldAuto) {
         const pending = timers.get(id);
@@ -491,6 +499,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       if (popupPinnedRef.current) return;
       const marker = markersRef.current.find((item) => studentMarkerKey(item) === key);
       if (!marker) return;
+      setActionError((prev) => (prev ? '' : prev));
       setOpenMarker((prev) => (studentMarkerKey(prev) === key ? prev : marker));
     };
     const onMove = (event) => {
@@ -586,7 +595,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     setActionBusy(true);
     setActionError('');
     autoFixQueuedRef.current.add(Number(marker.annotation.id));
-    markCommentFixed(marker.annotation.id, { closePopup: true });
+    markCommentFixed(marker.annotation.id, { closePopup: true, showError: true });
     dismissCommentPopup();
     setActionBusy(false);
   }

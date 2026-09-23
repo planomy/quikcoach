@@ -398,14 +398,16 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
         const studentId = Number(socket.data.studentId);
         const annotationId = Number(payload.annotationId);
         const row = annotationId ? selectAnnotationStmt.get(annotationId) : null;
-        if (
-          socket.data.role !== 'student' ||
-          !studentId ||
-          !row ||
-          Number(row.student_id) !== studentId ||
-          row.status === 'resolved'
-        ) {
-          cb?.({ ok: false, error: 'Comment not found' });
+        if (socket.data.role !== 'student' || !studentId) {
+          cb?.({ ok: false, error: 'Reconnect and try again' });
+          return;
+        }
+        if (!row || Number(row.student_id) !== studentId) {
+          cb?.({ ok: false, error: 'Could not update this comment' });
+          return;
+        }
+        if (row.status === 'fixed' || row.status === 'resolved') {
+          cb?.({ ok: true });
           return;
         }
         markAnnotationFixedStmt.run(annotationId);
