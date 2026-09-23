@@ -21,7 +21,7 @@ const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
 const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
 const NOTE_HEIGHT = 22;
-const NOTE_RAIL = 188;
+const NOTE_RAIL = 172;
 const MARKER_MARGIN = 6;
 const AUTO_FIX_DELAY_MS = 700;
 
