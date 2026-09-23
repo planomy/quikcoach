@@ -1,5 +1,6 @@
 import { CloseButton } from './PanelActions.jsx';
 import { useState } from 'react';
+import HintWrap from './HintWrap.jsx';
 
 const CONFIDENCE_OPTIONS = [
   ['confident', 'Confident'],
@@ -42,20 +43,22 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
   if (!open) {
     if (chip) {
       return (
-        <button
-          type="button"
-          onClick={() => {
-            setMessage('');
-            setOpen(true);
-          }}
-          className={`iboard-inbox-answer-chip inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-[11px] font-black tracking-wide transition ${className}`}
-          aria-label="Quick answer"
-        >
-          <span className="grid h-5 w-5 place-items-center rounded-lg bg-[#5a5fc3] text-[14px] leading-none text-white" aria-hidden="true">
-            +
-          </span>
-          <span>{message === 'Sent' ? 'Sent' : 'Answer'}</span>
-        </button>
+        <HintWrap hint="Answer a question asked aloud" prefer="below">
+          <button
+            type="button"
+            onClick={() => {
+              setMessage('');
+              setOpen(true);
+            }}
+            className={`iboard-inbox-answer-chip inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-[11px] font-black tracking-wide transition ${className}`}
+            aria-label="Answer a question asked aloud"
+          >
+            <span className="grid h-5 w-5 place-items-center rounded-lg bg-[#5a5fc3] text-[14px] leading-none text-white" aria-hidden="true">
+              +
+            </span>
+            <span>{message === 'Sent' ? 'Sent' : 'Answer'}</span>
+          </button>
+        </HintWrap>
       );
     }
     return (
