@@ -1,8 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ConversationModal, { ChatIcon } from './ConversationModal.jsx';
 
 export default function StudentChatButton({ socket, studentId, unread = false, onOpen }) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    function onOpenChat() {
+      setOpen(true);
+      onOpen?.();
+    }
+    window.addEventListener('iboard:open-student-chat', onOpenChat);
+    return () => window.removeEventListener('iboard:open-student-chat', onOpenChat);
+  }, [onOpen]);
 
   return (
     <>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CloseButton } from './PanelActions.jsx';
 import { confirmDialog } from './ConfirmDialogHost.jsx';
+import HintWrap from './HintWrap.jsx';
 import './conversationModal.css';
 
 export function ChatIcon({ className = 'h-4 w-4' }) {
@@ -307,16 +308,18 @@ export default function ConversationModal({
             }}
           >
             {allowUrgent ? (
-              <button
-                type="button"
-                className="iboard-chat-urgent-toggle"
-                aria-pressed={urgent}
-                title={urgent ? 'Urgent on — they will see a toast' : 'Mark urgent'}
-                aria-label={urgent ? 'Urgent on' : 'Mark urgent'}
-                onClick={() => setUrgent((current) => !current)}
-              >
-                !
-              </button>
+              <HintWrap hint={urgent ? 'Urgent on — they will see a toast' : 'Mark urgent — they will see a toast'} prefer="above">
+                <button
+                  type="button"
+                  className="iboard-chat-urgent-toggle"
+                  aria-pressed={urgent}
+                  title=""
+                  aria-label={urgent ? 'Urgent on' : 'Mark urgent'}
+                  onClick={() => setUrgent((current) => !current)}
+                >
+                  !
+                </button>
+              </HintWrap>
             ) : null}
             <button
               type="button"
