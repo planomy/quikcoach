@@ -2764,6 +2764,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   --ann-stem: #b8b8c0;
   --ann-stem-width: 1.5px;
   --ann-pip: #5a5fc3;
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: flex-end;
@@ -2774,6 +2775,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   border: 0;
   background: transparent;
   color: var(--ann-pip);
+  overflow: visible;
   pointer-events: none;
 }
 
@@ -2802,6 +2804,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   padding: 0 0 1px;
   background: transparent;
   color: #3c3c45;
+  cursor: default;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -2810,6 +2813,40 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: auto;
+}
+
+.iboard-student-note__text[aria-expanded] {
+  cursor: pointer;
+}
+
+.iboard-student-note__full {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  z-index: 60;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(16.5rem, 70vw);
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d5d4e4;
+  border-radius: 0.85rem;
+  background: #fff;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 0.16);
+  color: #3c3c45;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+
+html.dark .iboard-student-note__full {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.4);
 }
 
 .iboard-student-note__check {
