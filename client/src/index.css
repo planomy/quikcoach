@@ -596,13 +596,13 @@ html:not(.dark) .iboard-student-canvas footer {
   padding-top: 1.15rem;
   padding-bottom: 1.75rem;
   padding-left: clamp(1.15rem, 3.5%, 2rem);
-  padding-right: 13rem;
+  padding-right: 14rem;
   font-size: 16px;
 }
 
 @media (max-width: 767px) {
   .iboard-student-writing-page {
-    padding-right: 8.75rem;
+    padding-right: 9.5rem;
   }
 }
 
@@ -2768,7 +2768,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   flex-direction: row;
   align-items: flex-end;
   box-sizing: border-box;
-  min-width: 8.5rem;
+  min-width: 0;
   height: 22px;
   padding: 0;
   border: 0;

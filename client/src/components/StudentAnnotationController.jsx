@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   COMMENT_HOVER_WASH,
   annotationMarkersMatch,
@@ -22,8 +23,7 @@ const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
 const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
 const NOTE_HEIGHT = 22;
 const NOTE_RAIL = 192;
-const MARKER_MARGIN = 6;
-const PIP_INSET = 16;
+const PIP_INSET = 28;
 const AUTO_FIX_DELAY_MS = 700;
 
 function currentStudentId() {
@@ -41,46 +41,22 @@ function editorElement() {
   return document.querySelector('[role="textbox"][contenteditable]');
 }
 
-function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-  const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
-  const nextTop = Math.max(padding, Math.min(vh - height - padding, top));
-  const nextLeft = Math.max(padding, left);
-  const nextWidth = Math.max(height, Math.min(width, vw - padding - nextLeft));
-  return { top: nextTop, left: nextLeft, width: nextWidth };
+function writingCard() {
+  return typeof document === 'undefined' ? null : document.querySelector('.iboard-student-writing-card');
 }
 
-function writingCardRect(editorRect) {
-  const card = document.querySelector('.iboard-student-writing-card');
-  const rect = card?.getBoundingClientRect();
-  return rect?.width ? rect : editorRect;
-}
-
-function noteRightEdge(editorRect) {
-  const card = writingCardRect(editorRect);
-  const edge = Math.min(editorRect?.right || card.right, card.right);
-  return edge - PIP_INSET;
-}
-
-function markerPosition(rangeRect, editorRect) {
-  const right = noteRightEdge(editorRect);
-  const left = rangeRect.left;
-  return clampOnScreen({
+function markerPosition(rangeRect) {
+  return {
     top: rangeRect.bottom - NOTE_HEIGHT,
-    left,
-    width: Math.max(NOTE_HEIGHT, right - left),
-    height: NOTE_HEIGHT,
-  });
+    left: rangeRect.left,
+  };
 }
 
 function detachedMarkerPosition(editorRect, index) {
-  const right = noteRightEdge(editorRect);
-  return clampOnScreen({
+  return {
     top: editorRect.top + 8 + index * (NOTE_HEIGHT + 4),
-    left: right - NOTE_RAIL,
-    width: NOTE_RAIL,
-    height: NOTE_HEIGHT,
-  });
+    left: editorRect.right - NOTE_RAIL - PIP_INSET,
+  };
 }
 
 
@@ -145,7 +121,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             lane: 'note',
             top: pos.top,
             left: pos.left,
-            width: pos.width,
           });
           detachedCount += 1;
         }
@@ -159,14 +134,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const rects = Array.from(range.getClientRects()).filter((item) => item.width || item.height);
       const rect = rects[rects.length - 1] || range.getBoundingClientRect();
       if (rect.width || rect.height) {
-        const pos = markerPosition(rect, editorRect);
+        const pos = markerPosition(rect);
         nextMarkers.push({
           annotation,
           detached: resolved.detached,
           lane: 'note',
           top: pos.top,
           left: pos.left,
-          width: pos.width,
         });
       }
     }
@@ -495,25 +469,43 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           }}
         />
       ))}
-      {markers.map((marker) => {
-        const live =
-          annotations.find((item) => Number(item.id) === Number(marker.annotation.id)) || marker.annotation;
-        const tone = commentTone(live, marker.detached);
-        return (
-          <StudentCommentNote
-            key={marker.annotation.id}
-            tone={tone}
-            note={live.note}
-            detached={marker.detached}
-            lit={hoveredId === String(marker.annotation.id)}
-            busy={actionBusy}
-            data-ann-key={String(marker.annotation.id)}
-            className="fixed z-[50]"
-            style={{ top: marker.top, left: marker.left, width: marker.width || undefined }}
-            onCheck={() => markCommentFixedManual(marker)}
-          />
-        );
-      })}
+      {(() => {
+        const board = writingCard();
+        const boardRect = board?.getBoundingClientRect();
+        const notes = markers.map((marker) => {
+          const live =
+            annotations.find((item) => Number(item.id) === Number(marker.annotation.id)) || marker.annotation;
+          const tone = commentTone(live, marker.detached);
+          const style = boardRect
+            ? {
+                position: 'absolute',
+                top: marker.top - boardRect.top,
+                left: marker.left - boardRect.left,
+                right: PIP_INSET,
+              }
+            : {
+                position: 'fixed',
+                top: marker.top,
+                left: marker.left,
+                right: PIP_INSET,
+              };
+          return (
+            <StudentCommentNote
+              key={marker.annotation.id}
+              tone={tone}
+              note={live.note}
+              detached={marker.detached}
+              lit={hoveredId === String(marker.annotation.id)}
+              busy={actionBusy}
+              data-ann-key={String(marker.annotation.id)}
+              className="z-[50]"
+              style={style}
+              onCheck={() => markCommentFixedManual(marker)}
+            />
+          );
+        });
+        return board ? createPortal(notes, board) : notes;
+      })()}
     </>
   );
 }
