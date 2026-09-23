@@ -199,9 +199,9 @@ export function commentTone(annotation, detached = false) {
   return 'open';
 }
 
-/** Unread / check-again sit in the left gutter; reviewed sit to the right. */
-export function commentGutterLane(tone) {
-  return tone === 'open' || tone === 'reopen' ? 'attention' : 'done';
+/** All teacher pips share one right-edge rail — colour and outline/fill carry status. */
+export function commentGutterLane(_tone) {
+  return 'gutter';
 }
 
 /** Keep cached gutter pips in lockstep with confirm/reopen — same lane is not enough. */

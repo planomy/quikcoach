@@ -47,9 +47,7 @@ const MARKER_SIZE = 18;
 const INLINE_MARKER_SIZE = 13;
 const MARKER_MARGIN = 4;
 const GUTTER_INSET = 8;
-const LANE_GAP = 10;
 const COMPACT_GUTTER_INSET = 5;
-const COMPACT_LANE_GAP = 3;
 
 const SHIPPED_PILLS = [
   { id: 'spelling', label: 'Spelling', text: 'Spelling' },
@@ -207,13 +205,11 @@ function cardUsesCompactPip(card) {
   return !card?.article?.matches?.('[role="dialog"]');
 }
 
-function gutterLaneInset(compact, lane, size) {
-  const inset = compact ? COMPACT_GUTTER_INSET : GUTTER_INSET;
-  if (lane !== 'attention') return inset;
-  return inset + size + (compact ? COMPACT_LANE_GAP : LANE_GAP);
+function gutterInset(compact) {
+  return compact ? COMPACT_GUTTER_INSET : GUTTER_INSET;
 }
 
-function markerPosition(range, card, lane = 'done') {
+function markerPosition(range, card) {
   if (typeof window === 'undefined' || !card?.textPane) return null;
 
   const rangeRect = primaryRangeClientRect(range);
@@ -236,14 +232,13 @@ function markerPosition(range, card, lane = 'done') {
   const maxTop = paneHeight - size - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
-  // One hairline from the start of the quote on this line out to the margin bubble.
+  // Stem sits on the highlight baseline and runs out to one right-edge pip column.
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  const laneInset = gutterLaneInset(compact, lane, size);
-  const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - laneInset;
+  const inset = gutterInset(compact);
+  const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - inset;
   const left = Math.max(minLeft, Math.min(gutterLeft, local.left));
   const width = Math.max(size, gutterLeft + size - left);
-  const underlineY = local.top + local.height - 3;
-  const top = Math.max(minTop, Math.min(maxTop, underlineY - size / 2));
+  const top = Math.max(minTop, Math.min(maxTop, local.top + local.height - size));
   return {
     top,
     left,
@@ -254,15 +249,15 @@ function markerPosition(range, card, lane = 'done') {
   };
 }
 
-function detachedMarkerPosition(pane, index, compact = false, lane = 'done') {
+function detachedMarkerPosition(pane, index, compact = false) {
   if (!pane) return null;
   const paneRect = pane.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
   const size = compact ? INLINE_MARKER_SIZE : MARKER_SIZE;
-  const laneInset = gutterLaneInset(compact, lane, size);
+  const inset = gutterInset(compact);
   // Keep orphaned ticks in the visible corner of the writing pane.
   const top = (pane.scrollTop || 0) + MARKER_MARGIN + index * (size + 4);
-  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - laneInset;
+  const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - inset;
   const maxTop = (pane.scrollTop || 0) + (pane.clientHeight || paneRect.height) - size - MARKER_MARGIN;
   if (top > maxTop) return null;
   return { top, left, width: size, layout: 'orphan', position: 'absolute', root: pane };
@@ -438,7 +433,7 @@ export default function TeacherAnnotationController() {
       const writingRoot = contentRootForPane(card.textPane) || card.textPane;
       const fullText = plainTextFromElement(writingRoot);
       const paneRect = card.textPane.getBoundingClientRect();
-      const detachedCount = { attention: 0, done: 0 };
+      let detachedCount = 0;
       const compact = cardUsesCompactPip(card);
       for (const annotation of annotations || []) {
         const { resolved, range } = locateAnnotationRange(writingRoot, annotation, fullText);
@@ -446,7 +441,7 @@ export default function TeacherAnnotationController() {
         const lane = commentGutterLane(tone);
         if (!range) {
           if (paneIsOnScreen(paneRect)) {
-            const position = detachedMarkerPosition(card.textPane, detachedCount[lane], compact, lane);
+            const position = detachedMarkerPosition(card.textPane, detachedCount, compact);
             if (position) {
               nextMarkers.push({
                 studentId,
@@ -459,7 +454,7 @@ export default function TeacherAnnotationController() {
                 width: position.width,
                 position: position.position,
               });
-              detachedCount[lane] += 1;
+              detachedCount += 1;
             }
           }
           continue;
@@ -469,7 +464,7 @@ export default function TeacherAnnotationController() {
         else if (tone === 'reopen') reopenRanges.push(range);
         else ranges.push(range);
         hoverTargets.push({ key: `${studentId}:${annotation.id}`, range, tone });
-        const position = markerPosition(range, card, lane);
+        const position = markerPosition(range, card);
         if (!position) continue;
         nextMarkers.push({
           studentId,
