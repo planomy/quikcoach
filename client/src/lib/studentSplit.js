@@ -2,8 +2,8 @@ const STORAGE_KEY = 'iboard-student-inbox-share';
 
 export const INBOX_SHARE_MIN = 0.28;
 export const INBOX_SHARE_MAX = 0.72;
-/** Matches the old 3fr writing / 2fr Inbox split. */
-export const INBOX_SHARE_DEFAULT = 0.4;
+/** Writing keeps the comment rail; Inbox takes a slightly smaller default share. */
+export const INBOX_SHARE_DEFAULT = 0.34;
 
 export function clampInboxShare(value) {
   const n = Number(value);

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   COMMENT_HOVER_WASH,
   annotationMarkersMatch,
-  commentGutterLane,
   commentTone,
   documentAnnotationChange,
   locateAnnotationRange,
@@ -16,16 +15,16 @@ import {
 } from '../lib/annotations.js';
 import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
-import AnnotationMark from './AnnotationMark.jsx';
+import StudentCommentNote from './StudentCommentNote.jsx';
 
 const HIGHLIGHT_NAME = 'iboard-student-inline-comments';
 const REOPEN_HIGHLIGHT_NAME = 'iboard-student-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-student-awaiting-comments';
 const RESOLVED_HIGHLIGHT_NAME = 'iboard-student-resolved-comments';
 const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
-const MARKER_SIZE = 18;
+const NOTE_HEIGHT = 22;
+const NOTE_RAIL = 188;
 const MARKER_MARGIN = 6;
-const LANE_GAP = 8;
 const POPUP_WIDTH = 320;
 /** Placement budget — keep the action button visible on short iPad viewports. */
 const POPUP_HEIGHT = 360;
@@ -55,28 +54,23 @@ function clampOnScreen({ top, left, width, height, padding = MARKER_MARGIN }) {
   return { top: nextTop, left: nextLeft, width: nextWidth };
 }
 
-function laneShift(lane) {
-  return lane === 'attention' ? MARKER_SIZE + LANE_GAP : 0;
-}
-
-function markerPosition(rangeRect, editorRect, lane = 'done') {
-  const gutterRight = (editorRect?.right || rangeRect.right + 40) - 16 - laneShift(lane);
+function markerPosition(rangeRect, editorRect) {
+  const right = (editorRect?.right || rangeRect.right + NOTE_RAIL) - 12;
   const left = rangeRect.left;
-  const width = Math.max(MARKER_SIZE, gutterRight - left);
   return clampOnScreen({
-    top: rangeRect.top + rangeRect.height - 3 - MARKER_SIZE / 2,
+    top: rangeRect.top + rangeRect.height / 2 - NOTE_HEIGHT / 2,
     left,
-    width,
-    height: MARKER_SIZE,
+    width: Math.max(NOTE_HEIGHT, right - left),
+    height: NOTE_HEIGHT,
   });
 }
 
-function detachedMarkerPosition(editorRect, index, lane = 'done') {
+function detachedMarkerPosition(editorRect, index) {
   return clampOnScreen({
-    top: editorRect.top + 8 + index * (MARKER_SIZE + 4),
-    left: editorRect.right - MARKER_SIZE - 6 - laneShift(lane),
-    width: MARKER_SIZE,
-    height: MARKER_SIZE,
+    top: editorRect.top + 8 + index * (NOTE_HEIGHT + 4),
+    left: editorRect.right - NOTE_RAIL - 12,
+    width: NOTE_RAIL,
+    height: NOTE_HEIGHT,
   });
 }
 
@@ -95,11 +89,11 @@ function commentPopupPosition(marker, lock = null) {
   return placementNearAnchor({
     anchor: {
       top: marker.top,
-      left: marker.left + (marker.width || MARKER_SIZE) - MARKER_SIZE,
-      right: marker.left + (marker.width || MARKER_SIZE),
-      bottom: marker.top + MARKER_SIZE,
-      width: MARKER_SIZE,
-      height: MARKER_SIZE,
+      left: marker.left + (marker.width || NOTE_RAIL) - 28,
+      right: marker.left + (marker.width || NOTE_RAIL),
+      bottom: marker.top + NOTE_HEIGHT,
+      width: 28,
+      height: NOTE_HEIGHT,
     },
     width: POPUP_WIDTH,
     height,
@@ -176,7 +170,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     const resolvedRanges = [];
     const nextMarkers = [];
     const hoverTargets = [];
-    const detachedCount = { attention: 0, done: 0 };
+    let detachedCount = 0;
     const editorRect = editor.getBoundingClientRect();
     const vp = viewportBox();
     const editorVisible =
@@ -187,19 +181,18 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     for (const annotation of annotations || []) {
       const { resolved, range } = locateAnnotationRange(editor, annotation, text);
       const tone = commentTone(annotation, resolved.detached);
-      const lane = commentGutterLane(tone);
       if (!range) {
         if (editorVisible) {
-          const pos = detachedMarkerPosition(editorRect, detachedCount[lane], lane);
+          const pos = detachedMarkerPosition(editorRect, detachedCount);
           nextMarkers.push({
             annotation,
             detached: true,
-            lane,
+            lane: 'note',
             top: pos.top,
             left: pos.left,
             width: pos.width,
           });
-          detachedCount[lane] += 1;
+          detachedCount += 1;
         }
         continue;
       }
@@ -211,11 +204,11 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const rects = Array.from(range.getClientRects()).filter((item) => item.width || item.height);
       const rect = rects[rects.length - 1] || range.getBoundingClientRect();
       if (rect.width || rect.height) {
-        const pos = markerPosition(rect, editorRect, lane);
+        const pos = markerPosition(rect, editorRect);
         nextMarkers.push({
           annotation,
           detached: resolved.detached,
-          lane,
+          lane: 'note',
           top: pos.top,
           left: pos.left,
           width: pos.width,
@@ -235,7 +228,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
       setHoverWash(null);
     }
-    const stacked = stackGutterMarkers(nextMarkers, () => MARKER_SIZE + 6);
+    const stacked = stackGutterMarkers(nextMarkers, () => NOTE_HEIGHT + 4);
     setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
   }, [annotations]);
 
@@ -495,22 +488,14 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         applyHover(null);
       }, 160);
     };
-    const openFromMark = (key) => {
-      if (popupPinnedRef.current) return;
-      const marker = markersRef.current.find((item) => studentMarkerKey(item) === key);
-      if (!marker) return;
-      setActionError((prev) => (prev ? '' : prev));
-      setOpenMarker((prev) => (studentMarkerKey(prev) === key ? prev : marker));
-    };
     const onMove = (event) => {
       const { clientX: x, clientY: y } = event;
       const under = document.elementFromPoint(x, y);
-      const fromMark = under?.closest?.('.iboard-ann-mark')?.dataset?.annKey;
+      const fromMark = under?.closest?.('.iboard-student-note')?.dataset?.annKey;
       const overPopup = !!under?.closest?.('[data-comment-popup]');
       if (fromMark) {
         cancelClose();
         applyHover(fromMark);
-        openFromMark(fromMark);
         return;
       }
       if (overPopup) {
@@ -637,24 +622,18 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           annotations.find((item) => Number(item.id) === Number(marker.annotation.id)) || marker.annotation;
         const tone = commentTone(live, marker.detached);
         return (
-          <AnnotationMark
+          <StudentCommentNote
             key={marker.annotation.id}
             tone={tone}
-            layout={marker.detached ? 'orphan' : 'gutter'}
+            note={live.note}
+            detached={marker.detached}
             lit={hoveredId === String(marker.annotation.id)}
+            busy={actionBusy}
             data-ann-key={String(marker.annotation.id)}
-            onClick={() => pinCommentPopup(marker)}
             className="fixed z-[50]"
             style={{ top: marker.top, left: marker.left, width: marker.width || undefined }}
-            aria-label={
-              tone === 'resolved'
-                ? 'Confirmed fixed'
-                : tone === 'fixed'
-                  ? 'Waiting for teacher review'
-                  : tone === 'reopen'
-                    ? 'Check this comment again'
-                    : 'Open teacher comment'
-            }
+            onOpen={() => pinCommentPopup(marker)}
+            onCheck={() => markCommentFixedManual(marker)}
           />
         );
       })}
