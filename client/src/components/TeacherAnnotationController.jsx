@@ -33,11 +33,11 @@ const HOVER_HIGHLIGHT_NAME = 'iboard-teacher-hover-comment';
 const PENDING_HIGHLIGHT_NAME = 'iboard-teacher-pending-comment';
 const EXTRA_PILLS_KEY = 'iboard-teacher-extra-comment-pills';
 const MAX_PILLS = 20;
-const PENDING_WIDTH = 268;
+const PENDING_WIDTH = 320;
 
 /** Max scrollable panel height — not the height used for initial placement. */
 const PENDING_MAX_HEIGHT = 520;
-/** Side card: header + 6 icon rows + field. Grow when extras are added. */
+/** Side card: header + 6 word-pill rows + field. Grow when extras are added. */
 const PENDING_PLACE_HEIGHT = 420;
 const OPEN_WIDTH = 320;
 /** Placement budget for the open-comment card; CSS max-height lets it grow with the note. */
@@ -65,119 +65,6 @@ const SHIPPED_PILLS = [
   { id: 'add-depth', label: 'Add depth / details', text: 'Add depth / details' },
   { id: 'this-is-good', label: 'This is good', text: 'This is good' },
 ];
-
-function PillIcon({ name }) {
-  const common = {
-    width: 16,
-    height: 16,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.85,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': true,
-  };
-  switch (name) {
-    case 'spelling':
-      return (
-        <svg {...common}>
-          <path d="M5 19 10 5h2l5 14" />
-          <path d="M7.2 14h7.6" />
-        </svg>
-      );
-    case 'punctuation':
-      return (
-        <svg {...common}>
-          <path d="M8 6h3v6H8z" />
-          <path d="M8 12c0 3-1.2 4.2-3 5" />
-          <path d="M15 6h3v6h-3z" />
-          <path d="M15 12c0 3-1.2 4.2-3 5" />
-        </svg>
-      );
-    case 'tense':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8" />
-          <path d="M12 8v4.5L15 15" />
-        </svg>
-      );
-    case 'not-clear':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8" />
-          <path d="M9.4 9.6a2.6 2.6 0 1 1 3.7 2.3c-.9.5-1.2 1.1-1.2 2.1" />
-          <path d="M12 17.2v.2" />
-        </svg>
-      );
-    case 'repetition':
-      return (
-        <svg {...common}>
-          <path d="M7 8h9l-2.4-2.4" />
-          <path d="M17 16H8l2.4 2.4" />
-        </svg>
-      );
-    case 'split':
-      return (
-        <svg {...common}>
-          <path d="M12 3v18" />
-          <path d="M5 9h5L7.5 6.5" />
-          <path d="M19 15h-5l2.5 2.5" />
-        </svg>
-      );
-    case 'fragment':
-      return (
-        <svg {...common}>
-          <path d="M4 12h5l2-3 2 6 2-3h5" />
-        </svg>
-      );
-    case 'too-wordy':
-      return (
-        <svg {...common}>
-          <path d="M6 7h12" />
-          <path d="M6 12h8" />
-          <path d="M6 17h5" />
-          <path d="M17 14v5" />
-          <path d="M15 17h4" />
-        </svg>
-      );
-    case 'choose-better':
-      return (
-        <svg {...common}>
-          <path d="M7 8h10L14 5" />
-          <path d="M17 16H7l3 3" />
-        </svg>
-      );
-    case 'irrelevant':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8" />
-          <path d="M6.8 6.8 17.2 17.2" />
-        </svg>
-      );
-    case 'add-depth':
-      return (
-        <svg {...common}>
-          <path d="M12 4 20 8l-8 4-8-4 8-4z" />
-          <path d="m4 12 8 4 8-4" />
-          <path d="m4 16 8 4 8-4" />
-        </svg>
-      );
-    case 'this-is-good':
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8" />
-          <path d="m8 12.4 2.8 2.8L16.4 9.4" />
-        </svg>
-      );
-    default:
-      return (
-        <svg {...common}>
-          <path d="M5 6h14v10H8l-3 3z" />
-        </svg>
-      );
-  }
-}
 
 function normalizeExtraPills(raw) {
   if (!Array.isArray(raw)) return [];
@@ -1353,13 +1240,13 @@ export default function TeacherAnnotationController() {
           title=""
           aria-label={`${pill.label}. Click to send. Shift-click to stack.`}
           onClick={(event) => handleQuickCommentClick(event, pill.text)}
-          className={`grid h-8 w-full place-items-center rounded-lg border transition ${
+          className={`flex min-h-8 w-full items-center justify-center rounded-lg border px-1.5 py-1 text-center text-[10px] font-bold leading-tight transition ${
             selected
               ? 'border-[#5a5fc3] bg-[#5a5fc3] text-white'
               : 'border-[#d5d4e4] bg-white text-[#52525c] hover:border-[#cfcce8] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/40'
           }`}
         >
-          <PillIcon name={pill.id} />
+          {pill.label}
         </button>
       </HintWrap>
     );
@@ -1375,7 +1262,7 @@ export default function TeacherAnnotationController() {
             title=""
             aria-label={`${comment}. Click to send. Shift-click to stack.`}
             onClick={(event) => handleQuickCommentClick(event, comment)}
-            className={`grid h-8 w-full place-items-center rounded-lg border px-1 text-[10px] font-bold leading-none transition ${
+            className={`flex min-h-8 w-full items-center justify-center rounded-lg border px-1.5 py-1 text-center text-[10px] font-bold leading-tight transition ${
               selected
                 ? 'border-[#5a5fc3] bg-[#5a5fc3] text-white'
                 : 'border-[#d5d4e4] bg-white text-[#52525c] hover:border-[#cfcce8] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
