@@ -11,7 +11,6 @@ export default function StudentCommentNote({
   lit = false,
   detached = false,
   busy = false,
-  onOpen,
   onCheck,
   className = '',
   ...props
@@ -25,14 +24,7 @@ export default function StudentCommentNote({
       {...props}
     >
       <span className="iboard-student-note__stem" aria-hidden="true" />
-      <button
-        type="button"
-        className="iboard-student-note__text"
-        onClick={onOpen}
-        title={label}
-      >
-        {label}
-      </button>
+      <span className="iboard-student-note__text">{label}</span>
       <button
         type="button"
         className="iboard-student-note__check"

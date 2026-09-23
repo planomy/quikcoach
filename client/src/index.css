@@ -2766,7 +2766,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   --ann-pip: #5a5fc3;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-end;
   box-sizing: border-box;
   min-width: 8.5rem;
   height: 22px;
@@ -2780,7 +2780,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 .iboard-student-note__stem {
   position: relative;
   flex: 1 1 auto;
-  align-self: center;
+  align-self: flex-end;
   min-width: 8px;
   height: 0;
   margin-right: 6px;
@@ -2799,10 +2799,9 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   max-width: 9.25rem;
   overflow: hidden;
   border: 0;
-  padding: 0;
+  padding: 0 0 1px;
   background: transparent;
   color: #3c3c45;
-  cursor: pointer;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -2816,13 +2815,13 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 .iboard-student-note__check {
   display: grid;
   place-items: center;
-  flex: 0 0 22px;
-  width: 22px;
-  height: 22px;
-  margin-left: 5px;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0 0 0 4px;
   padding: 0;
   border: 1.5px solid var(--ann-pip);
-  border-radius: 7px;
+  border-radius: 5px;
   background: transparent;
   color: var(--ann-pip);
   cursor: pointer;
@@ -2832,8 +2831,8 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 
 .iboard-student-note__check svg {
   display: block;
-  width: 11px;
-  height: 11px;
+  width: 8px;
+  height: 8px;
 }
 
 .iboard-student-note__check:disabled {

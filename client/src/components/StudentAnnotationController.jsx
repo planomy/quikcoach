@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   COMMENT_HOVER_WASH,
   annotationMarkersMatch,
   commentTone,
-  documentAnnotationChange,
   locateAnnotationRange,
   plainTextFromElement,
   rangeContainsPoint,
@@ -13,7 +12,6 @@ import {
   setNamedHighlight,
   stackGutterMarkers,
 } from '../lib/annotations.js';
-import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 import StudentCommentNote from './StudentCommentNote.jsx';
 
@@ -25,9 +23,6 @@ const HOVER_HIGHLIGHT_NAME = 'iboard-student-hover-comment';
 const NOTE_HEIGHT = 22;
 const NOTE_RAIL = 188;
 const MARKER_MARGIN = 6;
-const POPUP_WIDTH = 320;
-/** Placement budget — keep the action button visible on short iPad viewports. */
-const POPUP_HEIGHT = 360;
 const AUTO_FIX_DELAY_MS = 700;
 
 function currentStudentId() {
@@ -58,7 +53,7 @@ function markerPosition(rangeRect, editorRect) {
   const right = (editorRect?.right || rangeRect.right + NOTE_RAIL) - 12;
   const left = rangeRect.left;
   return clampOnScreen({
-    top: rangeRect.top + rangeRect.height / 2 - NOTE_HEIGHT / 2,
+    top: rangeRect.bottom - NOTE_HEIGHT,
     left,
     width: Math.max(NOTE_HEIGHT, right - left),
     height: NOTE_HEIGHT,
@@ -75,77 +70,23 @@ function detachedMarkerPosition(editorRect, index) {
 }
 
 
-function studentMarkerKey(marker) {
-  return marker?.annotation?.id != null ? String(marker.annotation.id) : '';
-}
-
-function commentPopupMaxHeight() {
-  const vp = viewportBox();
-  return Math.max(220, Math.min(POPUP_HEIGHT, vp.height - 24));
-}
-
-function commentPopupPosition(marker, lock = null) {
-  const height = commentPopupMaxHeight();
-  return placementNearAnchor({
-    anchor: {
-      top: marker.top,
-      left: marker.left + (marker.width || NOTE_RAIL) - 28,
-      right: marker.left + (marker.width || NOTE_RAIL),
-      bottom: marker.top + NOTE_HEIGHT,
-      width: 28,
-      height: NOTE_HEIGHT,
-    },
-    width: POPUP_WIDTH,
-    height,
-    gap: 10,
-    prefer: 'below',
-    lock,
-  });
-}
-
 export default function StudentAnnotationController({ socket, studentId: suppliedStudentId }) {
   const studentId = Number(suppliedStudentId) || currentStudentId();
   const [annotations, setAnnotations] = useState([]);
   const [markers, setMarkers] = useState([]);
-  const [openMarker, setOpenMarker] = useState(null);
-  const [popupPinned, setPopupPinned] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
-  const [actionError, setActionError] = useState('');
   const [editorTextTick, setEditorTextTick] = useState(0);
   const [hoveredId, setHoveredId] = useState(null);
   const [hoverWash, setHoverWash] = useState(null);
   const moveFrameRef = useRef(null);
   const hoverTargetsRef = useRef([]);
   const hoveredIdRef = useRef(null);
-  const popupPinnedRef = useRef(false);
-  const markersRef = useRef([]);
   const hoverCloseTimerRef = useRef(null);
-  const openPlaceSideRef = useRef(null);
-  const openPlaceKeyRef = useRef('');
   const autoFixQueuedRef = useRef(new Set());
   const autoFixTimersRef = useRef(new Map());
   const checkAgainSnapshotRef = useRef(new Map());
   const detachedSinceRef = useRef(new Map());
   const prevToneRef = useRef(new Map());
-  markersRef.current = markers;
-  popupPinnedRef.current = popupPinned;
-
-  function dismissCommentPopup() {
-    setOpenMarker(null);
-    setPopupPinned(false);
-    setActionError('');
-    hoveredIdRef.current = null;
-    setHoveredId(null);
-    setHoverWash(null);
-    setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
-  }
-
-  function pinCommentPopup(marker) {
-    if (!marker) return;
-    setOpenMarker(marker);
-    setPopupPinned(true);
-    setActionError('');
-  }
 
   const refreshHighlights = useCallback(() => {
     if (typeof document === 'undefined') return;
@@ -259,7 +200,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }, [annotations]);
 
   const markCommentFixed = useCallback(
-    (annotationId, { closePopup = false, showError = false } = {}) => {
+    (annotationId) => {
       const id = Number(annotationId);
       if (!socket || !id) return;
       setAnnotations((prev) =>
@@ -275,10 +216,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             : item
         )
       );
-      if (closePopup) setOpenMarker(null);
       socket.emit('student:annotation-fixed', { annotationId: id }, (ack) => {
         if (ack?.ok) return;
-        if (showError) setActionError('Could not save this check. Try again.');
         autoFixQueuedRef.current.delete(id);
         socket.emit('student:annotations-sync', {}, (syncAck) => {
           if (syncAck?.ok && Array.isArray(syncAck.annotations)) {
@@ -454,11 +393,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }, [hoveredId]);
 
   useEffect(() => {
-    if (openMarker) return;
-    setPopupPinned(false);
-  }, [openMarker]);
-
-  useEffect(() => {
     const cancelClose = () => {
       if (hoverCloseTimerRef.current != null) {
         clearTimeout(hoverCloseTimerRef.current);
@@ -479,12 +413,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       setHoverWash({ key, tone: hit.tone, boxes: hoverRangeBoxes(hit.range) });
     };
     const scheduleClose = () => {
-      if (popupPinnedRef.current) return;
       cancelClose();
       hoverCloseTimerRef.current = setTimeout(() => {
         hoverCloseTimerRef.current = null;
-        if (popupPinnedRef.current) return;
-        setOpenMarker(null);
         applyHover(null);
       }, 160);
     };
@@ -492,15 +423,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const { clientX: x, clientY: y } = event;
       const under = document.elementFromPoint(x, y);
       const fromMark = under?.closest?.('.iboard-student-note')?.dataset?.annKey;
-      const overPopup = !!under?.closest?.('[data-comment-popup]');
       if (fromMark) {
         cancelClose();
         applyHover(fromMark);
-        return;
-      }
-      if (overPopup) {
-        cancelClose();
-        applyHover(hoveredIdRef.current);
         return;
       }
       const hit = hoverTargetsRef.current.find((item) => rangeContainsPoint(item.range, x, y));
@@ -526,74 +451,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
 
   const hoveredTarget = hoverTargetsRef.current.find((item) => item.key === hoveredId) || null;
 
-  useEffect(() => {
-    if (!openMarker) return;
-    const current = markers.find(
-      (marker) => Number(marker.annotation?.id) === Number(openMarker.annotation?.id)
-    );
-    if (!current) {
-      setOpenMarker(null);
-      return;
-    }
-    if (
-      current.top !== openMarker.top ||
-      current.left !== openMarker.left ||
-      current.detached !== openMarker.detached ||
-      current.annotation?.status !== openMarker.annotation?.status
-    ) {
-      setOpenMarker(current);
-    }
-  }, [markers, openMarker]);
-
-  const openPopupPosition = useMemo(() => {
-    if (!openMarker) return null;
-    const key = studentMarkerKey(openMarker);
-    if (openPlaceKeyRef.current !== key) {
-      openPlaceKeyRef.current = key;
-      openPlaceSideRef.current = null;
-    }
-    const next = commentPopupPosition(openMarker, openPlaceSideRef.current);
-    openPlaceSideRef.current = next.side;
-    return next;
-  }, [openMarker]);
-
-  const openMarkerChange = useMemo(() => {
-    if (!openMarker?.annotation) return null;
-    const editor = editorElement();
-    if (!editor) return null;
-    return documentAnnotationChange(openMarker.annotation, plainTextFromElement(editor));
-  }, [openMarker]);
-
-  useEffect(() => {
-    if (!openMarker) return undefined;
-    function onMouseDown(event) {
-      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
-      if (target?.closest?.('[data-teacher-annotation-ui]')) return;
-      dismissCommentPopup();
-    }
-    document.addEventListener('mousedown', onMouseDown);
-    return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [openMarker]);
-
   function markCommentFixedManual(marker) {
     if (!marker?.annotation?.id || actionBusy) return;
     setActionBusy(true);
-    setActionError('');
     autoFixQueuedRef.current.add(Number(marker.annotation.id));
-    markCommentFixed(marker.annotation.id, { closePopup: true, showError: true });
-    dismissCommentPopup();
+    markCommentFixed(marker.annotation.id);
     setActionBusy(false);
   }
-
-  const openTone = commentTone(openMarker?.annotation, openMarker?.detached);
-  const showChangedPassage = !!openMarkerChange;
-  const openLiveText = editorElement() ? plainTextFromElement(editorElement()) : '';
-  const reopenSnapshot = openMarker
-    ? checkAgainSnapshotRef.current.get(Number(openMarker.annotation?.id))
-    : null;
-  const needsManualCheck =
-    (openTone === 'open' && !openMarker?.detached) ||
-    (openTone === 'reopen' && (reopenSnapshot == null || openLiveText === reopenSnapshot));
 
   return (
     <>
@@ -632,95 +496,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             data-ann-key={String(marker.annotation.id)}
             className="fixed z-[50]"
             style={{ top: marker.top, left: marker.left, width: marker.width || undefined }}
-            onOpen={() => pinCommentPopup(marker)}
             onCheck={() => markCommentFixedManual(marker)}
           />
         );
       })}
-      {openMarker && openPopupPosition && (
-        <div
-          data-teacher-annotation-ui
-          data-comment-popup
-          onPointerDown={() => pinCommentPopup(openMarker)}
-          className="fixed z-[70] flex w-[320px] flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
-          style={{
-            top: openPopupPosition.top,
-            left: openPopupPosition.left,
-            maxHeight: commentPopupMaxHeight(),
-          }}
-        >
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-2">
-            {openTone === 'resolved' ? (
-              <p className="mb-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                Teacher confirmed fixed
-              </p>
-            ) : openTone === 'fixed' ? null : openTone === 'reopen' ? (
-              <p className="mb-1.5 text-sm font-semibold text-rose-600 dark:text-rose-300">
-                Check this again please
-              </p>
-            ) : (
-              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3] dark:text-indigo-300">
-                Teacher comment
-              </p>
-            )}
-            {(openTone === 'open' || openTone === 'reopen') && !openMarker.detached && (
-              <p className="line-clamp-3 text-xs italic text-[#52525c] dark:text-slate-400">
-                “{openMarker.annotation.quote}”
-              </p>
-            )}
-            <p
-              className={`${
-                (openTone === 'open' || openTone === 'reopen') && !openMarker.detached ? 'mt-2' : ''
-              } whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-[#3c3c45] dark:text-slate-100`}
-            >
-              {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
-            </p>
-            {showChangedPassage && (
-              <div className="mt-2.5 space-y-1.5 rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] p-2.5 text-xs dark:border-slate-600 dark:bg-slate-800">
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Was</p>
-                  <p className="mt-0.5 font-medium leading-snug text-[#52525c] line-through decoration-[#c4c4ce] dark:text-slate-400">
-                    {openMarkerChange?.before || openMarker.annotation.quote || '—'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Now</p>
-                  <p className="mt-0.5 font-semibold leading-snug text-[#3c3c45] dark:text-slate-100">
-                    {openMarkerChange?.removed || !openMarkerChange?.after?.trim()
-                      ? 'Removed'
-                      : openMarkerChange.after.trim()}
-                  </p>
-                </div>
-              </div>
-            )}
-            {actionError && <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-300">{actionError}</p>}
-          </div>
-          <div className="shrink-0 border-t border-[#e4e4ea] bg-[#fafafc] p-3 dark:border-slate-700 dark:bg-slate-950/40">
-            {openTone === 'resolved' ? (
-              <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
-                Confirmed fixed
-              </p>
-            ) : openTone === 'fixed' ? (
-              <p className="rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] px-3 py-2 text-xs font-semibold text-[#5c5c68] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                Waiting for your teacher
-              </p>
-            ) : needsManualCheck ? (
-              <button
-                type="button"
-                disabled={actionBusy}
-                onClick={() => markCommentFixedManual(openMarker)}
-                className="w-full rounded-xl bg-[#6b6b78] px-3 py-2.5 text-sm font-bold text-white hover:bg-[#5a5a66] disabled:opacity-50"
-              >
-                {actionBusy ? 'Saving…' : 'I’ve checked this'}
-              </button>
-            ) : (
-              <p className="rounded-xl border border-[#d0d0d8] bg-[#f0f0f3] px-3 py-2 text-xs font-semibold text-[#5c5c68] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                Waiting for your teacher
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 }
