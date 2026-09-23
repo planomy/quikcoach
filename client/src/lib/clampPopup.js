@@ -56,6 +56,21 @@ export function placementNearAnchor({
   hysteresis = 16,
 }) {
   const vp = viewportBox();
+  if (prefer === 'side') {
+    const rightLeft = anchor.right + gap;
+    const leftLeft = anchor.left - gap - width;
+    const spaceRight = vp.left + vp.width - padding - rightLeft - width;
+    const spaceLeft = leftLeft - (vp.left + padding);
+    let dock = 'right';
+    if (lock === 'right' && spaceRight >= -hysteresis) dock = 'right';
+    else if (lock === 'left' && spaceLeft >= -hysteresis) dock = 'left';
+    else if (spaceRight >= 0) dock = 'right';
+    else if (spaceLeft >= 0) dock = 'left';
+    else dock = spaceRight >= spaceLeft ? 'right' : 'left';
+    const left = dock === 'right' ? rightLeft : leftLeft;
+    const top = anchor.top + anchor.height / 2 - height / 2;
+    return { ...clampFixedBox({ top, left, width, height, padding }), side: dock };
+  }
   const aboveTop = anchor.top - gap - height;
   const belowTop = anchor.bottom + gap;
   const spaceBelow = vp.top + vp.height - padding - belowTop - height;

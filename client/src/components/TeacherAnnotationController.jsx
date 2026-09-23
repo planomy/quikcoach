@@ -13,6 +13,7 @@ import {
   rangeForPlainOffsets,
   selectionOffsetsWithin,
   clearNamedHighlights,
+  hoverRangeBoxes,
   setCommentHoverHighlight,
   setNamedHighlight,
   stackGutterMarkers,
@@ -20,7 +21,7 @@ import {
 } from '../lib/annotations.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
 import { clientLayoutScale, rectRelativeToScrollElement, subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
-import { confirmDialog, promptDialog } from './ConfirmDialogHost.jsx';
+import { promptDialog } from './ConfirmDialogHost.jsx';
 import HintWrap from './HintWrap.jsx';
 import AnnotationMark from './AnnotationMark.jsx';
 
@@ -29,19 +30,15 @@ const REOPEN_HIGHLIGHT_NAME = 'iboard-teacher-reopen-comments';
 const AWAITING_HIGHLIGHT_NAME = 'iboard-teacher-awaiting-comments';
 const FIXED_HIGHLIGHT_NAME = 'iboard-teacher-fixed-comments';
 const HOVER_HIGHLIGHT_NAME = 'iboard-teacher-hover-comment';
-const CUSTOM_COMMENTS_KEY = 'iboard-teacher-custom-inline-comments';
-const FAVOURITE_COMMENTS_KEY = 'iboard-teacher-favourite-inline-comments';
-const COMMENT_BANKS_KEY = 'iboard-teacher-comment-banks-v1';
-const DEFAULT_BANK_ID = 'default';
-const MAX_FAVOURITES = 8;
-const MAX_BANKS = 12;
-const MAX_BANK_COMMENTS = 40;
-const PENDING_WIDTH = 400;
+const PENDING_HIGHLIGHT_NAME = 'iboard-teacher-pending-comment';
+const EXTRA_PILLS_KEY = 'iboard-teacher-extra-comment-pills';
+const MAX_PILLS = 20;
+const PENDING_WIDTH = 268;
 
 /** Max scrollable panel height — not the height used for initial placement. */
-const PENDING_MAX_HEIGHT = 440;
-/** Compact type-first composer; grows when Quick tray opens. */
-const PENDING_PLACE_HEIGHT = 200;
+const PENDING_MAX_HEIGHT = 520;
+/** Side card: header + 6 icon rows + field. Grow when extras are added. */
+const PENDING_PLACE_HEIGHT = 420;
 const OPEN_WIDTH = 320;
 /** Placement budget for the open-comment card; CSS max-height lets it grow with the note. */
 const OPEN_PLACE_HEIGHT = 280;
@@ -54,152 +51,162 @@ const LANE_GAP = 10;
 const COMPACT_GUTTER_INSET = 5;
 const COMPACT_LANE_GAP = 3;
 
-const CHIT_CATEGORIES = [
-  { id: 'fix', label: 'Fix' },
-  { id: 'shape', label: 'Shape' },
-  { id: 'craft', label: 'Craft' },
-  { id: 'praise', label: 'Praise' },
+const SHIPPED_PILLS = [
+  { id: 'spelling', label: 'Spelling', text: 'Spelling' },
+  { id: 'punctuation', label: 'Punctuation', text: 'Punctuation' },
+  { id: 'tense', label: 'Tense', text: 'Tense' },
+  { id: 'not-clear', label: 'Not clear', text: 'Not clear' },
+  { id: 'repetition', label: 'Repetition', text: 'Repetition' },
+  { id: 'split', label: 'Split this here', text: 'Split this here' },
+  { id: 'fragment', label: 'Fragment', text: 'Fragment' },
+  { id: 'too-wordy', label: 'Too wordy', text: 'Too wordy' },
+  { id: 'choose-better', label: 'Choose better', text: 'Choose better' },
+  { id: 'irrelevant', label: 'Irrelevant', text: 'Irrelevant' },
+  { id: 'add-depth', label: 'Add depth / details', text: 'Add depth / details' },
+  { id: 'this-is-good', label: 'This is good', text: 'This is good' },
 ];
 
-/**
- * Default bank: short chip labels, fuller text sent to the student.
- * Keep `text` stable — pins / banks are stored by that string.
- */
-const CORE_COMMENT_DEFS = [
-  { label: 'Spelling', text: 'Spelling', category: 'fix' },
-  { label: 'Punctuation', text: 'Punctuation', category: 'fix' },
-  { label: 'Grammar', text: 'Grammar', category: 'fix' },
-  { label: 'Fragment', text: 'Fragment sentence', category: 'fix' },
-  { label: 'Tense', text: 'Tense slip', category: 'fix' },
-  { label: 'Repeated', text: 'Repeated word or idea', category: 'fix' },
-  { label: 'Wrong word', text: 'Wrong word choice', category: 'fix' },
-  { label: 'New ¶', text: 'New paragraph here', category: 'shape' },
-  { label: 'Split sentence', text: 'Split this sentence', category: 'shape' },
-  { label: 'Move this', text: 'This belongs somewhere else', category: 'shape' },
-  { label: 'Topic sentence?', text: "Where's your topic sentence?", category: 'shape' },
-  { label: 'Cut words', text: 'Which words could go?', category: 'craft' },
-  { label: 'Precise word', text: "What's a more precise word?", category: 'craft' },
-  { label: 'Restart', text: 'How else could this start?', category: 'craft' },
-  { label: "Show, don't tell", text: 'Show me this instead of telling me', category: 'craft' },
-  { label: 'Argument?', text: 'What are you arguing here?', category: 'craft' },
-  { label: 'So what?', text: 'This tells me what happens — what does it mean?', category: 'craft' },
-  { label: 'Evidence?', text: "What's your evidence?", category: 'craft' },
-  { label: 'Quote meaning', text: 'What does this quote actually suggest?', category: 'craft' },
-  { label: 'Link to Q', text: 'How does this link to the question?', category: 'craft' },
-  { label: 'Say it again', text: 'Not following you — say it another way', category: 'craft' },
-  { label: 'Love this', text: 'Love this', category: 'praise' },
-  { label: 'Best line', text: 'This is your best line so far', category: 'praise' },
-  { label: 'More like this', text: 'More like this', category: 'praise' },
-];
-
-const CORE_COMMENTS = CORE_COMMENT_DEFS.map((item) => item.text);
-const CORE_LABEL_BY_TEXT = Object.fromEntries(CORE_COMMENT_DEFS.map((item) => [item.text, item.label]));
-/** First-run pins so Default opens as a toolkit, not a wall. */
-const DEFAULT_STARTER_PINS = [
-  'Spelling',
-  'Punctuation',
-  'Grammar',
-  'New paragraph here',
-  'Love this',
-  'More like this',
-];
-
-function chitLabel(text) {
-  return CORE_LABEL_BY_TEXT[text] || text;
-}
-
-function starterPins() {
-  return DEFAULT_STARTER_PINS.filter((item) => CORE_COMMENTS.includes(item)).slice(0, MAX_FAVOURITES);
-}
-function normalizeCommentList(raw, limit) {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((item) => String(item || '').trim().slice(0, 500)).filter(Boolean).slice(0, limit);
-}
-
-function newBankId() {
-  return `bank-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-function normalizeBank(raw) {
-  if (!raw || typeof raw !== 'object') return null;
-  const id = String(raw.id || '').trim();
-  const name = String(raw.name || '').trim().slice(0, 40);
-  if (!id || id === DEFAULT_BANK_ID || !name) return null;
-  const comments = normalizeCommentList(raw.comments, MAX_BANK_COMMENTS);
-  const favourites = normalizeCommentList(raw.favourites, MAX_FAVOURITES).filter((item) => comments.includes(item));
-  return { id, name, comments, favourites };
-}
-
-function loadLegacyCustoms() {
-  try {
-    return normalizeCommentList(JSON.parse(localStorage.getItem(CUSTOM_COMMENTS_KEY) || '[]'), MAX_BANK_COMMENTS);
-  } catch {
-    return [];
-  }
-}
-
-function loadLegacyFavourites(known) {
-  try {
-    const knownSet = new Set(known);
-    return normalizeCommentList(JSON.parse(localStorage.getItem(FAVOURITE_COMMENTS_KEY) || '[]'), MAX_FAVOURITES).filter(
-      (item) => knownSet.has(item)
-    );
-  } catch {
-    return [];
-  }
-}
-
-function loadCommentBankState() {
-  const empty = {
-    activeId: DEFAULT_BANK_ID,
-    defaultFavourites: starterPins(),
-    banks: [],
+function PillIcon({ name }) {
+  const common = {
+    width: 16,
+    height: 16,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.85,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
   };
-  if (typeof window === 'undefined') return empty;
-  try {
-    const parsed = JSON.parse(localStorage.getItem(COMMENT_BANKS_KEY) || 'null');
-    if (parsed && typeof parsed === 'object') {
-      const banks = Array.isArray(parsed.banks)
-        ? parsed.banks.map(normalizeBank).filter(Boolean).slice(0, MAX_BANKS)
-        : [];
-      const activeId =
-        parsed.activeId === DEFAULT_BANK_ID || banks.some((bank) => bank.id === parsed.activeId)
-          ? parsed.activeId
-          : DEFAULT_BANK_ID;
-      const savedPins = normalizeCommentList(parsed.defaultFavourites, MAX_FAVOURITES).filter((item) =>
-        CORE_COMMENTS.includes(item)
+  switch (name) {
+    case 'spelling':
+      return (
+        <svg {...common}>
+          <path d="M5 19 10 5h2l5 14" />
+          <path d="M7.2 14h7.6" />
+        </svg>
       );
-      const legacyPins = loadLegacyFavourites(CORE_COMMENTS);
-      return {
-        activeId,
-        defaultFavourites: savedPins.length ? savedPins : legacyPins.length ? legacyPins : starterPins(),
-        banks,
-      };
-    }
-  } catch {
-    /* fall through to migrate */
+    case 'punctuation':
+      return (
+        <svg {...common}>
+          <path d="M8 6h3v6H8z" />
+          <path d="M8 12c0 3-1.2 4.2-3 5" />
+          <path d="M15 6h3v6h-3z" />
+          <path d="M15 12c0 3-1.2 4.2-3 5" />
+        </svg>
+      );
+    case 'tense':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 8v4.5L15 15" />
+        </svg>
+      );
+    case 'not-clear':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M9.4 9.6a2.6 2.6 0 1 1 3.7 2.3c-.9.5-1.2 1.1-1.2 2.1" />
+          <path d="M12 17.2v.2" />
+        </svg>
+      );
+    case 'repetition':
+      return (
+        <svg {...common}>
+          <path d="M7 8h9l-2.4-2.4" />
+          <path d="M17 16H8l2.4 2.4" />
+        </svg>
+      );
+    case 'split':
+      return (
+        <svg {...common}>
+          <path d="M12 3v18" />
+          <path d="M5 9h5L7.5 6.5" />
+          <path d="M19 15h-5l2.5 2.5" />
+        </svg>
+      );
+    case 'fragment':
+      return (
+        <svg {...common}>
+          <path d="M4 12h5l2-3 2 6 2-3h5" />
+        </svg>
+      );
+    case 'too-wordy':
+      return (
+        <svg {...common}>
+          <path d="M6 7h12" />
+          <path d="M6 12h8" />
+          <path d="M6 17h5" />
+          <path d="M17 14v5" />
+          <path d="M15 17h4" />
+        </svg>
+      );
+    case 'choose-better':
+      return (
+        <svg {...common}>
+          <path d="M7 8h10L14 5" />
+          <path d="M17 16H7l3 3" />
+        </svg>
+      );
+    case 'irrelevant':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M6.8 6.8 17.2 17.2" />
+        </svg>
+      );
+    case 'add-depth':
+      return (
+        <svg {...common}>
+          <path d="M12 4 20 8l-8 4-8-4 8-4z" />
+          <path d="m4 12 8 4 8-4" />
+          <path d="m4 16 8 4 8-4" />
+        </svg>
+      );
+    case 'this-is-good':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="m8 12.4 2.8 2.8L16.4 9.4" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common}>
+          <path d="M5 6h14v10H8l-3 3z" />
+        </svg>
+      );
   }
-  const legacyCustoms = loadLegacyCustoms();
-  const legacyPins = loadLegacyFavourites(CORE_COMMENTS);
-  return {
-    activeId: DEFAULT_BANK_ID,
-    defaultFavourites: legacyPins.length ? legacyPins : starterPins(),
-    banks: legacyCustoms.length
-      ? [{ id: newBankId(), name: 'My comments', comments: legacyCustoms, favourites: [] }]
-      : [],
-  };
 }
 
-function saveCommentBankState(state) {
+function normalizeExtraPills(raw) {
+  if (!Array.isArray(raw)) return [];
+  const shipped = new Set(SHIPPED_PILLS.map((item) => item.text.toLocaleLowerCase()));
+  const seen = new Set();
+  const extras = [];
+  for (const item of raw) {
+    const text = String(item || '').trim().slice(0, 80);
+    const key = text.toLocaleLowerCase();
+    if (!text || shipped.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    extras.push(text);
+    if (SHIPPED_PILLS.length + extras.length >= MAX_PILLS) break;
+  }
+  return extras;
+}
+
+function loadExtraPills() {
+  if (typeof window === 'undefined') return [];
   try {
-    localStorage.setItem(
-      COMMENT_BANKS_KEY,
-      JSON.stringify({
-        activeId: state.activeId,
-        defaultFavourites: state.defaultFavourites.slice(0, MAX_FAVOURITES),
-        banks: state.banks.slice(0, MAX_BANKS),
-      })
-    );
+    return normalizeExtraPills(JSON.parse(localStorage.getItem(EXTRA_PILLS_KEY) || '[]'));
+  } catch {
+    return [];
+  }
+}
+
+function saveExtraPills(list) {
+  try {
+    localStorage.setItem(EXTRA_PILLS_KEY, JSON.stringify(normalizeExtraPills(list)));
   } catch {
     /* ignore storage failures */
   }
@@ -413,13 +420,18 @@ function annotationMap(raw) {
   return out;
 }
 
+function pendingRangeKey(pending) {
+  if (!pending) return '';
+  return `${pending.studentId}:${pending.start}:${pending.end}`;
+}
+
 export default function TeacherAnnotationController() {
   const [socket, setSocket] = useState(currentSocket);
   const [byStudent, setByStudent] = useState({});
   const [pending, setPending] = useState(null);
   const [draftNote, setDraftNote] = useState('');
   const [quickStack, setQuickStack] = useState([]);
-  const [bankState, setBankState] = useState(loadCommentBankState);
+  const [extraPills, setExtraPills] = useState(loadExtraPills);
   const [customCommentDraft, setCustomCommentDraft] = useState('');
   const [addingCustomComment, setAddingCustomComment] = useState(false);
   const [commentError, setCommentError] = useState('');
@@ -432,8 +444,7 @@ export default function TeacherAnnotationController() {
   const [reviewBusyId, setReviewBusyId] = useState(null);
   const [reviewError, setReviewError] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [chitCategory, setChitCategory] = useState(null);
-  const [quickTrayOpen, setQuickTrayOpen] = useState(false);
+  const [pendingWash, setPendingWash] = useState(null);
   const [hoveredKey, setHoveredKey] = useState(null);
   const moveFrameRef = useRef(null);
   const hoverTargetsRef = useRef([]);
@@ -450,10 +461,6 @@ export default function TeacherAnnotationController() {
   const pendingPanelRef = useRef(null);
   const draftNoteLatestRef = useRef('');
   const quickPrefixRef = useRef('');
-  const quickHoverOpenRef = useRef(null);
-  const quickHoverCloseRef = useRef(null);
-  /** Click/tap keeps the tray open; hover alone auto-closes on leave. */
-  const quickPinnedOpenRef = useRef(false);
   markersRef.current = markers;
   pendingRef.current = pending;
   popupPinnedRef.current = popupPinned;
@@ -474,88 +481,34 @@ export default function TeacherAnnotationController() {
     setReviewError('');
   }
 
-  const activeBankId = bankState.activeId || DEFAULT_BANK_ID;
-  const isDefaultBank = activeBankId === DEFAULT_BANK_ID;
-  const activeCustomBank = useMemo(
-    () => bankState.banks.find((bank) => bank.id === activeBankId) || null,
-    [bankState.banks, activeBankId]
-  );
-  const activeComments = isDefaultBank ? CORE_COMMENTS : activeCustomBank?.comments || [];
-  const activeFavourites = isDefaultBank
-    ? bankState.defaultFavourites
-    : activeCustomBank?.favourites || [];
-  const pinnedComments = useMemo(
-    () => activeFavourites.filter((item) => activeComments.includes(item)),
-    [activeFavourites, activeComments]
-  );
-  const favouriteSet = useMemo(() => new Set(pinnedComments), [pinnedComments]);
-  const browseComments = useMemo(() => {
-    if (isDefaultBank) {
-      if (!chitCategory) return [];
-      return CORE_COMMENT_DEFS
-        .filter((item) => item.category === chitCategory && !favouriteSet.has(item.text))
-        .map((item) => item.text);
+  function paintPendingSelection() {
+    const current = pendingRef.current;
+    if (!current) {
+      setNamedHighlight(PENDING_HIGHLIGHT_NAME, []);
+      setPendingWash((prev) => (prev ? null : prev));
+      return;
     }
-    return activeComments.filter((item) => !favouriteSet.has(item));
-  }, [isDefaultBank, chitCategory, favouriteSet, activeComments]);
-
-  function commitBankState(updater) {
-    setBankState((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      saveCommentBankState(next);
-      return next;
-    });
-  }
-
-  function selectCommentBank(bankId) {
-    commitBankState((prev) => ({ ...prev, activeId: bankId }));
-    setAddingCustomComment(false);
-    setCustomCommentDraft('');
-    setChitCategory(null);
-  }
-
-  function clearQuickHoverTimers() {
-    if (quickHoverOpenRef.current != null) {
-      window.clearTimeout(quickHoverOpenRef.current);
-      quickHoverOpenRef.current = null;
+    const card = cardForStudent(current.studentId);
+    if (!card) {
+      setNamedHighlight(PENDING_HIGHLIGHT_NAME, []);
+      setPendingWash((prev) => (prev ? null : prev));
+      return;
     }
-    if (quickHoverCloseRef.current != null) {
-      window.clearTimeout(quickHoverCloseRef.current);
-      quickHoverCloseRef.current = null;
-    }
-  }
-
-  function resetQuickTray() {
-    clearQuickHoverTimers();
-    quickPinnedOpenRef.current = false;
-    setQuickTrayOpen(false);
-    setChitCategory(null);
-  }
-
-  function openQuickTraySoon() {
-    clearQuickHoverTimers();
-    quickHoverOpenRef.current = window.setTimeout(() => {
-      quickHoverOpenRef.current = null;
-      setQuickTrayOpen(true);
-    }, 140);
-  }
-
-  function closeQuickTraySoon() {
-    if (quickPinnedOpenRef.current) return;
-    clearQuickHoverTimers();
-    quickHoverCloseRef.current = window.setTimeout(() => {
-      quickHoverCloseRef.current = null;
-      setQuickTrayOpen(false);
-      setChitCategory(null);
-    }, 160);
-  }
-
-  function toggleQuickTray() {
-    clearQuickHoverTimers();
-    setQuickTrayOpen((open) => {
-      const next = !open;
-      quickPinnedOpenRef.current = next;
-      if (!next) setChitCategory(null);
+    const writingRoot = contentRootForPane(card.textPane) || card.textPane;
+    const range = rangeForPlainOffsets(writingRoot, current.start, current.end, current.quote);
+    setNamedHighlight(PENDING_HIGHLIGHT_NAME, range ? [range] : [], { force: true });
+    const boxes = range ? hoverRangeBoxes(range) : [];
+    const next = boxes.length ? { key: pendingRangeKey(current), boxes } : null;
+    setPendingWash((prev) => {
+      if (!next) return prev ? null : prev;
+      if (prev?.key === next.key && prev.boxes.length === next.boxes.length
+        && prev.boxes.every((box, index) => (
+          Math.abs(box.top - next.boxes[index].top) <= 1
+          && Math.abs(box.left - next.boxes[index].left) <= 1
+          && Math.abs(box.width - next.boxes[index].width) <= 1
+        ))) {
+        return prev;
+      }
       return next;
     });
   }
@@ -649,6 +602,7 @@ export default function TeacherAnnotationController() {
     setNamedHighlight(REOPEN_HIGHLIGHT_NAME, reopenRanges);
     setNamedHighlight(AWAITING_HIGHLIGHT_NAME, awaitingRanges);
     setNamedHighlight(FIXED_HIGHLIGHT_NAME, resolvedRanges);
+    paintPendingSelection();
     hoverTargetsRef.current = hoverTargets;
     const lit = hoverTargets.find((item) => item.key === hoveredKeyRef.current);
     if (lit?.range) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit.range);
@@ -762,6 +716,7 @@ export default function TeacherAnnotationController() {
         AWAITING_HIGHLIGHT_NAME,
         FIXED_HIGHLIGHT_NAME,
         HOVER_HIGHLIGHT_NAME,
+        PENDING_HIGHLIGHT_NAME,
       ]);
     };
   }, [refreshHighlights]);
@@ -852,6 +807,8 @@ export default function TeacherAnnotationController() {
   useEffect(() => {
     function clearPendingComposer() {
       setPending(null);
+      setPendingWash(null);
+      setNamedHighlight(PENDING_HIGHLIGHT_NAME, []);
       dismissCommentPopup();
       setQuickStack([]);
       draftNoteLatestRef.current = '';
@@ -874,6 +831,20 @@ export default function TeacherAnnotationController() {
       const fullText = plainTextFromElement(writingRoot);
       const offsets = selectionOffsetsWithin(writingRoot, fullText);
       if (!offsets || offsets.quote.length > 1200) return;
+      const existing = pendingRef.current;
+      if (
+        existing
+        && Number(existing.studentId) === Number(card.studentId)
+        && existing.start === offsets.start
+        && existing.end === offsets.end
+      ) {
+        return;
+      }
+      // Double-click / iPad word-expand: keep the side we already chose.
+      if (existing && Number(existing.studentId) === Number(card.studentId) && !allowCollapsedClear) {
+        setPending((prev) => (prev ? { ...prev, ...offsets } : prev));
+        return;
+      }
       const highlightRange = rangeForPlainOffsets(writingRoot, offsets.start, offsets.end, offsets.quote) || range;
       const rect = highlightRange.getBoundingClientRect();
       setDraftNote('');
@@ -892,7 +863,7 @@ export default function TeacherAnnotationController() {
         anchor: rect,
         width: panelWidth,
         height: placeHeight,
-        prefer: 'below',
+        prefer: 'side',
         padding: 8,
       });
       setPending({
@@ -1042,7 +1013,7 @@ export default function TeacherAnnotationController() {
             anchor,
             width,
             height: measured,
-            prefer: 'below',
+            prefer: 'side',
             padding: 8,
             lock: pending.placeSide || null,
           })
@@ -1052,7 +1023,7 @@ export default function TeacherAnnotationController() {
             width,
             height: measured,
             padding: 8,
-          }), side: pending.placeSide || 'below' };
+          }), side: pending.placeSide || 'right' };
       setPending((prev) => {
         if (!prev) return prev;
         if (
@@ -1068,21 +1039,16 @@ export default function TeacherAnnotationController() {
     };
     const frame = requestAnimationFrame(place);
     return () => cancelAnimationFrame(frame);
-  }, [pending?.studentId, pending?.start, pending?.end, pending?.anchor, pinnedComments.length, browseComments.length, addingCustomComment, activeBankId, chitCategory, quickTrayOpen]);
+  }, [pending?.studentId, pending?.start, pending?.end, pending?.anchor, extraPills.length, addingCustomComment]);
 
   useEffect(() => {
-    resetQuickTray();
-    // Fresh selection always opens type-first — never remember an expanded Quick tray.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset on each new pending anchor only
+    setAddingCustomComment(false);
+    setCustomCommentDraft('');
   }, [pending?.studentId, pending?.start, pending?.end]);
 
-  useEffect(() => () => clearQuickHoverTimers(), []);
-
   useEffect(() => {
-    // Persist migrated legacy customs on first mount.
-    saveCommentBankState(bankState);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot hydrate write
-  }, []);
+    paintPendingSelection();
+  }, [pending?.studentId, pending?.start, pending?.end, pending?.quote]);
 
   async function copyPendingSelection() {
     const text = String(pending?.quote || '');
@@ -1138,12 +1104,15 @@ export default function TeacherAnnotationController() {
 
   function closePending() {
     setPending(null);
+    setPendingWash(null);
+    setNamedHighlight(PENDING_HIGHLIGHT_NAME, []);
     setDraftNote('');
     setQuickStack([]);
     draftNoteLatestRef.current = '';
     quickPrefixRef.current = '';
     setCommentError('');
-    resetQuickTray();
+    setAddingCustomComment(false);
+    setCustomCommentDraft('');
   }
 
   function focusDraftEnd(text) {
@@ -1195,142 +1164,38 @@ export default function TeacherAnnotationController() {
     addComment(text);
   }
 
-  function undoQuickComment() {
-    setQuickStack((prev) => {
-      if (!prev.length) return prev;
-      const next = prev.slice(0, -1);
-      writeQuickDraft(quickPrefixRef.current, next);
-      return next;
-    });
-  }
-
-  function addCustomComment() {
-    if (isDefaultBank || !activeCustomBank) return;
-    const comment = customCommentDraft.trim().slice(0, 500);
+  function addExtraPill() {
+    const comment = customCommentDraft.trim().slice(0, 80);
     if (!comment) return;
-    const existing = activeCustomBank.comments.find(
-      (item) => item.toLocaleLowerCase() === comment.toLocaleLowerCase()
-    );
-    // Save to the bank only — do not also stack into the draft comment.
-    if (!existing) {
-      commitBankState((prev) => ({
-        ...prev,
-        banks: prev.banks.map((bank) =>
-          bank.id === activeCustomBank.id
-            ? { ...bank, comments: [...bank.comments, comment].slice(0, MAX_BANK_COMMENTS) }
-            : bank
-        ),
-      }));
+    const key = comment.toLocaleLowerCase();
+    if (SHIPPED_PILLS.some((item) => item.text.toLocaleLowerCase() === key) || extraPills.some((item) => item.toLocaleLowerCase() === key)) {
+      setAddingCustomComment(false);
+      setCustomCommentDraft('');
+      return;
     }
+    if (SHIPPED_PILLS.length + extraPills.length >= MAX_PILLS) {
+      setCommentError(`You already have ${MAX_PILLS} pills.`);
+      return;
+    }
+    const next = normalizeExtraPills([...extraPills, comment]);
+    setExtraPills(next);
+    saveExtraPills(next);
     setCustomCommentDraft('');
     setAddingCustomComment(false);
+    setCommentError('');
+    requestAnimationFrame(() => draftNoteRef.current?.focus());
   }
 
-  function removeCustomComment(comment) {
-    if (isDefaultBank || !activeCustomBank) return;
-    commitBankState((prev) => ({
-      ...prev,
-      banks: prev.banks.map((bank) =>
-        bank.id === activeCustomBank.id
-          ? {
-              ...bank,
-              comments: bank.comments.filter((item) => item !== comment),
-              favourites: bank.favourites.filter((item) => item !== comment),
-            }
-          : bank
-      ),
-    }));
+  function removeExtraPill(comment) {
+    const next = extraPills.filter((item) => item !== comment);
+    setExtraPills(next);
+    saveExtraPills(next);
     setQuickStack((prev) => {
       if (!prev.includes(comment)) return prev;
       const stack = prev.filter((item) => item !== comment);
       writeQuickDraft(quickPrefixRef.current, stack);
       return stack;
     });
-  }
-
-  function toggleFavouriteComment(comment) {
-    commitBankState((prev) => {
-      if (prev.activeId === DEFAULT_BANK_ID) {
-        const pinned = prev.defaultFavourites.includes(comment);
-        if (pinned) {
-          return { ...prev, defaultFavourites: prev.defaultFavourites.filter((item) => item !== comment) };
-        }
-        if (prev.defaultFavourites.length >= MAX_FAVOURITES) return prev;
-        return { ...prev, defaultFavourites: [...prev.defaultFavourites, comment] };
-      }
-      return {
-        ...prev,
-        banks: prev.banks.map((bank) => {
-          if (bank.id !== prev.activeId) return bank;
-          const pinned = bank.favourites.includes(comment);
-          if (pinned) {
-            return { ...bank, favourites: bank.favourites.filter((item) => item !== comment) };
-          }
-          if (bank.favourites.length >= MAX_FAVOURITES) return bank;
-          return { ...bank, favourites: [...bank.favourites, comment] };
-        }),
-      };
-    });
-  }
-
-  async function createCommentBank() {
-    if (bankState.banks.length >= MAX_BANKS) {
-      setCommentError(`You already have ${MAX_BANKS} comment banks.`);
-      return;
-    }
-    const name = await promptDialog({
-      title: 'New comment bank',
-      message: 'Name this set for a class or subject — e.g. Junior English, Y10 History, Y12 Ancient.',
-      inputLabel: 'Bank name',
-      placeholder: 'Y10 History',
-      confirmLabel: 'Create bank',
-      defaultValue: '',
-    });
-    const trimmed = String(name || '').trim().slice(0, 40);
-    if (!trimmed) return;
-    const id = newBankId();
-    commitBankState((prev) => ({
-      ...prev,
-      activeId: id,
-      banks: [...prev.banks, { id, name: trimmed, comments: [], favourites: [] }].slice(0, MAX_BANKS),
-    }));
-    setAddingCustomComment(true);
-    setCustomCommentDraft('');
-  }
-
-  async function renameActiveBank() {
-    if (isDefaultBank || !activeCustomBank) return;
-    const name = await promptDialog({
-      title: 'Rename comment bank',
-      message: 'Teachers often keep one bank per class or subject.',
-      inputLabel: 'Bank name',
-      placeholder: activeCustomBank.name,
-      confirmLabel: 'Save name',
-      defaultValue: activeCustomBank.name,
-    });
-    const trimmed = String(name || '').trim().slice(0, 40);
-    if (!trimmed) return;
-    commitBankState((prev) => ({
-      ...prev,
-      banks: prev.banks.map((bank) => (bank.id === activeCustomBank.id ? { ...bank, name: trimmed } : bank)),
-    }));
-  }
-
-  async function deleteActiveBank() {
-    if (isDefaultBank || !activeCustomBank) return;
-    const ok = await confirmDialog({
-      title: `Delete “${activeCustomBank.name}”?`,
-      message: 'The chits in this bank will be removed from this browser. Default comments stay.',
-      confirmLabel: 'Delete bank',
-      tone: 'danger',
-    });
-    if (!ok) return;
-    commitBankState((prev) => ({
-      ...prev,
-      activeId: DEFAULT_BANK_ID,
-      banks: prev.banks.filter((bank) => bank.id !== activeCustomBank.id),
-    }));
-    setAddingCustomComment(false);
   }
 
   function addComment(noteOverride) {
@@ -1479,53 +1344,53 @@ export default function TeacherAnnotationController() {
     );
   }
 
-  function renderChitChip(comment, { pinned }) {
-    const selected = quickStack.includes(comment);
-    const pinBlocked = !pinned && activeFavourites.length >= MAX_FAVOURITES;
-    const label = chitLabel(comment);
+  function renderShippedPill(pill) {
+    const selected = quickStack.includes(pill.text);
     return (
-      <span
-        key={comment}
-        className={`group inline-flex max-w-full items-stretch overflow-hidden rounded-lg border text-[11px] font-semibold leading-tight transition ${
-          selected
-            ? 'border-[#5a5fc3] bg-[#5a5fc3] text-white shadow-sm'
-            : pinned
-              ? 'border-[#cfcce8] bg-[#ebeaf8] text-[#3c3c45] shadow-sm dark:border-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-100'
+      <HintWrap key={pill.id} hint={pill.label} prefer="above" className="w-full">
+        <button
+          type="button"
+          title=""
+          aria-label={`${pill.label}. Click to send. Shift-click to stack.`}
+          onClick={(event) => handleQuickCommentClick(event, pill.text)}
+          className={`grid h-8 w-full place-items-center rounded-lg border transition ${
+            selected
+              ? 'border-[#5a5fc3] bg-[#5a5fc3] text-white'
               : 'border-[#d5d4e4] bg-white text-[#52525c] hover:border-[#cfcce8] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/40'
-        }`}
-      >
-        <button
-          type="button"
-          onClick={(event) => handleQuickCommentClick(event, comment)}
-          title={`${comment} · Tap to send · Shift+tap to stack`}
-          className="px-2 py-1 text-left hover:brightness-95"
+          }`}
         >
-          {label}
+          <PillIcon name={pill.id} />
         </button>
-        <button
-          type="button"
-          onClick={() => toggleFavouriteComment(comment)}
-          disabled={pinBlocked}
-          className={`shrink-0 border-l border-current/15 px-1.5 text-[10px] ${
-            pinned
-              ? 'text-[#5a5fc3] dark:text-indigo-300'
-              : 'text-current/35 opacity-0 hover:text-[#5a5fc3] group-hover:opacity-100 focus-visible:opacity-100'
-          } disabled:cursor-not-allowed disabled:opacity-0`}
-          aria-label={pinned ? `Unpin ${label}` : `Pin ${label} to Quick`}
-          title={
-            pinned
-              ? 'Unpin from Quick'
-              : pinBlocked
-                ? `Unpin one first (max ${MAX_FAVOURITES})`
-                : 'Pin to Quick'
-          }
-        >
-          {pinned ? '★' : '☆'}
-        </button>
-        {!isDefaultBank && (
-          <RemoveButton onClick={() => removeCustomComment(comment)} aria-label={`Remove chit: ${comment}`} title="Remove chit" />
-        )}
-      </span>
+      </HintWrap>
+    );
+  }
+
+  function renderExtraPill(comment) {
+    const selected = quickStack.includes(comment);
+    return (
+      <div key={comment} className="group relative">
+        <HintWrap hint={comment} prefer="right" className="w-full">
+          <button
+            type="button"
+            title=""
+            aria-label={`${comment}. Click to send. Shift-click to stack.`}
+            onClick={(event) => handleQuickCommentClick(event, comment)}
+            className={`grid h-8 w-full place-items-center rounded-lg border px-1 text-[10px] font-bold leading-none transition ${
+              selected
+                ? 'border-[#5a5fc3] bg-[#5a5fc3] text-white'
+                : 'border-[#d5d4e4] bg-white text-[#52525c] hover:border-[#cfcce8] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+            }`}
+          >
+            <span className="max-w-full truncate">{comment}</span>
+          </button>
+        </HintWrap>
+        <RemoveButton
+          onClick={() => removeExtraPill(comment)}
+          aria-label={`Remove pill: ${comment}`}
+          title=""
+          className="!absolute -right-1 -top-1 !h-4 !w-4 opacity-0 group-hover:opacity-100"
+        />
+      </div>
     );
   }
 
@@ -1572,7 +1437,21 @@ export default function TeacherAnnotationController() {
         ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(107, 107, 120, 0.16); }
         ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
         ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
+        ::highlight(${PENDING_HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.4); }
       `}</style>
+      {(pendingWash?.boxes || []).map((box, index) => (
+        <span
+          key={`pending-wash-${pendingWash.key}-${index}`}
+          className="iboard-ann-hover-wash"
+          style={{
+            top: box.top,
+            left: box.left,
+            width: box.width,
+            height: box.height,
+            background: 'rgba(90, 95, 195, 0.4)',
+          }}
+        />
+      ))}
 
       {markers.map((marker) => renderMarkerButton(marker))}
 
@@ -1601,250 +1480,56 @@ export default function TeacherAnnotationController() {
               >
                 Copy
               </button>
-              <div
-                onMouseEnter={openQuickTraySoon}
-                onMouseLeave={closeQuickTraySoon}
-              >
+              <HintWrap hint={SHIPPED_PILLS.length + extraPills.length >= MAX_PILLS ? `Pills are full (${MAX_PILLS})` : 'Add a pill'} prefer="below">
                 <button
                   type="button"
-                  onClick={toggleQuickTray}
-                  aria-expanded={quickTrayOpen}
-                  aria-label={quickTrayOpen ? 'Hide quick comments' : 'Show quick comments'}
-                  title="Quick comments"
-                  className={`grid h-7 w-7 place-items-center rounded-md border text-slate-600 transition dark:text-slate-300 ${
-                    quickTrayOpen
-                      ? 'border-[#cfcce8] bg-[#ebeaf8] text-[#5a5fc3] dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'
-                      : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
-                  }`}
+                  title=""
+                  disabled={SHIPPED_PILLS.length + extraPills.length >= MAX_PILLS}
+                  aria-label="Add a pill"
+                  onClick={() => {
+                    setAddingCustomComment((open) => !open);
+                    setCustomCommentDraft('');
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-md border border-[#d5d4e4] bg-white text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-200"
                 >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                    <circle cx="5" cy="12" r="1.8" />
-                    <circle cx="12" cy="12" r="1.8" />
-                    <circle cx="19" cy="12" r="1.8" />
-                  </svg>
+                  +
                 </button>
-              </div>
+              </HintWrap>
             </div>
           </div>
 
-          {quickTrayOpen && (
-            <div
-              className="mt-2 flex min-h-0 flex-1 flex-col border-t border-slate-100 pt-2 dark:border-slate-800"
-              onMouseEnter={openQuickTraySoon}
-              onMouseLeave={closeQuickTraySoon}
-            >
-              <div className="flex shrink-0 items-center gap-1">
-                <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <button
-                    type="button"
-                    onClick={() => selectCommentBank(DEFAULT_BANK_ID)}
-                    className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wide transition ${
-                      isDefaultBank
-                        ? 'bg-[#5a5fc3] text-white'
-                        : 'border border-[#d5d4e4] bg-white text-[#52525c] hover:bg-[#ebeaf8] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                    }`}
-                  >
-                    Default
-                  </button>
-                  {bankState.banks.map((bank) => {
-                    const active = bank.id === activeBankId;
-                    return (
-                      <button
-                        key={bank.id}
-                        type="button"
-                        onClick={() => selectCommentBank(bank.id)}
-                        onDoubleClick={() => {
-                          if (active) renameActiveBank();
-                        }}
-                        title={active ? 'Double-click to rename' : bank.name}
-                        className={`max-w-[9rem] shrink-0 truncate rounded-md px-2 py-1 text-[10px] font-black transition ${
-                          active
-                            ? 'bg-[#5a5fc3] text-white'
-                            : 'border border-[#d5d4e4] bg-white text-[#52525c] hover:bg-[#ebeaf8] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                        }`}
-                      >
-                        {bank.name}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={createCommentBank}
-                    disabled={bankState.banks.length >= MAX_BANKS}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#ebeaf8] text-sm font-black text-[#5a5fc3] hover:bg-[#e0dff5] disabled:opacity-40 dark:bg-indigo-950 dark:text-indigo-200"
-                    aria-label="Add a comment bank"
-                    title={bankState.banks.length >= MAX_BANKS ? `Max ${MAX_BANKS} banks` : 'Add a named bank'}
-                  >
-                    +
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={undoQuickComment}
-                  disabled={!quickStack.length}
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ebeaf8] text-[#52525c] hover:bg-[#e0dff5] disabled:opacity-35 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                  aria-label="Undo last quick comment"
-                  title="Undo last quick comment"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 14 4 9l5-5" />
-                    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13" />
-                  </svg>
-                </button>
-              </div>
+          <div className="mt-2 grid min-h-0 grid-cols-2 gap-1 overflow-y-auto overscroll-contain">
+            {SHIPPED_PILLS.map((pill) => renderShippedPill(pill))}
+            {extraPills.map((comment) => renderExtraPill(comment))}
+          </div>
 
-              <div className="mt-1.5 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain">
-                <div>
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[#5a5fc3]">
-                      Quick · ★ pin up to {MAX_FAVOURITES}
-                    </p>
-                    {!isDefaultBank && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={renameActiveBank}
-                          className="rounded px-1.5 py-0.5 text-[9px] font-bold text-[#52525c] hover:bg-[#ebeaf8] dark:hover:bg-slate-800"
-                          title="Rename bank"
-                        >
-                          Rename
-                        </button>
-                        <button
-                          type="button"
-                          onClick={deleteActiveBank}
-                          className="rounded px-1.5 py-0.5 text-[9px] font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                          title="Delete bank"
-                        >
-                          Delete
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAddingCustomComment((open) => !open);
-                            setCustomCommentDraft('');
-                          }}
-                          className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ebeaf8] text-xs font-black text-[#5a5fc3] hover:bg-[#e0dff5] dark:bg-indigo-950 dark:text-indigo-200"
-                          aria-label="Add a chit to this bank"
-                          title="Add a chit to this bank"
-                        >
-                          +
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap content-start gap-1">
-                    {!pinnedComments.length && (
-                      <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
-                        {isDefaultBank
-                          ? 'Open Fix / Shape / Craft / Praise and ★ pin what you use.'
-                          : 'Empty — tap + to add chits, then ★ pin your favourites.'}
-                      </p>
-                    )}
-                    {pinnedComments.map((comment) => renderChitChip(comment, { pinned: true }))}
-                  </div>
-                </div>
-
-                {isDefaultBank ? (
-                  <div>
-                    <div
-                      className="inline-flex w-full rounded-xl border border-[#d5d4e4] bg-[#ebeaf8] p-0.5 dark:border-slate-700 dark:bg-slate-950"
-                      role="tablist"
-                      aria-label="Comment categories"
-                    >
-                      {CHIT_CATEGORIES.map((category) => {
-                        const active = chitCategory === category.id;
-                        return (
-                          <button
-                            key={category.id}
-                            type="button"
-                            role="tab"
-                            aria-selected={active}
-                            onClick={() => setChitCategory((current) => (current === category.id ? null : category.id))}
-                            className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-[10px] font-black transition ${
-                              active
-                                ? 'bg-[#5a5fc3] text-white shadow-sm'
-                                : 'text-[#52525c] hover:bg-white/70 hover:text-[#3c3c45] dark:text-slate-400 dark:hover:text-slate-200'
-                            }`}
-                          >
-                            {category.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {chitCategory ? (
-                      <div className="mt-1.5 flex flex-wrap content-start gap-1" role="tabpanel">
-                        {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
-                        {!browseComments.length && (
-                          <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
-                            All {CHIT_CATEGORIES.find((item) => item.id === chitCategory)?.label || ''} chits are pinned.
-                          </p>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div>
-                    {browseComments.length > 0 && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setChitCategory((current) => (current === 'all' ? null : 'all'))}
-                          className="text-[10px] font-black text-[#5a5fc3] hover:underline dark:text-indigo-300"
-                        >
-                          {chitCategory === 'all' ? 'Hide bank chits' : `Show all bank chits · ${browseComments.length}`}
-                        </button>
-                        {chitCategory === 'all' && (
-                          <div className="mt-1.5 flex flex-wrap content-start gap-1">
-                            {browseComments.map((comment) => renderChitChip(comment, { pinned: false }))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {!activeComments.length && (
-                      <p className="px-0.5 py-1 text-[10px] font-semibold text-slate-400">
-                        Empty bank — tap + to add chits for this class.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {addingCustomComment && !isDefaultBank && (
-                <div className="mt-1.5 shrink-0 rounded-lg border border-[#d5d4e4] bg-[#ebeaf8] p-1.5 dark:border-indigo-900 dark:bg-indigo-950/40">
-                  <label htmlFor="custom-inline-comment" className="text-[9px] font-bold text-[#5a5fc3] dark:text-indigo-200">
-                    New chit in {activeCustomBank?.name || 'this bank'}
-                  </label>
-                  <div className="mt-1 flex gap-1">
-                    <input
-                      id="custom-inline-comment"
-                      autoFocus
-                      value={customCommentDraft}
-                      maxLength={500}
-                      onChange={(event) => setCustomCommentDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          addCustomComment();
-                        }
-                        if (event.key === 'Escape') setAddingCustomComment(false);
-                      }}
-                      placeholder="Type your comment…"
-                      className="min-w-0 flex-1 rounded-md border border-[#d5d4e4] bg-white px-2 py-1 text-[11px] text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      disabled={!customCommentDraft.trim()}
-                      onClick={addCustomComment}
-                      className="rounded-md bg-[#5a5fc3] px-2 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-              )}
+          {addingCustomComment && (
+            <div className="mt-1.5 flex shrink-0 gap-1">
+              <input
+                autoFocus
+                value={customCommentDraft}
+                maxLength={80}
+                onChange={(event) => setCustomCommentDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addExtraPill();
+                  }
+                  if (event.key === 'Escape') setAddingCustomComment(false);
+                }}
+                placeholder="New pill…"
+                className="min-w-0 flex-1 rounded-md border border-[#d5d4e4] bg-white px-2 py-1 text-[11px] text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              />
+              <button
+                type="button"
+                disabled={!customCommentDraft.trim()}
+                onClick={addExtraPill}
+                className="rounded-md bg-[#5a5fc3] px-2 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40"
+              >
+                Add
+              </button>
             </div>
           )}
-
 
           <textarea
             ref={draftNoteRef}
@@ -1867,6 +1552,7 @@ export default function TeacherAnnotationController() {
             placeholder="Type your comment…"
             className="mt-2 min-h-[3.25rem] w-full shrink-0 resize-none rounded-lg border border-[#d5d4e4] px-2.5 py-1.5 text-xs text-[#3c3c45] outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
+
           {commentError && (
             <p className="mt-1 shrink-0 text-[11px] font-semibold leading-relaxed text-red-600 dark:text-red-300">
               {commentError}
