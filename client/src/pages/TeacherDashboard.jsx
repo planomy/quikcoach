@@ -2974,7 +2974,7 @@ function TeacherDashboardInner() {
                 room?.draftTrail?.reason
                 || (room?.draftTrail?.active
                   ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Recording drafting evidence — click to stop')
-                  : 'Record drafting evidence — writing only, not screen or audio')
+                  : 'Record written drafting evidence')
               }
               prefer="below"
               multiline
@@ -2988,7 +2988,7 @@ function TeacherDashboardInner() {
                     ? 'Updating drafting evidence'
                     : room?.draftTrail?.active
                       ? (room?.draftTrail?.label ? `Stop drafting evidence · ${room.draftTrail.label}` : 'Stop drafting evidence')
-                      : 'Record drafting evidence'
+                      : 'Record written drafting evidence'
                 }
                 className={`iboard-rec-switch${room?.draftTrail?.active ? ' is-on' : ''}${draftTrailBusy ? ' is-busy' : ''}`}
                 onClick={() => {
