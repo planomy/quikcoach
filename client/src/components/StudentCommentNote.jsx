@@ -5,6 +5,21 @@ const CHECK_LABEL = {
   resolved: 'Teacher confirmed this',
 };
 
+function NoteIcon({ tone }) {
+  if (tone === 'open' || tone === 'reopen') {
+    return (
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+        <path d="M3.2 4.2h9.6M3.2 8h6.4" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m3.4 8.2 3.1 3.1 6.1-6.6" />
+    </svg>
+  );
+}
+
 export default function StudentCommentNote({
   tone = 'open',
   note = '',
@@ -32,9 +47,7 @@ export default function StudentCommentNote({
         onClick={canCheck ? onCheck : undefined}
         aria-label={CHECK_LABEL[tone] || CHECK_LABEL.open}
       >
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="m3.4 8.2 3.1 3.1 6.1-6.6" />
-        </svg>
+        <NoteIcon tone={tone} />
       </button>
     </div>
   );

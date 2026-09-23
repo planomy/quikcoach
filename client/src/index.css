@@ -2821,7 +2821,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   margin: 0 0 0 4px;
   padding: 0;
   border: 1.5px solid var(--ann-pip);
-  border-radius: 5px;
+  border-radius: 999px;
   background: transparent;
   color: var(--ann-pip);
   cursor: pointer;
