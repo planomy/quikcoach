@@ -176,19 +176,58 @@ html.dark .iboard-chat-bubble--theirs {
   opacity: 0.82;
 }
 
+.iboard-chat-dock {
+  flex-shrink: 0;
+  border-top: 1px solid #e2e4ec;
+  background: #fff;
+}
+
+html.dark .iboard-chat-dock {
+  border-top-color: #243044;
+  background: #0f172a;
+}
+
+.iboard-chat-react {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.3rem;
+  padding: 0.5rem 0.65rem 0.15rem;
+}
+
+.iboard-chat-react__chip {
+  display: grid;
+  height: 2.35rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.85rem;
+  background: #f1f2f7;
+  color: #1f1f24;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.iboard-chat-react__chip:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+html.dark .iboard-chat-react__chip {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
 .iboard-chat-compose {
   display: flex;
   flex-shrink: 0;
   align-items: flex-end;
   gap: 0.4rem;
   padding: 0.55rem 0.65rem 0.8rem;
-  border-top: 1px solid #e2e4ec;
-  background: #fff;
+  background: transparent;
 }
 
 html.dark .iboard-chat-compose {
-  border-top-color: #243044;
-  background: #0f172a;
+  background: transparent;
 }
 
 .iboard-chat-compose textarea {
@@ -213,7 +252,8 @@ html.dark .iboard-chat-compose textarea {
 }
 
 .iboard-chat-send,
-.iboard-chat-urgent-toggle {
+.iboard-chat-urgent-toggle,
+.iboard-chat-react-toggle {
   display: grid;
   flex-shrink: 0;
   width: 2.35rem;
@@ -231,9 +271,21 @@ html.dark .iboard-chat-compose textarea {
   opacity: 0.38;
 }
 
-.iboard-chat-urgent-toggle {
+.iboard-chat-urgent-toggle,
+.iboard-chat-react-toggle {
   background: #f1f2f7;
   color: #64748b;
+}
+
+.iboard-chat-react-toggle svg {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.iboard-chat-react-toggle[aria-expanded='true'] {
+  background: #5a5fc3;
+  color: #fff;
 }
 
 .iboard-chat-urgent-toggle[aria-pressed='true'] {
@@ -241,9 +293,15 @@ html.dark .iboard-chat-compose textarea {
   color: #fff;
 }
 
-html.dark .iboard-chat-urgent-toggle {
+html.dark .iboard-chat-urgent-toggle,
+html.dark .iboard-chat-react-toggle {
   background: #1e293b;
   color: #94a3b8;
+}
+
+html.dark .iboard-chat-react-toggle[aria-expanded='true'] {
+  background: #5a5fc3;
+  color: #fff;
 }
 
 html.dark .iboard-chat-urgent-toggle[aria-pressed='true'] {

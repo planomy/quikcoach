@@ -55,6 +55,15 @@ function mergeMessages(current, incoming) {
   return [...byId.values()].sort((a, b) => Number(a.at || 0) - Number(b.at || 0) || String(a.id).localeCompare(String(b.id)));
 }
 
+const CHAT_QUICK = [
+  { id: 'up', label: 'Thumbs up', text: '👍' },
+  { id: 'smile', label: 'Smiley', text: '😊' },
+  { id: 'grin', label: 'Very smiley', text: '😄' },
+  { id: 'think', label: 'Thinking', text: '🤔' },
+  { id: 'wink', label: 'Big wink', text: '😉' },
+  { id: 'get-it', label: 'Mmm, now I get it', text: 'Mmm, now I get it', glyph: '💡' },
+];
+
 function messageFromChatEvent(payload) {
   const message = payload?.message;
   if (!message?.id || !String(message.text || '').trim()) return null;
@@ -89,6 +98,7 @@ export default function ConversationModal({
   const [urgent, setUrgent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [reactOpen, setReactOpen] = useState(false);
   const mine = role === 'teacher' ? 'teacher' : 'student';
   const sid = Number(studentId) || 0;
 
@@ -126,6 +136,7 @@ export default function ConversationModal({
       setMessages([]);
       setError('');
       setSending(false);
+      setReactOpen(false);
     }
   }, [open]);
 
@@ -141,6 +152,10 @@ export default function ConversationModal({
     function onKey(event) {
       if (event.key === 'Escape') {
         event.preventDefault();
+        if (reactOpen) {
+          setReactOpen(false);
+          return;
+        }
         requestClose();
       }
     }
@@ -149,7 +164,7 @@ export default function ConversationModal({
       window.clearTimeout(timer);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open, sending, draft]);
+  }, [open, sending, draft, reactOpen]);
 
   async function requestClose() {
     if (sending) return;
@@ -165,18 +180,19 @@ export default function ConversationModal({
     onClose?.();
   }
 
-  function send() {
-    const text = draft.trim();
+  function sendMessage(raw, { preserveDraft = false, asUrgent = false } = {}) {
+    const text = String(raw || '').trim();
     if (!text || sending || !socket) return;
     setSending(true);
     setError('');
-    setDraft('');
+    setReactOpen(false);
+    if (!preserveDraft) setDraft('');
     if (role === 'teacher') {
       if (typeof window !== 'undefined') window.__iboardPendingNoteStudentId = sid;
-      socket.emit('teacher:distribute', { items: [{ studentId: sid, text, urgent: !!urgent, kind: 'chat' }] }, (ack) => {
+      socket.emit('teacher:distribute', { items: [{ studentId: sid, text, urgent: !!asUrgent, kind: 'chat' }] }, (ack) => {
         setSending(false);
         if (!ack?.ok) {
-          setDraft(text);
+          if (!preserveDraft) setDraft(text);
           setError(ack?.error || 'Could not send.');
           return;
         }
@@ -188,20 +204,20 @@ export default function ConversationModal({
               from: 'teacher',
               text,
               at: Date.now(),
-              urgent: !!urgent,
+              urgent: !!asUrgent,
               studentId: sid,
             },
           ])
         );
-        setUrgent(false);
-        onTeacherSent?.({ studentId: sid, urgent: !!urgent, name: title });
+        if (!preserveDraft) setUrgent(false);
+        onTeacherSent?.({ studentId: sid, urgent: !!asUrgent, name: title });
       });
       return;
     }
     socket.emit('student:chat-send', { text }, (ack) => {
       setSending(false);
       if (!ack?.ok) {
-        setDraft(text);
+        if (!preserveDraft) setDraft(text);
         setError(ack?.error || 'Could not send.');
         return;
       }
@@ -214,6 +230,10 @@ export default function ConversationModal({
       };
       setMessages((current) => mergeMessages(current, [item]));
     });
+  }
+
+  function send() {
+    sendMessage(draft, { asUrgent: urgent });
   }
 
   const rows = useMemo(() => messages, [messages]);
@@ -239,7 +259,7 @@ export default function ConversationModal({
           </div>
           <CloseButton onClick={requestClose} aria-label="Close chat" />
         </div>
-        <div ref={threadRef} className="iboard-chat-thread">
+        <div ref={threadRef} className="iboard-chat-thread" onPointerDown={() => setReactOpen(false)}>
           {rows.length === 0 ? (
             <p className="iboard-chat-empty">No messages yet. This stays between you and {role === 'teacher' ? title || 'this student' : 'your teacher'}.</p>
           ) : (
@@ -261,45 +281,77 @@ export default function ConversationModal({
           )}
         </div>
         {error ? <p className="iboard-chat-error">{error}</p> : null}
-        <form
-          className="iboard-chat-compose"
-          onSubmit={(event) => {
-            event.preventDefault();
-            send();
-          }}
-        >
-          {allowUrgent ? (
+        <div className="iboard-chat-dock">
+          {reactOpen ? (
+            <div className="iboard-chat-react" role="listbox" aria-label="Quick replies">
+              {CHAT_QUICK.map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  role="option"
+                  className="iboard-chat-react__chip"
+                  disabled={sending}
+                  aria-label={chip.label}
+                  onClick={() => sendMessage(chip.text, { preserveDraft: true })}
+                >
+                  {chip.glyph || chip.text}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <form
+            className="iboard-chat-compose"
+            onSubmit={(event) => {
+              event.preventDefault();
+              send();
+            }}
+          >
+            {allowUrgent ? (
+              <button
+                type="button"
+                className="iboard-chat-urgent-toggle"
+                aria-pressed={urgent}
+                title={urgent ? 'Urgent on — they will see a toast' : 'Mark urgent'}
+                aria-label={urgent ? 'Urgent on' : 'Mark urgent'}
+                onClick={() => setUrgent((current) => !current)}
+              >
+                !
+              </button>
+            ) : null}
             <button
               type="button"
-              className="iboard-chat-urgent-toggle"
-              aria-pressed={urgent}
-              title={urgent ? 'Urgent on — they will see a toast' : 'Mark urgent'}
-              aria-label={urgent ? 'Urgent on' : 'Mark urgent'}
-              onClick={() => setUrgent((current) => !current)}
+              className="iboard-chat-react-toggle"
+              aria-expanded={reactOpen}
+              aria-label={reactOpen ? 'Hide quick replies' : 'Quick replies'}
+              onClick={() => setReactOpen((current) => !current)}
             >
-              !
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M8.4 14.2c1.1 1.2 2.3 1.8 3.6 1.8s2.5-.6 3.6-1.8" />
+                <path d="M9 10.1h.01M15 10.1h.01" />
+              </svg>
             </button>
-          ) : null}
-          <textarea
-            ref={inputRef}
-            rows={1}
-            maxLength={role === 'teacher' ? 5000 : 2000}
-            value={draft}
-            placeholder="Message"
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                send();
-              }
-            }}
-          />
-          <button type="submit" className="iboard-chat-send" disabled={sending || !draft.trim()} aria-label="Send">
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-              <path d="M3.4 20.6 21 12 3.4 3.4 3 10.2l11.2 1.8L3 13.8z" />
-            </svg>
-          </button>
-        </form>
+            <textarea
+              ref={inputRef}
+              rows={1}
+              maxLength={role === 'teacher' ? 5000 : 2000}
+              value={draft}
+              placeholder="Message"
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  send();
+                }
+              }}
+            />
+            <button type="submit" className="iboard-chat-send" disabled={sending || !draft.trim()} aria-label="Send">
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                <path d="M3.4 20.6 21 12 3.4 3.4 3 10.2l11.2 1.8L3 13.8z" />
+              </svg>
+            </button>
+          </form>
+        </div>
       </div>
     </div>,
     document.body
