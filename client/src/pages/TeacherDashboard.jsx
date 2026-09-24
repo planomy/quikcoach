@@ -2914,37 +2914,41 @@ function TeacherDashboardInner() {
                 <b className="tabular-nums">{orderedStudents.length}</b> online
               </span>
               {attentionSummary ? (
-                <button
-                  type="button"
-                  onClick={() => setAttentionFocus((on) => !on)}
-                  className={`iboard-header-pill iboard-header-pill--attention${attentionFocus ? ' is-on' : ''}`}
-                  title={attentionFocus ? 'Show all cards' : 'Bring away / not started cards to the top'}
-                  aria-pressed={attentionFocus}
-                >
-                  {attentionSummary}
-                </button>
+                <HintWrap hint={attentionFocus ? 'Show all cards' : 'Bring away / not started cards to the top'} prefer="below">
+                  <button
+                    type="button"
+                    onClick={() => setAttentionFocus((on) => !on)}
+                    className={`iboard-header-pill iboard-header-pill--attention${attentionFocus ? ' is-on' : ''}`}
+                    title=""
+                    aria-pressed={attentionFocus}
+                  >
+                    {attentionSummary}
+                  </button>
+                </HintWrap>
               ) : null}
               {inboxSummary ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInboxFocus((on) => {
-                      const next = !on;
-                      if (next) {
-                        window.requestAnimationFrame(() => {
-                          document.querySelector('[data-inbox-waiting="true"]')
-                            ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                        });
-                      }
-                      return next;
-                    });
-                  }}
-                  className={`iboard-header-pill iboard-header-pill--inbox${inboxFocus ? ' is-on' : ''}`}
-                  title={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'}
-                  aria-pressed={inboxFocus}
-                >
-                  {inboxSummary}
-                </button>
+                <HintWrap hint={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'} prefer="below">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInboxFocus((on) => {
+                        const next = !on;
+                        if (next) {
+                          window.requestAnimationFrame(() => {
+                            document.querySelector('[data-inbox-waiting="true"]')
+                              ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                          });
+                        }
+                        return next;
+                      });
+                    }}
+                    className={`iboard-header-pill iboard-header-pill--inbox${inboxFocus ? ' is-on' : ''}`}
+                    title=""
+                    aria-pressed={inboxFocus}
+                  >
+                    {inboxSummary}
+                  </button>
+                </HintWrap>
               ) : null}
               {frozen && (
                 <span className="iboard-header-pill iboard-header-pill--frozen">
@@ -3148,15 +3152,17 @@ function TeacherDashboardInner() {
                   <circle cx="12" cy="12" r="2.5" />
                 </svg>
                 <span className="truncate text-[11px] font-black">Monitoring · {monitoredCount}</span>
-                <button
-                  type="button"
-                  onClick={clearMonitoredStudents}
-                  className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-white/80 hover:bg-white/15 hover:text-white"
-                  aria-label="Clear monitor list"
-                  title="Clear monitor list"
-                >
-                  ×
-                </button>
+                <HintWrap hint="Clear monitor list" prefer="below">
+                  <button
+                    type="button"
+                    onClick={clearMonitoredStudents}
+                    className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-white/80 hover:bg-white/15 hover:text-white"
+                    aria-label="Clear monitor list"
+                    title=""
+                  >
+                    ×
+                  </button>
+                </HintWrap>
               </div>
             ) : room?.draftTrail?.reason ? (
               <div
@@ -3391,35 +3397,39 @@ function TeacherDashboardInner() {
         </nav>
 
         <div className="iboard-teacher-panel-wrap">
-          <button
-            type="button"
-            className="iboard-teacher-panel-reveal"
-            onPointerDown={revealTeacherPanel}
-            onClick={(event) => event.preventDefault()}
-            aria-label="Show teacher"
-            title="Show teacher"
-            tabIndex={teacherPanelHidden ? 0 : -1}
-            aria-hidden={!teacherPanelHidden}
-          >
-            <span aria-hidden="true">&gt;</span>
-          </button>
+          <HintWrap hint="Show teacher" prefer="right" suppressed={!teacherPanelHidden}>
+            <button
+              type="button"
+              className="iboard-teacher-panel-reveal"
+              onPointerDown={revealTeacherPanel}
+              onClick={(event) => event.preventDefault()}
+              aria-label="Show teacher"
+              title=""
+              tabIndex={teacherPanelHidden ? 0 : -1}
+              aria-hidden={!teacherPanelHidden}
+            >
+              <span aria-hidden="true">&gt;</span>
+            </button>
+          </HintWrap>
           <aside
             className="iboard-teacher-panel"
             aria-label="Teacher cards"
             aria-hidden={teacherPanelHidden}
           >
             <div className="iboard-teacher-panel-head">
-              <button
-                type="button"
-                className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
-                onClick={() => setTeacherPanelHidden(true)}
-                aria-label="Hide teacher"
-                title="Hide"
-              >
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 6 9 12l6 6" />
-                </svg>
-              </button>
+              <HintWrap hint="Hide teacher" prefer="below">
+                <button
+                  type="button"
+                  className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
+                  onClick={() => setTeacherPanelHidden(true)}
+                  aria-label="Hide teacher"
+                  title=""
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 6 9 12l6 6" />
+                  </svg>
+                </button>
+              </HintWrap>
             </div>
             <div
               ref={addCardPanelRef}
@@ -3695,7 +3705,7 @@ function TeacherDashboardInner() {
                 key={s.id}
                 data-student-id={s.id}
                 data-inbox-waiting={inboxWaiting ? 'true' : undefined}
-                title={handUp ? `${s.name} has a question — tap to open` : undefined}
+                aria-label={handUp ? `${s.name} has a question — tap to open` : undefined}
                 role={handUp ? 'button' : undefined}
                 tabIndex={handUp ? 0 : undefined}
                 onClick={handUp ? () => setHandQuestionTarget({ student: s, questions: handQuestions }) : undefined}
@@ -3748,7 +3758,7 @@ function TeacherDashboardInner() {
                           handUp ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''
                         }`}
                         aria-label={handUp ? `${s.name} has a question` : undefined}
-                        title={handUp ? 'Open question' : undefined}
+                        title=""
                         onClick={(event) => {
                           if (!handUp) return;
                           event.stopPropagation();
@@ -4625,21 +4635,22 @@ function TeacherDashboardInner() {
             {CARD_VIEWS.map((view) => {
               const active = cardView === view.id;
               return (
-                <button
-                  key={view.id}
-                  type="button"
-                  onClick={() => setCardView(view.id)}
-                  aria-pressed={active}
-                  title={view.label}
-                  className={`flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold leading-tight transition ${
-                    active
-                      ? 'bg-[#5a5fc3] text-white shadow-sm'
-                      : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <CardViewIcon id={view.id} className="h-4 w-4 shrink-0" />
-                  <span>{view.id === 'full' ? 'Full' : view.label}</span>
-                </button>
+                <HintWrap key={view.id} hint={view.label} prefer="above" suppressed={active}>
+                  <button
+                    type="button"
+                    onClick={() => setCardView(view.id)}
+                    aria-pressed={active}
+                    title=""
+                    className={`flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold leading-tight transition ${
+                      active
+                        ? 'bg-[#5a5fc3] text-white shadow-sm'
+                        : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <CardViewIcon id={view.id} className="h-4 w-4 shrink-0" />
+                    <span>{view.id === 'full' ? 'Full' : view.label}</span>
+                  </button>
+                </HintWrap>
               );
             })}
           </div>
@@ -4848,32 +4859,39 @@ function TeacherDashboardInner() {
                         {student.name}
                       </span>
                       <div className="iboard-breakout-assign__chips" role="group" aria-label={`Room for ${student.name}`}>
-                        <button
-                          type="button"
-                          aria-pressed={selected === ''}
-                          className="iboard-breakout-assign__chip"
-                          onClick={() => setDraftBreakoutRoom(student.id, '')}
-                          title="Unassigned"
-                        >
-                          —
-                        </button>
+                        <HintWrap hint="Unassigned" prefer="above">
+                          <button
+                            type="button"
+                            aria-pressed={selected === ''}
+                            className="iboard-breakout-assign__chip"
+                            onClick={() => setDraftBreakoutRoom(student.id, '')}
+                            title=""
+                          >
+                            —
+                          </button>
+                        </HintWrap>
                         {Array.from({ length: roomCount }, (_, index) => {
                           const id = String(index + 1);
                           const selectedHere = selected === id;
                           const full =
                             !selectedHere && countDraftInRoom(id, student.id) >= MAX_BREAKOUT_ROOM;
                           return (
-                            <button
+                            <HintWrap
                               key={id}
-                              type="button"
-                              aria-pressed={selectedHere}
-                              disabled={full}
-                              title={full ? `Room ${id} is full (max ${MAX_BREAKOUT_ROOM})` : `Room ${id}`}
-                              className="iboard-breakout-assign__chip"
-                              onClick={() => setDraftBreakoutRoom(student.id, id)}
+                              hint={full ? `Room ${id} is full (max ${MAX_BREAKOUT_ROOM})` : `Room ${id}`}
+                              prefer="above"
                             >
-                              {id}
-                            </button>
+                              <button
+                                type="button"
+                                aria-pressed={selectedHere}
+                                disabled={full}
+                                title=""
+                                className="iboard-breakout-assign__chip"
+                                onClick={() => setDraftBreakoutRoom(student.id, id)}
+                              >
+                                {id}
+                              </button>
+                            </HintWrap>
                           );
                         })}
                       </div>
@@ -4931,25 +4949,27 @@ function TeacherDashboardInner() {
                 >
                   {frozen ? 'Unfreeze board' : 'Freeze board'}
                 </button>
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  aria-pressed={isDark}
-                  title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                  aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                  className="iboard-room-settings__icon-btn"
-                >
-                  {isDark ? (
-                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="4" />
-                      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-                    </svg>
-                  ) : (
-                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5Z" />
-                    </svg>
-                  )}
-                </button>
+                <HintWrap hint={isDark ? 'Switch to light mode' : 'Switch to dark mode'} prefer="above">
+                  <button
+                    type="button"
+                    onClick={toggleTheme}
+                    aria-pressed={isDark}
+                    title=""
+                    aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                    className="iboard-room-settings__icon-btn"
+                  >
+                    {isDark ? (
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                      </svg>
+                    ) : (
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5Z" />
+                      </svg>
+                    )}
+                  </button>
+                </HintWrap>
               </div>
               {fixedCommentCount > 0 && (
                 <div className="iboard-room-settings__cleanup">
@@ -5243,16 +5263,18 @@ function TeacherDashboardInner() {
                   {focusedStudent.name}
                 </h2>
                 {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(focusedStudent.id)) ? (
-                  <button
-                    type="button"
-                    title="Open drafting evidence"
-                    aria-label={`Open drafting evidence for ${focusedStudent.name}`}
-                    onClick={() => {
-                      setDraftTrailFocusId(focusedStudent.id);
-                      setDraftTrailOpen(true);
-                    }}
-                    className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 ring-2 ring-red-200 hover:ring-red-300 dark:ring-red-900"
-                  />
+                  <HintWrap hint="Open drafting evidence" prefer="below">
+                    <button
+                      type="button"
+                      title=""
+                      aria-label={`Open drafting evidence for ${focusedStudent.name}`}
+                      onClick={() => {
+                        setDraftTrailFocusId(focusedStudent.id);
+                        setDraftTrailOpen(true);
+                      }}
+                      className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 ring-2 ring-red-200 hover:ring-red-300 dark:ring-red-900"
+                    />
+                  </HintWrap>
                 ) : null}
                 <p className="text-xs text-slate-500 dark:text-slate-400">{wordCount(focusedStudent.text)} words · select text to add an inline comment</p>
               </div>

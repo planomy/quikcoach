@@ -1,4 +1,5 @@
 import { RemoveButton, CloseButton } from './PanelActions.jsx';
+import HintWrap from './HintWrap.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { confirmDialog } from './ConfirmDialogHost.jsx';
@@ -615,20 +616,22 @@ export default function SavedSetsPanel({
                   }`}
                 >
                   <input type="checkbox" checked={selectedSetIds.includes(set.id)} disabled={sending} onChange={() => toggleSet(set.id)} aria-label={`Select ${set.name}`} className="ml-1 h-4 w-4 shrink-0 accent-[#5a5fc3]" />
-                  <button
-                    type="button"
-                    onClick={(event) => toggleFavourite(set.id, event)}
-                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${
-                      isFavourite
-                        ? 'text-[#5a5fc3] hover:bg-[#ebeaf8] dark:text-indigo-400 dark:hover:bg-indigo-950/40'
-                        : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300'
-                    }`}
-                    aria-label={isFavourite ? `Unfavourite ${set.name}` : `Favourite ${set.name}`}
-                    aria-pressed={isFavourite}
-                    title={isFavourite ? 'Remove from favourites' : 'Favourite — keep at top'}
-                  >
-                    <StarIcon filled={isFavourite} />
-                  </button>
+                  <HintWrap hint={isFavourite ? 'Remove from favourites' : 'Favourite — keep at top'} prefer="above">
+                    <button
+                      type="button"
+                      onClick={(event) => toggleFavourite(set.id, event)}
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${
+                        isFavourite
+                          ? 'text-[#5a5fc3] hover:bg-[#ebeaf8] dark:text-indigo-400 dark:hover:bg-indigo-950/40'
+                          : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300'
+                      }`}
+                      aria-label={isFavourite ? `Unfavourite ${set.name}` : `Favourite ${set.name}`}
+                      aria-pressed={isFavourite}
+                      title=""
+                    >
+                      <StarIcon filled={isFavourite} />
+                    </button>
+                  </HintWrap>
                   <button
                     type="button"
                     onClick={() => openPreview(set)}

@@ -46,6 +46,6 @@ echo "==> Done. Image size: $(echo "$BYTES" | awk '{printf "%.1f MB", $1/1024/10
 echo ""
 echo "Copy everything in nuc-handoff/ to the thumb drive:"
 echo "  $OUT_DIR/"
-echo "  (must include docker-compose.yml + Caddyfile — edge on TCP 443)"
+echo "  (must include docker-compose.yml — HTTP on TCP 80, no 443)"
 echo ""
-echo "Rob runs LOAD-AND-RUN.sh on the NUC → https://<nuc-ip> (see README.md)."
+echo "Rob runs LOAD-AND-RUN.sh on the NUC → http://<nuc-ip>/ (see README.md)."

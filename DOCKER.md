@@ -35,9 +35,9 @@ Expected response:
 {"ok":true}
 ```
 
-## NUC handoff (ports 443 / 80)
+## NUC handoff (port 80 only)
 
-School NUC packaging lives in `nuc-handoff/`. Compose runs the app image internally on **3001** and puts **Caddy** in front on **TCP 443** (HTTPS + WebSocket) and **80** (HTTP). See `nuc-handoff/README.md`.
+School NUC packaging lives in `nuc-handoff/`. Compose publishes the app on **TCP 80** (HTTP + Socket.IO). There is **no TLS / no port 443**. See `nuc-handoff/README.md`.
 
 ## Persistent data
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import HintWrap from './HintWrap.jsx';
 
 const BASE_QUESTION = {
   correctAnswer: '',
@@ -552,26 +553,30 @@ export default function TeacherPresenterDock() {
               iBOARD <span className="iboard-presenter-room">{roomCode || '----'}</span>
             </div>
             <span className="iboard-presenter-chip">{onlineCount} online</span>
-            <button
-              type="button"
-              className={`iboard-presenter-head-button${pendingQuestions.length ? ' is-question' : ''}`}
-              onClick={() => setShowQuestions((value) => !value)}
-              title="Waiting audience questions"
-            >
-              Q {pendingQuestions.length}
-            </button>
+            <HintWrap hint="Waiting audience questions" prefer="below">
+              <button
+                type="button"
+                className={`iboard-presenter-head-button${pendingQuestions.length ? ' is-question' : ''}`}
+                onClick={() => setShowQuestions((value) => !value)}
+                title=""
+              >
+                Q {pendingQuestions.length}
+              </button>
+            </HintWrap>
             <button type="button" className="iboard-presenter-head-button" onClick={bringBoardForward}>Board</button>
-            <button
-              type="button"
-              className="iboard-presenter-head-close"
-              onClick={closeDock}
-              aria-label="Close Presenter Dock"
-              title="Close"
-            >
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-                <path d="m6 6 12 12M18 6 6 18" />
-              </svg>
-            </button>
+            <HintWrap hint="Close" prefer="below">
+              <button
+                type="button"
+                className="iboard-presenter-head-close"
+                onClick={closeDock}
+                aria-label="Close Presenter Dock"
+                title=""
+              >
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </HintWrap>
           </header>
 
           <div className="iboard-presenter-body">
@@ -633,16 +638,17 @@ export default function TeacherPresenterDock() {
                 <p className="iboard-presenter-section-label">Tap a response type</p>
                 <div className="iboard-presenter-presets">
                   {PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      title={preset.title}
-                      className="iboard-presenter-preset"
-                      disabled={busy || !socket}
-                      onClick={() => launch(preset.question)}
-                    >
-                      {preset.label}
-                    </button>
+                    <HintWrap key={preset.id} hint={preset.title} prefer="above">
+                      <button
+                        type="button"
+                        title=""
+                        className="iboard-presenter-preset"
+                        disabled={busy || !socket}
+                        onClick={() => launch(preset.question)}
+                      >
+                        {preset.label}
+                      </button>
+                    </HintWrap>
                   ))}
                 </div>
               </>
@@ -661,33 +667,35 @@ export default function TeacherPresenterDock() {
   return (
     <>
       {!pipWindow && !fallbackOpen && (
-        <button
-          type="button"
-          onClick={openDock}
-          title="Open Presenter Dock"
-          aria-label="Open Presenter Dock"
-          style={{
-            position: 'fixed',
-            right: 16,
-            bottom: 16,
-            zIndex: 70,
-            width: 40,
-            height: 40,
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            background: '#fff',
-            color: '#64748b',
-            padding: 0,
-            fontSize: 16,
-            fontWeight: 700,
-            boxShadow: '0 4px 14px rgba(15,23,42,.08)',
-            cursor: 'pointer',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          ◈
-        </button>
+        <HintWrap hint="Open Presenter Dock" prefer="above">
+          <button
+            type="button"
+            onClick={openDock}
+            title=""
+            aria-label="Open Presenter Dock"
+            style={{
+              position: 'fixed',
+              right: 16,
+              bottom: 16,
+              zIndex: 70,
+              width: 40,
+              height: 40,
+              border: '1px solid #e2e8f0',
+              borderRadius: 12,
+              background: '#fff',
+              color: '#64748b',
+              padding: 0,
+              fontSize: 16,
+              fontWeight: 700,
+              boxShadow: '0 4px 14px rgba(15,23,42,.08)',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            ◈
+          </button>
+        </HintWrap>
       )}
       {fallbackOpen && <div className="iboard-presenter-fallback">{dock}</div>}
       {pipWindow && createPortal(dock, pipWindow.document.body)}

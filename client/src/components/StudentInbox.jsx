@@ -1,4 +1,5 @@
 import { CloseButton, RemoveButton } from './PanelActions.jsx';
+import HintWrap from './HintWrap.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RichTextDisplay from './RichTextDisplay.jsx';
@@ -159,17 +160,20 @@ function saveSnapshotCard(item) {
 }
 
 function MaterialIconButton({ label, busyLabel, busy, onClick, children }) {
+  const hint = busy ? busyLabel : label;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!!busy}
-      title={busy ? busyLabel : label}
-      aria-label={busy ? busyLabel : label}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-    >
-      {children}
-    </button>
+    <HintWrap hint={hint} prefer="above">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={!!busy}
+        title=""
+        aria-label={hint}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+      >
+        {children}
+      </button>
+    </HintWrap>
   );
 }
 

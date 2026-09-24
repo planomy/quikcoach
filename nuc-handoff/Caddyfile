@@ -1,6 +1,6 @@
-# Edge for school LAN: TCP 443 (HTTPS) + 80 (HTTP).
-# WebSockets (/socket.io) are proxied automatically.
-# TLS uses the bundled self-signed cert in ./certs (no Let's Encrypt on LAN).
+# Optional — not used by the current HTTP-only handoff.
+# Compose publishes the app directly on host TCP 80 (no Caddy, no 443).
+# Keep this file only if you later restore an HTTPS edge with certs/.
 
 {
 	admin off
@@ -8,12 +8,6 @@
 }
 
 :80 {
-	encode gzip
-	reverse_proxy iboard:3001
-}
-
-:443 {
-	tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
 	encode gzip
 	reverse_proxy iboard:3001
 }

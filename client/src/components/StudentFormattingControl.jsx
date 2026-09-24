@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import HintWrap from './HintWrap.jsx';
 
 function currentTeacherSocket() {
   if (typeof window === 'undefined') return null;
@@ -79,19 +80,21 @@ export default function StudentFormattingControl({ compact = false }) {
           <p className="text-[11px] text-slate-500 dark:text-slate-400">Bold · underline · highlight (H again clears)</p>
         )}
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        disabled={busy}
-        onClick={toggleFormatting}
-        className={`${compact ? 'min-w-[3.1rem] rounded-lg px-2.5 py-1.5' : 'min-w-[3.75rem] rounded-xl px-3 py-2'} text-xs font-black uppercase tracking-wide text-white shadow-sm transition disabled:opacity-60 ${
-          enabled ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-500 hover:bg-slate-600'
-        }`}
-        title={enabled ? 'Turn student formatting off' : 'Turn student formatting on'}
-      >
-        {busy ? '…' : enabled ? 'On' : 'Off'}
-      </button>
+      <HintWrap hint={enabled ? 'Turn student formatting off' : 'Turn student formatting on'} prefer="above">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          disabled={busy}
+          onClick={toggleFormatting}
+          className={`${compact ? 'min-w-[3.1rem] rounded-lg px-2.5 py-1.5' : 'min-w-[3.75rem] rounded-xl px-3 py-2'} text-xs font-black uppercase tracking-wide text-white shadow-sm transition disabled:opacity-60 ${
+            enabled ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-500 hover:bg-slate-600'
+          }`}
+          title=""
+        >
+          {busy ? '…' : enabled ? 'On' : 'Off'}
+        </button>
+      </HintWrap>
     </div>
   );
 }

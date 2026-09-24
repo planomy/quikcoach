@@ -1,4 +1,5 @@
 import { UNSURE_COLOR } from '../lib/liveResponseMeta.js';
+import HintWrap from './HintWrap.jsx';
 
 const CONFIDENCE_COLOURS = {
   confident: '#10b981',
@@ -69,23 +70,25 @@ export default function EngagementRing({ engagement, connected = true, size = 48
     : label;
 
   return (
-    <div
-      role="img"
-      aria-label={detail}
-      title={detail}
-      className={`iboard-confidence-ring grid shrink-0 place-items-center rounded-full ${connected ? '' : 'border-2 border-dashed border-slate-300 dark:border-slate-600'}`}
-      style={{
-        width: size,
-        height: size,
-        background: connected && total ? segmentedGradient(segments) : 'var(--iboard-ring-empty)',
-      }}
-    >
+    <HintWrap hint={detail} prefer="above" multiline>
       <div
-        className="grid place-items-center rounded-full bg-white text-[11px] font-black text-slate-700 dark:bg-slate-900 dark:text-slate-200"
-        style={{ width: size - 9, height: size - 9 }}
+        role="img"
+        aria-label={detail}
+        title=""
+        className={`iboard-confidence-ring grid shrink-0 place-items-center rounded-full ${connected ? '' : 'border-2 border-dashed border-slate-300 dark:border-slate-600'}`}
+        style={{
+          width: size,
+          height: size,
+          background: connected && total ? segmentedGradient(segments) : 'var(--iboard-ring-empty)',
+        }}
       >
-        {total ? `${responded}/${total}` : '—'}
+        <div
+          className="grid place-items-center rounded-full bg-white text-[11px] font-black text-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          style={{ width: size - 9, height: size - 9 }}
+        >
+          {total ? `${responded}/${total}` : '—'}
+        </div>
       </div>
-    </div>
+    </HintWrap>
   );
 }

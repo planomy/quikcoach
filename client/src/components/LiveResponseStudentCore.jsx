@@ -1,4 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
+import HintWrap from './HintWrap.jsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
@@ -549,15 +550,17 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
                   {secondsLeft > 0 ? `${secondsLeft}s` : '0s'}
                 </span>
               )}
-              <button
-                type="button"
-                onClick={toggleSound}
-                className={`rounded-lg font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]'}`}
-                title="Turn new-question sound on or off"
-                aria-label={soundOn ? 'Turn question sound off' : 'Turn question sound on'}
-              >
-                {soundOn ? 'Sound on' : 'Sound off'}
-              </button>
+              <HintWrap hint="Turn new-question sound on or off" prefer="below">
+                <button
+                  type="button"
+                  onClick={toggleSound}
+                  className={`rounded-lg font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]'}`}
+                  title=""
+                  aria-label={soundOn ? 'Turn question sound off' : 'Turn question sound on'}
+                >
+                  {soundOn ? 'Sound on' : 'Sound off'}
+                </button>
+              </HintWrap>
               {headerTrailing}
               {inboxCloseButton}
               {!quietAlerts && !compact && (

@@ -1,4 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
+import HintWrap from './HintWrap.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
 import QnaShareMenu from './QnaShareMenu.jsx';
@@ -265,9 +266,11 @@ export default function TeacherLiveQuestionIndicators() {
               anonymityLocked={!!selectedQuestion.anonymousRequested}
               onShare={(anonymous) => shareToClass(anonymous)}
             />
-            <button type="button" onClick={finishQuestion} className="text-xs font-bold text-slate-600 dark:text-slate-300" title="Clear without a private reply">
-              Dismiss
-            </button>
+            <HintWrap hint="Clear without a private reply" prefer="above">
+              <button type="button" onClick={finishQuestion} className="text-xs font-bold text-slate-600 dark:text-slate-300" title="">
+                Dismiss
+              </button>
+            </HintWrap>
           </div>
 
           <QuestionInboxReply

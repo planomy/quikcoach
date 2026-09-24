@@ -222,19 +222,20 @@ export function ThinkingPopover({
               {(grouped[category.id] || []).map((prompt) => {
                 const on = selected.has(prompt.id);
                 return (
-                  <button
-                    key={prompt.id}
-                    type="button"
-                    title={prompt.text}
-                    onClick={() => togglePrompt(prompt.id, prompt.text)}
-                    className={`w-full rounded-lg px-1.5 py-1 text-left text-[11px] font-semibold leading-snug transition ${
-                      on
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'text-slate-700 hover:bg-white dark:text-slate-200 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span className="line-clamp-2">{prompt.text}</span>
-                  </button>
+                  <HintWrap key={prompt.id} hint={prompt.text} prefer="above" multiline>
+                    <button
+                      type="button"
+                      title=""
+                      onClick={() => togglePrompt(prompt.id, prompt.text)}
+                      className={`w-full rounded-lg px-1.5 py-1 text-left text-[11px] font-semibold leading-snug transition ${
+                        on
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-slate-700 hover:bg-white dark:text-slate-200 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className="line-clamp-2">{prompt.text}</span>
+                    </button>
+                  </HintWrap>
                 );
               })}
             </div>

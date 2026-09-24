@@ -1,4 +1,5 @@
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
+import HintWrap from './HintWrap.jsx';
 
 export function formatTimer(totalSeconds) {
   const seconds = Math.max(0, Number(totalSeconds) || 0);
@@ -45,7 +46,7 @@ export default function RoomTimerPill({ timer, onClick, onFinishedClick, classNa
   };
 
   if (onClick || onFinishedClick) {
-    return (
+    const button = (
       <button
         type="button"
         onClick={handleClick}
@@ -55,11 +56,15 @@ export default function RoomTimerPill({ timer, onClick, onFinishedClick, classNa
             ? 'Time up. Clear timer for the class.'
             : `Timer ${label}. Open the timer.`
         }
-        title={finished ? 'Clear timer for the class' : undefined}
+        title=""
       >
         {content}
       </button>
     );
+    if (finished) {
+      return <HintWrap hint="Clear timer for the class" prefer="below">{button}</HintWrap>;
+    }
+    return button;
   }
 
   return <div className={sharedClass} aria-label={`Timer ${label}`}>{content}</div>;

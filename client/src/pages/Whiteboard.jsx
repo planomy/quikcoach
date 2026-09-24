@@ -1,4 +1,5 @@
 import { RemoveButton } from '../components/PanelActions.jsx';
+import HintWrap from '../components/HintWrap.jsx';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
@@ -105,7 +106,9 @@ const BoardCard = memo(function BoardCard({ s, displayName, picked, selectMode, 
           <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-200">
             {wc}
           </span>
-          <span className={`h-2 w-2 rounded-full ${light}`} title="Activity" />
+          <HintWrap hint="Activity" prefer="above">
+            <span className={`h-2 w-2 rounded-full ${light}`} title="" />
+          </HintWrap>
           {!selectMode && (
             <RemoveButton onClick={(e) => {
                 e.stopPropagation();
@@ -192,44 +195,50 @@ const TeacherPostCard = memo(function TeacherPostCard({
         </div>
         {!selectMode && (
           <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              disabled={size <= 1}
-              onClick={(e) => {
-                e.stopPropagation();
-                onResize(post.id, size - 1);
-              }}
-              className="rounded-lg bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
-              title="Smaller"
-            >
-              −
-            </button>
+            <HintWrap hint="Smaller" prefer="above">
+              <button
+                type="button"
+                disabled={size <= 1}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResize(post.id, size - 1);
+                }}
+                className="rounded-lg bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                title=""
+              >
+                −
+              </button>
+            </HintWrap>
             <span className="min-w-[1.25rem] text-center text-[10px] font-bold uppercase text-slate-400">
               {['S', 'M', 'L', 'XL'][size - 1]}
             </span>
-            <button
-              type="button"
-              disabled={size >= 4}
-              onClick={(e) => {
-                e.stopPropagation();
-                onResize(post.id, size + 1);
-              }}
-              className="rounded-lg bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
-              title="Larger — easier for the class to read"
-            >
-              +
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(post.id);
-              }}
-              className="rounded-lg bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-300 hover:bg-red-600 hover:text-white"
-              title="Remove this card"
-            >
-              Remove
-            </button>
+            <HintWrap hint="Larger — easier for the class to read" prefer="above">
+              <button
+                type="button"
+                disabled={size >= 4}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onResize(post.id, size + 1);
+                }}
+                className="rounded-lg bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                title=""
+              >
+                +
+              </button>
+            </HintWrap>
+            <HintWrap hint="Remove this card" prefer="above">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(post.id);
+                }}
+                className="rounded-lg bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-300 hover:bg-red-600 hover:text-white"
+                title=""
+              >
+                Remove
+              </button>
+            </HintWrap>
           </div>
         )}
       </header>
@@ -842,31 +851,35 @@ function WhiteboardInner() {
           >
             {selectMode ? 'Selecting…' : 'Select'}
           </button>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                if (document.fullscreenElement) await document.exitFullscreen?.();
-                else await document.documentElement.requestFullscreen?.();
-              } catch {
-                /* browser may block without gesture persistence */
-              }
-              bumpChrome();
-            }}
-            className="rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-indigo-200 hover:bg-indigo-600 hover:text-white"
-            title="Fill the display"
-          >
-            Fullscreen
-          </button>
-          <button
-            type="button"
-            onClick={sendBroadcast}
-            disabled={pickedCount === 0}
-            className="rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
-            title={`Send up to ${MAX_BROADCAST} anonymised exemplars to student screens`}
-          >
-            Broadcast{pickedCount ? ` (${pickedCount})` : ''}
-          </button>
+          <HintWrap hint="Fill the display" prefer="below">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if (document.fullscreenElement) await document.exitFullscreen?.();
+                  else await document.documentElement.requestFullscreen?.();
+                } catch {
+                  /* browser may block without gesture persistence */
+                }
+                bumpChrome();
+              }}
+              className="rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-indigo-200 hover:bg-indigo-600 hover:text-white"
+              title=""
+            >
+              Fullscreen
+            </button>
+          </HintWrap>
+          <HintWrap hint={`Send up to ${MAX_BROADCAST} anonymised exemplars to student screens`} prefer="below">
+            <button
+              type="button"
+              onClick={sendBroadcast}
+              disabled={pickedCount === 0}
+              className="rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+              title=""
+            >
+              Broadcast{pickedCount ? ` (${pickedCount})` : ''}
+            </button>
+          </HintWrap>
           {pickedCount > 0 && (
             <button
               type="button"
@@ -876,44 +889,52 @@ function WhiteboardInner() {
               Clear
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setShowInitials((v) => !v);
-              bumpChrome();
-            }}
-            className="rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-200 hover:bg-slate-700"
-            title={showInitials ? 'Show full names' : 'Show initials only'}
-          >
-            {showInitials ? 'Names' : 'Initials'}
-          </button>
+          <HintWrap hint={showInitials ? 'Show full names' : 'Show initials only'} prefer="below">
+            <button
+              type="button"
+              onClick={() => {
+                setShowInitials((v) => !v);
+                bumpChrome();
+              }}
+              className="rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-200 hover:bg-slate-700"
+              title=""
+            >
+              {showInitials ? 'Names' : 'Initials'}
+            </button>
+          </HintWrap>
           <div className="mx-1 hidden h-5 w-px bg-white/10 sm:block" />
-          <button
-            type="button"
-            onClick={openAddCard}
-            className="rounded-lg bg-amber-500 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-950 hover:bg-amber-400"
-            title="Post your own text or paste an image"
-          >
-            Add card
-          </button>
-          <button
-            type="button"
-            onClick={clearAllCards}
-            disabled={ordered.length === 0 && posts.length === 0}
-            className="rounded-lg bg-red-700/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
-            title="Reset the class board — students will need to join again"
-          >
-            Reset board
-          </button>
-          <button
-            type="button"
-            onClick={saveAllStudentWork}
-            disabled={saveBusy || ordered.length === 0}
-            className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
-            title="Download student writing as an HTML file"
-          >
-            {saveBusy ? 'Saving…' : 'Save'}
-          </button>
+          <HintWrap hint="Post your own text or paste an image" prefer="below">
+            <button
+              type="button"
+              onClick={openAddCard}
+              className="rounded-lg bg-amber-500 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-950 hover:bg-amber-400"
+              title=""
+            >
+              Add card
+            </button>
+          </HintWrap>
+          <HintWrap hint="Reset the class board — students will need to join again" prefer="below">
+            <button
+              type="button"
+              onClick={clearAllCards}
+              disabled={ordered.length === 0 && posts.length === 0}
+              className="rounded-lg bg-red-700/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+              title=""
+            >
+              Reset board
+            </button>
+          </HintWrap>
+          <HintWrap hint="Download student writing as an HTML file" prefer="below">
+            <button
+              type="button"
+              onClick={saveAllStudentWork}
+              disabled={saveBusy || ordered.length === 0}
+              className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+              title=""
+            >
+              {saveBusy ? 'Saving…' : 'Save'}
+            </button>
+          </HintWrap>
         </div>
         <div className="pointer-events-auto flex gap-2">
           <ThemeToggle className="border-white/10 bg-slate-900/90 text-slate-200 hover:border-indigo-400 hover:text-white dark:border-white/10 dark:bg-slate-900/90" />

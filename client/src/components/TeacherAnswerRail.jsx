@@ -488,11 +488,13 @@ export default function TeacherAnswerRail({
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${confidenceDotClass(response.confidence)}`}
-                        title={confidenceLabel(response.confidence)}
-                        aria-label={confidenceLabel(response.confidence)}
-                      />
+                      <HintWrap hint={confidenceLabel(response.confidence)} prefer="above">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${confidenceDotClass(response.confidence)}`}
+                          title=""
+                          aria-label={confidenceLabel(response.confidence)}
+                        />
+                      </HintWrap>
                       <p className="min-w-0 flex-1 truncate text-sm font-black text-slate-900 dark:text-white">
                         {response.name || 'Student'}
                       </p>
@@ -535,11 +537,13 @@ export default function TeacherAnswerRail({
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${confidenceDotClass(response.confidence)}`}
-                        title={confidenceLabel(response.confidence)}
-                        aria-label={confidenceLabel(response.confidence)}
-                      />
+                      <HintWrap hint={confidenceLabel(response.confidence)} prefer="above">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${confidenceDotClass(response.confidence)}`}
+                          title=""
+                          aria-label={confidenceLabel(response.confidence)}
+                        />
+                      </HintWrap>
                       <p className="min-w-0 flex-1 truncate text-sm font-black text-slate-900 dark:text-white">
                         {response.name || 'Student'}
                       </p>

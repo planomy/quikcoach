@@ -1,4 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
+import HintWrap from './HintWrap.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import EngagementRing from './EngagementRing.jsx';
 import AudienceQnaTeacher from './AudienceQnaTeacher.jsx';
@@ -709,16 +710,22 @@ export default function LiveResponseTeacher({
           const focused = Number(engagementFocus?.id) === Number(student.id);
           return (
             <div key={student.id} className="iboard-engagement-chit relative">
-              <button
-                type="button"
-                onClick={() => selectEngagementStudent(student)}
-                title={`${student.name} · ${tile.title}`}
-                className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900 ${focused ? 'ring-2 ring-[#5a5fc3]' : ''}`}
-              >
-                <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
-                <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
-              </button>
-              {needsAttention && <span title={STATUS_LABELS[student.engagement_status] || student.engagement_status} className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>}
+              <HintWrap hint={`${student.name} · ${tile.title}`} prefer="above">
+                <button
+                  type="button"
+                  onClick={() => selectEngagementStudent(student)}
+                  title=""
+                  className={`flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900 ${focused ? 'ring-2 ring-[#5a5fc3]' : ''}`}
+                >
+                  <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
+                  <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
+                </button>
+              </HintWrap>
+              {needsAttention && (
+                <HintWrap hint={STATUS_LABELS[student.engagement_status] || student.engagement_status} prefer="above">
+                  <span title="" className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>
+                </HintWrap>
+              )}
               {questionCount > 0 && (
                 <button
                   type="button"
@@ -895,12 +902,22 @@ export default function LiveResponseTeacher({
             const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
             return (
               <div key={student.id} className="iboard-engagement-chit relative">
-                <button type="button" onClick={() => openStudent(student)} title={`${student.name} · ${tile.title}`} className="flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900">
-                  <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
-                  <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
-                </button>
-                {needsAttention && <span title={STATUS_LABELS[student.engagement_status] || student.engagement_status} className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>}
-                {questionCount > 0 && <button type="button" onClick={() => { setSelectedStudentId(student.id); setActiveView('qna'); }} aria-label={`Question ${queuePosition} in the queue from ${student.name}${questionCount > 1 ? ` · ${questionCount} questions waiting` : ''}`} title={`Question ${queuePosition} in the queue`} className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-[#5a5fc3] px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">{queuePosition}</button>}
+                <HintWrap hint={`${student.name} · ${tile.title}`} prefer="above">
+                  <button type="button" onClick={() => openStudent(student)} title="" className="flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900">
+                    <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
+                    <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
+                  </button>
+                </HintWrap>
+                {needsAttention && (
+                  <HintWrap hint={STATUS_LABELS[student.engagement_status] || student.engagement_status} prefer="above">
+                    <span title="" className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>
+                  </HintWrap>
+                )}
+                {questionCount > 0 && (
+                  <HintWrap hint={`Question ${queuePosition} in the queue`} prefer="above">
+                    <button type="button" onClick={() => { setSelectedStudentId(student.id); setActiveView('qna'); }} aria-label={`Question ${queuePosition} in the queue from ${student.name}${questionCount > 1 ? ` · ${questionCount} questions waiting` : ''}`} title="" className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-[#5a5fc3] px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">{queuePosition}</button>
+                  </HintWrap>
+                )}
               </div>
             );
           })}

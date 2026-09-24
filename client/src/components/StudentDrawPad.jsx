@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import HintWrap from './HintWrap.jsx';
 
 const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 720;
@@ -54,19 +55,22 @@ function drawStroke(ctx, stroke) {
 
 function ToolButton({ active = false, disabled = false, children, onClick, title }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      title={title}
-      className={`min-h-10 rounded-xl border px-3 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-        active
-          ? 'border-indigo-600 bg-indigo-600 text-white'
-          : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60'
-      }`}
-    >
-      {children}
-    </button>
+    <HintWrap hint={title} prefer="above">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        title=""
+        aria-label={title}
+        className={`min-h-10 rounded-xl border px-3 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+          active
+            ? 'border-indigo-600 bg-indigo-600 text-white'
+            : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60'
+        }`}
+      >
+        {children}
+      </button>
+    </HintWrap>
   );
 }
 

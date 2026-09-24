@@ -1,4 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
+import HintWrap from './HintWrap.jsx';
 import { useMemo, useState } from 'react';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
 import QnaShareMenu from './QnaShareMenu.jsx';
@@ -177,9 +178,11 @@ export default function AudienceQnaTeacher({
             />
           ) : null}
           {(mode === 'pending' || mode === 'published') && (
-            <button type="button" onClick={() => finishQuestion(question, mode)} className={TEXT_ACTION} title="Clear without a private reply">
-              Dismiss
-            </button>
+            <HintWrap hint="Clear without a private reply" prefer="above">
+              <button type="button" onClick={() => finishQuestion(question, mode)} className={TEXT_ACTION} title="">
+                Dismiss
+              </button>
+            </HintWrap>
           )}
           {mode === 'answered' && (
             <button type="button" onClick={() => update(question, 'reopen')} className="text-xs font-bold text-indigo-600 dark:text-indigo-400">

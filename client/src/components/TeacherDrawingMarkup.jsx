@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import HintWrap from './HintWrap.jsx';
 
 const DEFAULT_SIZE = { width: 1200, height: 720 };
 const MAX_CANVAS_SIDE = 1600;
@@ -43,19 +44,22 @@ function drawStroke(ctx, stroke, width) {
 
 function ToolButton({ active = false, children, onClick, title, disabled = false }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      title={title}
-      className={`rounded-xl border px-3 py-2 text-sm font-black transition disabled:opacity-40 ${
-        active
-          ? 'border-indigo-600 bg-indigo-600 text-white'
-          : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-      }`}
-    >
-      {children}
-    </button>
+    <HintWrap hint={title} prefer="above">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        title=""
+        aria-label={title}
+        className={`rounded-xl border px-3 py-2 text-sm font-black transition disabled:opacity-40 ${
+          active
+            ? 'border-indigo-600 bg-indigo-600 text-white'
+            : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+        }`}
+      >
+        {children}
+      </button>
+    </HintWrap>
   );
 }
 
