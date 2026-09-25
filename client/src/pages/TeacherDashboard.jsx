@@ -2500,6 +2500,32 @@ function TeacherDashboardInner() {
     });
   }
 
+  function quickSnapshotWriting() {
+    const packStudents = visibleStudents.length ? visibleStudents : orderedStudents;
+    if (!packStudents.length) {
+      setError('No student work to snapshot yet.');
+      return;
+    }
+    if (evidenceBusy) return;
+    const now = new Date();
+    const label = `Room ${codeInput} · ${now.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })}`;
+    setEvidenceBusy(true);
+    setError('');
+    socket.emit('teacher:snapshot-save', { label }, (ack) => {
+      setEvidenceBusy(false);
+      if (!ack?.ok) {
+        setError(ack?.error || 'Could not save snapshot.');
+        return;
+      }
+      setSnapshots(ack.snapshots || []);
+      setCopyToast('Snapshot saved');
+      setTimeout(() => setCopyToast(''), 2500);
+    });
+  }
+
   function setDraftTrailRecording(active, label = '') {
     setDraftTrailBusy(true);
     setDraftTrailLabelOpen(false);
@@ -3202,6 +3228,20 @@ function TeacherDashboardInner() {
                     <path d="M21 15v6h-6" />
                   </svg>
                 )}
+              </button>
+            </HintWrap>
+            <HintWrap hint="Snapshot everyone’s writing now" prefer="below">
+              <button
+                type="button"
+                onClick={quickSnapshotWriting}
+                disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
+                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                aria-label="Snapshot everyone’s writing now"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 8h3l2-2h6l2 2h3v11H4z" />
+                  <circle cx="12" cy="13" r="3.25" />
+                </svg>
               </button>
             </HintWrap>
             <TeacherHelpButton open={helpOpen} onClick={openHelpDock} buttonRef={helpButtonRef} />
@@ -4319,16 +4359,8 @@ function TeacherDashboardInner() {
             <div className={`overflow-y-auto scrollbar-thin${libraryView === 'feedback' || libraryView === 'pdf' ? ' p-4' : ' p-5'}`}>
         {libraryView === 'home' && (
           <section className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-                Capture and revisit today’s writing evidence.
-              </p>
-              <button type="button" onClick={openEvidenceModal} className="rounded-xl bg-[#5a5fc3] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#4b50b0]">
-                Snapshot writing
-              </button>
-            </div>
-            <p className="-mt-2 max-w-xl text-xs text-slate-400 dark:text-slate-500">
-              Snapshot saves a point-in-time pack of everyone’s writing. Drafting evidence plays back how one student’s draft changed during recording.
+            <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
+              Capture and revisit today’s writing evidence. Use the camera in the header to snapshot everyone’s writing; browse packs and tools below.
             </p>
             <div className="flex flex-wrap gap-2" role="navigation" aria-label="Lesson records sections">
               <button
@@ -4373,7 +4405,7 @@ function TeacherDashboardInner() {
               <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                 <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">No snapshots yet</h3>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-                  Snapshot student drafts once to unlock class packs and student portfolios.
+                  Snapshot everyone’s writing with the camera in the header to unlock class packs and student portfolios.
                 </p>
               </div>
             ) : (
@@ -4592,7 +4624,7 @@ function TeacherDashboardInner() {
                                 </button>
                               )}
                               <button type="button" onClick={copyStudentPortfolio} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">Copy all</button>
-                              <button type="button" disabled={!!portfolioDownloadKind} onClick={downloadStudentPortfolio} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50">{portfolioDownloadKind === 'one' ? 'Preparing PDF…' : 'Download PDF'}</button>
+                              <button type="button" disabled={!!portfolioDownloadKind} onClick={downloadStudentPortfolio} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-50">{portfolioDownloadKind === 'one' ? 'Preparing PDF…' : 'Download PDF'}</button>
                             </div>
                           </div>
                           <div className="mt-3 max-h-[34rem] space-y-3 overflow-y-auto pr-1 scrollbar-thin">

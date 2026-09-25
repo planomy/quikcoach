@@ -51,7 +51,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'records',
     title: 'Lesson records',
-    body: 'Open Session/Lesson Records to snapshot the class writing and open past lesson snapshots.',
+    body: 'Use the camera in the header to snapshot everyone’s writing. Open Session → Lesson records to browse class snapshots and portfolios.',
     action: 'records',
   },
   {
