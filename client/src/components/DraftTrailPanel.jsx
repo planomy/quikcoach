@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 const labels = { baseline: 'Recording baseline', resume: 'Recording resumed · unrecorded interval before this', gap: 'Unrecorded / reconnect interval', stop: 'Recording stopped', feedback: 'Teacher feedback sent', paste: 'Paste reported by student browser', change: 'Writing changed' };
 const buttonClass = 'rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-800';
 
-export default function DraftTrailPanel({ socket, onClose, initialStudentId = null }) {
+export default function DraftTrailPanel({ socket, onClose, initialStudentId = null, embedded = false }) {
   const dialogRef = useRef(null);
   const [students, setStudents] = useState([]);
   const [selected, setSelected] = useState(() => (initialStudentId != null ? String(initialStudentId) : ''));
@@ -15,10 +15,11 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
   const [refresh, setRefresh] = useState(0);
   const [label, setLabel] = useState('');
   useEffect(() => {
+    if (embedded) return undefined;
     const prior = document.activeElement;
     dialogRef.current?.showModal();
     return () => prior?.focus?.();
-  }, []);
+  }, [embedded]);
   useEffect(() => {
     if (initialStudentId != null) setSelected(String(initialStudentId));
   }, [initialStudentId]);
@@ -61,27 +62,26 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
     ? 'bg-red-200 text-red-950 no-underline dark:bg-red-950/70 dark:text-red-100'
     : 'bg-emerald-100 text-emerald-950 no-underline dark:bg-emerald-950/60 dark:text-emerald-100';
 
-  return (
-    <dialog
-      ref={dialogRef}
-      onCancel={onClose}
-      className="m-auto max-h-[90dvh] w-[min(64rem,94vw)] overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-      aria-labelledby="draft-trail-title"
-    >
-      <div className="flex items-center justify-between gap-4">
-        <h2 id="draft-trail-title" className={`text-lg font-bold ${empty ? 'sr-only' : ''}`}>
-          Drafting evidence{label ? ` · ${label}` : ''}
-        </h2>
-        <CloseButton onClick={onClose} label="Close" className={empty ? 'ml-auto' : undefined} />
-      </div>
+  const body = (
+    <>
+      {!embedded ? (
+        <div className="flex items-center justify-between gap-4">
+          <h2 id="draft-trail-title" className={`text-lg font-bold ${empty ? 'sr-only' : ''}`}>
+            Drafting evidence{label ? ` · ${label}` : ''}
+          </h2>
+          <CloseButton onClick={onClose} label="Close" className={empty ? 'ml-auto' : undefined} />
+        </div>
+      ) : label ? (
+        <p className="mb-3 text-sm font-semibold text-slate-500 dark:text-slate-400">{label}</p>
+      ) : null}
 
       {empty ? (
-        <p className="py-10 text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
+        <p className={`text-center text-sm font-semibold text-slate-700 dark:text-slate-200 ${embedded ? 'py-6' : 'py-10'}`}>
           No drafting evidence captured yet. Hit the recording button to begin.
         </p>
       ) : (
         <>
-          <div className="my-4 flex flex-wrap items-center gap-3">
+          <div className={`${embedded ? 'mb-4' : 'my-4'} flex flex-wrap items-center gap-3`}>
             <label className="text-sm font-semibold">
               Student{' '}
               <select
@@ -185,6 +185,21 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
           )}
         </>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="text-slate-800 dark:text-slate-100">{body}</div>;
+  }
+
+  return (
+    <dialog
+      ref={dialogRef}
+      onCancel={onClose}
+      className="m-auto max-h-[90dvh] w-[min(64rem,94vw)] overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+      aria-labelledby="draft-trail-title"
+    >
+      {body}
     </dialog>
   );
 }

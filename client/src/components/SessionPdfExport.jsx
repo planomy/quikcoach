@@ -11,7 +11,7 @@ function isDynamicImportError(error) {
     || message.includes('loading chunk');
 }
 
-export default function SessionPdfExport({ socket, onClose }) {
+export default function SessionPdfExport({ socket, onClose, embedded = false }) {
   const dialog = useRef(null);
   const [pack, setPack] = useState(null);
   const [people, setPeople] = useState([]);
@@ -23,10 +23,11 @@ export default function SessionPdfExport({ socket, onClose }) {
   const [refreshRequired, setRefreshRequired] = useState(false);
   const [reload, setReload] = useState(0);
   useEffect(() => {
+    if (embedded) return undefined;
     const prior = document.activeElement;
     dialog.current?.showModal();
     return () => prior?.focus?.();
-  }, []);
+  }, [embedded]);
   useEffect(() => {
     let cancelled = false;
     setBusy(true); setError(''); setMessage(''); setRefreshRequired(false); setPack(null); setPeople([]); setSelected([]);
@@ -69,22 +70,95 @@ export default function SessionPdfExport({ socket, onClose }) {
   const recordedPeople = people.filter((student) => Array.isArray(student.trail?.events) && student.trail.events.length > 0);
   const noDraftTrail = !!pack && !busy && people.length > 0 && recordedPeople.length === 0;
 
-  return <dialog ref={dialog} onCancel={event => { if (busy) event.preventDefault(); else onClose(); }} aria-labelledby="session-pdf-title" className="m-auto max-h-[90dvh] w-[min(36rem,94vw)] overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-    <div className="flex items-center justify-between gap-3"><h2 id="session-pdf-title" className="text-lg font-bold">Export session report (PDF)</h2><CloseButton onClick={onClose} disabled={busy} label="Close session report" /></div>
-    <p className="my-3 text-sm text-slate-500 dark:text-slate-400">Includes writing, student images and compact named drafting evidence, with inline feedback linked to subsequent passage revisions.</p>
-    {pack && <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">Session captured {new Date(pack.exportedAt).toLocaleString()}. Reopen this window to capture later changes.</p>}
-    {noDraftTrail && <p role="status" className="my-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100"><strong>No drafting evidence was recorded for this session.</strong> The PDF will still include writing and other session evidence.</p>}
-    {error && <div role="alert" className="my-3 text-sm text-red-600 dark:text-red-300"><span>{error}</span>{refreshRequired ? <button type="button" className={`${buttonClass} ml-2`} onClick={refreshApp}>Refresh iBOARD</button> : !pack ? <button type="button" className={`${buttonClass} ml-2`} onClick={() => { setRefreshRequired(false); setReload(n => n + 1); }}>Retry</button> : null}</div>}
-    {busy && !pack && <p role="status">Capturing session…</p>}
-    {!!people.length && <>
-      <div className="mb-2 flex items-center gap-3"><button type="button" disabled={busy} className={buttonClass} onClick={() => setSelected(people.map(s => s.key))}>Whole class</button><button type="button" disabled={busy} className={buttonClass} onClick={() => setSelected([])}>Clear selection</button><span className="text-sm">{selected.length} selected</span></div>
-      <fieldset disabled={busy} className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-200 p-3 dark:border-slate-700"><legend className="px-1 text-sm font-semibold">Students</legend>
-        {people.map(s => <label key={s.key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selected.includes(s.key)} onChange={e => setSelected(current => e.target.checked ? [...current, s.key] : current.filter(key => key !== s.key))} />{s.name}{s.archived ? ' (archived trail)' : ''}</label>)}
-      </fieldset>
-      <label className="my-4 flex items-start gap-2 text-sm"><input type="checkbox" disabled={busy} checked={detailed} onChange={e => setDetailed(e.target.checked)} className="mt-1" /><span>More drafting evidence checkpoints<br /><span className="text-slate-500 dark:text-slate-400">Checking this selects up to 20 checkpoints with short passages. Default is up to 3 meaningful revision extracts.</span></span></label>
-    </>}
-    {!busy && pack && !people.length && <p className="my-5 text-sm">No students or archived drafting evidence in this session yet.</p>}
-    <button type="button" disabled={busy || !pack || !selected.length} onClick={download} className="mt-2 rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 disabled:opacity-50">{busy && pack ? 'Creating PDF…' : 'Download PDF'}</button>
-    {message && <p role="status" className="mt-3 text-sm">{message}</p>}
-  </dialog>;
+  const body = (
+    <>
+      {!embedded ? (
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="session-pdf-title" className="text-lg font-bold">Session PDF</h2>
+          <CloseButton onClick={onClose} disabled={busy} label="Close session report" />
+        </div>
+      ) : null}
+      <p className={`${embedded ? 'mb-3' : 'my-3'} text-sm text-slate-500 dark:text-slate-400`}>
+        Includes writing, student images and compact named drafting evidence, with inline feedback linked to subsequent passage revisions.
+      </p>
+      {pack && (
+        <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+          Session captured {new Date(pack.exportedAt).toLocaleString()}. Reopen this view to capture later changes.
+        </p>
+      )}
+      {noDraftTrail && (
+        <p role="status" className="my-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+          <strong>No drafting evidence was recorded for this session.</strong> The PDF will still include writing and other session evidence.
+        </p>
+      )}
+      {error && (
+        <div role="alert" className="my-3 text-sm text-red-600 dark:text-red-300">
+          <span>{error}</span>
+          {refreshRequired ? (
+            <button type="button" className={`${buttonClass} ml-2`} onClick={refreshApp}>Refresh iBOARD</button>
+          ) : !pack ? (
+            <button type="button" className={`${buttonClass} ml-2`} onClick={() => { setRefreshRequired(false); setReload((n) => n + 1); }}>Retry</button>
+          ) : null}
+        </div>
+      )}
+      {busy && !pack && <p role="status">Capturing session…</p>}
+      {!!people.length && (
+        <>
+          <div className="mb-2 flex items-center gap-3">
+            <button type="button" disabled={busy} className={buttonClass} onClick={() => setSelected(people.map((s) => s.key))}>Whole class</button>
+            <button type="button" disabled={busy} className={buttonClass} onClick={() => setSelected([])}>Clear selection</button>
+            <span className="text-sm">{selected.length} selected</span>
+          </div>
+          <fieldset disabled={busy} className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+            <legend className="px-1 text-sm font-semibold">Students</legend>
+            {people.map((s) => (
+              <label key={s.key} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(s.key)}
+                  onChange={(e) => setSelected((current) => (e.target.checked ? [...current, s.key] : current.filter((key) => key !== s.key)))}
+                />
+                {s.name}{s.archived ? ' (archived trail)' : ''}
+              </label>
+            ))}
+          </fieldset>
+          <label className="my-4 flex items-start gap-2 text-sm">
+            <input type="checkbox" disabled={busy} checked={detailed} onChange={(e) => setDetailed(e.target.checked)} className="mt-1" />
+            <span>
+              More drafting evidence checkpoints
+              <br />
+              <span className="text-slate-500 dark:text-slate-400">
+                Checking this selects up to 20 checkpoints with short passages. Default is up to 3 meaningful revision extracts.
+              </span>
+            </span>
+          </label>
+        </>
+      )}
+      {!busy && pack && !people.length && <p className="my-5 text-sm">No students or archived drafting evidence in this session yet.</p>}
+      <button
+        type="button"
+        disabled={busy || !pack || !selected.length}
+        onClick={download}
+        className="mt-2 rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800 disabled:opacity-50"
+      >
+        {busy && pack ? 'Creating PDF…' : 'Download PDF'}
+      </button>
+      {message && <p role="status" className="mt-3 text-sm">{message}</p>}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="text-slate-800 dark:text-slate-100">{body}</div>;
+  }
+
+  return (
+    <dialog
+      ref={dialog}
+      onCancel={(event) => { if (busy) event.preventDefault(); else onClose(); }}
+      aria-labelledby="session-pdf-title"
+      className="m-auto max-h-[90dvh] w-[min(36rem,94vw)] overflow-y-auto rounded-xl border border-slate-300 bg-white p-5 text-slate-800 shadow-2xl backdrop:bg-black/50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+    >
+      {body}
+    </dialog>
+  );
 }

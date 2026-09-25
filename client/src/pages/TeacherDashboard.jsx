@@ -409,8 +409,8 @@ function TeacherDashboardInner() {
   const [teacherToolsTop, setTeacherToolsTop] = useState(0);
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
-  const [lessonReportOpen, setLessonReportOpen] = useState(false);
-  const [libraryPanel, setLibraryPanel] = useState(null);
+  const [libraryPanel, setLibraryPanel] = useState(null); // null | 'evidence' (Lesson records hub shell)
+  const [libraryView, setLibraryView] = useState('home'); // home | feedback | drafting | participation | pdf
   const [evidenceHubTab, setEvidenceHubTab] = useState('lessons'); // lessons | students
 
   const [fixedCommentCount, setFixedCommentCount] = useState(0);
@@ -2813,6 +2813,7 @@ function TeacherDashboardInner() {
       setClearFixedArmed(false);
       setToolsPanelOpen(false);
       setLibraryPanel(null);
+      setLibraryView('home');
       setNewClassConfirmOpen(false);
       clearSessionDirty();
       setCopyToast('Board reset — ready for a fresh lesson');
@@ -2961,7 +2962,38 @@ function TeacherDashboardInner() {
 
   function openLessonReport() {
     closeSettings();
-    setLessonReportOpen(true);
+    setLibraryPanel('evidence');
+    setLibraryView('participation');
+  }
+
+  function openLibrary(panel, evidenceTab = 'lessons') {
+    closeSettings();
+    setLibraryPanel('evidence');
+    if (panel === 'reports') {
+      setLibraryView('home');
+      setEvidenceHubTab('students');
+      setSnapshotsOpen(true);
+      return;
+    }
+    if (panel === 'feedback') {
+      setLibraryView('feedback');
+      setSnapshotsOpen(true);
+      return;
+    }
+    setLibraryView('home');
+    if (panel === 'evidence') {
+      setEvidenceHubTab(evidenceTab === 'students' ? 'students' : 'lessons');
+      setSnapshotsOpen(true);
+    }
+  }
+
+  function closeLibraryHub() {
+    setLibraryPanel(null);
+    setLibraryView('home');
+  }
+
+  function goLibraryHome() {
+    setLibraryView('home');
   }
 
   async function downloadLessonReportQuick() {
@@ -2975,24 +3007,6 @@ function TeacherDashboardInner() {
       setTimeout(() => setCopyToast(''), 2500);
     } catch (e) {
       setError(e.message || 'Could not download participation report');
-    }
-  }
-
-  function openLibrary(panel, evidenceTab = 'lessons') {
-    closeSettings();
-    if (panel === 'reports') {
-      setLibraryPanel('evidence');
-      setEvidenceHubTab('students');
-      setSnapshotsOpen(true);
-      return;
-    }
-    setLibraryPanel(panel);
-    if (panel === 'evidence') {
-      setEvidenceHubTab(evidenceTab === 'students' ? 'students' : 'lessons');
-      setSnapshotsOpen(true);
-    }
-    if (panel === 'feedback') {
-      setSnapshotsOpen(true);
     }
   }
 
@@ -4258,80 +4272,98 @@ function TeacherDashboardInner() {
           );
         })(), document.body)}
 
-      {lessonReportOpen && (
-        <LessonReportPanel roomCode={codeInput} onClose={() => setLessonReportOpen(false)} />
-      )}
-
       {libraryPanel && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
             className={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900${
-              libraryPanel === 'feedback' ? ' max-w-xl' : ' max-w-5xl'
-            }${helpFlash === 'records' && libraryPanel === 'evidence' ? ' is-help-flash' : ''}${
-              helpFlash === 'ai' && libraryPanel === 'feedback' ? ' is-help-flash' : ''
+              libraryView === 'feedback' || libraryView === 'pdf'
+                ? ' max-w-xl'
+                : libraryView === 'participation'
+                  ? ' max-w-4xl'
+                  : ' max-w-5xl'
+            }${helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''}${
+              helpFlash === 'ai' && libraryView === 'feedback' ? ' is-help-flash' : ''
             }`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="library-panel-title"
-            data-help-target={libraryPanel === 'feedback' ? 'ai' : 'records'}
+            data-help-target={libraryView === 'feedback' ? 'ai' : 'records'}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5 dark:border-slate-700">
-              <div className="min-w-0">
-                <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
-                  {libraryPanel === 'feedback'
-                    ? 'AI feedback'
-                    : evidenceHubTab === 'students'
-                      ? 'Student portfolios'
-                      : 'Lesson records'}
-                </h2>
-                {libraryPanel === 'feedback' && (
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    Students are only identified by number — names are never sent to the AI.
-                  </p>
-                )}
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3.5 dark:border-slate-700">
+              <div className="flex min-w-0 items-start gap-2">
+                {libraryView !== 'home' ? (
+                  <button
+                    type="button"
+                    onClick={goLibraryHome}
+                    className="mt-0.5 shrink-0 rounded-lg px-2 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+                    aria-label="Back to Lesson records"
+                  >
+                    ← Lesson records
+                  </button>
+                ) : null}
+                <div className="min-w-0">
+                  <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+                    {libraryView === 'feedback'
+                      ? 'AI feedback'
+                      : libraryView === 'drafting'
+                        ? 'Drafting evidence'
+                        : libraryView === 'participation'
+                          ? 'Participation'
+                          : libraryView === 'pdf'
+                            ? 'Session PDF'
+                            : evidenceHubTab === 'students'
+                              ? 'Student portfolios'
+                              : 'Lesson records'}
+                  </h2>
+                  {libraryView === 'feedback' ? (
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      Students are only identified by number — names are never sent to the AI.
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              <CloseButton onClick={() => setLibraryPanel(null)} aria-label="Close" />
+              <CloseButton onClick={closeLibraryHub} aria-label="Close Lesson records" />
             </div>
-            <div className={`overflow-y-auto scrollbar-thin${libraryPanel === 'feedback' ? ' p-4' : ' p-5'}`}>
-        {libraryPanel === 'evidence' && (
+            <div className={`overflow-y-auto scrollbar-thin${libraryView === 'feedback' || libraryView === 'pdf' ? ' p-4' : ' p-5'}`}>
+        {libraryView === 'home' && (
           <section className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-                Snapshot writing now, or browse Lesson saves and Portfolios.
+                Capture and revisit today’s writing evidence.
               </p>
               <button type="button" onClick={openEvidenceModal} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
                 Snapshot writing
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="navigation" aria-label="Lesson records sections">
               <button
                 type="button"
-                onClick={() => { setLibraryPanel(null); setDraftTrailOpen(true); }}
+                onClick={() => setLibraryView('drafting')}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Drafting evidence
               </button>
               <button
                 type="button"
-                onClick={() => setLibraryPanel('feedback')}
+                onClick={() => setLibraryView('feedback')}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 AI feedback
               </button>
               <button
                 type="button"
-                onClick={() => { setLibraryPanel(null); openLessonReport(); }}
+                onClick={() => setLibraryView('participation')}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                Participation report
+                Participation
               </button>
               <button
                 type="button"
                 disabled={sessionBusy}
-                onClick={() => { setLibraryPanel(null); setSessionPdfOpen(true); }}
+                onClick={() => setLibraryView('pdf')}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                Export PDF
+                Session PDF
               </button>
             </div>
 
@@ -4339,7 +4371,7 @@ function TeacherDashboardInner() {
               <div className="rounded-2xl border border-dashed border-emerald-300 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-slate-900">
                 <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">No snapshots yet</h3>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-                  Snapshot student drafts once to unlock lesson packs and individual portfolios.
+                  Snapshot student drafts once to unlock Class snapshots and Student portfolios.
                 </p>
               </div>
             ) : (
@@ -4356,7 +4388,7 @@ function TeacherDashboardInner() {
                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
-                    Lesson saves · {snapshots.length}
+                    Class snapshots · {snapshots.length}
                   </button>
                   <button
                     type="button"
@@ -4369,15 +4401,15 @@ function TeacherDashboardInner() {
                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
-                    Portfolios · {evidenceStudents.length || '…'}
+                    Student portfolios · {evidenceStudents.length || '…'}
                   </button>
                 </div>
 
                 {evidenceHubTab === 'lessons' && (
                   <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm dark:border-emerald-800 dark:bg-slate-900">
                     <div className="border-b border-emerald-100 px-4 py-3 dark:border-emerald-900">
-                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Lesson saves</h3>
-                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Whole-class packs from each Save. View or download HTML again.</p>
+                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Class snapshots</h3>
+                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Whole-class packs from each snapshot. View or download HTML again.</p>
                     </div>
                     <ul className="max-h-96 divide-y divide-emerald-100/80 overflow-y-auto px-4 scrollbar-thin dark:divide-emerald-900/50">
                       {snapshots.map((sn) => (
@@ -4412,7 +4444,7 @@ function TeacherDashboardInner() {
                 <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                   <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                     <div>
-                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Portfolios</h3>
+                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Student portfolios</h3>
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose a name for one PDF, or download the class as a zip of separate files.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -4601,7 +4633,7 @@ function TeacherDashboardInner() {
                                       {(selectedEvidenceStudent.aliases || []).length > 1 && entry.sourceName ? ` · as ${entry.sourceName}` : ''}
                                     </p>
                                   </div>
-                                  <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">Open lesson save</button>
+                                  <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">Open class snapshot</button>
                                 </div>
                                 <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">{entry.text}</p>
                               </article>
@@ -4628,7 +4660,7 @@ function TeacherDashboardInner() {
           </section>
         )}
 
-        {libraryPanel === 'feedback' && (
+        {libraryView === 'feedback' && (
           <section data-help-target="ai" className="iboard-ai-feedback">
             <div className="iboard-ai-feedback__bar">
               <div className="min-w-0">
@@ -4685,6 +4717,30 @@ function TeacherDashboardInner() {
             </button>
             {aiPasteHint ? <p className="iboard-ai-feedback__hint">{aiPasteHint}</p> : null}
           </section>
+        )}
+
+        {libraryView === 'drafting' && (
+          <DraftTrailPanel
+            embedded
+            socket={socket}
+            onClose={goLibraryHome}
+          />
+        )}
+
+        {libraryView === 'participation' && (
+          <LessonReportPanel
+            embedded
+            roomCode={codeInput}
+            onClose={goLibraryHome}
+          />
+        )}
+
+        {libraryView === 'pdf' && (
+          <SessionPdfExport
+            embedded
+            socket={socket}
+            onClose={goLibraryHome}
+          />
         )}
             </div>
           </div>
