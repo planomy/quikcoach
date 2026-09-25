@@ -1055,11 +1055,13 @@ html.dark .iboard-tour-ring {
     0 12px 28px rgba(40, 40, 55, 0.14),
     0 2px 6px rgba(40, 40, 55, 0.08);
   opacity: 0;
-  transition: opacity 220ms ease;
+  /* Snap hide so the next stop never flashes; only fade in when shown. */
+  transition: none;
 }
 
 .iboard-tour.is-shown {
   opacity: 1;
+  transition: opacity 220ms ease;
 }
 
 .iboard-tour__arrow {

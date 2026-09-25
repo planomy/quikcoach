@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import { subscribeViewportChanges } from '../lib/viewport.js';
 
 const STORAGE_KEY = 'iboard-teacher-tour';
-const RING_MS = 680;
-const PILL_FADE_MS = 220;
 /** Pill fades in near the end of the ring slide. */
 const PILL_IN_DELAY_MS = 480;
 
@@ -173,8 +171,11 @@ export default function TeacherBoardTour({ anchors }) {
     if (!show) {
       setRing(null);
       setBox(null);
+      setPillShown(false);
       return undefined;
     }
+    // Hide before the new position paints so the pill never flashes at the next stop.
+    setPillShown(false);
     const place = () => {
       const anchor = anchors?.[current.id]?.current;
       const pill = pillRef.current;
@@ -197,10 +198,9 @@ export default function TeacherBoardTour({ anchors }) {
     return undefined;
   }, [show, ring]);
 
-  // Fade pill out on step change, then in as the ring lands.
+  // Fade the pill in as the ring lands (already snapped hidden in layout).
   useEffect(() => {
     if (!show) return undefined;
-    setPillShown(false);
     const delay = step === 0 ? 120 : PILL_IN_DELAY_MS;
     const timer = window.setTimeout(() => setPillShown(true), delay);
     return () => window.clearTimeout(timer);
@@ -232,7 +232,6 @@ export default function TeacherBoardTour({ anchors }) {
           top: box ? box.top : -9999,
           left: box ? box.left : -9999,
           visibility: box ? 'visible' : 'hidden',
-          transitionDuration: `${PILL_FADE_MS}ms`,
         }}
         role="dialog"
         aria-label="Teacher board tour"
