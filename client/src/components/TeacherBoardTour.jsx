@@ -81,7 +81,6 @@ function measureRing(anchor, clipKind) {
   let bottom = target.bottom;
 
   if (clipKind === 'header' && clip) {
-    // REC: ring lives in the header band, not tight on the switch.
     const hx = 16;
     top = clip.top + edge;
     bottom = clip.bottom - edge;
@@ -115,7 +114,6 @@ function placeBesideAnchor(anchor, pill, place, ringBox = null) {
     width: measured?.width > 8 ? measured.width : 320,
     height: measured?.height > 8 ? measured.height : 48,
   };
-  // Extra gap on the left (REC) so the arrow clears the focus ring stroke.
   const gap = place === 'left' ? 20 : 14;
   let left = place === 'right'
     ? target.right + gap
@@ -142,7 +140,6 @@ export default function TeacherBoardTour({ anchors }) {
   const stepRef = useRef(0);
   const firstRingRef = useRef(true);
   const anchorsRef = useRef(anchors);
-  const pillArmedStepRef = useRef(-1);
   anchorsRef.current = anchors;
 
   const show = !dismissed;
@@ -151,7 +148,6 @@ export default function TeacherBoardTour({ anchors }) {
 
   function dismiss() {
     rememberDismissed();
-    pillArmedStepRef.current = -1;
     setDismissed(true);
   }
 
@@ -182,6 +178,7 @@ export default function TeacherBoardTour({ anchors }) {
       setPillShown(false);
       return undefined;
     }
+    // Snap-hide on step change only (this effect deps on step, not box updates).
     setPillShown(false);
     const place = () => {
       const live = anchorsRef.current;
@@ -190,7 +187,6 @@ export default function TeacherBoardTour({ anchors }) {
       const nextRing = measureRing(anchor, current.clip);
       if (!nextRing) return false;
       setRing(nextRing);
-      // Position even if the pill ref is not ready yet (estimate size).
       setBox(placeBesideAnchor(anchor, pillRef.current, current.place, nextRing));
       return true;
     };
@@ -227,16 +223,15 @@ export default function TeacherBoardTour({ anchors }) {
     return undefined;
   }, [show, ring]);
 
-  // Fade in once per step, only after we have a docked position.
+  // Fade in on step change only — must NOT depend on `box`, or place() retries
+  // clear the timer and the pill stays opacity 0 forever.
   useEffect(() => {
-    if (!show || !box) return undefined;
-    if (pillArmedStepRef.current === step) return undefined;
-    pillArmedStepRef.current = step;
+    if (!show) return undefined;
     setPillShown(false);
-    const delay = step === 0 ? 180 : PILL_IN_DELAY_MS;
+    const delay = step === 0 ? 200 : PILL_IN_DELAY_MS;
     const timer = window.setTimeout(() => setPillShown(true), delay);
     return () => window.clearTimeout(timer);
-  }, [show, step, box]);
+  }, [show, step]);
 
   if (!show || typeof document === 'undefined') return null;
 
@@ -263,10 +258,13 @@ export default function TeacherBoardTour({ anchors }) {
         style={{
           top: box ? box.top : -9999,
           left: box ? box.left : -9999,
-          visibility: box ? 'visible' : 'hidden',
+          // Keep in accessibility tree; opacity handles hide/show.
+          visibility: 'visible',
+          pointerEvents: pillShown && box ? 'auto' : 'none',
         }}
         role="dialog"
         aria-label="Teacher board tour"
+        aria-hidden={!pillShown}
       >
         {box?.aim ? (
           <span className={`iboard-tour__arrow iboard-tour__arrow--${box.aim}`} aria-hidden="true" />
