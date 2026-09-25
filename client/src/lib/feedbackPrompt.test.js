@@ -47,13 +47,13 @@ test('prompt locks numbering and injects focus glosses', () => {
   assert.match(full, /END OF DRAFTS/);
 });
 
-test('year change does not rearrange core defaults', () => {
+test('year change does not rearrange defaults — all on', () => {
   const y3 = defaultModeTogglesForYear('yr3');
   const y10 = defaultModeTogglesForYear('yr10');
-  assert.equal(y3.argument.positionContention, y10.argument.positionContention);
-  assert.equal(y3.argument.evidenceExamples, y10.argument.evidenceExamples);
-  assert.equal(y3.writing.themeSubtext, false);
-  assert.equal(y10.writing.themeSubtext, false);
+  assert.equal(y3.argument.positionContention, true);
+  assert.equal(y10.argument.positionContention, true);
+  assert.equal(y3.writing.sentenceVariety, true);
+  assert.equal(y10.writing.themeSubtext, true);
 });
 
 test('senior focuses appear only for older / mixed / general', () => {

@@ -300,33 +300,6 @@ const FOCUS_GLOSSES = {
   },
 };
 
-/** Stable default-on cores (does not change when Year changes). Senior extras default off. */
-const DEFAULT_ON_CORE = {
-  writing: ['storyStructure', 'characterVoice', 'showDontTell', 'wordChoice', 'paragraphingFlow'],
-  explanation: [
-    'structureSequencing',
-    'explainingHowWhy',
-    'keyTermsVocab',
-    'accuracyDetail',
-    'cohesionConnections',
-  ],
-  argument: [
-    'structureCohesion',
-    'positionContention',
-    'argumentsReasoning',
-    'evidenceExamples',
-    'analysisEvidence',
-  ],
-  problem_solving: [
-    'understandingProblem',
-    'methodStrategy',
-    'workingProcess',
-    'accuracy',
-    'answerReasonableness',
-  ],
-  custom: [],
-};
-
 const ROLE_BY_MODE = {
   writing:
     'You are an expert narrative writing coach for school students. Focus on craft, clarity, and improvement at the year level given for each student.',
@@ -378,17 +351,16 @@ export function visibleToggleLabels(mode, yearLevel = 'general') {
 }
 
 /**
- * Default toggle map. Core defaults are stable across years; senior extras default off.
+ * Default toggle map — all known focuses on (teacher turns off what they don't want).
  * @param {string} [yearLevel]
  */
 export function defaultModeTogglesForYear(yearLevel = 'general') {
   const o = {};
   for (const m of FEEDBACK_MODES) {
     const labels = MODE_TOGGLE_LABELS[m] || {};
-    const on = new Set(DEFAULT_ON_CORE[m] || []);
     o[m] = {};
     for (const k of Object.keys(labels)) {
-      o[m][k] = on.has(k);
+      o[m][k] = true;
     }
   }
   return o;
