@@ -195,13 +195,16 @@ const FOCUS_GLOSSES = {
       senior: 'Implication and restraint over stated emotion; one concrete rewrite is enough.',
     },
     wordChoice: {
-      default: 'Precise verbs and nouns; quote one weak word and offer a stronger alternative.',
+      default:
+        'Precise verbs and nouns; quote one weak word and offer a stronger alternative. If word choice is already strong, name one word or phrase that is working well.',
     },
     sentenceVariety: {
-      default: 'Mix short and long sentences; vary openers; avoid chains of “and then”.',
+      default:
+        'Mix short and long sentences; vary openers; avoid chains of “and then”. If variety is already strong, briefly name what is working.',
     },
     paragraphingFlow: {
-      default: 'New paragraph for new time, place, speaker or event; smooth links between them.',
+      default:
+        'New paragraph for new time, place, speaker or event; smooth links between them. If paragraphing is already clear, briefly reinforce that.',
     },
     mechanics: {
       default:
@@ -488,7 +491,7 @@ export function buildLockedOutputRules(studentCount) {
 - Do not write any heading, intro, or closing before 1. or after the last number.
 - Do not use real student names. If you refer to a writer, say Student 1, Student 2, etc.
 - Pitch language and expectations to the year level shown for that student.
-- Review every teacher-selected focus area, then give feedback on only the 2–3 selected areas where specific advice would most improve that student’s draft. Do not comment on areas outside the selected list.
+- Review every teacher-selected focus area, then comment on only 2–3 of them. Prefer areas where specific advice would most improve the draft. If a selected focus is already strong, you may use one of those slots for a short reinforce comment that names what is working — do not invent a vague weakness. Do not comment on areas outside the selected list.
 
 Required shape:
 ${example}`;
@@ -578,7 +581,13 @@ export function buildEditableGuidance({
       ? `The target length is approximately ${enforcedTarget} words. Comment on whether the student is meaningfully under or over the target only when it affects the quality or completeness of the response.`
       : '';
 
-  return [role, '', focusLine, yearLine, subjectLine, customLine, targetLine]
+  const craftKeys = ['paragraphingFlow', 'wordChoice', 'sentenceVariety'];
+  const craftSelected = mode === 'writing' && craftKeys.some((k) => enabledKeys.includes(k));
+  const craftLine = craftSelected
+    ? 'When Paragraphing & Flow, Word Choice, or Sentence Variety are selected, try to include at least one of them in the 2–3 comments (improve or briefly reinforce if already strong), so craft is rarely silent on a narrative draft.'
+    : '';
+
+  return [role, '', focusLine, yearLine, subjectLine, customLine, targetLine, craftLine]
     .filter((p) => p !== '')
     .join('\n');
 }

@@ -37,11 +37,13 @@ test('prompt locks numbering and injects focus glosses', () => {
   });
   assert.match(parts.lockedRules, /1\./);
   assert.match(parts.lockedRules, /exactly 3/);
-  assert.match(parts.lockedRules, /2–3 selected areas/);
+  assert.match(parts.lockedRules, /2–3 of them/);
+  assert.match(parts.lockedRules, /short reinforce comment that names what is working/);
   assert.match(parts.lockedRules, /Plain text only/);
   assert.match(parts.lockedRules, /each focus-area comment on its own new line/);
   assert.match(parts.guidance, /Year 4/);
   assert.match(parts.guidance, /Story Structure/);
+  assert.equal(parts.guidance.includes('craft is rarely silent'), false);
   assert.match(parts.lockedClosing, /exactly 3/);
   assert.match(parts.lockedClosing, /Plain text only/);
   const full = assembleAiPrompt({ ...parts, guidance: parts.guidance + '\nExtra note from teacher.' });
@@ -160,13 +162,38 @@ test('focus wording reviews selected areas only', () => {
     toggles: { storyStructure: true, mechanics: true },
     students: [{ text: 'Hi' }],
   });
-  assert.match(parts.lockedRules, /2–3 selected areas where specific advice would most improve/);
+  assert.match(parts.lockedRules, /2–3 of them/);
+  assert.match(parts.lockedRules, /short reinforce comment that names what is working/);
   assert.match(parts.guidance, /^[\s\S]*Teacher-selected focus areas:\n/);
   assert.equal(
     (parts.guidance.match(/Review the student’s writing against every selected/g) || []).length,
     0
   );
   assert.match(parts.guidance, /do not proofread or rewrite the whole response/);
+  assert.equal(parts.guidance.includes('craft is rarely silent'), false);
+});
+
+test('narrative craft focuses ask for reinforce when strong', () => {
+  const parts = buildAiPromptParts({
+    feedbackMode: 'writing',
+    yearLevel: 'yr8',
+    toggles: { paragraphingFlow: true, wordChoice: true, sentenceVariety: true },
+    students: [{ text: 'Hi' }],
+  });
+  assert.match(parts.guidance, /craft is rarely silent/);
+  assert.match(parts.guidance, /briefly reinforce that/);
+  assert.match(parts.guidance, /working well/);
+});
+
+test('explanation mode has no narrative craft preference line', () => {
+  const parts = buildAiPromptParts({
+    feedbackMode: 'explanation',
+    yearLevel: 'yr8',
+    toggles: { structureSequencing: true, keyTermsVocab: true },
+    students: [{ text: 'Hi' }],
+  });
+  assert.equal(parts.guidance.includes('craft is rarely silent'), false);
+  assert.match(parts.lockedRules, /short reinforce comment that names what is working/);
 });
 
 test('explanation structure gloss is logical not chronological', () => {
