@@ -2059,17 +2059,6 @@ html.dark .iboard-ai-feedback__copy {
   color: #c7d2fe;
 }
 
-.iboard-ai-feedback__note {
-  margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: #64748b;
-}
-
-html.dark .iboard-ai-feedback__note {
-  color: #94a3b8;
-}
-
 .iboard-ai-feedback__paste-label {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;

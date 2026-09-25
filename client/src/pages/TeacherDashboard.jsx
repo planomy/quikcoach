@@ -4629,9 +4629,6 @@ function TeacherDashboardInner() {
             <button type="button" onClick={copyForAi} className="iboard-ai-feedback__copy">
               Copy prompt for AI
             </button>
-            <p className="iboard-ai-feedback__note">
-              Locked portions keep numbering and student anonymity.
-            </p>
 
             <label className="iboard-ai-feedback__paste-label" htmlFor="ai-paste-back">
               Paste below
