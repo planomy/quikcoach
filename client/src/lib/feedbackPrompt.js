@@ -464,8 +464,10 @@ function glossFor(mode, key, band) {
 }
 
 function formatExampleLine(n) {
-  return `${n}. Star: [specific strength in Student ${n}’s draft]
-Star: [second specific strength]
+  return `${n}. What I like about your writing
+[specific strength in Student ${n}’s draft]
+[second specific strength]
+What I think needs your attention
 [Focus label]: [specific wish — what to try next]
 [Focus label]: [specific wish]
 [Focus label]: [specific wish]`;
@@ -486,12 +488,14 @@ export function buildLockedOutputRules(studentCount) {
 - Write feedback for exactly ${n || 'each'} student${n === 1 ? '' : 's'} below, in the same order.
 - Every reply item MUST start on its own line with the number, a full stop, then a space (1. 2. 3. …). Never start any other line with a number and full stop — that would look like the next student.
 - Plain text only: no markdown, no asterisks for bold or italics (write allies not *allies* or **allies**).
-- Within each numbered item use two stars and up to three wishes, each on its own line:
-  - Exactly two lines starting with "Star: " — each names one specific strength in the draft (not vague praise). Stars may notice craft such as paragraphing, vocabulary or sentence variety when those strengths are real.
+- Within each numbered item use exactly this shape (two likes, then up to three wishes):
+  - First line after the number: the heading What I like about your writing
+  - Then exactly two short lines — each names one specific strength (not vague praise). Prefer real micro-strengths even on a weak draft (e.g. one accurate fact, a clear opening, finishing the task). You may notice craft such as paragraphing, vocabulary or sentence variety when those strengths are real. Do not invent empty compliments.
+  - Then the heading What I think needs your attention on its own line
   - Then up to three wish lines. Each wish starts with a teacher-selected focus label and a colon (e.g. Accuracy & Detail: …) and gives specific, actionable advice. Prefer the 2–3 selected areas where advice would most improve the draft. If fewer than three focuses are selected, write fewer wishes. Do not invent wishes outside the selected list.
-- Do not write any heading, intro, or closing before 1. or after the last number.
+- Do not write any other heading, intro, or closing before 1. or after the last number.
 - Do not use real student names. If you refer to a writer, say Student 1, Student 2, etc.
-- Pitch language and expectations to the year level shown for that student.
+- Pitch language and expectations to the year level shown for that student. Write in first person (“I”) as a supportive teacher.
 
 Required shape:
 ${example}`;
@@ -503,9 +507,9 @@ ${example}`;
 export function buildLockedClosing(studentCount) {
   const n = Math.max(0, Number(studentCount) || 0);
   if (n <= 0) {
-    return 'END OF DRAFTS. Reply with numbered feedback only (plain text; 2 Star: lines then up to 3 focus wishes): 1. … 2. …';
+    return 'END OF DRAFTS. Reply with numbered feedback only (plain text; “What I like about your writing” then 2 likes, then “What I think needs your attention” then up to 3 focus wishes): 1. … 2. …';
   }
-  return `END OF DRAFTS. Reply now with exactly ${n} numbered items and nothing else — start with "1. " and finish with "${n}. ". Plain text only; each item = 2 Star: lines, then up to 3 focus-label wish lines.`;
+  return `END OF DRAFTS. Reply now with exactly ${n} numbered items and nothing else — start with "1. " and finish with "${n}. ". Plain text only; each item = What I like about your writing (2 likes) then What I think needs your attention (up to 3 focus-label wishes).`;
 }
 
 /**

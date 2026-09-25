@@ -3201,16 +3201,16 @@ function TeacherDashboardInner() {
           </div>
 
           <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(32rem,calc(100vw-12rem))] -translate-x-1/2 items-center">
-            {!socketConnected ? null : copyToast || joinWhisper ? (
+            {!socketConnected ? null : !copyToast && joinWhisper ? (
               <div
                 role="status"
                 aria-live="polite"
                 className="iboard-header-whisper pointer-events-auto"
-                title={copyToast || joinWhisper}
+                title={joinWhisper}
               >
-                {copyToast || joinWhisper}
+                {joinWhisper}
               </div>
-            ) : broadcastPickCount > 0 ? (
+            ) : !copyToast && broadcastPickCount > 0 ? (
               <div className="pointer-events-auto flex items-center gap-2">
               <div ref={sendToMenuRef} data-send-to-menu className="relative">
                 <button
@@ -3355,6 +3355,19 @@ function TeacherDashboardInner() {
         }
       />
       </div>
+      {copyToast
+        ? createPortal(
+            <div
+              role="status"
+              aria-live="polite"
+              className="iboard-header-whisper iboard-header-whisper--float pointer-events-none"
+              title={copyToast}
+            >
+              {copyToast}
+            </div>,
+            document.body
+          )
+        : null}
       {draftTrailLabelOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900" role="dialog" aria-labelledby="draft-trail-label-title">

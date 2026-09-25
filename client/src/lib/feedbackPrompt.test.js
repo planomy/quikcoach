@@ -37,13 +37,13 @@ test('prompt locks numbering and injects focus glosses', () => {
   });
   assert.match(parts.lockedRules, /1\./);
   assert.match(parts.lockedRules, /exactly 3/);
-  assert.match(parts.lockedRules, /two stars and up to three wishes/);
-  assert.match(parts.lockedRules, /Exactly two lines starting with "Star: "/);
+  assert.match(parts.lockedRules, /What I like about your writing/);
+  assert.match(parts.lockedRules, /What I think needs your attention/);
   assert.match(parts.lockedRules, /Plain text only/);
   assert.match(parts.guidance, /Year 4/);
   assert.match(parts.guidance, /Story Structure/);
   assert.match(parts.lockedClosing, /exactly 3/);
-  assert.match(parts.lockedClosing, /2 Star:/);
+  assert.match(parts.lockedClosing, /What I like about your writing/);
   const full = assembleAiPrompt({ ...parts, guidance: parts.guidance + '\nExtra note from teacher.' });
   assert.match(full, /CRITICAL/);
   assert.match(full, /Extra note from teacher/);
@@ -160,7 +160,7 @@ test('focus wording reviews selected areas only', () => {
     toggles: { storyStructure: true, mechanics: true },
     students: [{ text: 'Hi' }],
   });
-  assert.match(parts.lockedRules, /two stars and up to three wishes/);
+  assert.match(parts.lockedRules, /What I think needs your attention/);
   assert.match(parts.lockedRules, /Do not invent wishes outside the selected list/);
   assert.match(parts.guidance, /^[\s\S]*Teacher-selected focus areas:\n/);
   assert.equal(
@@ -171,7 +171,7 @@ test('focus wording reviews selected areas only', () => {
   assert.equal(parts.guidance.includes('craft is rarely silent'), false);
 });
 
-test('stars may notice craft strengths; wishes stay on selected focuses', () => {
+test('likes may notice craft strengths; wishes stay on selected focuses', () => {
   const parts = buildAiPromptParts({
     feedbackMode: 'writing',
     yearLevel: 'yr8',
@@ -179,18 +179,20 @@ test('stars may notice craft strengths; wishes stay on selected focuses', () => 
     students: [{ text: 'Hi' }],
   });
   assert.match(parts.lockedRules, /paragraphing, vocabulary or sentence variety/);
-  assert.match(parts.lockedRules, /Star: /);
+  assert.match(parts.lockedRules, /What I like about your writing/);
+  assert.equal(parts.lockedRules.includes('Star:'), false);
   assert.equal(parts.guidance.includes('craft is rarely silent'), false);
 });
 
-test('explanation mode uses the same stars-and-wishes shape', () => {
+test('explanation mode uses the same personal likes-and-wishes shape', () => {
   const parts = buildAiPromptParts({
     feedbackMode: 'explanation',
     yearLevel: 'yr8',
     toggles: { structureSequencing: true, keyTermsVocab: true },
     students: [{ text: 'Hi' }],
   });
-  assert.match(parts.lockedRules, /two stars and up to three wishes/);
+  assert.match(parts.lockedRules, /What I like about your writing/);
+  assert.match(parts.lockedRules, /What I think needs your attention/);
   assert.equal(parts.guidance.includes('craft is rarely silent'), false);
 });
 
