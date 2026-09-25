@@ -1,9 +1,9 @@
 /** @typedef {'writing'|'explanation'|'argument'|'problem_solving'|'custom'} FeedbackMode */
 /** @typedef {'lower'|'mid'|'senior'} YearBand */
 
-export const FEEDBACK_MODES = ['custom', 'writing', 'explanation', 'argument', 'problem_solving'];
+export const FEEDBACK_MODES = ['writing', 'explanation', 'argument', 'problem_solving', 'custom'];
 
-/** Chip order in Feedback settings (Custom first). */
+/** Chip order in Feedback settings (Custom last). */
 export const FEEDBACK_MODE_CHIPS = FEEDBACK_MODES;
 
 const LEGACY_MODE_MAP = {

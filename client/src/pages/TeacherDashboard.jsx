@@ -58,11 +58,11 @@ import {
 } from '../lib/iboardSession.js';
 
 const MODE_LABELS = {
-  custom: 'Custom',
   writing: 'Narrative',
   explanation: 'Explanation',
   argument: 'Argument / Analysis',
   problem_solving: 'Problem Solving',
+  custom: 'Custom',
 };
 
 const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
