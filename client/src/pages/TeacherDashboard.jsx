@@ -4655,7 +4655,7 @@ function TeacherDashboardInner() {
                   Copy the prompt for AI
                 </button>
                 <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-                  The AI prompt contains locked portions to preserve student anonymity, and formatting controls.
+                  The AI prompt contains locked portions for formatting control and to preserve student anonymity.
                 </p>
                 <button
                   type="button"
