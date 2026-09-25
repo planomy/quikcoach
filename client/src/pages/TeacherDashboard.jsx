@@ -3264,7 +3264,6 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      <TeacherBoardTour anchors={tourAnchors} />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {headerDockOpen ? (
         <div className="iboard-workspace-scrim pointer-events-none absolute inset-0 z-[55]" aria-hidden="true" />
@@ -3408,6 +3407,8 @@ function TeacherDashboardInner() {
             </div>
           </div>
         </nav>
+
+        <TeacherBoardTour anchors={tourAnchors} />
 
         <div className="iboard-teacher-panel-wrap">
           <HintWrap hint="Show teacher" prefer="right" suppressed={!teacherPanelHidden}>

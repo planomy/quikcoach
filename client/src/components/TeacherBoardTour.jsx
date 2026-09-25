@@ -110,7 +110,11 @@ function placeBesideAnchor(anchor, pill, place, ringBox = null) {
         height: ringBox.height,
       }
     : fallback;
-  const size = pill.getBoundingClientRect();
+  const measured = pill?.getBoundingClientRect?.();
+  const size = {
+    width: measured?.width > 8 ? measured.width : 320,
+    height: measured?.height > 8 ? measured.height : 48,
+  };
   // Extra gap on the left (REC) so the arrow clears the focus ring stroke.
   const gap = place === 'left' ? 20 : 14;
   let left = place === 'right'
@@ -138,6 +142,7 @@ export default function TeacherBoardTour({ anchors }) {
   const stepRef = useRef(0);
   const firstRingRef = useRef(true);
   const anchorsRef = useRef(anchors);
+  const pillArmedStepRef = useRef(-1);
   anchorsRef.current = anchors;
 
   const show = !dismissed;
@@ -146,6 +151,7 @@ export default function TeacherBoardTour({ anchors }) {
 
   function dismiss() {
     rememberDismissed();
+    pillArmedStepRef.current = -1;
     setDismissed(true);
   }
 
@@ -176,21 +182,25 @@ export default function TeacherBoardTour({ anchors }) {
       setPillShown(false);
       return undefined;
     }
-    // Hide only when the step changes — not on every parent re-render / resize.
     setPillShown(false);
     const place = () => {
       const live = anchorsRef.current;
       const anchor = live?.[current.id]?.current;
-      const pill = pillRef.current;
-      if (!anchor) return;
+      if (!anchor) return false;
       const nextRing = measureRing(anchor, current.clip);
+      if (!nextRing) return false;
       setRing(nextRing);
-      if (pill) setBox(placeBesideAnchor(anchor, pill, current.place, nextRing));
+      // Position even if the pill ref is not ready yet (estimate size).
+      setBox(placeBesideAnchor(anchor, pillRef.current, current.place, nextRing));
+      return true;
     };
     place();
-    // Retry once if the rail/header refs were not mounted yet on first paint.
-    const retry = window.setTimeout(place, 50);
-    return () => window.clearTimeout(retry);
+    const retryA = window.setTimeout(place, 50);
+    const retryB = window.setTimeout(place, 200);
+    return () => {
+      window.clearTimeout(retryA);
+      window.clearTimeout(retryB);
+    };
   }, [show, step, current.id, current.place, current.clip]);
 
   useEffect(() => {
@@ -198,11 +208,11 @@ export default function TeacherBoardTour({ anchors }) {
     const unsub = subscribeViewportChanges(() => {
       const live = anchorsRef.current;
       const anchor = live?.[current.id]?.current;
-      const pill = pillRef.current;
       if (!anchor) return;
       const nextRing = measureRing(anchor, current.clip);
+      if (!nextRing) return;
       setRing(nextRing);
-      if (pill) setBox(placeBesideAnchor(anchor, pill, current.place, nextRing));
+      setBox(placeBesideAnchor(anchor, pillRef.current, current.place, nextRing));
     });
     return unsub;
   }, [show, step, current.id, current.place, current.clip]);
@@ -217,13 +227,16 @@ export default function TeacherBoardTour({ anchors }) {
     return undefined;
   }, [show, ring]);
 
-  // Fade the pill in after the ring is in place (already snapped hidden on step change).
+  // Fade in once per step, only after we have a docked position.
   useEffect(() => {
-    if (!show) return undefined;
-    const delay = step === 0 ? 160 : PILL_IN_DELAY_MS;
+    if (!show || !box) return undefined;
+    if (pillArmedStepRef.current === step) return undefined;
+    pillArmedStepRef.current = step;
+    setPillShown(false);
+    const delay = step === 0 ? 180 : PILL_IN_DELAY_MS;
     const timer = window.setTimeout(() => setPillShown(true), delay);
     return () => window.clearTimeout(timer);
-  }, [show, step]);
+  }, [show, step, box]);
 
   if (!show || typeof document === 'undefined') return null;
 
