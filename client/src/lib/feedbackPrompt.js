@@ -101,7 +101,7 @@ export const MODE_TOGGLE_LABELS = {
     explainingHowWhy: 'Explaining How & Why',
     keyTermsVocab: 'Key Terms & Vocabulary',
     accuracyDetail: 'Accuracy & Detail',
-    evidenceExamplesData: 'Evidence, Examples & Data',
+    evidenceExamplesData: 'Evidence, Examples & Sources',
     cohesionConnections: 'Cohesion & Connections',
     depthPrecision: 'Depth & Precision',
   },
@@ -227,7 +227,7 @@ const FOCUS_GLOSSES = {
       default: 'Specific, enough detail to explain; flag vagueness or doubtful claims.',
     },
     evidenceExamplesData: {
-      default: 'Use examples, evidence or data where they strengthen the explanation.',
+      default: 'Use relevant evidence, examples, sources or data where they strengthen the explanation.',
     },
     cohesionConnections: {
       default: 'Ideas and paragraphs connect logically; relationships between concepts are explicit.',
@@ -484,7 +484,7 @@ export function buildLockedOutputRules(studentCount) {
 - Do not write any heading, intro, or closing before 1. or after the last number.
 - Do not use real student names. If you refer to a writer, say Student 1, Student 2, etc.
 - Pitch language and expectations to the year level shown for that student.
-- Review every teacher-selected focus area, then give feedback on only the 2–3 selected areas that would most improve that student’s draft. Do not comment on areas outside the selected list.
+- Review every teacher-selected focus area, then give feedback on only the 2–3 selected areas where specific advice would most improve that student’s draft. Do not comment on areas outside the selected list.
 
 Required shape:
 ${example}`;

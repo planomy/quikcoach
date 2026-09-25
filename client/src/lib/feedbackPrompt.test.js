@@ -157,7 +157,7 @@ test('focus wording reviews selected areas only', () => {
     toggles: { storyStructure: true, mechanics: true },
     students: [{ text: 'Hi' }],
   });
-  assert.match(parts.lockedRules, /2–3 selected areas/);
+  assert.match(parts.lockedRules, /2–3 selected areas where specific advice would most improve/);
   assert.match(parts.guidance, /^[\s\S]*Teacher-selected focus areas:\n/);
   assert.equal(
     (parts.guidance.match(/Review the student’s writing against every selected/g) || []).length,
@@ -175,6 +175,21 @@ test('explanation structure gloss is logical not chronological', () => {
   });
   assert.match(parts.guidance, /clear, logical sequence/);
   assert.equal(parts.guidance.includes('through in order'), false);
+});
+
+test('explanation evidence focus uses Sources and keeps data optional', () => {
+  const parts = buildAiPromptParts({
+    feedbackMode: 'explanation',
+    yearLevel: 'yr8',
+    toggles: { evidenceExamplesData: true },
+    students: [{ text: 'Hi' }],
+  });
+  assert.match(parts.guidance, /Evidence, Examples & Sources/);
+  assert.match(
+    parts.guidance,
+    /relevant evidence, examples, sources or data where they strengthen the explanation/
+  );
+  assert.equal(parts.guidance.includes('Evidence, Examples & Data'), false);
 });
 
 test('parseNumberedPaste accepts 1. blocks', () => {
