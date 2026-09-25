@@ -1975,6 +1975,164 @@ html.dark .iboard-help-panel__item.is-action:hover {
   }
 }
 
+/* AI feedback — compact single column */
+.iboard-ai-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.iboard-ai-feedback__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.iboard-ai-feedback__meta {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+html.dark .iboard-ai-feedback__meta {
+  color: #94a3b8;
+}
+
+.iboard-ai-feedback__settings {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #5a5fc3;
+  cursor: pointer;
+}
+
+.iboard-ai-feedback__settings:hover {
+  color: #4347a8;
+}
+
+html.dark .iboard-ai-feedback__settings {
+  color: #a5b4fc;
+}
+
+.iboard-ai-feedback__warn {
+  margin: 0;
+  border-radius: 0.75rem;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #78350f;
+}
+
+html.dark .iboard-ai-feedback__warn {
+  border-color: #92400e;
+  background: rgba(120, 53, 15, 0.25);
+  color: #fde68a;
+}
+
+.iboard-ai-feedback__copy {
+  width: 100%;
+  border: 1px solid #c7d2fe;
+  border-radius: 0.75rem;
+  background: #eef2ff;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #3730a3;
+  cursor: pointer;
+}
+
+.iboard-ai-feedback__copy:hover {
+  background: #e0e7ff;
+}
+
+html.dark .iboard-ai-feedback__copy {
+  border-color: #3730a3;
+  background: rgba(49, 46, 129, 0.35);
+  color: #c7d2fe;
+}
+
+.iboard-ai-feedback__note {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+html.dark .iboard-ai-feedback__note {
+  color: #94a3b8;
+}
+
+.iboard-ai-feedback__paste-label {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+html.dark .iboard-ai-feedback__paste-label {
+  color: #94a3b8;
+}
+
+.iboard-ai-feedback__paste {
+  width: 100%;
+  min-height: 12rem;
+  resize: vertical;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.75rem 0.875rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #0f172a;
+  outline: none;
+}
+
+.iboard-ai-feedback__paste:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+html.dark .iboard-ai-feedback__paste {
+  border-color: #334155;
+  background: #020617;
+  color: #f1f5f9;
+}
+
+.iboard-ai-feedback__distribute {
+  width: 100%;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+
+.iboard-ai-feedback__distribute:hover {
+  background: #1e293b;
+}
+
+html.dark .iboard-ai-feedback__distribute {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+html.dark .iboard-ai-feedback__distribute:hover {
+  background: #f8fafc;
+}
+
 /* Room settings — Keynote-like inspector sheet */
 .iboard-header-dock.iboard-room-settings {
   display: flex;

@@ -4237,13 +4237,17 @@ function TeacherDashboardInner() {
       {libraryPanel && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
-            className={`flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900${helpFlash === 'records' ? ' is-help-flash' : ''}`}
+            className={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900${
+              libraryPanel === 'feedback' ? ' max-w-xl' : ' max-w-5xl'
+            }${helpFlash === 'records' && libraryPanel === 'evidence' ? ' is-help-flash' : ''}${
+              helpFlash === 'ai' && libraryPanel === 'feedback' ? ' is-help-flash' : ''
+            }`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="library-panel-title"
-            data-help-target="records"
+            data-help-target={libraryPanel === 'feedback' ? 'ai' : 'records'}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5 dark:border-slate-700">
               <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
                 {libraryPanel === 'feedback'
                   ? 'AI feedback'
@@ -4253,7 +4257,7 @@ function TeacherDashboardInner() {
               </h2>
               <CloseButton onClick={() => setLibraryPanel(null)} aria-label="Close" />
             </div>
-            <div className="overflow-y-auto p-5 scrollbar-thin">
+            <div className={`overflow-y-auto scrollbar-thin${libraryPanel === 'feedback' ? ' p-4' : ' p-5'}`}>
         {libraryPanel === 'evidence' && (
           <section className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -4590,77 +4594,59 @@ function TeacherDashboardInner() {
         )}
 
         {libraryPanel === 'feedback' && (
-          <section data-help-target="ai" className={helpFlash === 'ai' ? 'is-help-flash' : undefined}>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {MODE_LABELS[normalizeFeedbackMode(room?.genre)] || 'Writing'}
-                  {room?.feedback_toggles?.subjectAssist && room.feedback_toggles.subjectAssist !== 'general'
-                    ? ` · ${SUBJECT_ASSIST_OPTIONS.find((o) => o.id === room.feedback_toggles.subjectAssist)?.label || room.feedback_toggles.subjectAssist}`
-                    : ''}
-                  {room?.feedback_toggles?.yearLevel && room.feedback_toggles.yearLevel !== 'general'
-                    ? ` · ${YEAR_LEVEL_OPTIONS.find((o) => o.id === room.feedback_toggles.yearLevel)?.label || room.feedback_toggles.yearLevel}`
-                    : ''}
-                </p>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                  Copy the prompt → paste into your AI tool → paste numbered feedback back → distribute.
+          <section data-help-target="ai" className="iboard-ai-feedback">
+            <div className="iboard-ai-feedback__bar">
+              <div className="min-w-0">
+                <p className="iboard-ai-feedback__meta">
+                  {[
+                    MODE_LABELS[normalizeFeedbackMode(room?.genre)] || 'Writing',
+                    room?.feedback_toggles?.subjectAssist && room.feedback_toggles.subjectAssist !== 'general'
+                      ? SUBJECT_ASSIST_OPTIONS.find((o) => o.id === room.feedback_toggles.subjectAssist)?.label || room.feedback_toggles.subjectAssist
+                      : null,
+                    room?.feedback_toggles?.yearLevel && room.feedback_toggles.yearLevel !== 'general'
+                      ? YEAR_LEVEL_OPTIONS.find((o) => o.id === room.feedback_toggles.yearLevel)?.label || room.feedback_toggles.yearLevel
+                      : null,
+                    visibleStudents.length ? `${visibleStudents.length} students` : null,
+                    `~${aiPayloadStats.promptKb} KB`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </p>
               </div>
-              <button type="button" onClick={() => setModalOpen(true)} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700">
-                Feedback settings
+              <button type="button" onClick={() => setModalOpen(true)} className="iboard-ai-feedback__settings">
+                Settings
               </button>
             </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
-                <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">1. Prompt</h3>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  ~{aiPayloadStats.promptKb} KB · {aiPayloadStats.totalDraftWords} words
-                  {visibleStudents.length > 0 ? ` · ${visibleStudents.length} students` : ''}
-                </p>
-                {aiPayloadStats.level === 'warn' && (
-                  <p className="mt-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
-                    Large prompt — try half the class at a time if your AI tool truncates it.
-                  </p>
-                )}
-                {aiPayloadStats.level === 'heavy' && (
-                  <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
-                    Very large prompt — copy in smaller batches.
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={copyForAi}
-                  className="mt-4 w-full rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/50 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
-                >
-                  Copy the prompt for AI
-                </button>
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
-                  The AI prompt contains locked portions for formatting control and to preserve student anonymity.
-                  Change mode, year, and focuses in Feedback settings.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
-                <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">2. Paste back</h3>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                  Paste numbered feedback (<code className="rounded bg-slate-100 dark:bg-slate-800 px-1">1.</code>{' '}
-                  <code className="rounded bg-slate-100 dark:bg-slate-800 px-1">2.</code> …). Same student order as the prompt.
-                </p>
-                <textarea
-                  value={pasteBox}
-                  onChange={(e) => setPasteBox(e.target.value)}
-                  rows={14}
-                  placeholder={`1. Feedback for first student\n2. Feedback for second student`}
-                  className="mt-3 w-full rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-                />
-                <button
-                  type="button"
-                  onClick={distributePaste}
-                  className="mt-3 w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-                >
-                  Distribute to students
-                </button>
-              </div>
-            </div>
+
+            {(aiPayloadStats.level === 'warn' || aiPayloadStats.level === 'heavy') && (
+              <p className="iboard-ai-feedback__warn">
+                {aiPayloadStats.level === 'heavy'
+                  ? 'Very large prompt — copy in smaller batches.'
+                  : 'Large prompt — try half the class if your AI tool truncates it.'}
+              </p>
+            )}
+
+            <button type="button" onClick={copyForAi} className="iboard-ai-feedback__copy">
+              Copy prompt for AI
+            </button>
+            <p className="iboard-ai-feedback__note">
+              Locked portions keep numbering and student anonymity.
+            </p>
+
+            <label className="iboard-ai-feedback__paste-label" htmlFor="ai-paste-back">
+              Paste below
+            </label>
+            <textarea
+              id="ai-paste-back"
+              value={pasteBox}
+              onChange={(e) => setPasteBox(e.target.value)}
+              rows={10}
+              placeholder={`1. …\n2. …`}
+              className="iboard-ai-feedback__paste"
+            />
+            <button type="button" onClick={distributePaste} className="iboard-ai-feedback__distribute">
+              Distribute to students
+            </button>
           </section>
         )}
             </div>
