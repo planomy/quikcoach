@@ -4651,7 +4651,6 @@ function TeacherDashboardInner() {
               value={pasteBox}
               onChange={(e) => setPasteBox(e.target.value)}
               rows={10}
-              placeholder={`1. …\n2. …`}
               className="iboard-ai-feedback__paste"
             />
             <button type="button" onClick={distributePaste} className="iboard-ai-feedback__distribute">
