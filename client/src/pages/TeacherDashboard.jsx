@@ -4323,7 +4323,7 @@ function TeacherDashboardInner() {
               <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
                 Capture and revisit today’s writing evidence.
               </p>
-              <button type="button" onClick={openEvidenceModal} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
+              <button type="button" onClick={openEvidenceModal} className="rounded-xl bg-[#5a5fc3] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#4b50b0]">
                 Snapshot writing
               </button>
             </div>
@@ -4370,19 +4370,19 @@ function TeacherDashboardInner() {
             </div>
 
             {snapshots.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-emerald-300 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-slate-900">
+              <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                 <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">No snapshots yet</h3>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
                   Snapshot student drafts once to unlock class packs and student portfolios.
                 </p>
               </div>
             ) : (
-                  <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm dark:border-emerald-800 dark:bg-slate-900">
-                    <div className="border-b border-emerald-100 px-4 py-3 dark:border-emerald-900">
+                  <div className="overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
                       <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Class snapshots</h3>
                       <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Whole-class packs from each snapshot. View or download HTML again.</p>
                     </div>
-                    <ul className="max-h-96 divide-y divide-emerald-100/80 overflow-y-auto px-4 scrollbar-thin dark:divide-emerald-900/50">
+                    <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto px-4 scrollbar-thin dark:divide-slate-800">
                       {snapshots.map((sn) => (
                         <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                           <span className="text-slate-800 dark:text-slate-200">
@@ -4393,14 +4393,14 @@ function TeacherDashboardInner() {
                             <button
                               type="button"
                               onClick={() => loadSnapshotForView(sn.id)}
-                              className="rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:hover:text-indigo-300"
+                              className="rounded-lg text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300 dark:hover:text-indigo-200"
                             >
                               View
                             </button>
                             <button
                               type="button"
                               onClick={() => redownloadEvidence(sn.id)}
-                              className="rounded-lg text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                              className="rounded-lg text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300 dark:hover:text-indigo-200"
                             >
                               Download HTML
                             </button>
@@ -4425,7 +4425,7 @@ function TeacherDashboardInner() {
                         type="button"
                         disabled={!!portfolioDownloadKind || !evidenceStudents.length}
                         onClick={downloadAllPortfolioPdfs}
-                        className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-50"
+                        className="rounded-xl bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-50"
                       >
                         {portfolioDownloadKind === 'all' ? 'Preparing PDFs…' : 'Download all PDFs (zip)'}
                       </button>
