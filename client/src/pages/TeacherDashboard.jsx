@@ -8,8 +8,7 @@ import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import { activityStatus, isNotStarted, wordCount } from '../lib/text.js';
 import useActivityClock from '../hooks/useActivityClock.js';
 import {
-  assembleAiPrompt,
-  buildAiPromptParts,
+  buildAiPrompt,
   parseNumberedPaste,
   normalizeFeedbackMode,
   FEEDBACK_MODES,
@@ -349,8 +348,6 @@ function TeacherDashboardInner() {
   const [addFocusDraft, setAddFocusDraft] = useState('');
 
   const [pasteBox, setPasteBox] = useState('');
-  const [aiGuidanceEdit, setAiGuidanceEdit] = useState('');
-  const [aiPromptEditOpen, setAiPromptEditOpen] = useState(false);
   const [copyToast, setCopyToast] = useState('');
   const [joinWhisper, setJoinWhisper] = useState('');
   const joinWhisperTokenRef = useRef(0);
@@ -1638,8 +1635,8 @@ function TeacherDashboardInner() {
       .map((x) => x.text.trim());
   }, [extraFocusByMode, promptModeKey]);
 
-  const aiPromptParts = useMemo(() => {
-    return buildAiPromptParts({
+  const assembledAiPrompt = useMemo(() => {
+    return buildAiPrompt({
       feedbackMode: normalizeFeedbackMode(promptModeKey),
       subjectAssist: promptSubjectAssist,
       yearLevel: promptYearLevel,
@@ -1659,23 +1656,6 @@ function TeacherDashboardInner() {
     visibleStudents,
     room?.word_target,
   ]);
-
-  useEffect(() => {
-    setAiGuidanceEdit(aiPromptParts.guidance);
-  }, [aiPromptParts.guidance]);
-
-  const aiGuidanceDirty = aiGuidanceEdit !== aiPromptParts.guidance;
-
-  const assembledAiPrompt = useMemo(
-    () =>
-      assembleAiPrompt({
-        lockedRules: aiPromptParts.lockedRules,
-        guidance: aiGuidanceEdit,
-        roster: aiPromptParts.roster,
-        lockedClosing: aiPromptParts.lockedClosing,
-      }),
-    [aiPromptParts, aiGuidanceEdit]
-  );
 
   const aiPayloadStats = useMemo(() => {
     const promptChars = assembledAiPrompt.length;
@@ -4656,41 +4636,8 @@ function TeacherDashboardInner() {
                 </button>
                 <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
                   The AI prompt contains locked portions for formatting control and to preserve student anonymity.
+                  Change mode, year, and focuses in Feedback settings.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setAiPromptEditOpen((open) => !open)}
-                  aria-expanded={aiPromptEditOpen}
-                  className="mt-3 text-sm font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
-                >
-                  {aiPromptEditOpen ? 'Hide prompt editor' : 'Edit the prompt'}
-                </button>
-                {aiPromptEditOpen && (
-                  <div className="mt-3">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Edit guidance only. Numbering and anonymised drafts stay locked when you copy.
-                      </p>
-                      {aiGuidanceDirty && (
-                        <button
-                          type="button"
-                          onClick={() => setAiGuidanceEdit(aiPromptParts.guidance)}
-                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
-                        >
-                          Reset guidance
-                        </button>
-                      )}
-                    </div>
-                    <textarea
-                      value={aiGuidanceEdit}
-                      onChange={(e) => setAiGuidanceEdit(e.target.value)}
-                      rows={10}
-                      spellCheck={false}
-                      aria-label="Editable feedback guidance"
-                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-100 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
-                    />
-                  </div>
-                )}
               </div>
               <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
                 <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">2. Paste back</h3>
