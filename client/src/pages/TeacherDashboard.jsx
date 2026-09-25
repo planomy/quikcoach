@@ -5757,13 +5757,20 @@ function TeacherDashboardInner() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
-            className={`max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl${helpFlash === 'ai' ? ' is-help-flash' : ''}`}
+            className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl"
             role="dialog"
             aria-modal="true"
-            data-help-target="ai"
+            aria-labelledby="feedback-settings-title"
           >
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4">
-              <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Prepare feedback</h2>
+              <div>
+                <h2 id="feedback-settings-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+                  Feedback settings
+                </h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Shapes the AI guidance. Numbering and anonymity stay locked when you copy.
+                </p>
+              </div>
               <CloseButton onClick={() => setModalOpen(false)} aria-label="Close" />
             </div>
             <div className="max-h-[60vh] space-y-5 overflow-y-auto p-5 scrollbar-thin">
@@ -5809,9 +5816,6 @@ function TeacherDashboardInner() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    For the AI only — not shown to students.
-                  </p>
                 </div>
                 <div className="min-w-0">
                   <label
@@ -5832,33 +5836,76 @@ function TeacherDashboardInner() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Sets age-appropriate language in the prompt.
-                  </p>
                 </div>
               </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Subject and year are for the AI only — not shown to students. Pick a year for age-appropriate language.
+              </p>
 
               {feedbackMode === 'custom' ? (
-                <div>
-                  <label
-                    htmlFor="custom-focus"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                  >
-                    Custom focus
-                  </label>
-                  <textarea
-                    id="custom-focus"
-                    value={customFocusText}
-                    onChange={(e) => setCustomFocusText(e.target.value)}
-                    rows={3}
-                    placeholder="e.g. Focus on use of evidence and paragraph control"
-                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="custom-focus"
+                      className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                    >
+                      Custom focus
+                    </label>
+                    <textarea
+                      id="custom-focus"
+                      value={customFocusText}
+                      onChange={(e) => setCustomFocusText(e.target.value)}
+                      rows={3}
+                      placeholder="e.g. Focus on use of evidence and paragraph control"
+                      className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    {(extraFocusByMode.custom || []).length > 0 && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {(extraFocusByMode.custom || []).map((item) => (
+                          <div key={item.id} className="flex items-stretch gap-1">
+                            <div className="min-w-0 flex-1">
+                              <ToggleRow
+                                label={item.text}
+                                checked={item.enabled}
+                                onChange={(v) => setExtraFocusEnabled('custom', item.id, v)}
+                              />
+                            </div>
+                            <RemoveButton onClick={() => removeExtraFocus('custom', item.id)} aria-label={`Remove ${item.text}`} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={addFocusDraft}
+                        onChange={(e) => setAddFocusDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCustomFocusLine();
+                          }
+                        }}
+                        placeholder="Add another focus line (optional)"
+                        className="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
+                      />
+                      <button
+                        type="button"
+                        onClick={addCustomFocusLine}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-2xl font-light leading-none text-white shadow-md transition hover:bg-indigo-700"
+                        aria-label="Add custom focus"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Focus toggles</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Focus</p>
                     <div className="mt-2 grid grid-cols-2 gap-4">
                       {Object.entries(MODE_TOGGLE_LABELS[feedbackMode] || {}).map(([key, label]) => (
                         <ToggleRow
@@ -5906,51 +5953,6 @@ function TeacherDashboardInner() {
                     </button>
                   </div>
                 </>
-              )}
-
-              {feedbackMode === 'custom' && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Extra focus lines (optional)
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(extraFocusByMode.custom || []).map((item) => (
-                      <div key={item.id} className="flex items-stretch gap-1">
-                        <div className="min-w-0 flex-1">
-                          <ToggleRow
-                            label={item.text}
-                            checked={item.enabled}
-                            onChange={(v) => setExtraFocusEnabled('custom', item.id, v)}
-                          />
-                        </div>
-                        <RemoveButton onClick={() => removeExtraFocus('custom', item.id)} aria-label={`Remove ${item.text}`} />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={addFocusDraft}
-                      onChange={(e) => setAddFocusDraft(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addCustomFocusLine();
-                        }
-                      }}
-                      placeholder="Add custom focus"
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-                    />
-                    <button
-                      type="button"
-                      onClick={addCustomFocusLine}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-2xl font-light leading-none text-white shadow-md transition hover:bg-indigo-700"
-                      aria-label="Add custom focus"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
               )}
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-5 py-4">
