@@ -529,7 +529,7 @@ export default function TeacherPresenterDock() {
     if (api?.requestWindow) {
       try {
         const nextWindow = await api.requestWindow({ width: 470, height: 360 });
-        nextWindow.document.title = `iBOARD Presenter · ${roomCode}`;
+        nextWindow.document.title = `TUIT Presenter · ${roomCode}`;
         nextWindow.document.body.innerHTML = '';
         setFallbackOpen(false);
         setPipWindow(nextWindow);

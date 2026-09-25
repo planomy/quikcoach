@@ -87,7 +87,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   const pulseTimerRef = useRef(null);
   const titleTimerRef = useRef(null);
   const collapseTimerRef = useRef(null);
-  const originalTitleRef = useRef('iBOARD');
+  const originalTitleRef = useRef('TUIT');
   const clockOffsetRef = useRef(0);
   /** Student writing board: tab badge only — no giant splash / featured toast. */
   const quietAlerts =
@@ -137,8 +137,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     if (!quietAlerts) {
       setArrival(nextActivity);
       arrivalTimerRef.current = setTimeout(() => setArrival(null), 2600);
-      if (!document.title.startsWith('🔔')) originalTitleRef.current = document.title || 'iBOARD';
-      document.title = `🔔 Question ${number} — iBOARD`;
+      if (!document.title.startsWith('🔔')) originalTitleRef.current = document.title || 'TUIT';
+      document.title = `🔔 Question ${number} — TUIT`;
       titleTimerRef.current = setTimeout(() => {
         document.title = originalTitleRef.current;
       }, 7000);

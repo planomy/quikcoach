@@ -192,7 +192,7 @@ export default function StudentView() {
   useEffect(() => {
     if (!joined) return undefined;
     if (!baseDocumentTitleRef.current) {
-      baseDocumentTitleRef.current = document.title.replace(/^\(\d+\)\s*/, '') || 'iBoard';
+      baseDocumentTitleRef.current = document.title.replace(/^\(\d+\)\s*/, '') || 'TUIT';
     }
     const base = baseDocumentTitleRef.current;
     const unread = inboxUnreadIds.size || (urgentNoteToast ? 1 : 0);
