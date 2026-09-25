@@ -934,7 +934,7 @@ function TeacherDashboardInner() {
     setHelpFlash(id);
     window.setTimeout(() => {
       setHelpFlash((current) => (current === id ? null : current));
-    }, 1700);
+    }, 1650);
   }
 
   function openSessionFromHelp(target) {
