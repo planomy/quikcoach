@@ -1,4 +1,5 @@
 /** @typedef {'writing'|'explanation'|'argument'|'problem_solving'|'custom'} FeedbackMode */
+/** @typedef {'lower'|'mid'|'senior'} YearBand */
 
 export const FEEDBACK_MODES = ['writing', 'explanation', 'argument', 'problem_solving', 'custom'];
 
@@ -75,51 +76,250 @@ export const SUBJECT_ASSIST_OPTIONS = [
   { id: 'the_arts', label: 'The Arts' },
 ];
 
-/** Mode id -> toggle key -> human label */
+/**
+ * Teacher-facing focus toggles (5 per mode). Keys are stable ids used in saved room settings.
+ * @type {Record<FeedbackMode, Record<string, string>>}
+ */
 export const MODE_TOGGLE_LABELS = {
   writing: {
-    showDontTell: "Show Don't Tell",
-    sensoryDetail: 'Sensory Detail',
-    characterVoice: 'Character Voice',
+    storyStructure: 'Story Structure',
+    showDontTell: "Show, Don't Tell",
+    wordChoice: 'Word Choice',
     sentenceVariety: 'Sentence Variety',
-    paragraphFlow: 'Paragraph Flow',
+    paragraphingFlow: 'Paragraphing & Flow',
   },
   explanation: {
-    clarityIdeas: 'Clarity of Ideas',
-    keyTerms: 'Use of Key Terms',
+    structureSequencing: 'Structure & Sequencing',
     causeEffect: 'Cause and Effect',
-    accurateDetail: 'Accurate Detail',
-    logicalSequencing: 'Logical Sequencing',
+    keyTermsVocab: 'Key Terms & Vocabulary',
+    accuracyDetail: 'Accuracy & Detail',
+    linkingWords: 'Linking Words',
   },
   argument: {
     clearPosition: 'Clear Position',
-    strongEvidence: 'Strong Evidence',
-    explainEvidence: 'Explanation of Evidence',
-    persuasiveReasoning: 'Persuasive Reasoning',
-    audienceAwareness: 'Audience Awareness',
+    paragraphTeel: 'Paragraph Structure (TEEL)',
+    evidenceExamples: 'Evidence & Examples',
+    explainingEvidence: 'Explaining the Evidence',
+    audiencePersuasiveLanguage: 'Audience & Persuasive Language',
   },
   problem_solving: {
-    clearWorking: 'Clear Working',
-    logicalSteps: 'Logical Steps',
-    methodAccuracy: 'Accuracy of Method',
-    mathCommunication: 'Mathematical Communication',
-    answerCheck: 'Final Answer Check',
+    understandingQuestion: 'Understanding the Question',
+    settingOutWorking: 'Setting Out Working',
+    methodStrategy: 'Method & Strategy',
+    accuracy: 'Accuracy',
+    answerReasonableness: 'Answer & Reasonableness',
   },
   custom: {},
 };
 
+/** Map old toggle keys (pre v3) onto the current set. */
+const LEGACY_TOGGLE_KEY_MAP = {
+  writing: {
+    sensoryDetail: 'showDontTell',
+    characterVoice: 'showDontTell',
+    paragraphFlow: 'paragraphingFlow',
+  },
+  explanation: {
+    clarityIdeas: 'structureSequencing',
+    keyTerms: 'keyTermsVocab',
+    accurateDetail: 'accuracyDetail',
+    logicalSequencing: 'structureSequencing',
+  },
+  argument: {
+    strongEvidence: 'evidenceExamples',
+    explainEvidence: 'explainingEvidence',
+    persuasiveReasoning: 'explainingEvidence',
+    audienceAwareness: 'audiencePersuasiveLanguage',
+  },
+  problem_solving: {
+    clearWorking: 'settingOutWorking',
+    logicalSteps: 'settingOutWorking',
+    methodAccuracy: 'methodStrategy',
+    mathCommunication: 'accuracy',
+    answerCheck: 'answerReasonableness',
+  },
+};
+
+/**
+ * Hidden AI glosses per focus. `default` is mid-band; lower/senior override when year band matches.
+ * @type {Record<string, Record<string, { default: string, lower?: string, senior?: string }>>}
+ */
+const FOCUS_GLOSSES = {
+  writing: {
+    storyStructure: {
+      default:
+        'Check for a clear opening, a complication worth caring about, and a resolution that is not rushed.',
+      lower: 'Help the story have a beginning, a problem in the middle, and an ending that finishes the problem.',
+      senior: 'Judge orientation–complication–resolution pacing; flag rushed endings and undeveloped turning points.',
+    },
+    showDontTell: {
+      default:
+        'Replace stated feelings with action, dialogue, body language and sensory detail where useful.',
+      lower: 'Use what a character sees, hears and does to show how they feel, instead of naming the feeling.',
+      senior: 'Prefer implication and restraint over stating emotion; quote a told line and suggest a shown rewrite.',
+    },
+    wordChoice: {
+      default: 'Prefer precise verbs and nouns; quote one weak or repeated word and offer a stronger alternative.',
+      lower: 'Pick one everyday word and suggest a more interesting one the student could try.',
+      senior: 'Push for precise diction and avoid vague intensifiers; one concrete upgrade is enough.',
+    },
+    sentenceVariety: {
+      default: 'Mix short and long sentences; vary openers; avoid chains of “and then”.',
+      lower: 'Try a short sentence next to a longer one so the writing does not all sound the same.',
+    },
+    paragraphingFlow: {
+      default: 'New paragraph for a new time, place, speaker or event; smooth links between them.',
+      lower: 'Start a new paragraph when something new happens (new time, place, or person speaking).',
+    },
+  },
+  explanation: {
+    structureSequencing: {
+      default: 'Open by saying what the thing is, then take the reader through in a logical order.',
+      lower: 'Start by saying what you are explaining, then put the steps in order.',
+    },
+    causeEffect: {
+      default: 'Make the why and so-what explicit, not just the what.',
+    },
+    keyTermsVocab: {
+      default: 'Use the correct subject terms accurately, not just as decoration.',
+    },
+    accuracyDetail: {
+      default: 'Flag vagueness and anything that may be factually shaky; ask for specific detail where needed.',
+    },
+    linkingWords: {
+      default: 'Use connectives that carry explanation: because, as a result, therefore, this means that, first/next/finally.',
+      lower: 'Use simple linking words like because, so, first, next, and finally.',
+    },
+  },
+  argument: {
+    clearPosition: {
+      default: 'A position stated up front, held consistently, and restated at the end.',
+      lower: 'Say clearly what you think at the start and stick to it.',
+    },
+    paragraphTeel: {
+      default: 'Topic sentence, evidence, explanation, link — one idea per paragraph (TEEL/PEEL).',
+      lower: 'One idea per paragraph: say the idea, give an example, then say why it matters.',
+      senior: 'Expect TEEL/PEEL control; flag missing explanation or weak links back to the contention.',
+    },
+    evidenceExamples: {
+      default: 'Prefer specific, relevant support over bare assertion.',
+    },
+    explainingEvidence: {
+      default: 'Spell out how each piece of evidence supports the position; do not leave the reader to join the dots.',
+    },
+    audiencePersuasiveLanguage: {
+      default:
+        'Word choice and devices pitched at the reader: emotive language, rhetorical questions, modality, inclusive language.',
+      lower: 'Choose words that would convince a reader; try a question or feeling-word if it fits.',
+    },
+  },
+  problem_solving: {
+    understandingQuestion: {
+      default: 'Identify what is given, what is asked, and the units before calculating.',
+    },
+    settingOutWorking: {
+      default: 'One step per line, equals signs used carefully, so a reader can follow without guessing.',
+    },
+    methodStrategy: {
+      default: 'Is the approach appropriate and efficient? Name a better strategy if there is one.',
+    },
+    accuracy: {
+      default:
+        'Check arithmetic and substitution. Raise anything suspect as a question (e.g. “check line 3 — 24 or 42?”) rather than declaring a final verdict.',
+    },
+    answerReasonableness: {
+      default: 'Final answer clear, correct units, and a quick sanity check that the size of the answer makes sense.',
+    },
+  },
+};
+
+/** Default-on keys by year band (about 3 per mode — depth over checklist). */
+const DEFAULT_ON_BY_BAND = {
+  writing: {
+    lower: ['storyStructure', 'showDontTell', 'wordChoice'],
+    mid: ['storyStructure', 'showDontTell', 'paragraphingFlow'],
+    senior: ['showDontTell', 'wordChoice', 'paragraphingFlow'],
+  },
+  explanation: {
+    lower: ['structureSequencing', 'causeEffect', 'linkingWords'],
+    mid: ['linkingWords', 'keyTermsVocab', 'accuracyDetail'],
+    senior: ['keyTermsVocab', 'causeEffect', 'accuracyDetail'],
+  },
+  argument: {
+    lower: ['clearPosition', 'evidenceExamples', 'explainingEvidence'],
+    mid: ['clearPosition', 'paragraphTeel', 'explainingEvidence'],
+    senior: ['paragraphTeel', 'explainingEvidence', 'audiencePersuasiveLanguage'],
+  },
+  problem_solving: {
+    lower: ['understandingQuestion', 'settingOutWorking', 'answerReasonableness'],
+    mid: ['understandingQuestion', 'settingOutWorking', 'methodStrategy'],
+    senior: ['methodStrategy', 'answerReasonableness', 'accuracy'],
+  },
+  custom: { lower: [], mid: [], senior: [] },
+};
+
 const ROLE_BY_MODE = {
   writing:
-    'You are an expert writing coach for school students. Focus on craft, clarity, and improvement at the year level given for each student.',
+    'You are an expert narrative writing coach for school students. Focus on craft, clarity, and improvement at the year level given for each student.',
   explanation:
     'You are an expert teacher helping students improve explanatory writing. Focus on clarity, accurate detail, and logical development of ideas at the year level given for each student.',
   argument:
     'You are an expert teacher helping students improve argument writing. Focus on position, reasoning, evidence, and audience impact at the year level given for each student.',
   problem_solving:
-    'You are an expert teacher helping students improve written mathematical problem solving. Focus on clear working, logical method, and accuracy at the year level given for each student.',
+    'You are an expert teacher helping students improve written mathematical problem solving. Focus on clear working, logical method, and accuracy at the year level given for each student. When checking calculations, raise possible errors as questions rather than asserting answers you cannot verify.',
   custom:
     'You are an expert classroom teacher giving clear, practical feedback pitched to the year level given for each student.',
 };
+
+/**
+ * @param {string} [yearLevel]
+ * @returns {YearBand}
+ */
+export function yearBand(yearLevel) {
+  const id = String(yearLevel || 'general').trim().toLowerCase();
+  if (id === 'yr2' || id === 'yr3' || id === 'yr4') return 'lower';
+  if (id === 'yr9' || id === 'yr10' || id === 'yr11' || id === 'yr12') return 'senior';
+  return 'mid';
+}
+
+/**
+ * Default toggle map for a year level (about three focuses on).
+ * @param {string} [yearLevel]
+ */
+export function defaultModeTogglesForYear(yearLevel = 'general') {
+  const band = yearBand(yearLevel);
+  const o = {};
+  for (const m of FEEDBACK_MODES) {
+    const labels = MODE_TOGGLE_LABELS[m] || {};
+    const on = new Set(DEFAULT_ON_BY_BAND[m]?.[band] || []);
+    o[m] = {};
+    for (const k of Object.keys(labels)) {
+      o[m][k] = on.has(k);
+    }
+  }
+  return o;
+}
+
+/**
+ * Merge saved toggles onto current keys; remap legacy keys.
+ * @param {Record<string, Record<string, boolean>> | null | undefined} saved
+ * @param {string} [yearLevel]
+ */
+export function mergeModeToggles(saved, yearLevel = 'general') {
+  const next = defaultModeTogglesForYear(yearLevel);
+  if (!saved || typeof saved !== 'object') return next;
+  for (const m of FEEDBACK_MODES) {
+    const incoming = saved[m];
+    if (!incoming || typeof incoming !== 'object') continue;
+    const remap = LEGACY_TOGGLE_KEY_MAP[m] || {};
+    const known = MODE_TOGGLE_LABELS[m] || {};
+    for (const [rawKey, value] of Object.entries(incoming)) {
+      const key = known[rawKey] ? rawKey : remap[rawKey];
+      if (key && known[key]) next[m][key] = !!value;
+    }
+  }
+  return next;
+}
 
 function subjectLabel(id) {
   const row = SUBJECT_ASSIST_OPTIONS.find((o) => o.id === id);
@@ -149,6 +349,14 @@ function studentYearLabel(yearLevel) {
   return '';
 }
 
+function glossFor(mode, key, band) {
+  const entry = FOCUS_GLOSSES[mode]?.[key];
+  if (!entry) return '';
+  if (band === 'lower' && entry.lower) return entry.lower;
+  if (band === 'senior' && entry.senior) return entry.senior;
+  return entry.default;
+}
+
 function formatExampleLine(n) {
   return `${n}. [Your feedback for Student ${n}]`;
 }
@@ -172,6 +380,7 @@ export function buildLockedOutputRules(studentCount) {
 - Do not write any heading, intro, or closing before 1. or after the last number.
 - Do not use real student names. If you refer to a writer, say Student 1, Student 2, etc.
 - Pitch language and expectations to the year level shown for that student.
+- For each student, use at most two or three focus points — choose the ones that will most improve that draft. Do not tick through every focus as a checklist.
 
 Required shape:
 ${example}`;
@@ -205,19 +414,29 @@ export function buildEditableGuidance({
 }) {
   const mode = normalizeFeedbackMode(feedbackMode);
   const role = ROLE_BY_MODE[mode] || ROLE_BY_MODE.writing;
-
+  const band = yearBand(yearLevel);
   const labels = MODE_TOGGLE_LABELS[mode] || {};
-  const fromToggles = Object.entries(toggles || {})
+
+  const enabledKeys = Object.entries(toggles || {})
     .filter(([, v]) => v)
-    .map(([k]) => labels[k] || k);
+    .map(([k]) => k)
+    .filter((k) => labels[k]);
+
+  const focusBlocks = enabledKeys.map((key) => {
+    const label = labels[key];
+    const gloss = glossFor(mode, key, band);
+    return gloss ? `- ${label}: ${gloss}` : `- ${label}`;
+  });
 
   const extras = (extraFocusLabels || []).map((s) => String(s).trim()).filter(Boolean);
-  const combined = [...fromToggles, ...extras];
+  for (const extra of extras) {
+    focusBlocks.push(`- ${extra}`);
+  }
 
   const focusLine =
-    combined.length > 0
-      ? `Pay special attention to: ${combined.join(', ')}.`
-      : 'Give general improvement feedback suitable for this mode.';
+    focusBlocks.length > 0
+      ? `Teacher focus points (use at most two or three per student — pick what will help most):\n${focusBlocks.join('\n')}`
+      : 'Give general improvement feedback suitable for this mode. Prefer one or two concrete next steps per student.';
 
   const subjectLine =
     subjectAssist && subjectAssist !== 'general'
@@ -286,7 +505,7 @@ export function assembleAiPrompt({ lockedRules, guidance, roster, lockedClosing 
 }
 
 /**
- * Full prompt (locked envelope + guidance + roster). Prefer assembleAiPrompt when teachers edit guidance.
+ * Full prompt (locked envelope + guidance + roster).
  */
 export function buildAiPrompt(params) {
   return assembleAiPrompt(buildAiPromptParts(params));
@@ -306,7 +525,6 @@ export function parseNumberedPaste(raw) {
   }
   if (out.length) return out.sort((a, b) => a.index - b.index);
 
-  // Fallback: one feedback item per numbered line (when the model kept everything on single lines)
   for (const line of text.split(/\n/)) {
     const m = line.match(/^\s*(\d+)\s*[\.):]\s*(.+?)\s*$/);
     if (!m) continue;

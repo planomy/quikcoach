@@ -15,6 +15,8 @@ import {
   SUBJECT_ASSIST_OPTIONS,
   YEAR_LEVEL_OPTIONS,
   MODE_TOGGLE_LABELS,
+  defaultModeTogglesForYear,
+  mergeModeToggles,
 } from '../lib/feedbackPrompt.js';
 import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
@@ -231,18 +233,11 @@ function initialOverviewColumns() {
   }
 }
 
-/** Saved room settings with this version use merged toggles; older saves default to all-on. */
-const FEEDBACK_SETTINGS_VERSION = 2;
+/** Saved room settings with this version use merged toggles; older saves remapped via mergeModeToggles. */
+const FEEDBACK_SETTINGS_VERSION = 3;
 
-function defaultModeToggles() {
-  const o = {};
-  for (const m of FEEDBACK_MODES) {
-    o[m] = {};
-    for (const k of Object.keys(MODE_TOGGLE_LABELS[m] || {})) {
-      o[m][k] = true;
-    }
-  }
-  return o;
+function defaultModeToggles(yearLevel = 'general') {
+  return defaultModeTogglesForYear(yearLevel);
 }
 
 function emptyExtraFocusState() {
@@ -349,7 +344,7 @@ function TeacherDashboardInner() {
   const [subjectAssist, setSubjectAssist] = useState('general');
   const [yearLevel, setYearLevel] = useState('general');
   const [customFocusText, setCustomFocusText] = useState('');
-  const [modeToggles, setModeToggles] = useState(defaultModeToggles);
+  const [modeToggles, setModeToggles] = useState(() => defaultModeToggles('general'));
   const [extraFocusByMode, setExtraFocusByMode] = useState(emptyExtraFocusState);
   const [addFocusDraft, setAddFocusDraft] = useState('');
 
@@ -784,18 +779,9 @@ function TeacherDashboardInner() {
       rawYl != null && String(rawYl).trim() !== '' ? String(rawYl).trim() : 'general'
     );
     setCustomFocusText(ft.customFocusText ?? '');
-    const defaults = defaultModeToggles();
-    const v = ft.version ?? 0;
-    let next;
-    if (v >= FEEDBACK_SETTINGS_VERSION && ft.modes) {
-      next = { ...defaults };
-      for (const m of FEEDBACK_MODES) {
-        next[m] = { ...defaults[m], ...(ft.modes[m] || {}) };
-      }
-    } else {
-      next = defaults;
-    }
-    setModeToggles(next);
+    const yearForDefaults =
+      rawYl != null && String(rawYl).trim() !== '' ? String(rawYl).trim() : 'general';
+    setModeToggles(ft.modes ? mergeModeToggles(ft.modes, yearForDefaults) : defaultModeToggles(yearForDefaults));
     const ex = emptyExtraFocusState();
     if (ft.extraFocuses) {
       for (const m of FEEDBACK_MODES) {
@@ -5768,7 +5754,11 @@ function TeacherDashboardInner() {
                   <select
                     id="year-level"
                     value={yearLevel}
-                    onChange={(e) => setYearLevel(e.target.value)}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setYearLevel(next);
+                      setModeToggles(defaultModeTogglesForYear(next));
+                    }}
                   >
                     {YEAR_LEVEL_OPTIONS.map((o) => (
                       <option key={o.id} value={o.id}>
