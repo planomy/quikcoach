@@ -464,7 +464,9 @@ function glossFor(mode, key, band) {
 }
 
 function formatExampleLine(n) {
-  return `${n}. [Your feedback for Student ${n}]`;
+  return `${n}. [Short overall comment for Student ${n}.]
+[Focus label]: [specific advice]
+[Focus label]: [specific advice]`;
 }
 
 /**
@@ -474,13 +476,15 @@ export function buildLockedOutputRules(studentCount) {
   const n = Math.max(0, Number(studentCount) || 0);
   const example =
     n <= 0
-      ? `${formatExampleLine(1)}\n${formatExampleLine(2)}`
-      : Array.from({ length: Math.min(n, 3) }, (_, i) => formatExampleLine(i + 1)).join('\n') +
-        (n > 3 ? `\n...\n${formatExampleLine(n)}` : n >= 2 ? '' : '');
+      ? `${formatExampleLine(1)}\n\n${formatExampleLine(2)}`
+      : Array.from({ length: Math.min(n, 3) }, (_, i) => formatExampleLine(i + 1)).join('\n\n') +
+        (n > 3 ? `\n\n...\n\n${formatExampleLine(n)}` : n >= 2 ? '' : '');
 
   return `CRITICAL — how you must reply (do not skip):
 - Write feedback for exactly ${n || 'each'} student${n === 1 ? '' : 's'} below, in the same order.
-- Every reply item MUST start on its own line with the number, a full stop, then a space (1. 2. 3. …).
+- Every reply item MUST start on its own line with the number, a full stop, then a space (1. 2. 3. …). Never start any other line with a number and full stop — that would look like the next student.
+- Plain text only: no markdown, no asterisks for bold or italics (write allies not *allies* or **allies**).
+- Within each numbered item: one short overall comment, then each focus-area comment on its own new line, starting with the focus label and a colon (e.g. Accuracy & Detail: …).
 - Do not write any heading, intro, or closing before 1. or after the last number.
 - Do not use real student names. If you refer to a writer, say Student 1, Student 2, etc.
 - Pitch language and expectations to the year level shown for that student.
@@ -496,9 +500,9 @@ ${example}`;
 export function buildLockedClosing(studentCount) {
   const n = Math.max(0, Number(studentCount) || 0);
   if (n <= 0) {
-    return 'END OF DRAFTS. Reply with numbered feedback only, one line per student: 1. … 2. …';
+    return 'END OF DRAFTS. Reply with numbered feedback only (plain text; each focus on its own line): 1. … 2. …';
   }
-  return `END OF DRAFTS. Reply now with exactly ${n} numbered items and nothing else — start with "1. " and finish with "${n}. ".`;
+  return `END OF DRAFTS. Reply now with exactly ${n} numbered items and nothing else — start with "1. " and finish with "${n}. ". Plain text only; put each focus comment on its own line inside the item.`;
 }
 
 /**

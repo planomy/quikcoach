@@ -38,9 +38,12 @@ test('prompt locks numbering and injects focus glosses', () => {
   assert.match(parts.lockedRules, /1\./);
   assert.match(parts.lockedRules, /exactly 3/);
   assert.match(parts.lockedRules, /2–3 selected areas/);
+  assert.match(parts.lockedRules, /Plain text only/);
+  assert.match(parts.lockedRules, /each focus-area comment on its own new line/);
   assert.match(parts.guidance, /Year 4/);
   assert.match(parts.guidance, /Story Structure/);
   assert.match(parts.lockedClosing, /exactly 3/);
+  assert.match(parts.lockedClosing, /Plain text only/);
   const full = assembleAiPrompt({ ...parts, guidance: parts.guidance + '\nExtra note from teacher.' });
   assert.match(full, /CRITICAL/);
   assert.match(full, /Extra note from teacher/);
@@ -190,6 +193,17 @@ test('explanation evidence focus uses Sources and keeps data optional', () => {
     /relevant evidence, examples, sources or data where they strengthen the explanation/
   );
   assert.equal(parts.guidance.includes('Evidence, Examples & Data'), false);
+});
+
+test('parseNumberedPaste keeps newlines inside a student block', () => {
+  const parsed = parseNumberedPaste(
+    '1. Solid opening.\nAccuracy & Detail: be more specific.\nKey Terms & Vocabulary: use allies not friends.\n2. Clear conclusion.\nStructure & Sequencing: group long-term causes first.'
+  );
+  assert.equal(parsed.length, 2);
+  assert.match(parsed[0].text, /Solid opening\.\nAccuracy & Detail:/);
+  assert.match(parsed[0].text, /Key Terms & Vocabulary:/);
+  assert.equal(parsed[0].text.includes('**'), false);
+  assert.match(parsed[1].text, /Clear conclusion\.\nStructure & Sequencing:/);
 });
 
 test('parseNumberedPaste accepts 1. blocks', () => {
