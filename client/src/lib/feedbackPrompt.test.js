@@ -37,7 +37,7 @@ test('prompt locks numbering and injects focus glosses', () => {
   });
   assert.match(parts.lockedRules, /1\./);
   assert.match(parts.lockedRules, /exactly 3/);
-  assert.match(parts.lockedRules, /two or three/);
+  assert.match(parts.lockedRules, /2–3 selected areas/);
   assert.match(parts.guidance, /Year 4/);
   assert.match(parts.guidance, /Story Structure/);
   assert.match(parts.lockedClosing, /exactly 3/);
@@ -101,6 +101,65 @@ test('legacy toggle keys remap', () => {
   assert.equal(merged.argument.structureCohesion, true);
   assert.equal(merged.problem_solving.workingProcess, true);
   assert.equal(merged.problem_solving.answerReasonableness, false);
+});
+
+test('year 8 is Year 8 not General', () => {
+  const parts = buildAiPromptParts({
+    feedbackMode: 'writing',
+    yearLevel: 'yr8',
+    toggles: { storyStructure: true },
+    students: [{ text: 'Draft one' }, { text: 'Draft two' }],
+  });
+  assert.match(parts.guidance, /Year level: Year 8/);
+  assert.equal(parts.guidance.includes('General (secondary)'), false);
+  assert.match(parts.roster, /Year level: Year 8/);
+});
+
+test('word target only when enforcement is on', () => {
+  const off = buildAiPromptParts({
+    feedbackMode: 'writing',
+    yearLevel: 'yr8',
+    wordTarget: 150,
+    enforceWordCount: false,
+    students: [{ text: 'Hi' }],
+  });
+  assert.equal(off.guidance.includes('150'), false);
+  assert.equal(off.guidance.toLowerCase().includes('word'), false);
+
+  const on = buildAiPromptParts({
+    feedbackMode: 'writing',
+    yearLevel: 'yr8',
+    wordTarget: 150,
+    enforceWordCount: true,
+    students: [{ text: 'Hi' }],
+  });
+  assert.match(on.guidance, /approximately 150 words/);
+  assert.match(on.guidance, /meaningfully under or over/);
+});
+
+test('students inherit class year unless personal override', () => {
+  const parts = buildAiPromptParts({
+    feedbackMode: 'writing',
+    yearLevel: 'yr8',
+    students: [
+      { text: 'A', year_level: '' },
+      { text: 'B', year_level: 'yr5' },
+    ],
+  });
+  assert.match(parts.roster, /Student 1 ---\nYear level: Year 8/);
+  assert.match(parts.roster, /Student 2 ---\nYear level: Year 5 \(individual override\)/);
+});
+
+test('focus wording reviews selected areas only', () => {
+  const parts = buildAiPromptParts({
+    feedbackMode: 'writing',
+    yearLevel: 'yr8',
+    toggles: { storyStructure: true, mechanics: true },
+    students: [{ text: 'Hi' }],
+  });
+  assert.match(parts.guidance, /Teacher-selected focus areas/);
+  assert.match(parts.guidance, /2–3 selected areas/);
+  assert.match(parts.guidance, /Do not comment on areas outside this list/);
 });
 
 test('parseNumberedPaste accepts 1. blocks', () => {

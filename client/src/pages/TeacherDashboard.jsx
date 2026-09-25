@@ -1610,11 +1610,11 @@ function TeacherDashboardInner() {
   const promptYearLevel = useMemo(() => {
     if (modalOpen) return yearLevel;
     const ft = room?.feedback_toggles;
-    const y = ft?.yearLevel ?? ft?.year_level;
+    const y = ft?.yearLevel ?? ft?.year_level ?? room?.teacherYearLevel;
     const yStr = y == null ? '' : String(y).trim();
-    if (yStr !== '' && YEAR_LEVEL_OPTIONS.some((o) => o.id === yStr)) return yStr;
+    if (yStr !== '') return yStr;
     return yearLevel;
-  }, [modalOpen, room?.feedback_toggles?.yearLevel, yearLevel]);
+  }, [modalOpen, room?.feedback_toggles?.yearLevel, room?.teacherYearLevel, yearLevel]);
 
   const promptCustomFocusText = useMemo(() => {
     if (modalOpen) return customFocusText;
@@ -1638,6 +1638,7 @@ function TeacherDashboardInner() {
       extraFocusLabels: enabledExtraLabels,
       students: visibleStudents,
       wordTarget: room?.word_target ?? 0,
+      enforceWordCount: !!room?.enforce_word_count,
     });
   }, [
     promptModeKey,
@@ -1648,6 +1649,7 @@ function TeacherDashboardInner() {
     enabledExtraLabels,
     visibleStudents,
     room?.word_target,
+    room?.enforce_word_count,
   ]);
 
   const aiPayloadStats = useMemo(() => {

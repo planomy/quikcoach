@@ -322,7 +322,7 @@ const ROLE_BY_MODE = {
  * @returns {YearBand}
  */
 export function yearBand(yearLevel) {
-  const id = String(yearLevel || 'general').trim().toLowerCase();
+  const id = normalizeYearLevelId(yearLevel) || 'general';
   if (id === 'yr2' || id === 'yr3' || id === 'yr4') return 'lower';
   if (id === 'yr9' || id === 'yr10' || id === 'yr11' || id === 'yr12') return 'senior';
   return 'mid';
@@ -397,27 +397,58 @@ function subjectLabel(id) {
   return row ? row.label : 'General';
 }
 
-function yearLevelLabel(id) {
-  const row = YEAR_LEVEL_OPTIONS.find((o) => o.id === id);
-  return row ? row.label : YEAR_LEVEL_OPTIONS[0].label;
-}
-
-function yearLevelLine(id) {
-  const key = YEAR_LEVEL_OPTIONS.some((o) => o.id === id) ? id : 'general';
-  const guide = YEAR_LEVEL_GUIDANCE[key] || YEAR_LEVEL_GUIDANCE.general;
-  return `Year level: ${yearLevelLabel(key)}. ${guide}`;
-}
-
-function studentYearLabel(yearLevel) {
-  const id = String(yearLevel || '')
+/**
+ * Normalise year ids from settings / student cards (yr8, Year 8, y8, 8, …).
+ * @param {string} [raw]
+ * @returns {string} option id or ''
+ */
+export function normalizeYearLevelId(raw) {
+  const id = String(raw || '')
     .trim()
     .toLowerCase();
   if (!id) return '';
-  if (YEAR_LEVEL_OPTIONS.some((o) => o.id === id)) return yearLevelLabel(id);
-  const compact = id.replace(/^y(?:ear)?/, 'yr').replace(/^yr(?=\d)/, 'yr');
-  const asYr = compact.startsWith('yr') ? compact : `yr${compact.replace(/\D/g, '')}`;
-  if (YEAR_LEVEL_OPTIONS.some((o) => o.id === asYr)) return yearLevelLabel(asYr);
+  if (YEAR_LEVEL_OPTIONS.some((o) => o.id === id)) return id;
+  if (id === 'mixed' || id.startsWith('mixed')) return 'mixed';
+  if (id.includes('general')) return 'general';
+  const digits = id.replace(/\D/g, '');
+  if (digits) {
+    const asYr = `yr${digits}`;
+    if (YEAR_LEVEL_OPTIONS.some((o) => o.id === asYr)) return asYr;
+  }
+  const compact = id.replace(/^y(?:ear)?\s*/, 'yr').replace(/^yr(?=\d)/, 'yr');
+  if (YEAR_LEVEL_OPTIONS.some((o) => o.id === compact)) return compact;
   return '';
+}
+
+function yearLevelLabel(id) {
+  const key = normalizeYearLevelId(id);
+  const row = YEAR_LEVEL_OPTIONS.find((o) => o.id === key);
+  return row ? row.label : '';
+}
+
+function yearLevelLine(id) {
+  const key = normalizeYearLevelId(id) || 'general';
+  const guide = YEAR_LEVEL_GUIDANCE[key] || YEAR_LEVEL_GUIDANCE.general;
+  const label = yearLevelLabel(key) || YEAR_LEVEL_OPTIONS[0].label;
+  return `Year level: ${label}. ${guide}`;
+}
+
+function studentYearLabel(yearLevel) {
+  return yearLevelLabel(yearLevel);
+}
+
+/**
+ * Effective year for a student: personal override if set, else class year
+ * (unless class is Mixed — then only personal counts).
+ * @param {{ year_level?: string }} student
+ * @param {string} classYearLevel
+ */
+export function effectiveStudentYearId(student, classYearLevel) {
+  const personal = normalizeYearLevelId(student?.year_level);
+  if (personal) return personal;
+  const classId = normalizeYearLevelId(classYearLevel) || 'general';
+  if (classId === 'mixed') return '';
+  return classId;
 }
 
 function glossFor(mode, key, band) {
@@ -450,7 +481,7 @@ export function buildLockedOutputRules(studentCount) {
 - Do not write any heading, intro, or closing before 1. or after the last number.
 - Do not use real student names. If you refer to a writer, say Student 1, Student 2, etc.
 - Pitch language and expectations to the year level shown for that student.
-- For each student, use at most two or three focus points — choose the ones that will most improve that draft. Do not tick through every focus as a checklist.
+- Review every teacher-selected focus area, then give feedback on only the 2–3 selected areas that would most improve that student’s draft. Do not comment on areas outside the selected list.
 
 Required shape:
 ${example}`;
@@ -469,6 +500,8 @@ export function buildLockedClosing(studentCount) {
 
 /**
  * @param {object} params
+ * @param {boolean} [params.enforceWordCount] — only include word target when true
+ * @param {number} [params.wordTarget]
  */
 export function buildEditableGuidance({
   feedbackMode,
@@ -479,11 +512,13 @@ export function buildEditableGuidance({
   extraFocusLabels = [],
   students = [],
   wordTarget = 0,
+  enforceWordCount = false,
 }) {
   const mode = normalizeFeedbackMode(feedbackMode);
   const role = ROLE_BY_MODE[mode] || ROLE_BY_MODE.writing;
-  const band = yearBand(yearLevel);
-  const labels = visibleToggleLabels(mode, yearLevel);
+  const classYearId = normalizeYearLevelId(yearLevel) || 'general';
+  const band = yearBand(classYearId);
+  const labels = visibleToggleLabels(mode, classYearId);
 
   const enabledKeys = Object.entries(toggles || {})
     .filter(([, v]) => v)
@@ -503,7 +538,7 @@ export function buildEditableGuidance({
 
   const focusLine =
     focusBlocks.length > 0
-      ? `Teacher focus points (use at most two or three per student — pick what will help most):\n${focusBlocks.join('\n')}`
+      ? `Teacher-selected focus areas: Review the student’s writing against every selected focus point. Then give feedback on the 2–3 selected areas that would most improve that student’s draft. Do not comment on areas outside this list.\n${focusBlocks.join('\n')}`
       : 'Give general improvement feedback suitable for this mode. Prefer one or two concrete next steps per student.';
 
   const subjectLine =
@@ -512,20 +547,28 @@ export function buildEditableGuidance({
       : '';
 
   const list = students || [];
-  const withPersonalYear = list.filter((s) => studentYearLabel(s.year_level)).length;
-  const yearLine =
-    withPersonalYear > 0
-      ? `Year level: each student excerpt includes their own year level when known (${withPersonalYear} of ${list.length} marked). Apply selected focuses at THAT student's year. If a student has no year marked, use the class default — ${yearLevelLabel(yearLevel)}. Do not expect senior features from younger students.`
-      : yearLevelLine(yearLevel);
+  const withPersonalYear = list.filter((s) => normalizeYearLevelId(s.year_level)).length;
+  let yearLine;
+  if (classYearId === 'mixed') {
+    yearLine =
+      withPersonalYear > 0
+        ? `Year level: mixed class. Each student excerpt includes their own year level when known (${withPersonalYear} of ${list.length} marked). Apply selected focuses at THAT student’s year. Do not expect senior features from younger students.`
+        : yearLevelLine('mixed');
+  } else if (withPersonalYear > 0) {
+    yearLine = `Year level: class default is ${yearLevelLabel(classYearId)}. Some students have an individual year override — use the year shown on each student excerpt. Pitch feedback to that year.`;
+  } else {
+    yearLine = yearLevelLine(classYearId);
+  }
 
   const customLine =
     mode === 'custom' && String(customFocusText || '').trim()
       ? `Teacher-requested focus: ${String(customFocusText).trim()}`
       : '';
 
+  const enforcedTarget = Number(wordTarget) || 0;
   const targetLine =
-    wordTarget > 0
-      ? `The class word target is approximately ${wordTarget} words; comment on progress toward that goal where useful.`
+    enforceWordCount && enforcedTarget > 0
+      ? `The target length is approximately ${enforcedTarget} words. Comment on whether the student is meaningfully under or over the target only when it affects the quality or completeness of the response.`
       : '';
 
   return [role, '', focusLine, yearLine, subjectLine, customLine, targetLine]
@@ -539,13 +582,18 @@ export function buildEditableGuidance({
  */
 export function buildLockedRoster(students = [], yearLevel = 'general') {
   const list = students || [];
-  const fallbackYear = yearLevelLabel(yearLevel);
+  const classYearId = normalizeYearLevelId(yearLevel) || 'general';
   return list
     .map((s, i) => {
       const excerpt = (s.text || '').trim() || '(empty draft)';
-      const personal = studentYearLabel(s.year_level);
-      const yearShown = personal || fallbackYear;
-      return `--- Student ${i + 1} ---\nYear level: ${yearShown}${personal ? '' : ' (class default)'}\n${excerpt}`;
+      const personalId = normalizeYearLevelId(s.year_level);
+      const effectiveId = effectiveStudentYearId(s, classYearId);
+      const yearShown = yearLevelLabel(effectiveId) || (classYearId === 'mixed' ? 'Not set' : yearLevelLabel(classYearId));
+      const note =
+        personalId && classYearId !== 'mixed' && personalId !== classYearId
+          ? ' (individual override)'
+          : '';
+      return `--- Student ${i + 1} ---\nYear level: ${yearShown}${note}\n${excerpt}`;
     })
     .join('\n\n');
 }
@@ -553,10 +601,10 @@ export function buildLockedRoster(students = [], yearLevel = 'general') {
 export function buildAiPromptParts(params) {
   const students = params.students || [];
   const studentCount = students.length;
-  const yearLevel = params.yearLevel || 'general';
+  const yearLevel = normalizeYearLevelId(params.yearLevel) || params.yearLevel || 'general';
   return {
     lockedRules: buildLockedOutputRules(studentCount),
-    guidance: buildEditableGuidance(params),
+    guidance: buildEditableGuidance({ ...params, yearLevel }),
     roster: buildLockedRoster(students, yearLevel),
     lockedClosing: buildLockedClosing(studentCount),
     studentCount,
