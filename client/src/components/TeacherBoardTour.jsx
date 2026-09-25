@@ -11,7 +11,7 @@ const PILL_IN_DELAY_MS = 480;
 const STEPS = [
   { id: 'share', text: 'Share items with your students', place: 'right', clip: 'rail' },
   { id: 'engage', text: 'Ask the class and watch answers', place: 'right', clip: 'rail' },
-  { id: 'board', text: 'View cards, set a timer, and manage the session', place: 'right', clip: 'rail' },
+  { id: 'board', text: 'Toggle student writing card view, set a timer, manage the session', place: 'right', clip: 'rail' },
   { id: 'rec', text: "Record your students' drafting", place: 'left', clip: 'header' },
 ];
 
@@ -39,20 +39,57 @@ function findClip(anchor, kind) {
   return anchor.closest('.iboard-arr-rail') || anchor.parentElement;
 }
 
+/** Prefer the button cluster inside a flex section (e.g. Ask/Responses), not empty stretch space. */
+function contentRect(anchor) {
+  if (!anchor) return null;
+  const nodes = anchor.querySelectorAll('button, .iboard-arr-btn, .iboard-rec-switch');
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  let hit = 0;
+  nodes.forEach((node) => {
+    const r = node.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    hit += 1;
+    left = Math.min(left, r.left);
+    top = Math.min(top, r.top);
+    right = Math.max(right, r.right);
+    bottom = Math.max(bottom, r.bottom);
+  });
+  if (!hit) {
+    const r = anchor.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+  }
+  const pad = 5;
+  left -= pad;
+  top -= pad;
+  right += pad;
+  bottom += pad;
+  return { left, top, right, bottom, width: right - left, height: bottom - top };
+}
+
 /** Empty rounded stroke around the target, inset so it stays inside rail/header. */
 function measureRing(anchor, clipKind) {
   if (!anchor) return null;
-  const target = anchor.getBoundingClientRect();
+  const target = contentRect(anchor);
+  if (!target) return null;
   const clip = findClip(anchor, clipKind)?.getBoundingClientRect();
-  const inset = 3;
   const edge = 4;
 
-  let left = target.left + inset;
-  let top = target.top + inset;
-  let right = target.right - inset;
-  let bottom = target.bottom - inset;
+  let left = target.left;
+  let top = target.top;
+  let right = target.right;
+  let bottom = target.bottom;
 
-  if (clip) {
+  if (clipKind === 'header' && clip) {
+    // REC: ring lives in the header band, not tight on the switch.
+    const hx = 16;
+    top = clip.top + edge;
+    bottom = clip.bottom - edge;
+    left = Math.max(clip.left + edge, target.left - hx);
+    right = Math.min(clip.right - edge, target.right + hx);
+  } else if (clip) {
     left = Math.max(left, clip.left + edge);
     top = Math.max(top, clip.top + edge);
     right = Math.min(right, clip.right - edge);
@@ -66,7 +103,7 @@ function measureRing(anchor, clipKind) {
 }
 
 function placeBesideAnchor(anchor, pill, place) {
-  const target = anchor.getBoundingClientRect();
+  const target = contentRect(anchor) || anchor.getBoundingClientRect();
   const size = pill.getBoundingClientRect();
   const gap = 14;
   let left = place === 'right'

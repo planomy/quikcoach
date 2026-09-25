@@ -3675,7 +3675,7 @@ function TeacherDashboardInner() {
               >
                 {codeInput}
               </button>
-              <p className="iboard-board-empty__hint">Cards appear as students join and write.</p>
+              <p className="iboard-board-empty__hint">Writing cards appear as students join</p>
             </div>
           )}
           {orderedStudents.length > 0 && boardSections.map((section) => (
