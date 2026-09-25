@@ -3238,7 +3238,7 @@ function TeacherDashboardInner() {
                 className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                 aria-label="Snapshot everyone’s writing now"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg className="iboard-header-icon-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M2 7.25h3.5l1.75-2.25h9.5L18.5 7.25H22V20.5H2z" />
                   <circle cx="12" cy="13.5" r="4" />
                 </svg>

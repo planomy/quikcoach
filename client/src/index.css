@@ -1943,6 +1943,11 @@ html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-
   overflow: visible;
 }
 
+.iboard-header-icon-button > svg.iboard-header-icon-camera {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
 html.dark .iboard-help-panel {
   border-color: #334155;
   background: #0f172a;
