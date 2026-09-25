@@ -55,7 +55,7 @@ import {
 } from '../lib/iboardSession.js';
 
 const MODE_LABELS = {
-  writing: 'Writing',
+  writing: 'Narrative',
   explanation: 'Explanation',
   argument: 'Argument',
   problem_solving: 'Problem Solving',
@@ -4632,7 +4632,7 @@ function TeacherDashboardInner() {
               <div className="min-w-0">
                 <p className="iboard-ai-feedback__meta">
                   {[
-                    MODE_LABELS[normalizeFeedbackMode(room?.genre)] || 'Writing',
+                    MODE_LABELS[normalizeFeedbackMode(room?.genre)] || 'Narrative',
                     room?.feedback_toggles?.subjectAssist && room.feedback_toggles.subjectAssist !== 'general'
                       ? SUBJECT_ASSIST_OPTIONS.find((o) => o.id === room.feedback_toggles.subjectAssist)?.label || room.feedback_toggles.subjectAssist
                       : null,
