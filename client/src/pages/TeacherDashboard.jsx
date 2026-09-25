@@ -348,6 +348,7 @@ function TeacherDashboardInner() {
   const [addFocusDraft, setAddFocusDraft] = useState('');
 
   const [pasteBox, setPasteBox] = useState('');
+  const [aiPromptEdit, setAiPromptEdit] = useState('');
   const [copyToast, setCopyToast] = useState('');
   const [joinWhisper, setJoinWhisper] = useState('');
   const joinWhisperTokenRef = useRef(0);
@@ -1002,7 +1003,7 @@ function TeacherDashboardInner() {
     }
     if (action === 'ai') {
       setHelpOpen(false);
-      setModalOpen(true);
+      openLibrary('feedback');
       window.requestAnimationFrame(() => flashHelpTarget('ai'));
     }
   }
@@ -1657,8 +1658,14 @@ function TeacherDashboardInner() {
     room?.word_target,
   ]);
 
+  useEffect(() => {
+    setAiPromptEdit(aiPrompt);
+  }, [aiPrompt]);
+
+  const aiPromptDirty = aiPromptEdit !== aiPrompt;
+
   const aiPayloadStats = useMemo(() => {
-    const promptChars = aiPrompt.length;
+    const promptChars = aiPromptEdit.length;
     const draftChars = visibleStudents.reduce((n, s) => n + (s.text || '').length, 0);
     const totalDraftWords = visibleStudents.reduce((n, s) => n + wordCount(s.text || ''), 0);
     const promptKb = Math.round((promptChars / 1024) * 10) / 10;
@@ -1666,7 +1673,7 @@ function TeacherDashboardInner() {
     if (promptChars >= 140_000 || draftChars >= 120_000) level = 'heavy';
     else if (promptChars >= 55_000 || draftChars >= 45_000) level = 'warn';
     return { promptChars, draftChars, totalDraftWords, promptKb, level };
-  }, [aiPrompt, visibleStudents]);
+  }, [aiPromptEdit, visibleStudents]);
 
   useEffect(() => {
     if (!joined) return;
@@ -1919,11 +1926,11 @@ function TeacherDashboardInner() {
 
   async function copyForAi() {
     try {
-      await navigator.clipboard.writeText(aiPrompt);
-      setCopyToast('Copied structured prompt');
+      await navigator.clipboard.writeText(aiPromptEdit);
+      setCopyToast('Copied prompt');
       setTimeout(() => setCopyToast(''), 2500);
     } catch {
-      setCopyToast('Copy failed — select and copy manually');
+      setCopyToast('Copy failed — select the prompt and copy manually');
       setTimeout(() => setCopyToast(''), 3500);
     }
   }
@@ -2967,6 +2974,9 @@ function TeacherDashboardInner() {
     setLibraryPanel(panel);
     if (panel === 'evidence') {
       setEvidenceHubTab(evidenceTab === 'students' ? 'students' : 'lessons');
+      setSnapshotsOpen(true);
+    }
+    if (panel === 'feedback') {
       setSnapshotsOpen(true);
     }
   }
@@ -4580,11 +4590,10 @@ function TeacherDashboardInner() {
         )}
 
         {libraryPanel === 'feedback' && (
-          <section>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+          <section data-help-target="ai" className={helpFlash === 'ai' ? 'is-help-flash' : undefined}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Feedback</h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {MODE_LABELS[normalizeFeedbackMode(room?.genre)] || 'Writing'}
                   {room?.feedback_toggles?.subjectAssist && room.feedback_toggles.subjectAssist !== 'general'
                     ? ` · ${SUBJECT_ASSIST_OPTIONS.find((o) => o.id === room.feedback_toggles.subjectAssist)?.label || room.feedback_toggles.subjectAssist}`
@@ -4593,75 +4602,83 @@ function TeacherDashboardInner() {
                     ? ` · ${YEAR_LEVEL_OPTIONS.find((o) => o.id === room.feedback_toggles.yearLevel)?.label || room.feedback_toggles.yearLevel}`
                     : ''}
                 </p>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  Copy the prompt → paste into your AI tool → paste numbered feedback back → distribute.
+                </p>
               </div>
               <button type="button" onClick={() => setModalOpen(true)} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700">
                 Feedback settings
               </button>
             </div>
-            <div className="mb-3">
-              <h3 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">AI batch feedback</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Copy student work, paste the numbered feedback, then distribute it to the visible group.</p>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">1. Prompt</h3>
+                  {aiPromptDirty && (
+                    <button
+                      type="button"
+                      onClick={() => setAiPromptEdit(aiPrompt)}
+                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
+                    >
+                      Reset to generated
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                  Anonymised drafts as Student 1, 2, … Edit below before you copy.
+                </p>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  ~{aiPayloadStats.promptKb} KB · {aiPayloadStats.totalDraftWords} words
+                  {visibleStudents.length > 0 ? ` · ${visibleStudents.length} students` : ''}
+                </p>
+                {aiPayloadStats.level === 'warn' && (
+                  <p className="mt-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
+                    Large prompt — try half the class at a time if your AI tool truncates it.
+                  </p>
+                )}
+                {aiPayloadStats.level === 'heavy' && (
+                  <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
+                    Very large prompt — copy in smaller batches.
+                  </p>
+                )}
+                <textarea
+                  value={aiPromptEdit}
+                  onChange={(e) => setAiPromptEdit(e.target.value)}
+                  rows={14}
+                  spellCheck={false}
+                  aria-label="AI prompt"
+                  className="mt-3 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-100 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                />
+                <button
+                  type="button"
+                  onClick={copyForAi}
+                  className="mt-3 w-full rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/50 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
+                >
+                  Copy for AI
+                </button>
+              </div>
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
+                <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">2. Paste back</h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                  Paste numbered feedback (<code className="rounded bg-slate-100 dark:bg-slate-800 px-1">1.</code>{' '}
+                  <code className="rounded bg-slate-100 dark:bg-slate-800 px-1">2.</code> …). Same student order as the prompt.
+                </p>
+                <textarea
+                  value={pasteBox}
+                  onChange={(e) => setPasteBox(e.target.value)}
+                  rows={14}
+                  placeholder={`1. Feedback for first student\n2. Feedback for second student`}
+                  className="mt-3 w-full rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
+                />
+                <button
+                  type="button"
+                  onClick={distributePaste}
+                  className="mt-3 w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+                >
+                  Distribute to students
+                </button>
+              </div>
             </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
-            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Copy for AI</h3>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Builds a structured prompt from feedback mode, subject, year level, toggles, custom focuses, and each
-              visible student&apos;s draft (respects <strong>Show group</strong> above). Student names are not
-              included — only Student 1, 2, … in list order.
-            </p>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Payload: ~{aiPayloadStats.promptKb} KB · {aiPayloadStats.totalDraftWords} words of student drafts
-              {visibleStudents.length > 0 ? ` · ${visibleStudents.length} students` : ''}
-            </p>
-            {aiPayloadStats.level === 'warn' && (
-              <p className="mt-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
-                Large prompt — some AI tools may slow down or truncate. Consider copying in two batches (e.g. half the
-                class) or nudging students with the word target.
-              </p>
-            )}
-            {aiPayloadStats.level === 'heavy' && (
-              <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
-                Very large prompt — high risk of truncation or errors. Batch students (smaller groups per copy) or lower
-                the word target before feedback rounds.
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={copyForAi}
-              className="mt-4 w-full rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/50 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
-            >
-              Copy for AI
-            </button>
-            <details className="mt-4">
-              <summary className="cursor-pointer text-xs font-medium text-slate-500 dark:text-slate-400">Preview prompt</summary>
-              <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100 scrollbar-thin">
-                {aiPrompt}
-              </pre>
-            </details>
-          </div>
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
-            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Paste back</h3>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Paste numbered ChatGPT output (e.g. <code className="rounded bg-slate-100 dark:bg-slate-800 px-1">1. [Feedback]</code>
-              ). Items are matched to <strong>visible</strong> students in list order (same order as Copy for AI).
-            </p>
-            <textarea
-              value={pasteBox}
-              onChange={(e) => setPasteBox(e.target.value)}
-              rows={8}
-              placeholder={`1. [Feedback for first student]\n2. [Feedback for second student]`}
-              className="mt-3 w-full rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-            />
-            <button
-              type="button"
-              onClick={distributePaste}
-              className="mt-3 w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-            >
-              Distribute to students
-            </button>
-          </div>
-        </div>
           </section>
         )}
             </div>
