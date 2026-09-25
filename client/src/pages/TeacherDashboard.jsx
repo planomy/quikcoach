@@ -8,7 +8,8 @@ import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import { activityStatus, isNotStarted, wordCount } from '../lib/text.js';
 import useActivityClock from '../hooks/useActivityClock.js';
 import {
-  buildAiPrompt,
+  assembleAiPrompt,
+  buildAiPromptParts,
   parseNumberedPaste,
   normalizeFeedbackMode,
   FEEDBACK_MODES,
@@ -348,7 +349,7 @@ function TeacherDashboardInner() {
   const [addFocusDraft, setAddFocusDraft] = useState('');
 
   const [pasteBox, setPasteBox] = useState('');
-  const [aiPromptEdit, setAiPromptEdit] = useState('');
+  const [aiGuidanceEdit, setAiGuidanceEdit] = useState('');
   const [copyToast, setCopyToast] = useState('');
   const [joinWhisper, setJoinWhisper] = useState('');
   const joinWhisperTokenRef = useRef(0);
@@ -1636,8 +1637,8 @@ function TeacherDashboardInner() {
       .map((x) => x.text.trim());
   }, [extraFocusByMode, promptModeKey]);
 
-  const aiPrompt = useMemo(() => {
-    return buildAiPrompt({
+  const aiPromptParts = useMemo(() => {
+    return buildAiPromptParts({
       feedbackMode: normalizeFeedbackMode(promptModeKey),
       subjectAssist: promptSubjectAssist,
       yearLevel: promptYearLevel,
@@ -1659,13 +1660,24 @@ function TeacherDashboardInner() {
   ]);
 
   useEffect(() => {
-    setAiPromptEdit(aiPrompt);
-  }, [aiPrompt]);
+    setAiGuidanceEdit(aiPromptParts.guidance);
+  }, [aiPromptParts.guidance]);
 
-  const aiPromptDirty = aiPromptEdit !== aiPrompt;
+  const aiGuidanceDirty = aiGuidanceEdit !== aiPromptParts.guidance;
+
+  const assembledAiPrompt = useMemo(
+    () =>
+      assembleAiPrompt({
+        lockedRules: aiPromptParts.lockedRules,
+        guidance: aiGuidanceEdit,
+        roster: aiPromptParts.roster,
+        lockedClosing: aiPromptParts.lockedClosing,
+      }),
+    [aiPromptParts, aiGuidanceEdit]
+  );
 
   const aiPayloadStats = useMemo(() => {
-    const promptChars = aiPromptEdit.length;
+    const promptChars = assembledAiPrompt.length;
     const draftChars = visibleStudents.reduce((n, s) => n + (s.text || '').length, 0);
     const totalDraftWords = visibleStudents.reduce((n, s) => n + wordCount(s.text || ''), 0);
     const promptKb = Math.round((promptChars / 1024) * 10) / 10;
@@ -1673,7 +1685,7 @@ function TeacherDashboardInner() {
     if (promptChars >= 140_000 || draftChars >= 120_000) level = 'heavy';
     else if (promptChars >= 55_000 || draftChars >= 45_000) level = 'warn';
     return { promptChars, draftChars, totalDraftWords, promptKb, level };
-  }, [aiPromptEdit, visibleStudents]);
+  }, [assembledAiPrompt, visibleStudents]);
 
   useEffect(() => {
     if (!joined) return;
@@ -1926,7 +1938,7 @@ function TeacherDashboardInner() {
 
   async function copyForAi() {
     try {
-      await navigator.clipboard.writeText(aiPromptEdit);
+      await navigator.clipboard.writeText(assembledAiPrompt);
       setCopyToast('Copied prompt');
       setTimeout(() => setCopyToast(''), 2500);
     } catch {
@@ -1938,7 +1950,14 @@ function TeacherDashboardInner() {
   function distributePaste() {
     const parsed = parseNumberedPaste(pasteBox);
     if (!parsed.length) {
-      setError('Could not parse numbered feedback. Use lines like: 1. [Your feedback]');
+      setError('Could not parse numbered feedback. The AI must start each item with 1. 2. 3. …');
+      return;
+    }
+    const expected = visibleStudents.length;
+    if (expected > 0 && parsed.length < expected) {
+      setError(
+        `Only found ${parsed.length} of ${expected} numbered items. Ask the AI to redo with 1. through ${expected}.`
+      );
       return;
     }
     const items = visibleStudents
@@ -4614,18 +4633,18 @@ function TeacherDashboardInner() {
               <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">1. Prompt</h3>
-                  {aiPromptDirty && (
+                  {aiGuidanceDirty && (
                     <button
                       type="button"
-                      onClick={() => setAiPromptEdit(aiPrompt)}
+                      onClick={() => setAiGuidanceEdit(aiPromptParts.guidance)}
                       className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
                     >
-                      Reset to generated
+                      Reset guidance
                     </button>
                   )}
                 </div>
                 <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                  Anonymised drafts as Student 1, 2, … Edit below before you copy.
+                  Numbering and anonymised drafts stay locked. Edit guidance only (from Feedback settings).
                 </p>
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                   ~{aiPayloadStats.promptKb} KB · {aiPayloadStats.totalDraftWords} words
@@ -4641,14 +4660,30 @@ function TeacherDashboardInner() {
                     Very large prompt — copy in smaller batches.
                   </p>
                 )}
+                <p className="mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Locked — reply format
+                </p>
+                <pre className="mt-1 max-h-36 overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3 text-[11px] leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                  {aiPromptParts.lockedRules}
+                </pre>
+                <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Editable — guidance
+                </p>
                 <textarea
-                  value={aiPromptEdit}
-                  onChange={(e) => setAiPromptEdit(e.target.value)}
-                  rows={14}
+                  value={aiGuidanceEdit}
+                  onChange={(e) => setAiGuidanceEdit(e.target.value)}
+                  rows={8}
                   spellCheck={false}
-                  aria-label="AI prompt"
-                  className="mt-3 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-100 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                  aria-label="Editable feedback guidance"
+                  className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-100 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
                 />
+                <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Locked — student drafts (no names)
+                </p>
+                <pre className="mt-1 max-h-48 overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3 text-[11px] leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                  {aiPromptParts.roster || '(No students on the board yet)'}
+                </pre>
+                <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{aiPromptParts.lockedClosing}</p>
                 <button
                   type="button"
                   onClick={copyForAi}
@@ -5775,7 +5810,7 @@ function TeacherDashboardInner() {
                     ))}
                   </select>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Guides the AI with subject expectations (does not change student view).
+                    For the AI only — not shown to students.
                   </p>
                 </div>
                 <div className="min-w-0">
@@ -5798,7 +5833,7 @@ function TeacherDashboardInner() {
                     ))}
                   </select>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Age-appropriate vocabulary and complexity for the AI (does not change student view).
+                    Sets age-appropriate language in the prompt.
                   </p>
                 </div>
               </div>

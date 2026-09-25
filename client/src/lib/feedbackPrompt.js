@@ -110,15 +110,15 @@ export const MODE_TOGGLE_LABELS = {
 
 const ROLE_BY_MODE = {
   writing:
-    'You are an expert writing coach for student writing in a secondary classroom. Focus on craft, clarity, and improvement.',
+    'You are an expert writing coach for school students. Focus on craft, clarity, and improvement at the year level given for each student.',
   explanation:
-    'You are an expert teacher helping students improve explanatory writing. Focus on clarity, accurate detail, and logical development of ideas.',
+    'You are an expert teacher helping students improve explanatory writing. Focus on clarity, accurate detail, and logical development of ideas at the year level given for each student.',
   argument:
-    'You are an expert teacher helping students improve argument writing. Focus on position, reasoning, evidence, and audience impact.',
+    'You are an expert teacher helping students improve argument writing. Focus on position, reasoning, evidence, and audience impact at the year level given for each student.',
   problem_solving:
-    'You are an expert teacher helping students improve written mathematical problem solving. Focus on clear working, logical method, and accuracy.',
+    'You are an expert teacher helping students improve written mathematical problem solving. Focus on clear working, logical method, and accuracy at the year level given for each student.',
   custom:
-    'You are an expert classroom teacher giving clear, practical feedback to students.',
+    'You are an expert classroom teacher giving clear, practical feedback pitched to the year level given for each student.',
 };
 
 function subjectLabel(id) {
@@ -143,27 +143,57 @@ function studentYearLabel(yearLevel) {
     .toLowerCase();
   if (!id) return '';
   if (YEAR_LEVEL_OPTIONS.some((o) => o.id === id)) return yearLevelLabel(id);
-  // Accept compact forms like "y5" / "5"
   const compact = id.replace(/^y(?:ear)?/, 'yr').replace(/^yr(?=\d)/, 'yr');
   const asYr = compact.startsWith('yr') ? compact : `yr${compact.replace(/\D/g, '')}`;
   if (YEAR_LEVEL_OPTIONS.some((o) => o.id === asYr)) return yearLevelLabel(asYr);
   return '';
 }
 
+function formatExampleLine(n) {
+  return `${n}. [Your feedback for Student ${n}]`;
+}
+
 /**
- * @param {object} params
- * @param {FeedbackMode} params.feedbackMode
- * @param {string} [params.subjectAssist]
- * @param {string} [params.customFocusText]
- * @param {Record<string, boolean>} [params.toggles]
- * @param {string[]} [params.extraFocusLabels] — enabled teacher-added focus lines (current mode)
- * @param {Array<{name?: string, text?: string, year_level?: string}>} [params.students]
- *   Student `name` is intentionally ignored — prompts use ordinal labels only (Student 1, 2, …)
- *   so real names are never sent to external AI tools.
- * @param {number} [params.wordTarget]
- * @param {string} [params.yearLevel] — id from YEAR_LEVEL_OPTIONS
+ * Locked output rules — always prepended/appended on copy. Teachers must not remove these
+ * or distribute cannot match feedback to students.
+ * @param {number} studentCount
  */
-export function buildAiPrompt({
+export function buildLockedOutputRules(studentCount) {
+  const n = Math.max(0, Number(studentCount) || 0);
+  const example =
+    n <= 0
+      ? `${formatExampleLine(1)}\n${formatExampleLine(2)}`
+      : Array.from({ length: Math.min(n, 3) }, (_, i) => formatExampleLine(i + 1)).join('\n') +
+        (n > 3 ? `\n...\n${formatExampleLine(n)}` : n >= 2 ? '' : '');
+
+  return `CRITICAL — how you must reply (do not skip):
+- Write feedback for exactly ${n || 'each'} student${n === 1 ? '' : 's'} below, in the same order.
+- Every reply item MUST start on its own line with the number, a full stop, then a space (1. 2. 3. …).
+- Do not write any heading, intro, or closing before 1. or after the last number.
+- Do not use real student names. If you refer to a writer, say Student 1, Student 2, etc.
+- Pitch language and expectations to the year level shown for that student.
+
+Required shape:
+${example}`;
+}
+
+/**
+ * Locked closing reminder — LLMs often obey the last instruction most reliably.
+ * @param {number} studentCount
+ */
+export function buildLockedClosing(studentCount) {
+  const n = Math.max(0, Number(studentCount) || 0);
+  if (n <= 0) {
+    return 'END OF DRAFTS. Reply with numbered feedback only, one line per student: 1. … 2. …';
+  }
+  return `END OF DRAFTS. Reply now with exactly ${n} numbered items and nothing else — start with "1. " and finish with "${n}. ".`;
+}
+
+/**
+ * Editable middle: role, focuses, year, subject, custom notes from Feedback settings.
+ * @param {object} params
+ */
+export function buildEditableGuidance({
   feedbackMode,
   subjectAssist = 'general',
   yearLevel = 'general',
@@ -211,37 +241,55 @@ export function buildAiPrompt({
       ? `The class word target is approximately ${wordTarget} words; comment on progress toward that goal where useful.`
       : '';
 
-  const headerParts = [
-    role,
-    '',
-    focusLine,
-    yearLine,
-    subjectLine,
-    customLine,
-    targetLine,
-  ].filter((p) => p !== '');
+  return [role, '', focusLine, yearLine, subjectLine, customLine, targetLine]
+    .filter((p) => p !== '')
+    .join('\n');
+}
 
-  const header = `${headerParts.join('\n')}
-
-Respond with numbered feedback ONLY, one item per student, in this exact format (no extra prose before item 1):
-1. [Your feedback for student 1]
-2. [Your feedback for student 2]
-...and so on.
-
-Students are listed below in the same order as the numbers you must use. Match the tone and expectations to each student's year level.`;
-
+/**
+ * Locked anonymised student drafts — never includes real names.
+ * @param {Array<{name?: string, text?: string, year_level?: string}>} students
+ * @param {string} yearLevel
+ */
+export function buildLockedRoster(students = [], yearLevel = 'general') {
+  const list = students || [];
   const fallbackYear = yearLevelLabel(yearLevel);
-  const body = list
+  return list
     .map((s, i) => {
       const excerpt = (s.text || '').trim() || '(empty draft)';
       const personal = studentYearLabel(s.year_level);
       const yearShown = personal || fallbackYear;
-      // De-identify: never include the student's real name in outbound AI prompts.
       return `--- Student ${i + 1} ---\nYear level: ${yearShown}${personal ? '' : ' (class default)'}\n${excerpt}`;
     })
     .join('\n\n');
+}
 
-  return `${header}\n\n${body}`;
+/**
+ * @returns {{ lockedRules: string, guidance: string, roster: string, lockedClosing: string, studentCount: number }}
+ */
+export function buildAiPromptParts(params) {
+  const students = params.students || [];
+  const studentCount = students.length;
+  const yearLevel = params.yearLevel || 'general';
+  return {
+    lockedRules: buildLockedOutputRules(studentCount),
+    guidance: buildEditableGuidance(params),
+    roster: buildLockedRoster(students, yearLevel),
+    lockedClosing: buildLockedClosing(studentCount),
+    studentCount,
+  };
+}
+
+/** Glue locked + guidance sections for clipboard. */
+export function assembleAiPrompt({ lockedRules, guidance, roster, lockedClosing }) {
+  return [lockedRules, guidance, roster, lockedClosing].filter((part) => String(part || '').trim()).join('\n\n');
+}
+
+/**
+ * Full prompt (locked envelope + guidance + roster). Prefer assembleAiPrompt when teachers edit guidance.
+ */
+export function buildAiPrompt(params) {
+  return assembleAiPrompt(buildAiPromptParts(params));
 }
 
 export function parseNumberedPaste(raw) {
@@ -255,6 +303,14 @@ export function parseNumberedPaste(raw) {
     const idx = Number(m[1]);
     let content = m[2].replace(/\]\s*$/, '').trim();
     out.push({ index: idx, text: content });
+  }
+  if (out.length) return out.sort((a, b) => a.index - b.index);
+
+  // Fallback: one feedback item per numbered line (when the model kept everything on single lines)
+  for (const line of text.split(/\n/)) {
+    const m = line.match(/^\s*(\d+)\s*[\.):]\s*(.+?)\s*$/);
+    if (!m) continue;
+    out.push({ index: Number(m[1]), text: m[2].replace(/^\[/, '').replace(/\]$/, '').trim() });
   }
   return out.sort((a, b) => a.index - b.index);
 }
