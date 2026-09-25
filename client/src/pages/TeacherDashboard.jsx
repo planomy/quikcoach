@@ -4254,13 +4254,20 @@ function TeacherDashboardInner() {
             data-help-target={libraryPanel === 'feedback' ? 'ai' : 'records'}
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5 dark:border-slate-700">
-              <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
-                {libraryPanel === 'feedback'
-                  ? 'AI feedback'
-                  : evidenceHubTab === 'students'
-                    ? 'Student portfolios'
-                    : 'Lesson records'}
-              </h2>
+              <div className="min-w-0">
+                <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+                  {libraryPanel === 'feedback'
+                    ? 'AI feedback'
+                    : evidenceHubTab === 'students'
+                      ? 'Student portfolios'
+                      : 'Lesson records'}
+                </h2>
+                {libraryPanel === 'feedback' && (
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    Students are only identified by number — names are never sent to the AI.
+                  </p>
+                )}
+              </div>
               <CloseButton onClick={() => setLibraryPanel(null)} aria-label="Close" />
             </div>
             <div className={`overflow-y-auto scrollbar-thin${libraryPanel === 'feedback' ? ' p-4' : ' p-5'}`}>
