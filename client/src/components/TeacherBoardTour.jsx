@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { subscribeViewportChanges } from '../lib/viewport.js';
 
 const STORAGE_KEY = 'iboard-teacher-tour';
-const AUTO_MS = 4000;
 
 const STEPS = [
   { id: 'share', text: 'Share items with your students', place: 'right' },
@@ -27,13 +26,12 @@ function rememberDismissed() {
   }
 }
 
-/** First-visit coach marks for the teacher board. One pill slides between the three stops. */
+/** First-visit coach marks for the teacher board. One pill; advance only via Next/Done. */
 export default function TeacherBoardTour({ anchors }) {
   const [dismissed, setDismissed] = useState(readDismissed);
   const [step, setStep] = useState(0);
   const [box, setBox] = useState(null);
   const [motion, setMotion] = useState(false);
-  const [hovering, setHovering] = useState(false);
   const pillRef = useRef(null);
   const stepRef = useRef(0);
 
@@ -66,15 +64,6 @@ export default function TeacherBoardTour({ anchors }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [show]);
 
-  useEffect(() => {
-    if (!show) return undefined;
-    const nodes = STEPS.map((item) => anchors?.[item.id]?.current).filter(Boolean);
-    const target = anchors?.[current.id]?.current;
-    nodes.forEach((node) => node.classList.remove('is-tour-target'));
-    target?.classList.add('is-tour-target');
-    return () => nodes.forEach((node) => node.classList.remove('is-tour-target'));
-  }, [show, current.id, anchors]);
-
   useLayoutEffect(() => {
     if (!show) {
       setBox(null);
@@ -106,15 +95,6 @@ export default function TeacherBoardTour({ anchors }) {
     return () => cancelAnimationFrame(frame);
   }, [box, motion]);
 
-  useEffect(() => {
-    if (!show || hovering) return undefined;
-    const timer = window.setTimeout(() => {
-      if (stepRef.current >= STEPS.length - 1) dismiss();
-      else setStep((value) => value + 1);
-    }, AUTO_MS);
-    return () => window.clearTimeout(timer);
-  }, [show, step, hovering]);
-
   if (!show || typeof document === 'undefined') return null;
 
   const last = step === STEPS.length - 1;
@@ -130,8 +110,6 @@ export default function TeacherBoardTour({ anchors }) {
       }}
       role="dialog"
       aria-label="Teacher board tour"
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
     >
       <span className={`iboard-tour__arrow iboard-tour__arrow--${box?.aim || 'left'}`} aria-hidden="true" />
       <p className="iboard-tour__text">{current.text}</p>

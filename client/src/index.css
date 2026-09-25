@@ -961,12 +961,6 @@ html.dark .iboard-board-empty__code {
   padding-top: 0.25rem;
 }
 
-.is-tour-target {
-  outline: 2px solid rgba(90, 95, 195, 0.4);
-  outline-offset: 2px;
-  border-radius: 12px;
-}
-
 html[data-iboard-tour] [role="tooltip"] {
   display: none !important;
 }
