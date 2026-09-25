@@ -3,12 +3,16 @@ import { createPortal } from 'react-dom';
 import { subscribeViewportChanges } from '../lib/viewport.js';
 
 const STORAGE_KEY = 'iboard-teacher-tour';
+const RING_MS = 680;
+const PILL_FADE_MS = 220;
+/** Pill fades in near the end of the ring slide. */
+const PILL_IN_DELAY_MS = 480;
 
 const STEPS = [
-  { id: 'share', text: 'Share items with your students', place: 'right' },
-  { id: 'engage', text: 'Ask the class and watch answers', place: 'right' },
-  { id: 'board', text: 'View cards, set a timer, and manage the session', place: 'right' },
-  { id: 'rec', text: "Record your students' drafting", place: 'left' },
+  { id: 'share', text: 'Share items with your students', place: 'right', clip: 'rail' },
+  { id: 'engage', text: 'Ask the class and watch answers', place: 'right', clip: 'rail' },
+  { id: 'board', text: 'View cards, set a timer, and manage the session', place: 'right', clip: 'rail' },
+  { id: 'rec', text: "Record your students' drafting", place: 'left', clip: 'header' },
 ];
 
 function readDismissed() {
@@ -27,14 +31,68 @@ function rememberDismissed() {
   }
 }
 
-/** First-visit coach marks for the teacher board. One pill; advance only via Next/Done. */
+function findClip(anchor, kind) {
+  if (!anchor) return null;
+  if (kind === 'header') {
+    return anchor.closest('.iboard-app-header') || anchor.closest('.iboard-teacher-header-bar') || anchor.parentElement;
+  }
+  return anchor.closest('.iboard-arr-rail') || anchor.parentElement;
+}
+
+/** Empty rounded stroke around the target, inset so it stays inside rail/header. */
+function measureRing(anchor, clipKind) {
+  if (!anchor) return null;
+  const target = anchor.getBoundingClientRect();
+  const clip = findClip(anchor, clipKind)?.getBoundingClientRect();
+  const inset = 3;
+  const edge = 4;
+
+  let left = target.left + inset;
+  let top = target.top + inset;
+  let right = target.right - inset;
+  let bottom = target.bottom - inset;
+
+  if (clip) {
+    left = Math.max(left, clip.left + edge);
+    top = Math.max(top, clip.top + edge);
+    right = Math.min(right, clip.right - edge);
+    bottom = Math.min(bottom, clip.bottom - edge);
+  }
+
+  const width = Math.max(0, right - left);
+  const height = Math.max(0, bottom - top);
+  if (width < 8 || height < 8) return null;
+  return { left, top, width, height, radius: clipKind === 'header' ? 10 : 12 };
+}
+
+function placeBesideAnchor(anchor, pill, place) {
+  const target = anchor.getBoundingClientRect();
+  const size = pill.getBoundingClientRect();
+  const gap = 14;
+  let left = place === 'right'
+    ? target.right + gap
+    : target.left - size.width - gap;
+  let top = target.top + target.height / 2 - size.height / 2;
+  const pad = 8;
+  left = Math.max(pad, Math.min(left, window.innerWidth - size.width - pad));
+  top = Math.max(pad, Math.min(top, window.innerHeight - size.height - pad));
+  return { left, top, aim: place === 'right' ? 'left' : 'right' };
+}
+
+/**
+ * First-visit coach marks: one focus ring slides between stops;
+ * the caption pill fades in as the ring lands.
+ */
 export default function TeacherBoardTour({ anchors }) {
   const [dismissed, setDismissed] = useState(readDismissed);
   const [step, setStep] = useState(0);
+  const [ring, setRing] = useState(null);
   const [box, setBox] = useState(null);
-  const [motion, setMotion] = useState(false);
+  const [ringMotion, setRingMotion] = useState(false);
+  const [pillShown, setPillShown] = useState(false);
   const pillRef = useRef(null);
   const stepRef = useRef(0);
+  const firstRingRef = useRef(true);
 
   const show = !dismissed;
   const current = STEPS[step];
@@ -67,61 +125,84 @@ export default function TeacherBoardTour({ anchors }) {
 
   useLayoutEffect(() => {
     if (!show) {
+      setRing(null);
       setBox(null);
       return undefined;
     }
     const place = () => {
       const anchor = anchors?.[current.id]?.current;
       const pill = pillRef.current;
-      if (!anchor || !pill) return;
-      const target = anchor.getBoundingClientRect();
-      const size = pill.getBoundingClientRect();
-      const gap = 14;
-      let left = current.place === 'right'
-        ? target.right + gap
-        : target.left - size.width - gap;
-      let top = target.top + target.height / 2 - size.height / 2;
-      const pad = 8;
-      left = Math.max(pad, Math.min(left, window.innerWidth - size.width - pad));
-      top = Math.max(pad, Math.min(top, window.innerHeight - size.height - pad));
-      setBox({ left, top, aim: current.place === 'right' ? 'left' : 'right' });
+      if (!anchor) return;
+      setRing(measureRing(anchor, current.clip));
+      if (pill) setBox(placeBesideAnchor(anchor, pill, current.place));
     };
     place();
     return subscribeViewportChanges(place);
-  }, [show, current.id, current.place, anchors]);
+  }, [show, step, current.id, current.place, current.clip, anchors]);
 
   useEffect(() => {
-    if (!box || motion) return undefined;
-    const frame = requestAnimationFrame(() => setMotion(true));
-    return () => cancelAnimationFrame(frame);
-  }, [box, motion]);
+    if (!show || !ring) return undefined;
+    if (firstRingRef.current) {
+      firstRingRef.current = false;
+      const frame = requestAnimationFrame(() => setRingMotion(true));
+      return () => cancelAnimationFrame(frame);
+    }
+    return undefined;
+  }, [show, ring]);
+
+  // Fade pill out on step change, then in as the ring lands.
+  useEffect(() => {
+    if (!show) return undefined;
+    setPillShown(false);
+    const delay = step === 0 ? 120 : PILL_IN_DELAY_MS;
+    const timer = window.setTimeout(() => setPillShown(true), delay);
+    return () => window.clearTimeout(timer);
+  }, [show, step]);
 
   if (!show || typeof document === 'undefined') return null;
 
   const last = step === STEPS.length - 1;
 
   return createPortal(
-    <div
-      ref={pillRef}
-      className={`iboard-tour${motion ? ' is-moving' : ''}`}
-      style={{
-        top: box ? box.top : -9999,
-        left: box ? box.left : -9999,
-        visibility: box ? 'visible' : 'hidden',
-      }}
-      role="dialog"
-      aria-label="Teacher board tour"
-    >
-      <span className={`iboard-tour__arrow iboard-tour__arrow--${box?.aim || 'left'}`} aria-hidden="true" />
-      <p className="iboard-tour__text">{current.text}</p>
-      <span className="iboard-tour__count">{step + 1}/{STEPS.length}</span>
-      <button type="button" className="iboard-tour__next" onClick={next}>
-        {last ? 'Done' : 'Next'}
-      </button>
-      <button type="button" className="iboard-tour__close" onClick={dismiss} aria-label="Close tour">
-        ×
-      </button>
-    </div>,
+    <>
+      {ring ? (
+        <div
+          className={`iboard-tour-ring${ringMotion ? ' is-moving' : ''}`}
+          style={{
+            top: ring.top,
+            left: ring.left,
+            width: ring.width,
+            height: ring.height,
+            borderRadius: ring.radius,
+          }}
+          aria-hidden="true"
+        />
+      ) : null}
+      <div
+        ref={pillRef}
+        className={`iboard-tour${pillShown ? ' is-shown' : ''}`}
+        style={{
+          top: box ? box.top : -9999,
+          left: box ? box.left : -9999,
+          visibility: box ? 'visible' : 'hidden',
+          transitionDuration: `${PILL_FADE_MS}ms`,
+        }}
+        role="dialog"
+        aria-label="Teacher board tour"
+      >
+        {box?.aim ? (
+          <span className={`iboard-tour__arrow iboard-tour__arrow--${box.aim}`} aria-hidden="true" />
+        ) : null}
+        <p className="iboard-tour__text">{current.text}</p>
+        <span className="iboard-tour__count">{step + 1}/{STEPS.length}</span>
+        <button type="button" className="iboard-tour__next" onClick={next}>
+          {last ? 'Done' : 'Next'}
+        </button>
+        <button type="button" className="iboard-tour__close" onClick={dismiss} aria-label="Close tour">
+          ×
+        </button>
+      </div>
+    </>,
     document.body
   );
 }
