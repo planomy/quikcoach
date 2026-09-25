@@ -56,8 +56,8 @@ export const TEACHER_HELP_ITEMS = [
   },
   {
     id: 'ai',
-    title: 'AI feedback',
-    body: 'Prepare anonymised writing for an AI tool, then paste and distribute feedback to students.',
+    title: 'AI Feedback',
+    body: 'Open Session, Lesson Records, AI Feedback to prepare anonymised writing for an AI tool, then paste and distribute feedback to students.',
     action: 'ai',
   },
   {
