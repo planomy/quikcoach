@@ -350,6 +350,7 @@ function TeacherDashboardInner() {
 
   const [pasteBox, setPasteBox] = useState('');
   const [aiGuidanceEdit, setAiGuidanceEdit] = useState('');
+  const [aiPromptEditOpen, setAiPromptEditOpen] = useState(false);
   const [copyToast, setCopyToast] = useState('');
   const [joinWhisper, setJoinWhisper] = useState('');
   const joinWhisperTokenRef = useRef(0);
@@ -4631,22 +4632,8 @@ function TeacherDashboardInner() {
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">1. Prompt</h3>
-                  {aiGuidanceDirty && (
-                    <button
-                      type="button"
-                      onClick={() => setAiGuidanceEdit(aiPromptParts.guidance)}
-                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
-                    >
-                      Reset guidance
-                    </button>
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                  Numbering and anonymised drafts stay locked. Edit guidance only (from Feedback settings).
-                </p>
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">1. Prompt</h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   ~{aiPayloadStats.promptKb} KB · {aiPayloadStats.totalDraftWords} words
                   {visibleStudents.length > 0 ? ` · ${visibleStudents.length} students` : ''}
                 </p>
@@ -4660,37 +4647,50 @@ function TeacherDashboardInner() {
                     Very large prompt — copy in smaller batches.
                   </p>
                 )}
-                <p className="mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Locked — reply format
-                </p>
-                <pre className="mt-1 max-h-36 overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3 text-[11px] leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                  {aiPromptParts.lockedRules}
-                </pre>
-                <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Editable — guidance
-                </p>
-                <textarea
-                  value={aiGuidanceEdit}
-                  onChange={(e) => setAiGuidanceEdit(e.target.value)}
-                  rows={8}
-                  spellCheck={false}
-                  aria-label="Editable feedback guidance"
-                  className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-100 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
-                />
-                <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Locked — student drafts (no names)
-                </p>
-                <pre className="mt-1 max-h-48 overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-3 text-[11px] leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                  {aiPromptParts.roster || '(No students on the board yet)'}
-                </pre>
-                <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{aiPromptParts.lockedClosing}</p>
                 <button
                   type="button"
                   onClick={copyForAi}
-                  className="mt-3 w-full rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/50 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
+                  className="mt-4 w-full rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/50 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
                 >
-                  Copy for AI
+                  Copy the prompt for AI
                 </button>
+                <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                  The AI prompt contains locked portions to preserve student anonymity, and formatting controls.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAiPromptEditOpen((open) => !open)}
+                  aria-expanded={aiPromptEditOpen}
+                  className="mt-3 text-sm font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
+                >
+                  {aiPromptEditOpen ? 'Hide prompt editor' : 'Edit the prompt'}
+                </button>
+                {aiPromptEditOpen && (
+                  <div className="mt-3">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Edit guidance only. Numbering and anonymised drafts stay locked when you copy.
+                      </p>
+                      {aiGuidanceDirty && (
+                        <button
+                          type="button"
+                          onClick={() => setAiGuidanceEdit(aiPromptParts.guidance)}
+                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300"
+                        >
+                          Reset guidance
+                        </button>
+                      )}
+                    </div>
+                    <textarea
+                      value={aiGuidanceEdit}
+                      onChange={(e) => setAiGuidanceEdit(e.target.value)}
+                      rows={10}
+                      spellCheck={false}
+                      aria-label="Editable feedback guidance"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-800 dark:text-slate-100 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2"
+                    />
+                  </div>
+                )}
               </div>
               <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-card">
                 <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">2. Paste back</h3>
