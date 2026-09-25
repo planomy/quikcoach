@@ -7,16 +7,19 @@ export const TEACHER_HELP_ITEMS = [
     id: 'share',
     title: 'Share a PDF, image, or note',
     body: 'Use PDF, Image, or Text on the left rail to send materials to student inboxes.',
+    action: 'share',
   },
   {
     id: 'ask',
     title: 'Ask the class',
     body: 'Open Ask and pick a Quick check (yes/no, 1–5, A–D, short answer) or write your own. Select from premade curriculum question sets or make your own.',
+    action: 'ask',
   },
   {
     id: 'responses',
     title: 'Read Responses',
     body: "Open Responses to watch live answers, remind anyone who hasn't responded, project responses then tap Done when finished.",
+    action: 'responses',
   },
   {
     id: 'chat',
@@ -32,6 +35,7 @@ export const TEACHER_HELP_ITEMS = [
     id: 'freeze',
     title: 'Freeze the board',
     body: 'Open Session, freeze the board to stop all student board writing.',
+    action: 'freeze',
   },
   {
     id: 'rec',
@@ -42,6 +46,7 @@ export const TEACHER_HELP_ITEMS = [
     id: 'session',
     title: 'Save / load the session',
     body: 'Open Session to save an .iboard file to keep the lesson, or load one to restore it later.',
+    action: 'session',
   },
   {
     id: 'records',
@@ -59,6 +64,7 @@ export const TEACHER_HELP_ITEMS = [
     id: 'breakouts',
     title: 'Breakout rooms',
     body: 'Open Session, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
+    action: 'breakouts',
   },
   {
     id: 'tour',

@@ -1947,6 +1947,35 @@ html.dark .iboard-help-panel__item.is-action:hover {
   background: rgba(129, 140, 248, 0.12);
 }
 
+/* Brief pulse on the control opened from Help */
+.is-help-flash {
+  animation: iboard-help-flash 1.7s ease;
+  border-radius: 12px;
+}
+
+@keyframes iboard-help-flash {
+  0%,
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+  15%,
+  55% {
+    outline: 2px solid #5a5fc3;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 4px rgba(90, 95, 195, 0.22);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-help-flash {
+    animation: none;
+    outline: 2px solid #5a5fc3;
+    outline-offset: 3px;
+  }
+}
+
 /* Room settings — Keynote-like inspector sheet */
 .iboard-header-dock.iboard-room-settings {
   display: flex;

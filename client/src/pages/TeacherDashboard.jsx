@@ -439,6 +439,7 @@ function TeacherDashboardInner() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [tourKey, setTourKey] = useState(0);
   const [helpDockBox, setHelpDockBox] = useState(null);
+  const [helpFlash, setHelpFlash] = useState(null);
   const [teacherPanelHidden, setTeacherPanelHidden] = useState(() => {
     try {
       return localStorage.getItem(TEACHER_PANEL_HIDDEN_KEY) === '1';
@@ -929,6 +930,29 @@ function TeacherDashboardInner() {
     setHelpOpen(false);
   }
 
+  function flashHelpTarget(id) {
+    setHelpFlash(id);
+    window.setTimeout(() => {
+      setHelpFlash((current) => (current === id ? null : current));
+    }, 1700);
+  }
+
+  function openSessionFromHelp(target) {
+    setHelpOpen(false);
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+    setAddCardOpen(false);
+    setTimerOpen(false);
+    setViewOpen(false);
+    setClearFixedArmed(false);
+    setSettingsOpen(true);
+    window.requestAnimationFrame(() => {
+      flashHelpTarget(target);
+      const el = document.querySelector(`[data-help-target="${target}"]`);
+      el?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    });
+  }
+
   function handleHelpAction(action) {
     if (action === 'tour') {
       try {
@@ -940,14 +964,46 @@ function TeacherDashboardInner() {
       setTourKey((value) => value + 1);
       return;
     }
+    if (action === 'share') {
+      setHelpOpen(false);
+      openAddCard('document', { forceOpen: true });
+      window.requestAnimationFrame(() => flashHelpTarget('share'));
+      return;
+    }
+    if (action === 'ask') {
+      setHelpOpen(false);
+      openTeacherTools('ask');
+      window.requestAnimationFrame(() => flashHelpTarget('ask'));
+      return;
+    }
+    if (action === 'responses') {
+      setHelpOpen(false);
+      openTeacherTools('responses');
+      window.requestAnimationFrame(() => flashHelpTarget('responses'));
+      return;
+    }
+    if (action === 'freeze') {
+      openSessionFromHelp('freeze');
+      return;
+    }
+    if (action === 'session') {
+      openSessionFromHelp('session');
+      return;
+    }
+    if (action === 'breakouts') {
+      openSessionFromHelp('breakouts');
+      return;
+    }
     if (action === 'records') {
       setHelpOpen(false);
       openLibrary('evidence', 'lessons');
+      window.requestAnimationFrame(() => flashHelpTarget('records'));
       return;
     }
     if (action === 'ai') {
       setHelpOpen(false);
       setModalOpen(true);
+      window.requestAnimationFrame(() => flashHelpTarget('ai'));
     }
   }
 
@@ -2034,14 +2090,15 @@ function TeacherDashboardInner() {
     setSettingsOpen(true);
   }
 
-  function openAddCard(mode = 'document') {
+  function openAddCard(mode = 'document', { forceOpen = false } = {}) {
     const next = ADD_CARD_ACTIONS.some((action) => action.id === mode) ? mode : 'document';
     closeSettings();
     setTimerOpen(false);
     setViewOpen(false);
+    setHelpOpen(false);
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
-    if (addCardOpen && addCardMode === next && !teacherPanelHidden) {
+    if (!forceOpen && addCardOpen && addCardMode === next && !teacherPanelHidden) {
       closeAddCard();
       return;
     }
@@ -2869,6 +2926,7 @@ function TeacherDashboardInner() {
     setAddCardOpen(false);
     setTimerOpen(false);
     setViewOpen(false);
+    setHelpOpen(false);
     setToolsTab(tab);
     setToolsPanelOpen(true);
     setToolsHighlightStudentId(highlightStudentId != null ? Number(highlightStudentId) : null);
@@ -3363,10 +3421,11 @@ function TeacherDashboardInner() {
                   <button
                     type="button"
                     data-iboard-add-card-trigger="true"
+                    data-help-target={action.id === 'document' ? 'share' : undefined}
                     onClick={() => openAddCard(action.id)}
                     aria-expanded={active}
                     data-active={active ? 'true' : 'false'}
-                    className="iboard-arr-btn"
+                    className={`iboard-arr-btn${helpFlash === 'share' && action.id === 'document' ? ' is-help-flash' : ''}`}
                     aria-label={action.title}
                   >
                     {action.id === 'document' ? (
@@ -3402,13 +3461,14 @@ function TeacherDashboardInner() {
                 <HintWrap key={tab.id} hint={tab.hint} prefer="right" suppressed={active}>
                   <button
                     type="button"
+                    data-help-target={tab.id}
                     onClick={() => {
                       if (active) closeTeacherTools();
                       else openTeacherTools(tab.id);
                     }}
                     aria-current={active ? 'page' : undefined}
                     data-active={active ? 'true' : 'false'}
-                    className="iboard-arr-btn relative"
+                    className={`iboard-arr-btn relative${helpFlash === tab.id ? ' is-help-flash' : ''}`}
                     aria-label={tab.label}
                   >
                     {tab.id === 'ask' ? (
@@ -4167,10 +4227,11 @@ function TeacherDashboardInner() {
       {libraryPanel && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
-            className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900"
+            className={`flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900${helpFlash === 'records' ? ' is-help-flash' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="library-panel-title"
+            data-help-target="records"
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
               <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
@@ -5019,7 +5080,7 @@ function TeacherDashboardInner() {
             </div>
           </div>
           <div className="iboard-room-settings__body scrollbar-thin">
-            <div className="iboard-room-settings__hero">
+            <div className={`iboard-room-settings__hero${helpFlash === 'session' ? ' is-help-flash' : ''}`} data-help-target="session">
               <button
                 type="button"
                 disabled={sessionBusy}
@@ -5039,12 +5100,13 @@ function TeacherDashboardInner() {
                 </button>
                 <button
                   type="button"
+                  data-help-target="freeze"
                   onClick={() => {
                     const v = !frozen;
                     setRoom((r) => (r ? { ...r, freeze_class: v } : r));
                     pushSettings({ freeze_class: v });
                   }}
-                  className="iboard-room-settings__secondary"
+                  className={`iboard-room-settings__secondary${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                 >
                   {frozen ? 'Unfreeze board' : 'Freeze board'}
                 </button>
@@ -5109,9 +5171,9 @@ function TeacherDashboardInner() {
               )}
             </div>
 
-            <section className="iboard-room-settings__section">
+            <section className="iboard-room-settings__section" data-help-target="breakouts">
               <h3 className="iboard-room-settings__label">Breakouts</h3>
-              <div className="iboard-room-settings__card iboard-room-settings__card-pad">
+              <div className={`iboard-room-settings__card iboard-room-settings__card-pad${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}>
                 {breakoutsActive ? (
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -5643,9 +5705,10 @@ function TeacherDashboardInner() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl"
+            className={`max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl${helpFlash === 'ai' ? ' is-help-flash' : ''}`}
             role="dialog"
             aria-modal="true"
+            data-help-target="ai"
           >
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4">
               <h2 className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">Prepare feedback</h2>
