@@ -356,17 +356,17 @@ html:not(.dark) .iboard-teacher-canvas .iboard-brand {
 
 html:not(.dark) .iboard-teacher-canvas .iboard-brand-logo {
   display: block;
-  height: 1.175rem;
+  height: 1.7rem;
   width: auto;
-  max-width: min(5.75rem, 28vw);
+  max-width: min(8.25rem, 36vw);
   object-fit: contain;
 }
 
 .iboard-brand-logo {
   display: block;
-  height: 1.175rem;
+  height: 1.7rem;
   width: auto;
-  max-width: min(5.75rem, 28vw);
+  max-width: min(8.25rem, 36vw);
   object-fit: contain;
 }
 
