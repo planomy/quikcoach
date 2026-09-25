@@ -3215,17 +3215,17 @@ function TeacherDashboardInner() {
               >
                 {browserFullscreen ? (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M9 3v6H3" />
-                    <path d="M15 3v6h6" />
-                    <path d="M9 21v-6H3" />
-                    <path d="M15 21v-6h6" />
+                    <path d="M8 2v6H2" />
+                    <path d="M16 2v6h6" />
+                    <path d="M8 22v-6H2" />
+                    <path d="M16 22v-6h6" />
                   </svg>
                 ) : (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M3 9V3h6" />
-                    <path d="M21 9V3h-6" />
-                    <path d="M3 15v6h6" />
-                    <path d="M21 15v6h-6" />
+                    <path d="M2 8V2h6" />
+                    <path d="M22 8V2h-6" />
+                    <path d="M2 16v6h6" />
+                    <path d="M22 16v6h-6" />
                   </svg>
                 )}
               </button>
@@ -3239,8 +3239,8 @@ function TeacherDashboardInner() {
                 aria-label="Snapshot everyone’s writing now"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M3 8.5h3.2l1.6-2h8.4l1.6 2H21V19H3z" />
-                  <circle cx="12" cy="13.25" r="3.5" />
+                  <path d="M2 7.25h3.5l1.75-2.25h9.5L18.5 7.25H22V20.5H2z" />
+                  <circle cx="12" cy="13.5" r="4" />
                 </svg>
               </button>
             </HintWrap>
