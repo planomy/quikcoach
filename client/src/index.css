@@ -978,10 +978,10 @@ html[data-iboard-tour] [role="tooltip"] {
   z-index: 79;
   box-sizing: border-box;
   pointer-events: none;
-  border: 1.5px solid #9a9aa8;
+  border: 2px solid #7a7a8a;
   background: transparent;
-  box-shadow: none;
-  animation: iboard-tour-ring-pulse 1.6s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(90, 95, 195, 0.28);
+  animation: iboard-tour-ring-pulse 1.25s ease-in-out infinite;
 }
 
 .iboard-tour-ring.is-moving {
@@ -996,12 +996,16 @@ html[data-iboard-tour] [role="tooltip"] {
 @keyframes iboard-tour-ring-pulse {
   0%,
   100% {
-    border-color: #9a9aa8;
+    border-color: #7a7a8a;
     opacity: 1;
+    box-shadow: 0 0 0 0 rgba(90, 95, 195, 0.3);
+    transform: scale(1);
   }
   50% {
-    border-color: #6e6e7c;
-    opacity: 0.45;
+    border-color: #5a5fc3;
+    opacity: 1;
+    box-shadow: 0 0 0 6px rgba(90, 95, 195, 0.18);
+    transform: scale(1.035);
   }
 }
 
@@ -1014,10 +1018,14 @@ html.dark .iboard-tour-ring {
   100% {
     border-color: #94a3b8;
     opacity: 1;
+    box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.35);
+    transform: scale(1);
   }
   50% {
-    border-color: #cbd5e1;
-    opacity: 0.4;
+    border-color: #a5b4fc;
+    opacity: 1;
+    box-shadow: 0 0 0 6px rgba(129, 140, 248, 0.22);
+    transform: scale(1.035);
   }
 }
 

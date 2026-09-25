@@ -102,10 +102,19 @@ function measureRing(anchor, clipKind) {
   return { left, top, width, height, radius: clipKind === 'header' ? 10 : 12 };
 }
 
-function placeBesideAnchor(anchor, pill, place) {
-  const target = contentRect(anchor) || anchor.getBoundingClientRect();
+function placeBesideAnchor(anchor, pill, place, ringBox = null) {
+  const fallback = contentRect(anchor) || anchor.getBoundingClientRect();
+  const target = ringBox
+    ? {
+        left: ringBox.left,
+        right: ringBox.left + ringBox.width,
+        top: ringBox.top,
+        height: ringBox.height,
+      }
+    : fallback;
   const size = pill.getBoundingClientRect();
-  const gap = 14;
+  // Extra gap on the left (REC) so the arrow clears the focus ring stroke.
+  const gap = place === 'left' ? 20 : 14;
   let left = place === 'right'
     ? target.right + gap
     : target.left - size.width - gap;
@@ -170,8 +179,9 @@ export default function TeacherBoardTour({ anchors }) {
       const anchor = anchors?.[current.id]?.current;
       const pill = pillRef.current;
       if (!anchor) return;
-      setRing(measureRing(anchor, current.clip));
-      if (pill) setBox(placeBesideAnchor(anchor, pill, current.place));
+      const nextRing = measureRing(anchor, current.clip);
+      setRing(nextRing);
+      if (pill) setBox(placeBesideAnchor(anchor, pill, current.place, nextRing));
     };
     place();
     return subscribeViewportChanges(place);
