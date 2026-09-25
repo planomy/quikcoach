@@ -941,6 +941,14 @@ html.dark .iboard-board-empty__code {
   width: 100%;
 }
 
+.iboard-arr-rail__lower {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
 .iboard-arr-rail__board {
   flex: 0 0 auto;
   display: flex;
@@ -981,7 +989,7 @@ html[data-iboard-tour] [role="tooltip"] {
 }
 
 .iboard-tour.is-moving {
-  transition: top 480ms cubic-bezier(0.22, 1, 0.36, 1), left 480ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: top 680ms cubic-bezier(0.22, 1, 0.36, 1), left 680ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-tour__arrow {

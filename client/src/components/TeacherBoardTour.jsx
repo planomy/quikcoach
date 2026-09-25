@@ -7,6 +7,7 @@ const STORAGE_KEY = 'iboard-teacher-tour';
 const STEPS = [
   { id: 'share', text: 'Share items with your students', place: 'right' },
   { id: 'engage', text: 'Ask the class and watch answers', place: 'right' },
+  { id: 'board', text: 'View cards, set a timer, and manage the session', place: 'right' },
   { id: 'rec', text: "Record your students' drafting", place: 'left' },
 ];
 

@@ -384,6 +384,7 @@ function TeacherDashboardInner() {
   const teacherToolsNavRef = useRef(null);
   const tourShareRef = useRef(null);
   const tourEngageRef = useRef(null);
+  const tourBoardRef = useRef(null);
   const tourRecRef = useRef(null);
   const teacherToolsPanelRef = useRef(null);
   const addCardPanelRef = useRef(null);
@@ -3260,7 +3261,7 @@ function TeacherDashboardInner() {
       )}
 
       <TeacherBoardTour
-        anchors={{ share: tourShareRef, engage: tourEngageRef, rec: tourRecRef }}
+        anchors={{ share: tourShareRef, engage: tourEngageRef, board: tourBoardRef, rec: tourRecRef }}
       />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {headerDockOpen ? (
@@ -3343,64 +3344,66 @@ function TeacherDashboardInner() {
               );
             })}
           </div>
-          <div className="iboard-arr-rail__board" aria-label="Board view and timer">
-            <HintWrap hint="Student card view" prefer="right" suppressed={viewOpen}>
-              <button
-                ref={viewButtonRef}
-                type="button"
-                onClick={openViewDock}
-                aria-expanded={viewOpen}
-                data-active={viewOpen ? 'true' : 'false'}
-                className="iboard-arr-btn"
-                aria-label="View"
-              >
-                <CardViewIcon id={cardView} className="iboard-arr-btn__glyph" />
-                <span className="iboard-arr-label">View</span>
-              </button>
-            </HintWrap>
-            <HintWrap hint="Class timer" prefer="right" suppressed={timerOpen}>
-              <button
-                ref={timerButtonRef}
-                type="button"
-                onClick={openTimerDock}
-                aria-expanded={timerOpen}
-                data-active={timerOpen || timerKeepsRailLit(room?.timer) ? 'true' : 'false'}
-                className="iboard-arr-btn"
-                aria-label="Timer"
-              >
-                <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="13" r="7.25" />
-                  <path d="M9.2 3.6h5.6" />
-                  <path d="M12 3.6v2.1" />
-                  <path d="M12 13V9.8" />
-                  <path d="M12 13l2.4 1.6" />
-                </svg>
-                <span className="iboard-arr-label"><RailTimerLabel timer={room?.timer} /></span>
-              </button>
-            </HintWrap>
-          </div>
-          <div className="iboard-arr-rail__foot">
-            <HintWrap hint="Session functions" prefer="right" suppressed={settingsOpen}>
-              <button
-                ref={settingsButtonRef}
-                type="button"
-                onClick={toggleSettings}
-                aria-expanded={settingsOpen}
-                data-active={settingsOpen ? 'true' : 'false'}
-                className="iboard-arr-btn"
-                aria-label="Session"
-              >
-                <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" aria-hidden="true">
-                  <path d="M4 7h10" />
-                  <path d="M18 7h2" />
-                  <circle cx="16" cy="7" r="2" />
-                  <path d="M4 17h2" />
-                  <path d="M10 17h10" />
-                  <circle cx="8" cy="17" r="2" />
-                </svg>
-                <span className="iboard-arr-label">Session</span>
-              </button>
-            </HintWrap>
+          <div ref={tourBoardRef} className="iboard-arr-rail__lower">
+            <div className="iboard-arr-rail__board" aria-label="Board view and timer">
+              <HintWrap hint="Student card view" prefer="right" suppressed={viewOpen}>
+                <button
+                  ref={viewButtonRef}
+                  type="button"
+                  onClick={openViewDock}
+                  aria-expanded={viewOpen}
+                  data-active={viewOpen ? 'true' : 'false'}
+                  className="iboard-arr-btn"
+                  aria-label="View"
+                >
+                  <CardViewIcon id={cardView} className="iboard-arr-btn__glyph" />
+                  <span className="iboard-arr-label">View</span>
+                </button>
+              </HintWrap>
+              <HintWrap hint="Class timer" prefer="right" suppressed={timerOpen}>
+                <button
+                  ref={timerButtonRef}
+                  type="button"
+                  onClick={openTimerDock}
+                  aria-expanded={timerOpen}
+                  data-active={timerOpen || timerKeepsRailLit(room?.timer) ? 'true' : 'false'}
+                  className="iboard-arr-btn"
+                  aria-label="Timer"
+                >
+                  <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="13" r="7.25" />
+                    <path d="M9.2 3.6h5.6" />
+                    <path d="M12 3.6v2.1" />
+                    <path d="M12 13V9.8" />
+                    <path d="M12 13l2.4 1.6" />
+                  </svg>
+                  <span className="iboard-arr-label"><RailTimerLabel timer={room?.timer} /></span>
+                </button>
+              </HintWrap>
+            </div>
+            <div className="iboard-arr-rail__foot">
+              <HintWrap hint="Session functions" prefer="right" suppressed={settingsOpen}>
+                <button
+                  ref={settingsButtonRef}
+                  type="button"
+                  onClick={toggleSettings}
+                  aria-expanded={settingsOpen}
+                  data-active={settingsOpen ? 'true' : 'false'}
+                  className="iboard-arr-btn"
+                  aria-label="Session"
+                >
+                  <svg viewBox="0 0 24 24" className="iboard-arr-btn__glyph" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" aria-hidden="true">
+                    <path d="M4 7h10" />
+                    <path d="M18 7h2" />
+                    <circle cx="16" cy="7" r="2" />
+                    <path d="M4 17h2" />
+                    <path d="M10 17h10" />
+                    <circle cx="8" cy="17" r="2" />
+                  </svg>
+                  <span className="iboard-arr-label">Session</span>
+                </button>
+              </HintWrap>
+            </div>
           </div>
         </nav>
 
