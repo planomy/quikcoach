@@ -157,9 +157,24 @@ test('focus wording reviews selected areas only', () => {
     toggles: { storyStructure: true, mechanics: true },
     students: [{ text: 'Hi' }],
   });
-  assert.match(parts.guidance, /Teacher-selected focus areas/);
-  assert.match(parts.guidance, /2–3 selected areas/);
-  assert.match(parts.guidance, /Do not comment on areas outside this list/);
+  assert.match(parts.lockedRules, /2–3 selected areas/);
+  assert.match(parts.guidance, /^[\s\S]*Teacher-selected focus areas:\n/);
+  assert.equal(
+    (parts.guidance.match(/Review the student’s writing against every selected/g) || []).length,
+    0
+  );
+  assert.match(parts.guidance, /do not proofread or rewrite the whole response/);
+});
+
+test('explanation structure gloss is logical not chronological', () => {
+  const parts = buildAiPromptParts({
+    feedbackMode: 'explanation',
+    yearLevel: 'yr8',
+    toggles: { structureSequencing: true },
+    students: [{ text: 'Hi' }],
+  });
+  assert.match(parts.guidance, /clear, logical sequence/);
+  assert.equal(parts.guidance.includes('through in order'), false);
 });
 
 test('parseNumberedPaste accepts 1. blocks', () => {

@@ -204,7 +204,8 @@ const FOCUS_GLOSSES = {
       default: 'New paragraph for new time, place, speaker or event; smooth links between them.',
     },
     mechanics: {
-      default: 'Note a few high-impact grammar, spelling or punctuation fixes — not a full proofread.',
+      default:
+        'Identify a few high-impact errors or patterns that the student should check; do not proofread or rewrite the whole response.',
     },
     themeSubtext: {
       default: 'What the story is really about; implication and controlled meaning beneath the plot.',
@@ -213,7 +214,7 @@ const FOCUS_GLOSSES = {
   },
   explanation: {
     structureSequencing: {
-      default: 'Open by saying what is being explained, then take the reader through in order.',
+      default: 'Introduce what is being explained, then organise ideas in a clear, logical sequence.',
     },
     explainingHowWhy: {
       default: 'Make how and why clear — processes, relationships and reasoning, not only description.',
@@ -234,7 +235,8 @@ const FOCUS_GLOSSES = {
       senior: 'Synthesise ideas rather than listing isolated facts.',
     },
     mechanics: {
-      default: 'Note a few high-impact grammar, spelling or punctuation fixes — not a full proofread.',
+      default:
+        'Identify a few high-impact errors or patterns that the student should check; do not proofread or rewrite the whole response.',
     },
     depthPrecision: {
       default: 'Push for conceptual precision and nuanced explanation where the draft stays surface-level.',
@@ -247,7 +249,8 @@ const FOCUS_GLOSSES = {
       senior: 'Controlled essay/paragraph architecture (e.g. TEEL/PEEL) with clear links back to the contention.',
     },
     mechanics: {
-      default: 'Note a few high-impact grammar, spelling or punctuation fixes — not a full proofread.',
+      default:
+        'Identify a few high-impact errors or patterns that the student should check; do not proofread or rewrite the whole response.',
     },
     positionContention: {
       default: 'A clear position stated early and held consistently.',
@@ -538,7 +541,7 @@ export function buildEditableGuidance({
 
   const focusLine =
     focusBlocks.length > 0
-      ? `Teacher-selected focus areas: Review the student’s writing against every selected focus point. Then give feedback on the 2–3 selected areas that would most improve that student’s draft. Do not comment on areas outside this list.\n${focusBlocks.join('\n')}`
+      ? `Teacher-selected focus areas:\n${focusBlocks.join('\n')}`
       : 'Give general improvement feedback suitable for this mode. Prefer one or two concrete next steps per student.';
 
   const subjectLine =
