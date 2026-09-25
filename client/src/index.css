@@ -845,6 +845,121 @@ html.dark .iboard-board-empty__code {
   padding-top: 0.25rem;
 }
 
+.is-tour-target {
+  outline: 2px solid rgba(90, 95, 195, 0.4);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+html[data-iboard-tour] [role="tooltip"] {
+  display: none !important;
+}
+
+.iboard-tour {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: min(26rem, calc(100vw - 1rem));
+  padding: 0.5rem 0.45rem 0.5rem 0.85rem;
+  border: 1px solid #d5d4e4;
+  border-radius: 14px;
+  background: #fff;
+  color: #3c3c45;
+  box-shadow: 0 8px 22px rgba(60, 60, 69, 0.08);
+}
+
+.iboard-tour.is-moving {
+  transition: top 480ms cubic-bezier(0.22, 1, 0.36, 1), left 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-tour__arrow {
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border: 7px solid transparent;
+  transform: translateY(-50%);
+}
+
+.iboard-tour__arrow--left {
+  left: -13px;
+  border-right-color: #5a5fc3;
+}
+
+.iboard-tour__arrow--right {
+  right: -13px;
+  border-left-color: #5a5fc3;
+}
+
+.iboard-tour__text {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #3c3c45;
+}
+
+.iboard-tour__count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #8b8b98;
+}
+
+.iboard-tour__next {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #5a5fc3;
+  cursor: pointer;
+}
+
+.iboard-tour__next:hover {
+  color: #454aab;
+}
+
+.iboard-tour__close {
+  display: grid;
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #6b6b78;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.iboard-tour__close:hover {
+  background: #f1f0f8;
+  color: #3c3c45;
+}
+
+html.dark .iboard-tour {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .iboard-tour__text {
+  color: #e2e8f0;
+}
+
+html.dark .iboard-tour__close:hover {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
 .iboard-arr-btn {
   width: 4.45rem;
   border: 1px solid transparent;

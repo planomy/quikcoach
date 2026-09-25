@@ -42,6 +42,7 @@ import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
+import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import ConversationModal, { ChatIcon } from '../components/ConversationModal.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
@@ -381,6 +382,9 @@ function TeacherDashboardInner() {
   const [toolsHighlightStudentId, setToolsHighlightStudentId] = useState(null);
   const teacherHeaderRef = useRef(null);
   const teacherToolsNavRef = useRef(null);
+  const tourShareRef = useRef(null);
+  const tourEngageRef = useRef(null);
+  const tourRecRef = useRef(null);
   const teacherToolsPanelRef = useRef(null);
   const addCardPanelRef = useRef(null);
   const settingsButtonRef = useRef(null);
@@ -2975,6 +2979,7 @@ function TeacherDashboardInner() {
               multiline
             >
               <button
+                ref={tourRecRef}
                 type="button"
                 disabled={draftTrailBusy || !socketConnected || !joined}
                 aria-pressed={!!room?.draftTrail?.active}
@@ -3254,13 +3259,16 @@ function TeacherDashboardInner() {
         </div>
       )}
 
+      <TeacherBoardTour
+        anchors={{ share: tourShareRef, engage: tourEngageRef, rec: tourRecRef }}
+      />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {headerDockOpen ? (
         <div className="iboard-workspace-scrim pointer-events-none absolute inset-0 z-[55]" aria-hidden="true" />
       ) : null}
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
-          <div className="iboard-arr-rail__add" aria-label="Add to class">
+          <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Add to class">
             {ADD_CARD_ACTIONS.map((action) => {
               const active = addCardOpen && addCardMode === action.id;
               return (
@@ -3300,7 +3308,7 @@ function TeacherDashboardInner() {
               );
             })}
           </div>
-          <div className="iboard-arr-rail__tools">
+          <div ref={tourEngageRef} className="iboard-arr-rail__tools">
             {TEACHER_TOOLS_TABS.map((tab) => {
               const active = toolsPanelOpen && toolsTab === tab.id;
               return (
