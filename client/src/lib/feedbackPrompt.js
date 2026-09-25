@@ -195,16 +195,13 @@ const FOCUS_GLOSSES = {
       senior: 'Implication and restraint over stated emotion; one concrete rewrite is enough.',
     },
     wordChoice: {
-      default:
-        'Precise verbs and nouns; quote one weak word and offer a stronger alternative. If word choice is already strong, name one word or phrase that is working well.',
+      default: 'Precise verbs and nouns; quote one weak word and offer a stronger alternative.',
     },
     sentenceVariety: {
-      default:
-        'Mix short and long sentences; vary openers; avoid chains of “and then”. If variety is already strong, briefly name what is working.',
+      default: 'Mix short and long sentences; vary openers; avoid chains of “and then”.',
     },
     paragraphingFlow: {
-      default:
-        'New paragraph for new time, place, speaker or event; smooth links between them. If paragraphing is already clear, briefly reinforce that.',
+      default: 'New paragraph for new time, place, speaker or event; smooth links between them.',
     },
     mechanics: {
       default:
@@ -467,9 +464,11 @@ function glossFor(mode, key, band) {
 }
 
 function formatExampleLine(n) {
-  return `${n}. [Short overall comment for Student ${n}.]
-[Focus label]: [specific advice]
-[Focus label]: [specific advice]`;
+  return `${n}. Star: [specific strength in Student ${n}’s draft]
+Star: [second specific strength]
+[Focus label]: [specific wish — what to try next]
+[Focus label]: [specific wish]
+[Focus label]: [specific wish]`;
 }
 
 /**
@@ -487,11 +486,12 @@ export function buildLockedOutputRules(studentCount) {
 - Write feedback for exactly ${n || 'each'} student${n === 1 ? '' : 's'} below, in the same order.
 - Every reply item MUST start on its own line with the number, a full stop, then a space (1. 2. 3. …). Never start any other line with a number and full stop — that would look like the next student.
 - Plain text only: no markdown, no asterisks for bold or italics (write allies not *allies* or **allies**).
-- Within each numbered item: one short overall comment, then each focus-area comment on its own new line, starting with the focus label and a colon (e.g. Accuracy & Detail: …).
+- Within each numbered item use two stars and up to three wishes, each on its own line:
+  - Exactly two lines starting with "Star: " — each names one specific strength in the draft (not vague praise). Stars may notice craft such as paragraphing, vocabulary or sentence variety when those strengths are real.
+  - Then up to three wish lines. Each wish starts with a teacher-selected focus label and a colon (e.g. Accuracy & Detail: …) and gives specific, actionable advice. Prefer the 2–3 selected areas where advice would most improve the draft. If fewer than three focuses are selected, write fewer wishes. Do not invent wishes outside the selected list.
 - Do not write any heading, intro, or closing before 1. or after the last number.
 - Do not use real student names. If you refer to a writer, say Student 1, Student 2, etc.
 - Pitch language and expectations to the year level shown for that student.
-- Review every teacher-selected focus area, then comment on only 2–3 of them. Prefer areas where specific advice would most improve the draft. If a selected focus is already strong, you may use one of those slots for a short reinforce comment that names what is working — do not invent a vague weakness. Do not comment on areas outside the selected list.
 
 Required shape:
 ${example}`;
@@ -503,9 +503,9 @@ ${example}`;
 export function buildLockedClosing(studentCount) {
   const n = Math.max(0, Number(studentCount) || 0);
   if (n <= 0) {
-    return 'END OF DRAFTS. Reply with numbered feedback only (plain text; each focus on its own line): 1. … 2. …';
+    return 'END OF DRAFTS. Reply with numbered feedback only (plain text; 2 Star: lines then up to 3 focus wishes): 1. … 2. …';
   }
-  return `END OF DRAFTS. Reply now with exactly ${n} numbered items and nothing else — start with "1. " and finish with "${n}. ". Plain text only; put each focus comment on its own line inside the item.`;
+  return `END OF DRAFTS. Reply now with exactly ${n} numbered items and nothing else — start with "1. " and finish with "${n}. ". Plain text only; each item = 2 Star: lines, then up to 3 focus-label wish lines.`;
 }
 
 /**
@@ -581,13 +581,7 @@ export function buildEditableGuidance({
       ? `The target length is approximately ${enforcedTarget} words. Comment on whether the student is meaningfully under or over the target only when it affects the quality or completeness of the response.`
       : '';
 
-  const craftKeys = ['paragraphingFlow', 'wordChoice', 'sentenceVariety'];
-  const craftSelected = mode === 'writing' && craftKeys.some((k) => enabledKeys.includes(k));
-  const craftLine = craftSelected
-    ? 'When Paragraphing & Flow, Word Choice, or Sentence Variety are selected, try to include at least one of them in the 2–3 comments (improve or briefly reinforce if already strong), so craft is rarely silent on a narrative draft.'
-    : '';
-
-  return [role, '', focusLine, yearLine, subjectLine, customLine, targetLine, craftLine]
+  return [role, '', focusLine, yearLine, subjectLine, customLine, targetLine]
     .filter((p) => p !== '')
     .join('\n');
 }

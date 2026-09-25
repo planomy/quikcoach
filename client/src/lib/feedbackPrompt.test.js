@@ -37,15 +37,13 @@ test('prompt locks numbering and injects focus glosses', () => {
   });
   assert.match(parts.lockedRules, /1\./);
   assert.match(parts.lockedRules, /exactly 3/);
-  assert.match(parts.lockedRules, /2–3 of them/);
-  assert.match(parts.lockedRules, /short reinforce comment that names what is working/);
+  assert.match(parts.lockedRules, /two stars and up to three wishes/);
+  assert.match(parts.lockedRules, /Exactly two lines starting with "Star: "/);
   assert.match(parts.lockedRules, /Plain text only/);
-  assert.match(parts.lockedRules, /each focus-area comment on its own new line/);
   assert.match(parts.guidance, /Year 4/);
   assert.match(parts.guidance, /Story Structure/);
-  assert.equal(parts.guidance.includes('craft is rarely silent'), false);
   assert.match(parts.lockedClosing, /exactly 3/);
-  assert.match(parts.lockedClosing, /Plain text only/);
+  assert.match(parts.lockedClosing, /2 Star:/);
   const full = assembleAiPrompt({ ...parts, guidance: parts.guidance + '\nExtra note from teacher.' });
   assert.match(full, /CRITICAL/);
   assert.match(full, /Extra note from teacher/);
@@ -162,8 +160,8 @@ test('focus wording reviews selected areas only', () => {
     toggles: { storyStructure: true, mechanics: true },
     students: [{ text: 'Hi' }],
   });
-  assert.match(parts.lockedRules, /2–3 of them/);
-  assert.match(parts.lockedRules, /short reinforce comment that names what is working/);
+  assert.match(parts.lockedRules, /two stars and up to three wishes/);
+  assert.match(parts.lockedRules, /Do not invent wishes outside the selected list/);
   assert.match(parts.guidance, /^[\s\S]*Teacher-selected focus areas:\n/);
   assert.equal(
     (parts.guidance.match(/Review the student’s writing against every selected/g) || []).length,
@@ -173,27 +171,27 @@ test('focus wording reviews selected areas only', () => {
   assert.equal(parts.guidance.includes('craft is rarely silent'), false);
 });
 
-test('narrative craft focuses ask for reinforce when strong', () => {
+test('stars may notice craft strengths; wishes stay on selected focuses', () => {
   const parts = buildAiPromptParts({
     feedbackMode: 'writing',
     yearLevel: 'yr8',
     toggles: { paragraphingFlow: true, wordChoice: true, sentenceVariety: true },
     students: [{ text: 'Hi' }],
   });
-  assert.match(parts.guidance, /craft is rarely silent/);
-  assert.match(parts.guidance, /briefly reinforce that/);
-  assert.match(parts.guidance, /working well/);
+  assert.match(parts.lockedRules, /paragraphing, vocabulary or sentence variety/);
+  assert.match(parts.lockedRules, /Star: /);
+  assert.equal(parts.guidance.includes('craft is rarely silent'), false);
 });
 
-test('explanation mode has no narrative craft preference line', () => {
+test('explanation mode uses the same stars-and-wishes shape', () => {
   const parts = buildAiPromptParts({
     feedbackMode: 'explanation',
     yearLevel: 'yr8',
     toggles: { structureSequencing: true, keyTermsVocab: true },
     students: [{ text: 'Hi' }],
   });
+  assert.match(parts.lockedRules, /two stars and up to three wishes/);
   assert.equal(parts.guidance.includes('craft is rarely silent'), false);
-  assert.match(parts.lockedRules, /short reinforce comment that names what is working/);
 });
 
 test('explanation structure gloss is logical not chronological', () => {
