@@ -6,17 +6,17 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'share',
     title: 'Share a PDF, image, or note',
-    body: 'Use PDF, Image, or Text on the left rail. Send to Inbox so it lands with every student.',
+    body: 'Use PDF, Image, or Text on the left rail to send materials to student inboxes.',
   },
   {
     id: 'ask',
     title: 'Ask the class',
-    body: 'Open Ask and pick a Quick check (yes/no, 1–5, A–D, short answer) or write your own.',
+    body: 'Open Ask and pick a Quick check (yes/no, 1–5, A–D, short answer) or write your own. Select from premade curriculum question sets or make your own.',
   },
   {
     id: 'responses',
     title: 'Read Responses',
-    body: 'Open Responses to watch live answers, remind anyone still out, then tap Done when finished.',
+    body: "Open Responses to watch live answers, remind anyone who hasn't responded, project responses then tap Done when finished.",
   },
   {
     id: 'chat',
@@ -26,27 +26,27 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'comment',
     title: 'Comment on their writing',
-    body: 'Open a full draft, select text, and add a comment. Students see it on their work.',
+    body: "On a student's card, select text and send them a comment. Once dealt with, confirm the fix or ask them to check again.",
   },
   {
     id: 'freeze',
     title: 'Freeze the board',
-    body: 'In Session, freeze so students stop editing while you talk or show something.',
+    body: 'Open Session, freeze the board to stop all student board writing.',
   },
   {
     id: 'rec',
     title: 'Record drafting (REC)',
-    body: 'Turn REC on in the header to capture how writing builds over time, then stop when done.',
+    body: 'Turn REC on in the header to capture progression of student drafting.',
   },
   {
     id: 'session',
     title: 'Save / load the session',
-    body: 'In Session, save an .iboard file to keep the lesson, or load one to restore it later.',
+    body: 'Open Session to save an .iboard file to keep the lesson, or load one to restore it later.',
   },
   {
     id: 'records',
     title: 'Lesson records',
-    body: 'Snapshot the class writing and open past lesson packs from Session → Lesson records.',
+    body: 'Open Session/Lesson Records to snapshot the class writing and open past lesson snapshots.',
     action: 'records',
   },
   {
@@ -58,12 +58,12 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'breakouts',
     title: 'Breakout rooms',
-    body: 'In Session, start auto or manual rooms so students write in smaller groups.',
+    body: 'Open Session, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
   },
   {
     id: 'tour',
     title: 'Replay the board tour',
-    body: 'Run the short first-visit highlights on Share, Ask, View/Timer/Session, and REC again.',
+    body: 'Run the short animated tour of the Teacher board.',
     action: 'tour',
   },
 ];
