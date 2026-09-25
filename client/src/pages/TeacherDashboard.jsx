@@ -1915,6 +1915,26 @@ function TeacherDashboardInner() {
     return () => window.removeEventListener('resize', measureChrome);
   }, [settingsOpen]);
 
+  const aiPasteParsed = useMemo(() => parseNumberedPaste(pasteBox), [pasteBox]);
+
+  const distributeReady = useMemo(() => {
+    if (!aiPasteParsed.length || !visibleStudents.length) return false;
+    if (aiPasteParsed.length < visibleStudents.length) return false;
+    return visibleStudents.every((_, i) => aiPasteParsed.some((row) => row.index === i + 1));
+  }, [aiPasteParsed, visibleStudents]);
+
+  const aiPasteHint = useMemo(() => {
+    if (!String(pasteBox || '').trim()) return '';
+    if (!aiPasteParsed.length) {
+      return 'No numbered items found — ask the AI to redo with 1. 2. 3. …';
+    }
+    if (visibleStudents.length && aiPasteParsed.length < visibleStudents.length) {
+      return `Found ${aiPasteParsed.length} of ${visibleStudents.length} numbered items.`;
+    }
+    if (!distributeReady) return 'Numbers don’t match the current student list.';
+    return '';
+  }, [pasteBox, aiPasteParsed, visibleStudents.length, distributeReady]);
+
   const headerDockStyle = useMemo(
     () => ({
       top: teacherToolsTop,
@@ -1922,8 +1942,6 @@ function TeacherDashboardInner() {
     }),
     [teacherToolsTop]
   );
-
-  async function copyForAi() {
     try {
       await navigator.clipboard.writeText(assembledAiPrompt);
       setCopyToast('Copied prompt');
@@ -4653,9 +4671,15 @@ function TeacherDashboardInner() {
               rows={10}
               className="iboard-ai-feedback__paste"
             />
-            <button type="button" onClick={distributePaste} className="iboard-ai-feedback__distribute">
+            <button
+              type="button"
+              onClick={distributePaste}
+              disabled={!distributeReady}
+              className={`iboard-ai-feedback__distribute${distributeReady ? ' is-ready' : ''}`}
+            >
               Distribute to students
             </button>
+            {aiPasteHint ? <p className="iboard-ai-feedback__hint">{aiPasteHint}</p> : null}
           </section>
         )}
             </div>

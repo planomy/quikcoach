@@ -2101,25 +2101,47 @@ html.dark .iboard-ai-feedback__paste {
   width: 100%;
   border: 0;
   border-radius: 0.75rem;
-  background: #0f172a;
+  background: #e2e8f0;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 700;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.iboard-ai-feedback__distribute.is-ready {
+  background: #5a5fc3;
   color: #fff;
   cursor: pointer;
 }
 
-.iboard-ai-feedback__distribute:hover {
-  background: #1e293b;
+.iboard-ai-feedback__distribute.is-ready:hover {
+  background: #4a4fb0;
 }
 
 html.dark .iboard-ai-feedback__distribute {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #1e293b;
+  color: #64748b;
 }
 
-html.dark .iboard-ai-feedback__distribute:hover {
-  background: #f8fafc;
+html.dark .iboard-ai-feedback__distribute.is-ready {
+  background: #5a5fc3;
+  color: #fff;
+}
+
+html.dark .iboard-ai-feedback__distribute.is-ready:hover {
+  background: #6b70d4;
+}
+
+.iboard-ai-feedback__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #b45309;
+}
+
+html.dark .iboard-ai-feedback__hint {
+  color: #fbbf24;
 }
 
 /* Feedback settings — dense, no fluff */
