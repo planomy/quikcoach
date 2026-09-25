@@ -1942,6 +1942,8 @@ function TeacherDashboardInner() {
     }),
     [teacherToolsTop]
   );
+
+  async function copyForAi() {
     try {
       await navigator.clipboard.writeText(assembledAiPrompt);
       setCopyToast('Copied prompt');
