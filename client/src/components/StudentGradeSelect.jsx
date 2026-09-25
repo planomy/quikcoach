@@ -29,7 +29,7 @@ export function gradeShortLabel(yearLevel) {
 export default function StudentGradeSelect({ value, onChange, compact = false, className = '' }) {
   const v = String(value || '').trim().toLowerCase();
   return (
-    <HintWrap hint="Student year level" prefer="above">
+    <HintWrap hint="Student year level" prefer="above" className={compact ? '' : 'w-full'}>
       <select
         value={STUDENT_GRADE_OPTIONS.some((o) => o.id === v) ? v : ''}
         onClick={(e) => e.stopPropagation()}
@@ -42,7 +42,7 @@ export default function StudentGradeSelect({ value, onChange, compact = false, c
         className={
           compact
             ? `max-w-[3.25rem] cursor-pointer rounded border-0 bg-white/10 py-0.5 pl-1 pr-0 text-[9px] font-bold uppercase tracking-wide text-indigo-100 outline-none hover:bg-white/15 focus:ring-1 focus:ring-indigo-300 ${className}`
-            : `cursor-pointer rounded-lg border border-slate-200 bg-white py-1 pl-2 pr-1 text-[11px] font-semibold text-slate-700 outline-none hover:border-indigo-300 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 ${className}`
+            : `box-border w-full cursor-pointer rounded-lg border border-slate-200 bg-white py-1 pl-2 pr-1 text-[11px] font-semibold text-slate-700 outline-none hover:border-indigo-300 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 ${className}`
         }
       >
         {STUDENT_GRADE_OPTIONS.map((o) => (
