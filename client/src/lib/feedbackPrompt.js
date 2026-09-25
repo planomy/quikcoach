@@ -1,7 +1,10 @@
 /** @typedef {'writing'|'explanation'|'argument'|'problem_solving'|'custom'} FeedbackMode */
 /** @typedef {'lower'|'mid'|'senior'} YearBand */
 
-export const FEEDBACK_MODES = ['writing', 'explanation', 'argument', 'problem_solving', 'custom'];
+export const FEEDBACK_MODES = ['custom', 'writing', 'explanation', 'argument', 'problem_solving'];
+
+/** Chip order in Feedback settings (Custom first). */
+export const FEEDBACK_MODE_CHIPS = FEEDBACK_MODES;
 
 const LEGACY_MODE_MAP = {
   narrative: 'writing',
@@ -77,28 +80,29 @@ export const SUBJECT_ASSIST_OPTIONS = [
 ];
 
 /**
- * Core focuses always visible. Senior keys listed in SENIOR_FOCUS_KEYS appear only for
- * Years 9–12, Mixed, or General (secondary). Year change never rearranges core toggles.
+ * Focus toggles — insertion order = grid order (2 columns).
+ * Slot 1 (top-left): Structure. Slot 2 (top-right): Grammar / Accuracy.
+ * Senior keys in SENIOR_FOCUS_KEYS appear only for older years; stay last.
  */
 export const MODE_TOGGLE_LABELS = {
   writing: {
     storyStructure: 'Story Structure',
+    mechanics: 'Grammar, Spelling & Punctuation',
     characterVoice: 'Character & Voice',
     showDontTell: "Show, Don't Tell",
     wordChoice: 'Word Choice',
     sentenceVariety: 'Sentence Variety',
     paragraphingFlow: 'Paragraphing & Flow',
-    mechanics: 'Grammar, Spelling & Punctuation',
     themeSubtext: 'Theme & Subtext',
   },
   explanation: {
     structureSequencing: 'Structure & Sequencing',
+    mechanics: 'Grammar, Spelling & Punctuation',
     explainingHowWhy: 'Explaining How & Why',
     keyTermsVocab: 'Key Terms & Vocabulary',
     accuracyDetail: 'Accuracy & Detail',
     evidenceExamplesData: 'Evidence, Examples & Data',
     cohesionConnections: 'Cohesion & Connections',
-    mechanics: 'Grammar, Spelling & Punctuation',
     depthPrecision: 'Depth & Precision',
   },
   argument: {
@@ -113,10 +117,10 @@ export const MODE_TOGGLE_LABELS = {
   },
   problem_solving: {
     understandingProblem: 'Understanding the Problem',
+    accuracy: 'Accuracy',
     methodStrategy: 'Method & Strategy',
     workingProcess: 'Working & Process',
     reasoningJustification: 'Reasoning & Justification',
-    accuracy: 'Accuracy',
     answerReasonableness: 'Answer & Reasonableness',
     unitsNotation: 'Units, Notation & Conventions',
     efficiencyAlternatives: 'Efficiency & Alternative Methods',
@@ -332,7 +336,8 @@ export function showSeniorFocuses(yearLevel) {
 }
 
 /**
- * Labels visible for this mode + year (core always; senior extras when eligible).
+ * Labels visible for this mode + year, in stable grid order
+ * (structure top-left, grammar/accuracy top-right).
  * @param {FeedbackMode | string} mode
  * @param {string} [yearLevel]
  */

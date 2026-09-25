@@ -74,6 +74,18 @@ test('year bands', () => {
   assert.equal(yearBand('yr11'), 'senior');
 });
 
+test('focus grid: structure left, grammar/accuracy right', () => {
+  const narr = Object.keys(visibleToggleLabels('writing', 'yr3'));
+  assert.equal(narr[0], 'storyStructure');
+  assert.equal(narr[1], 'mechanics');
+  const arg = Object.keys(visibleToggleLabels('argument', 'yr3'));
+  assert.equal(arg[0], 'structureCohesion');
+  assert.equal(arg[1], 'mechanics');
+  const maths = Object.keys(visibleToggleLabels('problem_solving', 'yr3'));
+  assert.equal(maths[0], 'understandingProblem');
+  assert.equal(maths[1], 'accuracy');
+});
+
 test('legacy toggle keys remap', () => {
   const merged = mergeModeToggles(
     {
