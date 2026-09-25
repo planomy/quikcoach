@@ -386,6 +386,10 @@ function TeacherDashboardInner() {
   const tourEngageRef = useRef(null);
   const tourBoardRef = useRef(null);
   const tourRecRef = useRef(null);
+  const tourAnchors = useMemo(
+    () => ({ share: tourShareRef, engage: tourEngageRef, board: tourBoardRef, rec: tourRecRef }),
+    [],
+  );
   const teacherToolsPanelRef = useRef(null);
   const addCardPanelRef = useRef(null);
   const settingsButtonRef = useRef(null);
@@ -3260,9 +3264,7 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      <TeacherBoardTour
-        anchors={{ share: tourShareRef, engage: tourEngageRef, board: tourBoardRef, rec: tourRecRef }}
-      />
+      <TeacherBoardTour anchors={tourAnchors} />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {headerDockOpen ? (
         <div className="iboard-workspace-scrim pointer-events-none absolute inset-0 z-[55]" aria-hidden="true" />
@@ -3675,7 +3677,7 @@ function TeacherDashboardInner() {
               >
                 {codeInput}
               </button>
-              <p className="iboard-board-empty__hint">Writing cards appear as students join</p>
+              <p className="iboard-board-empty__hint">Writing cards appear on this board as students join</p>
             </div>
           )}
           {orderedStudents.length > 0 && boardSections.map((section) => (

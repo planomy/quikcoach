@@ -137,6 +137,8 @@ export default function TeacherBoardTour({ anchors }) {
   const pillRef = useRef(null);
   const stepRef = useRef(0);
   const firstRingRef = useRef(true);
+  const anchorsRef = useRef(anchors);
+  anchorsRef.current = anchors;
 
   const show = !dismissed;
   const current = STEPS[step];
@@ -174,10 +176,11 @@ export default function TeacherBoardTour({ anchors }) {
       setPillShown(false);
       return undefined;
     }
-    // Hide before the new position paints so the pill never flashes at the next stop.
+    // Hide only when the step changes — not on every parent re-render / resize.
     setPillShown(false);
     const place = () => {
-      const anchor = anchors?.[current.id]?.current;
+      const live = anchorsRef.current;
+      const anchor = live?.[current.id]?.current;
       const pill = pillRef.current;
       if (!anchor) return;
       const nextRing = measureRing(anchor, current.clip);
@@ -185,8 +188,24 @@ export default function TeacherBoardTour({ anchors }) {
       if (pill) setBox(placeBesideAnchor(anchor, pill, current.place, nextRing));
     };
     place();
-    return subscribeViewportChanges(place);
-  }, [show, step, current.id, current.place, current.clip, anchors]);
+    // Retry once if the rail/header refs were not mounted yet on first paint.
+    const retry = window.setTimeout(place, 50);
+    return () => window.clearTimeout(retry);
+  }, [show, step, current.id, current.place, current.clip]);
+
+  useEffect(() => {
+    if (!show) return undefined;
+    const unsub = subscribeViewportChanges(() => {
+      const live = anchorsRef.current;
+      const anchor = live?.[current.id]?.current;
+      const pill = pillRef.current;
+      if (!anchor) return;
+      const nextRing = measureRing(anchor, current.clip);
+      setRing(nextRing);
+      if (pill) setBox(placeBesideAnchor(anchor, pill, current.place, nextRing));
+    });
+    return unsub;
+  }, [show, step, current.id, current.place, current.clip]);
 
   useEffect(() => {
     if (!show || !ring) return undefined;
@@ -198,10 +217,10 @@ export default function TeacherBoardTour({ anchors }) {
     return undefined;
   }, [show, ring]);
 
-  // Fade the pill in as the ring lands (already snapped hidden in layout).
+  // Fade the pill in after the ring is in place (already snapped hidden on step change).
   useEffect(() => {
     if (!show) return undefined;
-    const delay = step === 0 ? 120 : PILL_IN_DELAY_MS;
+    const delay = step === 0 ? 160 : PILL_IN_DELAY_MS;
     const timer = window.setTimeout(() => setPillShown(true), delay);
     return () => window.clearTimeout(timer);
   }, [show, step]);
