@@ -1936,6 +1936,12 @@ html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-
   line-height: 1;
 }
 
+.iboard-header-icon-button > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+}
+
 html.dark .iboard-help-panel {
   border-color: #334155;
   background: #0f172a;

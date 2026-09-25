@@ -3214,14 +3214,14 @@ function TeacherDashboardInner() {
                 aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
                 {browserFullscreen ? (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M9 3v6H3" />
                     <path d="M15 3v6h6" />
                     <path d="M9 21v-6H3" />
                     <path d="M15 21v-6h6" />
                   </svg>
                 ) : (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M3 9V3h6" />
                     <path d="M21 9V3h-6" />
                     <path d="M3 15v6h6" />
@@ -3238,9 +3238,9 @@ function TeacherDashboardInner() {
                 className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                 aria-label="Snapshot everyone’s writing now"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 8h3l2-2h6l2 2h3v11H4z" />
-                  <circle cx="12" cy="13" r="3.25" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 8.5h3.2l1.6-2h8.4l1.6 2H21V19H3z" />
+                  <circle cx="12" cy="13.25" r="3.5" />
                 </svg>
               </button>
             </HintWrap>
