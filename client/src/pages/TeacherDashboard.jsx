@@ -43,6 +43,7 @@ import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
+import TeacherHelpPanel, { TeacherHelpButton } from '../components/TeacherHelpPanel.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import ConversationModal, { ChatIcon } from '../components/ConversationModal.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
@@ -398,6 +399,8 @@ function TeacherDashboardInner() {
   const timerPanelRef = useRef(null);
   const viewButtonRef = useRef(null);
   const viewPanelRef = useRef(null);
+  const helpButtonRef = useRef(null);
+  const helpPanelRef = useRef(null);
   const settingsChromeRef = useRef(null);
   const breakoutAssignPanelRef = useRef(null);
   const [settingsChromeHeight, setSettingsChromeHeight] = useState(44);
@@ -433,6 +436,9 @@ function TeacherDashboardInner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timerOpen, setTimerOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [tourKey, setTourKey] = useState(0);
+  const [helpDockBox, setHelpDockBox] = useState(null);
   const [teacherPanelHidden, setTeacherPanelHidden] = useState(() => {
     try {
       return localStorage.getItem(TEACHER_PANEL_HIDDEN_KEY) === '1';
@@ -895,6 +901,7 @@ function TeacherDashboardInner() {
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
     setViewOpen(false);
+    setHelpOpen(false);
     setTimerOpen((open) => !open);
   }
 
@@ -904,7 +911,44 @@ function TeacherDashboardInner() {
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
     setTimerOpen(false);
+    setHelpOpen(false);
     setViewOpen((open) => !open);
+  }
+
+  function openHelpDock() {
+    closeSettings();
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+    setAddCardOpen(false);
+    setTimerOpen(false);
+    setViewOpen(false);
+    setHelpOpen((open) => !open);
+  }
+
+  function closeHelpDock() {
+    setHelpOpen(false);
+  }
+
+  function handleHelpAction(action) {
+    if (action === 'tour') {
+      try {
+        localStorage.removeItem('iboard-teacher-tour');
+      } catch {
+        /* ignore */
+      }
+      setHelpOpen(false);
+      setTourKey((value) => value + 1);
+      return;
+    }
+    if (action === 'records') {
+      setHelpOpen(false);
+      openLibrary('evidence', 'lessons');
+      return;
+    }
+    if (action === 'ai') {
+      setHelpOpen(false);
+      setModalOpen(true);
+    }
   }
 
   useEffect(() => {
@@ -1609,8 +1653,30 @@ function TeacherDashboardInner() {
     }
   }, [livePulse.activity?.id]);
 
+  useLayoutEffect(() => {
+    if (!helpOpen) {
+      setHelpDockBox(null);
+      return undefined;
+    }
+    const place = () => {
+      const btn = helpButtonRef.current;
+      const header = teacherHeaderRef.current;
+      if (!btn) return;
+      const br = btn.getBoundingClientRect();
+      const hr = header?.getBoundingClientRect();
+      const width = Math.min(352, window.innerWidth - 20);
+      let left = br.right - width;
+      left = Math.max(10, Math.min(left, window.innerWidth - width - 10));
+      const top = Math.round((hr?.bottom ?? br.bottom));
+      setHelpDockBox({ top, left, width });
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [helpOpen]);
+
   useEffect(() => {
-    if (!toolsPanelOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
+    if (!toolsPanelOpen && !settingsOpen && !timerOpen && !viewOpen && !helpOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
       const target = event.target;
@@ -1638,6 +1704,10 @@ function TeacherDashboardInner() {
         if (viewButtonRef.current?.contains(target)) return;
         if (viewPanelRef.current?.contains(target)) return;
       }
+      if (helpOpen) {
+        if (helpButtonRef.current?.contains(target)) return;
+        if (helpPanelRef.current?.contains(target)) return;
+      }
       if (toolsPanelOpen) {
         setToolsPanelOpen(false);
         setToolsHighlightStudentId(null);
@@ -1645,6 +1715,7 @@ function TeacherDashboardInner() {
       if (settingsOpen) closeSettings();
       if (timerOpen) setTimerOpen(false);
       if (viewOpen) setViewOpen(false);
+      if (helpOpen) setHelpOpen(false);
     }
 
     function closeHeaderPanelsOnEscape(event) {
@@ -1656,6 +1727,7 @@ function TeacherDashboardInner() {
       if (settingsOpen) closeSettings();
       if (timerOpen) setTimerOpen(false);
       if (viewOpen) setViewOpen(false);
+      if (helpOpen) setHelpOpen(false);
     }
 
     document.addEventListener('pointerdown', closeHeaderPanelsIfOutside);
@@ -1664,7 +1736,7 @@ function TeacherDashboardInner() {
       document.removeEventListener('pointerdown', closeHeaderPanelsIfOutside);
       document.removeEventListener('keydown', closeHeaderPanelsOnEscape);
     };
-  }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen]);
+  }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen, helpOpen]);
 
   useEffect(() => {
     if (!addCardOpen) return undefined;
@@ -1957,6 +2029,7 @@ function TeacherDashboardInner() {
     setAddCardOpen(false);
     setTimerOpen(false);
     setViewOpen(false);
+    setHelpOpen(false);
     setClearFixedArmed(false);
     setSettingsOpen(true);
   }
@@ -2882,7 +2955,7 @@ function TeacherDashboardInner() {
   const inboxSummary = messageWaitCount > 0
     ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
     : '';
-  const headerDockOpen = toolsPanelOpen || settingsOpen || timerOpen || viewOpen;
+  const headerDockOpen = toolsPanelOpen || settingsOpen || timerOpen || viewOpen || helpOpen;
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -3040,6 +3113,7 @@ function TeacherDashboardInner() {
                 )}
               </button>
             </HintWrap>
+            <TeacherHelpButton open={helpOpen} onClick={openHelpDock} buttonRef={helpButtonRef} />
           </div>
           </div>
 
@@ -3186,6 +3260,17 @@ function TeacherDashboardInner() {
           </div>
         </div>
       </header>
+      <TeacherHelpPanel
+        open={helpOpen}
+        onClose={closeHelpDock}
+        panelRef={helpPanelRef}
+        onAction={handleHelpAction}
+        style={
+          helpDockBox
+            ? { top: helpDockBox.top, left: helpDockBox.left, width: helpDockBox.width }
+            : { top: -9999, left: -9999, visibility: 'hidden' }
+        }
+      />
       </div>
       {draftTrailLabelOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/40 p-4">
@@ -3408,16 +3493,16 @@ function TeacherDashboardInner() {
           </div>
         </nav>
 
-        <TeacherBoardTour anchors={tourAnchors} />
+        <TeacherBoardTour key={tourKey} anchors={tourAnchors} />
 
         <div className="iboard-teacher-panel-wrap">
-          <HintWrap hint="Show teacher" prefer="right" suppressed={!teacherPanelHidden}>
+          <HintWrap hint="Show sent materials" prefer="right" suppressed={!teacherPanelHidden}>
             <button
               type="button"
               className="iboard-teacher-panel-reveal"
               onPointerDown={revealTeacherPanel}
               onClick={(event) => event.preventDefault()}
-              aria-label="Show teacher"
+              aria-label="Show sent materials"
               title=""
               tabIndex={teacherPanelHidden ? 0 : -1}
               aria-hidden={!teacherPanelHidden}
@@ -3427,16 +3512,16 @@ function TeacherDashboardInner() {
           </HintWrap>
           <aside
             className="iboard-teacher-panel"
-            aria-label="Teacher cards"
+            aria-label="Sent materials"
             aria-hidden={teacherPanelHidden}
           >
             <div className="iboard-teacher-panel-head">
-              <HintWrap hint="Hide teacher" prefer="below">
+              <HintWrap hint="Hide sent materials" prefer="below">
                 <button
                   type="button"
                   className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
                   onClick={() => setTeacherPanelHidden(true)}
-                  aria-label="Hide teacher"
+                  aria-label="Hide sent materials"
                   title=""
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
