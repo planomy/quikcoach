@@ -17,6 +17,7 @@ import {
   MODE_TOGGLE_LABELS,
   defaultModeTogglesForYear,
   mergeModeToggles,
+  visibleToggleLabels,
 } from '../lib/feedbackPrompt.js';
 import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
@@ -59,7 +60,7 @@ import {
 const MODE_LABELS = {
   writing: 'Narrative',
   explanation: 'Explanation',
-  argument: 'Argument',
+  argument: 'Argument / Analysis',
   problem_solving: 'Problem Solving',
   custom: 'Custom',
 };
@@ -233,8 +234,8 @@ function initialOverviewColumns() {
   }
 }
 
-/** Saved room settings with this version use merged toggles; older saves remapped via mergeModeToggles. */
-const FEEDBACK_SETTINGS_VERSION = 3;
+/** Saved room settings version; older saves remapped via mergeModeToggles. */
+const FEEDBACK_SETTINGS_VERSION = 4;
 
 function defaultModeToggles(yearLevel = 'general') {
   return defaultModeTogglesForYear(yearLevel);
@@ -5754,11 +5755,7 @@ function TeacherDashboardInner() {
                   <select
                     id="year-level"
                     value={yearLevel}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setYearLevel(next);
-                      setModeToggles(defaultModeTogglesForYear(next));
-                    }}
+                    onChange={(e) => setYearLevel(e.target.value)}
                   >
                     {YEAR_LEVEL_OPTIONS.map((o) => (
                       <option key={o.id} value={o.id}>
@@ -5816,7 +5813,7 @@ function TeacherDashboardInner() {
               ) : (
                 <>
                   <div className="iboard-feedback-settings__toggles">
-                    {Object.entries(MODE_TOGGLE_LABELS[feedbackMode] || {}).map(([key, label]) => (
+                    {Object.entries(visibleToggleLabels(feedbackMode, yearLevel)).map(([key, label]) => (
                       <ToggleRow
                         key={key}
                         compact

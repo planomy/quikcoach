@@ -6,8 +6,9 @@ import {
   buildAiPromptParts,
   defaultModeTogglesForYear,
   mergeModeToggles,
-  MODE_TOGGLE_LABELS,
   parseNumberedPaste,
+  showSeniorFocuses,
+  visibleToggleLabels,
   yearBand,
 } from './feedbackPrompt.js';
 
@@ -39,7 +40,6 @@ test('prompt locks numbering and injects focus glosses', () => {
   assert.match(parts.lockedRules, /two or three/);
   assert.match(parts.guidance, /Year 4/);
   assert.match(parts.guidance, /Story Structure/);
-  assert.match(parts.guidance, /beginning/);
   assert.match(parts.lockedClosing, /exactly 3/);
   const full = assembleAiPrompt({ ...parts, guidance: parts.guidance + '\nExtra note from teacher.' });
   assert.match(full, /CRITICAL/);
@@ -47,27 +47,47 @@ test('prompt locks numbering and injects focus glosses', () => {
   assert.match(full, /END OF DRAFTS/);
 });
 
-test('year bands and default ticks', () => {
+test('year change does not rearrange core defaults', () => {
+  const y3 = defaultModeTogglesForYear('yr3');
+  const y10 = defaultModeTogglesForYear('yr10');
+  assert.equal(y3.argument.positionContention, y10.argument.positionContention);
+  assert.equal(y3.argument.evidenceExamples, y10.argument.evidenceExamples);
+  assert.equal(y3.writing.themeSubtext, false);
+  assert.equal(y10.writing.themeSubtext, false);
+});
+
+test('senior focuses appear only for older / mixed / general', () => {
+  assert.equal(showSeniorFocuses('yr3'), false);
+  assert.equal(showSeniorFocuses('yr10'), true);
+  assert.equal(showSeniorFocuses('mixed'), true);
+  const y3 = visibleToggleLabels('argument', 'yr3');
+  const y10 = visibleToggleLabels('argument', 'yr10');
+  assert.equal('perspectivesValues' in y3, false);
+  assert.equal('perspectivesValues' in y10, true);
+  assert.equal('positionContention' in y3, true);
+  assert.equal('positionContention' in y10, true);
+});
+
+test('year bands', () => {
   assert.equal(yearBand('yr3'), 'lower');
   assert.equal(yearBand('yr7'), 'mid');
   assert.equal(yearBand('yr11'), 'senior');
-  const lower = defaultModeTogglesForYear('yr3');
-  assert.equal(lower.writing.storyStructure, true);
-  assert.equal(lower.writing.sentenceVariety, false);
-  assert.equal(Object.keys(MODE_TOGGLE_LABELS.writing).length, 5);
 });
 
 test('legacy toggle keys remap', () => {
   const merged = mergeModeToggles(
     {
       writing: { sensoryDetail: true, paragraphFlow: true },
+      argument: { clearPosition: true, paragraphTeel: true },
       problem_solving: { clearWorking: true, answerCheck: false },
     },
     'yr8'
   );
   assert.equal(merged.writing.showDontTell, true);
   assert.equal(merged.writing.paragraphingFlow, true);
-  assert.equal(merged.problem_solving.settingOutWorking, true);
+  assert.equal(merged.argument.positionContention, true);
+  assert.equal(merged.argument.structureCohesion, true);
+  assert.equal(merged.problem_solving.workingProcess, true);
   assert.equal(merged.problem_solving.answerReasonableness, false);
 });
 

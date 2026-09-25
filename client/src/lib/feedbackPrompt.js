@@ -60,7 +60,7 @@ const YEAR_LEVEL_GUIDANCE = {
   yr12:
     'Students are about Year 12 (~17–18). Feedback may use mature vocabulary and standards appropriate to final-year secondary work.',
   mixed:
-    'The class may span several year levels. Keep language understandable for younger students in the cohort while still useful for older ones; avoid narrow assumptions.',
+    'The class may span several year levels. Apply each selected focus at the individual student\'s year level. Expectations, terminology and depth must be developmentally appropriate. Do not penalise younger students for senior-level features that would not normally be expected at their year level.',
 };
 
 export const SUBJECT_ASSIST_OPTIONS = [
@@ -77,185 +77,254 @@ export const SUBJECT_ASSIST_OPTIONS = [
 ];
 
 /**
- * Teacher-facing focus toggles (5 per mode). Keys are stable ids used in saved room settings.
- * @type {Record<FeedbackMode, Record<string, string>>}
+ * Core focuses always visible. Senior keys listed in SENIOR_FOCUS_KEYS appear only for
+ * Years 9–12, Mixed, or General (secondary). Year change never rearranges core toggles.
  */
 export const MODE_TOGGLE_LABELS = {
   writing: {
     storyStructure: 'Story Structure',
+    characterVoice: 'Character & Voice',
     showDontTell: "Show, Don't Tell",
     wordChoice: 'Word Choice',
     sentenceVariety: 'Sentence Variety',
     paragraphingFlow: 'Paragraphing & Flow',
+    mechanics: 'Grammar, Spelling & Punctuation',
+    themeSubtext: 'Theme & Subtext',
   },
   explanation: {
     structureSequencing: 'Structure & Sequencing',
-    causeEffect: 'Cause and Effect',
+    explainingHowWhy: 'Explaining How & Why',
     keyTermsVocab: 'Key Terms & Vocabulary',
     accuracyDetail: 'Accuracy & Detail',
-    linkingWords: 'Linking Words',
+    evidenceExamplesData: 'Evidence, Examples & Data',
+    cohesionConnections: 'Cohesion & Connections',
+    mechanics: 'Grammar, Spelling & Punctuation',
+    depthPrecision: 'Depth & Precision',
   },
   argument: {
-    clearPosition: 'Clear Position',
-    paragraphTeel: 'Paragraph Structure (TEEL)',
+    structureCohesion: 'Structure & Cohesion',
+    mechanics: 'Grammar, Spelling & Punctuation',
+    positionContention: 'Position & Contention',
+    argumentsReasoning: 'Arguments & Reasoning',
     evidenceExamples: 'Evidence & Examples',
-    explainingEvidence: 'Explaining the Evidence',
-    audiencePersuasiveLanguage: 'Audience & Persuasive Language',
+    analysisEvidence: 'Analysis of Evidence',
+    audienceLanguage: 'Audience & Language Choices',
+    perspectivesValues: 'Perspectives, Values & Assumptions',
   },
   problem_solving: {
-    understandingQuestion: 'Understanding the Question',
-    settingOutWorking: 'Setting Out Working',
+    understandingProblem: 'Understanding the Problem',
     methodStrategy: 'Method & Strategy',
+    workingProcess: 'Working & Process',
+    reasoningJustification: 'Reasoning & Justification',
     accuracy: 'Accuracy',
     answerReasonableness: 'Answer & Reasonableness',
+    unitsNotation: 'Units, Notation & Conventions',
+    efficiencyAlternatives: 'Efficiency & Alternative Methods',
   },
   custom: {},
 };
 
-/** Map old toggle keys (pre v3) onto the current set. */
+/** Focus keys that only appear for senior / mixed / general secondary. */
+export const SENIOR_FOCUS_KEYS = {
+  writing: ['themeSubtext'],
+  explanation: ['depthPrecision'],
+  argument: ['perspectivesValues'],
+  problem_solving: ['efficiencyAlternatives'],
+  custom: [],
+};
+
+/** Map old toggle keys onto the current set. */
 const LEGACY_TOGGLE_KEY_MAP = {
   writing: {
     sensoryDetail: 'showDontTell',
-    characterVoice: 'showDontTell',
     paragraphFlow: 'paragraphingFlow',
   },
   explanation: {
     clarityIdeas: 'structureSequencing',
+    causeEffect: 'explainingHowWhy',
     keyTerms: 'keyTermsVocab',
     accurateDetail: 'accuracyDetail',
     logicalSequencing: 'structureSequencing',
+    linkingWords: 'cohesionConnections',
+    structureSequencing: 'structureSequencing',
   },
   argument: {
+    clearPosition: 'positionContention',
+    paragraphTeel: 'structureCohesion',
     strongEvidence: 'evidenceExamples',
-    explainEvidence: 'explainingEvidence',
-    persuasiveReasoning: 'explainingEvidence',
-    audienceAwareness: 'audiencePersuasiveLanguage',
+    explainEvidence: 'analysisEvidence',
+    explainingEvidence: 'analysisEvidence',
+    persuasiveReasoning: 'argumentsReasoning',
+    audienceAwareness: 'audienceLanguage',
+    audiencePersuasiveLanguage: 'audienceLanguage',
   },
   problem_solving: {
-    clearWorking: 'settingOutWorking',
-    logicalSteps: 'settingOutWorking',
+    understandingQuestion: 'understandingProblem',
+    clearWorking: 'workingProcess',
+    logicalSteps: 'workingProcess',
+    settingOutWorking: 'workingProcess',
     methodAccuracy: 'methodStrategy',
-    mathCommunication: 'accuracy',
+    mathCommunication: 'unitsNotation',
     answerCheck: 'answerReasonableness',
   },
 };
 
 /**
- * Hidden AI glosses per focus. `default` is mid-band; lower/senior override when year band matches.
+ * Hidden AI glosses. Band variants keep the same switch meaningful from Y3 to Y12.
  * @type {Record<string, Record<string, { default: string, lower?: string, senior?: string }>>}
  */
 const FOCUS_GLOSSES = {
   writing: {
     storyStructure: {
-      default:
-        'Check for a clear opening, a complication worth caring about, and a resolution that is not rushed.',
-      lower: 'Help the story have a beginning, a problem in the middle, and an ending that finishes the problem.',
-      senior: 'Judge orientation–complication–resolution pacing; flag rushed endings and undeveloped turning points.',
+      default: 'Clear opening, a complication worth caring about, and a resolution that is not rushed.',
+      lower: 'Beginning, a problem in the middle, and an ending that finishes the problem.',
+      senior: 'Orientation–complication–resolution pacing; flag rushed endings and thin turning points.',
+    },
+    characterVoice: {
+      default: 'Character feelings and actions are clear; voice fits the story.',
+      lower: 'Can we understand what the character is feeling and doing?',
+      senior: 'Narrative voice is deliberate and consistent; point of view is controlled effectively.',
     },
     showDontTell: {
-      default:
-        'Replace stated feelings with action, dialogue, body language and sensory detail where useful.',
-      lower: 'Use what a character sees, hears and does to show how they feel, instead of naming the feeling.',
-      senior: 'Prefer implication and restraint over stating emotion; quote a told line and suggest a shown rewrite.',
+      default: 'Prefer action, dialogue, body language and sensory detail over naming feelings.',
+      lower: 'Show feelings through what a character sees, hears and does.',
+      senior: 'Implication and restraint over stated emotion; one concrete rewrite is enough.',
     },
     wordChoice: {
-      default: 'Prefer precise verbs and nouns; quote one weak or repeated word and offer a stronger alternative.',
-      lower: 'Pick one everyday word and suggest a more interesting one the student could try.',
-      senior: 'Push for precise diction and avoid vague intensifiers; one concrete upgrade is enough.',
+      default: 'Precise verbs and nouns; quote one weak word and offer a stronger alternative.',
     },
     sentenceVariety: {
       default: 'Mix short and long sentences; vary openers; avoid chains of “and then”.',
-      lower: 'Try a short sentence next to a longer one so the writing does not all sound the same.',
     },
     paragraphingFlow: {
-      default: 'New paragraph for a new time, place, speaker or event; smooth links between them.',
-      lower: 'Start a new paragraph when something new happens (new time, place, or person speaking).',
+      default: 'New paragraph for new time, place, speaker or event; smooth links between them.',
+    },
+    mechanics: {
+      default: 'Note a few high-impact grammar, spelling or punctuation fixes — not a full proofread.',
+    },
+    themeSubtext: {
+      default: 'What the story is really about; implication and controlled meaning beneath the plot.',
+      senior: 'Theme and subtext are developing; avoid heavy-handed moralising.',
     },
   },
   explanation: {
     structureSequencing: {
-      default: 'Open by saying what the thing is, then take the reader through in a logical order.',
-      lower: 'Start by saying what you are explaining, then put the steps in order.',
+      default: 'Open by saying what is being explained, then take the reader through in order.',
     },
-    causeEffect: {
-      default: 'Make the why and so-what explicit, not just the what.',
+    explainingHowWhy: {
+      default: 'Make how and why clear — processes, relationships and reasoning, not only description.',
+      lower: 'Say what happens and why, in simple steps.',
     },
     keyTermsVocab: {
-      default: 'Use the correct subject terms accurately, not just as decoration.',
+      default: 'Use subject terms accurately, not just as decoration.',
     },
     accuracyDetail: {
-      default: 'Flag vagueness and anything that may be factually shaky; ask for specific detail where needed.',
+      default: 'Specific, enough detail to explain; flag vagueness or doubtful claims.',
     },
-    linkingWords: {
-      default: 'Use connectives that carry explanation: because, as a result, therefore, this means that, first/next/finally.',
-      lower: 'Use simple linking words like because, so, first, next, and finally.',
+    evidenceExamplesData: {
+      default: 'Use examples, evidence or data where they strengthen the explanation.',
+    },
+    cohesionConnections: {
+      default: 'Ideas and paragraphs connect logically; relationships between concepts are explicit.',
+      lower: 'Ideas are joined clearly with simple linking words.',
+      senior: 'Synthesise ideas rather than listing isolated facts.',
+    },
+    mechanics: {
+      default: 'Note a few high-impact grammar, spelling or punctuation fixes — not a full proofread.',
+    },
+    depthPrecision: {
+      default: 'Push for conceptual precision and nuanced explanation where the draft stays surface-level.',
     },
   },
   argument: {
-    clearPosition: {
-      default: 'A position stated up front, held consistently, and restated at the end.',
-      lower: 'Say clearly what you think at the start and stick to it.',
+    structureCohesion: {
+      default: 'Overall shape is clear; paragraphs and ideas connect; one main idea per paragraph where appropriate.',
+      lower: 'Ideas are in a sensible order and easy to follow.',
+      senior: 'Controlled essay/paragraph architecture (e.g. TEEL/PEEL) with clear links back to the contention.',
     },
-    paragraphTeel: {
-      default: 'Topic sentence, evidence, explanation, link — one idea per paragraph (TEEL/PEEL).',
-      lower: 'One idea per paragraph: say the idea, give an example, then say why it matters.',
-      senior: 'Expect TEEL/PEEL control; flag missing explanation or weak links back to the contention.',
+    mechanics: {
+      default: 'Note a few high-impact grammar, spelling or punctuation fixes — not a full proofread.',
+    },
+    positionContention: {
+      default: 'A clear position stated early and held consistently.',
+      lower: 'Say clearly what you think at the start and stick to it.',
+      senior: 'Contention is precise and sustained through to the conclusion.',
+    },
+    argumentsReasoning: {
+      default: 'Claims are reasoned, not just asserted; logic holds.',
+      senior: 'Include counterargument/rebuttal where the task expects it; reasoning is nuanced.',
     },
     evidenceExamples: {
-      default: 'Prefer specific, relevant support over bare assertion.',
+      default: 'Specific, relevant support rather than bare assertion.',
     },
-    explainingEvidence: {
-      default: 'Spell out how each piece of evidence supports the position; do not leave the reader to join the dots.',
+    analysisEvidence: {
+      default: 'Explain what the evidence shows and how it supports the point.',
+      lower: 'Explain how the example supports your point.',
+      mid: 'Explain what the evidence shows and connect it to the argument.',
+      senior:
+        'Analyse important details or quotations; show how language/textual choices construct meaning and connect explicitly to the contention.',
     },
-    audiencePersuasiveLanguage: {
-      default:
-        'Word choice and devices pitched at the reader: emotive language, rhetorical questions, modality, inclusive language.',
-      lower: 'Choose words that would convince a reader; try a question or feeling-word if it fits.',
+    audienceLanguage: {
+      default: 'Word choice and devices pitched at the reader (tone, modality, persuasive or analytical language as fits the task).',
+    },
+    perspectivesValues: {
+      default: 'Acknowledge perspectives, values or assumptions where relevant to the text or issue.',
     },
   },
   problem_solving: {
-    understandingQuestion: {
-      default: 'Identify what is given, what is asked, and the units before calculating.',
-    },
-    settingOutWorking: {
-      default: 'One step per line, equals signs used carefully, so a reader can follow without guessing.',
+    understandingProblem: {
+      default: 'What is given, what is asked, and units — show the question was read correctly.',
     },
     methodStrategy: {
-      default: 'Is the approach appropriate and efficient? Name a better strategy if there is one.',
+      default: 'Approach is appropriate; name a better strategy if there is one.',
+    },
+    workingProcess: {
+      default: 'Working is set out so a reader can follow (one step per line where helpful).',
+    },
+    reasoningJustification: {
+      default: 'Explain why steps were taken, not only what was calculated.',
     },
     accuracy: {
       default:
-        'Check arithmetic and substitution. Raise anything suspect as a question (e.g. “check line 3 — 24 or 42?”) rather than declaring a final verdict.',
+        'Check arithmetic and substitution. Raise possible errors as questions rather than declaring unverified verdicts.',
     },
     answerReasonableness: {
-      default: 'Final answer clear, correct units, and a quick sanity check that the size of the answer makes sense.',
+      default: 'Final answer clear, units correct, and a sanity check on size.',
+    },
+    unitsNotation: {
+      default: 'Units, symbols and conventional notation used correctly for the subject.',
+    },
+    efficiencyAlternatives: {
+      default: 'Note a more efficient method or a useful alternative approach when relevant.',
     },
   },
 };
 
-/** Default-on keys by year band (about 3 per mode — depth over checklist). */
-const DEFAULT_ON_BY_BAND = {
-  writing: {
-    lower: ['storyStructure', 'showDontTell', 'wordChoice'],
-    mid: ['storyStructure', 'showDontTell', 'paragraphingFlow'],
-    senior: ['showDontTell', 'wordChoice', 'paragraphingFlow'],
-  },
-  explanation: {
-    lower: ['structureSequencing', 'causeEffect', 'linkingWords'],
-    mid: ['linkingWords', 'keyTermsVocab', 'accuracyDetail'],
-    senior: ['keyTermsVocab', 'causeEffect', 'accuracyDetail'],
-  },
-  argument: {
-    lower: ['clearPosition', 'evidenceExamples', 'explainingEvidence'],
-    mid: ['clearPosition', 'paragraphTeel', 'explainingEvidence'],
-    senior: ['paragraphTeel', 'explainingEvidence', 'audiencePersuasiveLanguage'],
-  },
-  problem_solving: {
-    lower: ['understandingQuestion', 'settingOutWorking', 'answerReasonableness'],
-    mid: ['understandingQuestion', 'settingOutWorking', 'methodStrategy'],
-    senior: ['methodStrategy', 'answerReasonableness', 'accuracy'],
-  },
-  custom: { lower: [], mid: [], senior: [] },
+/** Stable default-on cores (does not change when Year changes). Senior extras default off. */
+const DEFAULT_ON_CORE = {
+  writing: ['storyStructure', 'characterVoice', 'showDontTell', 'wordChoice', 'paragraphingFlow'],
+  explanation: [
+    'structureSequencing',
+    'explainingHowWhy',
+    'keyTermsVocab',
+    'accuracyDetail',
+    'cohesionConnections',
+  ],
+  argument: [
+    'structureCohesion',
+    'positionContention',
+    'argumentsReasoning',
+    'evidenceExamples',
+    'analysisEvidence',
+  ],
+  problem_solving: [
+    'understandingProblem',
+    'methodStrategy',
+    'workingProcess',
+    'accuracy',
+    'answerReasonableness',
+  ],
+  custom: [],
 };
 
 const ROLE_BY_MODE = {
@@ -264,7 +333,7 @@ const ROLE_BY_MODE = {
   explanation:
     'You are an expert teacher helping students improve explanatory writing. Focus on clarity, accurate detail, and logical development of ideas at the year level given for each student.',
   argument:
-    'You are an expert teacher helping students improve argument writing. Focus on position, reasoning, evidence, and audience impact at the year level given for each student.',
+    'You are an expert teacher helping students improve argument and analytical writing. Focus on contention, reasoning, evidence, analysis, and audience impact at the year level given for each student.',
   problem_solving:
     'You are an expert teacher helping students improve written mathematical problem solving. Focus on clear working, logical method, and accuracy at the year level given for each student. When checking calculations, raise possible errors as questions rather than asserting answers you cannot verify.',
   custom:
@@ -282,16 +351,41 @@ export function yearBand(yearLevel) {
   return 'mid';
 }
 
+/** Whether senior-only focuses should be shown in the settings UI. */
+export function showSeniorFocuses(yearLevel) {
+  const id = String(yearLevel || 'general').trim().toLowerCase();
+  if (id === 'mixed' || id === 'general') return true;
+  return yearBand(id) === 'senior';
+}
+
 /**
- * Default toggle map for a year level (about three focuses on).
+ * Labels visible for this mode + year (core always; senior extras when eligible).
+ * @param {FeedbackMode | string} mode
+ * @param {string} [yearLevel]
+ */
+export function visibleToggleLabels(mode, yearLevel = 'general') {
+  const m = normalizeFeedbackMode(mode);
+  const all = MODE_TOGGLE_LABELS[m] || {};
+  const senior = new Set(SENIOR_FOCUS_KEYS[m] || []);
+  const allowSenior = showSeniorFocuses(yearLevel);
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const [key, label] of Object.entries(all)) {
+    if (senior.has(key) && !allowSenior) continue;
+    out[key] = label;
+  }
+  return out;
+}
+
+/**
+ * Default toggle map. Core defaults are stable across years; senior extras default off.
  * @param {string} [yearLevel]
  */
 export function defaultModeTogglesForYear(yearLevel = 'general') {
-  const band = yearBand(yearLevel);
   const o = {};
   for (const m of FEEDBACK_MODES) {
     const labels = MODE_TOGGLE_LABELS[m] || {};
-    const on = new Set(DEFAULT_ON_BY_BAND[m]?.[band] || []);
+    const on = new Set(DEFAULT_ON_CORE[m] || []);
     o[m] = {};
     for (const k of Object.keys(labels)) {
       o[m][k] = on.has(k);
@@ -354,6 +448,7 @@ function glossFor(mode, key, band) {
   if (!entry) return '';
   if (band === 'lower' && entry.lower) return entry.lower;
   if (band === 'senior' && entry.senior) return entry.senior;
+  if (band === 'mid' && entry.mid) return entry.mid;
   return entry.default;
 }
 
@@ -362,8 +457,6 @@ function formatExampleLine(n) {
 }
 
 /**
- * Locked output rules — always prepended/appended on copy. Teachers must not remove these
- * or distribute cannot match feedback to students.
  * @param {number} studentCount
  */
 export function buildLockedOutputRules(studentCount) {
@@ -387,7 +480,6 @@ ${example}`;
 }
 
 /**
- * Locked closing reminder — LLMs often obey the last instruction most reliably.
  * @param {number} studentCount
  */
 export function buildLockedClosing(studentCount) {
@@ -399,7 +491,6 @@ export function buildLockedClosing(studentCount) {
 }
 
 /**
- * Editable middle: role, focuses, year, subject, custom notes from Feedback settings.
  * @param {object} params
  */
 export function buildEditableGuidance({
@@ -415,15 +506,15 @@ export function buildEditableGuidance({
   const mode = normalizeFeedbackMode(feedbackMode);
   const role = ROLE_BY_MODE[mode] || ROLE_BY_MODE.writing;
   const band = yearBand(yearLevel);
-  const labels = MODE_TOGGLE_LABELS[mode] || {};
+  const labels = visibleToggleLabels(mode, yearLevel);
 
   const enabledKeys = Object.entries(toggles || {})
     .filter(([, v]) => v)
     .map(([k]) => k)
-    .filter((k) => labels[k]);
+    .filter((k) => labels[k] || (MODE_TOGGLE_LABELS[mode] || {})[k]);
 
   const focusBlocks = enabledKeys.map((key) => {
-    const label = labels[key];
+    const label = labels[key] || MODE_TOGGLE_LABELS[mode]?.[key] || key;
     const gloss = glossFor(mode, key, band);
     return gloss ? `- ${label}: ${gloss}` : `- ${label}`;
   });
@@ -447,7 +538,7 @@ export function buildEditableGuidance({
   const withPersonalYear = list.filter((s) => studentYearLabel(s.year_level)).length;
   const yearLine =
     withPersonalYear > 0
-      ? `Year level: each student excerpt includes their own year level when known (${withPersonalYear} of ${list.length} marked). Pitch feedback to THAT student's year. If a student has no year marked, use the class default — ${yearLevelLabel(yearLevel)}.`
+      ? `Year level: each student excerpt includes their own year level when known (${withPersonalYear} of ${list.length} marked). Apply selected focuses at THAT student's year. If a student has no year marked, use the class default — ${yearLevelLabel(yearLevel)}. Do not expect senior features from younger students.`
       : yearLevelLine(yearLevel);
 
   const customLine =
@@ -466,7 +557,6 @@ export function buildEditableGuidance({
 }
 
 /**
- * Locked anonymised student drafts — never includes real names.
  * @param {Array<{name?: string, text?: string, year_level?: string}>} students
  * @param {string} yearLevel
  */
@@ -483,9 +573,6 @@ export function buildLockedRoster(students = [], yearLevel = 'general') {
     .join('\n\n');
 }
 
-/**
- * @returns {{ lockedRules: string, guidance: string, roster: string, lockedClosing: string, studentCount: number }}
- */
 export function buildAiPromptParts(params) {
   const students = params.students || [];
   const studentCount = students.length;
@@ -499,14 +586,10 @@ export function buildAiPromptParts(params) {
   };
 }
 
-/** Glue locked + guidance sections for clipboard. */
 export function assembleAiPrompt({ lockedRules, guidance, roster, lockedClosing }) {
   return [lockedRules, guidance, roster, lockedClosing].filter((part) => String(part || '').trim()).join('\n\n');
 }
 
-/**
- * Full prompt (locked envelope + guidance + roster).
- */
 export function buildAiPrompt(params) {
   return assembleAiPrompt(buildAiPromptParts(params));
 }
