@@ -284,9 +284,15 @@ function normalizeStudentFromServer(s) {
   };
 }
 
-function ToggleRow({ label, checked, onChange }) {
+function ToggleRow({ label, checked, onChange, compact = false }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 shadow-sm transition hover:border-indigo-200">
+    <label
+      className={
+        compact
+          ? 'iboard-feedback-settings__toggle'
+          : 'flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 shadow-sm transition hover:border-indigo-200'
+      }
+    >
       <span className="min-w-0 flex-1 pr-2">{label}</span>
       <button
         type="button"
@@ -5687,58 +5693,36 @@ function TeacherDashboardInner() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl"
+            className="iboard-feedback-settings max-h-[90vh] w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900"
             role="dialog"
             aria-modal="true"
             aria-labelledby="feedback-settings-title"
           >
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-5 py-4">
-              <div>
-                <h2 id="feedback-settings-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
-                  Feedback settings
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Shapes the AI guidance. Numbering and anonymity stay locked when you copy.
-                </p>
-              </div>
+            <div className="iboard-feedback-settings__chrome">
+              <h2 id="feedback-settings-title">Feedback settings</h2>
               <CloseButton onClick={() => setModalOpen(false)} aria-label="Close" />
             </div>
-            <div className="max-h-[60vh] space-y-5 overflow-y-auto p-5 scrollbar-thin">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Feedback mode
-                </label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {FEEDBACK_MODES.map((id) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setFeedbackMode(id)}
-                      className={`rounded-xl px-3 py-2 text-xs font-semibold transition sm:text-sm ${
-                        feedbackMode === id
-                          ? 'bg-indigo-600 text-white shadow-md'
-                          : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-indigo-200'
-                      }`}
-                    >
-                      {MODE_LABELS[id]}
-                    </button>
-                  ))}
-                </div>
+            <div className="iboard-feedback-settings__body scrollbar-thin">
+              <div className="iboard-feedback-settings__modes" role="group" aria-label="Feedback mode">
+                {FEEDBACK_MODES.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setFeedbackMode(id)}
+                    data-active={feedbackMode === id ? 'true' : 'false'}
+                  >
+                    {MODE_LABELS[id]}
+                  </button>
+                ))}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="min-w-0">
-                  <label
-                    htmlFor="subject"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                  >
-                    Subject
-                  </label>
+              <div className="iboard-feedback-settings__selects">
+                <label>
+                  <span>Subject</span>
                   <select
                     id="subject"
                     value={subjectAssist}
                     onChange={(e) => setSubjectAssist(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                   >
                     {SUBJECT_ASSIST_OPTIONS.map((o) => (
                       <option key={o.id} value={o.id}>
@@ -5746,19 +5730,13 @@ function TeacherDashboardInner() {
                       </option>
                     ))}
                   </select>
-                </div>
-                <div className="min-w-0">
-                  <label
-                    htmlFor="year-level"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                  >
-                    Year level
-                  </label>
+                </label>
+                <label>
+                  <span>Year</span>
                   <select
                     id="year-level"
                     value={yearLevel}
                     onChange={(e) => setYearLevel(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
                   >
                     {YEAR_LEVEL_OPTIONS.map((o) => (
                       <option key={o.id} value={o.id}>
@@ -5766,100 +5744,35 @@ function TeacherDashboardInner() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </label>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Subject and year are for the AI only — not shown to students. Pick a year for age-appropriate language.
-              </p>
 
               {feedbackMode === 'custom' ? (
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="custom-focus"
-                      className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                    >
-                      Custom focus
-                    </label>
-                    <textarea
-                      id="custom-focus"
-                      value={customFocusText}
-                      onChange={(e) => setCustomFocusText(e.target.value)}
-                      rows={3}
-                      placeholder="e.g. Focus on use of evidence and paragraph control"
-                      className="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    {(extraFocusByMode.custom || []).length > 0 && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {(extraFocusByMode.custom || []).map((item) => (
-                          <div key={item.id} className="flex items-stretch gap-1">
-                            <div className="min-w-0 flex-1">
-                              <ToggleRow
-                                label={item.text}
-                                checked={item.enabled}
-                                onChange={(v) => setExtraFocusEnabled('custom', item.id, v)}
-                              />
-                            </div>
-                            <RemoveButton onClick={() => removeExtraFocus('custom', item.id)} aria-label={`Remove ${item.text}`} />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={addFocusDraft}
-                        onChange={(e) => setAddFocusDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addCustomFocusLine();
-                          }
-                        }}
-                        placeholder="Add another focus line (optional)"
-                        className="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
-                      />
-                      <button
-                        type="button"
-                        onClick={addCustomFocusLine}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-2xl font-light leading-none text-white shadow-md transition hover:bg-indigo-700"
-                        aria-label="Add custom focus"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Focus</p>
-                    <div className="mt-2 grid grid-cols-2 gap-4">
-                      {Object.entries(MODE_TOGGLE_LABELS[feedbackMode] || {}).map(([key, label]) => (
-                        <ToggleRow
-                          key={key}
-                          label={label}
-                          checked={!!modeToggles[feedbackMode]?.[key]}
-                          onChange={(v) => setModeToggle(feedbackMode, key, v)}
-                        />
-                      ))}
-                      {(extraFocusByMode[feedbackMode] || []).map((item) => (
-                        <div key={item.id} className="flex items-stretch gap-1">
-                          <div className="min-w-0 flex-1">
-                            <ToggleRow
-                              label={item.text}
-                              checked={item.enabled}
-                              onChange={(v) => setExtraFocusEnabled(feedbackMode, item.id, v)}
-                            />
-                          </div>
-                          <RemoveButton onClick={() => removeExtraFocus(feedbackMode, item.id)} aria-label={`Remove ${item.text}`} />
+                <div className="iboard-feedback-settings__custom">
+                  <textarea
+                    id="custom-focus"
+                    value={customFocusText}
+                    onChange={(e) => setCustomFocusText(e.target.value)}
+                    rows={3}
+                    placeholder="What should the AI focus on?"
+                    aria-label="Custom focus"
+                  />
+                  {(extraFocusByMode.custom || []).length > 0 && (
+                    <div className="iboard-feedback-settings__toggles">
+                      {(extraFocusByMode.custom || []).map((item) => (
+                        <div key={item.id} className="iboard-feedback-settings__toggle-row">
+                          <ToggleRow
+                            compact
+                            label={item.text}
+                            checked={item.enabled}
+                            onChange={(v) => setExtraFocusEnabled('custom', item.id, v)}
+                          />
+                          <RemoveButton onClick={() => removeExtraFocus('custom', item.id)} aria-label={`Remove ${item.text}`} />
                         </div>
                       ))}
                     </div>
-                  </div>
-                  <div className="flex gap-2">
+                  )}
+                  <div className="iboard-feedback-settings__add">
                     <input
                       type="text"
                       value={addFocusDraft}
@@ -5870,35 +5783,65 @@ function TeacherDashboardInner() {
                           addCustomFocusLine();
                         }
                       }}
-                      placeholder="Add custom focus"
-                      className="min-w-0 flex-1 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-sm outline-none ring-indigo-500 focus:border-indigo-500 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-600 focus:ring-2"
+                      placeholder="Add focus"
+                      aria-label="Add focus"
                     />
-                    <button
-                      type="button"
-                      onClick={addCustomFocusLine}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-2xl font-light leading-none text-white shadow-md transition hover:bg-indigo-700"
-                      aria-label="Add custom focus"
-                    >
+                    <button type="button" onClick={addCustomFocusLine} aria-label="Add focus">
+                      +
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="iboard-feedback-settings__toggles">
+                    {Object.entries(MODE_TOGGLE_LABELS[feedbackMode] || {}).map(([key, label]) => (
+                      <ToggleRow
+                        key={key}
+                        compact
+                        label={label}
+                        checked={!!modeToggles[feedbackMode]?.[key]}
+                        onChange={(v) => setModeToggle(feedbackMode, key, v)}
+                      />
+                    ))}
+                    {(extraFocusByMode[feedbackMode] || []).map((item) => (
+                      <div key={item.id} className="iboard-feedback-settings__toggle-row">
+                        <ToggleRow
+                          compact
+                          label={item.text}
+                          checked={item.enabled}
+                          onChange={(v) => setExtraFocusEnabled(feedbackMode, item.id, v)}
+                        />
+                        <RemoveButton onClick={() => removeExtraFocus(feedbackMode, item.id)} aria-label={`Remove ${item.text}`} />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="iboard-feedback-settings__add">
+                    <input
+                      type="text"
+                      value={addFocusDraft}
+                      onChange={(e) => setAddFocusDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addCustomFocusLine();
+                        }
+                      }}
+                      placeholder="Add focus"
+                      aria-label="Add focus"
+                    />
+                    <button type="button" onClick={addCustomFocusLine} aria-label="Add focus">
                       +
                     </button>
                   </div>
                 </>
               )}
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-5 py-4">
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200"
-              >
+            <div className="iboard-feedback-settings__footer">
+              <button type="button" onClick={() => setModalOpen(false)} className="iboard-feedback-settings__cancel">
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={saveFeedbackSettings}
-                className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-              >
-                Save settings
+              <button type="button" onClick={saveFeedbackSettings} className="iboard-feedback-settings__save">
+                Save
               </button>
             </div>
           </div>
