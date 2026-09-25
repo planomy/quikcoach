@@ -366,7 +366,7 @@ export default function ConversationModal({
             }}
           >
             {allowUrgent ? (
-              <HintWrap hint={urgent ? 'Urgent on — they will see a toast' : 'Mark urgent — they will see a toast'} prefer="above">
+              <HintWrap hint={urgent ? 'Urgent on — alerts them with a popup' : 'Mark urgent — alerts them with a popup'} prefer="above">
                 <button
                   type="button"
                   className="iboard-chat-urgent-toggle"

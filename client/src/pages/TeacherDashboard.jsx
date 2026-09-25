@@ -4297,7 +4297,7 @@ function TeacherDashboardInner() {
           <section className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-                Proof of learning for this room — snapshot writing now, or browse lesson packs and student portfolios.
+                Snapshot writing now, or browse Lesson saves and Portfolios.
               </p>
               <button type="button" onClick={openEvidenceModal} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
                 Snapshot writing
