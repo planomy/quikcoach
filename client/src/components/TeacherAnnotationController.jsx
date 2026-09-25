@@ -157,7 +157,7 @@ function primaryRangeClientRect(range) {
 }
 
 function markerSizeFor(marker) {
-  return marker?.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE;
+  return marker?.layout === 'compact' || marker?.layout === 'orphan-compact' ? INLINE_MARKER_SIZE : MARKER_SIZE;
 }
 
 function markerViewportBox(marker) {
@@ -260,7 +260,7 @@ function detachedMarkerPosition(pane, index, compact = false) {
   const left = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - inset;
   const maxTop = (pane.scrollTop || 0) + (pane.clientHeight || paneRect.height) - size - MARKER_MARGIN;
   if (top > maxTop) return null;
-  return { top, left, width: size, layout: 'orphan', position: 'absolute', root: pane };
+  return { top, left, width: size, layout: compact ? 'orphan-compact' : 'orphan', position: 'absolute', root: pane };
 }
 
 function teacherMarkerKey(marker) {
@@ -490,7 +490,7 @@ export default function TeacherAnnotationController() {
     if (lit?.range) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit.range);
     else if (!hoveredKeyRef.current) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
     const stacked = stackGutterMarkers(nextMarkers, (marker) => (
-      (marker.layout === 'compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 6
+      (marker.layout === 'compact' || marker.layout === 'orphan-compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 6
     ));
     setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
     setOpenMarker((previous) => {
@@ -1285,7 +1285,7 @@ export default function TeacherAnnotationController() {
       <AnnotationMark
         key={`${marker.studentId}-${marker.annotation.id}`}
         tone={tone}
-        layout={marker.layout === 'orphan' ? 'orphan' : marker.layout === 'compact' ? 'compact' : 'gutter'}
+        layout={marker.layout || 'gutter'}
         lit={hoveredKey === `${marker.studentId}:${marker.annotation.id}`}
         data-ann-key={`${marker.studentId}:${marker.annotation.id}`}
         onClick={() => pinCommentPopup(marker)}

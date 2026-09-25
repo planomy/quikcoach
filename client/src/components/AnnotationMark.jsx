@@ -10,11 +10,13 @@ export default function AnnotationMark({
   ...props
 }) {
   const icon = tone === 'open' || tone === 'reopen' ? 'comment' : 'check';
+  const orphan = layout === 'orphan' || layout === 'orphan-compact';
+  const compact = layout === 'compact' || layout === 'orphan-compact';
   return (
     <button
       type="button"
       data-teacher-annotation-ui
-      className={`iboard-ann-mark iboard-ann-mark--${tone} iboard-ann-mark--${layout}${lit ? ' is-lit' : ''} ${className}`.trim()}
+      className={`iboard-ann-mark iboard-ann-mark--${tone}${orphan ? ' iboard-ann-mark--orphan' : ''}${compact ? ' iboard-ann-mark--compact' : ''}${lit ? ' is-lit' : ''} ${className}`.trim()}
       {...props}
     >
       <span className="iboard-ann-mark__stem" aria-hidden="true" />

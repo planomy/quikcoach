@@ -738,7 +738,7 @@ export function stackGutterMarkers(markers, gapFor = () => 18) {
   const orphans = [];
   const groups = new Map();
   for (const marker of markers || []) {
-    if (marker.layout === 'orphan' || marker.detached) {
+    if (marker.layout === 'orphan' || marker.layout === 'orphan-compact') {
       orphans.push(marker);
       continue;
     }

@@ -123,6 +123,17 @@ test('all comment tones share one gutter column and stack when they collide', ()
   assert.deepEqual(stacked.map((marker) => marker.top), [100, 118, 136]);
 });
 
+test('detached notes with a rematched range still stack in the margin', () => {
+  const stacked = stackGutterMarkers(
+    [
+      { id: 1, top: 100, left: 40, lane: 'note', detached: true },
+      { id: 2, top: 102, left: 40, lane: 'note', detached: true },
+    ],
+    () => 26,
+  );
+  assert.deepEqual(stacked.map((marker) => marker.top), [100, 126]);
+});
+
 test('comment colours follow unseen, dealt with, check again, dealt with again, confirmed', () => {
   assert.equal(commentTone({ status: 'open' }), 'open');
   assert.equal(commentTone({ status: 'fixed' }), 'fixed');

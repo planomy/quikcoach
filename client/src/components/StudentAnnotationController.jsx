@@ -8,7 +8,6 @@ import {
   plainTextFromElement,
   rangeContainsPoint,
   clearNamedHighlights,
-  hoverRangeBoxes,
   setCommentHoverHighlight,
   setNamedHighlight,
   stackGutterMarkers,
@@ -67,7 +66,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const [actionBusy, setActionBusy] = useState(false);
   const [editorTextTick, setEditorTextTick] = useState(0);
   const [hoveredId, setHoveredId] = useState(null);
-  const [hoverWash, setHoverWash] = useState(null);
   const moveFrameRef = useRef(null);
   const hoverTargetsRef = useRef([]);
   const hoveredIdRef = useRef(null);
@@ -91,7 +89,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       ]);
       hoverTargetsRef.current = [];
       setMarkers([]);
-      setHoverWash(null);
       return;
     }
     const text = plainTextFromElement(editor);
@@ -135,12 +132,17 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const rect = rects[rects.length - 1] || range.getBoundingClientRect();
       if (rect.width || rect.height) {
         const pos = markerPosition(rect);
+        // After a fix, rematch can stay "detached" while still finding a range.
+        // Keep the note on the right rail — otherwise hiding the stem dumps it on the writing.
+        const left = resolved.detached
+          ? editorRect.right - NOTE_RAIL - PIP_INSET
+          : pos.left;
         nextMarkers.push({
           annotation,
           detached: resolved.detached,
           lane: 'note',
           top: pos.top,
-          left: pos.left,
+          left,
         });
       }
     }
@@ -152,10 +154,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     const lit = hoverTargets.find((item) => item.key === hoveredIdRef.current);
     if (lit?.range) {
       setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit.range);
-      setHoverWash({ key: lit.key, tone: lit.tone, boxes: hoverRangeBoxes(lit.range) });
     } else if (!hoveredIdRef.current) {
       setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
-      setHoverWash(null);
     }
     const stacked = stackGutterMarkers(nextMarkers, () => NOTE_HEIGHT + 4);
     setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
@@ -393,12 +393,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const hit = hoverTargetsRef.current.find((item) => item.key === key);
       if (!key) {
         setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
-        setHoverWash(null);
         return;
       }
       if (!hit?.range) return;
       setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, hit.range);
-      setHoverWash({ key, tone: hit.tone, boxes: hoverRangeBoxes(hit.range) });
     };
     const scheduleClose = () => {
       cancelClose();
@@ -456,19 +454,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         ::highlight(${RESOLVED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
         ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
       `}</style>
-      {(hoverWash?.boxes || []).map((box, index) => (
-        <span
-          key={`wash-${hoverWash.key}-${index}`}
-          className="iboard-ann-hover-wash"
-          style={{
-            top: box.top,
-            left: box.left,
-            width: box.width,
-            height: box.height,
-            background: COMMENT_HOVER_WASH[hoverWash.tone] || COMMENT_HOVER_WASH.open,
-          }}
-        />
-      ))}
       {(() => {
         const board = writingCard();
         const boardRect = board?.getBoundingClientRect();

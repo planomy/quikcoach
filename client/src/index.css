@@ -3721,6 +3721,10 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   display: none;
 }
 
+.iboard-student-note.is-detached {
+  justify-content: flex-end;
+}
+
 .iboard-student-note__text {
   flex: 0 1 9.25rem;
   min-width: 0;
