@@ -817,8 +817,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 }
 
 .iboard-teacher-header-rail .iboard-brand-logo {
-  height: 1.2rem;
-  max-width: min(5.25rem, 90%);
+  height: 1.7rem;
+  max-width: min(8.25rem, 92%);
   object-fit: contain;
   object-position: left center;
 }
