@@ -3911,7 +3911,8 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 .iboard-student-note__full {
   position: absolute;
   right: 0;
-  top: calc(100% + 5px);
+  bottom: calc(100% + 5px);
+  top: auto;
   z-index: 60;
   box-sizing: border-box;
   width: max-content;
