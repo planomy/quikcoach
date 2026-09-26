@@ -693,9 +693,6 @@ export default function SavedSetsPanel({
           </div>
 
           <div className="preview-questions min-h-0 flex-[0_1_auto] overflow-y-auto mx-3 mb-3 rounded-md px-3 py-2 scrollbar-thin">
-            {activeSet.note && (
-              <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-100">{activeSet.note}</p>
-            )}
             <ol className="space-y-2">
               {(activeSet.questions || []).map((question, index) => (
                 <li key={question.id} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold leading-snug text-slate-800 dark:border-slate-700 dark:text-slate-100">

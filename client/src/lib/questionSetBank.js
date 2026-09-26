@@ -214,7 +214,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Creative writing',
     minutes: 10,
-    note: 'Line editing. Fire this after a draft exists, not before. Best as revise — needs a draft students can edit line by line.',
     prompts: [
       'Find a weak verb and replace it. Type: old verb → new verb.',
       'Find a vague noun or description and rewrite it so it is specific.',
@@ -247,7 +246,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Creative writing',
     minutes: 12,
-    note: 'Whole-story planner before drafting. Send to Inbox as a keepable prompt set, or to Respond to collect plans.',
     prompts: [
       'What is the task?',
       'How many words?',
@@ -275,7 +273,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Analytical writing',
     minutes: 10,
-    note: 'Best as revise — needs a draft paragraph.',
     prompts: [
       'Paste the sentence that simply tells me what happened.',
       'What does this event reveal?',
@@ -321,7 +318,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Analytical writing',
     minutes: 10,
-    note: 'Works cold or on a draft — needs a studied text.',
     prompts: [
       'Which piece of evidence best proves your point? Paste it.',
       'Now cut it down to its strongest six words.',
@@ -337,7 +333,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Analytical writing',
     minutes: 10,
-    note: 'Needs a quote.',
     prompts: [
       'Which word or phrase matters most?',
       'What does it suggest?',
@@ -353,7 +348,6 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 12,
-    note: 'Needs a studied text.',
     prompts: [
       'What deliberate choice has the author made?',
       'Which aesthetic feature or literary device is being used?',
@@ -369,7 +363,6 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 10,
-    note: 'Needs a studied text.',
     prompts: [
       'How is the audience positioned to respond?',
       'What might the audience think, feel, question or believe?',
@@ -385,7 +378,6 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 12,
-    note: 'Needs a studied text.',
     prompts: [
       'What assumption, attitude, value or belief is represented here?',
       'Is the text reinforcing, questioning or challenging it? Explain which.',
@@ -401,7 +393,6 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 10,
-    note: 'Needs a studied text.',
     prompts: [
       'What bigger idea does this reveal?',
       'What does this suggest about people, society, culture, identity, power, values or the wider issue?',
@@ -417,7 +408,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Analytical writing',
     minutes: 10,
-    note: 'Best as revise — needs a paragraph with evidence already in it.',
     prompts: [
       'How does this evidence prove your point?',
       'What part of your argument does it strengthen?',
@@ -433,7 +423,6 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 12,
-    note: 'Needs a studied text.',
     prompts: [
       'What second piece of evidence could develop this idea?',
       'Does it reinforce, contrast or complicate the first example? Explain which.',
@@ -449,7 +438,6 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 15,
-    note: 'Flagship exam scaffold: Topic, Evidence, Author+Audience, Culture, Higher insight, Extend, Return. Needs a studied text.',
     prompts: [
       {
         prompt: 'T — Topic / Thesis: What is your paragraph arguing?',
@@ -488,7 +476,6 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'Text analysis',
     minutes: 12,
-    note: 'Junior version of TEACHER. Overlap is deliberate. Needs a studied text.',
     prompts: [
       {
         prompt: 'What claim are you making about the text?',
@@ -508,7 +495,6 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'Literature',
     minutes: 10,
-    note: 'Needs a studied text.',
     prompts: [
       'What do we learn about this character that is not said outright?',
       'Choose one moment that reveals this.',
@@ -525,7 +511,6 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'Literature',
     minutes: 12,
-    note: 'Needs a studied text.',
     prompts: [
       'What important idea is the text exploring?',
       'Where is that idea under pressure or in conflict?',
@@ -542,7 +527,6 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'Poetry',
     minutes: 10,
-    note: 'Needs a poem on screen or in hand.',
     prompts: [
       'What seems to be happening in this poem?',
       'Which word or image sticks in your mind?',
@@ -559,7 +543,6 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'Poetry',
     minutes: 12,
-    note: 'Reordered: the hardest question is no longer first. Needs a poem on screen or in hand.',
     prompts: [
       'Which image, pattern or structural feature is doing the heavy lifting?',
       'What technique is being used?',
@@ -627,7 +610,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Essay writing',
     minutes: 12,
-    note: 'Whole-essay planner before drafting. Send to Inbox as a keepable prompt set, or to Respond to collect plans.',
     prompts: [
       'What is the task?',
       'How many words?',
@@ -657,7 +639,6 @@ export const QUESTION_SET_BANK = [
     years: '5–10',
     skill: 'Unstick',
     minutes: 3,
-    note: 'NEW. For a student who has written nothing. Four prompts, one sentence out the other end. Overwrite prompt one with your own wording if you have a better opener.',
     prompts: [
       'Who is in your story? Just a name or a description.',
       'Where are they? One place. Be specific.',
@@ -672,7 +653,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Unstick',
     minutes: 3,
-    note: 'NEW. For a student staring at a blank analytical response. Needs a studied text.',
     prompts: [
       'In your own words, what is the question asking you to argue about?',
       'Name one moment, line or character that connects to it.',
@@ -704,7 +684,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Speaking',
     minutes: 10,
-    note: 'Needs a topic assigned.',
     prompts: [
       'State your side in one sentence.',
       'What is your strongest argument?',
@@ -721,7 +700,6 @@ export const QUESTION_SET_BANK = [
     years: '5–6',
     skill: 'Text analysis',
     minutes: 10,
-    note: 'Fills the junior analytical gap. Gets Year 5–6 past retelling. Needs a studied text.',
     prompts: [
       'What happens in this part of the text?',
       'Now the harder question: what does it show us about the character or the story?',
@@ -737,7 +715,6 @@ export const QUESTION_SET_BANK = [
     years: '5–12',
     skill: 'Editing',
     minutes: 8,
-    note: 'Error correction, not line editing. Pair with Sentence Craft for senior classes. Best as revise — needs a finished draft.',
     prompts: [
       'Read your work aloud in your head. Paste the sentence where you stumbled.',
       'Find one sentence with no full stop or the wrong one. Fix it and paste it.',
@@ -754,7 +731,6 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Analytical writing',
     minutes: 12,
-    note: 'Exam conditions. Every other analytical set assumes a studied text. Needs an unseen text on screen or in hand.',
     prompts: [
       'First read. What is this text about, in one sentence?',
       'What kind of text is it, and who is it for?',
@@ -773,7 +749,6 @@ export const QUESTION_SET_BANK = [
     years: '5–6',
     skill: 'History',
     minutes: 10,
-    note: 'Put one source on the board or in Inbox first. Needs one source on the board or in Inbox.',
     prompts: [
       'What kind of source is this — and how can you tell?',
       'Who made it, and roughly when?',
@@ -806,7 +781,6 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'History',
     minutes: 12,
-    note: 'Classic IOPCAM — sharpened for live use with one source visible. Needs one source visible.',
     prompts: [
       {
         prompt: 'I — Information: What does the source actually tell or show?',
@@ -826,7 +800,6 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'History',
     minutes: 12,
-    note: 'Needs one source visible.',
     prompts: [
       'What claim or message does this source present?',
       'Who created it — and what did they gain from people believing it?',
@@ -847,7 +820,6 @@ export const QUESTION_SET_BANK = [
     years: '11–12',
     skill: 'History',
     minutes: 12,
-    note: 'Needs one source visible.',
     prompts: [
       'What perspective does this source construct?',
       'How do origin and context shape that perspective?',
@@ -899,7 +871,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Geography',
     minutes: 10,
-    note: 'Works best with a map, graph or table on screen. Needs a map, graph or table on screen.',
     prompts: [
       'What does this map, graph or table actually show?',
       'What spatial or data pattern stands out?',
@@ -918,7 +889,6 @@ export const QUESTION_SET_BANK = [
     years: '5–6',
     skill: 'Problem solving',
     minutes: 8,
-    note: 'Needs a problem to work on.',
     prompts: [
       'What is the problem asking you to find?',
       'List the numbers or facts you actually need.',
@@ -935,7 +905,6 @@ export const QUESTION_SET_BANK = [
     years: '7–8',
     skill: 'Problem solving',
     minutes: 12,
-    note: 'Needs a problem to work on.',
     prompts: [
       'What is the unknown?',
       'What given information is useful?',
@@ -956,7 +925,6 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'Problem solving',
     minutes: 15,
-    note: 'Needs a problem to work on.',
     prompts: [
       'What quantities or variables are in play?',
       'What relationships link them?',
@@ -993,7 +961,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Mathematical reasoning',
     minutes: 10,
-    note: 'Put a worked example with an error on the board first. Needs a worked example containing an error, on the board.',
     prompts: [
       'Scan the working without calculating yet. Which line looks wrong?',
       'Locate the first incorrect step.',
@@ -1010,7 +977,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Mathematical reasoning',
     minutes: 10,
-    note: 'Fire after students have finished a problem. Best as revise — needs a completed problem.',
     prompts: [
       'Name the strategy you used.',
       'Why that strategy — not another?',
@@ -1027,7 +993,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Mathematical reasoning',
     minutes: 10,
-    note: 'Show Strategy A and B on the board, or have two student methods ready. Needs two methods on the board, or two student methods ready.',
     prompts: [
       'How does Strategy A actually work?',
       'How does Strategy B work?',
@@ -1044,7 +1009,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Data',
     minutes: 10,
-    note: 'Needs a graph or table visible. Needs a graph or table visible.',
     prompts: [
       'What does this graph or table claim to represent?',
       'What pattern do you see — not what you expected to see?',
@@ -1061,7 +1025,6 @@ export const QUESTION_SET_BANK = [
     years: '5–12',
     skill: 'Unstick',
     minutes: 3,
-    note: 'NEW. For a student who has read the problem three times and written nothing. Needs a problem in front of them.',
     prompts: [
       'Copy out the question in your own words.',
       'Write down every number the question gives you.',
@@ -1078,7 +1041,6 @@ export const QUESTION_SET_BANK = [
     years: '5–8',
     skill: 'Scientific thinking',
     minutes: 10,
-    note: 'Pause between predict / observe / explain during the demo. Needs a demonstration or experiment.',
     prompts: [
       'What do you predict will happen?',
       'Why — using science, not guesswork?',
@@ -1149,7 +1111,6 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Data analysis',
     minutes: 10,
-    note: 'Needs results, a graph or a table in view. Needs results, a graph or a table in view.',
     prompts: [
       'What trend or pattern is actually there?',
       'Which piece of evidence most strongly supports that reading?',
@@ -1166,7 +1127,6 @@ export const QUESTION_SET_BANK = [
     years: '9–10',
     skill: 'Investigations',
     minutes: 12,
-    note: 'Fire after an investigation is finished and results are in. Best as revise — needs completed results from an investigation.',
     prompts: [
       'How reliable are these results?',
       'Which results look inconsistent — and why might that be?',
@@ -1219,7 +1179,6 @@ export const QUESTION_SET_BANK = [
     years: '5–12',
     skill: 'Unstick',
     minutes: 3,
-    note: 'NEW. For a student stuck at the start of an explanation or investigation.',
     prompts: [
       'In one sentence, what are you trying to explain or find out?',
       'What do you already know about it? Anything counts.',
@@ -1265,7 +1224,6 @@ export const QUESTION_SET_BANK = [
     years: 'All',
     skill: 'Understanding check',
     minutes: 8,
-    note: 'Put a tempting wrong statement or example on the board. Needs a tempting wrong statement or example on the board.',
     prompts: [
       'Read it carefully. What seems wrong here?',
       'Name the incorrect idea.',
@@ -1296,7 +1254,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Feedback',
     minutes: 8,
-    note: 'Students need a peer\'s work visible. Best as revise — needs a peer\'s work visible.',
     prompts: [
       'What is working well — point to a specific line or move?',
       'Quote or describe that strength.',
@@ -1312,7 +1269,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Writing & feedback',
     minutes: 12,
-    note: 'Perfect after Inbox notes or board comments. Best as revise — needs teacher or peer feedback on existing work.',
     prompts: [
       'Which section are you improving?',
       'Read the teacher comment again. What is it actually asking?',
@@ -1329,7 +1285,6 @@ export const QUESTION_SET_BANK = [
     years: '5–10',
     skill: 'Vocabulary',
     minutes: 8,
-    note: 'Put the target word on the board. Needs the target word on the board.',
     prompts: [
       'What do you think this word means in this subject?',
       'Say it in plain words a Year 5 student would understand.',
@@ -1362,7 +1317,6 @@ export const QUESTION_SET_BANK = [
     years: 'All',
     skill: 'Live monitoring',
     minutes: 5,
-    note: 'Send mid-task when you need eyes on the room fast.',
     prompts: [
       'What are you doing right now — in one sentence?',
       'What have you finished?',
@@ -1396,7 +1350,6 @@ export const QUESTION_SET_BANK = [
     years: 'All',
     skill: 'Unstick',
     minutes: 3,
-    note: 'NEW. Subject-neutral. Send when a student says "I don\'t get it" and you need to find out where the block actually is.',
     prompts: [
       'In your own words, what is the task asking you to do?',
       'What part do you understand already?',
@@ -1411,7 +1364,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Task literacy',
     minutes: 6,
-    note: 'Fire before any extended response. Students lose marks for describing when the task said evaluate. Needs the question or task in front of them.',
     prompts: [
       {
         prompt: 'Copy out the command word in the question.',
@@ -1433,7 +1385,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Assessment',
     minutes: 8,
-    note: 'Students are marked against criteria they have often never read. Works cold or on a draft — needs the marking rubric or criteria sheet.',
     prompts: [
       'Find the band you are aiming for. Copy the words that describe it.',
       'Which word in that band is the hardest to prove?',
@@ -1449,7 +1400,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Assessment',
     minutes: 8,
-    note: 'Last-look set. Catches the marks students throw away. Best as revise — needs a finished or near-finished draft.',
     prompts: [
       'Reread the task. Quote the exact words of what it asked for.',
       'Which sentence of yours answers that most directly?',
@@ -1465,7 +1415,6 @@ export const QUESTION_SET_BANK = [
     years: 'All',
     skill: 'Classroom routines',
     minutes: 5,
-    note: 'Send to a returning student while you teach the rest of the class. Tells you the size of the gap in 60 seconds.',
     prompts: [
       'What was the last lesson you were here for?',
       'What do you remember covering that day?',
@@ -1481,7 +1430,6 @@ export const QUESTION_SET_BANK = [
     years: 'All',
     skill: 'Classroom routines',
     minutes: 6,
-    note: 'For a relief teacher with an unfamiliar class. Gets thirty students typing in four minutes and tells you what the class thinks the plan is.',
     prompts: [
       'What are you supposed to be working on today?',
       'Where are you up to?',
@@ -1497,7 +1445,6 @@ export const QUESTION_SET_BANK = [
     years: '5–12',
     skill: 'Collaboration',
     minutes: 6,
-    note: 'Every member answers separately. Mismatched answers show you which groups have a problem before it becomes one. Needs students in groups.',
     prompts: [
       'What is your group making or deciding?',
       'What are you personally responsible for?',
@@ -1513,7 +1460,6 @@ export const QUESTION_SET_BANK = [
     years: '5–12',
     skill: 'Collaboration',
     minutes: 5,
-    note: 'Mid-project. Send to every member individually. Best as revise — needs group work already underway.',
     prompts: [
       'What have you finished since last lesson?',
       'What is still not done?',
@@ -1529,7 +1475,6 @@ export const QUESTION_SET_BANK = [
     years: '9–12',
     skill: 'Revision',
     minutes: 8,
-    note: 'Run a fortnight out. Tells you what to reteach.',
     prompts: [
       'List the topics on this exam.',
       'Which topic would you least like to see on the paper?',
@@ -1549,7 +1494,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Assessment',
     minutes: 8,
-    note: 'Run when handing back. Moves students past the number. Best as revise — needs returned marked work.',
     prompts: [
       'Which question or section went best?',
       'Which mark surprised you, and why?',
@@ -1565,7 +1509,6 @@ export const QUESTION_SET_BANK = [
     years: '7–12',
     skill: 'Research',
     minutes: 8,
-    note: 'Online research, not historical sources. Different skill to IOPCAM. Needs a website or article students are using.',
     prompts: [
       'Who published this? Copy the name.',
       'When was it written or last updated?',
@@ -1598,7 +1541,6 @@ export const QUESTION_SET_BANK = [
     years: '5–12',
     skill: 'Note-taking',
     minutes: 8,
-    note: 'Send before you press play. Pause at the halfway mark to collect. Needs a video playing or just finished.',
     prompts: [
       'What is this video about, in one sentence?',
       'Write down three facts you did not know.',
@@ -1614,7 +1556,6 @@ export const QUESTION_SET_BANK = [
     years: '5–12',
     skill: 'Reflection',
     minutes: 8,
-    note: 'Start of term or after reports.',
     prompts: [
       'What went well for you last term?',
       'What is one thing you want to be better at by the end of this term?',
@@ -1631,7 +1572,6 @@ export const QUESTION_SET_BANK = [
     years: '5–12',
     skill: 'Reporting',
     minutes: 8,
-    note: 'Collects student voice before interviews. Gives you something specific to open with.',
     prompts: [
       'What is one piece of work this term you are proud of?',
       'Why that one?',
