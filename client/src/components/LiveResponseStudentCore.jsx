@@ -432,12 +432,17 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       <button
         type="button"
         onClick={onExpand}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? colour : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(!quietAlerts && (pulse || nudge)) ? 'iboard-question-pulse' : ''}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? `${colour} shadow-sm` : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(!quietAlerts && (pulse || nudge)) ? 'iboard-question-pulse' : ''}`}
         aria-label={`${label}. ${detail}. Open Pulse panel.`}
         aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
       >
-        <span className="min-w-0 truncate text-sm font-black leading-none">{label}</span>
-        <span className={`shrink-0 text-[11px] font-semibold leading-none ${quietAlerts ? 'text-indigo-600 dark:text-indigo-400' : 'text-white/95'}`}>Open</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-display text-sm font-bold leading-none">{label}</span>
+          <span className={`mt-0.5 block truncate text-[11px] font-semibold leading-snug ${quietAlerts ? 'text-slate-500 dark:text-slate-400' : 'text-white/85'}`}>
+            {detail}
+          </span>
+        </span>
+        <span className={`shrink-0 self-center text-[11px] font-semibold leading-none ${quietAlerts ? 'text-indigo-600 dark:text-indigo-400' : 'text-white/95'}`}>Open</span>
       </button>
     );
   }
