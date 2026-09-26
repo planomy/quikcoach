@@ -1854,16 +1854,24 @@ function TeacherDashboardInner() {
           ) || Math.max(panel.scrollHeight, panel.getBoundingClientRect().height)
         : 0;
       const maxHeight = Math.max(120, viewport - margin * 2);
-      // Ask sub-tabs share one header band. Align as a compact dock so opening on Sets
-      // (or switching into it) does not yank Quick / Write one / Sets up to the top.
+      // Ask sub-tabs share one header band. Bottom-align the compact Quick/Write shell
+      // with the Ask rail button so the tabs sit higher; Sets keeps that top and stretches down.
       const askCompact = toolsPanelOpen && toolsTab === 'ask';
+      const setsOpen = Boolean(panel?.querySelector('#sets-subject-filter'));
       const compactHeight = Math.min(340, maxHeight);
-      const usedHeight = askCompact
-        ? compactHeight
-        : (panelHeight ? Math.min(panelHeight, maxHeight) : Math.min(240, maxHeight));
-      const centered = buttonBox.top + buttonBox.height / 2 - usedHeight / 2;
+      let usedHeight;
+      if (askCompact) {
+        usedHeight = setsOpen
+          ? compactHeight
+          : (panelHeight ? Math.min(panelHeight, maxHeight) : compactHeight);
+      } else {
+        usedHeight = panelHeight ? Math.min(panelHeight, maxHeight) : Math.min(240, maxHeight);
+      }
+      const targetTop = askCompact
+        ? buttonBox.bottom - usedHeight
+        : buttonBox.top + buttonBox.height / 2 - usedHeight / 2;
       const maxTop = viewport - margin - usedHeight;
-      const nextTop = Math.round(Math.min(Math.max(margin, centered), Math.max(margin, maxTop)));
+      const nextTop = Math.round(Math.min(Math.max(margin, targetTop), Math.max(margin, maxTop)));
       setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
     }
 
