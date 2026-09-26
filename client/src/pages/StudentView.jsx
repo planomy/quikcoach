@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import { truncateToWordLimit } from '../lib/text.js';
@@ -150,6 +150,8 @@ export default function StudentView() {
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [helpSeenToast, setHelpSeenToast] = useState(false);
+  const [helpSeenBox, setHelpSeenBox] = useState(null);
+  const helpSeenToastRef = useRef(null);
   const [urgentNoteToast, setUrgentNoteToast] = useState(null);
   const feedbackSeenAckRef = useRef(new Set());
   const baseDocumentTitleRef = useRef('');
@@ -207,6 +209,40 @@ export default function StudentView() {
     document.documentElement.classList.add('iboard-student-workspace');
     return () => document.documentElement.classList.remove('iboard-student-workspace');
   }, [joined]);
+
+  useLayoutEffect(() => {
+    if (!helpSeenToast) {
+      setHelpSeenBox(null);
+      return undefined;
+    }
+    function place() {
+      const target =
+        document.querySelector('[data-iboard-student-question]')
+        || document.querySelector('[data-iboard-student-support]');
+      const pill = helpSeenToastRef.current;
+      if (!target || !pill) return;
+      const rect = target.getBoundingClientRect();
+      const size = pill.getBoundingClientRect();
+      const width = size.width > 8 ? size.width : 160;
+      const height = size.height > 8 ? size.height : 40;
+      const gap = 10;
+      let left = rect.left + rect.width / 2 - width / 2;
+      let top = rect.top - height - gap;
+      const pad = 8;
+      left = Math.max(pad, Math.min(left, window.innerWidth - width - pad));
+      if (top < pad) top = Math.min(rect.bottom + gap, window.innerHeight - height - pad);
+      setHelpSeenBox({ left: Math.round(left), top: Math.round(top), aim: top >= rect.bottom ? 'top' : 'bottom' });
+    }
+    place();
+    const frame = requestAnimationFrame(place);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [helpSeenToast]);
 
   // Shared / Ask live questions land in the Inbox rail (Respond tab was removed).
   useEffect(() => {
@@ -737,7 +773,10 @@ export default function StudentView() {
     const onLiveHelpSeen = () => {
       setHelpSeenToast(true);
       if (helpSeenTimerRef.current) clearTimeout(helpSeenTimerRef.current);
-      helpSeenTimerRef.current = setTimeout(() => setHelpSeenToast(false), 4000);
+      helpSeenTimerRef.current = setTimeout(() => {
+        setHelpSeenToast(false);
+        setHelpSeenBox(null);
+      }, 4000);
     };
     const onTimesUp = () => {
       setTimesUp(true);
@@ -1378,10 +1417,19 @@ export default function StudentView() {
       )}
       {helpSeenToast && (
         <div
+          ref={helpSeenToastRef}
           role="status"
-          className="fixed inset-x-4 top-4 z-[75] mx-auto max-w-md rounded-2xl bg-indigo-600 px-4 py-3 text-center shadow-lg ring-2 ring-white/80"
+          className="iboard-help-seen-toast fixed z-[75]"
+          style={{
+            top: helpSeenBox ? helpSeenBox.top : -9999,
+            left: helpSeenBox ? helpSeenBox.left : -9999,
+            visibility: helpSeenBox ? 'visible' : 'hidden',
+          }}
         >
-          <p className="text-sm font-black text-white">Response seen</p>
+          {helpSeenBox?.aim ? (
+            <span className={`iboard-tour__arrow iboard-tour__arrow--${helpSeenBox.aim}`} aria-hidden="true" />
+          ) : null}
+          <p className="iboard-help-seen-toast__text">Response seen</p>
         </div>
       )}
       {urgentNoteToast && (

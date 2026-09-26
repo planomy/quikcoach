@@ -433,6 +433,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         type="button"
         onClick={onExpand}
         className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? `${colour} shadow-sm` : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(!quietAlerts && (pulse || nudge)) ? 'iboard-question-pulse' : ''}`}
+        data-iboard-student-question
         aria-label={`${label}. ${detail}. Open Pulse panel.`}
         aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
       >
@@ -537,6 +538,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       {activity && (
         <section
           ref={panelRef}
+          data-iboard-student-question
           className={
             quietAlerts
               ? `scroll-mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 ${compact ? 'mt-2 p-3' : 'p-4'}`
