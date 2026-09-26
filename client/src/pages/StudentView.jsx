@@ -1429,7 +1429,7 @@ export default function StudentView() {
           {helpSeenBox?.aim ? (
             <span className={`iboard-tour__arrow iboard-tour__arrow--${helpSeenBox.aim}`} aria-hidden="true" />
           ) : null}
-          <p className="iboard-help-seen-toast__text">Response seen</p>
+          <p className="iboard-help-seen-toast__text">Status seen</p>
         </div>
       )}
       {urgentNoteToast && (

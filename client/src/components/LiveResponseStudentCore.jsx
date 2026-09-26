@@ -350,6 +350,40 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     });
   }
 
+  const checkInPortal = nudge
+    ? createPortal(
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="iboard-check-in-title"
+            className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl dark:bg-slate-900"
+          >
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Quick check-in</p>
+            <h2 id="iboard-check-in-title" className="mt-2 font-display text-2xl font-black text-slate-900 dark:text-white">
+              How are you going?
+            </h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Tap one status — this isn’t a chat.
+            </p>
+            <div className="mt-5 grid gap-3">
+              {STATUS_OPTIONS.map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => answerNudge(value)}
+                  className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 px-4 py-3 text-base font-bold text-indigo-900 hover:border-indigo-500 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-100"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
+
   function renderConfidenceControls(withDivider = false) {
     const labelClass = quietAlerts
       ? `font-semibold text-slate-500 dark:text-slate-400 ${compact ? 'text-[10px]' : 'text-xs'}`
@@ -397,8 +431,8 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       : 'from-indigo-600 to-indigo-700 text-white ring-indigo-300';
 
     if (nudge) {
-      label = 'Teacher check-in';
-      detail = 'Tap to reply';
+      label = 'Quick check-in';
+      detail = 'Tap your status';
       colour = quietAlerts
         ? 'border border-rose-200 bg-rose-50 text-rose-950 ring-rose-100 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100 dark:ring-rose-950'
         : 'from-rose-600 to-red-600 text-white ring-rose-300';
@@ -429,22 +463,31 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     }
 
     return (
-      <button
-        type="button"
-        onClick={onExpand}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? `${colour} shadow-sm` : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(!quietAlerts && (pulse || nudge)) ? 'iboard-question-pulse' : ''}`}
-        data-iboard-student-question
-        aria-label={`${label}. ${detail}. Open Pulse panel.`}
-        aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-display text-sm font-bold leading-none">{label}</span>
-          <span className={`mt-0.5 block truncate text-[11px] font-semibold leading-snug ${quietAlerts ? 'text-slate-500 dark:text-slate-400' : 'text-white/85'}`}>
-            {detail}
+      <>
+        {checkInPortal}
+        <button
+          type="button"
+          onClick={() => {
+            // Check-in is its own modal — don't also expand the live question card.
+            if (nudge) return;
+            onExpand?.();
+          }}
+          className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? `${colour} shadow-sm` : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(!quietAlerts && (pulse || nudge)) ? 'iboard-question-pulse' : ''}`}
+          data-iboard-student-question
+          aria-label={nudge ? `${label}. ${detail}.` : `${label}. ${detail}. Open Pulse panel.`}
+          aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-display text-sm font-bold leading-none">{label}</span>
+            <span className={`mt-0.5 block truncate text-[11px] font-semibold leading-snug ${quietAlerts ? 'text-slate-500 dark:text-slate-400' : 'text-white/85'}`}>
+              {detail}
+            </span>
           </span>
-        </span>
-        <span className={`shrink-0 self-center text-[11px] font-semibold leading-none ${quietAlerts ? 'text-indigo-600 dark:text-indigo-400' : 'text-white/95'}`}>Open</span>
-      </button>
+          <span className={`shrink-0 self-center text-[11px] font-semibold leading-none ${quietAlerts ? 'text-indigo-600 dark:text-indigo-400' : 'text-white/95'}`}>
+            {nudge ? 'Reply' : 'Open'}
+          </span>
+        </button>
+      </>
     );
   }
 
@@ -519,22 +562,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
           <span className="mt-3 block text-xs font-bold uppercase tracking-wide text-white/80">Tap to answer now</span>
         </button>
       )}
-      {nudge && createPortal(
-        <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl dark:bg-slate-900">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Private check-in</p>
-            <h2 className="mt-2 font-display text-2xl font-black text-slate-900 dark:text-white">Are you still with us?</h2>
-            <div className="mt-5 grid gap-3">
-              {STATUS_OPTIONS.map(([value, label]) => (
-                <button key={value} type="button" onClick={() => answerNudge(value)} className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 px-4 py-3 text-base font-bold text-indigo-900 hover:border-indigo-500 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-100">
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      {checkInPortal}
       {activity && (
         <section
           ref={panelRef}
