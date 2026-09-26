@@ -2552,7 +2552,7 @@ function TeacherDashboardInner() {
         return;
       }
       setSnapshots(ack.snapshots || []);
-      setCopyToast('Snapshot saved');
+      setCopyToast('Snapshot saved in Lesson records');
       setTimeout(() => setCopyToast(''), 2500);
     });
   }
