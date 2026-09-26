@@ -56,12 +56,12 @@
 
 /* Sets: use the full rail max-height (top-pinned so it doesn’t clip); catalogue scrolls. */
 .iboard-header-dock--rail:has(#sets-subject-filter) {
-  top: 0.625rem;
+  top: 0.625rem !important;
   height: calc(100dvh - 1.25rem);
   max-height: calc(100dvh - 1.25rem);
   transform: none;
   overflow: hidden;
-  animation: iboard-rail-dock-in-top 180ms ease-out;
+  /* Do not re-declare animation — toggling it on :has() restarts the entrance fade. */
 }
 
 .iboard-header-dock--start:has(#sets-subject-filter) > section {

@@ -1857,19 +1857,22 @@ function TeacherDashboardInner() {
       const usedHeight = panelHeight ? Math.min(panelHeight, maxHeight) : Math.min(240, maxHeight);
       const centered = buttonBox.top + buttonBox.height / 2 - usedHeight / 2;
       const maxTop = viewport - margin - usedHeight;
-      setTeacherToolsTop(Math.round(Math.min(Math.max(margin, centered), Math.max(margin, maxTop))));
+      const nextTop = Math.round(Math.min(Math.max(margin, centered), Math.max(margin, maxTop)));
+      setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
     }
 
     alignDockToRailButton();
+    const settleFrame = requestAnimationFrame(alignDockToRailButton);
     const resizeObserver = typeof ResizeObserver === 'function'
       ? new ResizeObserver(alignDockToRailButton)
       : null;
     const button = currentDockAnchor();
-    const panel = currentDockPanel();
+    // Observe the rail button only. Watching the panel re-centered the dock on every
+    // Ask sub-tab content height change (Quick ↔ Write one) and flashed the shell.
     if (button) resizeObserver?.observe(button);
-    if (panel) resizeObserver?.observe(panel);
     window.addEventListener('resize', alignDockToRailButton);
     return () => {
+      cancelAnimationFrame(settleFrame);
       resizeObserver?.disconnect();
       window.removeEventListener('resize', alignDockToRailButton);
     };
