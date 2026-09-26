@@ -427,10 +427,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       schedule();
     };
     const onInput = (event) => {
-      if (event.target?.closest?.('[role="textbox"][contenteditable]')) {
-        schedule();
-        setEditorTextTick((n) => n + 1);
-      }
+      const host = event.target?.closest?.('[role="textbox"]');
+      if (!host || host.getAttribute('contenteditable') === 'false') return;
+      schedule();
+      setEditorTextTick((n) => n + 1);
     };
     document.addEventListener('input', onInput, true);
     const unsubscribe = subscribeViewportChanges(schedule);

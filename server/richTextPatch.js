@@ -161,6 +161,12 @@ const markAnnotationFixedStmt = richDb.prepare(
        updated_at = datetime('now')
    WHERE id = ?`
 );
+const markReopenFixedForStudentStmt = richDb.prepare(
+  `UPDATE teacher_annotations
+   SET status = 'fixed', student_fixed_at = datetime('now'), resolved_at = NULL,
+       updated_at = datetime('now')
+   WHERE student_id = ? AND status = 'reopen'`
+);
 const resolveAnnotationStmt = richDb.prepare(
   `UPDATE teacher_annotations
    SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now')
@@ -204,6 +210,16 @@ function emitAnnotationUpdate(io, roomCode, studentId) {
   return payload;
 }
 
+/** Check again (red) → waiting (purple) as soon as the student draft actually changes. */
+function markReopenFixedAfterEdit(io, roomCode, studentId) {
+  const sid = Number(studentId);
+  if (!sid) return false;
+  const result = markReopenFixedForStudentStmt.run(sid);
+  if (!result.changes) return false;
+  emitAnnotationUpdate(io, roomCode, sid);
+  return true;
+}
+
 function nearestQuoteStart(text, quote, expectedStart) {
   if (!quote) return -1;
   if (text.slice(expectedStart, expectedStart + quote.length) === quote) return expectedStart;
@@ -234,6 +250,13 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
       let richTextHtml = String(payload?.richTextHtml ?? '');
       if (richTextHtml.length > 100_000) richTextHtml = richTextHtml.slice(0, 100_000);
 
+      // Capture pre-save draft — this listener runs before the core student:text saver.
+      const studentIdEarly = Number(socket.data.studentId);
+      const beforeText =
+        studentIdEarly && socket.data.role === 'student'
+          ? String(selectStudent.get(studentIdEarly)?.text || '')
+          : null;
+
       setImmediate(() => {
         try {
           const studentId = Number(socket.data.studentId);
@@ -243,9 +266,14 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           const current = selectStudent.get(studentId);
           if (!current || normaliseRoomCode(current.room_code) !== roomCode) return;
 
+          const savedText = String(current.text || '');
+          const draftChanged = beforeText != null && beforeText !== savedText;
+          // Any real edit while Check again is outstanding → purple on both boards.
+          if (draftChanged) markReopenFixedAfterEdit(io, roomCode, studentId);
+
           // If the existing server hard-limit shortened the plain draft, formatting no
           // longer lines up exactly. Drop formatting rather than display the wrong marks.
-          const safeRich = String(current.text || '') === plainText ? richTextHtml : '';
+          const safeRich = savedText === plainText ? richTextHtml : '';
           if (String(current.rich_text_html || '') === safeRich) return;
 
           saveRichText.run(safeRich, studentId);
