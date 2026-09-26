@@ -73,9 +73,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   const hoverTargetsRef = useRef([]);
   const hoveredIdRef = useRef(null);
   const hoverCloseTimerRef = useRef(null);
+  const annotationsRef = useRef([]);
   const autoFixQueuedRef = useRef(new Set());
   const autoFixTimersRef = useRef(new Map());
-  const checkAgainSnapshotRef = useRef(new Map());
+  const pendingFixedRef = useRef(new Set());
   const detachedSinceRef = useRef(new Map());
   const prevToneRef = useRef(new Map());
 
@@ -165,9 +166,35 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
   }, [annotations]);
 
+  const adoptAnnotations = useCallback((list) => {
+    const incoming = Array.isArray(list) ? list : [];
+    const pending = pendingFixedRef.current;
+    if (!pending.size) {
+      annotationsRef.current = incoming;
+      setAnnotations(incoming);
+      return;
+    }
+    const merged = incoming.map((item) => {
+      const id = Number(item?.id);
+      if (!id || !pending.has(id)) return item;
+      if (item.status === 'fixed' || item.status === 'resolved') {
+        pending.delete(id);
+        autoFixQueuedRef.current.delete(id);
+        return item;
+      }
+      // Stale sync can still say reopen after we already marked fixed — keep purple.
+      return {
+        ...item,
+        status: 'fixed',
+        student_fixed_at: item.student_fixed_at || new Date().toISOString(),
+      };
+    });
+    annotationsRef.current = merged;
+    setAnnotations(merged);
+  }, []);
+
   useEffect(() => {
-    const editor = editorElement();
-    const text = editor ? plainTextFromElement(editor) : '';
+    annotationsRef.current = annotations || [];
     const seen = new Set();
     for (const annotation of annotations || []) {
       const id = Number(annotation.id);
@@ -176,17 +203,25 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const tone = commentTone(annotation);
       const prev = prevToneRef.current.get(id);
       if (tone === 'reopen' && prev !== 'reopen') {
+        // Fresh Check again from teacher — allow another auto-fix cycle.
         autoFixQueuedRef.current.delete(id);
-        checkAgainSnapshotRef.current.set(id, text);
+        pendingFixedRef.current.delete(id);
       }
-      if (tone !== 'reopen') checkAgainSnapshotRef.current.delete(id);
+      if (tone === 'fixed' || tone === 'resolved') {
+        // Only drop the pending lock when the server (or optimistic map) confirms.
+        // Keep pending while we are the ones holding fixed against a stale reopen sync.
+        if (!pendingFixedRef.current.has(id) || tone === 'resolved') {
+          autoFixQueuedRef.current.delete(id);
+        }
+        if (tone === 'resolved') pendingFixedRef.current.delete(id);
+      }
       prevToneRef.current.set(id, tone);
     }
     for (const id of [...prevToneRef.current.keys()]) {
       if (!seen.has(id)) {
         prevToneRef.current.delete(id);
-        checkAgainSnapshotRef.current.delete(id);
         autoFixQueuedRef.current.delete(id);
+        pendingFixedRef.current.delete(id);
       }
     }
     // Keep pips in lockstep when Check again / Confirm lands from the teacher.
@@ -197,8 +232,10 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     (annotationId) => {
       const id = Number(annotationId);
       if (!socket || !id) return;
-      setAnnotations((prev) =>
-        prev.map((item) =>
+      pendingFixedRef.current.add(id);
+      autoFixQueuedRef.current.add(id);
+      setAnnotations((prev) => {
+        const next = prev.map((item) =>
           Number(item.id) === id
             ? item.status === 'resolved'
               ? item
@@ -208,34 +245,58 @@ export default function StudentAnnotationController({ socket, studentId: supplie
                   student_fixed_at: item.student_fixed_at || new Date().toISOString(),
                 }
             : item
-        )
-      );
+        );
+        annotationsRef.current = next;
+        return next;
+      });
       socket.emit('student:annotation-fixed', { annotationId: id }, (ack) => {
-        if (ack?.ok) return;
+        if (ack?.ok) {
+          // Server applied it — pending can clear on the next fixed payload.
+          return;
+        }
+        pendingFixedRef.current.delete(id);
         autoFixQueuedRef.current.delete(id);
         socket.emit('student:annotations-sync', {}, (syncAck) => {
           if (syncAck?.ok && Array.isArray(syncAck.annotations)) {
-            setAnnotations(syncAck.annotations);
+            adoptAnnotations(syncAck.annotations);
           }
         });
       });
     },
-    [socket]
+    [socket, adoptAnnotations]
   );
+
+  const scheduleReopenAutoFix = useCallback(() => {
+    if (!socket) return;
+    for (const annotation of annotationsRef.current || []) {
+      const id = Number(annotation?.id);
+      if (!id) continue;
+      if (commentTone(annotation) !== 'reopen') continue;
+      if (autoFixQueuedRef.current.has(id) || pendingFixedRef.current.has(id)) continue;
+      if (autoFixTimersRef.current.has(id)) continue;
+      autoFixTimersRef.current.set(
+        id,
+        setTimeout(() => {
+          autoFixTimersRef.current.delete(id);
+          const live = (annotationsRef.current || []).find((item) => Number(item.id) === id);
+          if (!live || commentTone(live) !== 'reopen') return;
+          if (autoFixQueuedRef.current.has(id) || pendingFixedRef.current.has(id)) return;
+          markCommentFixed(id);
+        }, AUTO_FIX_DELAY_MS)
+      );
+    }
+  }, [socket, markCommentFixed]);
 
   useEffect(() => {
     if (!socket) return;
     const timers = autoFixTimersRef.current;
     const queued = autoFixQueuedRef.current;
-    const editor = editorElement();
-    const liveText = editor ? plainTextFromElement(editor) : '';
     for (const marker of markers) {
       const id = Number(marker.annotation?.id);
       if (!id) continue;
       const live =
         (annotations || []).find((item) => Number(item.id) === id) || marker.annotation;
       const persisted = commentTone(live);
-      const snapshot = checkAgainSnapshotRef.current.get(id);
       if (persisted === 'open' && marker.quoteDetached) {
         if (!detachedSinceRef.current.has(id)) detachedSinceRef.current.set(id, Date.now());
       } else {
@@ -243,28 +304,30 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       }
       const detachedLongEnough =
         marker.quoteDetached && Date.now() - (detachedSinceRef.current.get(id) || Date.now()) >= 1500;
-      // Check again (red): any student edit — or the quote rematching away — flips to purple
-      // “waiting for teacher” on both boards.
-      const reopenRevised =
-        persisted === 'reopen' &&
-        ((snapshot != null && liveText !== snapshot) || Boolean(marker.quoteDetached));
-      const shouldAuto =
-        (persisted === 'open' && detachedLongEnough) || reopenRevised;
+      // Open comments still auto-fix when the quote rematches away.
+      // Check again (reopen) is handled on editor input via scheduleReopenAutoFix —
+      // any keystroke after red flips purple, with no text-snapshot race.
+      const shouldAuto = persisted === 'open' && detachedLongEnough;
       if (!shouldAuto) {
-        const pending = timers.get(id);
-        if (pending) {
-          clearTimeout(pending);
-          timers.delete(id);
+        if (persisted !== 'reopen') {
+          const pending = timers.get(id);
+          if (pending) {
+            clearTimeout(pending);
+            timers.delete(id);
+          }
         }
         continue;
       }
-      if (queued.has(id) || timers.has(id)) continue;
+      if (queued.has(id) || timers.has(id) || pendingFixedRef.current.has(id)) continue;
       timers.set(
         id,
         setTimeout(() => {
           timers.delete(id);
-          if (queued.has(id)) return;
-          queued.add(id);
+          if (queued.has(id) || pendingFixedRef.current.has(id)) return;
+          const still =
+            (annotationsRef.current || []).find((item) => Number(item.id) === id) ||
+            marker.annotation;
+          if (commentTone(still) !== 'open' || !marker.quoteDetached) return;
           markCommentFixed(id);
         }, AUTO_FIX_DELAY_MS)
       );
@@ -273,18 +336,22 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   }, [markers, socket, markCommentFixed, annotations, editorTextTick]);
 
   useEffect(() => {
+    if (editorTextTick > 0) scheduleReopenAutoFix();
+  }, [editorTextTick, scheduleReopenAutoFix]);
+
+  useEffect(() => {
     if (!socket) return;
     let cancelled = false;
     let retryTimer = null;
     const onMine = ({ studentId: incomingId, annotations: list }) => {
       const id = Number(incomingId) || currentStudentId();
       if (studentId && id && id !== Number(studentId)) return;
-      setAnnotations(Array.isArray(list) ? list : []);
+      adoptAnnotations(list);
     };
     const onUpdate = ({ studentId: incomingId, annotations: list }) => {
       const mine = currentStudentId() || studentId;
       if (mine && Number(incomingId) !== Number(mine)) return;
-      setAnnotations(Array.isArray(list) ? list : []);
+      adoptAnnotations(list);
     };
     const schedule = () => requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
     const queueSync = (delay = 0, attempt = 0) => {
@@ -327,7 +394,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       socket.off('room:state', onRoomState);
       socket.off('connect', requestSync);
     };
-  }, [socket, studentId, refreshHighlights]);
+  }, [socket, studentId, refreshHighlights, adoptAnnotations]);
 
   useEffect(() => {
     const schedule = () => {
@@ -360,7 +427,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       schedule();
     };
     const onInput = (event) => {
-      if (event.target?.matches?.('[role="textbox"][contenteditable]')) {
+      if (event.target?.closest?.('[role="textbox"][contenteditable]')) {
         schedule();
         setEditorTextTick((n) => n + 1);
       }
@@ -452,7 +519,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   function markCommentFixedManual(marker) {
     if (!marker?.annotation?.id || actionBusy) return;
     setActionBusy(true);
-    autoFixQueuedRef.current.add(Number(marker.annotation.id));
     markCommentFixed(marker.annotation.id);
     setActionBusy(false);
   }
