@@ -709,11 +709,7 @@ export default function SavedSetsPanel({
           </div>
 
           <div className="preview-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
-            <div className="flex items-center justify-between gap-2">
-            <label className="mr-auto flex items-center gap-2 px-1 text-xs font-bold text-slate-700 dark:text-slate-200">
-              <input type="checkbox" checked={selectedSetIds.includes(activeSet.id)} disabled={sending} onChange={() => toggleSet(activeSet.id)} className="h-4 w-4 accent-[#5a5fc3]" />
-              Select set
-            </label>
+            <div className="flex items-center justify-end gap-2">
             <button type="button" disabled={sending} onClick={() => chooseRecipients([activeSet])} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-40">Select students</button>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-3">
