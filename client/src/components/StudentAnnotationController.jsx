@@ -44,17 +44,20 @@ function writingCard() {
   return typeof document === 'undefined' ? null : document.querySelector('.iboard-student-writing-card');
 }
 
-function markerPosition(rangeRect) {
-  return {
-    top: rangeRect.bottom - NOTE_HEIGHT,
-    left: rangeRect.left,
-  };
+function markerPosition(rangeRect, editorRect) {
+  const top = rangeRect.bottom - NOTE_HEIGHT;
+  const left = rangeRect.left;
+  // Stem runs from the highlight out to the note rail (same idea as teacher gutter marks).
+  const railRight = editorRect.right - PIP_INSET;
+  const width = Math.max(NOTE_HEIGHT + 8, railRight - left);
+  return { top, left, width };
 }
 
 function detachedMarkerPosition(editorRect, index) {
   return {
     top: editorRect.top + 8 + index * (NOTE_HEIGHT + 4),
     left: editorRect.right - NOTE_RAIL - PIP_INSET,
+    width: NOTE_RAIL,
   };
 }
 
@@ -115,9 +118,11 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           nextMarkers.push({
             annotation,
             detached: true,
+            quoteDetached: true,
             lane: 'note',
             top: pos.top,
             left: pos.left,
+            width: pos.width,
           });
           detachedCount += 1;
         }
@@ -131,18 +136,17 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const rects = Array.from(range.getClientRects()).filter((item) => item.width || item.height);
       const rect = rects[rects.length - 1] || range.getBoundingClientRect();
       if (rect.width || rect.height) {
-        const pos = markerPosition(rect);
-        // After a fix, rematch can stay "detached" while still finding a range.
-        // Keep the note on the right rail — otherwise hiding the stem dumps it on the writing.
-        const left = resolved.detached
-          ? editorRect.right - NOTE_RAIL - PIP_INSET
-          : pos.left;
+        const pos = markerPosition(rect, editorRect);
+        // When a range still paints, keep the stem — same as the teacher board.
+        // Only true orphans (no range) hide the stem and sit on the rail.
         nextMarkers.push({
           annotation,
-          detached: resolved.detached,
+          detached: false,
+          quoteDetached: Boolean(resolved.detached),
           lane: 'note',
           top: pos.top,
-          left,
+          left: pos.left,
+          width: pos.width,
         });
       }
     }
@@ -466,13 +470,15 @@ export default function StudentAnnotationController({ socket, studentId: supplie
                 position: 'absolute',
                 top: marker.top - boardRect.top,
                 left: marker.left - boardRect.left,
-                right: PIP_INSET,
+                width: marker.width || undefined,
+                ...(marker.detached ? { right: PIP_INSET } : {}),
               }
             : {
                 position: 'fixed',
                 top: marker.top,
                 left: marker.left,
-                right: PIP_INSET,
+                width: marker.width || undefined,
+                ...(marker.detached ? { right: PIP_INSET } : {}),
               };
           return (
             <StudentCommentNote
