@@ -4868,7 +4868,7 @@ function TeacherDashboardInner() {
             </div>
             {overviewColsPeek ? (
               <div
-                className="flex items-center justify-center gap-1 border-t border-slate-200 px-2 py-1.5 dark:border-slate-700"
+                className="flex items-center justify-start gap-1 border-t border-slate-200 px-2 py-1.5 dark:border-slate-700"
                 role="group"
                 aria-label="Overview columns"
               >
