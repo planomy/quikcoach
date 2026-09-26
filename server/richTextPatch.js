@@ -161,12 +161,6 @@ const markAnnotationFixedStmt = richDb.prepare(
        updated_at = datetime('now')
    WHERE id = ?`
 );
-const markReopenFixedForStudentStmt = richDb.prepare(
-  `UPDATE teacher_annotations
-   SET status = 'fixed', student_fixed_at = datetime('now'), resolved_at = NULL,
-       updated_at = datetime('now')
-   WHERE student_id = ? AND status = 'reopen'`
-);
 const resolveAnnotationStmt = richDb.prepare(
   `UPDATE teacher_annotations
    SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now')
@@ -210,12 +204,22 @@ function emitAnnotationUpdate(io, roomCode, studentId) {
   return payload;
 }
 
-/** Check again (red) → waiting (purple) as soon as the student draft actually changes. */
-function markReopenFixedAfterEdit(io, roomCode, studentId) {
+/** Check again (red) → purple only for comments whose quoted passage is gone from the draft. */
+function markDetachedReopenFixed(io, roomCode, studentId, text) {
   const sid = Number(studentId);
   if (!sid) return false;
-  const result = markReopenFixedForStudentStmt.run(sid);
-  if (!result.changes) return false;
+  const draft = String(text || '').replace(/\r\n?/g, '\n');
+  let changed = 0;
+  for (const annotation of listAnnotationsForStudent(sid)) {
+    if (annotation.status !== 'reopen') continue;
+    const quote = String(annotation.quote || '').replace(/\r\n?/g, '\n');
+    if (quote && nearestQuoteStart(draft, quote, Number(annotation.start_offset) || 0) !== -1) {
+      continue;
+    }
+    markAnnotationFixedStmt.run(annotation.id);
+    changed += 1;
+  }
+  if (!changed) return false;
   emitAnnotationUpdate(io, roomCode, sid);
   return true;
 }
@@ -268,8 +272,8 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
 
           const savedText = String(current.text || '');
           const draftChanged = beforeText != null && beforeText !== savedText;
-          // Any real edit while Check again is outstanding → purple on both boards.
-          if (draftChanged) markReopenFixedAfterEdit(io, roomCode, studentId);
+          // Only Check again comments whose quote no longer appears → purple.
+          if (draftChanged) markDetachedReopenFixed(io, roomCode, studentId, savedText);
 
           // If the existing server hard-limit shortened the plain draft, formatting no
           // longer lines up exactly. Drop formatting rather than display the wrong marks.

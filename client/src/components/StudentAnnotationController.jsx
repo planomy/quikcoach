@@ -266,27 +266,6 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     [socket, adoptAnnotations]
   );
 
-  const scheduleReopenAutoFix = useCallback(() => {
-    if (!socket) return;
-    for (const annotation of annotationsRef.current || []) {
-      const id = Number(annotation?.id);
-      if (!id) continue;
-      if (commentTone(annotation) !== 'reopen') continue;
-      if (autoFixQueuedRef.current.has(id) || pendingFixedRef.current.has(id)) continue;
-      if (autoFixTimersRef.current.has(id)) continue;
-      autoFixTimersRef.current.set(
-        id,
-        setTimeout(() => {
-          autoFixTimersRef.current.delete(id);
-          const live = (annotationsRef.current || []).find((item) => Number(item.id) === id);
-          if (!live || commentTone(live) !== 'reopen') return;
-          if (autoFixQueuedRef.current.has(id) || pendingFixedRef.current.has(id)) return;
-          markCommentFixed(id);
-        }, AUTO_FIX_DELAY_MS)
-      );
-    }
-  }, [socket, markCommentFixed]);
-
   useEffect(() => {
     if (!socket) return;
     const timers = autoFixTimersRef.current;
@@ -297,24 +276,22 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const live =
         (annotations || []).find((item) => Number(item.id) === id) || marker.annotation;
       const persisted = commentTone(live);
-      if (persisted === 'open' && marker.quoteDetached) {
+      const watchDetached = persisted === 'open' || persisted === 'reopen';
+      if (watchDetached && marker.quoteDetached) {
         if (!detachedSinceRef.current.has(id)) detachedSinceRef.current.set(id, Date.now());
       } else {
         detachedSinceRef.current.delete(id);
       }
+      const needMs = persisted === 'reopen' ? AUTO_FIX_DELAY_MS : 1500;
       const detachedLongEnough =
-        marker.quoteDetached && Date.now() - (detachedSinceRef.current.get(id) || Date.now()) >= 1500;
-      // Open comments still auto-fix when the quote rematches away.
-      // Check again (reopen) is handled on editor input via scheduleReopenAutoFix —
-      // any keystroke after red flips purple, with no text-snapshot race.
-      const shouldAuto = persisted === 'open' && detachedLongEnough;
+        marker.quoteDetached && Date.now() - (detachedSinceRef.current.get(id) || Date.now()) >= needMs;
+      // Only the comment whose quoted passage was revised — never every red pip on the card.
+      const shouldAuto = watchDetached && detachedLongEnough;
       if (!shouldAuto) {
-        if (persisted !== 'reopen') {
-          const pending = timers.get(id);
-          if (pending) {
-            clearTimeout(pending);
-            timers.delete(id);
-          }
+        const pending = timers.get(id);
+        if (pending) {
+          clearTimeout(pending);
+          timers.delete(id);
         }
         continue;
       }
@@ -327,17 +304,14 @@ export default function StudentAnnotationController({ socket, studentId: supplie
           const still =
             (annotationsRef.current || []).find((item) => Number(item.id) === id) ||
             marker.annotation;
-          if (commentTone(still) !== 'open' || !marker.quoteDetached) return;
+          const tone = commentTone(still);
+          if ((tone !== 'open' && tone !== 'reopen') || !marker.quoteDetached) return;
           markCommentFixed(id);
         }, AUTO_FIX_DELAY_MS)
       );
     }
     return undefined;
   }, [markers, socket, markCommentFixed, annotations, editorTextTick]);
-
-  useEffect(() => {
-    if (editorTextTick > 0) scheduleReopenAutoFix();
-  }, [editorTextTick, scheduleReopenAutoFix]);
 
   useEffect(() => {
     if (!socket) return;
