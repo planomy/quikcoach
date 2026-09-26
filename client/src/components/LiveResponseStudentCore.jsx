@@ -20,9 +20,8 @@ function setQuestionsFromActivity(activity) {
 }
 
 const STATUS_OPTIONS = [
-  ['ready', 'Yep, ready'],
-  ['unsure', 'I’m unsure'],
-  ['tech', 'Tech problem'],
+  ['ready', 'Yes, I’m ready'],
+  ['unsure', 'Still thinking'],
 ];
 const CONFIDENCE_OPTIONS = [
   ['confident', 'Confident'],
@@ -359,13 +358,10 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             aria-labelledby="iboard-check-in-title"
             className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl dark:bg-slate-900"
           >
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Quick check-in</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Teacher checking in</p>
             <h2 id="iboard-check-in-title" className="mt-2 font-display text-2xl font-black text-slate-900 dark:text-white">
-              How are you going?
+              You good?
             </h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Tap one status — this isn’t a chat.
-            </p>
             <div className="mt-5 grid gap-3">
               {STATUS_OPTIONS.map(([value, label]) => (
                 <button
@@ -431,7 +427,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       : 'from-indigo-600 to-indigo-700 text-white ring-indigo-300';
 
     if (nudge) {
-      label = 'Quick check-in';
+      label = 'Teacher checking in';
       detail = 'Tap your status';
       colour = quietAlerts
         ? 'border border-rose-200 bg-rose-50 text-rose-950 ring-rose-100 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100 dark:ring-rose-950'

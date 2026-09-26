@@ -1,7 +1,7 @@
 export const LIVE_STATUS_LABELS = {
   ready: 'Ready',
-  unsure: 'Unsure',
-  tech: 'Tech issue',
+  unsure: 'Still thinking',
+  tech: 'Tech issue', // legacy — no longer offered on student check-in
   stuck: 'I’m stuck',
   slow: 'Please slow down',
   explain: 'Explain again',

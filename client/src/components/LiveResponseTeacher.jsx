@@ -756,7 +756,7 @@ export default function LiveResponseTeacher({
                   type="button"
                   disabled={!engagementFocusStudent.connected}
                   onClick={() => nudge(engagementFocusStudent.id)}
-                  title="Asks ready / unsure / tech — not a chat message"
+                  title="Asks ready or still thinking — not a chat message"
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-black text-slate-700 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
                 >
                   Check in again
@@ -767,7 +767,7 @@ export default function LiveResponseTeacher({
                 type="button"
                 disabled={!engagementFocusStudent.connected}
                 onClick={() => nudge(engagementFocusStudent.id)}
-                title="Asks ready / unsure / tech — not a chat message"
+                title="Asks ready or still thinking — not a chat message"
                 className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white disabled:opacity-40"
               >
                 Check in
