@@ -399,7 +399,7 @@ export default function TeacherAnswerRail({
           </div>
 
           <div className="relative z-[60] mt-3 flex flex-wrap items-center gap-2 overflow-visible" aria-label="Live question controls">
-            <ControlIcon label="Repeat this question" hint="Repeat" onClick={repeatQuestion}>
+            <ControlIcon label="Repeat the question" hint="Repeat the question" onClick={repeatQuestion}>
               <RepeatIcon />
             </ControlIcon>
             <ControlIcon
