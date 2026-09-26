@@ -3919,7 +3919,8 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   padding: 0.55rem 0.7rem;
   border: 1px solid #d5d4e4;
   border-radius: 0.85rem;
-  background: #fff;
+  background-color: #ffffff;
+  background-image: none;
   box-shadow: 0 12px 28px rgb(15 23 42 / 0.16);
   color: #3c3c45;
   font-size: 12px;
@@ -3929,11 +3930,18 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   pointer-events: auto;
+  isolation: isolate;
+}
+
+/* Expanded note sits above neighbouring rail labels so they can’t show “through” it. */
+.iboard-student-note.is-open {
+  z-index: 80;
 }
 
 html.dark .iboard-student-note__full {
   border-color: #334155;
-  background: #0f172a;
+  background-color: #0f172a;
+  background-image: none;
   color: #e2e8f0;
   box-shadow: 0 12px 28px rgb(0 0 0 / 0.4);
 }
