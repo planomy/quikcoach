@@ -109,10 +109,12 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
 
   if (!hint) return children;
 
+  const hasPositionClass = /\b(static|fixed|absolute|relative|sticky)\b/.test(className);
+
   return (
     <span
       ref={wrapRef}
-      className={`relative inline-flex ${className}`}
+      className={`${hasPositionClass ? '' : 'relative '}inline-flex ${className}`.trim()}
       onMouseEnter={openFromHover}
       onMouseLeave={closeFromHover}
       onPointerDownCapture={onPointerDownCapture}

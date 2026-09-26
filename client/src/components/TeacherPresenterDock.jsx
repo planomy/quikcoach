@@ -667,47 +667,45 @@ export default function TeacherPresenterDock() {
   return (
     <>
       {!pipWindow && !fallbackOpen && (
-        <HintWrap
-          hint="Open Presenter Dock"
-          prefer="above"
-          className="fixed bottom-4 right-4 z-[70]"
-        >
-          <button
-            type="button"
-            onClick={openDock}
-            title=""
-            aria-label="Open Presenter Dock"
-            style={{
-              width: 40,
-              height: 40,
-              border: '1px solid #c7d2fe',
-              borderRadius: 12,
-              background: '#fff',
-              color: '#4338ca',
-              padding: 0,
-              boxShadow: '0 4px 14px rgba(15,23,42,.08)',
-              cursor: 'pointer',
-              display: 'grid',
-              placeItems: 'center',
-            }}
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <div className="fixed bottom-4 right-4 z-[70]">
+          <HintWrap hint="Open Presenter Dock" prefer="above">
+            <button
+              type="button"
+              onClick={openDock}
+              title=""
+              aria-label="Open Presenter Dock"
+              style={{
+                width: 40,
+                height: 40,
+                border: '1px solid #c7d2fe',
+                borderRadius: 12,
+                background: '#fff',
+                color: '#4338ca',
+                padding: 0,
+                boxShadow: '0 4px 14px rgba(15,23,42,.08)',
+                cursor: 'pointer',
+                display: 'grid',
+                placeItems: 'center',
+              }}
             >
-              <rect x="3" y="4" width="18" height="12" rx="2" />
-              <path d="M8 20h8" />
-              <path d="M12 16v4" />
-            </svg>
-          </button>
-        </HintWrap>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="12" rx="2" />
+                <path d="M8 20h8" />
+                <path d="M12 16v4" />
+              </svg>
+            </button>
+          </HintWrap>
+        </div>
       )}
       {fallbackOpen && <div className="iboard-presenter-fallback">{dock}</div>}
       {pipWindow && createPortal(dock, pipWindow.document.body)}
