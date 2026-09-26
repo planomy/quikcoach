@@ -403,8 +403,8 @@ export default function TeacherAnswerRail({
               <RepeatIcon />
             </ControlIcon>
             <ControlIcon
-              label="Present answers on screen"
-              hint="Present"
+              label="Present responses"
+              hint="Present responses"
               onClick={() => setPresenting(true)}
             >
               <PresentIcon />
