@@ -667,17 +667,17 @@ export default function TeacherPresenterDock() {
   return (
     <>
       {!pipWindow && !fallbackOpen && (
-        <HintWrap hint="Open Presenter Dock" prefer="above">
+        <HintWrap
+          hint="Open Presenter Dock"
+          prefer="above"
+          className="fixed bottom-4 right-4 z-[70]"
+        >
           <button
             type="button"
             onClick={openDock}
             title=""
             aria-label="Open Presenter Dock"
             style={{
-              position: 'fixed',
-              right: 16,
-              bottom: 16,
-              zIndex: 70,
               width: 40,
               height: 40,
               border: '1px solid #e2e8f0',
