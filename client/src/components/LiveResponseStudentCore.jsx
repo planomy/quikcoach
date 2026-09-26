@@ -392,16 +392,22 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     const needsAnswer = !!activity && !response && !activity.locked && secondsLeft !== 0;
     let label = 'Pulse ready';
     let detail = 'Waiting for a question';
-    let colour = 'from-indigo-600 to-indigo-700 text-white ring-indigo-300';
+    let colour = quietAlerts
+      ? 'border border-slate-200 bg-white text-slate-800 ring-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+      : 'from-indigo-600 to-indigo-700 text-white ring-indigo-300';
 
     if (nudge) {
       label = 'Teacher check-in';
       detail = 'Tap to reply';
-      colour = 'from-rose-600 to-red-600 text-white ring-rose-300';
+      colour = quietAlerts
+        ? 'border border-rose-200 bg-rose-50 text-rose-950 ring-rose-100 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-100 dark:ring-rose-950'
+        : 'from-rose-600 to-red-600 text-white ring-rose-300';
     } else if (featuredNotice) {
       label = 'Answer featured!';
       detail = 'Tap to see it';
-      colour = 'from-amber-400 to-yellow-300 text-amber-950 ring-amber-200';
+      colour = quietAlerts
+        ? 'border border-amber-200 bg-amber-50 text-amber-950 ring-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100 dark:ring-amber-950'
+        : 'from-amber-400 to-yellow-300 text-amber-950 ring-amber-200';
     } else if (needsAnswer) {
       label = `Question · Q${activity.questionNumber || 1}`;
       detail = 'Tap to answer';
@@ -417,7 +423,9 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     } else if (activity) {
       label = `Question closed · Q${activity.questionNumber || 1}`;
       detail = 'Tap to review';
-      colour = 'from-slate-600 to-slate-700 text-white ring-slate-300';
+      colour = quietAlerts
+        ? 'border border-slate-200 bg-white text-slate-800 ring-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+        : 'from-slate-600 to-slate-700 text-white ring-slate-300';
     }
 
     return (

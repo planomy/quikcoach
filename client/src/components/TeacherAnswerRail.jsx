@@ -427,7 +427,7 @@ export default function TeacherAnswerRail({
             </ControlIcon>
             <ThinkingTrigger
               size="md"
-              hint="Thinking · class"
+              hint="Thinking prompts"
               studentIds={thinkingClassIds}
               targetLabel="the class"
               subjectAssist={subjectAssist}
