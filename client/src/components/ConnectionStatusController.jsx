@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 
+/** How long a blip can last before we treat it as a real connection problem. */
+const PROBLEM_AFTER_MS = 45000;
+
 function currentSocket() {
   if (typeof window === 'undefined') return null;
   return window.location.pathname === '/teacher'
@@ -17,6 +20,16 @@ function hideLegacyConnectionBanners() {
       node.dataset.iboardLegacyConnectionBanner = 'true';
     }
   }
+}
+
+function ReconnectingDots() {
+  return (
+    <span className="iboard-conn-dots" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  );
 }
 
 export default function ConnectionStatusController() {
@@ -53,14 +66,14 @@ export default function ConnectionStatusController() {
 
   useEffect(() => {
     if (!socket) return undefined;
-    let offlineTimer = null;
+    let problemTimer = null;
     let onlineTimer = null;
     let hadDisconnect = false;
 
     const clearTimers = () => {
-      if (offlineTimer) clearTimeout(offlineTimer);
+      if (problemTimer) clearTimeout(problemTimer);
       if (onlineTimer) clearTimeout(onlineTimer);
-      offlineTimer = null;
+      problemTimer = null;
       onlineTimer = null;
     };
 
@@ -68,7 +81,14 @@ export default function ConnectionStatusController() {
       hadDisconnect = true;
       clearTimers();
       setState('reconnecting');
-      offlineTimer = setTimeout(() => setState('offline'), 9000);
+      // Only go red after a sustained outage — brief blips stay calm.
+      problemTimer = setTimeout(() => setState('failed'), PROBLEM_AFTER_MS);
+    };
+
+    const onReconnectFailed = () => {
+      hadDisconnect = true;
+      clearTimers();
+      setState('failed');
     };
 
     const onConnect = () => {
@@ -84,43 +104,53 @@ export default function ConnectionStatusController() {
 
     socket.on('disconnect', onDisconnect);
     socket.on('connect', onConnect);
+    socket.io?.on?.('reconnect_failed', onReconnectFailed);
     if (!socket.connected) onDisconnect();
 
     return () => {
       socket.off('disconnect', onDisconnect);
       socket.off('connect', onConnect);
+      socket.io?.off?.('reconnect_failed', onReconnectFailed);
       clearTimers();
     };
   }, [socket]);
 
   if (state === 'hidden') return null;
 
-  const config = state === 'online'
-    ? {
-        label: 'Back online',
-        classes: 'border-[#cfcce8] bg-white text-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300',
-        dot: 'bg-[#5a5fc3]',
-      }
-    : state === 'offline'
-      ? {
-          label: 'Still offline',
-          classes: 'border-red-200 bg-white text-red-700 dark:border-red-900 dark:bg-slate-900 dark:text-red-300',
-          dot: 'bg-red-500',
-        }
-      : {
-          label: 'Reconnecting…',
-          classes: 'border-slate-200 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300',
-          dot: 'bg-[#5a5fc3] animate-pulse',
-        };
+  if (state === 'online') {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="iboard-conn-pill fixed left-1/2 top-3 z-[100] flex -translate-x-1/2 items-center gap-2 border-[#cfcce8] bg-white text-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300"
+      >
+        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#5a5fc3]" />
+        <span>Back online</span>
+      </div>
+    );
+  }
+
+  if (state === 'failed') {
+    return (
+      <div
+        role="status"
+        aria-live="assertive"
+        className="iboard-conn-pill fixed left-1/2 top-3 z-[100] flex -translate-x-1/2 items-center gap-2 border-red-200 bg-white text-red-700 dark:border-red-900 dark:bg-slate-900 dark:text-red-300"
+      >
+        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-red-500" />
+        <span>Can&apos;t reconnect — check your network</span>
+      </div>
+    );
+  }
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className={`fixed left-1/2 top-3 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black shadow-lg backdrop-blur ${config.classes}`}
+      className="iboard-conn-pill fixed left-1/2 top-3 z-[100] flex -translate-x-1/2 items-center gap-2 border-slate-200 bg-white text-slate-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300"
     >
-      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${config.dot}`} />
-      <span>{config.label}</span>
+      <span>Reconnecting</span>
+      <ReconnectingDots />
     </div>
   );
 }

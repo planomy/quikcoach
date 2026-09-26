@@ -8,7 +8,7 @@ const PILL_IN_DELAY_MS = 480;
 
 const STEPS = [
   { id: 'share', text: 'Share items with your students', place: 'right', clip: 'rail' },
-  { id: 'engage', text: 'Ask the class and watch answers', place: 'right', clip: 'rail' },
+  { id: 'engage', text: 'Ask the class questions and watch the responses.', place: 'right', clip: 'rail' },
   { id: 'board', text: 'Toggle student writing card view, set a timer, manage the session', place: 'right', clip: 'rail' },
   { id: 'rec', text: "Record your students' drafting", place: 'left', clip: 'header' },
   { id: 'headerTools', text: 'Go fullscreen, take a snapshot of all writing, view the help menu', place: 'left', clip: 'header' },
