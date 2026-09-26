@@ -11,6 +11,7 @@ const STEPS = [
   { id: 'engage', text: 'Ask the class and watch answers', place: 'right', clip: 'rail' },
   { id: 'board', text: 'Toggle student writing card view, set a timer, manage the session', place: 'right', clip: 'rail' },
   { id: 'rec', text: "Record your students' drafting", place: 'left', clip: 'header' },
+  { id: 'headerTools', text: 'Go fullscreen, take a snapshot of all writing, view the help menu', place: 'left', clip: 'header' },
 ];
 
 function readDismissed() {

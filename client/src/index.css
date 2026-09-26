@@ -1259,6 +1259,27 @@ html.dark .iboard-tour__close:hover {
   transition: color 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.iboard-arr-btn__icon {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  pointer-events: none;
+  background-color: currentColor;
+  -webkit-mask: var(--iboard-rail-icon) center / contain no-repeat;
+  mask: var(--iboard-rail-icon) center / contain no-repeat;
+  transition: color 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.iboard-arr-btn__icon--document { --iboard-rail-icon: url('/brand/rail-document.png'); }
+.iboard-arr-btn__icon--image { --iboard-rail-icon: url('/brand/rail-image.png'); }
+.iboard-arr-btn__icon--text { --iboard-rail-icon: url('/brand/rail-text.png'); }
+.iboard-arr-btn__icon--ask { --iboard-rail-icon: url('/brand/rail-ask.png'); }
+.iboard-arr-btn__icon--responses { --iboard-rail-icon: url('/brand/rail-responses.png'); }
+.iboard-arr-btn__icon--view { --iboard-rail-icon: url('/brand/rail-view.png'); }
+.iboard-arr-btn__icon--timer { --iboard-rail-icon: url('/brand/rail-timer.png'); }
+.iboard-arr-btn__icon--session { --iboard-rail-icon: url('/brand/rail-session.png'); }
+
 .iboard-arr-label {
   display: block;
   width: 100%;
@@ -1288,13 +1309,16 @@ html.dark .iboard-tour__close:hover {
 
 .iboard-arr-btn:hover .iboard-arr-btn__glyph,
 .iboard-arr-btn[data-active='true'] .iboard-arr-btn__glyph,
+.iboard-arr-btn:hover .iboard-arr-btn__icon,
+.iboard-arr-btn[data-active='true'] .iboard-arr-btn__icon,
 .iboard-arr-btn:hover .iboard-arr-label,
 .iboard-arr-btn[data-active='true'] .iboard-arr-label {
   color: #ffffff;
 }
 
 .iboard-arr-btn:hover:not([data-active='true']) img,
-.iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph {
+.iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph,
+.iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__icon {
   transform: scale(1.06);
 }
 
@@ -3497,7 +3521,8 @@ html.dark .iboard-arr-btn {
   color: #c7d0dc;
 }
 
-html.dark .iboard-arr-btn__glyph {
+html.dark .iboard-arr-btn__glyph,
+html.dark .iboard-arr-btn__icon {
   color: #c7d0dc;
 }
 
@@ -3514,8 +3539,10 @@ html.dark .iboard-arr-btn[data-active='true'] {
 }
 
 html.dark .iboard-arr-btn:hover .iboard-arr-btn__glyph,
+html.dark .iboard-arr-btn:hover .iboard-arr-btn__icon,
 html.dark .iboard-arr-btn:hover .iboard-arr-label,
 html.dark .iboard-arr-btn[data-active='true'] .iboard-arr-btn__glyph,
+html.dark .iboard-arr-btn[data-active='true'] .iboard-arr-btn__icon,
 html.dark .iboard-arr-btn[data-active='true'] .iboard-arr-label {
   color: #ffffff;
 }
