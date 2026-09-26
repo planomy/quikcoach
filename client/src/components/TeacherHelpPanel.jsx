@@ -133,9 +133,7 @@ export function TeacherHelpButton({ open, onClick, buttonRef }) {
         className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
         aria-label="How to use TUIT"
       >
-        <span className="iboard-help-glyph" aria-hidden="true">
-          ?
-        </span>
+        <span className="iboard-header-icon iboard-header-icon--help" aria-hidden="true" />
       </button>
     </HintWrap>
   );

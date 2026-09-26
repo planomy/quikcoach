@@ -1467,21 +1467,7 @@ export default function StudentView() {
               aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               title=""
             >
-              {browserFullscreen ? (
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M9 3v6H3" />
-                  <path d="M15 3v6h6" />
-                  <path d="M9 21v-6H3" />
-                  <path d="M15 21v-6h6" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M3 9V3h6" />
-                  <path d="M21 9V3h-6" />
-                  <path d="M3 15v6h6" />
-                  <path d="M21 15v6h-6" />
-                </svg>
-              )}
+              <span className="iboard-header-icon iboard-header-icon--fullscreen" aria-hidden="true" />
             </button>
             </HintWrap>
             <details className="group relative shrink-0">
