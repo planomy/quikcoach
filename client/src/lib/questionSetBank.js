@@ -78,13 +78,12 @@ export const QUESTION_SET_BANK = [
     years: '7–10',
     skill: 'Creative writing',
     minutes: 10,
-    note: 'Students need writing on the page. For a cold start use Get Writing — Narrative first. Best as revise — needs a draft that names an emotion.',
     prompts: [
-      'Find a sentence that tells the reader how the character feels. Paste it here.',
-      'Paste that sentence again with the emotion word removed.',
-      'What could the character do physically instead?',
-      'Add one small body-language or sensory detail. Write the new sentence.',
-      'What would a reader now guess the character is feeling?',
+      'What is your character feeling in this moment? Name the emotion in one word.',
+      'Write one sentence that tells that feeling using the emotion word.',
+      'Rewrite that sentence with the emotion word removed — show it through what they do.',
+      'Add one body-language or sensory detail. Write the stronger sentence.',
+      'What would a reader now guess they are feeling — and which clue made them think that?',
     ],
   }),
   set({

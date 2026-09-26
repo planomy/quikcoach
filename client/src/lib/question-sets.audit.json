@@ -88,24 +88,24 @@
       "year_min": 7,
       "year_max": 10,
       "minutes": 10,
-      "mode": "revise",
-      "requires": "a draft that names an emotion",
-      "teacher_note": "Students need writing on the page. For a cold start use Get Writing — Narrative first.",
+      "mode": "generate",
+      "requires": null,
+      "teacher_note": null,
       "prompts": [
         {
-          "text": "Find a sentence that tells the reader how the character feels. Paste it here."
+          "text": "What is your character feeling in this moment? Name the emotion in one word."
         },
         {
-          "text": "Paste that sentence again with the emotion word removed."
+          "text": "Write one sentence that tells that feeling using the emotion word."
         },
         {
-          "text": "What could the character do physically instead?"
+          "text": "Rewrite that sentence with the emotion word removed — show it through what they do."
         },
         {
-          "text": "Add one small body-language or sensory detail. Write the new sentence."
+          "text": "Add one body-language or sensory detail. Write the stronger sentence."
         },
         {
-          "text": "What would a reader now guess the character is feeling?"
+          "text": "What would a reader now guess they are feeling — and which clue made them think that?"
         }
       ]
     },
