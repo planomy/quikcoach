@@ -436,6 +436,7 @@ function TeacherDashboardInner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timerOpen, setTimerOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
+  const [overviewColsPeek, setOverviewColsPeek] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [tourKey, setTourKey] = useState(0);
   const [helpDockBox, setHelpDockBox] = useState(null);
@@ -1763,7 +1764,10 @@ function TeacherDashboardInner() {
       }
       if (settingsOpen) closeSettings();
       if (timerOpen) setTimerOpen(false);
-      if (viewOpen) setViewOpen(false);
+      if (viewOpen) {
+        setViewOpen(false);
+        setOverviewColsPeek(false);
+      }
       if (helpOpen) setHelpOpen(false);
     }
 
@@ -1775,7 +1779,10 @@ function TeacherDashboardInner() {
       }
       if (settingsOpen) closeSettings();
       if (timerOpen) setTimerOpen(false);
-      if (viewOpen) setViewOpen(false);
+      if (viewOpen) {
+        setViewOpen(false);
+        setOverviewColsPeek(false);
+      }
       if (helpOpen) setHelpOpen(false);
     }
 
@@ -1859,7 +1866,7 @@ function TeacherDashboardInner() {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', alignDockToRailButton);
     };
-  }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen, toolsTab, cardView]);
+  }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen, toolsTab]);
 
   useEffect(() => {
     if (!handQuestionTarget) return;
@@ -4856,51 +4863,68 @@ function TeacherDashboardInner() {
           aria-labelledby="card-view-title"
         >
           <h2 id="card-view-title" className="sr-only">View</h2>
-          <div className="flex items-stretch gap-0.5 p-1.5" role="group" aria-label="Card view">
-            {CARD_VIEWS.map((view) => {
-              const active = cardView === view.id;
-              return (
-                <HintWrap key={view.id} hint={view.label} prefer="above" suppressed={active}>
-                  <button
-                    type="button"
-                    onClick={() => setCardView(view.id)}
-                    aria-pressed={active}
-                    title=""
-                    className={`flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold leading-tight transition ${
-                      active
-                        ? 'bg-[#5a5fc3] text-white shadow-sm'
-                        : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <CardViewIcon id={view.id} className="h-4 w-4 shrink-0" />
-                    <span>{view.id === 'full' ? 'Full' : view.label}</span>
-                  </button>
-                </HintWrap>
-              );
-            })}
-          </div>
-          {cardView === 'overview' ? (
-            <div className="flex items-center justify-center gap-1 border-t border-slate-200 px-2 py-1.5 dark:border-slate-700" role="group" aria-label="Overview columns">
-              {OVERVIEW_COLUMN_OPTIONS.map((count) => {
-                const active = overviewColumns === count;
+          <div
+            className="relative"
+            onMouseLeave={() => setOverviewColsPeek(false)}
+          >
+            <div className="flex items-stretch gap-0.5 p-1.5" role="group" aria-label="Card view">
+              {CARD_VIEWS.map((view) => {
+                const active = cardView === view.id;
+                const isOverview = view.id === 'overview';
                 return (
-                  <button
-                    key={count}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setOverviewColumns(count)}
-                    className={`min-w-[1.75rem] rounded-md px-1.5 py-1 text-[11px] font-semibold tabular-nums transition ${
-                      active
-                        ? 'bg-[#5a5fc3] text-white shadow-sm'
-                        : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {count}
-                  </button>
+                  <HintWrap key={view.id} hint={view.label} prefer="above" suppressed={active || (isOverview && overviewColsPeek)}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCardView(view.id);
+                        setOverviewColsPeek(isOverview);
+                      }}
+                      onMouseEnter={() => setOverviewColsPeek(isOverview)}
+                      onFocus={() => setOverviewColsPeek(isOverview)}
+                      aria-pressed={active}
+                      aria-expanded={isOverview ? overviewColsPeek : undefined}
+                      title=""
+                      className={`flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold leading-tight transition ${
+                        active
+                          ? 'bg-[#5a5fc3] text-white shadow-sm'
+                          : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <CardViewIcon id={view.id} className="h-4 w-4 shrink-0" />
+                      <span>{view.id === 'full' ? 'Full' : view.label}</span>
+                    </button>
+                  </HintWrap>
                 );
               })}
             </div>
-          ) : null}
+            {overviewColsPeek ? (
+              <div
+                className="absolute left-0 right-0 top-full z-10 flex items-center justify-center gap-1 rounded-b-xl border border-t-0 border-slate-200 bg-white px-2 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                role="group"
+                aria-label="Overview columns"
+              >
+                {OVERVIEW_COLUMN_OPTIONS.map((count) => {
+                  const active = overviewColumns === count;
+                  return (
+                    <button
+                      key={count}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setOverviewColumns(count)}
+                      onFocus={() => setOverviewColsPeek(true)}
+                      className={`min-w-[1.75rem] rounded-md px-1.5 py-1 text-[11px] font-semibold tabular-nums transition ${
+                        active
+                          ? 'bg-[#5a5fc3] text-white shadow-sm'
+                          : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {count}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
 
