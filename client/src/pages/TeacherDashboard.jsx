@@ -1854,7 +1854,13 @@ function TeacherDashboardInner() {
           ) || Math.max(panel.scrollHeight, panel.getBoundingClientRect().height)
         : 0;
       const maxHeight = Math.max(120, viewport - margin * 2);
-      const usedHeight = panelHeight ? Math.min(panelHeight, maxHeight) : Math.min(240, maxHeight);
+      // Ask sub-tabs share one header band. Align as a compact dock so opening on Sets
+      // (or switching into it) does not yank Quick / Write one / Sets up to the top.
+      const askCompact = toolsPanelOpen && toolsTab === 'ask';
+      const compactHeight = Math.min(340, maxHeight);
+      const usedHeight = askCompact
+        ? compactHeight
+        : (panelHeight ? Math.min(panelHeight, maxHeight) : Math.min(240, maxHeight));
       const centered = buttonBox.top + buttonBox.height / 2 - usedHeight / 2;
       const maxTop = viewport - margin - usedHeight;
       const nextTop = Math.round(Math.min(Math.max(margin, centered), Math.max(margin, maxTop)));
