@@ -232,13 +232,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       if (!id) continue;
       const persisted = commentTone(marker.annotation);
       const snapshot = checkAgainSnapshotRef.current.get(id);
-      if (persisted === 'open' && marker.detached) {
+      if (persisted === 'open' && marker.quoteDetached) {
         if (!detachedSinceRef.current.has(id)) detachedSinceRef.current.set(id, Date.now());
       } else {
         detachedSinceRef.current.delete(id);
       }
       const detachedLongEnough =
-        marker.detached && Date.now() - (detachedSinceRef.current.get(id) || Date.now()) >= 1500;
+        marker.quoteDetached && Date.now() - (detachedSinceRef.current.get(id) || Date.now()) >= 1500;
       const shouldAuto =
         (persisted === 'open' && detachedLongEnough) ||
         (persisted === 'reopen' && snapshot != null && liveText !== snapshot);
