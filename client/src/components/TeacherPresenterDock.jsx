@@ -680,20 +680,32 @@ export default function TeacherPresenterDock() {
             style={{
               width: 40,
               height: 40,
-              border: '1px solid #e2e8f0',
+              border: '1px solid #c7d2fe',
               borderRadius: 12,
               background: '#fff',
-              color: '#64748b',
+              color: '#4338ca',
               padding: 0,
-              fontSize: 16,
-              fontWeight: 700,
               boxShadow: '0 4px 14px rgba(15,23,42,.08)',
               cursor: 'pointer',
               display: 'grid',
               placeItems: 'center',
             }}
           >
-            ◈
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="4" width="18" height="12" rx="2" />
+              <path d="M8 20h8" />
+              <path d="M12 16v4" />
+            </svg>
           </button>
         </HintWrap>
       )}
