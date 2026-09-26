@@ -4077,7 +4077,7 @@ function TeacherDashboardInner() {
                           ? 'Message seen'
                           : noteReceiptByStudentId[s.id] === 'waiting'
                             ? 'Sent — waiting'
-                            : 'Chat'
+                            : 'Private chat'
                     }
                   >
                     <button
@@ -5524,7 +5524,7 @@ function TeacherDashboardInner() {
                         ? 'Message seen'
                         : noteReceiptByStudentId[focusedStudent.id] === 'waiting'
                           ? 'Sent — waiting'
-                          : 'Chat'
+                          : 'Private chat'
                   }
                 >
                   <button
