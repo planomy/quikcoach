@@ -168,7 +168,7 @@ const resolveAnnotationStmt = richDb.prepare(
 );
 const reopenAnnotationStmt = richDb.prepare(
   `UPDATE teacher_annotations
-   SET status = 'reopen', resolved_at = NULL, updated_at = datetime('now')
+   SET status = 'reopen', student_fixed_at = NULL, resolved_at = NULL, updated_at = datetime('now')
    WHERE id = ?`
 );
 const deleteAnnotationStmt = richDb.prepare(`DELETE FROM teacher_annotations WHERE id = ?`);

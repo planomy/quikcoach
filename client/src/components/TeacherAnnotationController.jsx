@@ -965,7 +965,7 @@ export default function TeacherAnnotationController() {
     const patch =
       action === 'confirm'
         ? { status: 'resolved', resolved_at: now }
-        : { status: 'reopen', resolved_at: '' };
+        : { status: 'reopen', resolved_at: '', student_fixed_at: '' };
     setReviewBusyId(annotationId);
     setReviewError('');
     setByStudent((prev) => patchAnnotationInMap(prev, annotationId, patch));

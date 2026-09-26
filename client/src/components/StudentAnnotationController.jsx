@@ -189,7 +189,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         autoFixQueuedRef.current.delete(id);
       }
     }
-  }, [annotations]);
+    // Keep pips in lockstep when Check again / Confirm lands from the teacher.
+    refreshHighlights();
+  }, [annotations, refreshHighlights]);
 
   const markCommentFixed = useCallback(
     (annotationId) => {
@@ -230,7 +232,9 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     for (const marker of markers) {
       const id = Number(marker.annotation?.id);
       if (!id) continue;
-      const persisted = commentTone(marker.annotation);
+      const live =
+        (annotations || []).find((item) => Number(item.id) === id) || marker.annotation;
+      const persisted = commentTone(live);
       const snapshot = checkAgainSnapshotRef.current.get(id);
       if (persisted === 'open' && marker.quoteDetached) {
         if (!detachedSinceRef.current.has(id)) detachedSinceRef.current.set(id, Date.now());
@@ -239,9 +243,13 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       }
       const detachedLongEnough =
         marker.quoteDetached && Date.now() - (detachedSinceRef.current.get(id) || Date.now()) >= 1500;
+      // Check again (red): any student edit — or the quote rematching away — flips to purple
+      // “waiting for teacher” on both boards.
+      const reopenRevised =
+        persisted === 'reopen' &&
+        ((snapshot != null && liveText !== snapshot) || Boolean(marker.quoteDetached));
       const shouldAuto =
-        (persisted === 'open' && detachedLongEnough) ||
-        (persisted === 'reopen' && snapshot != null && liveText !== snapshot);
+        (persisted === 'open' && detachedLongEnough) || reopenRevised;
       if (!shouldAuto) {
         const pending = timers.get(id);
         if (pending) {

@@ -206,7 +206,7 @@ export function commentGutterLane(_tone) {
 
 export const COMMENT_PIP_HINT = {
   open: 'New comment',
-  fixed: 'Waiting for teacher',
+  fixed: 'Student revised — check this',
   reopen: 'Check again',
   resolved: 'Confirmed',
 };
