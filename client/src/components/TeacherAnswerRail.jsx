@@ -422,7 +422,7 @@ export default function TeacherAnswerRail({
             >
               <PauseIcon paused={!!activity.locked} />
             </ControlIcon>
-            <ControlIcon label="Remind students who have not answered" hint="Remind" onClick={remindUnanswered}>
+            <ControlIcon label="Nudge non-responders" hint="Nudge non-responders" onClick={remindUnanswered}>
               <BellIcon />
             </ControlIcon>
             <ThinkingTrigger
