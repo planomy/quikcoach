@@ -34,6 +34,9 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
   const tipRef = useRef(null);
   const hoverTimerRef = useRef(null);
   const openedByHoverRef = useRef(false);
+  // Pointer activation focuses the control after pointerdown; skip that focus so the
+  // tip does not flash open for a frame before clickCapture hides it again.
+  const ignoreFocusUntilRef = useRef(0);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState(null);
 
@@ -68,9 +71,15 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
 
   const openFromFocus = () => {
     if (suppressed) return;
+    if (typeof performance !== 'undefined' && performance.now() < ignoreFocusUntilRef.current) return;
     clearHoverTimer();
     openedByHoverRef.current = false;
     setOpen(true);
+  };
+
+  const onPointerDownCapture = () => {
+    ignoreFocusUntilRef.current = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + 500;
+    hideNow();
   };
 
   useEffect(() => () => clearHoverTimer(), []);
@@ -106,7 +115,7 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
       className={`relative inline-flex ${className}`}
       onMouseEnter={openFromHover}
       onMouseLeave={closeFromHover}
-      onPointerDownCapture={hideNow}
+      onPointerDownCapture={onPointerDownCapture}
       onClickCapture={hideNow}
       onFocusCapture={openFromFocus}
       onBlurCapture={(event) => {
