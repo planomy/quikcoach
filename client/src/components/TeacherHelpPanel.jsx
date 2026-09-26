@@ -18,7 +18,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'responses',
     title: 'Read Responses',
-    body: "Open Responses to watch live answers, remind anyone who hasn't responded, project responses then tap Done when finished.",
+    body: "Open Responses to watch live answers, remind anyone who hasn't responded, project responses then tap End question when finished.",
     action: 'responses',
   },
   {

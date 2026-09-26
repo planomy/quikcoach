@@ -157,10 +157,10 @@ function BellIcon() {
   );
 }
 
-function DoneIcon() {
+function EndQuestionIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m5 12 4 4L19 6" />
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor">
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
     </svg>
   );
 }
@@ -433,8 +433,8 @@ export default function TeacherAnswerRail({
               subjectAssist={subjectAssist}
               onSent={onThinkingSent}
             />
-            <ControlIcon label="Finish this question" hint="Done" onClick={finishQuestion} primary>
-              <DoneIcon />
+            <ControlIcon label="End question for the class" hint="End question" onClick={finishQuestion} primary>
+              <EndQuestionIcon />
             </ControlIcon>
             {activity.correctAnswer && !activity.revealed && (
               <details className="relative">
