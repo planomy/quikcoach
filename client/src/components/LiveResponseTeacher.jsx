@@ -327,7 +327,7 @@ export default function LiveResponseTeacher({
     if (panelTab && typeof onPanelTabChange === 'function') onPanelTabChange(nextTab);
     else if (panelTabs) setInternalPanelTab(nextTab);
     if (nextTab === 'respond') setActiveView('qna');
-    else if (nextTab === 'ask' && (activeView === 'qna' || activeView === 'student')) {
+    else if (nextTab === 'ask' && activeView === 'qna') {
       setActiveView(readSavedAskTab());
     }
   }
@@ -371,7 +371,6 @@ export default function LiveResponseTeacher({
     if (!positions[studentId]) positions[studentId] = index + 1;
     return positions;
   }, {});
-  const selectedStudent = students.find((student) => Number(student.id) === Number(selectedStudentId)) || null;
   const liveEngagementMatch = engagementFocus
     ? students.find((student) => Number(student.id) === Number(engagementFocus.id)) || null
     : null;
@@ -531,17 +530,16 @@ export default function LiveResponseTeacher({
 
   function nudge(studentId) {
     socket.emit('teacher:live-nudge', { studentId }, (ack) => {
-      setMessage(ack?.ok ? 'Private check-in sent.' : 'Student is not available.');
+      setMessage(ack?.ok ? 'Check-in sent.' : 'Student is not available.');
     });
   }
 
   function acknowledge(studentId) {
     socket.emit('teacher:live-acknowledge', { studentId }, (ack) => {
       if (ack?.ok) {
-        setMessage('Alert cleared.');
+        setMessage('Got it — alert cleared.');
         setEngagementFocus(null);
         setSelectedStudentId(null);
-        if (activeView === 'student') returnToPrimaryView();
       } else {
         setMessage('Could not clear alert.');
       }
@@ -600,17 +598,11 @@ export default function LiveResponseTeacher({
     setSelectedStudentId(null);
   }
 
-  function openStudent(student) {
-    setSelectedStudentId(student.id);
-    if (usingPanelTabs) {
-      switchPanelTab('respond');
-      setActiveView('student');
+  function selectEngagementStudent(student) {
+    if (Number(engagementFocus?.id) === Number(student.id)) {
+      clearEngagementFocus();
       return;
     }
-    setActiveView(pendingByStudent[Number(student.id)] ? 'qna' : 'student');
-  }
-
-  function selectEngagementStudent(student) {
     setSelectedStudentId(student.id);
     // Snapshot so the action bar stays open even if live roster briefly reorders.
     setEngagementFocus({
@@ -741,38 +733,47 @@ export default function LiveResponseTeacher({
         })}
         {!students.length && <p className="col-span-full py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
       </div>
-      {engagementFocusStudent && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-black text-slate-900 dark:text-white">{engagementFocusStudent.name}</p>
-            <p className="text-[10px] text-slate-500">{studentTileMeta(engagementFocusStudent).title}</p>
+      {engagementFocusStudent && (() => {
+        const needsAttention =
+          engagementFocusStudent.engagement_status
+          && engagementFocusStudent.engagement_status !== 'ready';
+        return (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-black text-slate-900 dark:text-white">{engagementFocusStudent.name}</p>
+              <p className="text-[10px] text-slate-500">{studentTileMeta(engagementFocusStudent).title}</p>
+            </div>
+            {needsAttention ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => acknowledge(engagementFocusStudent.id)}
+                  className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-black text-amber-950"
+                >
+                  Got it
+                </button>
+                <button
+                  type="button"
+                  disabled={!engagementFocusStudent.connected}
+                  onClick={() => nudge(engagementFocusStudent.id)}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-black text-slate-700 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  Check in again
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                disabled={!engagementFocusStudent.connected}
+                onClick={() => nudge(engagementFocusStudent.id)}
+                className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white disabled:opacity-40"
+              >
+                Check in
+              </button>
+            )}
           </div>
-          <button
-            type="button"
-            disabled={!engagementFocusStudent.connected}
-            onClick={() => nudge(engagementFocusStudent.id)}
-            className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black text-white disabled:opacity-40"
-          >
-            Send private check-in
-          </button>
-          {engagementFocusStudent.engagement_status && engagementFocusStudent.engagement_status !== 'ready' && (
-            <button
-              type="button"
-              onClick={() => acknowledge(engagementFocusStudent.id)}
-              className="rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-black text-amber-950"
-            >
-              Clear alert
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={clearEngagementFocus}
-            className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-          >
-            Done
-          </button>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 
@@ -889,42 +890,7 @@ export default function LiveResponseTeacher({
         </div>
       )}
 
-      {!overlay && !usingPanelTabs && (
-      <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/50">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <div><h3 className="text-sm font-black text-slate-900 dark:text-white">Class engagement</h3><p className="text-[10px] text-slate-500">{connectedCount} online{attention.length ? ` · ${attention.length} need attention` : ''}{pendingQuestions.length ? ` · ${pendingQuestions.length} question${pendingQuestions.length === 1 ? '' : 's'} waiting` : ''}</p></div>
-        </div>
-        <div className="iboard-engagement-chits">
-          {students.map((student) => {
-            const tile = studentTileMeta(student);
-            const questionCount = pendingByStudent[Number(student.id)] || 0;
-            const queuePosition = firstPendingPositionByStudent[Number(student.id)] || 0;
-            const needsAttention = student.engagement_status && student.engagement_status !== 'ready';
-            return (
-              <div key={student.id} className="iboard-engagement-chit relative">
-                <HintWrap hint={`${student.name} · ${tile.title}`} prefer="above">
-                  <button type="button" onClick={() => openStudent(student)} title="" className="flex w-full flex-col items-center gap-1 rounded-[1.1rem] border border-slate-200 bg-white px-1 pb-1.5 pt-2 dark:border-slate-700 dark:bg-slate-900">
-                    <EngagementRing engagement={student.engagement} connected={student.connected} size={34} />
-                    <span className="w-full truncate px-0.5 text-center text-[10px] font-black leading-tight text-slate-900 dark:text-white">{firstName(student.name)}</span>
-                  </button>
-                </HintWrap>
-                {needsAttention && (
-                  <HintWrap hint={STATUS_LABELS[student.engagement_status] || student.engagement_status} prefer="above">
-                    <span title="" className="absolute -left-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-sm">!</span>
-                  </HintWrap>
-                )}
-                {questionCount > 0 && (
-                  <HintWrap hint={`Question ${queuePosition} in the queue`} prefer="above">
-                    <button type="button" onClick={() => { setSelectedStudentId(student.id); setActiveView('qna'); }} aria-label={`Question ${queuePosition} in the queue from ${student.name}${questionCount > 1 ? ` · ${questionCount} questions waiting` : ''}`} title="" className="absolute right-0 top-0 grid h-6 min-w-6 place-items-center rounded-full bg-[#5a5fc3] px-1 text-[10px] font-black text-white shadow-sm ring-2 ring-white dark:ring-slate-900">{queuePosition}</button>
-                  </HintWrap>
-                )}
-              </div>
-            );
-          })}
-          {!students.length && <p className="col-span-full py-3 text-xs text-slate-500">Students will appear here when they join.</p>}
-        </div>
-      </div>
-      )}
+      {!overlay && !usingPanelTabs && awarenessStrip}
 
       {panelTabNav}
       {usingPanelTabs && effectivePanelTab === 'responses' && awarenessStrip}
@@ -1031,9 +997,7 @@ export default function LiveResponseTeacher({
       >
 
 
-        {(!usingPanelTabs || effectivePanelTab === 'respond') && activeView === 'student' && selectedStudent && <div className="p-4"><div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Student check-in</p><h3 className="font-display text-lg font-black text-slate-950 dark:text-white">{selectedStudent.name}</h3><p className="mt-1 text-xs text-slate-500">{studentTileMeta(selectedStudent).title}</p></div><CloseButton onClick={returnToPrimaryView} label="Close" /></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={!selectedStudent.connected} onClick={() => nudge(selectedStudent.id)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40">Send private check-in</button>{selectedStudent.engagement_status && selectedStudent.engagement_status !== 'ready' && <button type="button" onClick={() => acknowledge(selectedStudent.id)} className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-black text-amber-950">Clear alert</button>}{pendingByStudent[Number(selectedStudent.id)] > 0 && <button type="button" onClick={() => setActiveView('qna')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white">Review questions</button>}</div></div>}
-
-        {((!usingPanelTabs && activeView === 'qna') || (usingPanelTabs && effectivePanelTab === 'respond' && activeView !== 'student')) && (
+        {((!usingPanelTabs && activeView === 'qna') || (usingPanelTabs && effectivePanelTab === 'respond')) && (
           <AudienceQnaTeacher
             socket={socket}
             questions={qnaQuestions}

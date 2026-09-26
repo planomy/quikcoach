@@ -1699,7 +1699,7 @@ io.on('connection', (socket) => {
       cb?.({ ok: false });
       return;
     }
-    queries.setStudentEngagementStatus(db, sid, '');
+    // Keep any existing alert until the student replies or the teacher acknowledges.
     io.to(studentSocketName(sid)).emit('live:nudge', { message: 'Are you still with us?' });
     io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
     cb?.({ ok: true });
