@@ -8,6 +8,8 @@ client/dist/
 server/data/*.db
 server/data/*.db-wal
 server/data/*.db-shm
+# Live drafting evidence (student writing) — never commit
+server/data/draft-trails/
 
 # Env / secrets (if you add them later)
 .env

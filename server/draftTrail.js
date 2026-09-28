@@ -1,14 +1,125 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
-// Ephemeral, teacher-owned evidence. No new database or third-party service.
+// Teacher-owned evidence. No new database or third-party service.
 // Limits stop capture visibly; never silently drop the beginning of a trail.
+// Live trails are mirrored to disk so a server crash mid-lesson cannot erase them.
 const MAX_ROOM_BYTES = 8 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 64 * 1024 * 1024;
 const QUIET_MS = 3 * 60 * 1000;
 const LARGE_PASTE = 120;
 const LARGE_JUMP = 250;
+const PERSIST_EVERY_MS = 5000;
 const rooms = new Map();
 let totalBytes = 0;
+let persistDir = '';
+const dirtyRooms = new Set();
+const lastPersistAt = new Map();
+
+function markDirty(code) {
+  if (persistDir) dirtyRooms.add(code);
+}
+
+function roomFile(code) {
+  return path.join(persistDir, `${code}.json`);
+}
+
+function writeRoomFile(code) {
+  const room = rooms.get(code);
+  if (!room) return;
+  const data = {
+    version: 1,
+    active: room.active,
+    token: room.token,
+    reason: room.reason,
+    label: room.label,
+    changed: room.changed,
+    students: [...room.students.values()].map((s) => ({
+      id: s.id,
+      name: s.name,
+      text: s.text,
+      pending: s.pending,
+      lastCheckpoint: s.lastCheckpoint || 0,
+      events: s.events,
+    })),
+  };
+  const file = roomFile(code);
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(data));
+  fs.renameSync(tmp, file);
+}
+
+/** Write changed rooms to disk (throttled per room unless forced). */
+export function persistTrails(at = Date.now(), { force = false } = {}) {
+  if (!persistDir) return;
+  for (const code of [...dirtyRooms]) {
+    if (!force && at - (lastPersistAt.get(code) || 0) < PERSIST_EVERY_MS) continue;
+    try {
+      writeRoomFile(code);
+      dirtyRooms.delete(code);
+      lastPersistAt.set(code, at);
+    } catch (error) {
+      console.error(`Could not persist drafting evidence for room ${code}`, error);
+    }
+  }
+}
+
+/** Point persistence at a folder and restore any trails left by a previous run. */
+export function configureTrailPersistence(dir) {
+  persistDir = dir;
+  fs.mkdirSync(dir, { recursive: true });
+  for (const name of fs.readdirSync(dir)) {
+    if (name.endsWith('.tmp')) {
+      fs.rmSync(path.join(dir, name), { force: true });
+      continue;
+    }
+    if (!/^\d{4}\.json$/.test(name)) continue;
+    const code = name.slice(0, 4);
+    try {
+      const data = JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'));
+      if (data?.version !== 1 || !Array.isArray(data.students)) continue;
+      restoreRoom(code, data);
+    } catch (error) {
+      console.error(`Could not restore drafting evidence for room ${code}`, error);
+    }
+  }
+}
+
+function restoreRoom(code, data) {
+  if (rooms.has(code)) clearTrail(code);
+  const room = get(code);
+  room.active = !!data.active;
+  room.token = String(data.token || '');
+  room.reason = String(data.reason || '');
+  room.label = String(data.label || '');
+  room.changed = Number(data.changed) || Date.now();
+  for (const item of data.students) {
+    const events = Array.isArray(item.events) ? item.events : [];
+    const student = {
+      id: Number(item.id),
+      name: String(item.name || ''),
+      text: String(item.text || ''),
+      pending: item.pending || null,
+      lastCheckpoint: Number(item.lastCheckpoint) || 0,
+      events,
+      // The server went down mid-lesson: the next save records a visible gap.
+      gap: room.active,
+    };
+    const bytes = events.reduce((sum, e) => sum + Buffer.byteLength(JSON.stringify(e)), 0);
+    room.bytes += bytes;
+    totalBytes += bytes;
+    room.students.set(student.id, student);
+  }
+}
+
+/** Test hook: forget in-memory trails without touching disk (simulates a restart). */
+export function dropTrailsFromMemory() {
+  rooms.clear();
+  totalBytes = 0;
+  dirtyRooms.clear();
+  lastPersistAt.clear();
+}
 export function textDelta(before, after) {
   let start = 0;
   while (start < before.length && start < after.length && before[start] === after[start]) start++;
@@ -17,7 +128,7 @@ export function textDelta(before, after) {
   return { start, removed: before.length - start - end, inserted: after.slice(start, after.length - end) };
 }
 function get(code) {
-  if (!rooms.has(code)) rooms.set(code, { active: false, token: '', reason: '', label: '', students: new Map(), bytes: 0, changed: Date.now() });
+  if (!rooms.has(code)) rooms.set(code, { code, active: false, token: '', reason: '', label: '', students: new Map(), bytes: 0, changed: Date.now() });
   return rooms.get(code);
 }
 
@@ -63,6 +174,7 @@ export function trailStatus(code) {
 }
 function append(room, student, event) {
   const bytes = Buffer.byteLength(JSON.stringify(event));
+  markDirty(room.code);
   if (room.bytes + bytes > MAX_ROOM_BYTES || totalBytes + bytes > MAX_TOTAL_BYTES || student.events.length >= 3000) {
     room.active = false;
     room.reason = 'Drafting evidence storage limit reached. Save this session before resetting the class board.';
@@ -124,6 +236,8 @@ export function setTrailRecording(code, active, rows, at = Date.now(), options =
     } else if (!active) append(room, student, { type: 'stop', at });
   }
   room.changed = at;
+  markDirty(code);
+  persistTrails(at, { force: true });
   return trailStatus(code);
 }
 export function recordTrailText(code, beforeRow, text, metadata = {}, at = Date.now()) {
@@ -146,6 +260,7 @@ export function recordTrailText(code, beforeRow, text, metadata = {}, at = Date.
   }
   if (accepted === (student.pending?.text ?? student.text)) return;
   student.pending = { text: accepted, receivedAt: at };
+  markDirty(code);
   if (at - (student.lastCheckpoint || student.events[0].at) >= 30000) flush(room, student, at);
 }
 export function disconnectTrail(code, id) {
@@ -171,6 +286,7 @@ export function trailTick(at = Date.now()) {
     // Unsaved trails expire after 24 hours without changes, including abandoned rooms.
     if (at - room.changed > 86400000) clearTrail(code);
   }
+  persistTrails(at);
 }
 export function trailStudents(code) {
   const room = rooms.get(code);
@@ -194,6 +310,15 @@ export function clearTrail(code) {
   const room = rooms.get(code);
   if (room) totalBytes -= room.bytes;
   rooms.delete(code);
+  dirtyRooms.delete(code);
+  lastPersistAt.delete(code);
+  if (persistDir) {
+    try {
+      fs.rmSync(roomFile(code), { force: true });
+    } catch (error) {
+      console.error(`Could not remove drafting evidence file for room ${code}`, error);
+    }
+  }
 }
 export function exportTrails(code, idToExport) {
   const room = rooms.get(code);
@@ -261,4 +386,6 @@ export function importTrails(code, raw, exportToId) {
   }
   // Reopening a saved lesson must never silently restart recording.
   room.active = false;
+  markDirty(code);
+  persistTrails(Date.now(), { force: true });
 }

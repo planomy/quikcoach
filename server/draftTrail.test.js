@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { setTrailRecording, recordTrailText, trailTick, readTrail, exportTrails, importTrails, validateTrails, clearTrail, recordTrailFeedback, disconnectTrail, textDelta, trailStatus, studentTrailAttention } from './draftTrail.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { setTrailRecording, recordTrailText, trailTick, readTrail, exportTrails, importTrails, validateTrails, clearTrail, recordTrailFeedback, disconnectTrail, textDelta, trailStatus, studentTrailAttention, configureTrailPersistence, persistTrails, dropTrailsFromMemory } from './draftTrail.js';
 
 test('compact delta reconstructs insertion, deletion, replacement and Unicode', () => {
   for (const [before, after] of [['abc', 'axbc'], ['abc', 'ac'], ['', 'Hi 👋'], ['Hi 👋', 'Hello 🌏'], ['abc', ''], ['same', 'same']]) {
@@ -76,4 +79,28 @@ test('45-minute simulated class of 30 retains small checkpoints and final text',
   assert.ok(bytes < 500000);
   console.log(`30 students, 45 simulated minutes: ${bytes} bytes total`);
   clearTrail('3300');
+});
+test('live trail survives a server restart mid-recording and marks the gap', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trail-'));
+  configureTrailPersistence(dir);
+  const row = { id: 9, name: 'Sam', text: 'First' };
+  const { token } = setTrailRecording('5500', true, [row], 1000, { label: 'Crash test' });
+  recordTrailText('5500', row, 'First draft line', { token }, 2000);
+  recordTrailText('5500', row, 'First draft line, then more', { token, paste: true }, 3000);
+  persistTrails(4000, { force: true });
+  assert.ok(fs.existsSync(path.join(dir, '5500.json')));
+
+  dropTrailsFromMemory();
+  assert.equal(readTrail('5500', 9), null);
+  configureTrailPersistence(dir);
+
+  assert.equal(trailStatus('5500').active, true);
+  assert.equal(trailStatus('5500').label, 'Crash test');
+  assert.deepEqual(readTrail('5500', 9).events.map((e) => e.type), ['baseline', 'change', 'paste']);
+  recordTrailText('5500', row, 'After the restart', { token }, 5000);
+  assert.equal(readTrail('5500', 9).events.at(-1).type, 'gap');
+
+  clearTrail('5500');
+  assert.equal(fs.existsSync(path.join(dir, '5500.json')), false);
+  fs.rmSync(dir, { recursive: true, force: true });
 });

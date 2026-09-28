@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
 import { buildSessionPack, importSessionPack } from './sessionPack.js';
-import { trailStatus, setTrailRecording, recordTrailText, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail } from './draftTrail.js';
+import { trailStatus, setTrailRecording, recordTrailText, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail, configureTrailPersistence, persistTrails } from './draftTrail.js';
 import {
   BREAKOUT_SIZE,
   autoAssignBreakouts,
@@ -41,6 +41,14 @@ const db = openDatabase();
 const boardMediaRoot = path.join(dataDir, 'board-media');
 if (!fs.existsSync(boardMediaRoot)) {
   fs.mkdirSync(boardMediaRoot, { recursive: true });
+}
+
+configureTrailPersistence(path.join(dataDir, 'draft-trails'));
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.once(signal, () => {
+    persistTrails(Date.now(), { force: true });
+    process.exit(0);
+  });
 }
 
 /** Same 4-digit normalisation as join handlers — avoids room:123 vs room:0123 split. */
