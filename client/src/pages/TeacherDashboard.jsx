@@ -444,6 +444,7 @@ function TeacherDashboardInner() {
   const [attentionFocus, setAttentionFocus] = useState(false);
   /** Pastes this lesson by student id, pushed live by the server whether REC is on or off. */
   const [pasteCounts, setPasteCounts] = useState({});
+  const [pasteMenu, setPasteMenu] = useState(null); // { studentId, left, top }
   /** Pin students who asked a question or replied to a teacher message to the top. */
   const [inboxFocus, setInboxFocus] = useState(false);
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
@@ -1041,7 +1042,25 @@ function TeacherDashboardInner() {
     return () => socket.off('teacher:paste-alerts', onPasteAlerts);
   }, [socket]);
 
+  useEffect(() => {
+    if (!pasteMenu) return undefined;
+    const close = (event) => {
+      if (event.type === 'keydown' && event.key !== 'Escape') return;
+      if (event.type === 'pointerdown' && event.target.closest?.('[data-paste-menu]')) return;
+      setPasteMenu(null);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [pasteMenu]);
+
   function clearPasteAlert(studentId) {
+    setPasteMenu(null);
     setPasteCounts((prev) => {
       const next = { ...prev };
       delete next[studentId];
@@ -4107,14 +4126,20 @@ function TeacherDashboardInner() {
                         </HintWrap>
                       ) : null}
                       {pasteCounts[s.id] ? (
-                        <HintWrap hint="Dealt with? Click to clear" prefer="above">
+                        <HintWrap hint={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'} this lesson`} prefer="above">
                         <button
                           type="button"
                           title=""
-                          aria-label={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'}. Clear paste alert for ${s.name}`}
+                          aria-label={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'}. Options for ${s.name}`}
+                          aria-haspopup="menu"
+                          aria-expanded={pasteMenu?.studentId === s.id}
+                          data-paste-menu
                           onClick={(event) => {
                             event.stopPropagation();
-                            clearPasteAlert(s.id);
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            setPasteMenu((open) =>
+                              open?.studentId === s.id ? null : { studentId: s.id, left: rect.left, top: rect.bottom + 6 }
+                            );
                           }}
                           className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50"
                         >
@@ -4325,6 +4350,28 @@ function TeacherDashboardInner() {
             </div>
           );
         })(), document.body)}
+
+      {pasteMenu && pasteCounts[pasteMenu.studentId] ? createPortal(
+        <div
+          data-paste-menu
+          role="menu"
+          style={{ left: pasteMenu.left, top: pasteMenu.top }}
+          className="fixed z-[80] min-w-[11rem] rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900"
+        >
+          <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            Pasted {pasteCounts[pasteMenu.studentId]} {pasteCounts[pasteMenu.studentId] === 1 ? 'time' : 'times'} this lesson
+          </p>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => clearPasteAlert(pasteMenu.studentId)}
+            className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            Clear alert
+          </button>
+        </div>,
+        document.body
+      ) : null}
 
       {libraryPanel && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
