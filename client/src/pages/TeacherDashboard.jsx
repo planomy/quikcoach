@@ -1041,6 +1041,15 @@ function TeacherDashboardInner() {
     return () => socket.off('teacher:paste-alerts', onPasteAlerts);
   }, [socket]);
 
+  function clearPasteAlert(studentId) {
+    setPasteCounts((prev) => {
+      const next = { ...prev };
+      delete next[studentId];
+      return next;
+    });
+    socket.emit('teacher:paste-ack', { studentId });
+  }
+
   useEffect(() => {
     noteReplyByStudentIdRef.current = noteReplyByStudentId;
   }, [noteReplyByStudentId]);
@@ -4098,14 +4107,19 @@ function TeacherDashboardInner() {
                         </HintWrap>
                       ) : null}
                       {pasteCounts[s.id] ? (
-                        <HintWrap hint={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'} this lesson`} prefer="above">
-                        <span
+                        <HintWrap hint="Dealt with? Click to clear" prefer="above">
+                        <button
+                          type="button"
                           title=""
-                          aria-label={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'} this lesson`}
-                          className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                          aria-label={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'}. Clear paste alert for ${s.name}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            clearPasteAlert(s.id);
+                          }}
+                          className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50"
                         >
                           Pasted{pasteCounts[s.id] > 1 ? ` ×${pasteCounts[s.id]}` : ''}
-                        </span>
+                        </button>
                         </HintWrap>
                       ) : null}
                     </div>

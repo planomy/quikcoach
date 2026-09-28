@@ -194,21 +194,27 @@ export const insightPaste = safely((roomCode, studentId, inserted, at) =>
 );
 export const insightLessonEnd = safely((roomCode, at) => endLesson(roomCode, at));
 
-/** Pastes per current student id in the running lesson, for the teacher's live header pill. */
+/** The teacher has dealt with this student's pastes; only later pastes flag them again. */
+export const insightPasteAck = safely((roomCode, studentId, at) =>
+  record(roomCode, 'paste_ack', { studentId, at })
+);
+
+/** Unacknowledged pastes per current student id in the running lesson, for the live header pill. */
 export function livePasteCounts(roomCode, at = Date.now()) {
   const code = normaliseRoomCode(roomCode);
   const lesson = openLessonStmt.get(code);
   if (!lesson || at - Number(lesson.last_at) > LESSON_IDLE_SPLIT_MS) return {};
-  const byKey = new Map(
-    db
-      .prepare(
-        `SELECT student_key, COUNT(*) AS n FROM insight_events
-         WHERE lesson_id = ? AND type = 'paste' AND student_key IS NOT NULL
-         GROUP BY student_key`
-      )
-      .all(lesson.id)
-      .map((row) => [row.student_key, Number(row.n)])
-  );
+  const byKey = new Map();
+  const rows = db
+    .prepare(
+      `SELECT student_key, type FROM insight_events
+       WHERE lesson_id = ? AND type IN ('paste', 'paste_ack') AND student_key IS NOT NULL
+       ORDER BY at ASC, id ASC`
+    )
+    .all(lesson.id);
+  for (const row of rows) {
+    byKey.set(row.student_key, row.type === 'paste_ack' ? 0 : (byKey.get(row.student_key) || 0) + 1);
+  }
   const counts = {};
   if (!byKey.size) return counts;
   for (const row of roomStudentsStmt.all(code)) {

@@ -113,6 +113,12 @@ test('live paste counts follow the current roster and clear on a new class', () 
   insights.insightPaste(code, ben.id, 2, now + 2000);
   assert.deepEqual(insights.livePasteCounts(code, now + 3000), { [ana.id]: 2, [ben.id]: 1 });
 
+  insights.insightPasteAck(code, ana.id, now + 3100);
+  assert.deepEqual(insights.livePasteCounts(code, now + 3200), { [ben.id]: 1 }, 'cleared once dealt with');
+  insights.insightPaste(code, ana.id, 9, now + 3300);
+  assert.deepEqual(insights.livePasteCounts(code, now + 3400), { [ana.id]: 1, [ben.id]: 1 }, 'a new paste flags again');
+  assert.equal(insights.getInsights({ roomCode: code }).lessons[0].pastes, 4, 'clearing never erases the insights count');
+
   insights.insightLessonEnd(code, now + 4000);
   assert.deepEqual(insights.livePasteCounts(code, now + 5000), {});
 });

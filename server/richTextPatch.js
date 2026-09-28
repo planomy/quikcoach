@@ -10,6 +10,7 @@ import {
   insightCommentReopened,
   insightLessonEnd,
   insightPaste,
+  insightPasteAck,
   insightTextChanged,
   livePasteCounts,
   registerInsightsSocket,
@@ -587,6 +588,19 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
       if (socket.data.role !== 'teacher' || code.length !== 4) return;
       insightLessonEnd(code);
       setImmediate(() => emitPasteAlerts(io.to(`teacher:${code}`), code));
+    });
+
+    socket.on('teacher:paste-ack', (payload = {}, cb) => {
+      const code = normaliseRoomCode(socket.data.roomCode);
+      const studentId = Number(payload.studentId);
+      const student = studentId ? selectStudent.get(studentId) : null;
+      if (socket.data.role !== 'teacher' || !student || normaliseRoomCode(student.room_code) !== code) {
+        cb?.({ ok: false });
+        return;
+      }
+      insightPasteAck(code, studentId);
+      emitPasteAlerts(io.to(`teacher:${code}`), code);
+      cb?.({ ok: true });
     });
 
     registerInsightsSocket(socket);
