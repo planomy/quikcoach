@@ -442,6 +442,8 @@ function TeacherDashboardInner() {
   const [awayByStudentId, setAwayByStudentId] = useState(() => new Map());
   /** Pin attention cards (away / not started) to the top when true. */
   const [attentionFocus, setAttentionFocus] = useState(false);
+  /** Pastes this lesson by student id, pushed live by the server whether REC is on or off. */
+  const [pasteCounts, setPasteCounts] = useState({});
   /** Pin students who asked a question or replied to a teacher message to the top. */
   const [inboxFocus, setInboxFocus] = useState(false);
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
@@ -1029,6 +1031,17 @@ function TeacherDashboardInner() {
   }, [socket, markSessionDirty, markSaved]);
 
   useEffect(() => {
+    const onPasteAlerts = (payload) => setPasteCounts(payload?.counts || {});
+    socket.on('teacher:paste-alerts', onPasteAlerts);
+    if (joinedRef.current) {
+      socket.emit('teacher:paste-alerts-sync', {}, (ack) => {
+        if (ack?.ok) setPasteCounts(ack.counts || {});
+      });
+    }
+    return () => socket.off('teacher:paste-alerts', onPasteAlerts);
+  }, [socket]);
+
+  useEffect(() => {
     noteReplyByStudentIdRef.current = noteReplyByStudentId;
   }, [noteReplyByStudentId]);
 
@@ -1296,14 +1309,14 @@ function TeacherDashboardInner() {
         }
         if (attentionFocus) {
           const aAttention =
-            awayByStudentId.get(Number(a.id)) || isNotStarted(a, activityNow) ? 0 : 1;
+            pasteCounts[a.id] || awayByStudentId.get(Number(a.id)) || isNotStarted(a, activityNow) ? 0 : 1;
           const bAttention =
-            awayByStudentId.get(Number(b.id)) || isNotStarted(b, activityNow) ? 0 : 1;
+            pasteCounts[b.id] || awayByStudentId.get(Number(b.id)) || isNotStarted(b, activityNow) ? 0 : 1;
           if (aAttention !== bAttention) return aAttention - bAttention;
         }
         return Number(a.id) - Number(b.id);
       }),
-    [orderedStudents, monitoredIds, inboxFocus, pendingHandByStudentId, noteReceiptByStudentId, attentionFocus, awayByStudentId, activityNow]
+    [orderedStudents, monitoredIds, inboxFocus, pendingHandByStudentId, noteReceiptByStudentId, attentionFocus, awayByStudentId, activityNow, pasteCounts]
   );
 
   const breakoutsActive = !!breakouts?.active;
@@ -1347,7 +1360,7 @@ function TeacherDashboardInner() {
       const monitored = monitoredIds.has(Number(student.id)) ? 0 : 1;
       const attention =
         attentionFocus &&
-        (awayByStudentId.get(Number(student.id)) || isNotStarted(student, activityNow))
+        (pasteCounts[student.id] || awayByStudentId.get(Number(student.id)) || isNotStarted(student, activityNow))
           ? 0
           : 1;
       const inbox =
@@ -1393,6 +1406,7 @@ function TeacherDashboardInner() {
     noteReceiptByStudentId,
     awayByStudentId,
     activityNow,
+    pasteCounts,
   ]);
 
   function startBreakoutsAuto() {
@@ -3102,9 +3116,11 @@ function TeacherDashboardInner() {
     (n, student) => n + (isNotStarted(student, activityNow) ? 1 : 0),
     0
   );
+  const pastedCount = orderedStudents.reduce((n, student) => n + (pasteCounts[student.id] ? 1 : 0), 0);
   const attentionSummary = [
     awayCount > 0 ? `${awayCount} away` : '',
     notStartedCount > 0 ? `${notStartedCount} not started` : '',
+    pastedCount > 0 ? `${pastedCount} pasted` : '',
   ]
     .filter(Boolean)
     .join(' · ');
@@ -3156,7 +3172,7 @@ function TeacherDashboardInner() {
                 <b className="tabular-nums">{orderedStudents.length}</b> online
               </span>
               {attentionSummary ? (
-                <HintWrap hint={attentionFocus ? 'Show all cards' : 'Bring away / not started cards to the top'} prefer="below">
+                <HintWrap hint={attentionFocus ? 'Show all cards' : 'Bring these cards to the top'} prefer="below">
                   <button
                     type="button"
                     onClick={() => setAttentionFocus((on) => !on)}
@@ -4079,6 +4095,17 @@ function TeacherDashboardInner() {
                           }}
                           className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-600 ring-1 ring-red-200 hover:ring-red-300 dark:ring-red-900"
                         />
+                        </HintWrap>
+                      ) : null}
+                      {pasteCounts[s.id] ? (
+                        <HintWrap hint={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'} this lesson`} prefer="above">
+                        <span
+                          title=""
+                          aria-label={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'} this lesson`}
+                          className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                        >
+                          Pasted{pasteCounts[s.id] > 1 ? ` ×${pasteCounts[s.id]}` : ''}
+                        </span>
                         </HintWrap>
                       ) : null}
                     </div>

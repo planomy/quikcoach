@@ -194,6 +194,30 @@ export const insightPaste = safely((roomCode, studentId, inserted, at) =>
 );
 export const insightLessonEnd = safely((roomCode, at) => endLesson(roomCode, at));
 
+/** Pastes per current student id in the running lesson, for the teacher's live header pill. */
+export function livePasteCounts(roomCode, at = Date.now()) {
+  const code = normaliseRoomCode(roomCode);
+  const lesson = openLessonStmt.get(code);
+  if (!lesson || at - Number(lesson.last_at) > LESSON_IDLE_SPLIT_MS) return {};
+  const byKey = new Map(
+    db
+      .prepare(
+        `SELECT student_key, COUNT(*) AS n FROM insight_events
+         WHERE lesson_id = ? AND type = 'paste' AND student_key IS NOT NULL
+         GROUP BY student_key`
+      )
+      .all(lesson.id)
+      .map((row) => [row.student_key, Number(row.n)])
+  );
+  const counts = {};
+  if (!byKey.size) return counts;
+  for (const row of roomStudentsStmt.all(code)) {
+    const n = byKey.get(studentKey(code, row.name));
+    if (n) counts[row.id] = n;
+  }
+  return counts;
+}
+
 // Writing activity: who changed their draft recently. Sampled into the lesson every few minutes
 // while the class is writing, so "% actively writing" is based on the whole class, not just typists.
 const activity = new Map();
@@ -426,6 +450,20 @@ export function getInsights({ roomCode, scope = 'room', lessonId = null } = {}) 
 }
 
 export function registerInsightsSocket(socket) {
+  socket.on('teacher:paste-alerts-sync', (_payload, cb) => {
+    try {
+      const roomCode = normaliseRoomCode(socket.data.roomCode);
+      if (socket.data.role !== 'teacher' || roomCode.length !== 4) {
+        cb?.({ ok: false });
+        return;
+      }
+      cb?.({ ok: true, counts: livePasteCounts(roomCode) });
+    } catch (error) {
+      console.error('Could not read live paste alerts', error);
+      cb?.({ ok: false });
+    }
+  });
+
   socket.on('teacher:insights', (payload = {}, cb) => {
     try {
       const roomCode = normaliseRoomCode(socket.data.roomCode);

@@ -11,6 +11,7 @@ import {
   insightLessonEnd,
   insightPaste,
   insightTextChanged,
+  livePasteCounts,
   registerInsightsSocket,
   startInsightsSampler,
 } from './insights.js';
@@ -240,6 +241,14 @@ function markDetachedReopenFixed(io, roomCode, studentId, text) {
   return true;
 }
 
+function emitPasteAlerts(target, roomCode) {
+  try {
+    target.emit('teacher:paste-alerts', { counts: livePasteCounts(roomCode) });
+  } catch (error) {
+    console.error('Could not send live paste alerts', error);
+  }
+}
+
 function nearestQuoteStart(text, quote, expectedStart) {
   if (!quote) return -1;
   if (text.slice(expectedStart, expectedStart + quote.length) === quote) return expectedStart;
@@ -294,6 +303,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
             insightTextChanged(roomCode, studentId);
             if (payload?.draftTrail?.paste === true) {
               insightPaste(roomCode, studentId, insertedLength(beforeText, savedText));
+              emitPasteAlerts(io.to(`teacher:${roomCode}`), roomCode);
             }
           }
 
@@ -335,6 +345,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
         const code = normaliseRoomCode(socket.data.roomCode);
         if (socket.data.role !== 'teacher' || code.length !== 4) return;
         socket.emit('teacher-annotations:room', { byStudent: annotationsByStudent(code) });
+        emitPasteAlerts(socket, code);
       });
     });
 
@@ -575,6 +586,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
       const code = normaliseRoomCode(socket.data.roomCode);
       if (socket.data.role !== 'teacher' || code.length !== 4) return;
       insightLessonEnd(code);
+      setImmediate(() => emitPasteAlerts(io.to(`teacher:${code}`), code));
     });
 
     registerInsightsSocket(socket);

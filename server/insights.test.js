@@ -104,6 +104,19 @@ test('a long idle gap splits lessons and activity sampling covers the whole clas
   assert.equal(lesson.commentsGiven, 1);
 });
 
+test('live paste counts follow the current roster and clear on a new class', () => {
+  const code = '4103';
+  const [ana, ben] = classOf(code, ['Ana', 'Ben']);
+  const now = Date.now();
+  insights.insightPaste(code, ana.id, 5, now);
+  insights.insightPaste(code, ana.id, 300, now + 1000);
+  insights.insightPaste(code, ben.id, 2, now + 2000);
+  assert.deepEqual(insights.livePasteCounts(code, now + 3000), { [ana.id]: 2, [ben.id]: 1 });
+
+  insights.insightLessonEnd(code, now + 4000);
+  assert.deepEqual(insights.livePasteCounts(code, now + 5000), {});
+});
+
 test('recording failures never throw into the lesson', () => {
   assert.doesNotThrow(() => insights.insightCommentAdded(null, 'nope', undefined));
   assert.doesNotThrow(() => insights.insightPaste('9999', 123456, 'x'));
