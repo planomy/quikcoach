@@ -224,6 +224,14 @@ function initialCardView() {
   }
 }
 
+/** SQLite `datetime('now')` is UTC without a zone marker — show it in local time. */
+function formatSqlUtc(value) {
+  if (!value) return '';
+  const date = new Date(`${String(value).replace(' ', 'T')}Z`);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 function initialOverviewColumns() {
   if (typeof window === 'undefined') return OVERVIEW_COLUMNS_DEFAULT;
   try {
@@ -2268,6 +2276,7 @@ function TeacherDashboardInner() {
         return;
       }
       setAddCardOpen(false);
+      setAddCardTitle('');
       setAddCardText('');
       setAddCardImage('');
       setAddCardFile(null);
@@ -3843,7 +3852,12 @@ function TeacherDashboardInner() {
                     </a>
                   </div>
                 ) : post.text?.trim() ? (
-                  <p className="whitespace-pre-wrap break-words">{post.text}</p>
+                  <>
+                    {post.title && post.title !== 'Handout' ? (
+                      <p className="mb-1 font-semibold text-slate-800 dark:text-slate-100">{post.title}</p>
+                    ) : null}
+                    <p className="whitespace-pre-wrap break-words">{post.text}</p>
+                  </>
                 ) : (
                   <span className="italic text-slate-400">Empty card</span>
                 )}
@@ -4378,7 +4392,7 @@ function TeacherDashboardInner() {
                         <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                           <span className="text-slate-800 dark:text-slate-200">
                             <span className="font-medium">{sn.label || `Evidence #${sn.id}`}</span>
-                            <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{sn.created_at}</span>
+                            <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{formatSqlUtc(sn.created_at)}</span>
                           </span>
                           <span className="flex gap-2">
                             <button
@@ -5738,7 +5752,7 @@ function TeacherDashboardInner() {
               <CloseButton onClick={() => setSnapshotViewer(null)} aria-label="Close" />
             </div>
             <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5 text-sm scrollbar-thin">
-              <p className="text-xs text-slate-500 dark:text-slate-400">{snapshotViewer.created_at}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{formatSqlUtc(snapshotViewer.created_at)}</p>
               {(snapshotViewer.payload?.students || []).map((st) => (
                 <div key={st.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3">
                   <p className="font-semibold text-ink-900 dark:text-slate-100">

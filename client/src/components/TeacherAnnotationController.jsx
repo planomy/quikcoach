@@ -553,6 +553,9 @@ export default function TeacherAnnotationController() {
       typeof ResizeObserver !== 'undefined'
         ? new ResizeObserver(onMove)
         : null;
+    // Live drafts often update the text node in place (characterData), which collapses
+    // highlight ranges without any childList mutation — repaint on those too.
+    const paneTextObserver = new MutationObserver(onMove);
 
     const attachLayoutWatchers = () => {
       for (const pane of document.querySelectorAll('[data-student-writing-pane]')) {
@@ -560,6 +563,7 @@ export default function TeacherAnnotationController() {
           observedScrollers.add(pane);
           pane.addEventListener('scroll', onMove, scrollOptions);
           resizeObserver?.observe(pane);
+          paneTextObserver.observe(pane, { characterData: true, childList: true, subtree: true });
         }
       }
       for (const scroller of document.querySelectorAll('main .overflow-y-auto, main .overflow-auto')) {
@@ -583,6 +587,7 @@ export default function TeacherAnnotationController() {
     onMove();
     return () => {
       layoutObserver.disconnect();
+      paneTextObserver.disconnect();
       resizeObserver?.disconnect();
       for (const scroller of observedScrollers) {
         scroller.removeEventListener('scroll', onMove, scrollOptions);

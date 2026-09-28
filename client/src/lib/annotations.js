@@ -688,13 +688,31 @@ export function clearNamedHighlights(names) {
   for (const name of names || []) clearNamedHighlight(name);
 }
 
+function rangesStillLive(ranges) {
+  return ranges.every((range) => {
+    try {
+      return range.startContainer?.isConnected && range.endContainer?.isConnected;
+    } catch {
+      return false;
+    }
+  });
+}
+
 export function setNamedHighlight(name, ranges, { force = false } = {}) {
   if (!globalThis.CSS?.highlights || typeof globalThis.Highlight === 'undefined') return;
   const list = Array.isArray(ranges) ? ranges.filter(Boolean) : ranges ? [ranges] : [];
   const signature = highlightSignature(list);
   const registered = globalThis.CSS.highlights.has(name);
-  if (!force && highlightSignatureCache.get(name) === signature && registered) return;
-  highlightSignatureCache.set(name, signature);
+  const cached = highlightSignatureCache.get(name);
+  // Live text edits can replace or rewrite the painted text node: the registered ranges
+  // then collapse or detach even though the new ranges have the same offsets/text.
+  const paintedStillValid =
+    cached &&
+    cached.signature === signature &&
+    rangesStillLive(cached.ranges) &&
+    highlightSignature(cached.ranges) === signature;
+  if (!force && registered && paintedStillValid) return;
+  highlightSignatureCache.set(name, { signature, ranges: list });
   if (list.length) globalThis.CSS.highlights.set(name, new globalThis.Highlight(...list));
   else globalThis.CSS.highlights.delete(name);
 }

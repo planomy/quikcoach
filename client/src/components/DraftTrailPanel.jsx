@@ -94,7 +94,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
                 {students.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.attention ? '● ' : ''}
-                    {s.name} · {s.checkpoints} checkpoints · {s.pasteEvents} pastes
+                    {s.name} · {s.checkpoints} checkpoints · {s.pasteEvents} {s.pasteEvents === 1 ? 'paste' : 'pastes'}
                   </option>
                 ))}
               </select>
@@ -153,7 +153,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
               )}
               <div className="grid gap-4 md:grid-cols-2">
                 <section>
-                  <h3 className="mb-2 text-sm font-bold">{changed ? 'Before · removed text' : 'Previous recorded draft'}</h3>
+                  <h3 className="mb-2 text-sm font-bold">{changed ? (event.removed ? 'Before · removed text' : 'Before') : 'Previous recorded draft'}</h3>
                   <div className="min-h-40 whitespace-pre-wrap break-words rounded-lg border border-slate-200 p-4 text-base dark:border-slate-700">
                     {changed ? (
                       <>
