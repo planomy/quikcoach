@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
+import ClassInsightsPanel from '../components/ClassInsightsPanel.jsx';
 import { activityStatus, isNotStarted, wordCount } from '../lib/text.js';
 import useActivityClock from '../hooks/useActivityClock.js';
 import {
@@ -467,6 +468,8 @@ function TeacherDashboardInner() {
   const teacherRevealTimerRef = useRef(null);
   const [draftTrailOpen, setDraftTrailOpen] = useState(false);
   const [sessionPdfOpen, setSessionPdfOpen] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const closeInsights = useCallback(() => setInsightsOpen(false), []);
   const [draftTrailBusy, setDraftTrailBusy] = useState(false);
   const [draftTrailFocusId, setDraftTrailFocusId] = useState(null);
   const [draftTrailLabelOpen, setDraftTrailLabelOpen] = useState(false);
@@ -3484,6 +3487,7 @@ function TeacherDashboardInner() {
       {sessionPdfOpen ? (
         <SessionPdfExport socket={socket} onClose={() => setSessionPdfOpen(false)} />
       ) : null}
+      {insightsOpen ? <ClassInsightsPanel socket={socket} onClose={closeInsights} /> : null}
 
       {toolsPanelOpen && (
         <div
@@ -5342,6 +5346,9 @@ function TeacherDashboardInner() {
                   {snapshots.length > 0 ? (
                     <span className="iboard-room-settings__badge">{snapshots.length}</span>
                   ) : null}
+                </button>
+                <button type="button" onClick={() => { closeSettings(); setInsightsOpen(true); }}>
+                  Class insights
                 </button>
               </div>
             </section>

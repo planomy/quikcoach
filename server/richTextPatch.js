@@ -1,6 +1,21 @@
 import { Server } from 'socket.io';
 import { openDatabase, queries } from './db.js';
 import { recordTrailFeedback } from './draftTrail.js';
+import {
+  insertedLength,
+  insightCommentAdded,
+  insightCommentConfirmed,
+  insightCommentDeleted,
+  insightCommentFixed,
+  insightCommentReopened,
+  insightLessonEnd,
+  insightPaste,
+  insightTextChanged,
+  registerInsightsSocket,
+  startInsightsSampler,
+} from './insights.js';
+
+startInsightsSampler();
 
 // Rich formatting is deliberately stored beside the existing plain-text draft.
 // The existing text column remains the source of truth for word limits, AI, evidence and exports.
@@ -217,6 +232,7 @@ function markDetachedReopenFixed(io, roomCode, studentId, text) {
       continue;
     }
     markAnnotationFixedStmt.run(annotation.id);
+    insightCommentFixed(roomCode, sid, annotation.id);
     changed += 1;
   }
   if (!changed) return false;
@@ -274,6 +290,12 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           const draftChanged = beforeText != null && beforeText !== savedText;
           // Only Check again comments whose quote no longer appears → purple.
           if (draftChanged) markDetachedReopenFixed(io, roomCode, studentId, savedText);
+          if (draftChanged) {
+            insightTextChanged(roomCode, studentId);
+            if (payload?.draftTrail?.paste === true) {
+              insightPaste(roomCode, studentId, insertedLength(beforeText, savedText));
+            }
+          }
 
           // If the existing server hard-limit shortened the plain draft, formatting no
           // longer lines up exactly. Drop formatting rather than display the wrong marks.
@@ -389,6 +411,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
         );
         const update = emitAnnotationUpdate(io, roomCode, studentId);
         const annotation = update.annotations.find((item) => item.id === Number(result.lastInsertRowid)) || null;
+        insightCommentAdded(roomCode, studentId, Number(result.lastInsertRowid));
         recordTrailFeedback(roomCode, student, `${quote}\nTeacher comment: ${note}`);
         cb?.({ ok: true, annotation });
       } catch (error) {
@@ -443,6 +466,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           return;
         }
         markAnnotationFixedStmt.run(annotationId);
+        insightCommentFixed(row.student_room_code, studentId, annotationId);
         emitAnnotationUpdate(io, row.student_room_code, studentId);
         cb?.({ ok: true });
       } catch (error) {
@@ -466,9 +490,13 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           cb?.({ ok: false, error: 'Comment not found' });
           return;
         }
-        if (action === 'confirm') resolveAnnotationStmt.run(annotationId);
-        else if (action === 'reopen') reopenAnnotationStmt.run(annotationId);
-        else {
+        if (action === 'confirm') {
+          resolveAnnotationStmt.run(annotationId);
+          if (row.status !== 'resolved') insightCommentConfirmed(roomCode, row.student_id, annotationId);
+        } else if (action === 'reopen') {
+          reopenAnnotationStmt.run(annotationId);
+          if (row.status !== 'reopen') insightCommentReopened(roomCode, row.student_id, annotationId);
+        } else {
           cb?.({ ok: false, error: 'Choose confirm or reopen' });
           return;
         }
@@ -495,6 +523,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           return;
         }
         deleteAnnotationStmt.run(annotationId);
+        insightCommentDeleted(roomCode, row.student_id, annotationId);
         emitAnnotationUpdate(io, roomCode, row.student_id);
         cb?.({ ok: true });
       } catch (error) {
@@ -511,6 +540,10 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           return;
         }
         const studentId = Number(payload.studentId);
+        const confirming = richDb
+          .prepare(`SELECT id, student_id FROM teacher_annotations WHERE room_code = ? AND status = 'fixed'`)
+          .all(roomCode)
+          .filter((row) => !(studentId > 0) || Number(row.student_id) === studentId);
         let result;
         if (studentId > 0) {
           const student = selectStudent.get(studentId);
@@ -529,12 +562,22 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           result = bulkResolveFixedForRoomStmt.run(roomCode);
           for (const row of studentRows) emitAnnotationUpdate(io, roomCode, row.student_id);
         }
+        for (const row of confirming) insightCommentConfirmed(roomCode, row.student_id, row.id);
         cb?.({ ok: true, count: Number(result?.changes) || 0 });
       } catch (error) {
         console.error('Could not bulk confirm teacher annotations', error);
         cb?.({ ok: false, error: 'Could not clear fixed comments' });
       }
     });
+
+    // Runs before the core reset deletes the class, so end-of-lesson word counts can be read.
+    socket.on('teacher:clear-cards', () => {
+      const code = normaliseRoomCode(socket.data.roomCode);
+      if (socket.data.role !== 'teacher' || code.length !== 4) return;
+      insightLessonEnd(code);
+    });
+
+    registerInsightsSocket(socket);
 
     return listener(socket);
   });

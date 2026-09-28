@@ -1704,7 +1704,7 @@ export default function StudentView() {
                 html={draftHtml}
                 onChange={({ text, html, paste }) => {
                   draftTrailTokenRef.current = socket.connected ? room?.draftTrail?.token || '' : '';
-                  if (paste && socket.connected && room?.draftTrail?.active) {
+                  if (paste && socket.connected) {
                     socket.emit('student:text', { text, richTextHtml: html, draftTrail: { token: draftTrailTokenRef.current, paste: true } });
                   }
                   setDraft(text);
