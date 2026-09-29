@@ -15,8 +15,10 @@ const lesson = (over) => ({
   checkAgainPct: 15,
   confirmed: 20,
   avgConfirmMinutes: 12,
+  revised: 25,
+  avgReviseMinutes: 4,
   pastes: 7,
-  pasteAlerts: 3,
+  studentsPasted: 3,
   avgWords: 180,
   writingPct: 70,
   writingSamples: 8,
@@ -39,7 +41,9 @@ test('export is class-level, anonymised and suppresses small groups', () => {
   assert.equal(rows[0].lesson, 'Lesson 1');
   assert.equal(rows[0].group, 'Group 1');
   assert.equal(rows[0].actedOn, '75%');
-  assert.equal(rows[0].pasteAlerts, '<5');
+  assert.equal(rows[0].pastes, '7');
+  assert.equal(rows[0].studentsPasted, '<5');
+  assert.equal(rows[0].timeToRevise, '4 min');
   assert.equal(rows[1].students, '<5');
   assert.equal(rows[1].actedOn, '—', 'rates need at least 5 comments behind them');
   assert.equal(rows[1].avgWords, '—', 'averages hidden for groups under 5');
@@ -51,11 +55,11 @@ test('export is class-level, anonymised and suppresses small groups', () => {
 
 test('headline totals weight averages by what sits behind them', () => {
   const totals = headlineTotals([
-    lesson({ commentsGiven: 10, actedOn: 5, avgConfirmMinutes: 10, confirmed: 1, pasteAlerts: 2 }),
-    lesson({ commentsGiven: 30, actedOn: 27, avgConfirmMinutes: 20, confirmed: 3, pasteAlerts: 0 }),
+    lesson({ commentsGiven: 10, actedOn: 5, avgConfirmMinutes: 10, confirmed: 1, pastes: 2 }),
+    lesson({ commentsGiven: 30, actedOn: 27, avgConfirmMinutes: 20, confirmed: 3, pastes: 0 }),
   ]);
   assert.equal(totals.commentsGiven, 40);
   assert.equal(totals.actedOnPct, 80);
   assert.equal(totals.avgConfirmMinutes, 17.5);
-  assert.equal(totals.pasteAlertsPerLesson, 1);
+  assert.equal(totals.pastesPerLesson, 1);
 });

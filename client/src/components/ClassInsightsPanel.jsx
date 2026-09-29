@@ -159,13 +159,14 @@ export default function ClassInsightsPanel({ socket, onClose }) {
 
           {lessons.length ? (
             <>
-              <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7" aria-label="Across recorded lessons">
+              <section className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Across recorded lessons">
                 <Tile label="Comments given" value={totals.commentsGiven} />
                 <Tile label="Acted on" value={pctText(totals.actedOnPct)} />
                 <Tile label="Check again" value={pctText(totals.checkAgainPct)} />
+                <Tile label="Time to revise" value={formatMinutes(totals.avgReviseMinutes)} />
                 <Tile label="Time to confirm" value={formatMinutes(totals.avgConfirmMinutes)} />
-                <Tile label="Paste alerts / lesson" value={totals.pasteAlertsPerLesson ?? '—'} />
-                <Tile label="Words / student" value={totals.avgWords ?? '—'} />
+                <Tile label="Pastes / lesson" value={totals.pastesPerLesson ?? '—'} />
+                <Tile label="Words written / student" value={totals.avgWords ?? '—'} />
                 <Tile label="Actively writing" value={pctText(totals.writingPct)} />
               </section>
 
@@ -177,8 +178,8 @@ export default function ClassInsightsPanel({ socket, onClose }) {
                   points={trendPoints.map((l) => ({ id: l.id, startedAt: l.startedAt, value: l.actedOnPct }))}
                 />
                 <Trend
-                  label="Paste alerts per lesson"
-                  points={trendPoints.map((l) => ({ id: l.id, startedAt: l.startedAt, value: l.pasteAlerts }))}
+                  label="Pastes per lesson"
+                  points={trendPoints.map((l) => ({ id: l.id, startedAt: l.startedAt, value: l.pastes }))}
                 />
               </section>
 
@@ -194,9 +195,10 @@ export default function ClassInsightsPanel({ socket, onClose }) {
                         <th className="px-3 py-2">Comments</th>
                         <th className="px-3 py-2">Acted on</th>
                         <th className="px-3 py-2">Check again</th>
+                        <th className="px-3 py-2">Revise</th>
                         <th className="px-3 py-2">Confirm</th>
-                        <th className="px-3 py-2">Paste alerts</th>
-                        <th className="px-3 py-2">Words</th>
+                        <th className="px-3 py-2">Pastes</th>
+                        <th className="px-3 py-2">Words written</th>
                         <th className="px-3 py-2">Writing</th>
                       </tr>
                     </thead>
@@ -221,8 +223,14 @@ export default function ClassInsightsPanel({ socket, onClose }) {
                             <td className="px-3 py-2">{lesson.commentsGiven}</td>
                             <td className="px-3 py-2">{pctText(lesson.actedOnPct)}</td>
                             <td className="px-3 py-2">{pctText(lesson.checkAgainPct)}</td>
+                            <td className="px-3 py-2">{formatMinutes(lesson.avgReviseMinutes)}</td>
                             <td className="px-3 py-2">{formatMinutes(lesson.avgConfirmMinutes)}</td>
-                            <td className="px-3 py-2">{lesson.pasteAlerts}</td>
+                            <td className="px-3 py-2">
+                              {lesson.pastes}
+                              {lesson.pastes ? (
+                                <span className="text-slate-400"> ({lesson.studentsPasted} {lesson.studentsPasted === 1 ? 'student' : 'students'})</span>
+                              ) : null}
+                            </td>
                             <td className="px-3 py-2">{lesson.avgWords ?? '—'}</td>
                             <td className="px-3 py-2">{pctText(lesson.writingPct)}</td>
                           </tr>
@@ -252,8 +260,8 @@ export default function ClassInsightsPanel({ socket, onClose }) {
                           <th className="px-3 py-2">Comments</th>
                           <th className="px-3 py-2">Acted on</th>
                           <th className="px-3 py-2">Check again</th>
-                          <th className="px-3 py-2">Paste alerts</th>
-                          <th className="px-3 py-2">Words</th>
+                          <th className="px-3 py-2">Pastes</th>
+                          <th className="px-3 py-2">Words written</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -266,7 +274,7 @@ export default function ClassInsightsPanel({ socket, onClose }) {
                               {row.commentsGiven ? `${row.actedOn} (${pctText(row.actedOnPct)})` : '—'}
                             </td>
                             <td className="px-3 py-2">{row.checkAgain}</td>
-                            <td className="px-3 py-2">{row.pasteAlerts}</td>
+                            <td className="px-3 py-2">{row.pastes}</td>
                             <td className="px-3 py-2">{row.avgWords ?? '—'}</td>
                           </tr>
                         ))}
@@ -278,7 +286,7 @@ export default function ClassInsightsPanel({ socket, onClose }) {
 
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
                 <p className="text-[11px] text-slate-400">
-                  Acted on = the student revised the passage. Paste alert = a paste of {data?.pasteAlertChars || 120}+ characters.
+                  Acted on = the student revised the passage. Writing = students in the room who changed their draft in each 5 minutes.
                 </p>
                 <div className="flex gap-2">
                   <button type="button" className={chipBtn} onClick={() => downloadInsightsCsv(lessons)}>

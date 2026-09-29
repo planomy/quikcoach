@@ -14,6 +14,7 @@ import {
   insightTextChanged,
   livePasteCounts,
   registerInsightsSocket,
+  setPresenceCheck,
   startInsightsSampler,
 } from './insights.js';
 
@@ -272,6 +273,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
   if (eventName !== 'connection') return baseServerOn.call(this, eventName, listener);
 
   const io = this;
+  setPresenceCheck((studentId) => io.sockets.adapter.rooms.has(`student:${Number(studentId)}`));
   return baseServerOn.call(this, eventName, (socket) => {
     // The normal iBoard listener still saves/truncates plain text exactly as before. We run
     // just after it, verify the saved text, then persist only the companion rich HTML.
@@ -301,7 +303,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           // Only Check again comments whose quote no longer appears → purple.
           if (draftChanged) markDetachedReopenFixed(io, roomCode, studentId, savedText);
           if (draftChanged) {
-            insightTextChanged(roomCode, studentId);
+            insightTextChanged(roomCode, studentId, Date.now(), beforeText);
             if (payload?.draftTrail?.paste === true) {
               insightPaste(roomCode, studentId, insertedLength(beforeText, savedText));
               emitPasteAlerts(io.to(`teacher:${roomCode}`), roomCode);

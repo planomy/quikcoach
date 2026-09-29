@@ -47,7 +47,8 @@ export function headlineTotals(lessons = []) {
   const commentsGiven = lessons.reduce((n, l) => n + (l.commentsGiven || 0), 0);
   const actedOn = lessons.reduce((n, l) => n + (l.actedOn || 0), 0);
   const checkAgain = lessons.reduce((n, l) => n + (l.checkAgain || 0), 0);
-  const pasteAlerts = lessons.reduce((n, l) => n + (l.pasteAlerts || 0), 0);
+  const pastes = lessons.reduce((n, l) => n + (l.pastes || 0), 0);
+  const revise = weightedAverage(lessons.map((l) => [l.avgReviseMinutes, l.revised]));
   const confirm = weightedAverage(lessons.map((l) => [l.avgConfirmMinutes, l.confirmed]));
   const words = weightedAverage(lessons.map((l) => [l.avgWords, l.students]));
   const writing = weightedAverage(lessons.map((l) => [l.writingPct, l.writingSamples]));
@@ -58,9 +59,10 @@ export function headlineTotals(lessons = []) {
     actedOnPct: commentsGiven ? Math.round((actedOn / commentsGiven) * 100) : null,
     checkAgain,
     checkAgainPct: commentsGiven ? Math.round((checkAgain / commentsGiven) * 100) : null,
+    avgReviseMinutes: revise == null ? null : round1(revise),
     avgConfirmMinutes: confirm == null ? null : round1(confirm),
-    pasteAlerts,
-    pasteAlertsPerLesson: lessons.length ? round1(pasteAlerts / lessons.length) : null,
+    pastes,
+    pastesPerLesson: lessons.length ? round1(pastes / lessons.length) : null,
     avgWords: words == null ? null : Math.round(words),
     writingPct: writing == null ? null : Math.round(writing),
   };
@@ -84,8 +86,10 @@ export function anonymisedRows(lessons = []) {
       commentsGiven: suppressCount(lesson.commentsGiven),
       actedOn: suppressPct(lesson.actedOn, lesson.commentsGiven),
       checkAgain: suppressPct(lesson.checkAgain, lesson.commentsGiven),
+      timeToRevise: lesson.revised >= SMALL_COUNT ? formatMinutes(lesson.avgReviseMinutes) : '—',
       timeToConfirm: lesson.confirmed >= SMALL_COUNT ? formatMinutes(lesson.avgConfirmMinutes) : '—',
-      pasteAlerts: suppressCount(lesson.pasteAlerts),
+      pastes: suppressCount(lesson.pastes),
+      studentsPasted: suppressCount(lesson.studentsPasted),
       avgWords: smallClass || lesson.avgWords == null ? '—' : String(lesson.avgWords),
       writing: smallClass || lesson.writingPct == null ? '—' : `${lesson.writingPct}%`,
     };
@@ -100,9 +104,11 @@ export const EXPORT_COLUMNS = [
   ['commentsGiven', 'Comments given'],
   ['actedOn', 'Acted on'],
   ['checkAgain', 'Needed Check again'],
+  ['timeToRevise', 'Avg time to revise'],
   ['timeToConfirm', 'Avg time to confirm'],
-  ['pasteAlerts', 'Paste alerts'],
-  ['avgWords', 'Avg words per student'],
+  ['pastes', 'Pastes'],
+  ['studentsPasted', 'Students who pasted'],
+  ['avgWords', 'Avg words written per student'],
   ['writing', 'Actively writing'],
 ];
 

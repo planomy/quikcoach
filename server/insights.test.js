@@ -54,7 +54,9 @@ test('comment loop, pastes, words and resets roll up per lesson and survive a ne
   assert.equal(lesson.checkAgain, 1);
   assert.equal(lesson.avgConfirmMinutes, 11);
   assert.equal(lesson.pastes, 2);
-  assert.equal(lesson.pasteAlerts, 1);
+  assert.equal(lesson.studentsPasted, 1);
+  assert.equal(lesson.revised, 2);
+  assert.equal(lesson.avgReviseMinutes, 4, 'first revision only: 3 min and 5 min');
   assert.equal(lesson.avgWords, 3);
   assert.equal(lesson.students, 2);
 
@@ -72,7 +74,7 @@ test('comment loop, pastes, words and resets roll up per lesson and survive a ne
   assert.equal(byName.Mia.actedOn, 1);
   assert.equal(byName.Mia.checkAgain, 1);
   assert.equal(byName.Mia.avgWords, 4);
-  assert.equal(byName.Leo.pasteAlerts, 1);
+  assert.equal(byName.Leo.pastes, 2);
 
   const [mia2] = classOf(code, ['mia ']);
   insights.insightCommentAdded(code, mia2.id, 9, t0 + 24 * 60 * MIN);
@@ -102,6 +104,31 @@ test('a long idle gap splits lessons and activity sampling covers the whole clas
   assert.ok(lessons[1].endedAt, 'the stale lesson was closed');
   [lesson] = lessons;
   assert.equal(lesson.commentsGiven, 1);
+});
+
+test('words written counts only this lesson, and writing % only counts students in the room', () => {
+  const code = '4104';
+  const [ana, ben, cy, di] = classOf(code, ['Ana', 'Ben', 'Cy', 'Di']);
+  const t0 = Date.UTC(2026, 8, 3, 9, 0);
+  queries.updateStudentText(db, ana.id, 'one two three four five six seven eight nine ten');
+  queries.updateStudentText(db, cy.id, 'already had four words');
+
+  insights.insightTextChanged(code, ana.id, t0, 'one two three four five six seven eight nine ten');
+  queries.updateStudentText(db, ana.id, 'one two three four five six seven eight nine ten eleven twelve');
+  insights.insightTextChanged(code, ana.id, t0 + MIN, 'one two three four five six seven eight nine ten eleven');
+  insights.insightTextChanged(code, ben.id, t0 + MIN, '');
+  queries.updateStudentText(db, ben.id, 'fresh words here');
+
+  insights.setPresenceCheck((id) => id !== cy.id && id !== di.id);
+  insights.sampleActivity(t0 + 5 * MIN);
+  insights.setPresenceCheck(null);
+
+  const [lesson] = insights.getInsights({ roomCode: code }).lessons;
+  assert.equal(lesson.writingPct, 100, 'Cy and Di are not connected, so they are left out');
+  const byName = Object.fromEntries(insights.getInsights({ roomCode: code }).students.map((row) => [row.name, row]));
+  assert.equal(byName.Ana.avgWords, 2, 'carried-over draft words are not counted again');
+  assert.equal(byName.Ben.avgWords, 3);
+  assert.equal(byName.Cy.avgWords, 0, 'did not write this lesson');
 });
 
 test('live paste counts follow the current roster and clear on a new class', () => {

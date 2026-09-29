@@ -44,9 +44,10 @@ export function downloadInsightsPdf(lessons = [], filename = 'class-insights-ano
     ['Comments given', suppressCount(totals.commentsGiven)],
     ['Acted on', pct(totals.actedOnPct, totals.commentsGiven)],
     ['Needed Check again', pct(totals.checkAgainPct, totals.commentsGiven)],
+    ['Avg time to revise', plain(formatMinutes(totals.avgReviseMinutes))],
     ['Avg time to confirm', plain(formatMinutes(totals.avgConfirmMinutes))],
-    ['Paste alerts / lesson', totals.pasteAlertsPerLesson == null ? '-' : String(totals.pasteAlertsPerLesson)],
-    ['Avg words / student', totals.avgWords == null ? '-' : String(totals.avgWords)],
+    ['Pastes / lesson', totals.pastesPerLesson == null ? '-' : String(totals.pastesPerLesson)],
+    ['Words written / student', totals.avgWords == null ? '-' : String(totals.avgWords)],
     ['Actively writing', totals.writingPct == null ? '-' : `${totals.writingPct}%`],
   ];
   const tileW = width / 4;
@@ -90,10 +91,13 @@ export function downloadInsightsPdf(lessons = [], filename = 'class-insights-ano
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
   pdf.setTextColor(...MUTED);
+  let headerLines = 1;
   columns.forEach(([, label], index) => {
-    pdf.text(pdf.splitTextToSize(label, colW - 2), margin + index * colW, y);
+    const lines = pdf.splitTextToSize(label, colW - 2);
+    headerLines = Math.max(headerLines, lines.length);
+    pdf.text(lines, margin + index * colW, y);
   });
-  y += 7;
+  y += headerLines * 3 + 4;
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
   pdf.setTextColor(...INK);
@@ -112,7 +116,7 @@ export function downloadInsightsPdf(lessons = [], filename = 'class-insights-ano
   const notes = [
     'Class-level only: no names and no student writing. Counts from 1 to 4 are shown as <5, and rates are hidden when fewer than 5 comments or students sit behind them.',
     '"Acted on" means the student revised the passage a comment pointed to - it is a sign of engagement with feedback, not proof the writing improved.',
-    'Paste alerts are pastes of 120+ characters. Trends are observations, not causes.',
+    'Pastes count every paste into a draft, including a student moving their own text. "Actively writing" is the share of students in the room who changed their draft in each 5-minute window. Trends are observations, not causes.',
   ];
   pdf.setFontSize(7.5);
   pdf.setTextColor(...MUTED);

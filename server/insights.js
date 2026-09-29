@@ -4,7 +4,6 @@ import { openDatabase } from './db.js';
 // Nothing here is cleared by "Start new class" or clearing comments, and nothing here feeds
 // back into the lesson — it is only read by the teacher's Class insights panel.
 
-export const PASTE_ALERT_CHARS = 120;
 const LESSON_IDLE_SPLIT_MS = 6 * 60 * 60 * 1000;
 const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 const SAMPLE_EVERY_MS = 5 * 60 * 1000;
@@ -227,8 +226,27 @@ export function livePasteCounts(roomCode, at = Date.now()) {
 // Writing activity: who changed their draft recently. Sampled into the lesson every few minutes
 // while the class is writing, so "% actively writing" is based on the whole class, not just typists.
 const activity = new Map();
+const baselined = new Set();
+const baselineExistsStmt = db.prepare(
+  `SELECT 1 FROM insight_events WHERE lesson_id = ? AND type = 'words_start' AND student_key = ? LIMIT 1`
+);
 
-export const insightTextChanged = safely((roomCode, studentId, at = Date.now()) => {
+/**
+ * Draft length when the student first writes in a lesson, so "words written" measures this
+ * lesson's work even when a draft carries over from an earlier one.
+ */
+function recordWordBaseline(code, studentId, beforeText, at) {
+  const student = keyForStudentId(code, studentId);
+  if (!student) return;
+  const lesson = ensureLesson(code, at);
+  const marker = `${lesson.id}:${student.key}`;
+  if (baselined.has(marker)) return;
+  baselined.add(marker);
+  if (baselineExistsStmt.get(lesson.id, student.key)) return;
+  record(code, 'words_start', { studentId, value: countWords(beforeText), at });
+}
+
+export const insightTextChanged = safely((roomCode, studentId, at = Date.now(), beforeText = null) => {
   const code = normaliseRoomCode(roomCode);
   let room = activity.get(code);
   if (!room) {
@@ -237,33 +255,40 @@ export const insightTextChanged = safely((roomCode, studentId, at = Date.now()) 
     ensureLesson(code, at);
   }
   room.students.set(Number(studentId), at);
+  if (beforeText != null) recordWordBaseline(code, studentId, beforeText, at);
 });
+
+let isStudentConnected = () => true;
+
+export function setPresenceCheck(fn) {
+  isStudentConnected = typeof fn === 'function' ? fn : () => true;
+}
 
 export function sampleActivity(at = Date.now()) {
   for (const [code, room] of activity) {
     try {
       let latest = 0;
-      let active = 0;
-      for (const changedAt of room.students.values()) {
-        latest = Math.max(latest, changedAt);
-        if (at - changedAt <= ACTIVE_WINDOW_MS) active += 1;
-      }
+      for (const changedAt of room.students.values()) latest = Math.max(latest, changedAt);
       if (at - latest > LIVE_WINDOW_MS) {
         activity.delete(code);
         continue;
       }
       if (at - room.lastSampleAt < SAMPLE_EVERY_MS) continue;
       room.lastSampleAt = at;
-      const total = roomStudentsStmt.all(code).length;
-      if (!total) continue;
-      record(code, 'active_sample', { value: Math.min(active, total), value2: total, at });
+      // Only students in the room right now count, so absent students and ghost cards
+      // don't read as "not writing".
+      const present = roomStudentsStmt.all(code).filter((row) => isStudentConnected(row.id));
+      if (!present.length) continue;
+      const active = present.filter((row) => at - (room.students.get(Number(row.id)) || 0) <= ACTIVE_WINDOW_MS).length;
+      record(code, 'active_sample', { value: active, value2: present.length, at });
     } catch (error) {
       console.error('Class insights could not sample activity', error);
     }
   }
 }
 
-export function startInsightsSampler() {
+export function startInsightsSampler({ isConnected } = {}) {
+  if (isConnected) setPresenceCheck(isConnected);
   const timer = setInterval(() => sampleActivity(Date.now()), 60 * 1000);
   timer.unref?.();
   return timer;
@@ -300,13 +325,16 @@ function commentStats(events) {
   const reopened = new Set();
   const deleted = new Set();
   const confirmMinutes = [];
+  const reviseMinutes = [];
   for (const event of events) {
     const id = Number(event.annotation_id);
     if (!id) continue;
     if (event.type === 'comment_added') added.set(id, Number(event.at));
     else if (!added.has(id)) continue;
-    else if (event.type === 'comment_fixed') fixed.add(id);
-    else if (event.type === 'comment_reopened') reopened.add(id);
+    else if (event.type === 'comment_fixed') {
+      if (!fixed.has(id)) reviseMinutes.push((Number(event.at) - added.get(id)) / 60000);
+      fixed.add(id);
+    } else if (event.type === 'comment_reopened') reopened.add(id);
     else if (event.type === 'comment_deleted') deleted.add(id);
     else if (event.type === 'comment_confirmed') {
       confirmMinutes.push((Number(event.at) - added.get(id)) / 60000);
@@ -317,12 +345,15 @@ function commentStats(events) {
   const actedOn = given.filter((id) => fixed.has(id)).length;
   const checkAgain = given.filter((id) => reopened.has(id)).length;
   const avgConfirm = average(confirmMinutes);
+  const avgRevise = average(reviseMinutes);
   return {
     commentsGiven: given.length,
     actedOn,
     actedOnPct: pct(actedOn, given.length),
     checkAgain,
     checkAgainPct: pct(checkAgain, given.length),
+    revised: reviseMinutes.length,
+    avgReviseMinutes: avgRevise == null ? null : Math.round(avgRevise * 10) / 10,
     confirmed: confirmMinutes.length,
     avgConfirmMinutes: avgConfirm == null ? null : Math.round(avgConfirm * 10) / 10,
   };
@@ -332,23 +363,37 @@ function pasteStats(events) {
   const pastes = events.filter((event) => event.type === 'paste');
   return {
     pastes: pastes.length,
-    pasteAlerts: pastes.filter((event) => Number(event.value) >= PASTE_ALERT_CHARS).length,
+    studentsPasted: new Set(pastes.map((event) => event.student_key).filter(Boolean)).size,
   };
 }
 
-/** Words at lesson end; for a lesson still running, today's drafts stand in. */
+/**
+ * Words written this lesson per student: draft length at the end (or now, for a running lesson)
+ * minus the length when they first wrote. Lessons recorded before baselines existed use end length.
+ */
 function wordsByStudent(lesson, events) {
-  const words = new Map();
+  const end = new Map();
+  const start = new Map();
   for (const event of events) {
-    if (event.type === 'words' && event.student_key) words.set(event.student_key, Number(event.value) || 0);
+    if (!event.student_key) continue;
+    if (event.type === 'words') end.set(event.student_key, Number(event.value) || 0);
+    else if (event.type === 'words_start' && !start.has(event.student_key)) {
+      start.set(event.student_key, Number(event.value) || 0);
+    }
   }
   if (!lesson.ended_at) {
     for (const row of roomStudentsStmt.all(lesson.room_code)) {
       const key = studentKey(lesson.room_code, row.name);
-      if (key) words.set(key, countWords(row.text));
+      if (key) end.set(key, countWords(row.text));
     }
   }
-  return words;
+  const written = new Map();
+  for (const [key, count] of end) {
+    const before = start.get(key);
+    if (before != null) written.set(key, Math.max(0, count - before));
+    else written.set(key, start.size ? 0 : count);
+  }
+  return written;
 }
 
 function lessonSummary(lesson, events, studentRows) {
@@ -399,10 +444,16 @@ function studentBreakdown(lessons, events, studentRows) {
   }
   for (const event of events) {
     const key = event.student_key || addedBy.get(Number(event.annotation_id));
-    if (!key || event.type === 'words' || event.type === 'active_sample') continue;
+    if (!key || ['words', 'words_start', 'active_sample', 'paste_ack'].includes(event.type)) continue;
     ensure(key).events.push(event);
   }
   for (const lesson of lessons) {
+    if (!lesson.ended_at) {
+      for (const row of roomStudentsStmt.all(lesson.room_code)) {
+        const key = studentKey(lesson.room_code, row.name);
+        if (key && !byKey.get(key)?.name) ensure(key).name = String(row.name).trim();
+      }
+    }
     const lessonEvents = events.filter((event) => Number(event.lesson_id) === Number(lesson.id));
     for (const [key, count] of wordsByStudent(lesson, lessonEvents)) {
       const entry = ensure(key);
@@ -422,7 +473,7 @@ function studentBreakdown(lessons, events, studentRows) {
         actedOn: comments.actedOn,
         actedOnPct: comments.actedOnPct,
         checkAgain: comments.checkAgain,
-        ...pasteStats(entry.events),
+        pastes: pasteStats(entry.events).pastes,
         avgWords: avgWords == null ? null : Math.round(avgWords),
       };
     })
@@ -452,7 +503,7 @@ export function getInsights({ roomCode, scope = 'room', lessonId = null } = {}) 
     events.filter((event) => focusIds.has(Number(event.lesson_id))),
     studentRows.filter((row) => focusIds.has(Number(row.lesson_id)))
   );
-  return { lessons: summaries, students, pasteAlertChars: PASTE_ALERT_CHARS };
+  return { lessons: summaries, students };
 }
 
 export function registerInsightsSocket(socket) {
