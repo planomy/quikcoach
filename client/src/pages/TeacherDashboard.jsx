@@ -4993,12 +4993,16 @@ function TeacherDashboardInner() {
                 role="group"
                 aria-label="Overview columns"
               >
+                <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#8b8b96] dark:text-slate-400" aria-hidden="true">
+                  Columns
+                </span>
                 {OVERVIEW_COLUMN_OPTIONS.map((count) => {
                   const active = overviewColumns === count;
                   return (
                     <button
                       key={count}
                       type="button"
+                      aria-label={`${count} columns`}
                       aria-pressed={active}
                       onClick={() => setOverviewColumns(count)}
                       onFocus={() => setOverviewColsPeek(true)}
