@@ -1389,31 +1389,6 @@ html.dark .iboard-tour__close:hover {
   outline: 2px solid #5a5fc3;
   outline-offset: 2px;
 }
-
-/* "+ Add" rail flyout: PDF / Image / Text in a row beside the rail. */
-.iboard-add-flyout {
-  display: flex;
-  gap: 0.2rem;
-  padding: 0.3rem;
-  border: 1px solid #d5d4e4;
-  border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 10px 8px 28px -16px rgba(60, 60, 90, 0.35);
-  transform: translateY(-50%);
-  animation: iboard-add-flyout-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes iboard-add-flyout-in {
-  from {
-    opacity: 0;
-    transform: translate(-8px, -50%);
-  }
-  to {
-    opacity: 1;
-    transform: translate(0, -50%);
-  }
-}
-
 .iboard-teacher-panel-wrap {
   position: relative;
   min-width: 0;
@@ -3596,13 +3571,6 @@ html.dark .iboard-arr-rail {
   background: #181d25;
   border-right-color: #343c46;
 }
-
-html.dark .iboard-add-flyout {
-  border-color: #343c46;
-  background: #181d25;
-  box-shadow: 10px 8px 28px -16px rgba(0, 0, 0, 0.6);
-}
-
 html.dark .iboard-student-card,
 html.dark .iboard-student-card:hover {
   box-shadow: none;

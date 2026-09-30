@@ -204,12 +204,6 @@ const TEACHER_TOOLS_TABS = [
   { id: 'responses', label: 'Responses', rail: 'Responses', hint: 'See class responses' },
 ];
 
-const ADD_CARD_ACTIONS = [
-  { id: 'document', label: 'PDF', title: 'Add PDF', hint: 'Send a PDF to student inboxes' },
-  { id: 'image', label: 'Image', title: 'Add image', hint: 'Send an image to student inboxes' },
-  { id: 'text', label: 'Text', title: 'Add text', hint: 'Send text to student inboxes' },
-];
-
 function csvCell(value) {
   const text = String(value ?? '');
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -413,10 +407,6 @@ function TeacherDashboardInner() {
   );
   const teacherToolsPanelRef = useRef(null);
   const addCardPanelRef = useRef(null);
-  const addButtonRef = useRef(null);
-  const addFlyoutRef = useRef(null);
-  const addFlyoutCloseTimer = useRef(null);
-  const [addFlyout, setAddFlyout] = useState(null);
   const settingsButtonRef = useRef(null);
   const settingsPanelRef = useRef(null);
   const timerButtonRef = useRef(null);
@@ -456,7 +446,7 @@ function TeacherDashboardInner() {
   const [studentActionMenuAnchor, setStudentActionMenuAnchor] = useState(null);
   const studentActionMenuBtnRefs = useRef(new Map());
   const [addCardOpen, setAddCardOpen] = useState(false);
-  const [addCardMode, setAddCardMode] = useState('document');
+  const [addCardDragOver, setAddCardDragOver] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timerOpen, setTimerOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
@@ -984,7 +974,7 @@ function TeacherDashboardInner() {
     }
     if (action === 'share') {
       setHelpOpen(false);
-      openAddCard('document', { forceOpen: true });
+      openAddCard({ forceOpen: true });
       window.requestAnimationFrame(() => flashHelpTarget('share'));
       return;
     }
@@ -1063,45 +1053,6 @@ function TeacherDashboardInner() {
       window.removeEventListener('scroll', close, true);
     };
   }, [pasteMenu]);
-
-  useEffect(() => {
-    if (!addFlyout) return undefined;
-    if (addFlyout.focusFirst) addFlyoutRef.current?.querySelector('button')?.focus();
-    const close = (event) => {
-      if (event.type === 'keydown' && event.key !== 'Escape') return;
-      if (event.type === 'pointerdown' && event.target.closest?.('[data-add-flyout]')) return;
-      setAddFlyout(null);
-    };
-    document.addEventListener('pointerdown', close);
-    document.addEventListener('keydown', close);
-    window.addEventListener('resize', close);
-    return () => {
-      document.removeEventListener('pointerdown', close);
-      document.removeEventListener('keydown', close);
-      window.removeEventListener('resize', close);
-    };
-  }, [addFlyout]);
-
-  useEffect(() => () => window.clearTimeout(addFlyoutCloseTimer.current), []);
-
-  function openAddFlyout({ focusFirst = false } = {}) {
-    window.clearTimeout(addFlyoutCloseTimer.current);
-    const box = addButtonRef.current?.getBoundingClientRect();
-    if (!box) return;
-    setAddFlyout({ top: Math.round(box.top + box.height / 2), left: Math.round(box.right + 6), focusFirst });
-  }
-
-  function scheduleAddFlyoutClose(event) {
-    if (event?.pointerType && event.pointerType !== 'mouse') return;
-    window.clearTimeout(addFlyoutCloseTimer.current);
-    addFlyoutCloseTimer.current = window.setTimeout(() => setAddFlyout(null), 220);
-  }
-
-  function pickAddAction(mode) {
-    window.clearTimeout(addFlyoutCloseTimer.current);
-    setAddFlyout(null);
-    openAddCard(mode);
-  }
 
   function clearPasteAlert(studentId) {
     setPasteMenu(null);
@@ -1925,7 +1876,7 @@ function TeacherDashboardInner() {
     if (!addCardOpen) return;
     const titleField = addCardPanelRef.current?.querySelector('input[aria-label="Card title"]');
     titleField?.focus();
-  }, [addCardOpen, addCardMode]);
+  }, [addCardOpen]);
 
   useLayoutEffect(() => {
     if (!toolsPanelOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
@@ -2258,20 +2209,19 @@ function TeacherDashboardInner() {
     setSettingsOpen(true);
   }
 
-  function openAddCard(mode = 'document', { forceOpen = false } = {}) {
-    const next = ADD_CARD_ACTIONS.some((action) => action.id === mode) ? mode : 'document';
+  function openAddCard({ forceOpen = false } = {}) {
     closeSettings();
     setTimerOpen(false);
     setViewOpen(false);
     setHelpOpen(false);
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
-    if (!forceOpen && addCardOpen && addCardMode === next && !teacherPanelHidden) {
+    if (!forceOpen && addCardOpen && !teacherPanelHidden) {
       closeAddCard();
       return;
     }
     setTeacherPanelHidden(false);
-    setAddCardMode(next);
+    setAddCardDragOver(false);
     setAddCardTitle('');
     setAddCardText('');
     setAddCardImage('');
@@ -2338,10 +2288,21 @@ function TeacherDashboardInner() {
     });
   }
 
-  async function handleAddCardFileChange(event) {
+  function handleAddCardFileChange(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file) return;
+    if (file) acceptAddCardFile(file);
+  }
+
+  function handleAddCardDrop(event) {
+    event.preventDefault();
+    setAddCardDragOver(false);
+    if (addCardBusy) return;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) acceptAddCardFile(file);
+  }
+
+  function acceptAddCardFile(file) {
     if (file.size > 5 * 1024 * 1024) {
       setAddCardError('File too large — keep under 5 MB');
       return;
@@ -2351,22 +2312,11 @@ function TeacherDashboardInner() {
     const imageMime = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type || '');
     const pdfExt = /\.pdf$/.test(name);
     const pdfMime = /^application\/pdf$/i.test(file.type || '');
-    if (addCardMode === 'image') {
-      if (!imageExt && !imageMime) {
-        setAddCardError('Use a JPG, PNG, or WebP image');
-        return;
-      }
-    } else if (addCardMode === 'document') {
-      if (!pdfExt && !pdfMime) {
-        setAddCardError('Use a PDF — Word and PowerPoint can’t preview in class');
-        return;
-      }
-    } else if (!pdfExt && !pdfMime && !imageExt && !imageMime) {
-      setAddCardError('Use a PDF or image — Word/PowerPoint can’t preview in class');
+    if (!pdfExt && !pdfMime && !imageExt && !imageMime) {
+      setAddCardError('Use a PDF or image (JPG, PNG, WebP) — Word/PowerPoint can’t preview in class');
       return;
     }
     setAddCardImage('');
-    setAddCardText('');
     setAddCardFile(file);
     setAddCardSendInbox(true);
     setAddCardPlaceOnBoard(true);
@@ -2458,13 +2408,7 @@ function TeacherDashboardInner() {
 
     const text = addCardText.trim();
     if (!text) {
-      setAddCardError(
-        addCardMode === 'image'
-          ? 'Choose or paste an image first'
-          : addCardMode === 'document'
-            ? 'Attach a PDF first'
-            : 'Write some text first'
-      );
+      setAddCardError('Choose a file or write some text first');
       return;
     }
     setAddCardBusy(true);
@@ -3647,68 +3591,24 @@ function TeacherDashboardInner() {
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Add to class">
-            <button
-              ref={addButtonRef}
-              type="button"
-              data-add-flyout="true"
-              data-help-target="share"
-              onPointerEnter={(event) => {
-                if (event.pointerType !== 'mouse') return;
-                window.clearTimeout(addFlyoutCloseTimer.current);
-                if (addFlyout) return;
-                addFlyoutCloseTimer.current = window.setTimeout(() => openAddFlyout(), 90);
-              }}
-              onPointerLeave={scheduleAddFlyoutClose}
-              onClick={(event) => {
-                if (!addFlyout) openAddFlyout({ focusFirst: event.detail === 0 });
-              }}
-              aria-haspopup="menu"
-              aria-expanded={Boolean(addFlyout)}
-              data-active={addFlyout || addCardOpen ? 'true' : 'false'}
-              className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
-              aria-label="Send resources to students"
-            >
-              <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              <span className="iboard-arr-label">Add</span>
-            </button>
-          </div>
-          {addFlyout && typeof document !== 'undefined'
-            ? createPortal(
-              <div
-                ref={addFlyoutRef}
-                data-add-flyout="true"
-                className="iboard-add-flyout fixed z-[80]"
-                style={{ top: addFlyout.top, left: addFlyout.left }}
-                role="menu"
-                aria-label="Add to class"
-                onPointerEnter={() => window.clearTimeout(addFlyoutCloseTimer.current)}
-                onPointerLeave={scheduleAddFlyoutClose}
+            <HintWrap hint="Send resources to students" prefer="right" suppressed={addCardOpen}>
+              <button
+                type="button"
+                data-iboard-add-card-trigger="true"
+                data-help-target="share"
+                onClick={() => openAddCard()}
+                aria-expanded={addCardOpen}
+                data-active={addCardOpen ? 'true' : 'false'}
+                className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
+                aria-label="Add image, PDF or text"
               >
-                {ADD_CARD_ACTIONS.map((action) => {
-                  const active = addCardOpen && addCardMode === action.id;
-                  return (
-                    <HintWrap key={action.id} hint={action.hint} prefer="below">
-                      <button
-                        type="button"
-                        role="menuitem"
-                        data-iboard-add-card-trigger="true"
-                        onClick={() => pickAddAction(action.id)}
-                        data-active={active ? 'true' : 'false'}
-                        className="iboard-arr-btn"
-                        aria-label={action.title}
-                      >
-                        <span className={`iboard-arr-btn__icon iboard-arr-btn__icon--${action.id}`} aria-hidden="true" />
-                        <span className="iboard-arr-label">{action.label}</span>
-                      </button>
-                    </HintWrap>
-                  );
-                })}
-              </div>,
-              document.body
-            )
-            : null}
+                <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span className="iboard-arr-label">Add</span>
+              </button>
+            </HintWrap>
+          </div>
           <div ref={tourEngageRef} className="iboard-arr-rail__tools">
             {TEACHER_TOOLS_TABS.map((tab) => {
               const active = toolsPanelOpen && toolsTab === tab.id;
@@ -3816,6 +3716,7 @@ function TeacherDashboardInner() {
               <div className="iboard-teacher-composer__inner">
                 <form
                   className="iboard-teacher-composer__form"
+                  onPaste={handleAddCardPaste}
                   onSubmit={(event) => {
                     event.preventDefault();
                     submitTeacherCard();
@@ -3823,7 +3724,7 @@ function TeacherDashboardInner() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h2 id="add-teacher-card-title" className="text-[13px] font-semibold text-[#3c3c45] dark:text-white">
-                      {addCardMode === 'image' ? 'Add image' : addCardMode === 'text' ? 'Add text' : 'Add PDF'}
+                      Add image, PDF or text
                     </h2>
                     <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
                   </div>
@@ -3836,49 +3737,63 @@ function TeacherDashboardInner() {
                     className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                     placeholder="Title"
                   />
-                  {addCardMode !== 'text' ? (
-                    <label
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-[#cfcce8] bg-[#ebeaf8]/70 px-2.5 py-2 text-sm dark:border-indigo-800 dark:bg-indigo-950/30"
-                      onPaste={addCardMode === 'image' ? handleAddCardPaste : undefined}
-                    >
-                      <span className="rounded-md bg-[#5a5fc3] px-2 py-1 text-[11px] font-bold text-white">
-                        Choose file
-                      </span>
-                      <input
-                        type="file"
-                        accept={
-                          addCardMode === 'image'
-                            ? '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
-                            : '.pdf,application/pdf'
-                        }
-                        className="sr-only"
-                        aria-label={addCardMode === 'image' ? 'Choose an image' : 'Choose a PDF'}
-                        onChange={handleAddCardFileChange}
-                        disabled={addCardBusy}
-                      />
-                    </label>
-                  ) : null}
-                  {addCardFile && (
+                  {addCardFile ? (
                     <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-950/40">
-                      <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">{addCardFile.name}</p>
+                      <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">
+                        <span className="mr-1.5 rounded bg-[#ebeaf8] px-1 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-300">
+                          {/pdf$/i.test(addCardFile.type || addCardFile.name || '') ? 'PDF' : 'Image'}
+                        </span>
+                        {addCardFile.name}
+                      </p>
                       <button type="button" onClick={() => setAddCardFile(null)} className="shrink-0 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Clear</button>
                     </div>
-                  )}
-                  {addCardMode === 'text' ? (
-                    <textarea
-                      value={addCardText}
-                      onChange={(event) => setAddCardText(event.target.value)}
-                      rows={4}
-                      aria-label="Card text"
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                      placeholder="Write the note…"
-                    />
-                  ) : null}
-                  {addCardImage && (
+                  ) : addCardImage ? (
                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-1.5 dark:border-slate-700 dark:bg-slate-950/30">
                       <img src={addCardImage} alt="Pasted card preview" className="max-h-28 w-full object-contain" />
                       <button type="button" onClick={() => setAddCardImage('')} className="mt-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Clear image</button>
                     </div>
+                  ) : (
+                    <>
+                      <label
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-2.5 py-2 text-sm transition dark:border-indigo-800 dark:bg-indigo-950/30 ${
+                          addCardDragOver ? 'border-[#5a5fc3] bg-[#dcdaf5]' : 'border-[#cfcce8] bg-[#ebeaf8]/70'
+                        }`}
+                        onDragOver={(event) => {
+                          event.preventDefault();
+                          if (!addCardDragOver) setAddCardDragOver(true);
+                        }}
+                        onDragLeave={() => setAddCardDragOver(false)}
+                        onDrop={handleAddCardDrop}
+                      >
+                        <span className="shrink-0 rounded-md bg-[#5a5fc3] px-2 py-1 text-[11px] font-bold text-white">
+                          Choose file
+                        </span>
+                        <span className="min-w-0 text-[11px] font-semibold leading-tight text-[#5a5fc3]/80 dark:text-indigo-300/80">
+                          Image or PDF — or drop it here
+                        </span>
+                        <input
+                          type="file"
+                          accept=".pdf,application/pdf,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                          className="sr-only"
+                          aria-label="Choose an image or PDF"
+                          onChange={handleAddCardFileChange}
+                          disabled={addCardBusy}
+                        />
+                      </label>
+                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
+                        <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                        or write a note
+                        <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                      </div>
+                      <textarea
+                        value={addCardText}
+                        onChange={(event) => setAddCardText(event.target.value)}
+                        rows={4}
+                        aria-label="Card text"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                        placeholder="Write the note…"
+                      />
+                    </>
                   )}
                   {addCardError && <p className="text-xs font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
                   <label
@@ -3894,7 +3809,7 @@ function TeacherDashboardInner() {
                     />
                     <span>Send to Inbox</span>
                   </label>
-                  {(addCardMode === 'document' || addCardMode === 'image') && (
+                  {(addCardFile || addCardImage) && (
                     <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
                       <input
                         type="checkbox"
@@ -3923,7 +3838,7 @@ function TeacherDashboardInner() {
             <div className={`iboard-teacher-panel-list${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
               {posts.length === 0 && !addCardOpen && (
                 <p className="px-1 py-6 text-center text-xs font-semibold text-slate-400">
-                  No cards yet — add a PDF, image, or text from the rail
+                  No resources yet — press + to add an image, PDF or text
                 </p>
               )}
               {posts.map((post) => (
