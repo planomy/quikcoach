@@ -441,7 +441,7 @@ function TeacherDashboardInner() {
   /** studentId → away (tab/app background). Synced from student:presence + live:teacher. */
   const [awayByStudentId, setAwayByStudentId] = useState(() => new Map());
   /** Pin attention cards (away / not started) to the top when true. */
-  const [attentionFocus, setAttentionFocus] = useState(false);
+  const [attentionFocus, setAttentionFocus] = useState(null); // null | 'away' | 'notStarted' | 'pasted'
   /** Pastes this lesson by student id, pushed live by the server whether REC is on or off. */
   const [pasteCounts, setPasteCounts] = useState({});
   const [pasteMenu, setPasteMenu] = useState(null); // { studentId, left, top }
@@ -1324,6 +1324,28 @@ function TeacherDashboardInner() {
     return map;
   }, [audienceQuestions]);
 
+  const matchesAttention = useCallback(
+    (student, filter) => {
+      if (filter === 'away') return !!awayByStudentId.get(Number(student.id));
+      if (filter === 'notStarted') return isNotStarted(student, activityNow);
+      if (filter === 'pasted') return !!pasteCounts[student.id];
+      return false;
+    },
+    [awayByStudentId, activityNow, pasteCounts]
+  );
+
+  const attentionCounts = useMemo(() => {
+    const counts = { away: 0, notStarted: 0, pasted: 0 };
+    for (const student of orderedStudents) {
+      for (const filter of Object.keys(counts)) if (matchesAttention(student, filter)) counts[filter] += 1;
+    }
+    return counts;
+  }, [orderedStudents, matchesAttention]);
+
+  useEffect(() => {
+    if (attentionFocus && !attentionCounts[attentionFocus]) setAttentionFocus(null);
+  }, [attentionFocus, attentionCounts]);
+
   const visibleStudents = useMemo(
     () =>
       [...orderedStudents].sort((a, b) => {
@@ -1336,15 +1358,13 @@ function TeacherDashboardInner() {
           if (aInbox !== bInbox) return aInbox - bInbox;
         }
         if (attentionFocus) {
-          const aAttention =
-            pasteCounts[a.id] || awayByStudentId.get(Number(a.id)) || isNotStarted(a, activityNow) ? 0 : 1;
-          const bAttention =
-            pasteCounts[b.id] || awayByStudentId.get(Number(b.id)) || isNotStarted(b, activityNow) ? 0 : 1;
+          const aAttention = matchesAttention(a, attentionFocus) ? 0 : 1;
+          const bAttention = matchesAttention(b, attentionFocus) ? 0 : 1;
           if (aAttention !== bAttention) return aAttention - bAttention;
         }
         return Number(a.id) - Number(b.id);
       }),
-    [orderedStudents, monitoredIds, inboxFocus, pendingHandByStudentId, noteReceiptByStudentId, attentionFocus, awayByStudentId, activityNow, pasteCounts]
+    [orderedStudents, monitoredIds, inboxFocus, pendingHandByStudentId, noteReceiptByStudentId, attentionFocus, matchesAttention]
   );
 
   const breakoutsActive = !!breakouts?.active;
@@ -1386,11 +1406,7 @@ function TeacherDashboardInner() {
     const rankStudent = (student) => {
       if (!student) return Number.MAX_SAFE_INTEGER;
       const monitored = monitoredIds.has(Number(student.id)) ? 0 : 1;
-      const attention =
-        attentionFocus &&
-        (pasteCounts[student.id] || awayByStudentId.get(Number(student.id)) || isNotStarted(student, activityNow))
-          ? 0
-          : 1;
+      const attention = attentionFocus && matchesAttention(student, attentionFocus) ? 0 : 1;
       const inbox =
         inboxFocus &&
         studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId)
@@ -1432,9 +1448,7 @@ function TeacherDashboardInner() {
     inboxFocus,
     pendingHandByStudentId,
     noteReceiptByStudentId,
-    awayByStudentId,
-    activityNow,
-    pasteCounts,
+    matchesAttention,
   ]);
 
   function startBreakoutsAuto() {
@@ -1537,7 +1551,7 @@ function TeacherDashboardInner() {
   useEffect(() => {
     setMonitoredIds(readMonitoredIdsForRoom(codeInput));
     setAwayByStudentId(new Map());
-    setAttentionFocus(false);
+    setAttentionFocus(null);
   }, [codeInput, joined]);
 
   useEffect(() => {
@@ -3136,22 +3150,11 @@ function TeacherDashboardInner() {
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
   const selectedStudentPickCount = orderedStudents.filter((student) => broadcastPick[student.id]).length;
   const monitoredCount = monitoredIds.size;
-  const awayCount = orderedStudents.reduce(
-    (n, student) => n + (awayByStudentId.get(Number(student.id)) ? 1 : 0),
-    0
-  );
-  const notStartedCount = orderedStudents.reduce(
-    (n, student) => n + (isNotStarted(student, activityNow) ? 1 : 0),
-    0
-  );
-  const pastedCount = orderedStudents.reduce((n, student) => n + (pasteCounts[student.id] ? 1 : 0), 0);
-  const attentionSummary = [
-    awayCount > 0 ? `${awayCount} away` : '',
-    notStartedCount > 0 ? `${notStartedCount} not started` : '',
-    pastedCount > 0 ? `${pastedCount} pasted` : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const attentionPills = [
+    { id: 'away', label: `${attentionCounts.away} away` },
+    { id: 'notStarted', label: `${attentionCounts.notStarted} not started` },
+    { id: 'pasted', label: `${attentionCounts.pasted} pasted` },
+  ].filter((pill) => attentionCounts[pill.id] > 0);
   const messageWaitCount = orderedStudents.reduce(
     (n, student) => n + (studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId) ? 1 : 0),
     0
@@ -3199,19 +3202,22 @@ function TeacherDashboardInner() {
               <span className="iboard-header-meta__online">
                 <b className="tabular-nums">{orderedStudents.length}</b> online
               </span>
-              {attentionSummary ? (
-                <HintWrap hint={attentionFocus ? 'Show all cards' : 'Bring these cards to the top'} prefer="below">
-                  <button
-                    type="button"
-                    onClick={() => setAttentionFocus((on) => !on)}
-                    className={`iboard-header-pill iboard-header-pill--attention${attentionFocus ? ' is-on' : ''}`}
-                    title=""
-                    aria-pressed={attentionFocus}
-                  >
-                    {attentionSummary}
-                  </button>
-                </HintWrap>
-              ) : null}
+              {attentionPills.map((pill) => {
+                const on = attentionFocus === pill.id;
+                return (
+                  <HintWrap key={pill.id} hint={on ? 'Show all cards' : 'Bring these cards to the top'} prefer="below">
+                    <button
+                      type="button"
+                      onClick={() => setAttentionFocus(on ? null : pill.id)}
+                      className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}`}
+                      title=""
+                      aria-pressed={on}
+                    >
+                      {pill.label}
+                    </button>
+                  </HintWrap>
+                );
+              })}
               {inboxSummary ? (
                 <HintWrap hint={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'} prefer="below">
                   <button
