@@ -413,6 +413,10 @@ function TeacherDashboardInner() {
   );
   const teacherToolsPanelRef = useRef(null);
   const addCardPanelRef = useRef(null);
+  const addButtonRef = useRef(null);
+  const addFlyoutRef = useRef(null);
+  const addFlyoutCloseTimer = useRef(null);
+  const [addFlyout, setAddFlyout] = useState(null);
   const settingsButtonRef = useRef(null);
   const settingsPanelRef = useRef(null);
   const timerButtonRef = useRef(null);
@@ -1059,6 +1063,45 @@ function TeacherDashboardInner() {
       window.removeEventListener('scroll', close, true);
     };
   }, [pasteMenu]);
+
+  useEffect(() => {
+    if (!addFlyout) return undefined;
+    if (addFlyout.focusFirst) addFlyoutRef.current?.querySelector('button')?.focus();
+    const close = (event) => {
+      if (event.type === 'keydown' && event.key !== 'Escape') return;
+      if (event.type === 'pointerdown' && event.target.closest?.('[data-add-flyout]')) return;
+      setAddFlyout(null);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+      window.removeEventListener('resize', close);
+    };
+  }, [addFlyout]);
+
+  useEffect(() => () => window.clearTimeout(addFlyoutCloseTimer.current), []);
+
+  function openAddFlyout({ focusFirst = false } = {}) {
+    window.clearTimeout(addFlyoutCloseTimer.current);
+    const box = addButtonRef.current?.getBoundingClientRect();
+    if (!box) return;
+    setAddFlyout({ top: Math.round(box.top + box.height / 2), left: Math.round(box.right + 6), focusFirst });
+  }
+
+  function scheduleAddFlyoutClose(event) {
+    if (event?.pointerType && event.pointerType !== 'mouse') return;
+    window.clearTimeout(addFlyoutCloseTimer.current);
+    addFlyoutCloseTimer.current = window.setTimeout(() => setAddFlyout(null), 220);
+  }
+
+  function pickAddAction(mode) {
+    window.clearTimeout(addFlyoutCloseTimer.current);
+    setAddFlyout(null);
+    openAddCard(mode);
+  }
 
   function clearPasteAlert(studentId) {
     setPasteMenu(null);
@@ -3604,27 +3647,70 @@ function TeacherDashboardInner() {
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Add to class">
-            {ADD_CARD_ACTIONS.map((action) => {
-              const active = addCardOpen && addCardMode === action.id;
-              return (
-                <HintWrap key={action.id} hint={action.hint} prefer="right" suppressed={active}>
-                  <button
-                    type="button"
-                    data-iboard-add-card-trigger="true"
-                    data-help-target={action.id === 'document' ? 'share' : undefined}
-                    onClick={() => openAddCard(action.id)}
-                    aria-expanded={active}
-                    data-active={active ? 'true' : 'false'}
-                    className={`iboard-arr-btn${helpFlash === 'share' && action.id === 'document' ? ' is-help-flash' : ''}`}
-                    aria-label={action.title}
-                  >
-                    <span className={`iboard-arr-btn__icon iboard-arr-btn__icon--${action.id}`} aria-hidden="true" />
-                    <span className="iboard-arr-label">{action.label}</span>
-                  </button>
-                </HintWrap>
-              );
-            })}
+            <HintWrap hint="Add a PDF, image or text" prefer="right" suppressed={Boolean(addFlyout) || addCardOpen}>
+              <button
+                ref={addButtonRef}
+                type="button"
+                data-add-flyout="true"
+                data-help-target="share"
+                onPointerEnter={(event) => {
+                  if (event.pointerType !== 'mouse') return;
+                  window.clearTimeout(addFlyoutCloseTimer.current);
+                  if (addFlyout) return;
+                  addFlyoutCloseTimer.current = window.setTimeout(() => openAddFlyout(), 90);
+                }}
+                onPointerLeave={scheduleAddFlyoutClose}
+                onClick={(event) => {
+                  if (!addFlyout) openAddFlyout({ focusFirst: event.detail === 0 });
+                }}
+                aria-haspopup="menu"
+                aria-expanded={Boolean(addFlyout)}
+                data-active={addFlyout || addCardOpen ? 'true' : 'false'}
+                className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
+                aria-label="Add to class"
+              >
+                <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span className="iboard-arr-label">Add</span>
+              </button>
+            </HintWrap>
           </div>
+          {addFlyout && typeof document !== 'undefined'
+            ? createPortal(
+              <div
+                ref={addFlyoutRef}
+                data-add-flyout="true"
+                className="iboard-add-flyout fixed z-[80]"
+                style={{ top: addFlyout.top, left: addFlyout.left }}
+                role="menu"
+                aria-label="Add to class"
+                onPointerEnter={() => window.clearTimeout(addFlyoutCloseTimer.current)}
+                onPointerLeave={scheduleAddFlyoutClose}
+              >
+                {ADD_CARD_ACTIONS.map((action) => {
+                  const active = addCardOpen && addCardMode === action.id;
+                  return (
+                    <HintWrap key={action.id} hint={action.hint} prefer="below">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        data-iboard-add-card-trigger="true"
+                        onClick={() => pickAddAction(action.id)}
+                        data-active={active ? 'true' : 'false'}
+                        className="iboard-arr-btn"
+                        aria-label={action.title}
+                      >
+                        <span className={`iboard-arr-btn__icon iboard-arr-btn__icon--${action.id}`} aria-hidden="true" />
+                        <span className="iboard-arr-label">{action.label}</span>
+                      </button>
+                    </HintWrap>
+                  );
+                })}
+              </div>,
+              document.body
+            )
+            : null}
           <div ref={tourEngageRef} className="iboard-arr-rail__tools">
             {TEACHER_TOOLS_TABS.map((tab) => {
               const active = toolsPanelOpen && toolsTab === tab.id;
