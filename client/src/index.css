@@ -1936,10 +1936,26 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
   animation: iboard-rail-dock-in-top 210ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* View is a tiny on-top popup — never a scroll pane. */
+/* View is a tiny on-top popup — never a scroll pane — dropping from the header centre. */
 .iboard-header-dock--view {
   overflow: visible;
   max-height: none;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 0 0 1rem 1rem;
+  box-shadow: 0 16px 32px -18px rgba(15, 23, 42, 0.28);
+  animation: iboard-view-dock-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes iboard-view-dock-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-composer) .font-black {
@@ -2085,6 +2101,10 @@ html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-
 
 .iboard-header-icon--camera {
   --iboard-header-icon: url('/brand/header-camera.png');
+}
+
+.iboard-header-icon--view {
+  --iboard-header-icon: url('/brand/rail-view.png');
 }
 
 .iboard-header-icon--help {

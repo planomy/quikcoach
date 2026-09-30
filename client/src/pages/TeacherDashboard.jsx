@@ -399,11 +399,13 @@ function TeacherDashboardInner() {
   const tourBoardRef = useRef(null);
   const tourRecRef = useRef(null);
   const tourHeaderToolsRef = useRef(null);
+  const viewButtonRef = useRef(null);
   const tourAnchors = useMemo(
     () => ({
       share: tourShareRef,
       engage: tourEngageRef,
       board: tourBoardRef,
+      view: viewButtonRef,
       rec: tourRecRef,
       headerTools: tourHeaderToolsRef,
     }),
@@ -415,7 +417,6 @@ function TeacherDashboardInner() {
   const settingsPanelRef = useRef(null);
   const timerButtonRef = useRef(null);
   const timerPanelRef = useRef(null);
-  const viewButtonRef = useRef(null);
   const viewPanelRef = useRef(null);
   const helpButtonRef = useRef(null);
   const helpPanelRef = useRef(null);
@@ -1914,6 +1915,12 @@ function TeacherDashboardInner() {
         return;
       }
       const buttonBox = button.getBoundingClientRect();
+      if (viewOpen) {
+        const headerBottom = button.closest('.iboard-teacher-header-bar')?.getBoundingClientRect().bottom;
+        const nextTop = Math.round(headerBottom ?? buttonBox.bottom + margin);
+        setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
+        return;
+      }
       const panelHeight = panel
         ? [...panel.children].reduce(
             (sum, child) => sum + Math.max(child.scrollHeight, child.offsetHeight),
@@ -3326,7 +3333,23 @@ function TeacherDashboardInner() {
           </div>
           </div>
 
-          <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(32rem,calc(100vw-12rem))] -translate-x-1/2 items-center">
+          <div className="absolute inset-y-0 left-1/2 z-[2] flex -translate-x-1/2 items-center">
+            <HintWrap hint="Student card view" prefer="below" suppressed={viewOpen}>
+              <button
+                ref={viewButtonRef}
+                type="button"
+                onClick={openViewDock}
+                aria-expanded={viewOpen}
+                data-active={viewOpen ? 'true' : 'false'}
+                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                aria-label="View"
+              >
+                <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
+              </button>
+            </HintWrap>
+          </div>
+
+          <div className="pointer-events-none absolute inset-y-0 left-[calc(50%+1.75rem)] z-[1] flex max-w-[min(22rem,calc(50vw-20rem))] items-center">
             {!socketConnected ? null : !copyToast && joinWhisper ? (
               <div
                 role="status"
@@ -3627,21 +3650,7 @@ function TeacherDashboardInner() {
             })}
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
-            <div className="iboard-arr-rail__board" aria-label="Board view and timer">
-              <HintWrap hint="Student card view" prefer="right" suppressed={viewOpen}>
-                <button
-                  ref={viewButtonRef}
-                  type="button"
-                  onClick={openViewDock}
-                  aria-expanded={viewOpen}
-                  data-active={viewOpen ? 'true' : 'false'}
-                  className="iboard-arr-btn"
-                  aria-label="View"
-                >
-                  <span className="iboard-arr-btn__icon iboard-arr-btn__icon--view" aria-hidden="true" />
-                  <span className="iboard-arr-label">View</span>
-                </button>
-              </HintWrap>
+            <div className="iboard-arr-rail__board" aria-label="Class timer">
               <HintWrap hint="Class timer" prefer="right" suppressed={timerOpen}>
                 <button
                   ref={timerButtonRef}
@@ -4937,7 +4946,7 @@ function TeacherDashboardInner() {
       {viewOpen && (
         <div
           ref={viewPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail iboard-header-dock--view fixed z-[60] w-auto max-w-[min(22rem,calc(100vw-5.25rem))]"
+          className="iboard-header-dock iboard-header-dock--view fixed z-[60] w-auto max-w-[min(22rem,calc(100vw-1.5rem))]"
           style={{ top: teacherToolsTop }}
           role="dialog"
           aria-modal="false"
