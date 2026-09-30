@@ -9,7 +9,7 @@ const PILL_IN_DELAY_MS = 480;
 const STEPS = [
   { id: 'share', text: 'Share items with your students', place: 'right', clip: 'rail' },
   { id: 'engage', text: 'Ask the class questions and watch the responses.', place: 'right', clip: 'rail' },
-  { id: 'board', text: 'Set a timer, manage the session', place: 'right', clip: 'rail' },
+  { id: 'board', text: 'Set a timer, run the class, find records and settings', place: 'right', clip: 'rail' },
   { id: 'view', text: 'Toggle student writing card view', place: 'right', clip: 'header' },
   { id: 'rec', text: "Record your students' drafting", place: 'left', clip: 'header' },
   { id: 'headerTools', text: 'Go fullscreen, take a snapshot of all writing, view the help menu', place: 'left', clip: 'header' },

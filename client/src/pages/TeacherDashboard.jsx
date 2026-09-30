@@ -364,6 +364,7 @@ function TeacherDashboardInner() {
   const [noteReceiptByStudentId, setNoteReceiptByStudentId] = useState({});
   const [noteReplyByStudentId, setNoteReplyByStudentId] = useState({});
   const noteReplyByStudentIdRef = useRef({});
+  const noteTargetIdRef = useRef(0);
   const [broadcastPick, setBroadcastPick] = useState({});
   const [sendToMenuOpen, setSendToMenuOpen] = useState(false);
   const [sendRecipientPick, setSendRecipientPick] = useState({});
@@ -408,6 +409,8 @@ function TeacherDashboardInner() {
   const teacherToolsPanelRef = useRef(null);
   const addCardPanelRef = useRef(null);
   const settingsButtonRef = useRef(null);
+  const classButtonRef = useRef(null);
+  const recordsButtonRef = useRef(null);
   const settingsPanelRef = useRef(null);
   const timerButtonRef = useRef(null);
   const timerPanelRef = useRef(null);
@@ -448,6 +451,7 @@ function TeacherDashboardInner() {
   const [addCardOpen, setAddCardOpen] = useState(false);
   const [addCardDragOver, setAddCardDragOver] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState('settings');
   const [timerOpen, setTimerOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [overviewColsPeek, setOverviewColsPeek] = useState(false);
@@ -953,6 +957,7 @@ function TeacherDashboardInner() {
     setTimerOpen(false);
     setViewOpen(false);
     setClearFixedArmed(false);
+    setSettingsSection(target === 'session' ? 'records' : 'class');
     setSettingsOpen(true);
     window.requestAnimationFrame(() => {
       flashHelpTarget(target);
@@ -1069,6 +1074,10 @@ function TeacherDashboardInner() {
   }, [noteReplyByStudentId]);
 
   useEffect(() => {
+    noteTargetIdRef.current = Number(noteTarget?.id) || 0;
+  }, [noteTarget]);
+
+  useEffect(() => {
     const onFeedbackSeen = (payload = {}) => {
       const studentId = Number(payload.studentId);
       if (!studentId) return;
@@ -1096,6 +1105,11 @@ function TeacherDashboardInner() {
       const studentId = Number(item?.studentId);
       const text = String(item?.text || '').trim();
       if (!studentId || !text) return;
+      // Chat already open with this student: they're reading it now, so it isn't waiting.
+      if (noteTargetIdRef.current === studentId) {
+        socket.emit('teacher:note-reply-seen', { studentId });
+        return;
+      }
       setNoteReplyByStudentId((current) => ({
         ...current,
         [studentId]: {
@@ -1810,6 +1824,8 @@ function TeacherDashboardInner() {
       }
       if (settingsOpen) {
         if (settingsButtonRef.current?.contains(target)) return;
+        if (classButtonRef.current?.contains(target)) return;
+        if (recordsButtonRef.current?.contains(target)) return;
         if (settingsPanelRef.current?.contains(target)) return;
         if (breakoutAssignPanelRef.current?.contains(target)) return;
         // Native <select> menus are often outside the React tree; don't close while interacting.
@@ -1884,7 +1900,11 @@ function TeacherDashboardInner() {
     function currentDockAnchor() {
       if (viewOpen) return viewButtonRef.current;
       if (timerOpen) return timerButtonRef.current;
-      if (settingsOpen) return settingsButtonRef.current;
+      if (settingsOpen) {
+        if (settingsSection === 'class') return classButtonRef.current;
+        if (settingsSection === 'records') return recordsButtonRef.current;
+        return settingsButtonRef.current;
+      }
       if (toolsPanelOpen) {
         return teacherToolsNavRef.current?.querySelector('.iboard-arr-rail__tools [data-active="true"]');
       }
@@ -1958,7 +1978,7 @@ function TeacherDashboardInner() {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', alignDockToRailButton);
     };
-  }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen, toolsTab]);
+  }, [toolsPanelOpen, settingsOpen, settingsSection, timerOpen, viewOpen, toolsTab]);
 
   useEffect(() => {
     if (!handQuestionTarget) return;
@@ -2079,7 +2099,7 @@ function TeacherDashboardInner() {
     event?.stopPropagation?.();
     const studentId = Number(student.id);
     setNoteTarget({ id: studentId, name: String(student.name || 'Student') });
-    if (studentId && noteReplyByStudentId[studentId]) {
+    if (studentId && (noteReplyByStudentId[studentId] || noteReceiptByStudentId[studentId] === 'replied')) {
       socket.emit('teacher:note-reply-seen', { studentId });
       setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'seen' }));
       window.dispatchEvent(
@@ -2094,6 +2114,12 @@ function TeacherDashboardInner() {
     if (noteTarget?.id) {
       setNoteReplyByStudentId((current) => {
         if (!current[noteTarget.id]) return current;
+        const next = { ...current };
+        delete next[noteTarget.id];
+        return next;
+      });
+      setNoteReceiptByStudentId((current) => {
+        if (current[noteTarget.id] !== 'replied') return current;
         const next = { ...current };
         delete next[noteTarget.id];
         return next;
@@ -2194,8 +2220,8 @@ function TeacherDashboardInner() {
     setBreakoutSetupMode('auto');
   }
 
-  function toggleSettings() {
-    if (settingsOpen) {
+  function toggleSettings(section = 'settings') {
+    if (settingsOpen && settingsSection === section) {
       closeSettings();
       return;
     }
@@ -2206,6 +2232,8 @@ function TeacherDashboardInner() {
     setViewOpen(false);
     setHelpOpen(false);
     setClearFixedArmed(false);
+    setBreakoutSetupMode('auto');
+    setSettingsSection(section);
     setSettingsOpen(true);
   }
 
@@ -3157,6 +3185,7 @@ function TeacherDashboardInner() {
     ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
     : '';
   const headerDockOpen = toolsPanelOpen || settingsOpen || timerOpen || viewOpen || helpOpen;
+  const settingsTitle = settingsSection === 'class' ? 'Class' : settingsSection === 'records' ? 'Records' : 'Settings';
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -3634,7 +3663,7 @@ function TeacherDashboardInner() {
             })}
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
-            <div className="iboard-arr-rail__board" aria-label="Class timer">
+            <div className="iboard-arr-rail__board" aria-label="Timer and class controls">
               <HintWrap hint="Class timer" prefer="right" suppressed={timerOpen}>
                 <button
                   ref={timerButtonRef}
@@ -3649,20 +3678,56 @@ function TeacherDashboardInner() {
                   <span className="iboard-arr-label"><RailTimerLabel timer={room?.timer} /></span>
                 </button>
               </HintWrap>
+              <HintWrap hint="Breakouts, freeze board, word target" prefer="right" suppressed={settingsOpen && settingsSection === 'class'}>
+                <button
+                  ref={classButtonRef}
+                  type="button"
+                  onClick={() => toggleSettings('class')}
+                  aria-expanded={settingsOpen && settingsSection === 'class'}
+                  data-active={settingsOpen && settingsSection === 'class' ? 'true' : 'false'}
+                  className="iboard-arr-btn"
+                  aria-label="Class controls"
+                >
+                  <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="9.5" cy="8" r="3.25" />
+                    <path d="M3.5 19v-1a4.5 4.5 0 0 1 4.5-4.5h3a4.5 4.5 0 0 1 4.5 4.5v1" />
+                    <path d="M15.5 4.9a3.25 3.25 0 0 1 0 6.2" />
+                    <path d="M18 13.8a4.5 4.5 0 0 1 2.5 4.2v1" />
+                  </svg>
+                  <span className="iboard-arr-label">Class</span>
+                </button>
+              </HintWrap>
             </div>
             <div className="iboard-arr-rail__foot">
-              <HintWrap hint="Session functions" prefer="right" suppressed={settingsOpen}>
+              <HintWrap hint="Lesson records, insights, save session" prefer="right" suppressed={settingsOpen && settingsSection === 'records'}>
+                <button
+                  ref={recordsButtonRef}
+                  type="button"
+                  onClick={() => toggleSettings('records')}
+                  aria-expanded={settingsOpen && settingsSection === 'records'}
+                  data-active={settingsOpen && settingsSection === 'records' ? 'true' : 'false'}
+                  className="iboard-arr-btn"
+                  aria-label="Records"
+                >
+                  <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
+                    <path d="M8.5 16.5v-3M12 16.5v-7M15.5 16.5v-5" />
+                  </svg>
+                  <span className="iboard-arr-label">Records</span>
+                </button>
+              </HintWrap>
+              <HintWrap hint="Reset board, clean-up, display" prefer="right" suppressed={settingsOpen && settingsSection === 'settings'}>
                 <button
                   ref={settingsButtonRef}
                   type="button"
-                  onClick={toggleSettings}
-                  aria-expanded={settingsOpen}
-                  data-active={settingsOpen ? 'true' : 'false'}
+                  onClick={() => toggleSettings('settings')}
+                  aria-expanded={settingsOpen && settingsSection === 'settings'}
+                  data-active={settingsOpen && settingsSection === 'settings' ? 'true' : 'false'}
                   className="iboard-arr-btn"
-                  aria-label="Session"
+                  aria-label="Settings"
                 >
                   <span className="iboard-arr-btn__icon iboard-arr-btn__icon--session" aria-hidden="true" />
-                  <span className="iboard-arr-label">Session</span>
+                  <span className="iboard-arr-label">Settings</span>
                 </button>
               </HintWrap>
             </div>
@@ -5115,7 +5180,7 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      {settingsOpen && !breakoutsActive && breakoutSetupMode === 'manual' && (
+      {settingsOpen && settingsSection === 'class' && !breakoutsActive && breakoutSetupMode === 'manual' && (
         <div
           ref={breakoutAssignPanelRef}
           className="iboard-breakout-assign fixed z-[60]"
@@ -5249,66 +5314,75 @@ function TeacherDashboardInner() {
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
-          aria-label="Session"
+          aria-label={settingsTitle}
         >
           <div className="iboard-room-settings__chrome" ref={settingsChromeRef}>
-            <h2>Session</h2>
+            <h2>{settingsTitle}</h2>
             <div className="iboard-room-settings__chrome-close">
               <CloseButton onClick={closeSettings} label="Close" />
             </div>
           </div>
           <div className="iboard-room-settings__body scrollbar-thin">
-            <div className={`iboard-room-settings__hero${helpFlash === 'session' ? ' is-help-flash' : ''}`} data-help-target="session">
-              <button
-                type="button"
-                disabled={sessionBusy}
-                onClick={saveSessionFile}
-                className="iboard-room-settings__primary"
-              >
-                {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
-              </button>
-              <div className="iboard-room-settings__row">
+            {settingsSection === 'records' && (
+              <div className={`iboard-room-settings__hero${helpFlash === 'session' ? ' is-help-flash' : ''}`} data-help-target="session">
                 <button
                   type="button"
                   disabled={sessionBusy}
-                  onClick={openSessionFilePicker}
-                  className="iboard-room-settings__secondary"
+                  onClick={saveSessionFile}
+                  className="iboard-room-settings__primary"
                 >
-                  {sessionBusy ? 'Loading…' : 'Load session'}
+                  {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
                 </button>
-                <button
-                  type="button"
-                  data-help-target="freeze"
-                  onClick={() => {
-                    const v = !frozen;
-                    setRoom((r) => (r ? { ...r, freeze_class: v } : r));
-                    pushSettings({ freeze_class: v });
-                  }}
-                  className={`iboard-room-settings__secondary${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
-                >
-                  {frozen ? 'Unfreeze board' : 'Freeze board'}
-                </button>
-                <HintWrap hint={isDark ? 'Switch to light mode' : 'Switch to dark mode'} prefer="above">
+                <div className="iboard-room-settings__row">
                   <button
                     type="button"
-                    onClick={toggleTheme}
-                    aria-pressed={isDark}
-                    title=""
-                    aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                    className="iboard-room-settings__icon-btn"
+                    disabled={sessionBusy}
+                    onClick={openSessionFilePicker}
+                    className="iboard-room-settings__secondary"
                   >
-                    {isDark ? (
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="4" />
-                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-                      </svg>
-                    ) : (
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5Z" />
-                      </svg>
-                    )}
+                    {sessionBusy ? 'Loading…' : 'Load session'}
                   </button>
-                </HintWrap>
+                </div>
+              </div>
+            )}
+
+            {settingsSection === 'class' && (
+              <div className="iboard-room-settings__hero">
+                <div className="iboard-room-settings__row">
+                  <button
+                    type="button"
+                    data-help-target="freeze"
+                    onClick={() => {
+                      const v = !frozen;
+                      setRoom((r) => (r ? { ...r, freeze_class: v } : r));
+                      pushSettings({ freeze_class: v });
+                    }}
+                    className={`iboard-room-settings__secondary${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
+                  >
+                    {frozen ? 'Unfreeze board' : 'Freeze board'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { closeSettings(); openJoinScreen(); }}
+                    className="iboard-room-settings__secondary"
+                  >
+                    Present join screen
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {settingsSection === 'settings' && (
+            <div className="iboard-room-settings__hero">
+              <div className="iboard-room-settings__row">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  aria-pressed={isDark}
+                  className="iboard-room-settings__secondary"
+                >
+                  {isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                </button>
               </div>
               {fixedCommentCount > 0 && (
                 <div className="iboard-room-settings__cleanup">
@@ -5348,7 +5422,10 @@ function TeacherDashboardInner() {
                 </div>
               )}
             </div>
+            )}
 
+            {settingsSection === 'class' && (
+            <>
             <section className="iboard-room-settings__section" data-help-target="breakouts">
               <h3 className="iboard-room-settings__label">Breakouts</h3>
               <div className={`iboard-room-settings__card iboard-room-settings__card-pad${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}>
@@ -5444,9 +5521,12 @@ function TeacherDashboardInner() {
                 </div>
               </div>
             </section>
+            </>
+            )}
 
+            {settingsSection === 'records' && (
             <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">Records</h3>
+              <h3 className="iboard-room-settings__label">Reports</h3>
               <div className="iboard-room-settings__card iboard-room-settings__list">
                 <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
                   <span>Lesson records</span>
@@ -5457,21 +5537,14 @@ function TeacherDashboardInner() {
                 <button type="button" onClick={() => { closeSettings(); setInsightsOpen(true); }}>
                   Class insights
                 </button>
-              </div>
-            </section>
-
-            <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">Classroom</h3>
-              <div className="iboard-room-settings__card iboard-room-settings__list">
-                <button type="button" onClick={() => { closeSettings(); openJoinScreen(); }}>
-                  Present join screen
-                </button>
                 <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }}>
                   Download participant list
                 </button>
               </div>
             </section>
+            )}
 
+            {settingsSection === 'settings' && (
             <button
               type="button"
               onClick={() => { closeSettings(); openNewClassConfirmation(); }}
@@ -5479,6 +5552,7 @@ function TeacherDashboardInner() {
             >
               Reset class board
             </button>
+            )}
           </div>
         </div>
       )}

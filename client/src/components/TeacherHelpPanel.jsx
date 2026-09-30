@@ -6,7 +6,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'share',
     title: 'Share a PDF, image, or note',
-    body: 'Use PDF, Image, or Text on the left rail to send materials to student inboxes.',
+    body: 'Press + on the left rail to send an image, PDF or text to student inboxes.',
     action: 'share',
   },
   {
@@ -34,7 +34,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'freeze',
     title: 'Freeze the board',
-    body: 'Open Session, freeze the board to stop all student board writing.',
+    body: 'Open Class, freeze the board to stop all student board writing.',
     action: 'freeze',
   },
   {
@@ -45,25 +45,25 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'session',
     title: 'Save / load the session',
-    body: 'Open Session to save an .iboard file to keep the lesson, or load one to restore it later.',
+    body: 'Open Records to save an .iboard file to keep the lesson, or load one to restore it later.',
     action: 'session',
   },
   {
     id: 'records',
     title: 'Lesson records',
-    body: 'Use the camera in the header to snapshot everyone’s writing. Open Session → Lesson records to browse class snapshots and portfolios.',
+    body: 'Use the camera in the header to snapshot everyone’s writing. Open Records → Lesson records to browse class snapshots and portfolios.',
     action: 'records',
   },
   {
     id: 'ai',
     title: 'AI Feedback',
-    body: 'Open Session, Lesson Records, AI Feedback to prepare anonymised writing for an AI tool, then paste and distribute feedback to students.',
+    body: 'Open Records, Lesson records, AI Feedback to prepare anonymised writing for an AI tool, then paste and distribute feedback to students.',
     action: 'ai',
   },
   {
     id: 'breakouts',
     title: 'Breakout rooms',
-    body: 'Open Session, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
+    body: 'Open Class, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
     action: 'breakouts',
   },
   {

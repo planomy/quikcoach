@@ -14,6 +14,11 @@ export default function StudentChatButton({ socket, studentId, unread = false, o
     return () => window.removeEventListener('iboard:open-student-chat', onOpenChat);
   }, [onOpen]);
 
+  // Messages that land while the chat is open are already being read.
+  useEffect(() => {
+    if (open && unread) onOpen?.();
+  }, [open, unread, onOpen]);
+
   return (
     <>
       <HintWrap hint={unread ? 'Private chat — new message' : 'Private chat'} prefer="above" suppressed={open}>
