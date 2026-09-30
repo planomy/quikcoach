@@ -865,12 +865,11 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   gap: 0.85rem;
 }
 
-/* Header mirrors the open shell columns: logo caps the rail, meta starts at the board.
-   Fixed even when Resources is hidden so the room code never slides.
+/* Logo caps the rail; room meta sits right beside it and never slides with Resources.
    No column rules — continuous header chrome. */
 .iboard-teacher-header-bar {
   display: grid;
-  grid-template-columns: 4.75rem 15.5rem minmax(0, 1fr);
+  grid-template-columns: 4.75rem 0 minmax(0, 1fr);
   align-items: center;
   min-height: 3.45rem;
 }
@@ -899,7 +898,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   align-items: center;
   gap: 0.85rem;
   min-width: 0;
-  padding: 0.4rem 1.15rem;
+  padding: 0.4rem 1.15rem 0.4rem 0.9rem;
 }
 
 .iboard-board-empty {
