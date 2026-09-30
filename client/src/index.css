@@ -865,18 +865,14 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   gap: 0.85rem;
 }
 
-/* Header mirrors shell columns: logo caps the rail, meta starts at the board.
+/* Header mirrors the open shell columns: logo caps the rail, meta starts at the board.
+   Fixed even when Resources is hidden so the room code never slides.
    No column rules — continuous header chrome. */
 .iboard-teacher-header-bar {
   display: grid;
   grid-template-columns: 4.75rem 15.5rem minmax(0, 1fr);
   align-items: center;
   min-height: 3.45rem;
-  transition: grid-template-columns 210ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.iboard-app-header.is-teacher-hidden .iboard-teacher-header-bar {
-  grid-template-columns: 4.75rem 2.05rem minmax(0, 1fr);
 }
 
 .iboard-teacher-header-rail {
