@@ -3647,34 +3647,32 @@ function TeacherDashboardInner() {
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Add to class">
-            <HintWrap hint="Add a PDF, image or text" prefer="right" suppressed={Boolean(addFlyout) || addCardOpen}>
-              <button
-                ref={addButtonRef}
-                type="button"
-                data-add-flyout="true"
-                data-help-target="share"
-                onPointerEnter={(event) => {
-                  if (event.pointerType !== 'mouse') return;
-                  window.clearTimeout(addFlyoutCloseTimer.current);
-                  if (addFlyout) return;
-                  addFlyoutCloseTimer.current = window.setTimeout(() => openAddFlyout(), 90);
-                }}
-                onPointerLeave={scheduleAddFlyoutClose}
-                onClick={(event) => {
-                  if (!addFlyout) openAddFlyout({ focusFirst: event.detail === 0 });
-                }}
-                aria-haspopup="menu"
-                aria-expanded={Boolean(addFlyout)}
-                data-active={addFlyout || addCardOpen ? 'true' : 'false'}
-                className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
-                aria-label="Add to class"
-              >
-                <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span className="iboard-arr-label">Add</span>
-              </button>
-            </HintWrap>
+            <button
+              ref={addButtonRef}
+              type="button"
+              data-add-flyout="true"
+              data-help-target="share"
+              onPointerEnter={(event) => {
+                if (event.pointerType !== 'mouse') return;
+                window.clearTimeout(addFlyoutCloseTimer.current);
+                if (addFlyout) return;
+                addFlyoutCloseTimer.current = window.setTimeout(() => openAddFlyout(), 90);
+              }}
+              onPointerLeave={scheduleAddFlyoutClose}
+              onClick={(event) => {
+                if (!addFlyout) openAddFlyout({ focusFirst: event.detail === 0 });
+              }}
+              aria-haspopup="menu"
+              aria-expanded={Boolean(addFlyout)}
+              data-active={addFlyout || addCardOpen ? 'true' : 'false'}
+              className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
+              aria-label="Send resources to students"
+            >
+              <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span className="iboard-arr-label">Add</span>
+            </button>
           </div>
           {addFlyout && typeof document !== 'undefined'
             ? createPortal(
@@ -3774,13 +3772,13 @@ function TeacherDashboardInner() {
         <TeacherBoardTour key={tourKey} anchors={tourAnchors} />
 
         <div className="iboard-teacher-panel-wrap">
-          <HintWrap hint="Show sent materials" prefer="right" suppressed={!teacherPanelHidden}>
+          <HintWrap hint="Show resources" prefer="right" suppressed={!teacherPanelHidden}>
             <button
               type="button"
               className="iboard-teacher-panel-reveal"
               onPointerDown={revealTeacherPanel}
               onClick={(event) => event.preventDefault()}
-              aria-label="Show sent materials"
+              aria-label="Show resources"
               title=""
               tabIndex={teacherPanelHidden ? 0 : -1}
               aria-hidden={!teacherPanelHidden}
@@ -3790,16 +3788,16 @@ function TeacherDashboardInner() {
           </HintWrap>
           <aside
             className="iboard-teacher-panel"
-            aria-label="Sent materials"
+            aria-label="Resources"
             aria-hidden={teacherPanelHidden}
           >
             <div className="iboard-teacher-panel-head">
-              <HintWrap hint="Hide sent materials" prefer="below">
+              <HintWrap hint="Hide resources" prefer="below">
                 <button
                   type="button"
                   className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
                   onClick={() => setTeacherPanelHidden(true)}
-                  aria-label="Hide sent materials"
+                  aria-label="Hide resources"
                   title=""
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3807,6 +3805,7 @@ function TeacherDashboardInner() {
                   </svg>
                 </button>
               </HintWrap>
+              <h2>Resources</h2>
             </div>
             <div
               ref={addCardPanelRef}
