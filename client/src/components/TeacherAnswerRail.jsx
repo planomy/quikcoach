@@ -401,15 +401,15 @@ export default function TeacherAnswerRail({
           </div>
 
           <div className="relative z-[60] mt-3 flex flex-wrap items-center gap-2 overflow-visible" aria-label="Live question controls">
-            <ControlIcon label="Repeat the question" hint="Repeat the question" onClick={repeatQuestion}>
-              <RepeatIcon />
-            </ControlIcon>
             <ControlIcon
               label="Present responses"
               hint="Present responses"
               onClick={() => setPresenting(true)}
             >
               <PresentIcon />
+            </ControlIcon>
+            <ControlIcon label="Repeat the question" hint="Repeat the question" onClick={repeatQuestion}>
+              <RepeatIcon />
             </ControlIcon>
             {typeof onOpenAsk === 'function' && (
               <ControlIcon label="Ask another question" hint="Ask more" onClick={onOpenAsk}>
