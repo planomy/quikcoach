@@ -2100,6 +2100,8 @@ html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-
 
 .iboard-header-icon--view {
   --iboard-header-icon: url('/brand/rail-view.png');
+  width: 1.45rem;
+  height: 1.45rem;
 }
 
 .iboard-header-icon--help {
