@@ -3936,34 +3936,36 @@ function TeacherDashboardInner() {
                     </>
                   )}
                   {addCardError && <p className="text-xs font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
-                  <div className="flex justify-end gap-1.5 pt-1">
-                    <HintWrap hint="Close without sharing">
-                      <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
-                        Cancel
-                      </button>
-                    </HintWrap>
-                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Choose which students get it' : 'Choose a file or write a note first'}>
-                      <button
-                        type="button"
-                        disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                        onClick={() => {
-                          setAddCardError('');
-                          setAddCardPickerOpen(true);
-                        }}
-                        className="rounded-md border border-[#cfcce8] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
-                      >
-                        Select students…
-                      </button>
-                    </HintWrap>
-                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Send it to every student’s inbox' : 'Choose a file or write a note first'}>
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Send it to every student’s inbox' : 'Choose a file or write a note first'} className="w-full">
                       <button
                         type="submit"
                         disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                        className="rounded-md bg-[#5a5fc3] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                        className="w-full whitespace-nowrap rounded-md bg-[#5a5fc3] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
                       >
                         {addCardBusy && !addCardPickerOpen ? 'Sending…' : 'Send to inbox'}
                       </button>
                     </HintWrap>
+                    <div className="flex items-center gap-1.5">
+                      <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Choose which students get it' : 'Choose a file or write a note first'} className="min-w-0 flex-1">
+                        <button
+                          type="button"
+                          disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
+                          onClick={() => {
+                            setAddCardError('');
+                            setAddCardPickerOpen(true);
+                          }}
+                          className="w-full whitespace-nowrap rounded-md border border-[#cfcce8] bg-white px-2 py-1 text-[11px] font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
+                        >
+                          Select students…
+                        </button>
+                      </HintWrap>
+                      <HintWrap hint="Close without sharing">
+                        <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-md px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
+                          Cancel
+                        </button>
+                      </HintWrap>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
                     <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
