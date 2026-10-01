@@ -34,7 +34,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'freeze',
     title: 'Freeze the board',
-    body: 'Open Run, freeze the board to stop all student board writing. The class timer is in Run too.',
+    body: 'Open Manage, freeze the board to stop all student board writing. The class timer is in Manage too.',
     action: 'freeze',
   },
   {
@@ -63,7 +63,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'breakouts',
     title: 'Breakout rooms',
-    body: 'Open Run, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
+    body: 'Open Manage, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
     action: 'breakouts',
   },
   {

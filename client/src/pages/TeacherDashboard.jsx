@@ -3246,7 +3246,7 @@ function TeacherDashboardInner() {
     ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
     : '';
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
-  const settingsTitle = settingsSection === 'class' ? 'Run the class' : settingsSection === 'records' ? 'Review' : 'Settings';
+  const settingsTitle = settingsSection === 'class' ? 'Manage the class' : settingsSection === 'records' ? 'Review' : 'Settings';
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -3702,9 +3702,7 @@ function TeacherDashboardInner() {
                 className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
                 aria-label="Share an image, PDF or text"
               >
-                <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
+                <span className="iboard-arr-btn__icon iboard-arr-btn__icon--share" aria-hidden="true" />
                 <span className="iboard-arr-label">Share</span>
               </button>
             </HintWrap>
@@ -3726,12 +3724,7 @@ function TeacherDashboardInner() {
                     className={`iboard-arr-btn relative${helpFlash === tab.id ? ' is-help-flash' : ''}`}
                     aria-label={tab.label}
                   >
-                    <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M8 7V6a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3v2.5L16 13" />
-                      <path d="M6 7h7a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3.5 3v-3.1A3 3 0 0 1 3 14v-4a3 3 0 0 1 3-3z" />
-                      <path d="M7.7 10.3a1.8 1.8 0 1 1 2.65 1.6c-.55.3-.85.68-.85 1.3" />
-                      <path d="M9.5 15.3h.01" />
-                    </svg>
+                    <span className="iboard-arr-btn__icon iboard-arr-btn__icon--ask" aria-hidden="true" />
                     <span className="iboard-arr-label">{tab.rail || tab.label}</span>
                   </button>
                 </HintWrap>
@@ -3739,7 +3732,7 @@ function TeacherDashboardInner() {
             })}
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
-            <div className="iboard-arr-rail__board" aria-label="Run the class">
+            <div className="iboard-arr-rail__board" aria-label="Manage the class">
               <HintWrap hint="Timer, freeze board, breakouts, word target" prefer="right" suppressed={settingsOpen && settingsSection === 'class'}>
                 <button
                   ref={classButtonRef}
@@ -3748,7 +3741,7 @@ function TeacherDashboardInner() {
                   aria-expanded={settingsOpen && settingsSection === 'class'}
                   data-active={(settingsOpen && settingsSection === 'class') || timerKeepsRailLit(room?.timer) ? 'true' : 'false'}
                   className="iboard-arr-btn"
-                  aria-label="Run the class"
+                  aria-label="Manage the class"
                 >
                   {room?.timer?.active ? (
                     <>
@@ -3757,13 +3750,8 @@ function TeacherDashboardInner() {
                     </>
                   ) : (
                     <>
-                      <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <circle cx="9.5" cy="8" r="3.25" />
-                        <path d="M3.5 19v-1a4.5 4.5 0 0 1 4.5-4.5h3a4.5 4.5 0 0 1 4.5 4.5v1" />
-                        <path d="M15.5 4.9a3.25 3.25 0 0 1 0 6.2" />
-                        <path d="M18 13.8a4.5 4.5 0 0 1 2.5 4.2v1" />
-                      </svg>
-                      <span className="iboard-arr-label">Run</span>
+                      <span className="iboard-arr-btn__icon iboard-arr-btn__icon--manage" aria-hidden="true" />
+                      <span className="iboard-arr-label">Manage</span>
                     </>
                   )}
                 </button>
@@ -3778,10 +3766,7 @@ function TeacherDashboardInner() {
                   className="iboard-arr-btn"
                   aria-label="Review"
                 >
-                  <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
-                    <path d="M8.5 16.5v-3M12 16.5v-7M15.5 16.5v-5" />
-                  </svg>
+                  <span className="iboard-arr-btn__icon iboard-arr-btn__icon--review" aria-hidden="true" />
                   <span className="iboard-arr-label">Review</span>
                 </button>
               </HintWrap>

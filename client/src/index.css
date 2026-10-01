@@ -996,7 +996,7 @@ html.dark .iboard-board-empty__code {
   padding-bottom: 0.35rem;
 }
 
-/* Share / Ask / Run / Review stack at the top; settings sits at the bottom. */
+/* Share / Ask / Manage / Review stack at the top; settings sits at the bottom. */
 .iboard-arr-rail__lower {
   flex: 1 1 auto;
   display: flex;
@@ -1328,6 +1328,10 @@ html.dark .iboard-tour__close:hover {
 .iboard-arr-btn__icon--view { --iboard-rail-icon: url('/brand/rail-view.png'); }
 .iboard-arr-btn__icon--timer { --iboard-rail-icon: url('/brand/rail-timer.png'); }
 .iboard-arr-btn__icon--session { --iboard-rail-icon: url('/brand/rail-session.png'); }
+.iboard-arr-btn__icon--share { --iboard-rail-icon: url('/brand/rail-share.png'); }
+.iboard-arr-btn__icon--ask { --iboard-rail-icon: url('/brand/rail-ask.png'); }
+.iboard-arr-btn__icon--manage { --iboard-rail-icon: url('/brand/rail-manage.png'); }
+.iboard-arr-btn__icon--review { --iboard-rail-icon: url('/brand/rail-review.png'); }
 
 .iboard-arr-label {
   display: block;
