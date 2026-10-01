@@ -47,7 +47,7 @@ import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import StudentPickerDialog from '../components/StudentPickerDialog.jsx';
-import { BoardJoinPanel, JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
+import { BoardJoinGate, JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
 import { fitGrid } from '../lib/fitGrid.js';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
 import TeacherHelpPanel, { TeacherHelpButton } from '../components/TeacherHelpPanel.jsx';
@@ -73,6 +73,33 @@ const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view-v2';
 const OVERVIEW_COLUMNS_STORAGE_KEY = 'iboard-overview-columns';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
 const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden-v2';
+const LESSON_BEGUN_KEY = 'iboard-lesson-begun';
+const LESSON_BEGUN_MAX_MS = 4 * 60 * 60 * 1000;
+
+function readLessonBegun(code) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LESSON_BEGUN_KEY) || 'null');
+    return saved?.code === code && Date.now() - Number(saved.at) < LESSON_BEGUN_MAX_MS;
+  } catch {
+    return false;
+  }
+}
+
+function rememberLessonBegun(code) {
+  try {
+    localStorage.setItem(LESSON_BEGUN_KEY, JSON.stringify({ code, at: Date.now() }));
+  } catch {
+    /* storage may be unavailable */
+  }
+}
+
+function forgetLessonBegun() {
+  try {
+    localStorage.removeItem(LESSON_BEGUN_KEY);
+  } catch {
+    /* storage may be unavailable */
+  }
+}
 const MONITOR_STORAGE_KEY = 'iboard-teacher-monitor';
 const LEGACY_WATCH_STORAGE_KEY = 'iboard-teacher-watch';
 /** Per-card writing size steps (applied as rem so rich HTML inherits). */
@@ -357,7 +384,7 @@ function TeacherDashboardInner() {
   const [newClassConfirmOpen, setNewClassConfirmOpen] = useState(false);
   const [newClassBusy, setNewClassBusy] = useState(false);
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
-  const [joinBarDismissed, setJoinBarDismissed] = useState(false);
+  const [lessonBegun, setLessonBegun] = useState(false);
   const [pickAnchor, setPickAnchor] = useState(null);
   const [objectiveEditOpen, setObjectiveEditOpen] = useState(false);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
@@ -1267,7 +1294,7 @@ function TeacherDashboardInner() {
         rememberTeacherRoomCode(code);
         rememberedRoomRef.current = code;
         clearPrefilledCodeOnFocusRef.current = false;
-        setJoinBarDismissed(false);
+        setLessonBegun(readLessonBegun(code));
         setJoined(true);
         setCodeInput(code);
         try {
@@ -3023,7 +3050,8 @@ function TeacherDashboardInner() {
       setLibraryView('home');
       setNewClassConfirmOpen(false);
       clearSessionDirty();
-      setJoinBarDismissed(false);
+      forgetLessonBegun();
+      setLessonBegun(false);
       setCopyToast('Board reset — ready for a fresh lesson');
       setTimeout(() => setCopyToast(''), 3000);
       const code = String(codeInput || '').replace(/\D/g, '').slice(0, 4);
@@ -4048,16 +4076,19 @@ function TeacherDashboardInner() {
 
       <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
-          {!joinBarDismissed && (
-            <BoardJoinPanel
+          {!lessonBegun && (
+            <BoardJoinGate
               code={codeInput}
               joinUrl={studentJoinUrl()}
-              joinedCount={connectedStudents.length}
+              students={connectedStudents}
               rosterCount={orderedStudents.length}
               objective={room?.lesson_objective || ''}
               onObjectiveChange={setLessonObjective}
-              onShowBig={openJoinScreen}
-              onDismiss={() => setJoinBarDismissed(true)}
+              onRemoveStudent={requestRemoveStudent}
+              onBegin={() => {
+                rememberLessonBegun(String(codeInput || '').replace(/\D/g, '').slice(0, 4));
+                setLessonBegun(true);
+              }}
             />
           )}
 

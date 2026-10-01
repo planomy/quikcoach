@@ -99,12 +99,14 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, on
 }
 
 /**
- * Join info on the board itself: big while nobody is connected, a slim bar once
- * students are arriving. Projected with the board, so no separate start screen.
+ * Covers the board until the teacher presses Begin, so nobody sees a card (or a
+ * silly name) while the class is joining — safe to project or not.
  */
-export function BoardJoinPanel({ code, joinUrl, joinedCount = 0, rosterCount = 0, objective = '', onObjectiveChange, onShowBig, onDismiss }) {
+export function BoardJoinGate({ code, joinUrl, students = [], rosterCount = 0, objective = '', onObjectiveChange, onBegin, onRemoveStudent }) {
   const { qrSvg, address } = useJoinInfo(joinUrl);
   const [objectiveDraft, setObjectiveDraft] = useState(objective);
+  const [showNames, setShowNames] = useState(false);
+  const joinedCount = students.length;
 
   useEffect(() => {
     setObjectiveDraft(objective);
@@ -115,59 +117,65 @@ export function BoardJoinPanel({ code, joinUrl, joinedCount = 0, rosterCount = 0
     if (clean !== objective) onObjectiveChange?.(clean);
   }
 
-  if (joinedCount === 0) {
-    return (
-      <section className="iboard-board-join" aria-label="How students join">
-        <HintWrap hint="Hide this panel (click the room code at the top to see it again)" prefer="below-left" className="iboard-board-join__close">
-          <button type="button" onClick={onDismiss} aria-label="Hide the join panel">×</button>
-        </HintWrap>
-        <div className="iboard-board-join__text">
-          <p className="iboard-board-join__address">
-            Students enter code at: <strong>{address}</strong>
-          </p>
-          <div className="iboard-board-join__code-row">
-            <p className="iboard-board-join__code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
-            <p className="iboard-board-join__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
-          </div>
-          <input
-            type="text"
-            className="iboard-board-join__objective"
-            value={objectiveDraft}
-            maxLength={OBJECTIVE_MAX}
-            onChange={(event) => setObjectiveDraft(event.target.value)}
-            onBlur={saveObjective}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                saveObjective();
-                event.currentTarget.blur();
-              }
-            }}
-            placeholder="Optional – write today’s objective here"
-            aria-label="Today’s objective (optional)"
-          />
-        </div>
-        {qrSvg ? (
-          <div className="iboard-board-join__qr" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-        ) : null}
-      </section>
-    );
-  }
-
   return (
-    <div className="iboard-board-join-bar" role="status" aria-live="polite">
-      <span>
-        Students join at <strong>{address}</strong> · code <strong className="iboard-board-join-bar__code">{code}</strong>
-      </span>
-      <span className="iboard-board-join-bar__count">{joinedLabel(joinedCount, rosterCount)}</span>
-      <span className="iboard-board-join-bar__actions">
-        <HintWrap hint="Show the join details full screen for the projector" prefer="below">
-          <button type="button" onClick={onShowBig}>Show big</button>
-        </HintWrap>
-        <HintWrap hint="Hide this bar (click the room code at the top to see it again)" prefer="below">
-          <button type="button" onClick={onDismiss} aria-label="Hide the join bar">×</button>
-        </HintWrap>
-      </span>
+    <div className="iboard-join-gate">
+      <section className="iboard-join-gate__panel" aria-label="Students joining">
+        <p className="iboard-join-gate__address">
+          Students enter code at: <strong>{address}</strong>
+        </p>
+        <div className="iboard-join-gate__code-row">
+          <p className="iboard-join-gate__code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
+          {qrSvg ? (
+            <div className="iboard-join-gate__qr" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+          ) : null}
+        </div>
+        <p className="iboard-join-gate__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
+        <input
+          type="text"
+          className="iboard-join-gate__objective"
+          value={objectiveDraft}
+          maxLength={OBJECTIVE_MAX}
+          onChange={(event) => setObjectiveDraft(event.target.value)}
+          onBlur={saveObjective}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              saveObjective();
+              event.currentTarget.blur();
+            }
+          }}
+          placeholder="Optional – write today’s objective here"
+          aria-label="Today’s objective (optional)"
+        />
+        {showNames ? (
+          joinedCount ? (
+            <ul className="iboard-join-gate__names" aria-label="Students who have joined">
+              {students.map((student) => (
+                <li key={student.id}>
+                  <span>{student.name || 'Student'}</span>
+                  <HintWrap hint={`Remove ${student.name || 'this student'}`} prefer="above">
+                    <button type="button" onClick={() => onRemoveStudent?.(student)} aria-label={`Remove ${student.name || 'student'}`}>×</button>
+                  </HintWrap>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="iboard-join-gate__names-empty">No one has joined yet.</p>
+          )
+        ) : null}
+        <div className="iboard-join-gate__actions">
+          <HintWrap hint={showNames ? 'Hide the names again' : 'See who’s in, or remove a silly name. Turn the projector off first if it’s on.'} prefer="above" multiline>
+            <button type="button" className="iboard-join-gate__names-toggle" onClick={() => setShowNames((open) => !open)} aria-pressed={showNames}>
+              {showNames ? 'Hide names' : 'Show names'}
+            </button>
+          </HintWrap>
+          <HintWrap hint="Show the student cards and start the lesson. Late students can still join with the code." prefer="above" multiline>
+            <button type="button" className="iboard-join-gate__begin" onClick={onBegin}>
+              Begin
+            </button>
+          </HintWrap>
+        </div>
+      </section>
     </div>
   );
 }

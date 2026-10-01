@@ -4869,190 +4869,207 @@ html.dark .iboard-room-settings__list > span:not(:last-child) > button {
   border-bottom-color: #334155;
 }
 
-/* Join info on the board: big while nobody is connected, slim bar once students arrive. */
 .iboard-join-screen > .iboard-start-screen__primary {
   margin-top: clamp(1.5rem, 4vh, 2.5rem);
 }
 
-.iboard-board-join {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(1.25rem, 3vw, 2.5rem);
-  align-self: center;
-  width: fit-content;
-  max-width: calc(100% - 1.5rem);
-  margin: 0.6rem 0.75rem 0.4rem;
-  padding: clamp(0.9rem, 2vh, 1.5rem) clamp(2.75rem, 4vw, 3.25rem) clamp(0.9rem, 2vh, 1.5rem) clamp(1.25rem, 3vw, 2.25rem);
-  border-radius: 1.25rem;
-  background: #4f46e5;
-  color: #ffffff;
-  text-align: left;
-  position: relative;
-}
-
-.iboard-board-join__close {
+.iboard-join-gate {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-}
-
-.iboard-board-join__close button {
+  inset: 0;
+  z-index: 35;
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
+  overflow-y: auto;
+  padding: clamp(1rem, 3vh, 2rem) 1rem;
+  background: #f1f0f8;
+}
+
+.iboard-join-gate__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(48rem, 100%);
+  padding: clamp(1.5rem, 4vh, 2.75rem) clamp(1.25rem, 4vw, 3rem);
+  border-radius: 1.75rem;
+  background: #4f46e5;
   color: #ffffff;
-  font-size: 1.5rem;
-  line-height: 1;
-  opacity: 0.85;
+  text-align: center;
+  box-shadow: 0 30px 60px -30px rgba(49, 46, 129, 0.55);
 }
 
-.iboard-board-join__close button:hover,
-.iboard-board-join__close button:focus-visible {
-  background: rgba(255, 255, 255, 0.18);
-  opacity: 1;
-}
-
-.iboard-board-join__address {
+.iboard-join-gate__address {
   margin: 0;
-  font-size: clamp(1.1rem, 2vw, 1.85rem);
+  font-size: clamp(1.1rem, 2.2vw, 1.85rem);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   color: rgba(255, 255, 255, 0.8);
 }
 
-.iboard-board-join__address strong {
+.iboard-join-gate__address strong {
   font-weight: 800;
   color: #ffffff;
   overflow-wrap: anywhere;
 }
 
-.iboard-board-join__code-row {
+.iboard-join-gate__code-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1.5rem;
-  margin-top: 0.35rem;
+  justify-content: center;
+  gap: 1rem clamp(1.5rem, 4vw, 3rem);
+  margin-top: clamp(0.75rem, 2vh, 1.5rem);
 }
 
-.iboard-board-join__code {
+.iboard-join-gate__code {
   margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-size: clamp(4rem, 11vw, 8rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0.08em;
 }
 
-.iboard-board-join__count {
-  margin: 0;
-  font-size: clamp(1rem, 1.6vw, 1.3rem);
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.iboard-board-join__objective {
-  display: block;
-  width: min(36rem, 100%);
-  margin-top: 0.75rem;
-  border: 0;
-  border-radius: 0.65rem;
-  padding: 0.55rem 0.8rem;
-  background: rgba(255, 255, 255, 0.95);
-  color: #1e1b4b;
-  font-size: 0.95rem;
-  font-weight: 600;
-  outline: none;
-}
-
-.iboard-board-join__objective::placeholder {
-  color: #8b8bb0;
-  font-weight: 500;
-}
-
-.iboard-board-join__objective:focus {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45);
-}
-
-.iboard-board-join__qr {
+.iboard-join-gate__qr {
   flex: 0 0 auto;
-  width: clamp(6rem, 10vw, 8.5rem);
+  width: clamp(8rem, 15vw, 12rem);
   aspect-ratio: 1;
-  border-radius: 0.9rem;
-  padding: 0.5rem;
+  border-radius: 1rem;
+  padding: 0.6rem;
   background: #ffffff;
 }
 
-.iboard-board-join__qr svg {
+.iboard-join-gate__qr svg {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-.iboard-board-join-bar {
-  flex: 0 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 1rem;
-  margin: 0.5rem 0.75rem 0.25rem;
-  padding: 0.4rem 0.5rem 0.4rem 0.9rem;
-  border-radius: 0.75rem;
-  background: #ebeaf8;
-  color: #3c3f8f;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.iboard-board-join-bar strong {
+.iboard-join-gate__count {
+  margin: clamp(0.75rem, 2vh, 1.25rem) 0 0;
+  font-size: clamp(1.25rem, 2.4vw, 1.9rem);
   font-weight: 800;
 }
 
-.iboard-board-join-bar__code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.08em;
+.iboard-join-gate__objective {
+  display: block;
+  width: min(34rem, 100%);
+  margin-top: clamp(0.75rem, 2vh, 1.25rem);
+  border: 0;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1e1b4b;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
 }
 
-.iboard-board-join-bar__count {
-  color: #5a5fc3;
+.iboard-join-gate__objective::placeholder {
+  color: #8b8bb0;
+  font-weight: 500;
 }
 
-.iboard-board-join-bar__actions {
+.iboard-join-gate__objective:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45);
+}
+
+.iboard-join-gate__names {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  max-height: 9.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.iboard-join-gate__names li {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
-}
-
-.iboard-board-join-bar__actions button {
-  border-radius: 0.5rem;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.8rem;
+  gap: 0.15rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.25rem 0.2rem 0.75rem;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.9rem;
   font-weight: 700;
-  color: #4b50b0;
 }
 
-.iboard-board-join-bar__actions button:hover {
-  background: #dcdaf5;
+.iboard-join-gate__names button {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.05rem;
+  line-height: 1;
 }
 
-html.dark .iboard-board-join {
+.iboard-join-gate__names button:hover,
+.iboard-join-gate__names button:focus-visible {
+  background: #ffffff;
+  color: #b91c1c;
+}
+
+.iboard-join-gate__names-empty {
+  margin: 1rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.iboard-join-gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: clamp(1.25rem, 3vh, 2rem);
+}
+
+.iboard-join-gate__names-toggle {
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-radius: 0.85rem;
+  padding: 0.7rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  transition: background 160ms ease;
+}
+
+.iboard-join-gate__names-toggle:hover,
+.iboard-join-gate__names-toggle[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.iboard-join-gate__begin {
+  border-radius: 0.85rem;
+  padding: 0.75rem 2.5rem;
+  background: #ffffff;
+  color: #3730a3;
+  font-size: 1.15rem;
+  font-weight: 800;
+  box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.5);
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), background 160ms ease;
+}
+
+.iboard-join-gate__begin:hover {
+  background: #eef2ff;
+  transform: translateY(-1px);
+}
+
+.iboard-join-gate__begin:active {
+  transform: scale(0.98);
+}
+
+html.dark .iboard-join-gate {
+  background: #020617;
+}
+
+html.dark .iboard-join-gate__panel {
   background: #3730a3;
-}
-
-html.dark .iboard-board-join-bar {
-  background: #1e1b4b;
-  color: #c7d2fe;
-}
-
-html.dark .iboard-board-join-bar__count,
-html.dark .iboard-board-join-bar__actions button {
-  color: #a5b4fc;
-}
-
-html.dark .iboard-board-join-bar__actions button:hover {
-  background: #312e81;
 }
