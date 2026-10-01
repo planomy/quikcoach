@@ -4887,6 +4887,31 @@ html.dark .iboard-room-settings__list > span:not(:last-child) > button {
   background: #4f46e5;
   color: #ffffff;
   text-align: left;
+  position: relative;
+}
+
+.iboard-board-join__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.iboard-board-join__close button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 1.5rem;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.iboard-board-join__close button:hover,
+.iboard-board-join__close button:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+  opacity: 1;
 }
 
 .iboard-board-join__address {

@@ -118,6 +118,9 @@ export function BoardJoinPanel({ code, joinUrl, joinedCount = 0, rosterCount = 0
   if (joinedCount === 0) {
     return (
       <section className="iboard-board-join" aria-label="How students join">
+        <HintWrap hint="Hide this panel (click the room code at the top to see it again)" prefer="below-left" className="iboard-board-join__close">
+          <button type="button" onClick={onDismiss} aria-label="Hide the join panel">×</button>
+        </HintWrap>
         <div className="iboard-board-join__text">
           <p className="iboard-board-join__address">
             Students enter code at: <strong>{address}</strong>

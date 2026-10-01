@@ -4048,7 +4048,7 @@ function TeacherDashboardInner() {
 
       <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
-          {(connectedStudents.length === 0 || !joinBarDismissed) && (
+          {!joinBarDismissed && (
             <BoardJoinPanel
               code={codeInput}
               joinUrl={studentJoinUrl()}
