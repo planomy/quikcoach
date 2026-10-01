@@ -71,7 +71,7 @@ export function JoinScreen({ code, joinUrl, students = [], initialObjective = ''
     >
       <div className="iboard-join-screen">
         <h2 id="join-screen-title" className="iboard-join-screen__address">
-          Students join at: <strong>{address}</strong>
+          Students enter code at: <strong>{address}</strong>
         </h2>
 
         <div className="iboard-join-screen__code-row">
