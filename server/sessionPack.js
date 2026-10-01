@@ -305,6 +305,7 @@ export function buildSessionPack(db, roomCode, media) {
       word_target: room.word_target,
       enforce_word_count: room.enforce_word_count,
       freeze_class: room.freeze_class,
+      lesson_objective: room.lesson_objective || '',
       genre: room.genre,
       feedback_toggles: room.feedback_toggles,
       live_question_number: Number(roomRow?.live_question_number) || 0,
@@ -380,6 +381,7 @@ export function importSessionPack(db, roomCode, pack, media) {
     word_target: settings.word_target,
     enforce_word_count: settings.enforce_word_count,
     freeze_class: settings.freeze_class,
+    lesson_objective: settings.lesson_objective ?? '',
     genre: settings.genre,
     feedback_toggles: settings.feedback_toggles,
   });

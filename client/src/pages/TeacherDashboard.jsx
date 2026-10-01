@@ -46,6 +46,7 @@ import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
+import { JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
 import TeacherHelpPanel, { TeacherHelpButton } from '../components/TeacherHelpPanel.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
@@ -83,6 +84,7 @@ const CARD_VIEWS = [
 /** Overview density steps (Classroom-style column count). Default 4 suits 10–11" iPads. */
 const OVERVIEW_COLUMN_OPTIONS = [6, 5, 4, 3];
 const OVERVIEW_COLUMNS_DEFAULT = 4;
+const STRAIGHT_TO_ROOM_KEY = 'tuit-straight-to-room';
 const OVERVIEW_GRID_CLASS = {
   3: 'grid-cols-3',
   4: 'grid-cols-4',
@@ -338,6 +340,16 @@ function TeacherDashboardInner() {
   const [newClassConfirmOpen, setNewClassConfirmOpen] = useState(false);
   const [newClassBusy, setNewClassBusy] = useState(false);
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
+  const [startStep, setStartStep] = useState(null);
+  const [objectiveEditOpen, setObjectiveEditOpen] = useState(false);
+  const [straightToRoom, setStraightToRoom] = useState(() => {
+    try {
+      return localStorage.getItem(STRAIGHT_TO_ROOM_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const straightToRoomRef = useRef(straightToRoom);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
   const [handQuestionTarget, setHandQuestionTarget] = useState(null);
@@ -1150,7 +1162,7 @@ function TeacherDashboardInner() {
     prevModalOpenRef.current = modalOpen;
   }, [modalOpen, room, hydrateFeedbackStateFromRoom]);
 
-  async function createOrJoin(overrideCode) {
+  async function createOrJoin(overrideCode, { fromLink = false } = {}) {
     setError('');
     const digits = String(overrideCode ?? codeInput)
       .replace(/\D/g, '')
@@ -1189,7 +1201,7 @@ function TeacherDashboardInner() {
             socket.once('connect_error', onErr);
           });
         } catch {
-          setError('Cannot connect for live class updates — is the server running?');
+          setError('TUIT can’t reach the class server. Check the Wi-Fi, or ask IT to check the TUIT server is running.');
           return;
         }
       }
@@ -1213,13 +1225,15 @@ function TeacherDashboardInner() {
             setRoom(data.room);
             setStudents((data.students || []).map(normalizeStudentFromServer));
             hydrateFeedbackStateFromRoom(data.room);
+            const lessonRunning = (data.students || []).length > 0;
+            if (!fromLink && !straightToRoomRef.current && !lessonRunning) setStartStep('join');
           }
         } catch {
           /* room:state from socket will catch up */
         }
       });
     } catch {
-      setError('Network error — is the server running?');
+      setError('TUIT can’t reach the class server. Check the Wi-Fi, or ask IT to check the TUIT server is running.');
     }
   }
 
@@ -1227,7 +1241,7 @@ function TeacherDashboardInner() {
     if (autoJoinTriedRef.current || joined) return;
     if (codeFromLink.length !== 4) return;
     autoJoinTriedRef.current = true;
-    void createOrJoin(codeFromLink);
+    void createOrJoin(codeFromLink, { fromLink: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot return from FULL SCREEN
   }, [codeFromLink]);
 
@@ -2882,6 +2896,23 @@ function TeacherDashboardInner() {
     setJoinScreenOpen(true);
   }
 
+  function setLessonObjective(text) {
+    const clean = String(text || '').trim();
+    rememberObjective(clean);
+    setRoom((current) => (current ? { ...current, lesson_objective: clean } : current));
+    pushSettings({ lesson_objective: clean });
+  }
+
+  function updateStraightToRoom(on) {
+    straightToRoomRef.current = on;
+    setStraightToRoom(on);
+    try {
+      localStorage.setItem(STRAIGHT_TO_ROOM_KEY, on ? '1' : '0');
+    } catch {
+      /* storage may be unavailable */
+    }
+  }
+
   function downloadParticipantList() {
     closeSettings();
     const rows = [
@@ -2939,6 +2970,7 @@ function TeacherDashboardInner() {
       setLibraryView('home');
       setNewClassConfirmOpen(false);
       clearSessionDirty();
+      if (!straightToRoomRef.current) setStartStep('join');
       setCopyToast('Board reset — ready for a fresh lesson');
       setTimeout(() => setCopyToast(''), 3000);
       const code = String(codeInput || '').replace(/\D/g, '').slice(0, 4);
@@ -3035,6 +3067,15 @@ function TeacherDashboardInner() {
             >
               Open room
             </button>
+            <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={straightToRoom}
+                onChange={(event) => updateStraightToRoom(event.target.checked)}
+                className="h-4 w-4 accent-indigo-600"
+              />
+              <span>Go straight to my room (skip the start screens)</span>
+            </label>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
               <button
                 type="button"
@@ -3187,12 +3228,12 @@ function TeacherDashboardInner() {
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
           <div className="iboard-teacher-header-main">
             <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
-              <HintWrap hint="Copy student join link" prefer="below">
+              <HintWrap hint="Show the join screen" prefer="below">
                 <button
                   type="button"
                   className="iboard-header-room"
-                  onClick={() => void copyStudentJoinLink()}
-                  aria-label={`Room ${codeInput}. Copy student join link`}
+                  onClick={openJoinScreen}
+                  aria-label={`Room ${codeInput}. Show the join screen`}
                 >
                   <span className="iboard-header-room__label">Room</span>
                   <span className="iboard-header-code">{codeInput}</span>
@@ -3202,6 +3243,16 @@ function TeacherDashboardInner() {
               <span className="iboard-header-meta__online">
                 <b className="tabular-nums">{orderedStudents.length}</b> online
               </span>
+              <HintWrap hint={room?.lesson_objective ? 'Change today’s objective' : 'Students see this at the top of their screen'} prefer="below">
+                <button
+                  type="button"
+                  onClick={() => setObjectiveEditOpen(true)}
+                  className={`iboard-header-objective${room?.lesson_objective ? '' : ' is-empty'}`}
+                  aria-label={room?.lesson_objective ? `Today’s objective: ${room.lesson_objective}. Change it` : 'Add today’s objective'}
+                >
+                  <span>{room?.lesson_objective || '+ Add today’s objective'}</span>
+                </button>
+              </HintWrap>
               {attentionPills.map((pill) => {
                 const on = attentionFocus === pill.id;
                 return (
@@ -3284,7 +3335,7 @@ function TeacherDashboardInner() {
                     setDraftTrailRecording(false);
                     return;
                   }
-                  setDraftTrailLabelDraft(room?.draftTrail?.label || '');
+                  setDraftTrailLabelDraft(room?.draftTrail?.label || room?.lesson_objective || '');
                   setDraftTrailLabelOpen(true);
                 }}
               >
@@ -3708,7 +3759,7 @@ function TeacherDashboardInner() {
           </div>
         </nav>
 
-        <TeacherBoardTour key={tourKey} anchors={tourAnchors} />
+        {tourKey > 0 ? <TeacherBoardTour key={tourKey} anchors={tourAnchors} /> : null}
 
         <div className="iboard-teacher-panel-wrap">
           <HintWrap hint="Show resources" prefer="right" suppressed={!teacherPanelHidden}>
@@ -4889,44 +4940,49 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      {joinScreenOpen && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center overflow-auto bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 p-5 text-white sm:p-10"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="join-screen-title"
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') setJoinScreenOpen(false);
+      {startStep === 'join' && (
+        <JoinScreen
+          mode="start"
+          code={codeInput}
+          joinUrl={studentJoinUrl()}
+          students={orderedStudents}
+          onCopyLink={copyStudentJoinLink}
+          onNext={() => setStartStep('objective')}
+          onSkip={() => setStartStep(null)}
+        />
+      )}
+      {startStep === 'objective' && (
+        <ObjectiveScreen
+          mode="start"
+          initialObjective={room?.lesson_objective || ''}
+          onBack={() => setStartStep('join')}
+          onSkip={() => setStartStep(null)}
+          onSave={(text) => {
+            if (text || room?.lesson_objective) setLessonObjective(text);
+            setStartStep(null);
           }}
-        >
-          <button
-            type="button"
-            autoFocus
-            onClick={() => setJoinScreenOpen(false)}
-            className="fixed right-5 top-5 rounded-xl bg-white px-4 py-2 text-sm font-black text-indigo-950 shadow-xl"
-          >
-            Back to dashboard
-          </button>
-          <div className="mx-auto w-full max-w-5xl text-center">
-            <p className="text-sm font-black uppercase tracking-[0.3em] text-indigo-300">Join this iBOARD session</p>
-            <h2 id="join-screen-title" className="mt-6 font-display text-4xl font-black sm:text-6xl">Enter room code</h2>
-            <p className="mt-5 font-mono text-[clamp(5rem,20vw,12rem)] font-black leading-none tracking-[0.08em] text-white">
-              {codeInput}
-            </p>
-            <p className="mx-auto mt-6 max-w-3xl break-all rounded-2xl bg-white/10 px-5 py-4 text-lg font-bold text-indigo-100 ring-1 ring-white/20 sm:text-2xl">
-              {studentJoinUrl()}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <button type="button" onClick={copyStudentJoinLink} className="rounded-2xl bg-emerald-400 px-6 py-3 text-base font-black text-emerald-950 shadow-xl hover:bg-emerald-300">
-                Copy join link
-              </button>
-              <span className="rounded-2xl bg-white/10 px-5 py-3 text-base font-bold ring-1 ring-white/20">
-                {orderedStudents.length} joined
-              </span>
-            </div>
-            <p className="mt-7 text-sm font-semibold text-white/60">Keep this screen up while participants arrive.</p>
-          </div>
-        </div>
+        />
+      )}
+      {joinScreenOpen && !startStep && (
+        <JoinScreen
+          mode="room"
+          code={codeInput}
+          joinUrl={studentJoinUrl()}
+          students={orderedStudents}
+          onCopyLink={copyStudentJoinLink}
+          onClose={() => setJoinScreenOpen(false)}
+        />
+      )}
+      {objectiveEditOpen && !startStep && (
+        <ObjectiveScreen
+          mode="edit"
+          initialObjective={room?.lesson_objective || ''}
+          onClose={() => setObjectiveEditOpen(false)}
+          onSave={(text) => {
+            setLessonObjective(text);
+            setObjectiveEditOpen(false);
+          }}
+        />
       )}
 
       {newClassConfirmOpen && (
@@ -5261,13 +5317,6 @@ function TeacherDashboardInner() {
                   >
                     {frozen ? 'Unfreeze board' : 'Freeze board'}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => { closeSettings(); openJoinScreen(); }}
-                    className="iboard-room-settings__secondary"
-                  >
-                    Present join screen
-                  </button>
                 </div>
               </div>
             )}
@@ -5367,6 +5416,15 @@ function TeacherDashboardInner() {
                   {isDark ? 'Switch to light mode' : 'Switch to dark mode'}
                 </button>
               </div>
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                <span>Show start screens for a new lesson</span>
+                <input
+                  type="checkbox"
+                  checked={!straightToRoom}
+                  onChange={(event) => updateStraightToRoom(!event.target.checked)}
+                  className="h-4 w-4 accent-indigo-600"
+                />
+              </label>
               {fixedCommentCount > 0 && (
                 <div className="iboard-room-settings__cleanup">
                   {!clearFixedArmed ? (

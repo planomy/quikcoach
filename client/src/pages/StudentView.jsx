@@ -1579,6 +1579,12 @@ export default function StudentView() {
           </div>
         </div>
       </header>
+      {room?.lesson_objective ? (
+        <div className="iboard-lesson-objective" role="note" aria-label="Today's objective">
+          <span className="iboard-lesson-objective__label">Today</span>
+          <span className="iboard-lesson-objective__text">{room.lesson_objective}</span>
+        </div>
+      ) : null}
       <main className="mx-auto flex w-full min-h-0 flex-1 flex-col px-4 py-6 sm:px-6">
         <div
           ref={splitGridRef}

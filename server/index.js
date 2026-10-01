@@ -2777,6 +2777,7 @@ io.on('connection', (socket) => {
       queries.clearFeaturedWall(db, code);
       queries.clearLessonPulseLog(db, code);
       queries.resetLiveQuestionNumber(db, code);
+      queries.updateRoomSettings(db, code, { lesson_objective: '' });
       broadcastRoom(code);
       emitLiveState(code);
       emitAudienceQnaState(code);
