@@ -5207,13 +5207,13 @@ function TeacherDashboardInner() {
                       aria-pressed={active}
                       aria-expanded={isOverview ? overviewColsPeek : undefined}
                       title=""
-                      className={`flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold leading-tight transition ${
+                      className={`group flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold leading-tight transition active:scale-[0.98] ${
                         active
                           ? 'bg-[#5a5fc3] text-white shadow-sm'
-                          : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+                          : 'text-slate-700 hover:bg-[#5a5fc3] hover:text-white dark:text-slate-200 dark:hover:bg-[#5a5fc3]'
                       }`}
                     >
-                      <CardViewIcon id={view.id} className="h-4 w-4 shrink-0" />
+                      <CardViewIcon id={view.id} className={`h-4 w-4 shrink-0 transition-transform duration-150${active ? '' : ' group-hover:scale-[1.06]'}`} />
                       <span>{view.id === 'full' ? 'Full' : view.label}</span>
                     </button>
                   </HintWrap>
@@ -5242,7 +5242,7 @@ function TeacherDashboardInner() {
                       className={`min-w-[1.75rem] rounded-md px-1.5 py-1 text-[11px] font-semibold tabular-nums transition ${
                         active
                           ? 'bg-[#5a5fc3] text-white shadow-sm'
-                          : 'text-[#52525c] hover:bg-[#ebeaf8] dark:text-slate-300 dark:hover:bg-slate-800'
+                          : 'text-[#52525c] hover:bg-[#5a5fc3] hover:text-white dark:text-slate-300 dark:hover:bg-[#5a5fc3]'
                       }`}
                     >
                       {count}
