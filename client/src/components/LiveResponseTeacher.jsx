@@ -36,14 +36,14 @@ function firstName(name) {
   return trimmed.split(/\s+/)[0];
 }
 
+/** Quick checks and Write one share one 'compose' view; older saved 'quik' / 'build' land there too. */
 function readSavedAskTab() {
   try {
-    const saved = localStorage.getItem('iboard-ask-tab');
-    if (saved === 'prepared' || saved === 'build' || saved === 'quik') return saved;
+    if (localStorage.getItem('iboard-ask-tab') === 'prepared') return 'prepared';
   } catch {
     /* ignore */
   }
-  return 'quik';
+  return 'compose';
 }
 
 const PANEL_TAB_LABELS = {
@@ -286,13 +286,13 @@ export default function LiveResponseTeacher({
     if (!activity && activeView === 'live') setActiveView(readSavedAskTab());
   }, [activity, activeView]);
 
-  // Sets live under Share in the teacher console, so Ask falls back to Quick before paint.
+  // Sets live under Share in the teacher console, so Ask falls back to compose before paint.
   useLayoutEffect(() => {
-    if (effectivePanelTab === 'ask' && activeView === 'prepared') setActiveView('quik');
+    if (effectivePanelTab === 'ask' && activeView === 'prepared') setActiveView('compose');
   }, [effectivePanelTab, activeView]);
 
   useEffect(() => {
-    if (activeView === 'build' || activeView === 'prepared' || activeView === 'quik') {
+    if (activeView === 'compose' || activeView === 'prepared') {
       try { localStorage.setItem('iboard-ask-tab', activeView); } catch { /* ignore */ }
     }
   }, [activeView]);
@@ -767,8 +767,7 @@ export default function LiveResponseTeacher({
   const askSubNav = (
     <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-[#e4e4ea] bg-[#ebebed] px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
       {[
-        ['quik', 'Quick', 'Ready-made checks: yes/no, ratings, choices'],
-        ['build', queue.length ? `Write one · ${queue.length}` : 'Write one', 'Type your own question'],
+        ['compose', 'Ask', 'Send a quick check or write your own question'],
         ['responses', activity ? `Responses · ${responses.length}` : 'Responses', 'See the class’s answers as they come in'],
       ].map(([view, label, hint]) => (
         <HintWrap key={view} hint={hint} prefer="below" suppressed={view === 'responses' ? effectivePanelTab === 'responses' : effectivePanelTab === 'ask' && activeView === view}>
@@ -793,6 +792,7 @@ export default function LiveResponseTeacher({
         </HintWrap>
       ))}
       {featuredWall.length > 0 && (
+        <HintWrap hint="Answers you featured, ready to present or compare" prefer="below" suppressed={effectivePanelTab === 'ask' && activeView === 'featured'}>
         <button
           type="button"
           onClick={() => {
@@ -807,6 +807,7 @@ export default function LiveResponseTeacher({
         >
           Featured · {featuredWall.length}
         </button>
+        </HintWrap>
       )}
     </nav>
   );
@@ -877,7 +878,7 @@ export default function LiveResponseTeacher({
       {!embedded && !overlay && !activity && (
         <div className="border-b border-indigo-100 bg-indigo-50/80 px-4 py-2.5 dark:border-indigo-900 dark:bg-indigo-950/40">
           <p className="text-sm font-semibold text-indigo-950 dark:text-indigo-100">
-            Use a Quick check, write one question, or launch a Set.
+            Tap a Quick check, write your own question, or launch a Set.
             {typeof onCopyStudentLink === 'function' && (
               <button type="button" onClick={onCopyStudentLink} className="ml-2 rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-black text-white hover:bg-indigo-700">
                 Copy student link
@@ -898,25 +899,14 @@ export default function LiveResponseTeacher({
       <nav aria-label="Ask pages" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
         <button
           type="button"
-          onClick={() => setActiveView('quik')}
+          onClick={() => setActiveView('compose')}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
-            activeView === 'quik'
+            activeView === 'compose'
               ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
               : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
           }`}
         >
-          Quick
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveView('build')}
-          className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
-            activeView === 'build'
-              ? 'relative z-[1] -mb-px border border-b-white border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
-              : 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
-          }`}
-        >
-          {queue.length ? `Write one · ${queue.length}` : 'Write one'}
+          {queue.length ? `Ask · ${queue.length}` : 'Ask'}
         </button>
         <button
           type="button"
@@ -1030,10 +1020,6 @@ export default function LiveResponseTeacher({
           />
         )}
 
-        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'quik' && (
-          <QuikPulsePanel onLaunch={launchQuikPulse} />
-        )}
-
         {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'live' && activity && (
           <div className="p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1055,7 +1041,7 @@ export default function LiveResponseTeacher({
                 {currentActivityIsQuikPulse && (
                   <>
                     <button type="button" onClick={repeatQuikPulse} className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-800 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Repeat</button>
-                    <button type="button" onClick={() => setActiveView('quik')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask another</button>
+                    <button type="button" onClick={() => setActiveView('compose')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask another</button>
                   </>
                 )}
                 <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white dark:bg-white dark:text-slate-900">Done</button>
@@ -1081,7 +1067,7 @@ export default function LiveResponseTeacher({
           </div>
         )}
 
-        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'build' && (
+        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'compose' && (
           <div
             className="p-4"
             onPaste={(event) => {
@@ -1089,6 +1075,12 @@ export default function LiveResponseTeacher({
               if (file) { event.preventDefault(); loadImage(file); }
             }}
           >
+            <QuikPulsePanel onLaunch={launchQuikPulse} />
+            <div className="my-3 flex items-center gap-2" role="separator" aria-label="or write your own">
+              <span className="h-px flex-1 bg-[#e4e4ea] dark:bg-slate-700" aria-hidden />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8a96] dark:text-slate-500">or write your own</span>
+              <span className="h-px flex-1 bg-[#e4e4ea] dark:bg-slate-700" aria-hidden />
+            </div>
             <label className="block text-[0.78rem] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-200">Question</label>
             <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border border-[#e2e2e8] bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
             <div className="mt-3 flex flex-wrap gap-1.5">

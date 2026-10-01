@@ -16,7 +16,8 @@ const pulseCards = [
   {
     id: 'yes-no',
     label: 'Yes / No / Unsure',
-    hint: 'A fast three-way check',
+    short: 'Yes/No',
+    hint: 'Ask the whole class: Yes / No / Unsure',
     icon: 'yes-no',
     question: {
       ...baseQuestion,
@@ -28,7 +29,8 @@ const pulseCards = [
   {
     id: 'rating',
     label: '1–5 Rating',
-    hint: 'Confidence, quality or readiness',
+    short: '1–5',
+    hint: 'Ask the whole class to rate 1 to 5 (confidence, quality, readiness)',
     icon: 'rating',
     question: {
       ...baseQuestion,
@@ -40,7 +42,8 @@ const pulseCards = [
   {
     id: 'agreement',
     label: 'Agreement Scale',
-    hint: 'Strongly disagree → strongly agree',
+    short: 'Agree',
+    hint: 'Ask the whole class: strongly disagree → strongly agree',
     icon: 'agreement',
     question: {
       ...baseQuestion,
@@ -52,13 +55,15 @@ const pulseCards = [
   {
     id: 'choice',
     label: 'A–D Choice',
-    hint: 'Pick 2, 3 or 4 options',
+    short: 'A–D',
+    hint: 'Ask a letter-choice question: pick 2, 3 or 4 options',
     icon: 'choice',
   },
   {
     id: 'one-word',
     label: 'One Word',
-    hint: 'A quick word from everyone',
+    short: 'One word',
+    hint: 'Ask the whole class for a one-word answer',
     icon: 'one-word',
     question: {
       ...baseQuestion,
@@ -70,7 +75,8 @@ const pulseCards = [
   {
     id: 'short',
     label: 'Short Response',
-    hint: 'A brief written thought',
+    short: 'Short',
+    hint: 'Ask the whole class for a short written answer',
     icon: 'short',
     question: {
       ...baseQuestion,
@@ -242,15 +248,16 @@ function ChoiceCountPicker({ open, onClose, onPick, anchorRef }) {
       </p>
       <div className="flex gap-1.5" aria-label="Number of choices">
         {[2, 3, 4].map((count) => (
-          <button
-            key={count}
-            type="button"
-            aria-label={`${count} answer choices`}
-            className="grid h-10 min-w-10 flex-1 place-items-center rounded-lg border border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-800 transition hover:border-indigo-500 hover:bg-indigo-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"
-            onClick={() => onPick(count)}
-          >
-            {count}
-          </button>
+          <HintWrap key={count} hint={`Ask now with ${count} choices: A–${String.fromCharCode(64 + count)}`} prefer="below" className="min-w-10 flex-1">
+            <button
+              type="button"
+              aria-label={`${count} answer choices`}
+              className="grid h-10 w-full place-items-center rounded-lg border border-indigo-200 bg-indigo-50 text-sm font-black text-indigo-800 transition hover:border-indigo-500 hover:bg-indigo-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"
+              onClick={() => onPick(count)}
+            >
+              {count}
+            </button>
+          </HintWrap>
         ))}
       </div>
     </div>,
@@ -258,7 +265,8 @@ function ChoiceCountPicker({ open, onClose, onPick, anchorRef }) {
   );
 }
 
-export default function QuikPulsePanel({ onLaunch, compact = false }) {
+/** One row of one-tap checks that ask the whole class straight away. */
+export default function QuikPulsePanel({ onLaunch }) {
   const [choiceOpen, setChoiceOpen] = useState(false);
   const choiceAnchorRef = useRef(null);
 
@@ -272,76 +280,53 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
     });
   }
 
-  const cardClass = compact
-    ? 'group relative flex min-h-[3.75rem] w-full flex-col items-center justify-center rounded-lg border border-[#cfcce8] bg-white px-1.5 py-1.5 text-center text-[#5a5fc3] shadow-sm transition hover:border-[#5a5fc3] hover:bg-[#ebeaf8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#cfcce8] dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
-    : 'group relative flex min-h-[5.25rem] w-full flex-col items-center justify-center rounded-xl border border-[#cfcce8] bg-white px-2 py-2.5 text-center text-[#5a5fc3] shadow-sm transition hover:border-[#5a5fc3] hover:bg-[#ebeaf8] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#cfcce8] dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50';
-
   function renderCard(card) {
     const isChoice = card.id === 'choice';
-    const button = (
-      <button
-        ref={isChoice ? choiceAnchorRef : undefined}
-        type="button"
-        onClick={() => {
-          if (isChoice) setChoiceOpen((open) => !open);
-          else onLaunch(card.question);
-        }}
-        className={cardClass}
-        title=""
-        aria-label={`${card.label}. ${card.hint}`}
-        aria-expanded={isChoice ? choiceOpen : undefined}
-        aria-haspopup={isChoice ? 'dialog' : undefined}
-      >
-        <span className={`grid place-items-center rounded-lg bg-[#ebeaf8] text-[#5a5fc3] dark:bg-indigo-950 dark:text-indigo-300 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}>
-          <QuikPulseIcon name={card.icon} />
-        </span>
-        <span className={`font-black leading-tight text-slate-950 dark:text-white ${compact ? 'mt-1 text-[10px]' : 'mt-1.5 text-[11px]'}`}>
-          {card.label}
-        </span>
-        {!compact && (
-          <span className="mt-0.5 max-w-full px-0.5 text-[9px] font-semibold leading-snug text-slate-500 dark:text-slate-400">
-            {card.hint}
-          </span>
-        )}
-      </button>
-    );
-    return compact ? (
-      <HintWrap key={card.id} hint={card.hint} prefer="below" className="w-full">
-        {button}
-      </HintWrap>
-    ) : (
-      <HintWrap key={card.id} hint={isChoice ? 'Choose how many options, then ask the class' : 'Ask the whole class this now'} prefer="below" className="w-full" suppressed={isChoice && choiceOpen}>
-        {button}
-      </HintWrap>
-    );
-  }
-
-  const picker = (
-    <ChoiceCountPicker
-      open={choiceOpen}
-      anchorRef={choiceAnchorRef}
-      onClose={() => setChoiceOpen(false)}
-      onPick={launchChoice}
-    />
-  );
-
-  if (compact) {
+    const pressed = isChoice && choiceOpen;
     return (
-      <section aria-label="Quick questions" className="relative z-10 shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(65px,1fr))] gap-1.5">
-          {pulseCards.map(renderCard)}
-        </div>
-        {picker}
-      </section>
+      <HintWrap key={card.id} hint={card.hint} prefer="below" className="w-full min-w-0" suppressed={pressed}>
+        <button
+          ref={isChoice ? choiceAnchorRef : undefined}
+          type="button"
+          onClick={() => {
+            if (isChoice) setChoiceOpen((open) => !open);
+            else onLaunch(card.question);
+          }}
+          className={`flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg border px-1 py-1.5 text-center shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#cfcce8] dark:focus-visible:ring-indigo-500 ${
+            pressed
+              ? 'border-[#5a5fc3] bg-[#ebeaf8] text-[#5a5fc3] dark:border-indigo-400 dark:bg-indigo-950/60 dark:text-indigo-200'
+              : 'border-[#cfcce8] bg-white text-[#5a5fc3] hover:border-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
+          }`}
+          title=""
+          aria-label={`${card.label}. ${card.hint}`}
+          aria-expanded={isChoice ? choiceOpen : undefined}
+          aria-haspopup={isChoice ? 'dialog' : undefined}
+        >
+          <span className="grid h-5 w-5 shrink-0 place-items-center" aria-hidden>
+            <QuikPulseIcon name={card.icon} />
+          </span>
+          <span className="block w-full truncate text-[11px] font-bold leading-none text-slate-900 dark:text-white">
+            {card.short}
+          </span>
+        </button>
+      </HintWrap>
     );
   }
 
   return (
-    <section className="flex h-full flex-col p-3 sm:p-4" aria-label="Quick questions">
-      <div className="grid min-h-0 flex-1 grid-cols-3 content-start items-stretch gap-2">
+    <section aria-label="Quick questions">
+      <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#6b6b78] dark:text-slate-400">
+        Quick check <span className="font-semibold normal-case tracking-normal text-[#8a8a96] dark:text-slate-500">· one tap asks the whole class</span>
+      </p>
+      <div className="grid grid-cols-6 gap-1.5">
         {pulseCards.map(renderCard)}
       </div>
-      {picker}
+      <ChoiceCountPicker
+        open={choiceOpen}
+        anchorRef={choiceAnchorRef}
+        onClose={() => setChoiceOpen(false)}
+        onPick={launchChoice}
+      />
     </section>
   );
 }

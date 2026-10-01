@@ -1984,7 +1984,7 @@ function TeacherDashboardInner() {
           ) || Math.max(panel.scrollHeight, panel.getBoundingClientRect().height)
         : 0;
       const maxHeight = Math.max(120, viewport - margin * 2);
-      // Ask sub-tabs share one header band. Bottom-align the compact Quick/Write shell
+      // Ask sub-tabs share one header band. Bottom-align the compact Ask shell
       // with the Ask rail button so the tabs sit higher; Sets keeps that top and stretches down.
       const askCompact = toolsPanelOpen && toolsTab === 'ask';
       const setsOpen = Boolean(panel?.querySelector('#sets-subject-filter'));
@@ -2012,7 +2012,7 @@ function TeacherDashboardInner() {
       : null;
     const button = currentDockAnchor();
     // Observe the rail button only. Watching the panel re-centered the dock on every
-    // Ask sub-tab content height change (Quick ↔ Write one) and flashed the shell.
+    // Ask content height change (Ask ↔ Responses, question type) and flashed the shell.
     if (button) resizeObserver?.observe(button);
     window.addEventListener('resize', alignDockToRailButton);
     return () => {

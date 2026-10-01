@@ -12,7 +12,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'ask',
     title: 'Ask the class',
-    body: 'Open Ask and pick a Quick check (yes/no, 1–5, A–D, short answer) or write your own.',
+    body: 'Open Ask and tap a Quick check along the top (yes/no, 1–5, A–D, short answer), or write your own question underneath.',
     action: 'ask',
   },
   {

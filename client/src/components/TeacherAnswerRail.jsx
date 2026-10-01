@@ -311,10 +311,10 @@ export default function TeacherAnswerRail({
         <div className="grid place-items-center px-6 py-10 text-center">
           <p className="text-sm font-semibold text-[#3c3c45] dark:text-slate-100">No live question right now</p>
           <p className="mt-1 text-xs text-[#6b6b78] dark:text-slate-400">
-            Send a Quick check or write one, or ask aloud and let students tap + Answer.
+            Tap a Quick check or write your own in Ask, or ask aloud and let students tap + Answer.
           </p>
           {typeof onOpenAsk === 'function' ? (
-            <HintWrap hint="Go to Quick to send a question" className="mt-3">
+            <HintWrap hint="Go to Ask to send a quick check or your own question" className="mt-3">
               <button
                 type="button"
                 onClick={onOpenAsk}
@@ -337,7 +337,7 @@ export default function TeacherAnswerRail({
           <div className="grid place-items-center px-6 py-10 text-center">
             <p className="text-sm font-semibold text-[#3c3c45] dark:text-slate-100">No live question right now</p>
             <p className="mt-1 text-xs text-[#6b6b78] dark:text-slate-400">
-              Send a Quick check or write one, or ask aloud and let students tap + Answer.
+              Tap a Quick check or write your own in Ask, or ask aloud and let students tap + Answer.
             </p>
           </div>
         ) : null}
