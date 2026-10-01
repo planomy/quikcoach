@@ -3404,19 +3404,6 @@ function TeacherDashboardInner() {
               </HintWrap>
               {sessionMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-                  <HintWrap hint="Keeps a copy of every student’s writing right now. Find it later in Reports." prefer="side" className="w-full" multiline>
-                    <button
-                      type="button"
-                      disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
-                      onClick={() => {
-                        setSessionMenuOpen(false);
-                        quickSnapshotWriting();
-                      }}
-                      className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
-                    >
-                      {evidenceBusy ? 'Saving snapshot…' : 'Save a snapshot of everyone’s writing'}
-                    </button>
-                  </HintWrap>
                   <HintWrap hint="Downloads this lesson so you can open it again later" prefer="side" className="w-full">
                     <button
                       type="button"
@@ -3425,7 +3412,7 @@ function TeacherDashboardInner() {
                         setSessionMenuOpen(false);
                         void saveSessionFile();
                       }}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                      className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
                     >
                       {sessionBusy ? 'Saving lesson…' : 'Save lesson to a file'}
                     </button>
@@ -3441,6 +3428,19 @@ function TeacherDashboardInner() {
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                       {sessionBusy ? 'Opening…' : 'Open a saved lesson'}
+                    </button>
+                  </HintWrap>
+                  <HintWrap hint="Keeps a copy of every student’s writing right now. Find it later in Reports." prefer="side" className="w-full" multiline>
+                    <button
+                      type="button"
+                      disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
+                      onClick={() => {
+                        setSessionMenuOpen(false);
+                        quickSnapshotWriting();
+                      }}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      {evidenceBusy ? 'Saving snapshot…' : 'Save a snapshot of everyone’s writing'}
                     </button>
                   </HintWrap>
                 </div>
