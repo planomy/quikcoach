@@ -672,10 +672,11 @@ export default function SavedSetsPanel({
                   <button
                     type="button"
                     onClick={() => openPreview(set)}
-                    className="group w-full min-w-0 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3]"
+                    className="group flex w-full min-w-0 items-center gap-2 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3]"
                     aria-label={`Preview ${set.name}`}
                     aria-current={isActive ? 'true' : undefined}
                   >
+                    <span className="block min-w-0 flex-1">
                     <p className="truncate text-sm font-black text-slate-900 group-hover:text-[#3c3c45] dark:text-white dark:group-hover:text-indigo-100">{set.name}</p>
                     <p className="mt-0.5 truncate text-[10px] font-bold text-slate-400">
                       {!set.bank && (
@@ -692,6 +693,19 @@ export default function SavedSetsPanel({
                       )}
                       {formatSetCardMeta(set)}
                     </p>
+                    </span>
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className={`h-4 w-4 shrink-0 transition group-hover:translate-x-0.5 group-hover:text-[#5a5fc3] ${isActive ? 'text-[#5a5fc3]' : 'text-slate-400 dark:text-slate-500'}`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="m9 6 6 6-6 6" />
+                    </svg>
                   </button>
                   </HintWrap>
                 </article>
