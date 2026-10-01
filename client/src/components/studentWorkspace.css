@@ -30,44 +30,6 @@ html.iboard-student-workspace header {
   z-index: 60;
 }
 
-/* In the compact student tools menu, SupaCoach reads as a simple text link. */
-html.iboard-student-workspace header details a[href*='supacoach'] {
-  display: inline-flex;
-  width: 100%;
-  height: auto;
-  min-height: 2.25rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  background: white !important;
-  color: #3730a3 !important;
-  box-shadow: none !important;
-  font-size: 0 !important;
-  line-height: 1;
-}
-
-html.iboard-student-workspace header details a[href*='supacoach']::before {
-  content: 'SupaCoach';
-  font-size: 0.75rem;
-  font-weight: 800;
-}
-
-html.iboard-student-workspace header details div:has(> a[href*='supacoach']) {
-  padding: 0;
-  border: 0;
-}
-
-html.iboard-student-workspace header details div:has(> a[href*='supacoach']) > span {
-  display: none;
-}
-
-html.dark.iboard-student-workspace header details a[href*='supacoach'] {
-  border-color: #475569;
-  background: #0f172a !important;
-  color: #c7d2fe !important;
-}
-
 /* Draw mode replaces the main work surface. Keep the live card preview hidden until
    the student taps Done — teacher still receives incremental autosaves. */
 html.iboard-student-workspace.iboard-student-draw-mode [data-student-image-preview] {

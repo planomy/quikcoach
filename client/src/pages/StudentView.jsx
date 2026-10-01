@@ -7,7 +7,7 @@ import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import StudentGradeSelect from '../components/StudentGradeSelect.jsx';
-import SupaCoachLink from '../components/SupaCoachLink.jsx';
+import { SUPACOACH_URL } from '../components/SupaCoachLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import StudentChatButton from '../components/StudentChatButton.jsx';
@@ -1531,10 +1531,18 @@ export default function StudentView() {
                     className="w-full"
                   />
                 </div>
-                <div className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 dark:border-slate-700 dark:text-slate-200">
-                  <span>SupaCoach</span>
-                  <SupaCoachLink size="md" />
-                </div>
+                <HintWrap hint="Feedback on how you express your ideas" prefer="above" className="w-full">
+                  <a
+                    href={SUPACOACH_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title=""
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  >
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-red-600 text-[10px] font-bold leading-none text-white" aria-hidden="true">S</span>
+                    Open SupaCoach
+                  </a>
+                </HintWrap>
                 <ThemeToggle className="w-full justify-center" />
                 <button
                   type="button"

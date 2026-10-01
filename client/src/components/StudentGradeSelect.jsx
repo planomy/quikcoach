@@ -31,7 +31,9 @@ export function gradeShortLabel(yearLevel) {
 export default function StudentGradeSelect({ value, onChange, compact = false, className = '' }) {
   const v = String(value || '').trim().toLowerCase();
   const selected = STUDENT_GRADE_OPTIONS.some((o) => o.id === v) ? v : '';
-  const selectedLabel = STUDENT_GRADE_OPTIONS.find((o) => o.id === selected)?.label || 'Year';
+  const selectedLabel = selected
+    ? STUDENT_GRADE_OPTIONS.find((o) => o.id === selected)?.label
+    : compact ? 'Year' : 'Choose your year';
   const listId = useId();
   const wrapRef = useRef(null);
   const listRef = useRef(null);

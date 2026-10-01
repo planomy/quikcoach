@@ -5,7 +5,7 @@ export default function ThemeToggle({ className = '' }) {
   const { isDark, toggleTheme } = useTheme();
   const hint = isDark ? 'Switch to light mode' : 'Switch to dark mode';
   return (
-    <HintWrap hint={hint} prefer="below">
+    <HintWrap hint={hint} prefer="below" className={/\bw-full\b/.test(className) ? 'w-full' : ''}>
       <button
         type="button"
         onClick={toggleTheme}
@@ -14,7 +14,7 @@ export default function ThemeToggle({ className = '' }) {
         title=""
         className={`inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:text-indigo-200 ${className}`}
       >
-        {isDark ? 'Light' : 'Dark'}
+        {isDark ? 'Light mode' : 'Dark mode'}
       </button>
     </HintWrap>
   );
