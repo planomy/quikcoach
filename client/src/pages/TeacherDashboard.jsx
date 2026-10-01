@@ -72,7 +72,7 @@ const MODE_LABELS = {
 const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view-v2';
 const OVERVIEW_COLUMNS_STORAGE_KEY = 'iboard-overview-columns';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
-const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden';
+const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden-v2';
 const MONITOR_STORAGE_KEY = 'iboard-teacher-monitor';
 const LEGACY_WATCH_STORAGE_KEY = 'iboard-teacher-watch';
 /** Per-card writing size steps (applied as rem so rich HTML inherits). */
@@ -480,9 +480,9 @@ function TeacherDashboardInner() {
   const [helpFlash, setHelpFlash] = useState(null);
   const [teacherPanelHidden, setTeacherPanelHidden] = useState(() => {
     try {
-      return localStorage.getItem(TEACHER_PANEL_HIDDEN_KEY) === '1';
+      return localStorage.getItem(TEACHER_PANEL_HIDDEN_KEY) !== '0';
     } catch {
-      return false;
+      return true;
     }
   });
   const teacherRevealLockRef = useRef(false);
@@ -1270,6 +1270,11 @@ function TeacherDashboardInner() {
           const snap = await fetch(`/api/rooms/${encodeURIComponent(code)}`);
           if (snap.ok) {
             const data = await snap.json();
+            const startingFresh = !(data.students || []).some((student) => student.connected);
+            if (startingFresh && data.room?.lesson_objective) {
+              data.room = { ...data.room, lesson_objective: '' };
+              socket.emit('teacher:settings', { lesson_objective: '' }, () => {});
+            }
             setRoom(data.room);
             setStudents((data.students || []).map(normalizeStudentFromServer));
             hydrateFeedbackStateFromRoom(data.room);
