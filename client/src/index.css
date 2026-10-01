@@ -1928,12 +1928,11 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
   animation: iboard-rail-dock-in-top 210ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* View is a tiny on-top popup — never a scroll pane — dropping from the header centre. */
+/* View is a tiny on-top popup — never a scroll pane — dropping from its header icon. */
 .iboard-header-dock--view {
   overflow: visible;
   max-height: none;
-  left: 50%;
-  transform: translateX(-50%);
+  left: auto;
   border-radius: 0 0 1rem 1rem;
   box-shadow: 0 16px 32px -18px rgba(15, 23, 42, 0.28);
   animation: iboard-view-dock-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -1942,11 +1941,11 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
 @keyframes iboard-view-dock-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -6px);
+    transform: translateY(-6px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
   }
 }
 

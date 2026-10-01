@@ -416,6 +416,7 @@ function TeacherDashboardInner() {
   const tourRecRef = useRef(null);
   const tourHeaderToolsRef = useRef(null);
   const viewButtonRef = useRef(null);
+  const [viewDockRight, setViewDockRight] = useState(12);
   const tourAnchors = useMemo(
     () => ({
       share: tourShareRef,
@@ -969,6 +970,8 @@ function TeacherDashboardInner() {
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
     setHelpOpen(false);
+    const rect = viewButtonRef.current?.getBoundingClientRect();
+    if (rect) setViewDockRight(Math.max(12, window.innerWidth - rect.right - 8));
     setViewOpen((open) => !open);
   }
 
@@ -3463,6 +3466,19 @@ function TeacherDashboardInner() {
                 <span className="iboard-header-icon iboard-header-icon--camera" aria-hidden="true" />
               </button>
             </HintWrap>
+            <HintWrap hint="Student card view" prefer="below" suppressed={viewOpen}>
+              <button
+                ref={viewButtonRef}
+                type="button"
+                onClick={openViewDock}
+                aria-expanded={viewOpen}
+                data-active={viewOpen ? 'true' : 'false'}
+                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                aria-label="View"
+              >
+                <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
+              </button>
+            </HintWrap>
             <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
               <button
                 type="button"
@@ -3480,23 +3496,7 @@ function TeacherDashboardInner() {
           </div>
           </div>
 
-          <div className="absolute inset-y-0 left-1/2 z-[2] flex -translate-x-1/2 items-center">
-            <HintWrap hint="Student card view" prefer="below" suppressed={viewOpen}>
-              <button
-                ref={viewButtonRef}
-                type="button"
-                onClick={openViewDock}
-                aria-expanded={viewOpen}
-                data-active={viewOpen ? 'true' : 'false'}
-                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
-                aria-label="View"
-              >
-                <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
-              </button>
-            </HintWrap>
-          </div>
-
-          <div className="pointer-events-none absolute inset-y-0 left-[calc(50%+1.75rem)] z-[1] flex max-w-[min(22rem,calc(50vw-20rem))] items-center">
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(24rem,calc(100vw-40rem))] -translate-x-1/2 items-center justify-center">
             {!socketConnected ? null : !copyToast && joinWhisper ? (
               <div
                 role="status"
@@ -5180,7 +5180,7 @@ function TeacherDashboardInner() {
         <div
           ref={viewPanelRef}
           className="iboard-header-dock iboard-header-dock--view fixed z-[60] w-auto max-w-[min(22rem,calc(100vw-1.5rem))]"
-          style={{ top: teacherToolsTop }}
+          style={{ top: teacherToolsTop, right: viewDockRight }}
           role="dialog"
           aria-modal="false"
           aria-labelledby="card-view-title"
