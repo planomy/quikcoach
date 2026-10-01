@@ -5670,7 +5670,6 @@ function TeacherDashboardInner() {
 
             {settingsSection === 'records' && (
             <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">Reports</h3>
               <div className="iboard-room-settings__card iboard-room-settings__list">
                 <HintWrap hint="Snapshots of student writing from past lessons" className="w-full">
                   <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
