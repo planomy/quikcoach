@@ -1277,7 +1277,6 @@ function TeacherDashboardInner() {
         setCodeInput(code);
         try {
           const snap = await fetch(`/api/rooms/${encodeURIComponent(code)}`);
-          setStartStep((step) => (step === 'pending' ? null : step));
           if (snap.ok) {
             const data = await snap.json();
             setRoom(data.room);
@@ -1285,6 +1284,9 @@ function TeacherDashboardInner() {
             hydrateFeedbackStateFromRoom(data.room);
             const studentsConnected = (data.students || []).some((student) => student.connected);
             if (!straightToRoomRef.current && !studentsConnected) setStartStep('join');
+            else setStartStep((step) => (step === 'pending' ? null : step));
+          } else {
+            setStartStep((step) => (step === 'pending' ? null : step));
           }
         } catch {
           setStartStep((step) => (step === 'pending' ? null : step));
