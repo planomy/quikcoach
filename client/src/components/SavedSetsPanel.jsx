@@ -110,7 +110,6 @@ export default function SavedSetsPanel({
   queue,
   setQueue,
   onLaunchQuestion,
-  onLaunchSets,
   onSendSetsToInbox,
   onEnqueueSet,
   onMessage,
@@ -128,11 +127,13 @@ export default function SavedSetsPanel({
   const [setScope, setSetScope] = useState('all');
   const [activeSet, setActiveSet] = useState(null);
   const [selectedSetIds, setSelectedSetIds] = useState([]);
-  const [recipientSets, setRecipientSets] = useState([]);
-  const [recipientIds, setRecipientIds] = useState([]);
-  const recipientChoices = [...new Map(students.map(s => [Number(s.id), s])).values()].filter(s => Number(s.id) > 0);
-  const validRecipientIds = recipientIds.filter(id => recipientChoices.some(s => Number(s.id) === id));
-  const recipientQuestionCount = recipientSets.reduce((n, set) => n + (set.questions?.length || 0), 0);
+  const rosterCount = new Set(students.map((student) => Number(student.id)).filter((id) => id > 0)).size;
+  const tickedCount = new Set(selectedStudentIds.map(Number).filter((id) => id > 0)).size;
+  const sendHint = tickedCount
+    ? `Send to the ${tickedCount} student${tickedCount === 1 ? '' : 's'} ticked on the board`
+    : rosterCount
+      ? `Send to all ${rosterCount} students’ inboxes`
+      : 'No students in this room yet';
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState('');
   const sendingRef = useRef(false);
@@ -167,7 +168,7 @@ export default function SavedSetsPanel({
     setQueueOpen(queue.length > 0);
   }, [showQueue, queue.length]);
 
-  const previewOpen = (mode === 'preview' && !!activeSet) || mode === 'recipients';
+  const previewOpen = mode === 'preview' && !!activeSet;
 
   useEffect(() => {
     if (!previewOpen) {
@@ -181,9 +182,7 @@ export default function SavedSetsPanel({
     const sync = () => {
       const rect = dock.getBoundingClientRect();
       const gap = 8;
-      const maxWidth = mode === 'recipients'
-        ? 416
-        : 26 * 16;
+      const maxWidth = 26 * 16;
       const minWidth = 20 * 16;
       const available = window.innerWidth - rect.right - gap - 8;
       let width = Math.min(maxWidth, available > minWidth ? available : maxWidth);
@@ -208,7 +207,7 @@ export default function SavedSetsPanel({
       observer?.disconnect();
       window.removeEventListener('resize', sync);
     };
-  }, [previewOpen, activeSet?.id, mode, recipientChoices.length]);
+  }, [previewOpen, activeSet?.id, mode]);
 
   const library = useMemo(() => {
     const custom = customSets.map((set) => ({ ...set, bank: false, overridden: false }));
@@ -226,31 +225,25 @@ export default function SavedSetsPanel({
 
   const selectedSets = selectedSetIds.map((id) => library.find((set) => set.id === id)).filter(Boolean);
   const hiddenSelectionCount = selectedSets.filter((set) => !filtered.some((item) => item.id === set.id)).length;
-  const questionCount = selectedSets.reduce((total, set) => total + (set.questions?.length || 0), 0);
   function toggleSet(id) {
     if (sendingRef.current) return;
     setSelectedSetIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
     setSendStatus('');
   }
-  function chooseRecipients(sets) {
+  async function sendToInbox(sets) {
     if (!sets.length || sendingRef.current) return;
-    setRecipientSets(sets);
-    const previous = recipientIds.filter(id => recipientChoices.some(s => Number(s.id) === id));
-    const checked = selectedStudentIds.map(Number).filter(id => recipientChoices.some(s => Number(s.id) === id));
-    setRecipientIds(previous.length ? previous : checked.length ? checked : recipientChoices.map(s => Number(s.id)));
-    setSendStatus('');
-    setMode('recipients');
-  }
-  async function sendSelected(destination) {
-    if (!recipientSets.length || !validRecipientIds.length || sendingRef.current) return;
+    if (!rosterCount) {
+      setSendStatus('No students in this room yet.');
+      return;
+    }
     sendingRef.current = true;
     setSending(true);
     setSendStatus('Sending…');
     try {
-      const result = await (destination === 'ask' ? onLaunchSets(recipientSets, validRecipientIds) : onSendSetsToInbox(recipientSets, validRecipientIds));
+      const result = await onSendSetsToInbox(sets);
       setSendStatus(result.message);
       if (result.ok) {
-        setSelectedSetIds(ids => ids.filter(id => !recipientSets.some(set => set.id === id)));
+        setSelectedSetIds(ids => ids.filter(id => !sets.some(set => set.id === id)));
         setMode('');
         setActiveSet(null);
       }
@@ -463,6 +456,7 @@ export default function SavedSetsPanel({
       {showQueue && (
         <section>
           <div className="flex flex-wrap items-center justify-between gap-2">
+            <HintWrap hint={queue.length ? (queueOpen ? 'Hide the queued questions' : 'Show the queued questions') : 'Questions you add to the queue wait here'}>
             <button
               type="button"
               onClick={() => {
@@ -480,8 +474,11 @@ export default function SavedSetsPanel({
                 ) : null}
               </h3>
             </button>
+            </HintWrap>
             {queue.length > 0 && (
-              <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>
+              <HintWrap hint="Remove every question from the queue">
+                <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>
+              </HintWrap>
             )}
           </div>
 
@@ -495,9 +492,11 @@ export default function SavedSetsPanel({
                     placeholder="Name this set…"
                     className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                   />
-                  <button type="button" onClick={saveQueueAsSet} className="rounded-lg bg-[#5a5fc3] px-2.5 py-1.5 text-[10px] font-black text-white">
-                    Save queue as set
-                  </button>
+                  <HintWrap hint="Keep these questions as a set under Share → Question sets">
+                    <button type="button" onClick={saveQueueAsSet} className="rounded-lg bg-[#5a5fc3] px-2.5 py-1.5 text-[10px] font-black text-white">
+                      Save queue as set
+                    </button>
+                  </HintWrap>
                 </div>
               )}
 
@@ -509,13 +508,15 @@ export default function SavedSetsPanel({
                       <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-slate-900 dark:text-white">{item.prompt}</p>
                     </div>
                     <div className="mt-2 flex items-center justify-end gap-2 pl-6">
-                      <button
-                        type="button"
-                        onClick={() => onLaunchQuestion(item, item.id)}
-                        className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-900"
-                      >
-                        Launch
-                      </button>
+                      <HintWrap hint="Ask this question now">
+                        <button
+                          type="button"
+                          onClick={() => onLaunchQuestion(item, item.id)}
+                          className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-900"
+                        >
+                          Launch
+                        </button>
+                      </HintWrap>
                       <RemoveButton onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} aria-label="Remove from queue" />
                     </div>
                   </div>
@@ -535,22 +536,28 @@ export default function SavedSetsPanel({
                 <span className="ml-1.5 font-medium text-[#8a8a96] dark:text-slate-400">{filtered.length}</span>
               </h3>
               <p className="mt-0.5 text-[11px] font-normal text-[#6b6b78] dark:text-slate-400">
-                Tick to send · click a title to preview
+                Tick sets to send to student inboxes · click a title to preview
               </p>
             </div>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300 dark:hover:text-indigo-200"
-            >
-              Create a set
-            </button>
+            <HintWrap hint="Write your own set of questions">
+              <button
+                type="button"
+                onClick={openCreate}
+                className="text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300 dark:hover:text-indigo-200"
+              >
+                Create a set
+              </button>
+            </HintWrap>
           </div>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <div className="flex shrink-0 rounded-lg bg-[#ececef] p-0.5 dark:bg-slate-800" role="group" aria-label="Set library">
-              <button type="button" onClick={() => setSetScope('all')} className={`rounded-md px-2 py-1.5 text-[11px] font-semibold ${setScope === 'all' ? 'bg-white text-[#5a5fc3] shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-[#6b6b78] dark:text-slate-300'}`}>All sets</button>
-              <button type="button" onClick={() => setSetScope('mine')} className={`rounded-md px-2 py-1.5 text-[11px] font-semibold ${setScope === 'mine' ? 'bg-white text-[#5a5fc3] shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-[#6b6b78] dark:text-slate-300'}`}>My sets{customSets.length ? ` · ${customSets.length}` : ''}</button>
+              <HintWrap hint="Curriculum sets plus your own" suppressed={setScope === 'all'}>
+                <button type="button" onClick={() => setSetScope('all')} className={`rounded-md px-2 py-1.5 text-[11px] font-semibold ${setScope === 'all' ? 'bg-white text-[#5a5fc3] shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-[#6b6b78] dark:text-slate-300'}`}>All sets</button>
+              </HintWrap>
+              <HintWrap hint="Only sets you created" suppressed={setScope === 'mine'}>
+                <button type="button" onClick={() => setSetScope('mine')} className={`rounded-md px-2 py-1.5 text-[11px] font-semibold ${setScope === 'mine' ? 'bg-white text-[#5a5fc3] shadow-sm dark:bg-slate-700 dark:text-indigo-200' : 'text-[#6b6b78] dark:text-slate-300'}`}>My sets{customSets.length ? ` · ${customSets.length}` : ''}</button>
+              </HintWrap>
             </div>
             <label htmlFor="sets-subject-filter" className="sr-only">Subject</label>
             <select
@@ -584,20 +591,23 @@ export default function SavedSetsPanel({
               {selectedSets.length > 0 ? (
                 <p className="text-[11px] font-medium text-[#6b6b78] dark:text-slate-300">
                   {selectedSets.length} selected
-                  <button type="button" disabled={sending} onClick={() => setSelectedSetIds([])} className="ml-2 text-[#5a5fc3] hover:underline disabled:opacity-50">Clear</button>
+                  <HintWrap hint="Untick all sets">
+                    <button type="button" disabled={sending} onClick={() => setSelectedSetIds([])} className="ml-2 text-[#5a5fc3] hover:underline disabled:opacity-50">Clear</button>
+                  </HintWrap>
                 </p>
               ) : null}
-              <button
-                type="button"
-                disabled={!selectedSets.length || sending}
-                onClick={() => chooseRecipients(selectedSets)}
-                className="ml-auto rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-35"
-              >
-                {selectedSets.length ? 'Send to…' : 'Send selected…'}
-              </button>
+              <HintWrap hint={selectedSets.length ? sendHint : 'Tick one or more sets first'} className="ml-auto">
+                <button
+                  type="button"
+                  disabled={!selectedSets.length || sending}
+                  onClick={() => sendToInbox(selectedSets)}
+                  className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-35"
+                >
+                  Send to inbox
+                </button>
+              </HintWrap>
             </div>
             {hiddenSelectionCount > 0 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">{hiddenSelectionCount} selected outside this filter</p>}
-            {questionCount > 60 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">Ask up to 60 questions at once. Select fewer sets or send to inbox.</p>}
             {sendStatus && <p role="status" className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-200">{sendStatus}</p>}
           </div>
 
@@ -632,10 +642,11 @@ export default function SavedSetsPanel({
                       <StarIcon filled={isFavourite} />
                     </button>
                   </HintWrap>
+                  <HintWrap hint="Preview the questions in this set" className="min-w-0 flex-1" suppressed={isActive}>
                   <button
                     type="button"
                     onClick={() => openPreview(set)}
-                    className="group min-w-0 flex-1 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3]"
+                    className="group w-full min-w-0 rounded-lg px-1.5 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3]"
                     aria-label={`Preview ${set.name}`}
                     aria-current={isActive ? 'true' : undefined}
                   >
@@ -656,6 +667,7 @@ export default function SavedSetsPanel({
                       {formatSetCardMeta(set)}
                     </p>
                   </button>
+                  </HintWrap>
                 </article>
                 );
               })}
@@ -710,23 +722,32 @@ export default function SavedSetsPanel({
 
           <div className="preview-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
             <div className="flex items-center justify-end gap-2">
-            <button type="button" disabled={sending} onClick={() => chooseRecipients([activeSet])} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-40">Select students</button>
+            <HintWrap hint={sendHint}>
+              <button type="button" disabled={sending} onClick={() => sendToInbox([activeSet])} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-40">Send to inbox</button>
+            </HintWrap>
             </div>
+            {sendStatus && <p role="status" className="mt-2 text-right text-xs text-slate-600 dark:text-slate-300">{sendStatus}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={() => openEdit(activeSet)} className="rounded px-1 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
-              Edit
-            </button>
-            <button type="button" disabled={!activeSet.bank || !activeSet.overridden} onClick={() => resetBankOverride(activeSet.id)} className="rounded px-1 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800">
-              Reset to original
-            </button>
-            {!activeSet.bank && (
-              <button
-                type="button"
-                onClick={() => deleteCustomSet(activeSet.id)}
-                className="ml-auto rounded-lg px-2 py-2 text-xs font-black text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-              >
-                Delete
+            <HintWrap hint="Change the questions in this set">
+              <button type="button" onClick={() => openEdit(activeSet)} className="rounded px-1 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                Edit
               </button>
+            </HintWrap>
+            <HintWrap hint={activeSet.bank && activeSet.overridden ? 'Undo your edits to this set' : 'Only for curriculum sets you have edited'}>
+              <button type="button" disabled={!activeSet.bank || !activeSet.overridden} onClick={() => resetBankOverride(activeSet.id)} className="rounded px-1 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800">
+                Reset to original
+              </button>
+            </HintWrap>
+            {!activeSet.bank && (
+              <HintWrap hint="Delete this set from this computer" className="ml-auto">
+                <button
+                  type="button"
+                  onClick={() => deleteCustomSet(activeSet.id)}
+                  className="rounded-lg px-2 py-2 text-xs font-black text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                >
+                  Delete
+                </button>
+              </HintWrap>
             )}
             </div>
           </div>
@@ -735,47 +756,6 @@ export default function SavedSetsPanel({
       )}
 
 
-      {mode === 'recipients' && previewFlyout && createPortal(
-        <aside data-iboard-sets-preview="true" role="dialog" aria-label="Select students"
-          className="sets-recipient-panel sets-preview-flyout flex flex-col overflow-hidden rounded-2xl border border-[#cfcce8] bg-white shadow-2xl dark:border-indigo-800 dark:bg-slate-900"
-          style={{ top: previewFlyout.top, left: previewFlyout.left, height: 'auto', maxHeight: `calc(100dvh - ${previewFlyout.top + 8}px)`, width: previewFlyout.width }}>
-          <div className="recipient-heading shrink-0 px-4 pt-4 pb-2">
-            <div className="flex items-center justify-between gap-3">
-              <h4 className="text-base font-bold text-slate-950 dark:text-white">Select students</h4>
-              <button type="button" disabled={sending} onClick={() => setMode(activeSet ? 'preview' : '')} className="text-xs font-bold text-slate-500 disabled:opacity-40">Back</button>
-            </div>
-            <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-300">{recipientSets.length === 1 ? recipientSets[0].name : `${recipientSets.length} sets selected`}</p>
-            {recipientSets.length > 1 && <p className="mt-1 text-xs text-slate-500">{recipientSets.map(set => set.name).join(' · ')}</p>}
-          </div>
-          <div className="recipient-all flex shrink-0 items-center justify-between px-4 py-2">
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
-              <input type="checkbox" disabled={sending || !recipientChoices.length} checked={recipientChoices.length > 0 && validRecipientIds.length === recipientChoices.length}
-                onChange={e => setRecipientIds(e.target.checked ? recipientChoices.map(s => Number(s.id)) : [])} className="h-4 w-4 accent-[#5a5fc3]" />
-              All students
-            </label>
-            <span className="text-xs text-slate-500">{validRecipientIds.length} selected</span>
-          </div>
-          <div className="recipient-names min-h-0 flex-[0_1_auto] overflow-y-auto mx-3 mb-3 p-2 rounded-md">
-            <div className="sets-recipient-grid" style={{ '--recipient-columns': 2 }}>
-            {recipientChoices.map(student => <label key={student.id} className="sets-recipient-row flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 text-xs font-semibold text-slate-800 hover:bg-[#ebeaf8] dark:text-slate-100 dark:hover:bg-slate-800">
-              <input type="checkbox" disabled={sending} checked={validRecipientIds.includes(Number(student.id))}
-                onChange={e => setRecipientIds(ids => e.target.checked ? [...ids, Number(student.id)] : ids.filter(id => id !== Number(student.id)))} className="h-3.5 w-3.5 shrink-0 accent-[#5a5fc3]" />
-              <span title={student.name} className="min-w-0 flex-1 truncate">{student.name}</span>
-              {student.connected === false && <span className="text-[10px] font-normal text-slate-400">Offline</span>}
-            </label>)}
-            </div>
-            {!recipientChoices.length && <p className="p-2 text-sm text-slate-500">No students in this room yet.</p>}
-          </div>
-          <div className="recipient-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
-            {recipientQuestionCount > 60 && <p className="mb-2 text-xs text-amber-700">Ask supports up to 60 questions. Send these sets to inbox instead.</p>}
-            <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={sending || !validRecipientIds.length || recipientQuestionCount > 60} onClick={() => sendSelected('ask')} className="rounded-lg bg-[#5a5fc3] px-4 py-2 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-40">Ask now</button>
-              <button type="button" disabled={sending || !validRecipientIds.length} onClick={() => sendSelected('inbox')} className="recipient-inbox rounded-lg border border-[#cfcce8] px-4 py-2 text-xs font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-40 dark:border-indigo-800 dark:text-indigo-200 dark:hover:bg-indigo-950">Send to inbox</button>
-            </div>
-            {sendStatus && <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-300">{sendStatus}</p>}
-          </div>
-        </aside>, document.body
-      )}
 
       {sheetOpen && (
         <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/40 p-3 sm:items-center">

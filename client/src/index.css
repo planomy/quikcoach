@@ -4855,3 +4855,12 @@ html.dark .iboard-header-objective.is-empty {
   outline: 2px solid #5a5fc3;
   outline-offset: 1px;
 }
+
+/* Report rows wrapped in hover hints keep their dividers. */
+.iboard-room-settings__list > span:not(:last-child) > button {
+  border-bottom: 1px solid #efeff3;
+}
+
+html.dark .iboard-room-settings__list > span:not(:last-child) > button {
+  border-bottom-color: #334155;
+}

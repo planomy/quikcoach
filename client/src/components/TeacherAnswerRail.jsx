@@ -314,13 +314,15 @@ export default function TeacherAnswerRail({
             Send a Quick check or write one, or ask aloud and let students tap + Answer.
           </p>
           {typeof onOpenAsk === 'function' ? (
-            <button
-              type="button"
-              onClick={onOpenAsk}
-              className="mt-3 rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#4b50b0]"
-            >
-              Ask a question
-            </button>
+            <HintWrap hint="Go to Quick to send a question" className="mt-3">
+              <button
+                type="button"
+                onClick={onOpenAsk}
+                className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#4b50b0]"
+              >
+                Ask a question
+              </button>
+            </HintWrap>
           ) : null}
         </div>
       );

@@ -310,9 +310,9 @@ export default function QuikPulsePanel({ onLaunch, compact = false }) {
         {button}
       </HintWrap>
     ) : (
-      <span key={card.id} className="contents">
+      <HintWrap key={card.id} hint={isChoice ? 'Choose how many options, then ask the class' : 'Ask the whole class this now'} prefer="below" className="w-full" suppressed={isChoice && choiceOpen}>
         {button}
-      </span>
+      </HintWrap>
     );
   }
 

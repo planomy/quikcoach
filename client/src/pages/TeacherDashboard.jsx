@@ -3869,8 +3869,9 @@ function TeacherDashboardInner() {
                     </div>
                   ) : (
                     <>
+                      <HintWrap hint="Pick a picture or PDF to share with the class" className="w-full">
                       <label
-                        className={`flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-2.5 py-2 text-sm transition dark:border-indigo-800 dark:bg-indigo-950/30 ${
+                        className={`flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed px-2.5 py-2 text-sm transition dark:border-indigo-800 dark:bg-indigo-950/30 ${
                           addCardDragOver ? 'border-[#5a5fc3] bg-[#dcdaf5]' : 'border-[#cfcce8] bg-[#ebeaf8]/70'
                         }`}
                         onDragOver={(event) => {
@@ -3895,6 +3896,7 @@ function TeacherDashboardInner() {
                           disabled={addCardBusy}
                         />
                       </label>
+                      </HintWrap>
                       <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
                         <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                         or write a note
@@ -3912,22 +3914,27 @@ function TeacherDashboardInner() {
                   )}
                   {addCardError && <p className="text-xs font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
                   <div className="flex justify-end gap-1.5 pt-1">
-                    <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                      className="rounded-md bg-[#5a5fc3] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
-                    >
-                      {addCardBusy ? 'Sending…' : 'Send to inbox'}
-                    </button>
+                    <HintWrap hint="Close without sharing">
+                      <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
+                        Cancel
+                      </button>
+                    </HintWrap>
+                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Send it to every student’s inbox' : 'Choose a file or write a note first'}>
+                      <button
+                        type="submit"
+                        disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
+                        className="rounded-md bg-[#5a5fc3] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                      >
+                        {addCardBusy ? 'Sending…' : 'Send to inbox'}
+                      </button>
+                    </HintWrap>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
                     <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                     or
                     <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                   </div>
+                  <HintWrap hint="Send a set of questions to student inboxes" className="w-full">
                   <button
                     type="button"
                     disabled={addCardBusy}
@@ -3942,6 +3949,7 @@ function TeacherDashboardInner() {
                       <path d="m9 6 6 6-6 6" />
                     </svg>
                   </button>
+                  </HintWrap>
                 </form>
               </div>
             </div>
@@ -5283,23 +5291,27 @@ function TeacherDashboardInner() {
           <div className="iboard-room-settings__body scrollbar-thin">
             {settingsSection === 'records' && (
               <div className={`iboard-room-settings__hero${helpFlash === 'session' ? ' is-help-flash' : ''}`} data-help-target="session">
-                <button
-                  type="button"
-                  disabled={sessionBusy}
-                  onClick={saveSessionFile}
-                  className="iboard-room-settings__primary"
-                >
-                  {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
-                </button>
-                <div className="iboard-room-settings__row">
+                <HintWrap hint="Download this lesson to a file you can open again later" className="w-full">
                   <button
                     type="button"
                     disabled={sessionBusy}
-                    onClick={openSessionFilePicker}
-                    className="iboard-room-settings__secondary"
+                    onClick={saveSessionFile}
+                    className="iboard-room-settings__primary"
                   >
-                    {sessionBusy ? 'Loading…' : 'Load session'}
+                    {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
                   </button>
+                </HintWrap>
+                <div className="iboard-room-settings__row">
+                  <HintWrap hint="Open a lesson you saved earlier" className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      disabled={sessionBusy}
+                      onClick={openSessionFilePicker}
+                      className="iboard-room-settings__secondary"
+                    >
+                      {sessionBusy ? 'Loading…' : 'Load session'}
+                    </button>
+                  </HintWrap>
                 </div>
               </div>
             )}
@@ -5409,14 +5421,16 @@ function TeacherDashboardInner() {
             {settingsSection === 'settings' && (
             <div className="iboard-room-settings__hero">
               <div className="iboard-room-settings__row">
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  aria-pressed={isDark}
-                  className="iboard-room-settings__secondary"
-                >
-                  {isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                </button>
+                <HintWrap hint="Change the colours of your screen only" className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={toggleTheme}
+                    aria-pressed={isDark}
+                    className="iboard-room-settings__secondary"
+                  >
+                    {isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                  </button>
+                </HintWrap>
               </div>
               <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                 <span>Show the join screen for a new lesson</span>
@@ -5571,30 +5585,38 @@ function TeacherDashboardInner() {
             <section className="iboard-room-settings__section">
               <h3 className="iboard-room-settings__label">Reports</h3>
               <div className="iboard-room-settings__card iboard-room-settings__list">
-                <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
-                  <span>Lesson records</span>
-                  {snapshots.length > 0 ? (
-                    <span className="iboard-room-settings__badge">{snapshots.length}</span>
-                  ) : null}
-                </button>
-                <button type="button" onClick={() => { closeSettings(); setInsightsOpen(true); }}>
-                  Class insights
-                </button>
-                <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }}>
-                  Download participant list
-                </button>
+                <HintWrap hint="Snapshots of student writing from past lessons" className="w-full">
+                  <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
+                    <span>Lesson records</span>
+                    {snapshots.length > 0 ? (
+                      <span className="iboard-room-settings__badge">{snapshots.length}</span>
+                    ) : null}
+                  </button>
+                </HintWrap>
+                <HintWrap hint="Participation and engagement across the class" className="w-full">
+                  <button type="button" onClick={() => { closeSettings(); setInsightsOpen(true); }}>
+                    Class insights
+                  </button>
+                </HintWrap>
+                <HintWrap hint="Download a list of everyone who joined" className="w-full">
+                  <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }}>
+                    Download participant list
+                  </button>
+                </HintWrap>
               </div>
             </section>
             )}
 
             {settingsSection === 'settings' && (
-            <button
-              type="button"
-              onClick={() => { closeSettings(); openNewClassConfirmation(); }}
-              className="iboard-room-settings__danger"
-            >
-              Reset class board
-            </button>
+            <HintWrap hint="Clear every student and card to start a new class (asks first)" className="w-full">
+              <button
+                type="button"
+                onClick={() => { closeSettings(); openNewClassConfirmation(); }}
+                className="iboard-room-settings__danger"
+              >
+                Reset class board
+              </button>
+            </HintWrap>
             )}
           </div>
         </div>

@@ -24,10 +24,10 @@ const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').repla
 
 const QUEUE_KEY = 'iboard-pulse-question-queue';
 const TYPES = [
-  ['choice', 'Multiple choice'],
-  ['truefalse', 'True / False'],
-  ['rating', '1–5 scale'],
-  ['short', 'Short answer'],
+  ['choice', 'Multiple choice', 'Students pick from choices you write'],
+  ['truefalse', 'True / False', 'Students answer true or false'],
+  ['rating', '1–5 scale', 'Students rate from 1 to 5'],
+  ['short', 'Short answer', 'Students type a short answer'],
 ];
 
 function firstName(name) {
@@ -50,7 +50,7 @@ const PANEL_TAB_LABELS = {
   ask: { title: 'Ask the class', hint: 'Send a question to your class' },
   respond: { title: 'Reply', hint: 'Questions waiting from students' },
   responses: { title: 'Ask the class', hint: 'Answers coming back from your live question' },
-  sets: { title: 'Question sets', hint: 'Ask a set live, or send it to student inboxes' },
+  sets: { title: 'Question sets', hint: 'Send a set to student inboxes, then watch their boards' },
 };
 
 function PanelTabButton({ active, label, badge, onClick }) {
@@ -450,28 +450,6 @@ export default function LiveResponseTeacher({
     });
   }
 
-  async function launchSets(sets, recipientIds) {
-    const questions = sets.flatMap((set, setIndex) => normalizeSetQuestions(set.questions).map((question, index) => ({
-      ...question,
-      id: `set-${setIndex}-q-${index}`,
-      ...(sets.length > 1 ? { helper: `${set.name}${question.helper ? ` · ${question.helper}` : ''}`.slice(0, 240) } : {}),
-    })));
-    if (!questions.length || questions.length > 60) return { ok: false, message: 'Select between 1 and 60 questions to ask at once.' };
-    const targetStudentIds = [...new Set((recipientIds ?? selectedStudentIds ?? []).map(Number).filter(Boolean))];
-    if (recipientIds && !targetStudentIds.length) return { ok: false, message: 'Choose at least one student.' };
-    try {
-      await emitSetAction('teacher:live-launch', questions.length === 1
-        ? { ...questions[0], targetStudentIds, timerSeconds: 0 }
-        : { type: 'set', prompt: sets.map((set) => set.name).join(' · ').slice(0, 500), questions, targetStudentIds, anonymous: false, optional: false, timerSeconds: 0 });
-      const message = `${sets.length} set${sets.length === 1 ? '' : 's'} live · ${questions.length} questions · ${targetStudentIds.length ? `${targetStudentIds.length} selected students` : 'All students'}`;
-      setMessage(message);
-      if (targetStudentIds.length) onClearStudentSelection?.();
-      if (usingPanelTabs) { onQuestionLaunched?.(); switchPanelTab('responses'); }
-      else setActiveView('live');
-      return { ok: true, message };
-    } catch (error) { return { ok: false, message: error.message }; }
-  }
-
   async function sendSetsToInbox(sets, recipientIds) {
     const selected = [...new Set((recipientIds ?? selectedStudentIds ?? []).map(Number).filter(Boolean))];
     if (recipientIds && !selected.length) return { ok: false, message: 'Choose at least one student.' };
@@ -789,12 +767,12 @@ export default function LiveResponseTeacher({
   const askSubNav = (
     <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-[#e4e4ea] bg-[#ebebed] px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
       {[
-        ['quik', 'Quick'],
-        ['build', queue.length ? `Write one · ${queue.length}` : 'Write one'],
-        ['responses', activity ? `Responses · ${responses.length}` : 'Responses'],
-      ].map(([view, label]) => (
+        ['quik', 'Quick', 'Ready-made checks: yes/no, ratings, choices'],
+        ['build', queue.length ? `Write one · ${queue.length}` : 'Write one', 'Type your own question'],
+        ['responses', activity ? `Responses · ${responses.length}` : 'Responses', 'See the class’s answers as they come in'],
+      ].map(([view, label, hint]) => (
+        <HintWrap key={view} hint={hint} prefer="below" suppressed={view === 'responses' ? effectivePanelTab === 'responses' : effectivePanelTab === 'ask' && activeView === view}>
         <button
-          key={view}
           type="button"
           onClick={() => {
             if (view === 'responses') {
@@ -812,6 +790,7 @@ export default function LiveResponseTeacher({
         >
           {label}
         </button>
+        </HintWrap>
       ))}
       {featuredWall.length > 0 && (
         <button
@@ -1113,8 +1092,10 @@ export default function LiveResponseTeacher({
             <label className="block text-[0.78rem] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-200">Question</label>
             <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border border-[#e2e2e8] bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {TYPES.map(([value, label]) => (
-                <button key={value} type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold ${type === value ? 'bg-[#5a5fc3] text-white' : 'border border-[#e2e2e8] bg-white text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'}`}>{label}</button>
+              {TYPES.map(([value, label, hint]) => (
+                <HintWrap key={value} hint={hint} suppressed={type === value}>
+                  <button type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold ${type === value ? 'bg-[#5a5fc3] text-white' : 'border border-[#e2e2e8] bg-white text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'}`}>{label}</button>
+                </HintWrap>
               ))}
             </div>
             {type === 'choice' && (
@@ -1176,21 +1157,28 @@ export default function LiveResponseTeacher({
               </summary>
               <div className="mt-2 space-y-3 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="cursor-pointer rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-2.5 py-1.5 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
-                    {imageBusy ? 'Preparing…' : imageUrl ? 'Replace image' : 'Add image'}
-                    <input type="file" accept="image/*" className="hidden" onChange={(event) => loadImage(event.target.files?.[0])} />
-                  </label>
+                  <HintWrap hint="Show a picture with the question (or paste one)">
+                    <label className="cursor-pointer rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-2.5 py-1.5 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                      {imageBusy ? 'Preparing…' : imageUrl ? 'Replace image' : 'Add image'}
+                      <input type="file" accept="image/*" className="hidden" onChange={(event) => loadImage(event.target.files?.[0])} />
+                    </label>
+                  </HintWrap>
                   {imageUrl && (
                     <>
                       <img src={imageUrl} alt="Question preview" className="h-12 w-20 rounded-lg bg-white object-contain" />
-                      <button type="button" onClick={() => setImageUrl('')} className="text-xs font-semibold text-red-600">Remove</button>
+                      <HintWrap hint="Take the picture off this question">
+                        <button type="button" onClick={() => setImageUrl('')} className="text-xs font-semibold text-red-600">Remove</button>
+                      </HintWrap>
                     </>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-2 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
-                    <input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-3.5 w-3.5 accent-[#5a5fc3]" /> Optional
-                  </label>
+                  <HintWrap hint="Students can skip this question">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
+                      <input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-3.5 w-3.5 accent-[#5a5fc3]" /> Optional
+                    </label>
+                  </HintWrap>
+                  <HintWrap hint="Close answers automatically after this time">
                   <label className="flex items-center gap-1.5 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
                     Timer
                     <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="rounded-lg border border-[#e2e2e8] bg-white px-2 py-1 text-xs font-medium outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950">
@@ -1201,25 +1189,33 @@ export default function LiveResponseTeacher({
                       <option value="120">2 min</option>
                     </select>
                   </label>
+                  </HintWrap>
                   {type === 'short' && (
-                    <label className="flex items-center gap-2 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
-                      <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-3.5 w-3.5 accent-[#5a5fc3]" /> Anonymous when featured
-                    </label>
+                    <HintWrap hint="Hide names when you show answers to the class">
+                      <label className="flex items-center gap-2 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
+                        <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-3.5 w-3.5 accent-[#5a5fc3]" /> Anonymous when featured
+                      </label>
+                    </HintWrap>
                   )}
                 </div>
               </div>
             </details>
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
-              <button type="button" onClick={saveDraftAsSet} className="rounded-lg border border-[#cfcce8] bg-white px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Save as set</button>
-              <button type="button" onClick={addToQueue} className="rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2]">Add to queue</button>
-              <button type="button" onClick={() => launch()} className="ml-auto rounded-xl bg-[#5a5fc3] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4b50b0]">Launch</button>
+              <HintWrap hint="Keep this question under Share → Question sets">
+                <button type="button" onClick={saveDraftAsSet} className="rounded-lg border border-[#cfcce8] bg-white px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Save as set</button>
+              </HintWrap>
+              <HintWrap hint="Line it up to ask later in the lesson">
+                <button type="button" onClick={addToQueue} className="rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2]">Add to queue</button>
+              </HintWrap>
+              <HintWrap hint="Ask the class this question now" className="ml-auto">
+                <button type="button" onClick={() => launch()} className="rounded-xl bg-[#5a5fc3] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4b50b0]">Launch</button>
+              </HintWrap>
             </div>
             <SavedSetsPanel
               panel="queue"
               queue={queue}
               setQueue={setQueue}
               onLaunchQuestion={(item, id) => launch(item, id)}
-              onLaunchSets={launchSets}
               onSendSetsToInbox={sendSetsToInbox}
               onEnqueueSet={enqueueSet}
               onMessage={setMessage}
@@ -1237,7 +1233,6 @@ export default function LiveResponseTeacher({
             queue={queue}
             setQueue={setQueue}
             onLaunchQuestion={(item, id) => launch(item, id)}
-            onLaunchSets={launchSets}
             onSendSetsToInbox={sendSetsToInbox}
             onEnqueueSet={enqueueSet}
             onMessage={setMessage}
