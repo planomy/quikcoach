@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { renderSVG } from 'uqr';
+import HintWrap from './HintWrap.jsx';
 
 const RECENT_OBJECTIVES_KEY = 'tuit-recent-objectives';
 const OBJECTIVE_MAX = 200;
@@ -38,12 +39,7 @@ function StartShell({ labelledBy, onKeyDown, children }) {
   );
 }
 
-/**
- * Join screen: address, room code + QR, a live joined count, and an optional objective.
- * ENTER (or Escape) goes into the room. Also reopened mid-lesson from the header room code.
- */
-export function JoinScreen({ code, joinUrl, students = [], initialObjective = '', onEnter }) {
-  const [objective, setObjective] = useState(initialObjective);
+function useJoinInfo(joinUrl) {
   const qrSvg = useMemo(() => {
     try {
       return renderSVG(joinUrl, { border: 1 });
@@ -52,12 +48,23 @@ export function JoinScreen({ code, joinUrl, students = [], initialObjective = ''
     }
   }, [joinUrl]);
   const address = joinUrl.replace(/^https?:\/\//, '').replace(/\?code=\d+$/, '');
-  const joinedCount = students.length;
+  return { qrSvg, address };
+}
 
-  function enter(event) {
-    event?.preventDefault();
-    onEnter?.(objective.replace(/\s+/g, ' ').trim().slice(0, OBJECTIVE_MAX));
-  }
+function joinedLabel(joinedCount, rosterCount) {
+  if (joinedCount === 0) return 'Waiting for students…';
+  if (rosterCount > joinedCount) return `${joinedCount} of ${rosterCount} students in`;
+  return `${joinedCount} student${joinedCount === 1 ? '' : 's'} joined`;
+}
+
+/** Full-screen join view for projecting, opened from the header room code. */
+export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, onClose }) {
+  const { qrSvg, address } = useJoinInfo(joinUrl);
+  const closeRef = useRef(null);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
 
   return (
     <div
@@ -66,7 +73,7 @@ export function JoinScreen({ code, joinUrl, students = [], initialObjective = ''
       aria-modal="true"
       aria-labelledby="join-screen-title"
       onKeyDown={(event) => {
-        if (event.key === 'Escape') enter(event);
+        if (event.key === 'Escape') onClose?.();
       }}
     >
       <div className="iboard-join-screen">
@@ -81,23 +88,54 @@ export function JoinScreen({ code, joinUrl, students = [], initialObjective = ''
           ) : null}
         </div>
 
-        <p className="iboard-join-screen__count" aria-live="polite">
-          {joinedCount === 0 ? 'Waiting for students…' : `${joinedCount} student${joinedCount === 1 ? '' : 's'} joined`}
-        </p>
+        <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
 
-        <form className="iboard-join-screen__enter" onSubmit={enter}>
-          <input
-            type="text"
-            autoFocus
-            value={objective}
-            maxLength={OBJECTIVE_MAX}
-            onChange={(event) => setObjective(event.target.value)}
-            placeholder="Today’s objective (optional)"
-            aria-label="Today’s objective (optional)"
-          />
-          <button type="submit" className="iboard-start-screen__primary">ENTER</button>
-        </form>
+        <button ref={closeRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
+          Back to the board
+        </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Join info on the board itself: big while nobody is connected, a slim bar once
+ * students are arriving. Projected with the board, so no separate start screen.
+ */
+export function BoardJoinPanel({ code, joinUrl, joinedCount = 0, rosterCount = 0, onShowBig, onDismiss }) {
+  const { qrSvg, address } = useJoinInfo(joinUrl);
+
+  if (joinedCount === 0) {
+    return (
+      <section className="iboard-board-join" aria-label="How students join">
+        <div className="iboard-board-join__text">
+          <p className="iboard-board-join__address">
+            Students enter code at: <strong>{address}</strong>
+          </p>
+          <p className="iboard-board-join__code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
+          <p className="iboard-board-join__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
+        </div>
+        {qrSvg ? (
+          <div className="iboard-board-join__qr" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+        ) : null}
+      </section>
+    );
+  }
+
+  return (
+    <div className="iboard-board-join-bar" role="status" aria-live="polite">
+      <span>
+        Students join at <strong>{address}</strong> · code <strong className="iboard-board-join-bar__code">{code}</strong>
+      </span>
+      <span className="iboard-board-join-bar__count">{joinedLabel(joinedCount, rosterCount)}</span>
+      <span className="iboard-board-join-bar__actions">
+        <HintWrap hint="Show the join details full screen for the projector" prefer="below">
+          <button type="button" onClick={onShowBig}>Show big</button>
+        </HintWrap>
+        <HintWrap hint="Hide this bar (click the room code at the top to see it again)" prefer="below">
+          <button type="button" onClick={onDismiss} aria-label="Hide the join bar">×</button>
+        </HintWrap>
+      </span>
     </div>
   );
 }

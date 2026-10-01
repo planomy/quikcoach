@@ -47,7 +47,7 @@ import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import StudentPickerDialog from '../components/StudentPickerDialog.jsx';
-import { JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
+import { BoardJoinPanel, JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
 import { fitGrid } from '../lib/fitGrid.js';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
 import TeacherHelpPanel, { TeacherHelpButton } from '../components/TeacherHelpPanel.jsx';
@@ -87,7 +87,6 @@ const CARD_VIEWS = [
 /** Overview density steps (Classroom-style column count). Default 4 suits 10–11" iPads. */
 const OVERVIEW_COLUMN_OPTIONS = [6, 5, 4, 3];
 const OVERVIEW_COLUMNS_DEFAULT = 4;
-const STRAIGHT_TO_ROOM_KEY = 'tuit-straight-to-room';
 const OVERVIEW_GRID_CLASS = {
   3: 'grid-cols-3',
   4: 'grid-cols-4',
@@ -358,16 +357,8 @@ function TeacherDashboardInner() {
   const [newClassConfirmOpen, setNewClassConfirmOpen] = useState(false);
   const [newClassBusy, setNewClassBusy] = useState(false);
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
-  const [startStep, setStartStep] = useState(null);
+  const [joinBarDismissed, setJoinBarDismissed] = useState(false);
   const [objectiveEditOpen, setObjectiveEditOpen] = useState(false);
-  const [straightToRoom, setStraightToRoom] = useState(() => {
-    try {
-      return localStorage.getItem(STRAIGHT_TO_ROOM_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
-  const straightToRoomRef = useRef(straightToRoom);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
   const [handQuestionTarget, setHandQuestionTarget] = useState(null);
@@ -1272,7 +1263,7 @@ function TeacherDashboardInner() {
         rememberTeacherRoomCode(code);
         rememberedRoomRef.current = code;
         clearPrefilledCodeOnFocusRef.current = false;
-        if (!straightToRoomRef.current) setStartStep('pending');
+        setJoinBarDismissed(false);
         setJoined(true);
         setCodeInput(code);
         try {
@@ -1282,14 +1273,8 @@ function TeacherDashboardInner() {
             setRoom(data.room);
             setStudents((data.students || []).map(normalizeStudentFromServer));
             hydrateFeedbackStateFromRoom(data.room);
-            const studentsConnected = (data.students || []).some((student) => student.connected);
-            if (!straightToRoomRef.current && !studentsConnected) setStartStep('join');
-            else setStartStep((step) => (step === 'pending' ? null : step));
-          } else {
-            setStartStep((step) => (step === 'pending' ? null : step));
           }
         } catch {
-          setStartStep((step) => (step === 'pending' ? null : step));
           /* room:state from socket will catch up */
         }
       });
@@ -2967,16 +2952,6 @@ function TeacherDashboardInner() {
     pushSettings({ lesson_objective: clean });
   }
 
-  function updateStraightToRoom(on) {
-    straightToRoomRef.current = on;
-    setStraightToRoom(on);
-    try {
-      localStorage.setItem(STRAIGHT_TO_ROOM_KEY, on ? '1' : '0');
-    } catch {
-      /* storage may be unavailable */
-    }
-  }
-
   function downloadParticipantList() {
     closeSettings();
     const rows = [
@@ -3034,7 +3009,7 @@ function TeacherDashboardInner() {
       setLibraryView('home');
       setNewClassConfirmOpen(false);
       clearSessionDirty();
-      if (!straightToRoomRef.current) setStartStep('join');
+      setJoinBarDismissed(false);
       setCopyToast('Board reset — ready for a fresh lesson');
       setTimeout(() => setCopyToast(''), 3000);
       const code = String(codeInput || '').replace(/\D/g, '').slice(0, 4);
@@ -3131,15 +3106,6 @@ function TeacherDashboardInner() {
             >
               Open room
             </button>
-            <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-              <input
-                type="checkbox"
-                checked={straightToRoom}
-                onChange={(event) => updateStraightToRoom(event.target.checked)}
-                className="h-4 w-4 accent-indigo-600"
-              />
-              <span>Go straight to my room (skip the join screen)</span>
-            </label>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
               <button
                 type="button"
@@ -3299,7 +3265,7 @@ function TeacherDashboardInner() {
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
           <div className="iboard-teacher-header-main">
             <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
-              <HintWrap hint="Show the join screen" prefer="below">
+              <HintWrap hint="Show how students join, full screen" prefer="below">
                 <button
                   type="button"
                   className="iboard-header-room"
@@ -4163,23 +4129,19 @@ function TeacherDashboardInner() {
 
       <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
+          {(connectedStudents.length === 0 || !joinBarDismissed) && (
+            <BoardJoinPanel
+              code={codeInput}
+              joinUrl={studentJoinUrl()}
+              joinedCount={connectedStudents.length}
+              rosterCount={orderedStudents.length}
+              onShowBig={openJoinScreen}
+              onDismiss={() => setJoinBarDismissed(true)}
+            />
+          )}
 
               <div ref={boardScrollRef} className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
         <div className="iboard-student-board-stack">
-          {orderedStudents.length === 0 && (
-            <div className="iboard-board-empty">
-              <p className="iboard-board-empty__kicker">Share this room</p>
-              <button
-                type="button"
-                className="iboard-board-empty__code"
-                onClick={() => void copyStudentJoinLink()}
-                aria-label={`Copy student join link for room ${codeInput}`}
-              >
-                {codeInput}
-              </button>
-              <p className="iboard-board-empty__hint">Writing cards appear on this board as students join</p>
-            </div>
-          )}
           {orderedStudents.length > 0 && boardSections.map((section) => (
             <section
               key={`breakout-${section.id}`}
@@ -5083,21 +5045,16 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      {startStep === 'pending' && !joinScreenOpen && <div className="iboard-start-screen" aria-hidden="true" />}
-      {(startStep === 'join' || joinScreenOpen) && (
+      {joinScreenOpen && (
         <JoinScreen
           code={codeInput}
           joinUrl={studentJoinUrl()}
-          students={connectedStudents}
-          initialObjective={room?.lesson_objective || ''}
-          onEnter={(text) => {
-            if (text !== (room?.lesson_objective || '')) setLessonObjective(text);
-            setStartStep(null);
-            setJoinScreenOpen(false);
-          }}
+          joinedCount={connectedStudents.length}
+          rosterCount={orderedStudents.length}
+          onClose={() => setJoinScreenOpen(false)}
         />
       )}
-      {objectiveEditOpen && !startStep && (
+      {objectiveEditOpen && (
         <ObjectiveScreen
           initialObjective={room?.lesson_objective || ''}
           onClose={() => setObjectiveEditOpen(false)}
@@ -5518,15 +5475,6 @@ function TeacherDashboardInner() {
                   </button>
                 </HintWrap>
               </div>
-              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                <span>Show the join screen for a new lesson</span>
-                <input
-                  type="checkbox"
-                  checked={!straightToRoom}
-                  onChange={(event) => updateStraightToRoom(!event.target.checked)}
-                  className="h-4 w-4 accent-indigo-600"
-                />
-              </label>
               {fixedCommentCount > 0 && (
                 <div className="iboard-room-settings__cleanup">
                   {!clearFixedArmed ? (
