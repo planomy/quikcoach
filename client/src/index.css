@@ -4881,8 +4881,11 @@ html.dark .iboard-room-settings__list > span:not(:last-child) > button {
   align-items: center;
   justify-content: center;
   gap: clamp(1.25rem, 3vw, 2.5rem);
+  align-self: center;
+  width: fit-content;
+  max-width: calc(100% - 1.5rem);
   margin: 0.6rem 0.75rem 0.4rem;
-  padding: clamp(0.9rem, 2vh, 1.5rem) clamp(1.25rem, 3vw, 2.25rem);
+  padding: clamp(0.9rem, 2vh, 1.5rem) clamp(2.75rem, 4vw, 3.25rem) clamp(0.9rem, 2vh, 1.5rem) clamp(1.25rem, 3vw, 2.25rem);
   border-radius: 1.25rem;
   background: #4f46e5;
   color: #ffffff;
