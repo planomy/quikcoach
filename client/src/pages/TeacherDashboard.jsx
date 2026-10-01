@@ -46,6 +46,7 @@ import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
+import StudentPickerDialog from '../components/StudentPickerDialog.jsx';
 import { JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
 import { fitGrid } from '../lib/fitGrid.js';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
@@ -509,6 +510,7 @@ function TeacherDashboardInner() {
   const [addCardFile, setAddCardFile] = useState(null);
   const [addCardBusy, setAddCardBusy] = useState(false);
   const [addCardError, setAddCardError] = useState('');
+  const [addCardPickerOpen, setAddCardPickerOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [sessionBusy, setSessionBusy] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState('5');
@@ -2252,6 +2254,7 @@ function TeacherDashboardInner() {
 
   function closeAddCard() {
     if (addCardBusy) return;
+    setAddCardPickerOpen(false);
     setAddCardOpen(false);
     setAddCardError('');
   }
@@ -2295,6 +2298,7 @@ function TeacherDashboardInner() {
     setAddCardImage('');
     setAddCardFile(null);
     setAddCardError('');
+    setAddCardPickerOpen(false);
     setAddCardOpen(true);
   }
 
@@ -2390,27 +2394,40 @@ function TeacherDashboardInner() {
     setAddCardError('');
   }
 
-  function submitTeacherCard() {
+  function submitTeacherCard(recipientIds = null) {
     const title = String(addCardTitle || '').trim() || 'Handout';
+    const chosenIds = Array.isArray(recipientIds) ? recipientIds.map(Number).filter((id) => id > 0) : null;
+    const recipientOption = chosenIds ? { studentIds: chosenIds } : {};
     const finish = (ack, message) => {
       setAddCardBusy(false);
       if (!ack?.ok) {
         setAddCardError(ack?.error || 'Could not send to inboxes');
         return;
       }
+      setAddCardPickerOpen(false);
       setAddCardOpen(false);
       setAddCardTitle('');
       setAddCardText('');
       setAddCardImage('');
       setAddCardFile(null);
-      setCopyToast(message);
-      setTimeout(() => setCopyToast(''), 2500);
+      const toastMessage = chosenIds && ack.item && !Array.isArray(ack.item.studentIds)
+        ? 'Sent to every student — restart the iBOARD server to send files to chosen students only'
+        : message;
+      setCopyToast(toastMessage);
+      setTimeout(() => setCopyToast(''), toastMessage === message ? 2500 : 6000);
     };
 
-    const sentMessage = 'Sent to students’ inboxes';
+    const sentMessage = chosenIds
+      ? `Sent to ${chosenIds.length} student${chosenIds.length === 1 ? '' : 's'}’ inboxes`
+      : 'Sent to students’ inboxes';
+    if (chosenIds && !chosenIds.length) {
+      setAddCardError('Tick at least one student first');
+      return;
+    }
 
     if (addCardFile) {
       setAddCardBusy(true);
+      setAddCardError('');
       fileToBase64(addCardFile)
         .then((fileBase64) => {
           socket.emit(
@@ -2422,6 +2439,7 @@ function TeacherDashboardInner() {
               originalName: addCardFile.name || 'handout',
               sendToInbox: true,
               placeOnBoard: false,
+              ...recipientOption,
             },
             (ack) => finish(ack, sentMessage)
           );
@@ -2435,6 +2453,7 @@ function TeacherDashboardInner() {
 
     if (addCardImage) {
       setAddCardBusy(true);
+      setAddCardError('');
       socket.emit(
         'teacher:material-send',
         {
@@ -2444,6 +2463,7 @@ function TeacherDashboardInner() {
           originalName: `${title.replace(/\s+/g, '-').slice(0, 40) || 'handout'}.jpg`,
           sendToInbox: true,
           placeOnBoard: false,
+          ...recipientOption,
         },
         (ack) => finish(ack, sentMessage)
       );
@@ -2456,15 +2476,18 @@ function TeacherDashboardInner() {
       return;
     }
     const noteTitle = String(addCardTitle || '').trim();
-    const recipients = orderedStudents.map((student) => ({
-      studentId: student.id,
-      text: (noteTitle ? `${noteTitle}: ${text}` : text).slice(0, 4000),
-    }));
+    const recipients = orderedStudents
+      .filter((student) => !chosenIds || chosenIds.includes(Number(student.id)))
+      .map((student) => ({
+        studentId: student.id,
+        text: (noteTitle ? `${noteTitle}: ${text}` : text).slice(0, 4000),
+      }));
     if (!recipients.length) {
-      setAddCardError('No students have joined yet — nothing was sent');
+      setAddCardError(chosenIds ? 'Those students are no longer in this room — nothing was sent' : 'No students have joined yet — nothing was sent');
       return;
     }
     setAddCardBusy(true);
+    setAddCardError('');
     socket.emit('teacher:distribute', { items: recipients }, (ack) => finish(ack, sentMessage));
   }
 
@@ -3919,13 +3942,26 @@ function TeacherDashboardInner() {
                         Cancel
                       </button>
                     </HintWrap>
+                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Choose which students get it' : 'Choose a file or write a note first'}>
+                      <button
+                        type="button"
+                        disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
+                        onClick={() => {
+                          setAddCardError('');
+                          setAddCardPickerOpen(true);
+                        }}
+                        className="rounded-md border border-[#cfcce8] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
+                      >
+                        Select students…
+                      </button>
+                    </HintWrap>
                     <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Send it to every student’s inbox' : 'Choose a file or write a note first'}>
                       <button
                         type="submit"
                         disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
                         className="rounded-md bg-[#5a5fc3] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
                       >
-                        {addCardBusy ? 'Sending…' : 'Send to inbox'}
+                        {addCardBusy && !addCardPickerOpen ? 'Sending…' : 'Send to inbox'}
                       </button>
                     </HintWrap>
                   </div>
@@ -3951,6 +3987,22 @@ function TeacherDashboardInner() {
                   </button>
                   </HintWrap>
                 </form>
+                <StudentPickerDialog
+                  open={addCardOpen && addCardPickerOpen}
+                  subtitle={String(addCardTitle || '').trim() || (addCardFile ? addCardFile.name : addCardImage ? 'Pasted image' : 'Note')}
+                  students={orderedStudents.map((student) => ({
+                    ...student,
+                    connected: livePulse.students?.length ? connectedStudents.some((item) => item.id === student.id) : undefined,
+                  }))}
+                  initialIds={orderedStudents.filter((student) => broadcastPick[student.id]).map((student) => student.id)}
+                  busy={addCardBusy}
+                  error={addCardError}
+                  onCancel={() => {
+                    setAddCardPickerOpen(false);
+                    setAddCardError('');
+                  }}
+                  onConfirm={(ids) => submitTeacherCard(ids)}
+                />
               </div>
             </div>
             <div className={`iboard-teacher-panel-list${broadcastPickCount > 0 ? ' is-picking' : ''}`}>

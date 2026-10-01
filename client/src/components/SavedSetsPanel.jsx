@@ -3,6 +3,7 @@ import HintWrap from './HintWrap.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { confirmDialog } from './ConfirmDialogHost.jsx';
+import StudentPickerDialog from './StudentPickerDialog.jsx';
 import {
   newId,
   normalizeSetQuestions,
@@ -136,6 +137,8 @@ export default function SavedSetsPanel({
       : 'No students in this room yet';
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState('');
+  const [pickerSets, setPickerSets] = useState(null);
+  const [pickerError, setPickerError] = useState('');
   const sendingRef = useRef(false);
   const [mode, setMode] = useState(''); // preview | edit | create
   const [draftName, setDraftName] = useState('');
@@ -230,7 +233,13 @@ export default function SavedSetsPanel({
     setSelectedSetIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
     setSendStatus('');
   }
-  async function sendToInbox(sets) {
+  function openStudentPicker(sets) {
+    if (!sets.length || sendingRef.current) return;
+    setPickerSets(sets);
+    setPickerError('');
+    setSendStatus('');
+  }
+  async function sendToInbox(sets, recipientIds) {
     if (!sets.length || sendingRef.current) return;
     if (!rosterCount) {
       setSendStatus('No students in this room yet.');
@@ -239,16 +248,21 @@ export default function SavedSetsPanel({
     sendingRef.current = true;
     setSending(true);
     setSendStatus('Sending…');
+    setPickerError('');
     try {
-      const result = await onSendSetsToInbox(sets);
+      const result = recipientIds ? await onSendSetsToInbox(sets, recipientIds) : await onSendSetsToInbox(sets);
       setSendStatus(result.message);
       if (result.ok) {
         setSelectedSetIds(ids => ids.filter(id => !sets.some(set => set.id === id)));
         setMode('');
         setActiveSet(null);
+        setPickerSets(null);
+      } else if (recipientIds) {
+        setPickerError(result.message);
       }
     } catch {
       setSendStatus('Could not confirm delivery. Check the class before retrying.');
+      if (recipientIds) setPickerError('Could not confirm delivery. Check the class before retrying.');
     } finally {
       sendingRef.current = false;
       setSending(false);
@@ -596,16 +610,28 @@ export default function SavedSetsPanel({
                   </HintWrap>
                 </p>
               ) : null}
-              <HintWrap hint={selectedSets.length ? sendHint : 'Tick one or more sets first'} className="ml-auto">
-                <button
-                  type="button"
-                  disabled={!selectedSets.length || sending}
-                  onClick={() => sendToInbox(selectedSets)}
-                  className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-35"
-                >
-                  Send to inbox
-                </button>
-              </HintWrap>
+              <div className="ml-auto flex items-center gap-1.5">
+                <HintWrap hint={selectedSets.length ? 'Choose which students get it' : 'Tick one or more sets first'}>
+                  <button
+                    type="button"
+                    disabled={!selectedSets.length || sending}
+                    onClick={() => openStudentPicker(selectedSets)}
+                    className="rounded-lg border border-[#cfcce8] bg-white px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-35 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
+                  >
+                    Select students…
+                  </button>
+                </HintWrap>
+                <HintWrap hint={selectedSets.length ? sendHint : 'Tick one or more sets first'}>
+                  <button
+                    type="button"
+                    disabled={!selectedSets.length || sending}
+                    onClick={() => sendToInbox(selectedSets)}
+                    className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-35"
+                  >
+                    Send to inbox
+                  </button>
+                </HintWrap>
+              </div>
             </div>
             {hiddenSelectionCount > 0 && <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">{hiddenSelectionCount} selected outside this filter</p>}
             {sendStatus && <p role="status" className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-200">{sendStatus}</p>}
@@ -722,6 +748,9 @@ export default function SavedSetsPanel({
 
           <div className="preview-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
             <div className="flex items-center justify-end gap-2">
+            <HintWrap hint="Choose which students get it">
+              <button type="button" disabled={sending} onClick={() => openStudentPicker([activeSet])} className="rounded-lg border border-[#cfcce8] bg-white px-3 py-2 text-xs font-black text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-40 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950">Select students…</button>
+            </HintWrap>
             <HintWrap hint={sendHint}>
               <button type="button" disabled={sending} onClick={() => sendToInbox([activeSet])} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-40">Send to inbox</button>
             </HintWrap>
@@ -755,7 +784,16 @@ export default function SavedSetsPanel({
         document.body
       )}
 
-
+      <StudentPickerDialog
+        open={!!pickerSets}
+        subtitle={pickerSets?.length === 1 ? pickerSets[0].name : `${pickerSets?.length || 0} question sets`}
+        students={students}
+        initialIds={selectedStudentIds}
+        busy={sending}
+        error={pickerError}
+        onCancel={() => { setPickerSets(null); setPickerError(''); }}
+        onConfirm={(ids) => sendToInbox(pickerSets || [], ids)}
+      />
 
       {sheetOpen && (
         <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/40 p-3 sm:items-center">

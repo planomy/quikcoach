@@ -21,6 +21,7 @@ import {
   peerStudentIds,
   scopeStudentsForViewer,
 } from './breakouts.js';
+import { normalizeRecipientIds, isTargetedMaterial, materialVisibleTo, materialHistoryForStudent } from './materialRecipients.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3001;
@@ -269,7 +270,10 @@ function materialHistoryForRoom(code) {
 }
 
 function emitMaterialHistoryToSocket(socket, code) {
-  const history = materialHistoryForRoom(code);
+  const all = materialHistoryForRoom(code);
+  const history = socket.data.role === 'student' && all.some(isTargetedMaterial)
+    ? materialHistoryForStudent(all, socket.data.studentId)
+    : all;
   if (!history.length) return;
   socket.emit('inbox:material', { history, replay: true });
 }
@@ -278,7 +282,22 @@ function emitMaterialToRoom(code, item) {
   const c = normalizeRoomCode(code);
   const history = [...materialHistoryForRoom(c), item].slice(-MATERIAL_HISTORY_LIMIT);
   materialHistoryByRoom.set(c, history);
-  io.to(roomSocketName(c)).emit('inbox:material', { item, history });
+  if (!history.some(isTargetedMaterial)) {
+    io.to(roomSocketName(c)).emit('inbox:material', { item, history });
+    return;
+  }
+  const socketIds = io.sockets.adapter.rooms.get(roomSocketName(c)) || new Set();
+  for (const socketId of socketIds) {
+    const s = io.sockets.sockets.get(socketId);
+    if (!s) continue;
+    if (s.data.role !== 'student') {
+      s.emit('inbox:material', { item, history });
+      continue;
+    }
+    if (!materialVisibleTo(item, s.data.studentId)) continue;
+    const [visibleItem] = materialHistoryForStudent([item], s.data.studentId);
+    s.emit('inbox:material', { item: visibleItem, history: materialHistoryForStudent(history, s.data.studentId) });
+  }
 }
 
 app.get('/api/health', (_req, res) => {
@@ -2282,7 +2301,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('teacher:material-send', ({ title, fileBase64, mimeType, originalName, sendToInbox, placeOnBoard }, cb) => {
+  socket.on('teacher:material-send', ({ title, fileBase64, mimeType, originalName, sendToInbox, placeOnBoard, studentIds }, cb) => {
     try {
       const codeRaw = socket.data.roomCode;
       if (socket.data.role !== 'teacher' || !codeRaw) {
@@ -2294,6 +2313,13 @@ io.on('connection', (socket) => {
       const onBoard = placeOnBoard === true;
       if (!toInbox && !onBoard) {
         cb?.({ ok: false, error: 'Choose Send to Inbox and/or Place on this board' });
+        return;
+      }
+      const recipientIds = toInbox
+        ? normalizeRecipientIds(studentIds, queries.listStudents(db, code).map((row) => row.id))
+        : null;
+      if (recipientIds && !recipientIds.length) {
+        cb?.({ ok: false, error: 'Choose at least one student in this room' });
         return;
       }
       const decoded = decodeMaterialBase64(fileBase64, mimeType, originalName);
@@ -2321,6 +2347,7 @@ io.on('connection', (socket) => {
           size: decoded.buf.length,
           url: `/api/board-media/${encodeURIComponent(code)}/${encodeURIComponent(filename)}`,
           at: Date.now(),
+          ...(recipientIds ? { studentIds: recipientIds } : {}),
         };
         emitMaterialToRoom(code, item);
       }
