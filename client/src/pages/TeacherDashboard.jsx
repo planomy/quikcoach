@@ -509,8 +509,6 @@ function TeacherDashboardInner() {
   const [addCardFile, setAddCardFile] = useState(null);
   const [addCardBusy, setAddCardBusy] = useState(false);
   const [addCardError, setAddCardError] = useState('');
-  const [addCardSendInbox, setAddCardSendInbox] = useState(true);
-  const [addCardPlaceOnBoard, setAddCardPlaceOnBoard] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [sessionBusy, setSessionBusy] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState('5');
@@ -2296,8 +2294,6 @@ function TeacherDashboardInner() {
     setAddCardText('');
     setAddCardImage('');
     setAddCardFile(null);
-    setAddCardSendInbox(true);
-    setAddCardPlaceOnBoard(true);
     setAddCardError('');
     setAddCardOpen(true);
   }
@@ -2388,8 +2384,6 @@ function TeacherDashboardInner() {
     }
     setAddCardImage('');
     setAddCardFile(file);
-    setAddCardSendInbox(true);
-    setAddCardPlaceOnBoard(true);
     if (!addCardTitle.trim() || addCardTitle.trim() === 'Teacher') {
       setAddCardTitle(String(file.name || 'Handout').replace(/\.[^.]+$/, '').slice(0, 80) || 'Handout');
     }
@@ -2401,7 +2395,7 @@ function TeacherDashboardInner() {
     const finish = (ack, message) => {
       setAddCardBusy(false);
       if (!ack?.ok) {
-        setAddCardError(ack?.error || 'Could not add teacher card');
+        setAddCardError(ack?.error || 'Could not send to inboxes');
         return;
       }
       setAddCardOpen(false);
@@ -2413,11 +2407,9 @@ function TeacherDashboardInner() {
       setTimeout(() => setCopyToast(''), 2500);
     };
 
+    const sentMessage = 'Sent to students’ inboxes';
+
     if (addCardFile) {
-      if (!addCardSendInbox && !addCardPlaceOnBoard) {
-        setAddCardError('Choose Send to Inbox and/or Place on this board');
-        return;
-      }
       setAddCardBusy(true);
       fileToBase64(addCardFile)
         .then((fileBase64) => {
@@ -2428,15 +2420,10 @@ function TeacherDashboardInner() {
               fileBase64,
               mimeType: addCardFile.type || '',
               originalName: addCardFile.name || 'handout',
-              sendToInbox: addCardSendInbox,
-              placeOnBoard: addCardPlaceOnBoard,
+              sendToInbox: true,
+              placeOnBoard: false,
             },
-            (ack) => {
-              const bits = [];
-              if (addCardSendInbox) bits.push('Inbox');
-              if (addCardPlaceOnBoard) bits.push('board');
-              finish(ack, `Handout sent to ${bits.join(' · ')}`);
-            }
+            (ack) => finish(ack, sentMessage)
           );
         })
         .catch(() => {
@@ -2448,61 +2435,37 @@ function TeacherDashboardInner() {
 
     if (addCardImage) {
       setAddCardBusy(true);
-      if (addCardSendInbox || addCardPlaceOnBoard) {
-        socket.emit(
-          'teacher:material-send',
-          {
-            title,
-            fileBase64: addCardImage,
-            mimeType: 'image/jpeg',
-            originalName: `${title.replace(/\s+/g, '-').slice(0, 40) || 'handout'}.jpg`,
-            sendToInbox: addCardSendInbox,
-            placeOnBoard: addCardPlaceOnBoard || !addCardSendInbox,
-          },
-          (ack) => {
-            const bits = [];
-            if (addCardSendInbox) bits.push('Inbox');
-            if (addCardPlaceOnBoard || !addCardSendInbox) bits.push('board');
-            finish(ack, `Image sent to ${bits.join(' · ')}`);
-          }
-        );
-        return;
-      }
       socket.emit(
-        'teacher:board-post',
-        { kind: 'image', title, imageBase64: addCardImage, mimeType: 'image/jpeg' },
-        (ack) => finish(ack, 'Teacher image card added')
+        'teacher:material-send',
+        {
+          title,
+          fileBase64: addCardImage,
+          mimeType: 'image/jpeg',
+          originalName: `${title.replace(/\s+/g, '-').slice(0, 40) || 'handout'}.jpg`,
+          sendToInbox: true,
+          placeOnBoard: false,
+        },
+        (ack) => finish(ack, sentMessage)
       );
       return;
     }
 
     const text = addCardText.trim();
     if (!text) {
-      setAddCardError('Choose a file or write some text first');
+      setAddCardError('Choose a file or write a note first');
+      return;
+    }
+    const noteTitle = String(addCardTitle || '').trim();
+    const recipients = orderedStudents.map((student) => ({
+      studentId: student.id,
+      text: (noteTitle ? `${noteTitle}: ${text}` : text).slice(0, 4000),
+    }));
+    if (!recipients.length) {
+      setAddCardError('No students have joined yet — nothing was sent');
       return;
     }
     setAddCardBusy(true);
-    socket.emit('teacher:board-post', { kind: 'text', title, text }, (ack) => {
-      if (!ack?.ok || !addCardSendInbox) {
-        finish(ack, 'Teacher card added');
-        return;
-      }
-      // Also push the text note to every connected student inbox.
-      const recipients = orderedStudents.map((student) => ({
-        studentId: student.id,
-        text: `${title}: ${text}`.slice(0, 4000),
-      }));
-      if (!recipients.length) {
-        finish(ack, 'Teacher card added');
-        return;
-      }
-      socket.emit('teacher:distribute', { items: recipients }, (distAck) => {
-        finish(
-          distAck?.ok === false ? distAck : ack,
-          distAck?.ok === false ? distAck.error || 'Card added, but Inbox send failed' : 'Card added · sent to Inbox'
-        );
-      });
-    });
+    socket.emit('teacher:distribute', { items: recipients }, (ack) => finish(ack, sentMessage));
   }
 
   function deleteTeacherCard(postId) {
@@ -3948,30 +3911,6 @@ function TeacherDashboardInner() {
                     </>
                   )}
                   {addCardError && <p className="text-xs font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
-                  <label
-                    data-iboard-add-card-send-option="true"
-                    className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200"
-                  >
-                    <input
-                      type="checkbox"
-                      data-iboard-send-inbox="true"
-                      checked={addCardSendInbox}
-                      onChange={(event) => setAddCardSendInbox(event.target.checked)}
-                      className="h-3.5 w-3.5 accent-indigo-600"
-                    />
-                    <span>Send to Inbox</span>
-                  </label>
-                  {(addCardFile || addCardImage) && (
-                    <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={addCardPlaceOnBoard}
-                        onChange={(event) => setAddCardPlaceOnBoard(event.target.checked)}
-                        className="h-3.5 w-3.5 accent-indigo-600"
-                      />
-                      <span>Place on this board</span>
-                    </label>
-                  )}
                   <div className="flex justify-end gap-1.5 pt-1">
                     <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
                       Cancel
@@ -3981,7 +3920,7 @@ function TeacherDashboardInner() {
                       disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
                       className="rounded-md bg-[#5a5fc3] px-3 py-1 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
                     >
-                      {addCardBusy ? 'Sending…' : addCardFile || addCardImage ? 'Send' : 'Add card'}
+                      {addCardBusy ? 'Sending…' : 'Send to inbox'}
                     </button>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
