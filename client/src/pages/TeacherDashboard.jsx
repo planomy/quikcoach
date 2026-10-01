@@ -5400,6 +5400,20 @@ function TeacherDashboardInner() {
                     {frozen ? 'Unfreeze board' : 'Freeze board'}
                   </button>
                 </div>
+                <div className="iboard-room-settings__row">
+                  <HintWrap hint="A small floating window to run questions while you present" className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.dispatchEvent(new Event('iboard:open-presenter-dock'));
+                        closeSettings();
+                      }}
+                      className="iboard-room-settings__secondary w-full"
+                    >
+                      Present mode
+                    </button>
+                  </HintWrap>
+                </div>
               </div>
             )}
 
