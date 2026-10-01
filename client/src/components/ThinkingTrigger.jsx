@@ -304,7 +304,7 @@ export default function ThinkingTrigger({
   subjectAssist = 'general',
   socket = null,
   size = 'sm',
-  hint = 'Thinking',
+  hint = 'Send a thinking prompt',
   className = '',
   onSent,
 }) {
