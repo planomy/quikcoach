@@ -1272,10 +1272,12 @@ function TeacherDashboardInner() {
         rememberTeacherRoomCode(code);
         rememberedRoomRef.current = code;
         clearPrefilledCodeOnFocusRef.current = false;
+        if (!straightToRoomRef.current) setStartStep('pending');
         setJoined(true);
         setCodeInput(code);
         try {
           const snap = await fetch(`/api/rooms/${encodeURIComponent(code)}`);
+          setStartStep((step) => (step === 'pending' ? null : step));
           if (snap.ok) {
             const data = await snap.json();
             setRoom(data.room);
@@ -1285,6 +1287,7 @@ function TeacherDashboardInner() {
             if (!straightToRoomRef.current && !studentsConnected) setStartStep('join');
           }
         } catch {
+          setStartStep((step) => (step === 'pending' ? null : step));
           /* room:state from socket will catch up */
         }
       });
@@ -5078,6 +5081,7 @@ function TeacherDashboardInner() {
         </div>
       )}
 
+      {startStep === 'pending' && !joinScreenOpen && <div className="iboard-start-screen" aria-hidden="true" />}
       {(startStep === 'join' || joinScreenOpen) && (
         <JoinScreen
           code={codeInput}
