@@ -358,6 +358,7 @@ function TeacherDashboardInner() {
   const [newClassBusy, setNewClassBusy] = useState(false);
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [joinBarDismissed, setJoinBarDismissed] = useState(false);
+  const [pickAnchor, setPickAnchor] = useState(null);
   const [objectiveEditOpen, setObjectiveEditOpen] = useState(false);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
@@ -2210,7 +2211,9 @@ function TeacherDashboardInner() {
     setTimeout(() => setCopyToast(''), 2500);
   }
 
-  function toggleBroadcastCard(key) {
+  function toggleBroadcastCard(key, event) {
+    const rect = event?.currentTarget?.getBoundingClientRect?.();
+    if (rect) setPickAnchor({ x: rect.left + rect.width / 2, y: rect.top });
     setBroadcastPick((current) => {
       if (current[key]) return { ...current, [key]: false };
       if (Object.values(current).filter(Boolean).length >= 6) {
@@ -3233,6 +3236,16 @@ function TeacherDashboardInner() {
   const teacherWritingPaneClass = 'max-h-52 overflow-y-auto overflow-x-visible';
 
   const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
+  const viewportWidth = typeof window === 'undefined' ? 1280 : window.innerWidth;
+  const viewportHeight = typeof window === 'undefined' ? 800 : window.innerHeight;
+  const pickPoint = pickAnchor || { x: viewportWidth / 2, y: 120 };
+  const pickBarBelow = pickPoint.y < 80;
+  const pickBarStyle = {
+    left: Math.min(Math.max(pickPoint.x, 210), viewportWidth - 210),
+    top: pickBarBelow ? pickPoint.y + 28 : pickPoint.y - 8,
+    transform: pickBarBelow ? 'translateX(-50%)' : 'translate(-50%, -100%)',
+  };
+  const pickMenuOpensUp = !pickBarBelow && pickPoint.y > viewportHeight / 2;
   const selectedStudentPickCount = orderedStudents.filter((student) => broadcastPick[student.id]).length;
   const monitoredCount = monitoredIds.size;
   const attentionPills = [
@@ -3492,123 +3505,6 @@ function TeacherDashboardInner() {
                 title={joinWhisper}
               >
                 {joinWhisper}
-              </div>
-            ) : !copyToast && broadcastPickCount > 0 ? (
-              <div className="pointer-events-auto flex items-center gap-1.5 rounded-xl border border-[#d5d4e4] bg-white py-1 pl-2.5 pr-1 shadow-sm dark:border-slate-600 dark:bg-slate-900">
-              <span className="whitespace-nowrap text-[11px] font-black text-[#3c3c45] dark:text-slate-100">
-                ✓ {broadcastPickCount} selected:
-              </span>
-              <div ref={sendToMenuRef} data-send-to-menu className="relative">
-                <HintWrap hint="Show the ticked students’ writing to the class or to chosen students" prefer="below" suppressed={sendToMenuOpen}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeSettings();
-                    setSendToMenuOpen((open) => !open);
-                  }}
-                  className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-lg border border-[#5a5fc3] bg-white px-2.5 text-[11px] font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-400 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
-                  aria-expanded={sendToMenuOpen}
-                  aria-haspopup="menu"
-                  aria-label={`Share the writing of ${Math.min(6, broadcastPickCount)} selected cards`}
-                >
-                  Share their writing
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 opacity-70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                </button>
-                </HintWrap>
-                {sendToMenuOpen && (
-                  <div
-                    className="absolute left-1/2 top-[calc(100%+0.4rem)] z-50 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
-                    role="menu"
-                    aria-label="Send selected cards"
-                  >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => sendBroadcastToClass(null)}
-                      className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-bold text-[#3c3c45] hover:bg-[#ebeaf8] dark:text-slate-100 dark:hover:bg-slate-800"
-                    >
-                      <span>All students</span>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-[#5a5fc3]">Class</span>
-                    </button>
-                    <div className="border-t border-[#d5d4e4] dark:border-slate-700">
-                      <p className="px-3 pt-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#5a5fc3]">
-                        Or choose students
-                      </p>
-                      <div className="max-h-48 overflow-y-auto py-1 scrollbar-thin">
-                        {orderedStudents.length === 0 ? (
-                          <p className="px-3 py-2 text-xs font-semibold text-slate-400">No students in the room yet.</p>
-                        ) : (
-                          orderedStudents.map((student) => (
-                            <label
-                              key={student.id}
-                              className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-[#3c3c45] hover:bg-[#ebeaf8] dark:text-slate-200 dark:hover:bg-slate-800"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={!!sendRecipientPick[student.id]}
-                                onChange={() => toggleSendRecipient(student.id)}
-                                className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600"
-                              />
-                              <span className="min-w-0 truncate font-semibold">{student.name}</span>
-                            </label>
-                          ))
-                        )}
-                      </div>
-                      <div className="border-t border-[#d5d4e4] p-2 dark:border-slate-700">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          disabled={!Object.values(sendRecipientPick).some(Boolean)}
-                          onClick={() => {
-                            const recipients = orderedStudents
-                              .filter((student) => sendRecipientPick[student.id])
-                              .map((student) => student.id);
-                            sendBroadcastToClass(recipients);
-                          }}
-                          className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4f54b0] disabled:opacity-40"
-                        >
-                          Send to selected
-                          {Object.values(sendRecipientPick).filter(Boolean).length
-                            ? ` · ${Object.values(sendRecipientPick).filter(Boolean).length}`
-                            : ''}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {selectedStudentPickCount > 0 ? (
-                <HintWrap hint="Keep a close eye on these students’ writing" prefer="below">
-                <button
-                  type="button"
-                  onClick={monitorSelectedStudents}
-                  className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-lg border border-[#5a5fc3] bg-white px-2.5 text-[11px] font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-400 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
-                  aria-label={`Monitor ${selectedStudentPickCount} selected students`}
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
-                    <circle cx="12" cy="12" r="2.5" />
-                  </svg>
-                  Monitor
-                </button>
-                </HintWrap>
-              ) : null}
-              <HintWrap hint="Untick everyone" prefer="below">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBroadcastPick({});
-                    setSendRecipientPick({});
-                    setSendToMenuOpen(false);
-                  }}
-                  className="grid h-7 w-7 place-items-center rounded-lg text-base font-bold text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                  aria-label="Untick everyone"
-                >
-                  ×
-                </button>
-              </HintWrap>
               </div>
             ) : monitoredCount > 0 ? (
               <div className="pointer-events-auto inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-3 text-white shadow-sm">
@@ -4081,7 +3977,7 @@ function TeacherDashboardInner() {
                     <input
                       type="checkbox"
                       checked={!!broadcastPick[`post:${post.id}`]}
-                      onChange={() => toggleBroadcastCard(`post:${post.id}`)}
+                      onChange={(event) => toggleBroadcastCard(`post:${post.id}`, event)}
                       className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 dark:border-slate-600"
                     />
                     <span className="sr-only">Include teacher card</span>
@@ -4249,7 +4145,7 @@ function TeacherDashboardInner() {
                       <input
                         type="checkbox"
                         checked={!!broadcastPick[s.id]}
-                        onChange={() => toggleBroadcastCard(s.id)}
+                        onChange={(event) => toggleBroadcastCard(s.id, event)}
                         className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 dark:border-slate-600"
                       />
                       <span className="sr-only">Include this card</span>
@@ -5070,6 +4966,124 @@ function TeacherDashboardInner() {
         </div>
       )}
 
+      {broadcastPickCount > 0 && (
+        <div className="fixed z-[60] flex items-center gap-1.5 rounded-xl border border-[#d5d4e4] bg-white py-1 pl-2.5 pr-1 shadow-lg dark:border-slate-600 dark:bg-slate-900" style={pickBarStyle}>
+        <span className="whitespace-nowrap text-[11px] font-black text-[#3c3c45] dark:text-slate-100">
+          ✓ {broadcastPickCount} selected:
+        </span>
+        <div ref={sendToMenuRef} data-send-to-menu className="relative">
+          <HintWrap hint="Show the ticked students’ writing to the class or to chosen students" prefer="above" suppressed={sendToMenuOpen}>
+          <button
+            type="button"
+            onClick={() => {
+              closeSettings();
+              setSendToMenuOpen((open) => !open);
+            }}
+            className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-lg border border-[#5a5fc3] bg-white px-2.5 text-[11px] font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-400 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
+            aria-expanded={sendToMenuOpen}
+            aria-haspopup="menu"
+            aria-label={`Share the writing of ${Math.min(6, broadcastPickCount)} selected cards`}
+          >
+            Share their writing
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 opacity-70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          </HintWrap>
+          {sendToMenuOpen && (
+            <div
+              className={`absolute left-1/2 ${pickMenuOpensUp ? 'bottom-[calc(100%+0.4rem)]' : 'top-[calc(100%+0.4rem)]'} z-50 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900`}
+              role="menu"
+              aria-label="Send selected cards"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => sendBroadcastToClass(null)}
+                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-bold text-[#3c3c45] hover:bg-[#ebeaf8] dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                <span>All students</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#5a5fc3]">Class</span>
+              </button>
+              <div className="border-t border-[#d5d4e4] dark:border-slate-700">
+                <p className="px-3 pt-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#5a5fc3]">
+                  Or choose students
+                </p>
+                <div className="max-h-48 overflow-y-auto py-1 scrollbar-thin">
+                  {orderedStudents.length === 0 ? (
+                    <p className="px-3 py-2 text-xs font-semibold text-slate-400">No students in the room yet.</p>
+                  ) : (
+                    orderedStudents.map((student) => (
+                      <label
+                        key={student.id}
+                        className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-[#3c3c45] hover:bg-[#ebeaf8] dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!sendRecipientPick[student.id]}
+                          onChange={() => toggleSendRecipient(student.id)}
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600"
+                        />
+                        <span className="min-w-0 truncate font-semibold">{student.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <div className="border-t border-[#d5d4e4] p-2 dark:border-slate-700">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={!Object.values(sendRecipientPick).some(Boolean)}
+                    onClick={() => {
+                      const recipients = orderedStudents
+                        .filter((student) => sendRecipientPick[student.id])
+                        .map((student) => student.id);
+                      sendBroadcastToClass(recipients);
+                    }}
+                    className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4f54b0] disabled:opacity-40"
+                  >
+                    Send to selected
+                    {Object.values(sendRecipientPick).filter(Boolean).length
+                      ? ` · ${Object.values(sendRecipientPick).filter(Boolean).length}`
+                      : ''}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        {selectedStudentPickCount > 0 ? (
+          <HintWrap hint="Keep a close eye on these students’ writing" prefer="above">
+          <button
+            type="button"
+            onClick={monitorSelectedStudents}
+            className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-lg border border-[#5a5fc3] bg-white px-2.5 text-[11px] font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-400 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
+            aria-label={`Monitor ${selectedStudentPickCount} selected students`}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+              <circle cx="12" cy="12" r="2.5" />
+            </svg>
+            Monitor
+          </button>
+          </HintWrap>
+        ) : null}
+        <HintWrap hint="Untick everyone" prefer="above">
+          <button
+            type="button"
+            onClick={() => {
+              setBroadcastPick({});
+              setSendRecipientPick({});
+              setSendToMenuOpen(false);
+            }}
+            className="grid h-7 w-7 place-items-center rounded-lg text-base font-bold text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            aria-label="Untick everyone"
+          >
+            ×
+          </button>
+        </HintWrap>
+        </div>
+      )}
       {joinScreenOpen && (
         <JoinScreen
           code={codeInput}
