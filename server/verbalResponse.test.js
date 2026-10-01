@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decideVerbalResponseAction, isVerbalActivity, liveActivityExpired, VERBAL_PROMPT } from './verbalResponse.js';
+import { decideVerbalResponseAction, isVerbalActivity, liveActivityExpired, parseDbTime, VERBAL_PROMPT } from './verbalResponse.js';
 
 const NOW = Date.UTC(2026, 9, 1, 9, 0);
 const launchedAt = new Date(NOW - 10_000).toISOString();
@@ -21,6 +21,30 @@ test('an open teacher short question takes the + Answer instead of being replace
 
 test('an open verbal round takes repeat answers as updates, never a new round', () => {
   assert.equal(decide(live({ prompt: VERBAL_PROMPT })), 'answer');
+});
+
+test('a re-answer inside 15s of the last answer changes it; after 15s quiet it starts the next round', () => {
+  const verbal = live({ prompt: VERBAL_PROMPT });
+  const at = (msAgo) => new Date(NOW - msAgo).toISOString().replace('T', ' ').slice(0, 19);
+  const responses = [
+    { activityId: 'a1', studentId: 1, submittedAt: at(40_000) },
+    { activityId: 'a1', studentId: 2, submittedAt: at(5_000) },
+    { activityId: 'old', studentId: 3, submittedAt: at(90_000) },
+  ];
+  assert.equal(decide(verbal, { responses, studentId: 1 }), 'answer');
+  assert.equal(decide(verbal, { responses, studentId: 3 }), 'answer');
+  const quiet = responses.map((response) => ({ ...response, submittedAt: at(16_000) }));
+  assert.equal(decide(verbal, { responses: quiet, studentId: 1 }), 'launch');
+  assert.equal(decide(verbal, { responses: quiet, studentId: 4 }), 'answer');
+  assert.equal(decide(live(), { responses: quiet, studentId: 1 }), 'answer');
+  const unreadable = [{ activityId: 'a1', studentId: 1, submittedAt: 'bad' }];
+  assert.equal(decide(verbal, { responses: unreadable, studentId: 1 }), 'answer');
+});
+
+test('database times are read as UTC', () => {
+  assert.equal(parseDbTime('2026-10-01 09:00:00'), Date.UTC(2026, 9, 1, 9, 0));
+  assert.equal(parseDbTime('2026-10-01T09:00:00.000Z'), Date.UTC(2026, 9, 1, 9, 0));
+  assert.ok(Number.isNaN(parseDbTime('')));
 });
 
 test('open choice, rating and set questions refuse with a friendly message', () => {

@@ -1501,6 +1501,8 @@ io.on('connection', (socket) => {
         now: Date.now(),
         eligible: !!activityForStudent(activity, sid),
         isAsker: !!activity && sourceStudentIdForActivity(activity) === sid,
+        responses: activity ? queries.listLiveResponses(db, code) : [],
+        studentId: sid,
       });
       if (decision.action === 'refuse') {
         cb?.({ ok: false, error: decision.error });
