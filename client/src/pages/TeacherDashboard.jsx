@@ -47,6 +47,7 @@ import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import { JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
+import { fitGrid } from '../lib/fitGrid.js';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
 import TeacherHelpPanel, { TeacherHelpButton } from '../components/TeacherHelpPanel.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
@@ -67,7 +68,7 @@ const MODE_LABELS = {
   custom: 'Custom',
 };
 
-const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view';
+const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view-v2';
 const OVERVIEW_COLUMNS_STORAGE_KEY = 'iboard-overview-columns';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
 const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden';
@@ -77,6 +78,7 @@ const LEGACY_WATCH_STORAGE_KEY = 'iboard-teacher-watch';
 const CARD_FONT_REMS = [0.75, 0.875, 1, 1.125, 1.25];
 const CARD_FONT_DEFAULT = 2; /* index of 1rem */
 const CARD_VIEWS = [
+  { id: 'all', label: 'Fit all', hint: 'Every student on one screen' },
   { id: 'overview', label: 'Overview' },
   { id: 'reading', label: 'Reading' },
   { id: 'full', label: 'Full drafts' },
@@ -149,6 +151,21 @@ function cardFontRem(map, studentId) {
 }
 
 function CardViewIcon({ id, className = 'h-5 w-5' }) {
+  if (id === 'all') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 20 20" className={className} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2.5" width="4" height="4" rx="0.8" />
+        <rect x="8" y="2.5" width="4" height="4" rx="0.8" />
+        <rect x="14" y="2.5" width="4" height="4" rx="0.8" />
+        <rect x="2" y="8" width="4" height="4" rx="0.8" />
+        <rect x="8" y="8" width="4" height="4" rx="0.8" />
+        <rect x="14" y="8" width="4" height="4" rx="0.8" />
+        <rect x="2" y="13.5" width="4" height="4" rx="0.8" />
+        <rect x="8" y="13.5" width="4" height="4" rx="0.8" />
+        <rect x="14" y="13.5" width="4" height="4" rx="0.8" />
+      </svg>
+    );
+  }
   if (id === 'overview') {
     return (
       <svg aria-hidden="true" viewBox="0 0 20 20" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -211,12 +228,12 @@ function csvCell(value) {
 }
 
 function initialCardView() {
-  if (typeof window === 'undefined') return 'overview';
+  if (typeof window === 'undefined') return 'all';
   try {
     const saved = localStorage.getItem(CARD_VIEW_STORAGE_KEY);
-    return CARD_VIEWS.some((view) => view.id === saved) ? saved : 'overview';
+    return CARD_VIEWS.some((view) => view.id === saved) ? saved : 'all';
   } catch {
-    return 'overview';
+    return 'all';
   }
 }
 
@@ -440,6 +457,8 @@ function TeacherDashboardInner() {
   const [livePulse, setLivePulse] = useState({ activity: null, responses: [], students: [] });
   const [cardView, setCardView] = useState(initialCardView);
   const [overviewColumns, setOverviewColumns] = useState(initialOverviewColumns);
+  const boardScrollRef = useRef(null);
+  const [boardBox, setBoardBox] = useState({ width: 0, height: 0 });
   const [cardFontById, setCardFontById] = useState(readCardFontMap);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [focusedPostId, setFocusedPostId] = useState(null);
@@ -715,6 +734,21 @@ function TeacherDashboardInner() {
     const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
     return () => cancelAnimationFrame(frame);
   }, [overviewColumns]);
+
+  useEffect(() => {
+    const node = boardScrollRef.current;
+    if (!node || typeof ResizeObserver !== 'function') return undefined;
+    const measure = () => {
+      const style = window.getComputedStyle(node);
+      const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      const next = { width: node.clientWidth, height: Math.max(0, node.clientHeight - padY) };
+      setBoardBox((prev) => (prev.width === next.width && prev.height === next.height ? prev : next));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [joined]);
 
   useEffect(() => {
     function syncFullscreen() {
@@ -1882,6 +1916,17 @@ function TeacherDashboardInner() {
     document.addEventListener('keydown', rollUpComposerOnEscape);
     return () => document.removeEventListener('keydown', rollUpComposerOnEscape);
   }, [addCardOpen, addCardBusy]);
+
+  useEffect(() => {
+    if (!focusedStudentId) return undefined;
+    function closeFullDraftOnEscape(event) {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (event.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      setFocusedStudentId(null);
+    }
+    document.addEventListener('keydown', closeFullDraftOnEscape);
+    return () => document.removeEventListener('keydown', closeFullDraftOnEscape);
+  }, [focusedStudentId]);
 
   useEffect(() => {
     if (!addCardOpen) return;
@@ -3172,15 +3217,22 @@ function TeacherDashboardInner() {
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
   const focusedPost = posts.find((post) => Number(post.id) === Number(focusedPostId)) || null;
   // Overview: fixed column density (6/5/4/3). Reading / Full: wider reading columns.
+  const fitLayout = cardView === 'all'
+    ? fitGrid({ count: orderedStudents.length, width: boardBox.width, height: boardBox.height, gap: 12 })
+    : null;
   const studentGridClass =
-    cardView === 'overview'
+    cardView === 'all'
+      ? 'iboard-student-grid--fit'
+      : cardView === 'overview'
       ? `iboard-student-grid--overview ${OVERVIEW_GRID_CLASS[overviewColumns] || OVERVIEW_GRID_CLASS[OVERVIEW_COLUMNS_DEFAULT]}`
       : cardView === 'reading'
         ? 'grid-cols-[repeat(auto-fit,minmax(min(100%,26rem),1fr))]'
         : 'grid-cols-[repeat(auto-fit,minmax(min(100%,30rem),1fr))]';
   // Student board only — teacher strip cards stay compact regardless of Overview/Reading/Full.
   const studentWritingPaneClass =
-    cardView === 'overview'
+    cardView === 'all'
+      ? 'iboard-student-card__fit-pane'
+      : cardView === 'overview'
       ? 'min-h-0 flex-1 overflow-y-auto overflow-x-visible'
       : cardView === 'reading'
         ? 'min-h-[22rem] max-h-[32rem] overflow-y-auto overflow-x-visible'
@@ -4043,7 +4095,7 @@ function TeacherDashboardInner() {
       <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
 
-              <div className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
+              <div ref={boardScrollRef} className="min-h-0 flex-1 overflow-y-auto pb-2 scrollbar-thin">
         <div className="iboard-student-board-stack">
           {orderedStudents.length === 0 && (
             <div className="iboard-board-empty">
@@ -4070,7 +4122,13 @@ function TeacherDashboardInner() {
                   <h3>{section.label}</h3>
                 </div>
               ) : null}
-              <div className={`grid ${cardView === 'overview' ? 'gap-3' : 'gap-4'} ${studentGridClass}`}>
+              <div
+                className={`grid ${cardView === 'overview' || cardView === 'all' ? 'gap-3' : 'gap-4'} ${studentGridClass}`}
+                style={fitLayout ? {
+                  gridTemplateColumns: `repeat(${fitLayout.columns}, minmax(0, 1fr))`,
+                  gridAutoRows: `${fitLayout.rowHeight}px`,
+                } : undefined}
+              >
           {section.students.map((s) => {
             const displayText = String(s.text || '').trim();
             const wc = wordCount(s.text);
@@ -4108,7 +4166,7 @@ function TeacherDashboardInner() {
                   }
                 } : undefined}
                 className={`iboard-student-card group/student-card relative flex flex-col overflow-visible rounded-xl p-3 ${
-                  cardView === 'overview' ? 'iboard-student-card--overview' : ''
+                  cardView === 'overview' ? 'iboard-student-card--overview' : cardView === 'all' ? 'iboard-student-card--fit' : ''
                 } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${
                   broadcastPick[s.id] ? 'is-picked' : ''
                 } ${
@@ -4145,7 +4203,7 @@ function TeacherDashboardInner() {
                     <div className="flex min-w-0 items-center gap-1">
                       <h2
                         className={`iboard-student-card__name min-w-0 truncate ${
-                          cardView === 'overview' ? 'text-[13px]' : 'text-[14px]'
+                          cardView === 'overview' || cardView === 'all' ? 'text-[13px]' : 'text-[14px]'
                         } ${
                           handUp ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''
                         }`}
@@ -4340,6 +4398,8 @@ function TeacherDashboardInner() {
                           setTimeout(() => setCopyToast(''), 2500);
                         }}
                       />
+                      {cardView !== 'all' ? (
+                      <>
                       <HintWrap hint="Smaller text">
                         <button
                           type="button"
@@ -4362,6 +4422,8 @@ function TeacherDashboardInner() {
                           <span className="text-[12px] font-black leading-none">A+</span>
                         </button>
                       </HintWrap>
+                      </>
+                      ) : null}
                       <div className="relative" data-student-actions-menu>
                         <HintWrap hint="More actions">
                           <button
@@ -4389,8 +4451,20 @@ function TeacherDashboardInner() {
                 <div
                   data-student-writing-pane
                   data-card-font="true"
-                  style={{ fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 leading-relaxed scrollbar-thin ${cardEmpty ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
+                  style={cardView === 'all' ? undefined : { fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 leading-relaxed scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
+                  {...(cardView === 'all' && !handUp ? {
+                    role: 'button',
+                    tabIndex: 0,
+                    'aria-label': `Open ${s.name}'s full draft`,
+                    onClick: () => setFocusedStudentId(s.id),
+                    onKeyDown: (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setFocusedStudentId(s.id);
+                      }
+                    },
+                  } : {})}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
@@ -5076,7 +5150,7 @@ function TeacherDashboardInner() {
                 const active = cardView === view.id;
                 const isOverview = view.id === 'overview';
                 return (
-                  <HintWrap key={view.id} hint={view.label} prefer="above" suppressed={active || (isOverview && overviewColsPeek)}>
+                  <HintWrap key={view.id} hint={view.hint || view.label} prefer="above" suppressed={active || (isOverview && overviewColsPeek)}>
                     <button
                       type="button"
                       onClick={() => {
