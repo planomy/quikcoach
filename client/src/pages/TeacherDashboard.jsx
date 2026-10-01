@@ -3,6 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
+import { FULLSCREEN_UNAVAILABLE_MESSAGE, canFullscreen, isFullscreen, subscribeFullscreenChange, toggleFullscreen } from '../lib/fullscreen.js';
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import ClassInsightsPanel from '../components/ClassInsightsPanel.jsx';
@@ -479,6 +480,7 @@ function TeacherDashboardInner() {
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [focusedPostId, setFocusedPostId] = useState(null);
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
+  const [windowHeight, setWindowHeight] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight));
   const [monitoredIds, setMonitoredIds] = useState(() => new Set());
   /** studentId → away (tab/app background). Synced from student:presence + live:teacher. */
   const [awayByStudentId, setAwayByStudentId] = useState(() => new Map());
@@ -774,26 +776,29 @@ function TeacherDashboardInner() {
   }, [joined]);
 
   useEffect(() => {
+    const syncHeight = () => setWindowHeight(window.innerHeight);
+    window.addEventListener('resize', syncHeight);
+    window.addEventListener('orientationchange', syncHeight);
+    return () => {
+      window.removeEventListener('resize', syncHeight);
+      window.removeEventListener('orientationchange', syncHeight);
+    };
+  }, []);
+
+  useEffect(() => {
     function syncFullscreen() {
-      setBrowserFullscreen(!!document.fullscreenElement);
+      setBrowserFullscreen(isFullscreen());
     }
     syncFullscreen();
-    document.addEventListener('fullscreenchange', syncFullscreen);
-    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+    return subscribeFullscreenChange(syncFullscreen);
   }, []);
 
   async function toggleBrowserFullscreen() {
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen?.();
-        return;
-      }
-      const root = document.documentElement;
-      if (root.requestFullscreen) await root.requestFullscreen();
-      else if (root.webkitRequestFullscreen) await root.webkitRequestFullscreen();
+      await toggleFullscreen();
     } catch {
-      setCopyToast('Fullscreen blocked — try the browser View menu');
-      setTimeout(() => setCopyToast(''), 3200);
+      setCopyToast(canFullscreen() ? 'Fullscreen blocked — try the browser View menu' : FULLSCREEN_UNAVAILABLE_MESSAGE);
+      setTimeout(() => setCopyToast(''), 4500);
     }
   }
 
@@ -2090,9 +2095,9 @@ function TeacherDashboardInner() {
   const headerDockStyle = useMemo(
     () => ({
       top: teacherToolsTop,
-      maxHeight: `calc(100dvh - ${teacherToolsTop}px - 8px)`,
+      maxHeight: Math.max(220, windowHeight - teacherToolsTop - 8),
     }),
-    [teacherToolsTop]
+    [teacherToolsTop, windowHeight]
   );
 
   async function copyForAi() {
@@ -5235,7 +5240,7 @@ function TeacherDashboardInner() {
           className="iboard-breakout-assign fixed z-[60]"
           style={{
             top: teacherToolsTop + settingsChromeHeight,
-            maxHeight: `calc(100dvh - ${teacherToolsTop + settingsChromeHeight}px)`,
+            maxHeight: Math.max(220, windowHeight - teacherToolsTop - settingsChromeHeight),
             left: 'calc(4.75rem + min(22rem, calc(100vw - 4.75rem)))',
           }}
           role="dialog"

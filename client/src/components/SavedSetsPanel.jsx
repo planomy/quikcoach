@@ -715,7 +715,7 @@ export default function SavedSetsPanel({
             top: previewFlyout.top,
             left: previewFlyout.left,
             height: 'auto',
-            maxHeight: `calc(100dvh - ${previewFlyout.top + 8}px)`,
+            maxHeight: Math.max(200, window.innerHeight - previewFlyout.top - 8),
             width: previewFlyout.width,
           }}
           role="dialog"

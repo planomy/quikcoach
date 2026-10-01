@@ -80,12 +80,14 @@ html.dark:-webkit-full-screen {
 }
 
 #root {
+  min-height: 100vh;
   min-height: 100dvh;
 }
 
 .iboard-teacher-canvas {
   min-height: 100%;
   height: 100%;
+  max-height: 100vh;
   max-height: 100dvh;
 }
 
@@ -201,6 +203,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 .iboard-student-canvas {
   min-height: 100%;
   height: 100%;
+  max-height: 100vh;
   max-height: 100dvh;
 }
 
@@ -1885,6 +1888,7 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
 .iboard-header-dock--rail {
   top: 50%;
   left: 4.75rem;
+  max-height: calc(100vh - 1.25rem);
   max-height: calc(100dvh - 1.25rem);
   border-left: 0;
   border-radius: 0 1rem 1rem 0;
@@ -1989,6 +1993,7 @@ html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-
   display: flex;
   flex-direction: column;
   width: min(22rem, calc(100vw - 1.25rem));
+  max-height: min(72vh, calc(100vh - 4.5rem));
   max-height: min(72vh, calc(100dvh - 4.5rem));
   overflow: hidden;
   border: 1px solid #d5d4e4;

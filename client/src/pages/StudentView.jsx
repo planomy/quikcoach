@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
+import { FULLSCREEN_UNAVAILABLE_MESSAGE, canFullscreen, isFullscreen, subscribeFullscreenChange, toggleFullscreen } from '../lib/fullscreen.js';
 import { truncateToWordLimit } from '../lib/text.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import AppFooter from '../components/AppFooter.jsx';
@@ -268,30 +269,18 @@ export default function StudentView() {
 
   useEffect(() => {
     function syncFullscreen() {
-      setBrowserFullscreen(!!(document.fullscreenElement || document.webkitFullscreenElement));
+      setBrowserFullscreen(isFullscreen());
     }
     syncFullscreen();
-    document.addEventListener('fullscreenchange', syncFullscreen);
-    document.addEventListener('webkitfullscreenchange', syncFullscreen);
-    return () => {
-      document.removeEventListener('fullscreenchange', syncFullscreen);
-      document.removeEventListener('webkitfullscreenchange', syncFullscreen);
-    };
+    return subscribeFullscreenChange(syncFullscreen);
   }, []);
 
   async function toggleBrowserFullscreen() {
     try {
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
-        if (document.exitFullscreen) await document.exitFullscreen();
-        else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
-        return;
-      }
-      const root = document.documentElement;
-      if (root.requestFullscreen) await root.requestFullscreen();
-      else if (root.webkitRequestFullscreen) await root.webkitRequestFullscreen();
+      await toggleFullscreen();
     } catch {
-      setImageHint('Fullscreen blocked — try the browser View menu');
-      setTimeout(() => setImageHint(''), 3200);
+      setImageHint(canFullscreen() ? 'Fullscreen blocked — try the browser View menu' : FULLSCREEN_UNAVAILABLE_MESSAGE);
+      setTimeout(() => setImageHint(''), 4500);
     }
   }
 
