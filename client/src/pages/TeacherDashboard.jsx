@@ -1057,12 +1057,11 @@ function TeacherDashboardInner() {
     const onQna = (payload) => {
       setAudienceQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
       markSessionDirty();
-      markSaved();
     };
     socket.on('qna:teacher', onQna);
     if (joinedRef.current) socket.emit('teacher:qna-sync', {});
     return () => socket.off('qna:teacher', onQna);
-  }, [socket, markSessionDirty, markSaved]);
+  }, [socket, markSessionDirty]);
 
   useEffect(() => {
     const onPasteAlerts = (payload) => setPasteCounts(payload?.counts || {});
@@ -1196,7 +1195,7 @@ function TeacherDashboardInner() {
     prevModalOpenRef.current = modalOpen;
   }, [modalOpen, room, hydrateFeedbackStateFromRoom]);
 
-  async function createOrJoin(overrideCode, { fromLink = false } = {}) {
+  async function createOrJoin(overrideCode) {
     setError('');
     const digits = String(overrideCode ?? codeInput)
       .replace(/\D/g, '')
@@ -1259,8 +1258,8 @@ function TeacherDashboardInner() {
             setRoom(data.room);
             setStudents((data.students || []).map(normalizeStudentFromServer));
             hydrateFeedbackStateFromRoom(data.room);
-            const lessonRunning = (data.students || []).length > 0;
-            if (!fromLink && !straightToRoomRef.current && !lessonRunning) setStartStep('join');
+            const studentsConnected = (data.students || []).some((student) => student.connected);
+            if (!straightToRoomRef.current && !studentsConnected) setStartStep('join');
           }
         } catch {
           /* room:state from socket will catch up */
@@ -1275,7 +1274,7 @@ function TeacherDashboardInner() {
     if (autoJoinTriedRef.current || joined) return;
     if (codeFromLink.length !== 4) return;
     autoJoinTriedRef.current = true;
-    void createOrJoin(codeFromLink, { fromLink: true });
+    void createOrJoin(codeFromLink);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot return from FULL SCREEN
   }, [codeFromLink]);
 
@@ -1315,6 +1314,12 @@ function TeacherDashboardInner() {
     () => [...students].sort((a, b) => a.id - b.id),
     [students]
   );
+  const connectedStudents = useMemo(() => {
+    const connectedIds = new Set(
+      (livePulse.students || []).filter((student) => student.connected).map((student) => Number(student.id))
+    );
+    return orderedStudents.filter((student) => connectedIds.has(Number(student.id)));
+  }, [livePulse.students, orderedStudents]);
 
   useEffect(() => {
     if (!joined) {
@@ -3293,7 +3298,7 @@ function TeacherDashboardInner() {
               </HintWrap>
               <span className="iboard-header-meta__dot" aria-hidden="true" />
               <span className="iboard-header-meta__online">
-                <b className="tabular-nums">{orderedStudents.length}</b> online
+                <b className="tabular-nums">{connectedStudents.length}</b> online
               </span>
               <HintWrap hint={room?.lesson_objective ? 'Change today’s objective' : 'Students see this at the top of their screen'} prefer="below">
                 <button
@@ -5018,7 +5023,7 @@ function TeacherDashboardInner() {
         <JoinScreen
           code={codeInput}
           joinUrl={studentJoinUrl()}
-          students={orderedStudents}
+          students={connectedStudents}
           initialObjective={room?.lesson_objective || ''}
           onEnter={(text) => {
             if (text !== (room?.lesson_objective || '')) setLessonObjective(text);

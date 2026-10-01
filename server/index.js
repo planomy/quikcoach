@@ -308,7 +308,7 @@ app.get('/api/rooms/:code', (req, res) => {
     const students = queries.listStudents(db, code);
     res.json({
       room: { ...queries.rowToRoom(row), timer: timerStateForRoom(code) },
-      students: students.map(queries.rowToStudent),
+      students: students.map((row) => ({ ...queries.rowToStudent(row), connected: isStudentConnected(row.id) })),
     });
   } catch (e) {
     console.error(e);

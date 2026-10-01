@@ -1,6 +1,6 @@
 import { CloseButton } from './PanelActions.jsx';
 import HintWrap from './HintWrap.jsx';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import EngagementRing from './EngagementRing.jsx';
 import AudienceQnaTeacher from './AudienceQnaTeacher.jsx';
 import QuikPulsePanel, { isQuikPulseActivity } from './QuikPulsePanel.jsx';
@@ -286,8 +286,8 @@ export default function LiveResponseTeacher({
     if (!activity && activeView === 'live') setActiveView(readSavedAskTab());
   }, [activity, activeView]);
 
-  // Sets live under Share in the teacher console, so Ask falls back to Quick.
-  useEffect(() => {
+  // Sets live under Share in the teacher console, so Ask falls back to Quick before paint.
+  useLayoutEffect(() => {
     if (effectivePanelTab === 'ask' && activeView === 'prepared') setActiveView('quik');
   }, [effectivePanelTab, activeView]);
 
