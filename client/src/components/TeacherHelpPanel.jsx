@@ -44,14 +44,14 @@ export const TEACHER_HELP_ITEMS = [
   },
   {
     id: 'session',
-    title: 'Save / load the session',
-    body: 'Click the save icon at the top right to save an .iboard file of the lesson, or load one to restore it later.',
+    title: 'Save or open a lesson',
+    body: 'Click the save icon at the top right to save the lesson to a file, or open one you saved earlier.',
     action: 'session',
   },
   {
     id: 'records',
     title: 'Lesson records',
-    body: 'Use the camera in the header to snapshot everyone’s writing. Open View reports → Lesson records to browse class snapshots and portfolios.',
+    body: 'Click the save icon at the top right, then Save a snapshot of everyone’s writing. Open View reports → Lesson records to browse class snapshots and portfolios.',
     action: 'records',
   },
   {

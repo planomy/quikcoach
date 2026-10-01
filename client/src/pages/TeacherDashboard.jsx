@@ -2674,8 +2674,8 @@ function TeacherDashboardInner() {
         return;
       }
       setSnapshots(ack.snapshots || []);
-      setCopyToast('Snapshot saved in Lesson records');
-      setTimeout(() => setCopyToast(''), 2500);
+      setCopyToast('Snapshot saved — find it in Reports');
+      setTimeout(() => setCopyToast(''), 3000);
     });
   }
 
@@ -3397,14 +3397,27 @@ function TeacherDashboardInner() {
                   aria-expanded={sessionMenuOpen}
                   data-active={sessionMenuOpen ? 'true' : 'false'}
                   className={`iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'session' ? ' is-help-flash' : ''}`}
-                  aria-label="Save or load session"
+                  aria-label="Save or open a lesson"
                 >
                   <span className="iboard-header-icon iboard-header-icon--save" aria-hidden="true" />
                 </button>
               </HintWrap>
               {sessionMenuOpen && (
-                <div className="absolute right-0 top-full z-50 mt-1.5 flex w-56 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-                  <HintWrap hint="Download this lesson to a file you can open again later" prefer="side" className="w-full">
+                <div className="absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                  <HintWrap hint="Keeps a copy of every student’s writing right now. Find it later in Reports." prefer="side" className="w-full" multiline>
+                    <button
+                      type="button"
+                      disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
+                      onClick={() => {
+                        setSessionMenuOpen(false);
+                        quickSnapshotWriting();
+                      }}
+                      className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                    >
+                      {evidenceBusy ? 'Saving snapshot…' : 'Save a snapshot of everyone’s writing'}
+                    </button>
+                  </HintWrap>
+                  <HintWrap hint="Downloads this lesson so you can open it again later" prefer="side" className="w-full">
                     <button
                       type="button"
                       disabled={sessionBusy}
@@ -3412,9 +3425,9 @@ function TeacherDashboardInner() {
                         setSessionMenuOpen(false);
                         void saveSessionFile();
                       }}
-                      className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
+                      {sessionBusy ? 'Saving lesson…' : 'Save lesson to a file'}
                     </button>
                   </HintWrap>
                   <HintWrap hint="Open a lesson you saved earlier" prefer="side" className="w-full">
@@ -3427,23 +3440,12 @@ function TeacherDashboardInner() {
                       }}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      {sessionBusy ? 'Loading…' : 'Load session'}
+                      {sessionBusy ? 'Opening…' : 'Open a saved lesson'}
                     </button>
                   </HintWrap>
                 </div>
               )}
             </div>
-            <HintWrap hint="Snapshot everyone’s writing now" prefer="below">
-              <button
-                type="button"
-                onClick={quickSnapshotWriting}
-                disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
-                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
-                aria-label="Snapshot everyone’s writing now"
-              >
-                <span className="iboard-header-icon iboard-header-icon--camera" aria-hidden="true" />
-              </button>
-            </HintWrap>
             <HintWrap hint="Student card view" prefer="below" suppressed={viewOpen}>
               <button
                 ref={viewButtonRef}
@@ -4547,7 +4549,7 @@ function TeacherDashboardInner() {
         {libraryView === 'home' && (
           <section className="space-y-4">
             <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-              Capture and revisit today’s writing evidence. Use the camera in the header to snapshot everyone’s writing; browse packs and tools below.
+              Capture and revisit today’s writing evidence. Use the save icon in the header to snapshot everyone’s writing; browse packs and tools below.
             </p>
             <div className="flex flex-wrap gap-2" role="navigation" aria-label="Lesson records sections">
               <button
@@ -4592,7 +4594,7 @@ function TeacherDashboardInner() {
               <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                 <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">No snapshots yet</h3>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-                  Snapshot everyone’s writing with the camera in the header to unlock class packs and student portfolios.
+                  Snapshot everyone’s writing from the save icon in the header to unlock class packs and student portfolios.
                 </p>
               </div>
             ) : (
