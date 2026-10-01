@@ -102,8 +102,18 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, on
  * Join info on the board itself: big while nobody is connected, a slim bar once
  * students are arriving. Projected with the board, so no separate start screen.
  */
-export function BoardJoinPanel({ code, joinUrl, joinedCount = 0, rosterCount = 0, onShowBig, onDismiss }) {
+export function BoardJoinPanel({ code, joinUrl, joinedCount = 0, rosterCount = 0, objective = '', onObjectiveChange, onShowBig, onDismiss }) {
   const { qrSvg, address } = useJoinInfo(joinUrl);
+  const [objectiveDraft, setObjectiveDraft] = useState(objective);
+
+  useEffect(() => {
+    setObjectiveDraft(objective);
+  }, [objective]);
+
+  function saveObjective() {
+    const clean = objectiveDraft.replace(/\s+/g, ' ').trim().slice(0, OBJECTIVE_MAX);
+    if (clean !== objective) onObjectiveChange?.(clean);
+  }
 
   if (joinedCount === 0) {
     return (
@@ -112,8 +122,27 @@ export function BoardJoinPanel({ code, joinUrl, joinedCount = 0, rosterCount = 0
           <p className="iboard-board-join__address">
             Students enter code at: <strong>{address}</strong>
           </p>
-          <p className="iboard-board-join__code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
-          <p className="iboard-board-join__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
+          <div className="iboard-board-join__code-row">
+            <p className="iboard-board-join__code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
+            <p className="iboard-board-join__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
+          </div>
+          <input
+            type="text"
+            className="iboard-board-join__objective"
+            value={objectiveDraft}
+            maxLength={OBJECTIVE_MAX}
+            onChange={(event) => setObjectiveDraft(event.target.value)}
+            onBlur={saveObjective}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                saveObjective();
+                event.currentTarget.blur();
+              }
+            }}
+            placeholder="Optional – write today’s objective here"
+            aria-label="Today’s objective (optional)"
+          />
         </div>
         {qrSvg ? (
           <div className="iboard-board-join__qr" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />

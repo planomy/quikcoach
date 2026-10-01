@@ -4135,6 +4135,8 @@ function TeacherDashboardInner() {
               joinUrl={studentJoinUrl()}
               joinedCount={connectedStudents.length}
               rosterCount={orderedStudents.length}
+              objective={room?.lesson_objective || ''}
+              onObjectiveChange={setLessonObjective}
               onShowBig={openJoinScreen}
               onDismiss={() => setJoinBarDismissed(true)}
             />
