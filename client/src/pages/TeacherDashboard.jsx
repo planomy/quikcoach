@@ -107,7 +107,7 @@ const CARD_FONT_REMS = [0.75, 0.875, 1, 1.125, 1.25];
 const CARD_FONT_DEFAULT = 2; /* index of 1rem */
 const CARD_VIEWS = [
   { id: 'all', label: 'Fit all', hint: 'Every student on one screen' },
-  { id: 'overview', label: 'Overview' },
+  { id: 'overview', label: 'Columns' },
   { id: 'reading', label: 'Reading' },
   { id: 'full', label: 'Full drafts' },
 ];
@@ -5196,10 +5196,10 @@ function TeacherDashboardInner() {
               <div
                 className="flex items-center justify-start gap-1 border-t border-slate-200 px-2 py-1.5 dark:border-slate-700"
                 role="group"
-                aria-label="Overview columns"
+                aria-label="Number of columns"
               >
                 <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#8b8b96] dark:text-slate-400" aria-hidden="true">
-                  Columns
+                  How many
                 </span>
                 {OVERVIEW_COLUMN_OPTIONS.map((count) => {
                   const active = overviewColumns === count;
