@@ -3740,7 +3740,12 @@ function TeacherDashboardInner() {
                     className={`iboard-arr-btn relative${helpFlash === tab.id ? ' is-help-flash' : ''}`}
                     aria-label={tab.label}
                   >
-                    <span className={`iboard-arr-btn__icon iboard-arr-btn__icon--${tab.id}`} aria-hidden="true" />
+                    <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M8 7V6a3 3 0 0 1 3-3h7a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3v2.5L16 13" />
+                      <path d="M6 7h7a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3.5 3v-3.1A3 3 0 0 1 3 14v-4a3 3 0 0 1 3-3z" />
+                      <path d="M7.7 10.3a1.8 1.8 0 1 1 2.65 1.6c-.55.3-.85.68-.85 1.3" />
+                      <path d="M9.5 15.3h.01" />
+                    </svg>
                     <span className="iboard-arr-label">{tab.rail || tab.label}</span>
                   </button>
                 </HintWrap>
