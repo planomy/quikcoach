@@ -3185,7 +3185,7 @@ function TeacherDashboardInner() {
     ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
     : '';
   const headerDockOpen = toolsPanelOpen || settingsOpen || timerOpen || viewOpen || helpOpen;
-  const settingsTitle = settingsSection === 'class' ? 'Class' : settingsSection === 'records' ? 'Records' : 'Settings';
+  const settingsTitle = settingsSection === 'class' ? 'Run the class' : settingsSection === 'records' ? 'Review' : 'Settings';
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -3619,7 +3619,7 @@ function TeacherDashboardInner() {
       ) : null}
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
-          <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Add to class">
+          <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Share with class">
             <HintWrap hint="Send resources to students" prefer="right" suppressed={addCardOpen}>
               <button
                 type="button"
@@ -3629,12 +3629,12 @@ function TeacherDashboardInner() {
                 aria-expanded={addCardOpen}
                 data-active={addCardOpen ? 'true' : 'false'}
                 className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
-                aria-label="Add image, PDF or text"
+                aria-label="Share an image, PDF or text"
               >
                 <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                <span className="iboard-arr-label">Add</span>
+                <span className="iboard-arr-label">Share</span>
               </button>
             </HintWrap>
           </div>
@@ -3686,7 +3686,7 @@ function TeacherDashboardInner() {
                   aria-expanded={settingsOpen && settingsSection === 'class'}
                   data-active={settingsOpen && settingsSection === 'class' ? 'true' : 'false'}
                   className="iboard-arr-btn"
-                  aria-label="Class controls"
+                  aria-label="Run the class"
                 >
                   <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <circle cx="9.5" cy="8" r="3.25" />
@@ -3694,7 +3694,7 @@ function TeacherDashboardInner() {
                     <path d="M15.5 4.9a3.25 3.25 0 0 1 0 6.2" />
                     <path d="M18 13.8a4.5 4.5 0 0 1 2.5 4.2v1" />
                   </svg>
-                  <span className="iboard-arr-label">Class</span>
+                  <span className="iboard-arr-label">Run</span>
                 </button>
               </HintWrap>
             </div>
@@ -3707,13 +3707,13 @@ function TeacherDashboardInner() {
                   aria-expanded={settingsOpen && settingsSection === 'records'}
                   data-active={settingsOpen && settingsSection === 'records' ? 'true' : 'false'}
                   className="iboard-arr-btn"
-                  aria-label="Records"
+                  aria-label="Review"
                 >
                   <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
                     <path d="M8.5 16.5v-3M12 16.5v-7M15.5 16.5v-5" />
                   </svg>
-                  <span className="iboard-arr-label">Records</span>
+                  <span className="iboard-arr-label">Review</span>
                 </button>
               </HintWrap>
               <HintWrap hint="Reset board, clean-up, display" prefer="right" suppressed={settingsOpen && settingsSection === 'settings'}>
