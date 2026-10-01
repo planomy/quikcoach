@@ -220,7 +220,7 @@ function timerKeepsRailLit(timer) {
 }
 
 const TEACHER_TOOLS_TABS = [
-  { id: 'ask', label: 'Ask the class', rail: 'Ask', hint: 'Ask the class a question and see their answers' },
+  { id: 'ask', label: 'Ask the class', rail: 'Ask class', hint: 'Ask the class a question and see their answers' },
 ];
 
 function csvCell(value) {
@@ -523,6 +523,23 @@ function TeacherDashboardInner() {
   const sessionDirtyRef = useRef(false);
   const sessionHydratedRef = useRef(false);
   const sessionFileInputRef = useRef(null);
+  const sessionMenuRef = useRef(null);
+  const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!sessionMenuOpen) return undefined;
+    const onPointerDown = (event) => {
+      if (!sessionMenuRef.current?.contains(event.target)) setSessionMenuOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setSessionMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [sessionMenuOpen]);
   const saveStatusClearRef = useRef(null);
 
   const markSaved = useCallback(() => {
@@ -990,7 +1007,13 @@ function TeacherDashboardInner() {
     setAddCardOpen(false);
     setViewOpen(false);
     setClearFixedArmed(false);
-    setSettingsSection(target === 'session' ? 'records' : 'class');
+    if (target === 'session') {
+      setSettingsOpen(false);
+      setSessionMenuOpen(true);
+      window.requestAnimationFrame(() => flashHelpTarget(target));
+      return;
+    }
+    setSettingsSection('class');
     setSettingsOpen(true);
     window.requestAnimationFrame(() => {
       flashHelpTarget(target);
@@ -3246,7 +3269,7 @@ function TeacherDashboardInner() {
     ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
     : '';
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
-  const settingsTitle = settingsSection === 'class' ? 'Manage the class' : settingsSection === 'records' ? 'Review' : 'Settings';
+  const settingsTitle = settingsSection === 'class' ? 'Manage room' : settingsSection === 'records' ? 'Reports' : 'Settings';
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -3392,6 +3415,62 @@ function TeacherDashboardInner() {
               </button>
             </HintWrap>
             <div ref={tourHeaderToolsRef} className="flex items-center gap-1.5">
+            <div ref={sessionMenuRef} className="relative">
+              <HintWrap hint="Save or load this lesson" prefer="below" suppressed={sessionMenuOpen}>
+                <button
+                  type="button"
+                  data-help-target="session"
+                  onClick={() => setSessionMenuOpen((open) => !open)}
+                  aria-expanded={sessionMenuOpen}
+                  data-active={sessionMenuOpen ? 'true' : 'false'}
+                  className={`iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'session' ? ' is-help-flash' : ''}`}
+                  aria-label="Save or load session"
+                >
+                  <span className="iboard-header-icon iboard-header-icon--save" aria-hidden="true" />
+                </button>
+              </HintWrap>
+              {sessionMenuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-1.5 flex w-56 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                  <HintWrap hint="Download this lesson to a file you can open again later" prefer="side" className="w-full">
+                    <button
+                      type="button"
+                      disabled={sessionBusy}
+                      onClick={() => {
+                        setSessionMenuOpen(false);
+                        void saveSessionFile();
+                      }}
+                      className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                    >
+                      {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
+                    </button>
+                  </HintWrap>
+                  <HintWrap hint="Open a lesson you saved earlier" prefer="side" className="w-full">
+                    <button
+                      type="button"
+                      disabled={sessionBusy}
+                      onClick={() => {
+                        setSessionMenuOpen(false);
+                        void openSessionFilePicker();
+                      }}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      {sessionBusy ? 'Loading…' : 'Load session'}
+                    </button>
+                  </HintWrap>
+                </div>
+              )}
+            </div>
+            <HintWrap hint="Snapshot everyone’s writing now" prefer="below">
+              <button
+                type="button"
+                onClick={quickSnapshotWriting}
+                disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
+                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                aria-label="Snapshot everyone’s writing now"
+              >
+                <span className="iboard-header-icon iboard-header-icon--camera" aria-hidden="true" />
+              </button>
+            </HintWrap>
             <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
               <button
                 type="button"
@@ -3402,17 +3481,6 @@ function TeacherDashboardInner() {
                 aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
                 <span className="iboard-header-icon iboard-header-icon--fullscreen" aria-hidden="true" />
-              </button>
-            </HintWrap>
-            <HintWrap hint="Snapshot everyone’s writing now" prefer="below">
-              <button
-                type="button"
-                onClick={quickSnapshotWriting}
-                disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
-                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
-                aria-label="Snapshot everyone’s writing now"
-              >
-                <span className="iboard-header-icon iboard-header-icon--camera" aria-hidden="true" />
               </button>
             </HintWrap>
             <TeacherHelpButton open={helpOpen} onClick={openHelpDock} buttonRef={helpButtonRef} />
@@ -3703,7 +3771,7 @@ function TeacherDashboardInner() {
                 aria-label="Share an image, PDF or text"
               >
                 <span className="iboard-arr-btn__icon iboard-arr-btn__icon--share" aria-hidden="true" />
-                <span className="iboard-arr-label">Share</span>
+                <span className="iboard-arr-label">Share resources</span>
               </button>
             </HintWrap>
           </div>
@@ -3732,7 +3800,7 @@ function TeacherDashboardInner() {
             })}
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
-            <div className="iboard-arr-rail__board" aria-label="Manage the class">
+            <div className="iboard-arr-rail__board" aria-label="Manage room">
               <HintWrap hint="Timer, freeze board, breakouts, word target" prefer="right" suppressed={settingsOpen && settingsSection === 'class'}>
                 <button
                   ref={classButtonRef}
@@ -3741,7 +3809,7 @@ function TeacherDashboardInner() {
                   aria-expanded={settingsOpen && settingsSection === 'class'}
                   data-active={(settingsOpen && settingsSection === 'class') || timerKeepsRailLit(room?.timer) ? 'true' : 'false'}
                   className="iboard-arr-btn"
-                  aria-label="Manage the class"
+                  aria-label="Manage room"
                 >
                   {room?.timer?.active ? (
                     <>
@@ -3751,12 +3819,12 @@ function TeacherDashboardInner() {
                   ) : (
                     <>
                       <span className="iboard-arr-btn__icon iboard-arr-btn__icon--manage" aria-hidden="true" />
-                      <span className="iboard-arr-label">Manage</span>
+                      <span className="iboard-arr-label">Manage room</span>
                     </>
                   )}
                 </button>
               </HintWrap>
-              <HintWrap hint="Lesson records, insights, save session" prefer="right" suppressed={settingsOpen && settingsSection === 'records'}>
+              <HintWrap hint="Lesson records, class insights, participant list" prefer="right" suppressed={settingsOpen && settingsSection === 'records'}>
                 <button
                   ref={recordsButtonRef}
                   type="button"
@@ -3764,10 +3832,10 @@ function TeacherDashboardInner() {
                   aria-expanded={settingsOpen && settingsSection === 'records'}
                   data-active={settingsOpen && settingsSection === 'records' ? 'true' : 'false'}
                   className="iboard-arr-btn"
-                  aria-label="Review"
+                  aria-label="View reports"
                 >
                   <span className="iboard-arr-btn__icon iboard-arr-btn__icon--review" aria-hidden="true" />
-                  <span className="iboard-arr-label">Review</span>
+                  <span className="iboard-arr-label">View reports</span>
                 </button>
               </HintWrap>
             </div>
@@ -5328,33 +5396,6 @@ function TeacherDashboardInner() {
             </div>
           </div>
           <div className="iboard-room-settings__body scrollbar-thin">
-            {settingsSection === 'records' && (
-              <div className={`iboard-room-settings__hero${helpFlash === 'session' ? ' is-help-flash' : ''}`} data-help-target="session">
-                <HintWrap hint="Download this lesson to a file you can open again later" className="w-full">
-                  <button
-                    type="button"
-                    disabled={sessionBusy}
-                    onClick={saveSessionFile}
-                    className="iboard-room-settings__primary"
-                  >
-                    {sessionBusy ? 'Saving session…' : 'Save session (.iboard)'}
-                  </button>
-                </HintWrap>
-                <div className="iboard-room-settings__row">
-                  <HintWrap hint="Open a lesson you saved earlier" className="min-w-0 flex-1">
-                    <button
-                      type="button"
-                      disabled={sessionBusy}
-                      onClick={openSessionFilePicker}
-                      className="iboard-room-settings__secondary"
-                    >
-                      {sessionBusy ? 'Loading…' : 'Load session'}
-                    </button>
-                  </HintWrap>
-                </div>
-              </div>
-            )}
-
             {settingsSection === 'class' && (
               <div className="iboard-room-settings__hero">
                 <div className="iboard-room-settings__row">

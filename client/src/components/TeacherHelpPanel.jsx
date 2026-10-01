@@ -34,7 +34,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'freeze',
     title: 'Freeze the board',
-    body: 'Open Manage, freeze the board to stop all student board writing. The class timer is in Manage too.',
+    body: 'Open Manage room, freeze the board to stop all student board writing. The class timer is in Manage room too.',
     action: 'freeze',
   },
   {
@@ -45,25 +45,25 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'session',
     title: 'Save / load the session',
-    body: 'Open Review to save an .iboard file to keep the lesson, or load one to restore it later.',
+    body: 'Click the save icon at the top right to save an .iboard file of the lesson, or load one to restore it later.',
     action: 'session',
   },
   {
     id: 'records',
     title: 'Lesson records',
-    body: 'Use the camera in the header to snapshot everyone’s writing. Open Review → Lesson records to browse class snapshots and portfolios.',
+    body: 'Use the camera in the header to snapshot everyone’s writing. Open View reports → Lesson records to browse class snapshots and portfolios.',
     action: 'records',
   },
   {
     id: 'ai',
     title: 'AI Feedback',
-    body: 'Open Review, Lesson records, AI Feedback to prepare anonymised writing for an AI tool, then paste and distribute feedback to students.',
+    body: 'Open View reports, Lesson records, AI Feedback to prepare anonymised writing for an AI tool, then paste and distribute feedback to students.',
     action: 'ai',
   },
   {
     id: 'breakouts',
     title: 'Breakout rooms',
-    body: 'Open Manage, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
+    body: 'Open Manage room, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
     action: 'breakouts',
   },
   {
