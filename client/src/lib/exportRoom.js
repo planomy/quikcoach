@@ -293,12 +293,12 @@ function downloadViaAnchor(filename, text, mime) {
  * (Chrome/Edge/Opera on desktop); falls back to a normal browser download.
  * Returns { ok, method: 'picker' | 'download' | 'cancelled' }.
  */
-export async function downloadTextFile(filename, text, mime = 'text/plain;charset=utf-8') {
+export async function downloadTextFile(filename, text, mime = 'text/plain;charset=utf-8', { picker = true } = {}) {
   const name = String(filename || 'download.txt');
   const body = String(text ?? '');
   const blob = new Blob([body], { type: mime });
 
-  if (typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function') {
+  if (picker && typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function') {
     try {
       const handle = await window.showSaveFilePicker({
         suggestedName: name,

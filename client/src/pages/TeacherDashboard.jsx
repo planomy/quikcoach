@@ -384,6 +384,7 @@ function TeacherDashboardInner() {
   const [socketConnected, setSocketConnected] = useState(true);
   const [newClassConfirmOpen, setNewClassConfirmOpen] = useState(false);
   const [newClassBusy, setNewClassBusy] = useState(false);
+  const [newClassStep, setNewClassStep] = useState('');
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [lessonBegun, setLessonBegun] = useState(false);
   const [pickAnchor, setPickAnchor] = useState(null);
@@ -2529,6 +2530,8 @@ function TeacherDashboardInner() {
       fromAuto = false,
       label = '',
       successToast = 'Session saved — keep the .iboard file to reopen later',
+      silent = false,
+      timeoutMs,
     } = options;
     if (!fromAuto) closeSettings();
     if (!joinedRef.current || codeInput.length !== 4) {
@@ -2538,11 +2541,11 @@ function TeacherDashboardInner() {
     setSessionBusy(true);
     setError('');
     try {
-      const ack = await emitAck(socket, 'teacher:session-export');
+      const ack = await emitAck(socket, 'teacher:session-export', {}, timeoutMs);
       if (!ack?.ok || !ack.pack) {
         throw new Error(ack?.error || 'Could not save session');
       }
-      const result = await downloadSessionPack(ack.pack, codeInput, label);
+      const result = await downloadSessionPack(ack.pack, codeInput, label, { picker: !silent });
       if (result.method === 'cancelled') {
         setCopyToast(fromAuto ? 'Save cancelled — drafting evidence still live until you save' : 'Save cancelled');
         setTimeout(() => setCopyToast(''), 3500);
@@ -2969,6 +2972,7 @@ function TeacherDashboardInner() {
   async function startNewClass() {
     if (newClassBusy) return;
     setNewClassBusy(true);
+    setNewClassStep('Saving a backup…');
     setError('');
     try {
       if (room?.draftTrail?.active && socket) {
@@ -2985,14 +2989,18 @@ function TeacherDashboardInner() {
         fromAuto: true,
         label: 'before-reset',
         successToast: 'Session saved before reset — keep the .iboard file',
+        silent: true,
+        timeoutMs: 30_000,
       });
     } catch {
       // Still reset; teacher can recover from an earlier save if this one failed.
     }
-    socket.emit('teacher:clear-cards', {}, (ack) => {
+    setNewClassStep('Clearing the board…');
+    socket.timeout(20_000).emit('teacher:clear-cards', {}, (err, ack) => {
       setNewClassBusy(false);
-      if (!ack?.ok) {
-        setError(ack?.error || 'Could not clear cards');
+      setNewClassStep('');
+      if (err || !ack?.ok) {
+        setError(err ? 'The server didn’t answer — check the connection and try Reset again.' : ack?.error || 'Could not clear cards');
         return;
       }
       setStudents([]);
@@ -5148,7 +5156,7 @@ function TeacherDashboardInner() {
                 onClick={startNewClass}
                 className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white shadow-sm hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
               >
-                {newClassBusy ? 'Resetting…' : 'Reset board'}
+                {newClassBusy ? newClassStep || 'Resetting…' : 'Reset board'}
               </button>
             </div>
           </div>

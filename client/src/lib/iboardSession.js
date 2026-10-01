@@ -13,10 +13,10 @@ export function sessionFilename(roomCode, label = '') {
   return `iBoard-${code}-${stamp}.${IBOARD_SESSION_EXT}`;
 }
 
-export async function downloadSessionPack(pack, roomCode, label = '') {
+export async function downloadSessionPack(pack, roomCode, label = '', { picker = true } = {}) {
   const name = sessionFilename(roomCode, label);
   const body = JSON.stringify(pack, null, 2);
-  return downloadTextFile(name, body, IBOARD_SESSION_MIME);
+  return downloadTextFile(name, body, IBOARD_SESSION_MIME, { picker });
 }
 
 export function parseSessionFileText(text) {
@@ -57,13 +57,13 @@ export function readSessionFile(file) {
   });
 }
 
-export function emitAck(socket, event, payload = {}) {
+export function emitAck(socket, event, payload = {}, timeoutMs = 120_000) {
   return new Promise((resolve, reject) => {
     if (!socket) {
       reject(new Error('Not connected'));
       return;
     }
-    socket.timeout(120_000).emit(event, payload, (err, ack) => {
+    socket.timeout(timeoutMs).emit(event, payload, (err, ack) => {
       if (err) {
         reject(new Error('Timed out — try a smaller session or check your connection'));
         return;
