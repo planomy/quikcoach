@@ -505,7 +505,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
     return (
       <>
         {collapseButton}
-        <StudentVerbalRespond socket={socket} compact={compact} />
+        <StudentVerbalRespond socket={socket} compact={compact} liveActivity={activity} />
       </>
     );
   }
@@ -540,7 +540,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
       )}
       {collapseButton}
       {showPermanentQuickAnswer ? (
-        <StudentVerbalRespond socket={socket} compact={compact} className={activity ? (compact ? 'mb-2' : 'mb-3') : ''} />
+        <StudentVerbalRespond socket={socket} compact={compact} liveActivity={activity} className={activity ? (compact ? 'mb-2' : 'mb-3') : ''} />
       ) : null}
       {arrival && !quietAlerts && (
         <button

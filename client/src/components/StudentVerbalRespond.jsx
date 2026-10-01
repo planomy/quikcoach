@@ -1,5 +1,5 @@
 import { CloseButton } from './PanelActions.jsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
 
 const CONFIDENCE_OPTIONS = [
@@ -8,22 +8,58 @@ const CONFIDENCE_OPTIONS = [
   ['guessed', 'I guessed'],
 ];
 
+const BLOCKED_MESSAGE = 'Answer the question on your screen first';
+
+/** Open choice/rating/set questions must be answered on their own card; the server refuses + Answer. */
+export function blocksQuickAnswer(activity) {
+  return !!activity?.id && activity.type !== 'short' && !activity.locked;
+}
+
+function useLiveActivity(socket, liveActivity) {
+  const [tracked, setTracked] = useState(null);
+  const external = liveActivity !== undefined;
+
+  useEffect(() => {
+    if (external || !socket) return undefined;
+    const onLive = (payload) => setTracked(payload?.activity || null);
+    const onRealert = (payload) => {
+      if (payload?.activity) setTracked(payload.activity);
+    };
+    socket.on('live:activity', onLive);
+    socket.on('live:student', onLive);
+    socket.on('live:realert', onRealert);
+    return () => {
+      socket.off('live:activity', onLive);
+      socket.off('live:student', onLive);
+      socket.off('live:realert', onRealert);
+    };
+  }, [socket, external]);
+
+  return external ? liveActivity : tracked;
+}
+
 /**
  * Always-on Respond control — answer a verbal whiteboard question without a teacher-typed prompt.
  * variant="chip" = compact header control that expands full-width under the Inbox title.
+ * Pass `liveActivity` when the parent already tracks the live question; otherwise it listens itself.
  */
-export default function StudentVerbalRespond({ socket, compact = false, className = '', variant = 'card' }) {
+export default function StudentVerbalRespond({ socket, compact = false, className = '', variant = 'card', liveActivity }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [confidence, setConfidence] = useState('');
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState('');
   const chip = variant === 'chip';
+  const blocked = blocksQuickAnswer(useLiveActivity(socket, liveActivity));
 
   function submit(event) {
     event?.preventDefault?.();
     const text = draft.trim();
     if (!text || sending || !socket) return;
+    if (blocked) {
+      setMessage(BLOCKED_MESSAGE);
+      return;
+    }
     setSending(true);
     setMessage('');
     socket.emit('student:verbal-response', { value: text, confidence }, (ack) => {
@@ -43,15 +79,16 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
   if (!open) {
     if (chip) {
       return (
-        <HintWrap hint="Answer a question asked aloud" prefer="below">
+        <HintWrap hint={blocked ? BLOCKED_MESSAGE : 'Answer a question asked aloud'} prefer="below">
           <button
             type="button"
+            disabled={blocked}
             onClick={() => {
               setMessage('');
               setOpen(true);
             }}
-            className={`iboard-inbox-answer-chip inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-[11px] font-black tracking-wide transition ${className}`}
-            aria-label="Answer a question asked aloud"
+            className={`iboard-inbox-answer-chip inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-[11px] font-black tracking-wide transition disabled:pointer-events-none disabled:opacity-40 ${className}`}
+            aria-label={blocked ? `Answer a question asked aloud. ${BLOCKED_MESSAGE}.` : 'Answer a question asked aloud'}
           >
             <span className="grid h-5 w-5 place-items-center rounded-lg bg-[#5a5fc3] text-[14px] leading-none text-white" aria-hidden="true">
               +
@@ -64,15 +101,16 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
     return (
       <button
         type="button"
+        disabled={blocked}
         onClick={() => {
           setMessage('');
           setOpen(true);
         }}
-        className={`flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 text-left transition hover:border-indigo-300 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/50 ${compact ? 'p-3' : 'p-3.5'} ${className}`}
-        aria-label="Quick answer"
+        className={`flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 text-left transition hover:border-indigo-300 hover:bg-indigo-50 disabled:pointer-events-none disabled:opacity-40 dark:border-indigo-800 dark:bg-indigo-950/30 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/50 ${compact ? 'p-3' : 'p-3.5'} ${className}`}
+        aria-label={blocked ? `Quick answer. ${BLOCKED_MESSAGE}.` : 'Quick answer'}
       >
         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {message === 'Sent' ? 'Answer sent' : 'Quick answer'}
+          {blocked ? BLOCKED_MESSAGE : message === 'Sent' ? 'Answer sent' : 'Quick answer'}
         </span>
         <span
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-indigo-200 bg-white text-lg font-black text-indigo-700 shadow-sm dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200"
@@ -126,8 +164,8 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
             </button>
           ))}
         </div>
-        {message && message !== 'Sent' ? (
-          <p className="text-xs font-semibold text-red-600 dark:text-red-400">{message}</p>
+        {blocked || (message && message !== 'Sent') ? (
+          <p className="text-xs font-semibold text-red-600 dark:text-red-400">{blocked ? BLOCKED_MESSAGE : message}</p>
         ) : null}
         <div className="flex justify-end gap-2">
           <button
@@ -140,7 +178,7 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
           </button>
           <button
             type="submit"
-            disabled={sending || !draft.trim()}
+            disabled={sending || blocked || !draft.trim()}
             className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-black text-white hover:bg-[#4f54b0] disabled:opacity-40"
           >
             {sending ? 'Sending…' : 'Send'}

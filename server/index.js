@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
+import { VERBAL_PROMPT, decideVerbalResponseAction } from './verbalResponse.js';
 import { buildSessionPack, importSessionPack } from './sessionPack.js';
 import { trailStatus, setTrailRecording, recordTrailText, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail, configureTrailPersistence, persistTrails } from './draftTrail.js';
 import {
@@ -1494,27 +1495,23 @@ io.on('connection', (socket) => {
         return;
       }
 
-      const isVerbal = (activity) =>
-        activity?.type === 'short' && activity?.prompt === 'Verbal question';
-
       let activity = queries.getLiveActivity(db, code);
-      const joinExistingVerbal = activity && isVerbal(activity) && !activity.locked;
-      if (joinExistingVerbal) {
-        const existing = queries.listLiveResponses(db, code)
-          .find((row) => Number(row.studentId) === sid && row.activityId === activity.id);
-        // Already answered this verbal round → start the next aloud check without teacher Clear.
-        if (existing) {
-          activity = null;
-        }
-      } else {
-        activity = null;
+      const decision = decideVerbalResponseAction({
+        activity,
+        now: Date.now(),
+        eligible: !!activityForStudent(activity, sid),
+        isAsker: !!activity && sourceStudentIdForActivity(activity) === sid,
+      });
+      if (decision.action === 'refuse') {
+        cb?.({ ok: false, error: decision.error });
+        return;
       }
 
-      if (!activity) {
+      if (decision.action === 'launch') {
         activity = queries.launchLiveActivity(db, code, {
           id: randomUUID(),
           type: 'short',
-          prompt: 'Verbal question',
+          prompt: VERBAL_PROMPT,
           options: [],
           questions: [],
           correctAnswer: '',
