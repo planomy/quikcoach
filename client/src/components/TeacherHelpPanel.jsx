@@ -5,20 +5,20 @@ import { CloseButton } from './PanelActions.jsx';
 export const TEACHER_HELP_ITEMS = [
   {
     id: 'share',
-    title: 'Share a PDF, image, or note',
-    body: 'Press Share (+) on the left rail to send an image, PDF or text to student inboxes.',
+    title: 'Share a PDF, image, note or question set',
+    body: 'Press Share (+) on the left rail to send an image, PDF or text to student inboxes, or open Question sets for premade curriculum questions.',
     action: 'share',
   },
   {
     id: 'ask',
     title: 'Ask the class',
-    body: 'Open Ask and pick a Quick check (yes/no, 1–5, A–D, short answer) or write your own. Select from premade curriculum question sets or make your own.',
+    body: 'Open Ask and pick a Quick check (yes/no, 1–5, A–D, short answer) or write your own.',
     action: 'ask',
   },
   {
     id: 'responses',
     title: 'Read Responses',
-    body: "Open Responses to watch live answers, remind anyone who hasn't responded, project responses then tap End question when finished.",
+    body: "Open Ask, then Responses, to watch live answers, remind anyone who hasn't responded, project responses then tap End question when finished.",
     action: 'responses',
   },
   {
@@ -34,7 +34,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'freeze',
     title: 'Freeze the board',
-    body: 'Open Run, freeze the board to stop all student board writing.',
+    body: 'Open Run, freeze the board to stop all student board writing. The class timer is in Run too.',
     action: 'freeze',
   },
   {

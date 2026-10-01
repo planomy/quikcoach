@@ -49,7 +49,8 @@ function readSavedAskTab() {
 const PANEL_TAB_LABELS = {
   ask: { title: 'Ask the class', hint: 'Send a question to your class' },
   respond: { title: 'Reply', hint: 'Questions waiting from students' },
-  responses: { title: 'Responses', hint: 'Answers coming back from your live question' },
+  responses: { title: 'Ask the class', hint: 'Answers coming back from your live question' },
+  sets: { title: 'Question sets', hint: 'Ask a set live, or send it to student inboxes' },
 };
 
 function PanelTabButton({ active, label, badge, onClick }) {
@@ -285,6 +286,11 @@ export default function LiveResponseTeacher({
     if (!activity && activeView === 'live') setActiveView(readSavedAskTab());
   }, [activity, activeView]);
 
+  // Sets live under Share in the teacher console, so Ask falls back to Quick.
+  useEffect(() => {
+    if (effectivePanelTab === 'ask' && activeView === 'prepared') setActiveView('quik');
+  }, [effectivePanelTab, activeView]);
+
   useEffect(() => {
     if (activeView === 'build' || activeView === 'prepared' || activeView === 'quik') {
       try { localStorage.setItem('iboard-ask-tab', activeView); } catch { /* ignore */ }
@@ -429,8 +435,9 @@ export default function LiveResponseTeacher({
       const list = Array.isArray(existing) ? existing : [];
       localStorage.setItem(CUSTOM_SETS_KEY, JSON.stringify([next, ...list].slice(0, 40)));
     } catch { /* ignore */ }
-    setMessage('Saved as a set on this browser. Open Sets to find it.');
-    setActiveView('prepared');
+    setMessage('Saved as a set on this browser. Find it under Share → Question sets.');
+    if (usingPanelTabs) switchPanelTab('sets');
+    else setActiveView('prepared');
   }
 
   function emitSetAction(event, payload) {
@@ -784,14 +791,21 @@ export default function LiveResponseTeacher({
       {[
         ['quik', 'Quick'],
         ['build', queue.length ? `Write one · ${queue.length}` : 'Write one'],
-        ['prepared', 'Sets'],
+        ['responses', activity ? `Responses · ${responses.length}` : 'Responses'],
       ].map(([view, label]) => (
         <button
           key={view}
           type="button"
-          onClick={() => setActiveView(view)}
+          onClick={() => {
+            if (view === 'responses') {
+              switchPanelTab('responses');
+              return;
+            }
+            if (effectivePanelTab !== 'ask') switchPanelTab('ask');
+            setActiveView(view);
+          }}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
-            activeView === view
+            (view === 'responses' ? effectivePanelTab === 'responses' : effectivePanelTab === 'ask' && activeView === view)
               ? 'relative z-[1] -mb-px border border-b-[#f3f2f9] border-[#d5d4e4] bg-[#5a5fc3] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
               : 'border border-[#d5d4e4] bg-white text-[#52525c] shadow-sm hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
           }`}
@@ -802,9 +816,12 @@ export default function LiveResponseTeacher({
       {featuredWall.length > 0 && (
         <button
           type="button"
-          onClick={() => setActiveView('featured')}
+          onClick={() => {
+            if (effectivePanelTab !== 'ask') switchPanelTab('ask');
+            setActiveView('featured');
+          }}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
-            activeView === 'featured'
+            effectivePanelTab === 'ask' && activeView === 'featured'
               ? 'relative z-[1] -mb-px border border-b-[#f3f2f9] border-[#d5d4e4] bg-[#5a5fc3] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
               : 'border border-[#d5d4e4] bg-white text-[#52525c] shadow-sm hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40'
           }`}
@@ -895,8 +912,8 @@ export default function LiveResponseTeacher({
       {!overlay && !usingPanelTabs && awarenessStrip}
 
       {panelTabNav}
+      {usingPanelTabs && (effectivePanelTab === 'ask' || effectivePanelTab === 'responses') && askSubNav}
       {usingPanelTabs && effectivePanelTab === 'responses' && awarenessStrip}
-      {usingPanelTabs && effectivePanelTab === 'ask' && askSubNav}
 
       {!usingPanelTabs && (
       <nav aria-label="Ask pages" className="flex shrink-0 items-end gap-1 border-b border-slate-200 bg-slate-100/80 px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
@@ -990,6 +1007,7 @@ export default function LiveResponseTeacher({
       <div
         className={`min-h-0 flex-1 ${
           (activeView === 'prepared' && (!usingPanelTabs || effectivePanelTab === 'ask'))
+          || effectivePanelTab === 'sets'
           || (usingPanelTabs && effectivePanelTab === 'responses')
             ? 'overflow-hidden'
             : 'overflow-y-auto'
@@ -1213,7 +1231,7 @@ export default function LiveResponseTeacher({
 
         
 
-        {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'prepared' && (
+        {(effectivePanelTab === 'sets' || ((!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'prepared')) && (
           <SavedSetsPanel
             panel="sets"
             queue={queue}

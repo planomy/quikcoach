@@ -1304,6 +1304,16 @@ html.dark .iboard-tour__close:hover {
   transition: filter 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.iboard-arr-btn--cog {
+  width: 2.5rem;
+  padding: 0.4rem;
+}
+
+.iboard-arr-btn--cog .iboard-arr-btn__glyph {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
 .iboard-arr-btn__glyph {
   display: block;
   width: 1.75rem;

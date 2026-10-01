@@ -200,8 +200,7 @@ function timerKeepsRailLit(timer) {
 }
 
 const TEACHER_TOOLS_TABS = [
-  { id: 'ask', label: 'Ask the class', rail: 'Ask', hint: 'Ask the class a question' },
-  { id: 'responses', label: 'Responses', rail: 'Responses', hint: 'See class responses' },
+  { id: 'ask', label: 'Ask the class', rail: 'Ask', hint: 'Ask the class a question and see their answers' },
 ];
 
 function csvCell(value) {
@@ -412,8 +411,6 @@ function TeacherDashboardInner() {
   const classButtonRef = useRef(null);
   const recordsButtonRef = useRef(null);
   const settingsPanelRef = useRef(null);
-  const timerButtonRef = useRef(null);
-  const timerPanelRef = useRef(null);
   const viewPanelRef = useRef(null);
   const helpButtonRef = useRef(null);
   const helpPanelRef = useRef(null);
@@ -452,7 +449,6 @@ function TeacherDashboardInner() {
   const [addCardDragOver, setAddCardDragOver] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState('settings');
-  const [timerOpen, setTimerOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [overviewColsPeek, setOverviewColsPeek] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -909,13 +905,7 @@ function TeacherDashboardInner() {
   }
 
   function openTimerDock() {
-    closeSettings();
-    setToolsPanelOpen(false);
-    setToolsHighlightStudentId(null);
-    setAddCardOpen(false);
-    setViewOpen(false);
-    setHelpOpen(false);
-    setTimerOpen((open) => !open);
+    toggleSettings('class');
   }
 
   function openViewDock() {
@@ -923,7 +913,6 @@ function TeacherDashboardInner() {
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
-    setTimerOpen(false);
     setHelpOpen(false);
     setViewOpen((open) => !open);
   }
@@ -933,7 +922,6 @@ function TeacherDashboardInner() {
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
-    setTimerOpen(false);
     setViewOpen(false);
     setHelpOpen((open) => !open);
   }
@@ -954,7 +942,6 @@ function TeacherDashboardInner() {
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
-    setTimerOpen(false);
     setViewOpen(false);
     setClearFixedArmed(false);
     setSettingsSection(target === 'session' ? 'records' : 'class');
@@ -992,7 +979,7 @@ function TeacherDashboardInner() {
     if (action === 'responses') {
       setHelpOpen(false);
       openTeacherTools('responses');
-      window.requestAnimationFrame(() => flashHelpTarget('responses'));
+      window.requestAnimationFrame(() => flashHelpTarget('ask'));
       return;
     }
     if (action === 'freeze') {
@@ -1809,7 +1796,7 @@ function TeacherDashboardInner() {
   }, [helpOpen]);
 
   useEffect(() => {
-    if (!toolsPanelOpen && !settingsOpen && !timerOpen && !viewOpen && !helpOpen) return undefined;
+    if (!toolsPanelOpen && !settingsOpen && !viewOpen && !helpOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
       const target = event.target;
@@ -1831,10 +1818,6 @@ function TeacherDashboardInner() {
         // Native <select> menus are often outside the React tree; don't close while interacting.
         if (target?.closest?.('select') || document.activeElement?.tagName === 'SELECT') return;
       }
-      if (timerOpen) {
-        if (timerButtonRef.current?.contains(target)) return;
-        if (timerPanelRef.current?.contains(target)) return;
-      }
       if (viewOpen) {
         if (viewButtonRef.current?.contains(target)) return;
         if (viewPanelRef.current?.contains(target)) return;
@@ -1848,7 +1831,6 @@ function TeacherDashboardInner() {
         setToolsHighlightStudentId(null);
       }
       if (settingsOpen) closeSettings();
-      if (timerOpen) setTimerOpen(false);
       if (viewOpen) {
         setViewOpen(false);
         setOverviewColsPeek(false);
@@ -1863,7 +1845,6 @@ function TeacherDashboardInner() {
         setToolsHighlightStudentId(null);
       }
       if (settingsOpen) closeSettings();
-      if (timerOpen) setTimerOpen(false);
       if (viewOpen) {
         setViewOpen(false);
         setOverviewColsPeek(false);
@@ -1877,7 +1858,7 @@ function TeacherDashboardInner() {
       document.removeEventListener('pointerdown', closeHeaderPanelsIfOutside);
       document.removeEventListener('keydown', closeHeaderPanelsOnEscape);
     };
-  }, [toolsPanelOpen, settingsOpen, timerOpen, viewOpen, helpOpen]);
+  }, [toolsPanelOpen, settingsOpen, viewOpen, helpOpen]);
 
   useEffect(() => {
     if (!addCardOpen) return undefined;
@@ -1895,25 +1876,24 @@ function TeacherDashboardInner() {
   }, [addCardOpen]);
 
   useLayoutEffect(() => {
-    if (!toolsPanelOpen && !settingsOpen && !timerOpen && !viewOpen) return undefined;
+    if (!toolsPanelOpen && !settingsOpen && !viewOpen) return undefined;
 
     function currentDockAnchor() {
       if (viewOpen) return viewButtonRef.current;
-      if (timerOpen) return timerButtonRef.current;
       if (settingsOpen) {
         if (settingsSection === 'class') return classButtonRef.current;
         if (settingsSection === 'records') return recordsButtonRef.current;
         return settingsButtonRef.current;
       }
       if (toolsPanelOpen) {
-        return teacherToolsNavRef.current?.querySelector('.iboard-arr-rail__tools [data-active="true"]');
+        const group = toolsTab === 'sets' ? '.iboard-arr-rail__add' : '.iboard-arr-rail__tools';
+        return teacherToolsNavRef.current?.querySelector(`${group} [data-active="true"]`);
       }
       return null;
     }
 
     function currentDockPanel() {
       if (viewOpen) return viewPanelRef.current;
-      if (timerOpen) return timerPanelRef.current;
       if (settingsOpen) return settingsPanelRef.current;
       if (toolsPanelOpen) return teacherToolsPanelRef.current;
       return null;
@@ -1978,7 +1958,7 @@ function TeacherDashboardInner() {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', alignDockToRailButton);
     };
-  }, [toolsPanelOpen, settingsOpen, settingsSection, timerOpen, viewOpen, toolsTab]);
+  }, [toolsPanelOpen, settingsOpen, settingsSection, viewOpen, toolsTab]);
 
   useEffect(() => {
     if (!handQuestionTarget) return;
@@ -2228,7 +2208,6 @@ function TeacherDashboardInner() {
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
-    setTimerOpen(false);
     setViewOpen(false);
     setHelpOpen(false);
     setClearFixedArmed(false);
@@ -2239,7 +2218,6 @@ function TeacherDashboardInner() {
 
   function openAddCard({ forceOpen = false } = {}) {
     closeSettings();
-    setTimerOpen(false);
     setViewOpen(false);
     setHelpOpen(false);
     setToolsPanelOpen(false);
@@ -3092,7 +3070,6 @@ function TeacherDashboardInner() {
   function openTeacherTools(tab = 'ask', { highlightStudentId = null } = {}) {
     closeSettings();
     setAddCardOpen(false);
-    setTimerOpen(false);
     setViewOpen(false);
     setHelpOpen(false);
     setToolsTab(tab);
@@ -3184,7 +3161,7 @@ function TeacherDashboardInner() {
   const inboxSummary = messageWaitCount > 0
     ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
     : '';
-  const headerDockOpen = toolsPanelOpen || settingsOpen || timerOpen || viewOpen || helpOpen;
+  const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
   const settingsTitle = settingsSection === 'class' ? 'Run the class' : settingsSection === 'records' ? 'Review' : 'Settings';
 
   return (
@@ -3584,7 +3561,7 @@ function TeacherDashboardInner() {
           className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
-          aria-label={`${TEACHER_TOOLS_TABS.find((tab) => tab.id === toolsTab)?.label || 'Teacher tools'} panel`}
+          aria-label={toolsTab === 'sets' ? 'Question sets panel' : 'Ask the class panel'}
         >
           <LiveResponseTeacher
             socket={socket}
@@ -3620,14 +3597,14 @@ function TeacherDashboardInner() {
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Share with class">
-            <HintWrap hint="Send resources to students" prefer="right" suppressed={addCardOpen}>
+            <HintWrap hint="Send resources to students" prefer="right" suppressed={addCardOpen || (toolsPanelOpen && toolsTab === 'sets')}>
               <button
                 type="button"
                 data-iboard-add-card-trigger="true"
                 data-help-target="share"
                 onClick={() => openAddCard()}
                 aria-expanded={addCardOpen}
-                data-active={addCardOpen ? 'true' : 'false'}
+                data-active={addCardOpen || (toolsPanelOpen && toolsTab === 'sets') ? 'true' : 'false'}
                 className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
                 aria-label="Share an image, PDF or text"
               >
@@ -3640,7 +3617,7 @@ function TeacherDashboardInner() {
           </div>
           <div ref={tourEngageRef} className="iboard-arr-rail__tools">
             {TEACHER_TOOLS_TABS.map((tab) => {
-              const active = toolsPanelOpen && toolsTab === tab.id;
+              const active = toolsPanelOpen && (toolsTab === tab.id || (tab.id === 'ask' && toolsTab === 'responses'));
               return (
                 <HintWrap key={tab.id} hint={tab.hint} prefer="right" suppressed={active}>
                   <button
@@ -3663,42 +3640,35 @@ function TeacherDashboardInner() {
             })}
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
-            <div className="iboard-arr-rail__board" aria-label="Timer and class controls">
-              <HintWrap hint="Class timer" prefer="right" suppressed={timerOpen}>
-                <button
-                  ref={timerButtonRef}
-                  type="button"
-                  onClick={openTimerDock}
-                  aria-expanded={timerOpen}
-                  data-active={timerOpen || timerKeepsRailLit(room?.timer) ? 'true' : 'false'}
-                  className="iboard-arr-btn"
-                  aria-label="Timer"
-                >
-                  <span className="iboard-arr-btn__icon iboard-arr-btn__icon--timer" aria-hidden="true" />
-                  <span className="iboard-arr-label"><RailTimerLabel timer={room?.timer} /></span>
-                </button>
-              </HintWrap>
-              <HintWrap hint="Breakouts, freeze board, word target" prefer="right" suppressed={settingsOpen && settingsSection === 'class'}>
+            <div className="iboard-arr-rail__board" aria-label="Run the class">
+              <HintWrap hint="Timer, freeze board, breakouts, word target" prefer="right" suppressed={settingsOpen && settingsSection === 'class'}>
                 <button
                   ref={classButtonRef}
                   type="button"
                   onClick={() => toggleSettings('class')}
                   aria-expanded={settingsOpen && settingsSection === 'class'}
-                  data-active={settingsOpen && settingsSection === 'class' ? 'true' : 'false'}
+                  data-active={(settingsOpen && settingsSection === 'class') || timerKeepsRailLit(room?.timer) ? 'true' : 'false'}
                   className="iboard-arr-btn"
                   aria-label="Run the class"
                 >
-                  <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="9.5" cy="8" r="3.25" />
-                    <path d="M3.5 19v-1a4.5 4.5 0 0 1 4.5-4.5h3a4.5 4.5 0 0 1 4.5 4.5v1" />
-                    <path d="M15.5 4.9a3.25 3.25 0 0 1 0 6.2" />
-                    <path d="M18 13.8a4.5 4.5 0 0 1 2.5 4.2v1" />
-                  </svg>
-                  <span className="iboard-arr-label">Run</span>
+                  {room?.timer?.active ? (
+                    <>
+                      <span className="iboard-arr-btn__icon iboard-arr-btn__icon--timer" aria-hidden="true" />
+                      <span className="iboard-arr-label"><RailTimerLabel timer={room.timer} /></span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <circle cx="9.5" cy="8" r="3.25" />
+                        <path d="M3.5 19v-1a4.5 4.5 0 0 1 4.5-4.5h3a4.5 4.5 0 0 1 4.5 4.5v1" />
+                        <path d="M15.5 4.9a3.25 3.25 0 0 1 0 6.2" />
+                        <path d="M18 13.8a4.5 4.5 0 0 1 2.5 4.2v1" />
+                      </svg>
+                      <span className="iboard-arr-label">Run</span>
+                    </>
+                  )}
                 </button>
               </HintWrap>
-            </div>
-            <div className="iboard-arr-rail__foot">
               <HintWrap hint="Lesson records, insights, save session" prefer="right" suppressed={settingsOpen && settingsSection === 'records'}>
                 <button
                   ref={recordsButtonRef}
@@ -3716,18 +3686,22 @@ function TeacherDashboardInner() {
                   <span className="iboard-arr-label">Review</span>
                 </button>
               </HintWrap>
-              <HintWrap hint="Reset board, clean-up, display" prefer="right" suppressed={settingsOpen && settingsSection === 'settings'}>
+            </div>
+            <div className="iboard-arr-rail__foot">
+              <HintWrap hint="Settings" prefer="right" suppressed={settingsOpen && settingsSection === 'settings'}>
                 <button
                   ref={settingsButtonRef}
                   type="button"
                   onClick={() => toggleSettings('settings')}
                   aria-expanded={settingsOpen && settingsSection === 'settings'}
                   data-active={settingsOpen && settingsSection === 'settings' ? 'true' : 'false'}
-                  className="iboard-arr-btn"
+                  className="iboard-arr-btn iboard-arr-btn--cog"
                   aria-label="Settings"
                 >
-                  <span className="iboard-arr-btn__icon iboard-arr-btn__icon--session" aria-hidden="true" />
-                  <span className="iboard-arr-label">Settings</span>
+                  <svg className="iboard-arr-btn__glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+                  </svg>
                 </button>
               </HintWrap>
             </div>
@@ -3897,6 +3871,25 @@ function TeacherDashboardInner() {
                       {addCardBusy ? 'Sending…' : addCardFile || addCardImage ? 'Send' : 'Add card'}
                     </button>
                   </div>
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                    or
+                    <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={addCardBusy}
+                    onClick={() => openTeacherTools('sets')}
+                    className="flex w-full items-center justify-between gap-2 rounded-lg border border-[#cfcce8] bg-white px-2.5 py-2 text-left hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-950 dark:hover:bg-indigo-950/40"
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-xs font-bold text-[#5a5fc3] dark:text-indigo-300">Question sets</span>
+                      <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">Curriculum questions to prompt thinking</span>
+                    </span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[#5a5fc3]" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m9 6 6 6-6 6" />
+                    </svg>
+                  </button>
                 </form>
               </div>
             </div>
@@ -5087,99 +5080,6 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      {timerOpen && (
-        <div
-          ref={timerPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail fixed z-[60] w-[min(20rem,calc(100vw-4.75rem))]"
-          style={headerDockStyle}
-          role="dialog"
-          aria-modal="false"
-          aria-labelledby="room-timer-title"
-        >
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-            <h2 id="room-timer-title" className="text-base font-semibold text-[#3c3c45] dark:text-white">Timer</h2>
-            <CloseButton onClick={() => setTimerOpen(false)} label="Close" />
-          </div>
-          <div className="px-4 py-3">
-            {!room?.timer?.active ? (
-              <div className="iboard-room-settings__field-row">
-                <span className="iboard-room-settings__timer-label">Minutes</span>
-                <input
-                  type="number"
-                  min="1"
-                  max="120"
-                  inputMode="numeric"
-                  value={timerMinutes}
-                  onFocus={() => setTimerMinutes('')}
-                  onChange={(event) => {
-                    const raw = event.target.value;
-                    if (raw === '') {
-                      setTimerMinutes('');
-                      return;
-                    }
-                    const next = Math.floor(Number(raw));
-                    if (!Number.isFinite(next)) return;
-                    setTimerMinutes(String(Math.max(1, Math.min(120, next))));
-                  }}
-                  onBlur={() => {
-                    if (timerMinutes === '' || !Number(timerMinutes)) setTimerMinutes('5');
-                  }}
-                  aria-label="Timer minutes"
-                />
-                <button
-                  type="button"
-                  disabled={timerBusy || !Number(timerMinutes)}
-                  onClick={() =>
-                    controlRoomTimer('start', {
-                      seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
-                    })
-                  }
-                  className="iboard-room-settings__mini"
-                >
-                  Start
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="iboard-room-settings__timer-head">
-                  <span>Running</span>
-                  <RoomTimerPill
-                    timer={room?.timer}
-                    onFinishedClick={() => controlRoomTimer('end')}
-                  />
-                </div>
-                <div className="iboard-room-settings__field-row flex-wrap">
-                  <button
-                    type="button"
-                    disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
-                    onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
-                    className="iboard-room-settings__mini-ghost"
-                  >
-                    {room.timer.running ? 'Pause' : 'Resume'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={timerBusy}
-                    onClick={() => controlRoomTimer('add', { seconds: 60 })}
-                    className="iboard-room-settings__mini-ghost"
-                  >
-                    +1m
-                  </button>
-                  <button
-                    type="button"
-                    disabled={timerBusy}
-                    onClick={() => controlRoomTimer('end')}
-                    className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
-                  >
-                    End
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {settingsOpen && settingsSection === 'class' && !breakoutsActive && breakoutSetupMode === 'manual' && (
         <div
           ref={breakoutAssignPanelRef}
@@ -5370,6 +5270,89 @@ function TeacherDashboardInner() {
                   </button>
                 </div>
               </div>
+            )}
+
+            {settingsSection === 'class' && (
+              <section className="iboard-room-settings__section">
+                <h3 className="iboard-room-settings__label">Timer</h3>
+                <div className="iboard-room-settings__card iboard-room-settings__card-pad">
+                  {!room?.timer?.active ? (
+                    <div className="iboard-room-settings__field-row">
+                      <span className="iboard-room-settings__timer-label">Minutes</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        inputMode="numeric"
+                        value={timerMinutes}
+                        onFocus={() => setTimerMinutes('')}
+                        onChange={(event) => {
+                          const raw = event.target.value;
+                          if (raw === '') {
+                            setTimerMinutes('');
+                            return;
+                          }
+                          const next = Math.floor(Number(raw));
+                          if (!Number.isFinite(next)) return;
+                          setTimerMinutes(String(Math.max(1, Math.min(120, next))));
+                        }}
+                        onBlur={() => {
+                          if (timerMinutes === '' || !Number(timerMinutes)) setTimerMinutes('5');
+                        }}
+                        aria-label="Timer minutes"
+                      />
+                      <button
+                        type="button"
+                        disabled={timerBusy || !Number(timerMinutes)}
+                        onClick={() =>
+                          controlRoomTimer('start', {
+                            seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
+                          })
+                        }
+                        className="iboard-room-settings__mini"
+                      >
+                        Start
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="iboard-room-settings__timer-head">
+                        <span>Running</span>
+                        <RoomTimerPill
+                          timer={room?.timer}
+                          onFinishedClick={() => controlRoomTimer('end')}
+                        />
+                      </div>
+                      <div className="iboard-room-settings__field-row flex-wrap">
+                        <button
+                          type="button"
+                          disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
+                          onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
+                          className="iboard-room-settings__mini-ghost"
+                        >
+                          {room.timer.running ? 'Pause' : 'Resume'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={timerBusy}
+                          onClick={() => controlRoomTimer('add', { seconds: 60 })}
+                          className="iboard-room-settings__mini-ghost"
+                        >
+                          +1m
+                        </button>
+                        <button
+                          type="button"
+                          disabled={timerBusy}
+                          onClick={() => controlRoomTimer('end')}
+                          className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
+                        >
+                          End
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
             )}
 
             {settingsSection === 'settings' && (
