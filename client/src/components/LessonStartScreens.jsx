@@ -24,7 +24,7 @@ export function rememberObjective(text) {
   }
 }
 
-function StartShell({ step, labelledBy, onKeyDown, children, corner }) {
+function StartShell({ labelledBy, onKeyDown, children }) {
   return (
     <div
       className="iboard-start-screen"
@@ -33,27 +33,17 @@ function StartShell({ step, labelledBy, onKeyDown, children, corner }) {
       aria-labelledby={labelledBy}
       onKeyDown={onKeyDown}
     >
-      <div className="iboard-start-screen__top">
-        {step ? (
-          <ol className="iboard-start-screen__steps" aria-label="Lesson start steps">
-            <li className={step === 'join' ? 'is-current' : 'is-done'}>Students join</li>
-            <li className={step === 'objective' ? 'is-current' : ''}>Today’s objective</li>
-            <li>Room</li>
-          </ol>
-        ) : <span />}
-        {corner}
-      </div>
       <div className="iboard-start-screen__body">{children}</div>
     </div>
   );
 }
 
 /**
- * Join screen: big room code, address, QR and names as they arrive.
- * `mode="start"` is step one of a new lesson; `mode="room"` reopens it mid-lesson.
+ * Join screen: address, room code + QR, a live joined count, and an optional objective.
+ * ENTER (or Escape) goes into the room. Also reopened mid-lesson from the header room code.
  */
-export function JoinScreen({ mode = 'start', code, joinUrl, students = [], onNext, onSkip, onClose, onCopyLink }) {
-  const primaryRef = useRef(null);
+export function JoinScreen({ code, joinUrl, students = [], initialObjective = '', onEnter }) {
+  const [objective, setObjective] = useState(initialObjective);
   const qrSvg = useMemo(() => {
     try {
       return renderSVG(joinUrl, { border: 1 });
@@ -62,81 +52,58 @@ export function JoinScreen({ mode = 'start', code, joinUrl, students = [], onNex
     }
   }, [joinUrl]);
   const address = joinUrl.replace(/^https?:\/\//, '').replace(/\?code=\d+$/, '');
-  const names = students.map((student) => String(student.name || '').trim()).filter(Boolean);
+  const joinedCount = students.length;
 
-  useEffect(() => {
-    primaryRef.current?.focus();
-  }, []);
-
-  function handleKeyDown(event) {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      if (mode === 'start') onSkip?.();
-      else onClose?.();
-    }
+  function enter(event) {
+    event?.preventDefault();
+    onEnter?.(objective.replace(/\s+/g, ' ').trim().slice(0, OBJECTIVE_MAX));
   }
 
   return (
-    <StartShell
-      step={mode === 'start' ? 'join' : null}
-      labelledBy="join-screen-title"
-      onKeyDown={handleKeyDown}
-      corner={mode === 'start' ? (
-        <button type="button" onClick={onSkip} className="iboard-start-screen__skip">Skip to room</button>
-      ) : null}
+    <div
+      className="iboard-start-screen"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="join-screen-title"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') enter(event);
+      }}
     >
       <div className="iboard-join-screen">
-        <div className="iboard-join-screen__main">
-          <h2 id="join-screen-title" className="iboard-join-screen__title">Students join here</h2>
-          <ol className="iboard-join-screen__how">
-            <li>Go to <strong>{address}</strong></li>
-            <li>Enter the room code</li>
-          </ol>
+        <h2 id="join-screen-title" className="iboard-join-screen__address">
+          Students join at: <strong>{address}</strong>
+        </h2>
+
+        <div className="iboard-join-screen__code-row">
           <p className="iboard-join-screen__code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
-          <button type="button" onClick={onCopyLink} className="iboard-join-screen__copy">Copy join link</button>
-        </div>
-        {qrSvg ? (
-          <div className="iboard-join-screen__qr">
+          {qrSvg ? (
             <div className="iboard-join-screen__qr-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-            <p>Or scan to join</p>
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
 
-      <section className="iboard-join-screen__arrivals" aria-live="polite" aria-label="Students joined">
-        <p className="iboard-join-screen__count">
-          {names.length === 0
-            ? 'Waiting for students…'
-            : `${names.length} student${names.length === 1 ? '' : 's'} joined`}
+        <p className="iboard-join-screen__count" aria-live="polite">
+          {joinedCount === 0 ? 'Waiting for students…' : `${joinedCount} student${joinedCount === 1 ? '' : 's'} joined`}
         </p>
-        {names.length ? (
-          <ul className="iboard-join-screen__names">
-            {names.map((name, index) => <li key={`${name}-${index}`}>{name}</li>)}
-          </ul>
-        ) : null}
-      </section>
 
-      <div className="iboard-start-screen__actions">
-        {mode === 'start' ? (
-          <button ref={primaryRef} type="button" onClick={onNext} className="iboard-start-screen__primary">
-            Next: today’s objective
-            <span aria-hidden="true">→</span>
-          </button>
-        ) : (
-          <button ref={primaryRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
-            Back to room
-          </button>
-        )}
+        <form className="iboard-join-screen__enter" onSubmit={enter}>
+          <input
+            type="text"
+            autoFocus
+            value={objective}
+            maxLength={OBJECTIVE_MAX}
+            onChange={(event) => setObjective(event.target.value)}
+            placeholder="Today’s objective (optional)"
+            aria-label="Today’s objective (optional)"
+          />
+          <button type="submit" className="iboard-start-screen__primary">ENTER</button>
+        </form>
       </div>
-    </StartShell>
+    </div>
   );
 }
 
-/**
- * Today's objective: one line, recent objectives one tap away.
- * `mode="start"` is step two of a new lesson; `mode="edit"` changes it mid-lesson.
- */
-export function ObjectiveScreen({ mode = 'start', initialObjective = '', busy = false, onSave, onSkip, onBack, onClose }) {
+/** Change today's objective mid-lesson; recent objectives one tap away. */
+export function ObjectiveScreen({ initialObjective = '', busy = false, onSave, onClose }) {
   const [text, setText] = useState(initialObjective);
   const [recent] = useState(readRecentObjectives);
   const inputRef = useRef(null);
@@ -154,22 +121,14 @@ export function ObjectiveScreen({ mode = 'start', initialObjective = '', busy = 
   function handleKeyDown(event) {
     if (event.key === 'Escape') {
       event.preventDefault();
-      if (mode === 'start') onSkip?.();
-      else onClose?.();
+      onClose?.();
     }
   }
 
   return (
-    <StartShell
-      step={mode === 'start' ? 'objective' : null}
-      labelledBy="objective-screen-title"
-      onKeyDown={handleKeyDown}
-      corner={mode === 'start' ? (
-        <button type="button" onClick={onSkip} className="iboard-start-screen__skip">Skip to room</button>
-      ) : null}
-    >
+    <StartShell labelledBy="objective-screen-title" onKeyDown={handleKeyDown}>
       <form className="iboard-objective-screen" onSubmit={submit}>
-        <h2 id="objective-screen-title" className="iboard-join-screen__title">Today’s objective</h2>
+        <h2 id="objective-screen-title" className="iboard-objective-screen__title">Today’s objective</h2>
         <label className="iboard-objective-screen__field">
           <span>Today we are learning to…</span>
           <textarea
@@ -194,26 +153,15 @@ export function ObjectiveScreen({ mode = 'start', initialObjective = '', busy = 
             </div>
           </div>
         ) : null}
-        <p className="iboard-objective-screen__hint">
-          {mode === 'start'
-            ? 'Students see this at the top of their screen. You can leave it blank and add it later.'
-            : 'Students see this at the top of their screen.'}
-        </p>
+        <p className="iboard-objective-screen__hint">Students see this at the top of their screen.</p>
         <div className="iboard-start-screen__actions">
-          {mode === 'start' ? (
-            <button type="button" onClick={onBack} className="iboard-start-screen__secondary">Back</button>
-          ) : (
-            <button type="button" onClick={onClose} className="iboard-start-screen__secondary">Cancel</button>
-          )}
-          {mode === 'edit' && initialObjective ? (
+          <button type="button" onClick={onClose} className="iboard-start-screen__secondary">Cancel</button>
+          {initialObjective ? (
             <button type="button" disabled={busy} onClick={() => onSave?.('')} className="iboard-start-screen__secondary">
               Clear objective
             </button>
           ) : null}
-          <button type="submit" disabled={busy} className="iboard-start-screen__primary">
-            {mode === 'start' ? 'Start lesson' : 'Save'}
-            {mode === 'start' ? <span aria-hidden="true">→</span> : null}
-          </button>
+          <button type="submit" disabled={busy} className="iboard-start-screen__primary">Save</button>
         </div>
       </form>
     </StartShell>

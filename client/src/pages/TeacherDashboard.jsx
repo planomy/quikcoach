@@ -3119,7 +3119,7 @@ function TeacherDashboardInner() {
                 onChange={(event) => updateStraightToRoom(event.target.checked)}
                 className="h-4 w-4 accent-indigo-600"
               />
-              <span>Go straight to my room (skip the start screens)</span>
+              <span>Go straight to my room (skip the join screen)</span>
             </label>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
               <button
@@ -5014,42 +5014,21 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      {startStep === 'join' && (
+      {(startStep === 'join' || joinScreenOpen) && (
         <JoinScreen
-          mode="start"
           code={codeInput}
           joinUrl={studentJoinUrl()}
           students={orderedStudents}
-          onCopyLink={copyStudentJoinLink}
-          onNext={() => setStartStep('objective')}
-          onSkip={() => setStartStep(null)}
-        />
-      )}
-      {startStep === 'objective' && (
-        <ObjectiveScreen
-          mode="start"
           initialObjective={room?.lesson_objective || ''}
-          onBack={() => setStartStep('join')}
-          onSkip={() => setStartStep(null)}
-          onSave={(text) => {
-            if (text || room?.lesson_objective) setLessonObjective(text);
+          onEnter={(text) => {
+            if (text !== (room?.lesson_objective || '')) setLessonObjective(text);
             setStartStep(null);
+            setJoinScreenOpen(false);
           }}
-        />
-      )}
-      {joinScreenOpen && !startStep && (
-        <JoinScreen
-          mode="room"
-          code={codeInput}
-          joinUrl={studentJoinUrl()}
-          students={orderedStudents}
-          onCopyLink={copyStudentJoinLink}
-          onClose={() => setJoinScreenOpen(false)}
         />
       )}
       {objectiveEditOpen && !startStep && (
         <ObjectiveScreen
-          mode="edit"
           initialObjective={room?.lesson_objective || ''}
           onClose={() => setObjectiveEditOpen(false)}
           onSave={(text) => {
@@ -5491,7 +5470,7 @@ function TeacherDashboardInner() {
                 </button>
               </div>
               <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                <span>Show start screens for a new lesson</span>
+                <span>Show the join screen for a new lesson</span>
                 <input
                   type="checkbox"
                   checked={!straightToRoom}
