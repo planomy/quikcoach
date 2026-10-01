@@ -3389,7 +3389,7 @@ function TeacherDashboardInner() {
             </HintWrap>
             <div ref={tourHeaderToolsRef} className="flex items-center gap-1.5">
             <div ref={sessionMenuRef} className="relative">
-              <HintWrap hint="Save or load this lesson" prefer="below" suppressed={sessionMenuOpen}>
+              <HintWrap hint="Save or load a lesson" prefer="below" suppressed={sessionMenuOpen}>
                 <button
                   type="button"
                   data-help-target="session"
