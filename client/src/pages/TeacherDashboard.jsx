@@ -402,11 +402,6 @@ function TeacherDashboardInner() {
 
   const [pasteBox, setPasteBox] = useState('');
   const [copyToast, setCopyToast] = useState('');
-  const [joinWhisper, setJoinWhisper] = useState('');
-  const joinWhisperTokenRef = useRef(0);
-  const rosterReadyRef = useRef(false);
-  const seenStudentIdsRef = useRef(new Set());
-  const firstJoinToldRef = useRef(false);
   const [copiedStudentId, setCopiedStudentId] = useState(null);
   const [noteTarget, setNoteTarget] = useState(null);
   const [noteReceiptByStudentId, setNoteReceiptByStudentId] = useState({});
@@ -578,15 +573,6 @@ function TeacherDashboardInner() {
 
   const clearSessionDirty = useCallback(() => {
     sessionDirtyRef.current = false;
-  }, []);
-
-  const showJoinWhisper = useCallback((message, ms = 2000) => {
-    const token = joinWhisperTokenRef.current + 1;
-    joinWhisperTokenRef.current = token;
-    setJoinWhisper(message);
-    window.setTimeout(() => {
-      if (joinWhisperTokenRef.current === token) setJoinWhisper('');
-    }, ms);
   }, []);
 
   const pushSettings = useCallback(
@@ -1369,42 +1355,6 @@ function TeacherDashboardInner() {
     );
     return orderedStudents.filter((student) => connectedIds.has(Number(student.id)));
   }, [livePulse.students, orderedStudents]);
-
-  useEffect(() => {
-    if (!joined) {
-      rosterReadyRef.current = false;
-      seenStudentIdsRef.current = new Set();
-      firstJoinToldRef.current = false;
-      return;
-    }
-    const rows = students.filter((student) => Number(student.id));
-    const ids = rows.map((student) => Number(student.id));
-    if (!rosterReadyRef.current) {
-      seenStudentIdsRef.current = new Set(ids);
-      rosterReadyRef.current = true;
-      firstJoinToldRef.current = ids.length > 0;
-      return;
-    }
-    if (ids.length === 0) {
-      seenStudentIdsRef.current = new Set();
-      firstJoinToldRef.current = false;
-      return;
-    }
-    const newcomers = rows.filter((student) => !seenStudentIdsRef.current.has(Number(student.id)));
-    seenStudentIdsRef.current = new Set(ids);
-    if (!newcomers.length) return;
-    const name = String(newcomers[0].name || 'A student').trim() || 'A student';
-    if (!firstJoinToldRef.current) {
-      firstJoinToldRef.current = true;
-      showJoinWhisper(`${name} joined — each card is a student writing live.`, 4200);
-      return;
-    }
-    if (newcomers.length === 1) {
-      showJoinWhisper(`${name} joined`, 2000);
-      return;
-    }
-    showJoinWhisper(`${name} +${newcomers.length - 1} joined`, 2000);
-  }, [joined, students, showJoinWhisper]);
 
   const pendingHandByStudentId = useMemo(() => {
     const map = new Map();
@@ -3525,16 +3475,7 @@ function TeacherDashboardInner() {
           </div>
 
           <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(24rem,calc(100vw-40rem))] -translate-x-1/2 items-center justify-center">
-            {!socketConnected ? null : !copyToast && joinWhisper ? (
-              <div
-                role="status"
-                aria-live="polite"
-                className="iboard-header-whisper pointer-events-auto"
-                title={joinWhisper}
-              >
-                {joinWhisper}
-              </div>
-            ) : monitoredCount > 0 ? (
+            {!socketConnected ? null : monitoredCount > 0 ? (
               <div className="pointer-events-auto inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-3 text-white shadow-sm">
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 opacity-90" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
