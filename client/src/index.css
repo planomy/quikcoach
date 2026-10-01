@@ -1635,7 +1635,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
     0 16px 28px -14px rgba(15, 23, 42, 0.2);
 }
 
-.iboard-student-card--empty {
+.iboard-student-card--empty:not(.iboard-student-card--fit) {
   background: #e2e1eb;
   box-shadow: none;
 }
@@ -3570,7 +3570,7 @@ html.dark .iboard-student-card:hover {
   box-shadow: none;
 }
 
-html.dark .iboard-student-card--empty {
+html.dark .iboard-student-card--empty:not(.iboard-student-card--fit) {
   background: #10151c;
 }
 
@@ -4847,8 +4847,6 @@ html.dark .iboard-header-objective.is-empty {
   padding: 0.35rem 0.5rem !important;
   font-size: 0.72rem;
   line-height: 1.35;
-  -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent);
-  mask-image: linear-gradient(to bottom, #000 72%, transparent);
 }
 
 .iboard-student-card__fit-pane img {
