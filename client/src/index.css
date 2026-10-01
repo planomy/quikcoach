@@ -4824,6 +4824,10 @@ html.dark .iboard-header-objective.is-empty {
   gap: 0;
 }
 
+.iboard-student-card--fit .iboard-student-card__head-start > .min-w-0 {
+  padding-left: 0.9rem;
+}
+
 .iboard-student-card--fit .iboard-student-card__pick {
   position: absolute;
   top: -0.35rem;
