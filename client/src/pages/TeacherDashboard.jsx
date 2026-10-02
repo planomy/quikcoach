@@ -5386,21 +5386,23 @@ function TeacherDashboardInner() {
             {settingsSection === 'class' && (
               <div className="iboard-room-settings__hero">
                 <div className="iboard-room-settings__row">
-                  <button
-                    type="button"
-                    data-help-target="freeze"
-                    onClick={() => {
-                      const v = !frozen;
-                      setRoom((r) => (r ? { ...r, freeze_class: v } : r));
-                      pushSettings({ freeze_class: v });
-                    }}
-                    className={`iboard-room-settings__secondary${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
-                  >
-                    {frozen ? 'Unfreeze board' : 'Freeze board'}
-                  </button>
+                  <HintWrap hint={frozen ? 'Lets students write again' : "Disables student writing until it's unfrozen"} className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      data-help-target="freeze"
+                      onClick={() => {
+                        const v = !frozen;
+                        setRoom((r) => (r ? { ...r, freeze_class: v } : r));
+                        pushSettings({ freeze_class: v });
+                      }}
+                      className={`iboard-room-settings__secondary w-full${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
+                    >
+                      {frozen ? 'Unfreeze board' : 'Freeze board'}
+                    </button>
+                  </HintWrap>
                 </div>
                 <div className="iboard-room-settings__row">
-                  <HintWrap hint="A small floating window to run questions while you present" className="min-w-0 flex-1">
+                  <HintWrap hint="Keeps the Quick Question panel on top while you present other windows" className="min-w-0 flex-1">
                     <button
                       type="button"
                       onClick={() => {
@@ -5418,7 +5420,9 @@ function TeacherDashboardInner() {
 
             {settingsSection === 'class' && (
               <section className="iboard-room-settings__section">
-                <h3 className="iboard-room-settings__label">Timer</h3>
+                <h3 className="iboard-room-settings__label">
+                  <HintWrap hint="Adds a timer to the teacher and student boards" prefer="right" className="cursor-help">Timer</HintWrap>
+                </h3>
                 <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                   {!room?.timer?.active ? (
                     <div className="iboard-room-settings__field-row">
@@ -5445,18 +5449,20 @@ function TeacherDashboardInner() {
                         }}
                         aria-label="Timer minutes"
                       />
-                      <button
-                        type="button"
-                        disabled={timerBusy || !Number(timerMinutes)}
-                        onClick={() =>
-                          controlRoomTimer('start', {
-                            seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
-                          })
-                        }
-                        className="iboard-room-settings__mini"
-                      >
-                        Start
-                      </button>
+                      <HintWrap hint="Adds a timer to the teacher and student boards">
+                        <button
+                          type="button"
+                          disabled={timerBusy || !Number(timerMinutes)}
+                          onClick={() =>
+                            controlRoomTimer('start', {
+                              seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
+                            })
+                          }
+                          className="iboard-room-settings__mini"
+                        >
+                          Start
+                        </button>
+                      </HintWrap>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -5566,7 +5572,9 @@ function TeacherDashboardInner() {
             {settingsSection === 'class' && (
             <>
             <section className="iboard-room-settings__section" data-help-target="breakouts">
-              <h3 className="iboard-room-settings__label">Breakouts</h3>
+              <h3 className="iboard-room-settings__label">
+                <HintWrap hint="Student writing cards appear on group members' screens" prefer="right" className="cursor-help">Breakouts</HintWrap>
+              </h3>
               <div className={`iboard-room-settings__card iboard-room-settings__card-pad${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}>
                 {breakoutsActive ? (
                   <div className="flex flex-wrap gap-2">
@@ -5608,14 +5616,16 @@ function TeacherDashboardInner() {
                       </button>
                     </div>
                     {breakoutSetupMode === 'auto' ? (
-                      <button
-                        type="button"
-                        disabled={breakoutBusy || !students.length}
-                        onClick={startBreakoutsAuto}
-                        className="iboard-room-settings__primary"
-                      >
-                        Start breakouts
-                      </button>
+                      <HintWrap hint="Student writing cards appear on group members' screens" className="w-full">
+                        <button
+                          type="button"
+                          disabled={breakoutBusy || !students.length}
+                          onClick={startBreakoutsAuto}
+                          className="iboard-room-settings__primary w-full"
+                        >
+                          Start breakouts
+                        </button>
+                      </HintWrap>
                     ) : null}
                   </div>
                 )}
@@ -5623,14 +5633,13 @@ function TeacherDashboardInner() {
             </section>
 
             <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">Lesson</h3>
+              <h3 className="iboard-room-settings__label">
+                <HintWrap hint="Students cannot type past the word limit" prefer="right" className="cursor-help">Word limit</HintWrap>
+              </h3>
               <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                 <div className="iboard-word-target-row">
-                  <div className="iboard-room-settings__meta">
-                    <span>Word limit</span>
-                    <span>{wt}</span>
-                  </div>
                   <div className="iboard-word-target-bar flex items-center gap-2">
+                    <span className="w-8 shrink-0 text-right font-mono text-[0.72rem] font-bold tabular-nums text-[#5a5fc3] dark:text-indigo-300">{wt}</span>
                     <input
                       type="range"
                       min={0}
@@ -5643,6 +5652,7 @@ function TeacherDashboardInner() {
                       className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
                       aria-label="Word limit"
                     />
+                    <HintWrap hint="Students cannot type past the word limit" className="shrink-0">
                     <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                       <span>Enforce</span>
                       <input
@@ -5656,6 +5666,7 @@ function TeacherDashboardInner() {
                         className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
                       />
                     </label>
+                    </HintWrap>
                   </div>
                 </div>
               </div>
