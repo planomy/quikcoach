@@ -5216,7 +5216,10 @@ function TeacherDashboardInner() {
                       type="button"
                       aria-label={`${count} columns`}
                       aria-pressed={active}
-                      onClick={() => setOverviewColumns(count)}
+                      onClick={() => {
+                        setOverviewColumns(count);
+                        setCardView('overview');
+                      }}
                       onFocus={() => setOverviewColsPeek(true)}
                       className={`min-w-[1.75rem] rounded-md px-1.5 py-1 text-[11px] font-semibold tabular-nums transition ${
                         active
