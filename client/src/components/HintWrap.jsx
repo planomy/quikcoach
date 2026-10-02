@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { placementNearAnchor } from '../lib/clampPopup.js';
+import { clampFixedBox } from '../lib/clampPopup.js';
 import { subscribeViewportChanges } from '../lib/viewport.js';
 import { useHintsOff } from '../lib/hintPrefs.js';
 
 const HINT_PAD = 8;
+const HINT_GAP = 6;
 const EST_HEIGHT = 22;
 const FIRST_HOVER_DELAY = 350;
 const FOLLOW_ON_HOVER_DELAY = 75;
@@ -14,29 +15,23 @@ const FOLLOW_ON_GRACE_PERIOD = 700;
 // feels quick after the user has deliberately opened one tooltip.
 let fastHoverUntil = 0;
 
-function measureAndPlace(wrapEl, tipEl, hint, prefer, pointerX) {
+// One rule for every hint in the app: just above the hovered item, centred on where
+// the pointer entered it (item centre for keyboard focus), kept inside the viewport.
+// It only drops below the item when there is no room above.
+function measureAndPlace(wrapEl, tipEl, hint, pointerX) {
   const rect = wrapEl?.getBoundingClientRect();
   if (!rect) return null;
   const width = tipEl?.offsetWidth || Math.max(48, String(hint).length * 7 + 16);
   const height = tipEl?.offsetHeight || EST_HEIGHT;
-  // Above/below hints sit over where the pointer entered, not the middle of a wide
-  // control, so the tip lands where the eye already is.
-  const followPointer = (prefer === 'above' || prefer === 'below') && Number.isFinite(pointerX);
-  const anchor = followPointer
-    ? { top: rect.top, bottom: rect.bottom, height: rect.height, left: pointerX, right: pointerX, width: 0 }
-    : rect;
-  return placementNearAnchor({
-    anchor,
-    width,
-    height,
-    gap: 6,
-    padding: HINT_PAD,
-    prefer,
-  });
+  const viewportTop = window.visualViewport?.offsetTop ?? 0;
+  const centreX = Number.isFinite(pointerX) ? pointerX : rect.left + rect.width / 2;
+  const aboveTop = rect.top - HINT_GAP - height;
+  const top = aboveTop >= viewportTop + HINT_PAD ? aboveTop : rect.bottom + HINT_GAP;
+  return clampFixedBox({ top, left: centreX - width / 2, width, height, padding: HINT_PAD });
 }
 
 /** Fast hover/focus hint chip — brand accent, flips below when there isn’t room above. */
-export default function HintWrap({ hint, children, className = '', prefer = 'above', multiline = false, tone: _tone = 'brand', suppressed: suppressedProp = false }) {
+export default function HintWrap({ hint, children, className = '', prefer: _prefer, multiline = false, tone: _tone = 'brand', suppressed: suppressedProp = false }) {
   const hintsOff = useHintsOff();
   const suppressed = suppressedProp || hintsOff;
   const wrapRef = useRef(null);
@@ -107,7 +102,7 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
     }
 
     const place = () => {
-      setBox(measureAndPlace(wrapRef.current, tipRef.current, hint, prefer, pointerXRef.current));
+      setBox(measureAndPlace(wrapRef.current, tipRef.current, hint, pointerXRef.current));
     };
 
     place();
@@ -117,7 +112,7 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
       cancelAnimationFrame(frame);
       unsubscribe();
     };
-  }, [open, hint, prefer]);
+  }, [open, hint]);
 
   if (!hint) return children;
 

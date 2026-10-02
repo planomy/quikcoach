@@ -5551,16 +5551,18 @@ function TeacherDashboardInner() {
                 </HintWrap>
             </div>
               <div className="iboard-room-settings__row">
+                <HintWrap hint="Show a short tip when you hover a button" className="min-w-0 flex-1">
                   <button
                     type="button"
-                  role="switch"
-                  onClick={() => setHintsOff(!hintsOff)}
-                  aria-checked={!hintsOff}
-                  className="iboard-room-settings__secondary min-w-0 flex-1 justify-between gap-3"
-                >
-                  <span>Tooltips</span>
-                  <span className="iboard-switch" data-on={hintsOff ? 'false' : 'true'} aria-hidden="true" />
-                </button>
+                    role="switch"
+                    onClick={() => setHintsOff(!hintsOff)}
+                    aria-checked={!hintsOff}
+                    className="iboard-room-settings__secondary w-full justify-between gap-3"
+                  >
+                    <span>Tooltips</span>
+                    <span className="iboard-switch" data-on={hintsOff ? 'false' : 'true'} aria-hidden="true" />
+                  </button>
+                </HintWrap>
               </div>
               {fixedCommentCount > 0 && (
                 <div className="iboard-room-settings__cleanup">
