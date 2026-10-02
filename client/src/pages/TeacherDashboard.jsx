@@ -2996,7 +2996,7 @@ function TeacherDashboardInner() {
       // Still reset; teacher can recover from an earlier save if this one failed.
     }
     setNewClassStep('Clearing the board…');
-    socket.timeout(20_000).emit('teacher:clear-cards', {}, (err, ack) => {
+    socket.timeout(20_000).emit('teacher:start-new-class', {}, (err, ack) => {
       setNewClassBusy(false);
       setNewClassStep('');
       if (err || !ack?.ok) {

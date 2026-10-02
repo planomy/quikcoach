@@ -200,8 +200,10 @@ function startNewClass(io, socket, cb) {
       return;
     }
 
-    const clearHandler = socket.listeners('teacher:clear-cards')[0];
-    if (typeof clearHandler !== 'function') {
+    // Several patches listen for clear-cards (e.g. lesson insights read word counts
+    // first); run them all in order, and finish on the first one that acknowledges.
+    const clearHandlers = socket.listeners('teacher:clear-cards').filter((fn) => typeof fn === 'function');
+    if (!clearHandlers.length) {
       cb?.({ ok: false, error: 'Class reset is not available' });
       return;
     }
@@ -223,7 +225,10 @@ function startNewClass(io, socket, cb) {
         };
       });
 
-    clearHandler({}, (ack) => {
+    let acknowledged = false;
+    const onCleared = (ack) => {
+      if (acknowledged) return;
+      acknowledged = true;
       if (!ack?.ok) {
         cb?.(ack || { ok: false, error: 'Could not start a new class' });
         return;
@@ -250,7 +255,8 @@ function startNewClass(io, socket, cb) {
       }, 1200);
 
       cb?.({ ok: true });
-    });
+    };
+    for (const handler of clearHandlers) handler({}, onCleared);
   } catch (error) {
     console.error('Could not start new class', error);
     cb?.({ ok: false, error: 'Could not start a new class' });

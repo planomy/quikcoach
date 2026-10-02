@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   clearStudentSession,
   forgetRecentStudentSession,
@@ -7,34 +7,8 @@ import {
 } from '../lib/studentSession.js';
 import { clearDismissedInboxIds } from '../lib/inboxDismiss.js';
 
-function teacherSocket() {
-  return typeof window !== 'undefined' ? window.__iboardTeacherSocket || null : null;
-}
-
 function studentSocket() {
   return typeof window !== 'undefined' ? window.__iboardStudentSocket || null : null;
-}
-
-function findStartButton() {
-  return [...document.querySelectorAll('button')].find((button) => {
-    const text = button.textContent?.trim();
-    return (
-      text === 'Reset board' ||
-      text === 'Reset class board' ||
-      text === 'Clear board & start' ||
-      text === 'Start new class' ||
-      text === 'Resetting…' ||
-      text === 'Starting…'
-    );
-  }) || null;
-}
-
-function closeConfirmationDialog() {
-  const keepButton = [...document.querySelectorAll('button')].find((button) => {
-    const text = button.textContent?.trim();
-    return text === 'Keep board' || text === 'Keep current class';
-  });
-  keepButton?.click();
 }
 
 function cleanYear(value) {
@@ -43,8 +17,6 @@ function cleanYear(value) {
 }
 
 export default function ClassResetController({ role }) {
-  const [message, setMessage] = useState('');
-
   useEffect(() => {
     if (role !== 'student') return undefined;
 
@@ -140,82 +112,5 @@ export default function ClassResetController({ role }) {
     };
   }, [role]);
 
-  useEffect(() => {
-    if (role !== 'teacher') return undefined;
-
-    let frame = 0;
-    const polish = () => {
-      const button = findStartButton();
-      if (!button || button.dataset.iboardClassResetBusy === 'true') return;
-      if (button.textContent?.trim() === 'Reset board' || button.textContent?.trim() === 'Clear board & start') {
-        button.textContent = 'Reset class board';
-      }
-      button.dataset.iboardClassReset = 'true';
-    };
-    const schedulePolish = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        polish();
-      });
-    };
-
-    const onClick = (event) => {
-      const button = event.target?.closest?.('button[data-iboard-class-reset="true"]');
-      if (!button) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation?.();
-
-      const socket = teacherSocket();
-      if (!socket || button.dataset.iboardClassResetBusy === 'true') return;
-
-      button.dataset.iboardClassResetBusy = 'true';
-      button.disabled = true;
-      button.textContent = 'Resetting…';
-      setMessage('');
-
-      socket.emit('teacher:start-new-class', {}, (ack) => {
-        button.dataset.iboardClassResetBusy = 'false';
-        button.disabled = false;
-        button.textContent = 'Reset class board';
-
-        if (!ack?.ok) {
-          setMessage(ack?.error || 'Could not reset the class board');
-          return;
-        }
-
-        closeConfirmationDialog();
-        setMessage('Board reset');
-        setTimeout(() => setMessage(''), 1800);
-      });
-    };
-
-    polish();
-    const observer = new MutationObserver(schedulePolish);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    document.addEventListener('click', onClick, true);
-
-    return () => {
-      observer.disconnect();
-      document.removeEventListener('click', onClick, true);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, [role]);
-
-  if (!message) return null;
-
-  return (
-    <div
-      role="status"
-      className={`fixed left-1/2 top-3 z-[100] inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] -translate-x-1/2 items-center truncate rounded-lg border px-3 text-[11px] font-black shadow-sm ${
-        message === 'Board reset' || message === 'New class ready'
-          ? 'border-[#cfcce8] bg-[#ebeaf8] text-[#5a5fc3] dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200'
-          : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200'
-      }`}
-    >
-      {message}
-    </div>
-  );
+  return null;
 }
