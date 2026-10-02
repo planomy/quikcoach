@@ -15,17 +15,23 @@ const FOLLOW_ON_GRACE_PERIOD = 700;
 let fastHoverUntil = 0;
 
 function measureAndPlace(wrapEl, tipEl, hint, prefer) {
-  const anchor = wrapEl?.getBoundingClientRect();
-  if (!anchor) return null;
+  const rect = wrapEl?.getBoundingClientRect();
+  if (!rect) return null;
   const width = tipEl?.offsetWidth || Math.max(48, String(hint).length * 7 + 16);
   const height = tipEl?.offsetHeight || EST_HEIGHT;
+  // 'dock': every hint in a docked panel lines up just outside the panel's edge,
+  // level with the hovered item, so the eye always lands in the same column.
+  const dockBox = prefer === 'dock' ? wrapEl.closest('.iboard-header-dock')?.getBoundingClientRect() : null;
+  const anchor = dockBox
+    ? { top: rect.top, bottom: rect.bottom, height: rect.height, left: dockBox.left, right: dockBox.right, width: dockBox.width }
+    : rect;
   return placementNearAnchor({
     anchor,
     width,
     height,
-    gap: 6,
+    gap: dockBox ? 10 : 6,
     padding: HINT_PAD,
-    prefer,
+    prefer: dockBox ? 'side' : prefer === 'dock' ? 'above' : prefer,
   });
 }
 

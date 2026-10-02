@@ -5437,7 +5437,7 @@ function TeacherDashboardInner() {
             {settingsSection === 'class' && (
               <div className="iboard-room-settings__hero">
                 <div className="iboard-room-settings__row">
-                  <HintWrap hint={frozen ? 'Lets students write again' : "Disables student writing until it's unfrozen"} className="min-w-0 flex-1">
+                  <HintWrap prefer="dock" hint={frozen ? 'Lets students write again' : "Disables student writing until it's unfrozen"} className="min-w-0 flex-1">
               <button
                 type="button"
                       data-help-target="freeze"
@@ -5453,7 +5453,7 @@ function TeacherDashboardInner() {
                   </HintWrap>
             </div>
                 <div className="iboard-room-settings__row">
-                  <HintWrap hint="Keeps the Quick Question panel on top while you present other windows" className="min-w-0 flex-1">
+                  <HintWrap prefer="dock" hint="Keeps the Quick Question panel on top while you present other windows" className="min-w-0 flex-1">
                   <button
                     type="button"
                       onClick={() => {
@@ -5472,7 +5472,7 @@ function TeacherDashboardInner() {
             {settingsSection === 'class' && (
               <section className="iboard-room-settings__section">
                 <h3 className="iboard-room-settings__label">
-                  <HintWrap hint="Adds a timer to the teacher and student boards">Timer</HintWrap>
+                  <HintWrap prefer="dock" hint="Adds a timer to the teacher and student boards">Timer</HintWrap>
                 </h3>
                 <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                   {!room?.timer?.active ? (
@@ -5500,7 +5500,7 @@ function TeacherDashboardInner() {
                         }}
                         aria-label="Timer minutes"
                       />
-                      <HintWrap hint="Adds a timer to the teacher and student boards">
+                      <HintWrap prefer="dock" hint="Adds a timer to the teacher and student boards">
                         <button
                           type="button"
                           disabled={timerBusy || !Number(timerMinutes)}
@@ -5559,7 +5559,7 @@ function TeacherDashboardInner() {
             {settingsSection === 'settings' && (
             <div className="iboard-room-settings__hero">
               <div className="iboard-room-settings__row">
-                <HintWrap hint="Change the colours of your screen only" className="min-w-0 flex-1">
+                <HintWrap prefer="dock" hint="Change the colours of your screen only" className="min-w-0 flex-1">
                   <button
                     type="button"
                     role="switch"
@@ -5628,7 +5628,7 @@ function TeacherDashboardInner() {
             <>
             <section className="iboard-room-settings__section" data-help-target="breakouts">
               <h3 className="iboard-room-settings__label">
-                <HintWrap hint="Student writing cards appear on group members' screens">Breakouts</HintWrap>
+                <HintWrap prefer="dock" hint="Student writing cards appear on group members' screens">Breakouts</HintWrap>
               </h3>
               <div className={`iboard-room-settings__card iboard-room-settings__card-pad${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}>
                 {breakoutsActive ? (
@@ -5671,7 +5671,7 @@ function TeacherDashboardInner() {
               </button>
             </div>
                     {breakoutSetupMode === 'auto' ? (
-                      <HintWrap hint="Student writing cards appear on group members' screens" className="w-full">
+                      <HintWrap prefer="dock" hint="Student writing cards appear on group members' screens" className="w-full">
             <button
               type="button"
                           disabled={breakoutBusy || !students.length}
@@ -5689,7 +5689,7 @@ function TeacherDashboardInner() {
 
             <section className="iboard-room-settings__section">
               <h3 className="iboard-room-settings__label">
-                <HintWrap hint="Students cannot type past the word limit">Word limit</HintWrap>
+                <HintWrap prefer="dock" hint="Students cannot type past the word limit">Word limit</HintWrap>
               </h3>
               <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                 <div className="iboard-word-target-row">
@@ -5707,7 +5707,7 @@ function TeacherDashboardInner() {
                       className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
                       aria-label="Word limit"
                     />
-                    <HintWrap hint="Students cannot type past the word limit" className="shrink-0">
+                    <HintWrap prefer="dock" hint="Students cannot type past the word limit" className="shrink-0">
                     <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                       <span>Enforce</span>
                       <input
@@ -5732,7 +5732,7 @@ function TeacherDashboardInner() {
             {settingsSection === 'records' && (
             <section className="iboard-room-settings__section">
               <div className="iboard-room-settings__card iboard-room-settings__list">
-                <HintWrap hint="Snapshots of student writing from past lessons" className="w-full">
+                <HintWrap prefer="dock" hint="Snapshots of student writing from past lessons" className="w-full">
                   <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
                     <span>Lesson records</span>
                     {snapshots.length > 0 ? (
@@ -5740,12 +5740,12 @@ function TeacherDashboardInner() {
                     ) : null}
             </button>
                 </HintWrap>
-                <HintWrap hint="Participation and engagement across the class" className="w-full">
+                <HintWrap prefer="dock" hint="Participation and engagement across the class" className="w-full">
                   <button type="button" onClick={() => { closeSettings(); setInsightsOpen(true); }}>
                     Class insights
                   </button>
                 </HintWrap>
-                <HintWrap hint="Download a list of everyone who joined" className="w-full">
+                <HintWrap prefer="dock" hint="Download a list of everyone who joined" className="w-full">
                   <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }}>
               Download participant list
             </button>
@@ -5755,7 +5755,7 @@ function TeacherDashboardInner() {
             )}
 
             {settingsSection === 'settings' && (
-            <HintWrap hint="Clear every student and card to start a new class (asks first)" className="w-full">
+            <HintWrap prefer="dock" hint="Clear every student and card to start a new class (asks first)" className="w-full">
               <button
                 type="button"
                 onClick={() => { closeSettings(); openNewClassConfirmation(); }}
