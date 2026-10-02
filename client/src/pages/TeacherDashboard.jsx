@@ -49,7 +49,7 @@ import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import StudentPickerDialog from '../components/StudentPickerDialog.jsx';
-import { BoardJoinGate, JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
+import { JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
 import { fitGrid } from '../lib/fitGrid.js';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
 import TeacherHelpPanel, { TeacherHelpButton } from '../components/TeacherHelpPanel.jsx';
@@ -1248,7 +1248,13 @@ function TeacherDashboardInner() {
     prevModalOpenRef.current = modalOpen;
   }, [modalOpen, room, hydrateFeedbackStateFromRoom]);
 
-  async function createOrJoin(overrideCode) {
+  function beginLesson(code) {
+    rememberLessonBegun(String(code || '').replace(/\D/g, '').slice(0, 4));
+    setCardView('all');
+    setLessonBegun(true);
+  }
+
+  async function createOrJoin(overrideCode, { skipJoinScreen = false } = {}) {
     setError('');
     const digits = String(overrideCode ?? codeInput)
       .replace(/\D/g, '')
@@ -1302,7 +1308,8 @@ function TeacherDashboardInner() {
         rememberTeacherRoomCode(code);
         rememberedRoomRef.current = code;
         clearPrefilledCodeOnFocusRef.current = false;
-        setLessonBegun(readLessonBegun(code));
+        if (skipJoinScreen) beginLesson(code);
+        else setLessonBegun(readLessonBegun(code));
         setJoined(true);
         setCodeInput(code);
         try {
@@ -3161,6 +3168,17 @@ function TeacherDashboardInner() {
               >
                 Copy student link
               </button>
+              <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">·</span>
+              <HintWrap hint="Open the board without the big join screen">
+                <button
+                  type="button"
+                  onClick={() => createOrJoin(undefined, { skipJoinScreen: true })}
+                  disabled={codeInput.length !== 4}
+                  className="font-medium text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:no-underline dark:text-slate-300"
+                >
+                  Go straight to room
+                </button>
+              </HintWrap>
             </div>
             {copyToast && (
               <p className="mt-3 text-sm font-medium text-[#5a5fc3] dark:text-indigo-300">{copyToast}</p>
@@ -4025,19 +4043,13 @@ function TeacherDashboardInner() {
       <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
           {!lessonBegun && (
-            <BoardJoinGate
+            <JoinScreen
               code={codeInput}
               joinUrl={studentJoinUrl()}
-              students={connectedStudents}
+              joinedCount={connectedStudents.length}
               rosterCount={orderedStudents.length}
-              objective={room?.lesson_objective || ''}
-              onObjectiveChange={setLessonObjective}
-              onRemoveStudent={requestRemoveStudent}
-              onBegin={() => {
-                rememberLessonBegun(String(codeInput || '').replace(/\D/g, '').slice(0, 4));
-                setCardView('all');
-                setLessonBegun(true);
-              }}
+              primaryLabel="Enter"
+              onClose={() => beginLesson(codeInput)}
             />
           )}
 

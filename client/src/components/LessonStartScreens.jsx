@@ -58,7 +58,7 @@ function joinedLabel(joinedCount, rosterCount) {
 }
 
 /** Full-screen join view for projecting, opened from the header room code. */
-export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, onClose }) {
+export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, primaryLabel = 'Back to the board', onClose }) {
   const { qrSvg, address } = useJoinInfo(joinUrl);
   const closeRef = useRef(null);
 
@@ -91,7 +91,7 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, on
         <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
 
         <button ref={closeRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
-          Back to the board
+          {primaryLabel}
         </button>
       </div>
     </div>
