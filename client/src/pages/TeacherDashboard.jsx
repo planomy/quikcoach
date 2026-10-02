@@ -1254,7 +1254,7 @@ function TeacherDashboardInner() {
     setLessonBegun(true);
   }
 
-  async function createOrJoin(overrideCode, { skipJoinScreen = false } = {}) {
+  async function createOrJoin(overrideCode, { skipJoinScreen = false, showJoinScreen = false } = {}) {
     setError('');
     const digits = String(overrideCode ?? codeInput)
       .replace(/\D/g, '')
@@ -1309,7 +1309,7 @@ function TeacherDashboardInner() {
         rememberedRoomRef.current = code;
         clearPrefilledCodeOnFocusRef.current = false;
         if (skipJoinScreen) beginLesson(code);
-        else setLessonBegun(readLessonBegun(code));
+        else setLessonBegun(showJoinScreen ? false : readLessonBegun(code));
         setJoined(true);
         setCodeInput(code);
         try {
@@ -3122,7 +3122,7 @@ function TeacherDashboardInner() {
                   setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4));
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && codeInput.length === 4) createOrJoin();
+                  if (e.key === 'Enter' && codeInput.length === 4) createOrJoin(undefined, { showJoinScreen: true });
                 }}
                 placeholder="0000"
                 inputMode="numeric"
@@ -3145,7 +3145,7 @@ function TeacherDashboardInner() {
             {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
             <button
               type="button"
-              onClick={() => createOrJoin()}
+              onClick={() => createOrJoin(undefined, { showJoinScreen: true })}
               disabled={codeInput.length !== 4}
               className="mt-5 w-full rounded-2xl bg-indigo-600 py-4 text-base font-bold text-white shadow-lift hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
