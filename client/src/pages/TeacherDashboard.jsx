@@ -3881,15 +3881,6 @@ function TeacherDashboardInner() {
                     </h2>
                     <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
                   </div>
-                  <textarea
-                    autoFocus={addCardOpen}
-                    value={addCardText}
-                    onChange={(event) => setAddCardText(event.target.value)}
-                    rows={3}
-                    aria-label="Add text"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    placeholder={addCardFile || addCardImage ? 'Add a title (optional)' : 'Add text'}
-                  />
                   {addCardFile ? (
                     <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-950/40">
                       <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">
@@ -3935,6 +3926,15 @@ function TeacherDashboardInner() {
                       </label>
                       </HintWrap>
                   )}
+                  <textarea
+                    autoFocus={addCardOpen}
+                    value={addCardText}
+                    onChange={(event) => setAddCardText(event.target.value)}
+                    rows={2}
+                    aria-label="Add text"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    placeholder={addCardFile || addCardImage ? 'Add a title (optional)' : 'Add text'}
+                  />
                   {addCardError && <p className="text-xs font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
                   <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
                     <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
