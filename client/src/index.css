@@ -1380,10 +1380,16 @@ html.dark .iboard-tour__close:hover {
   color: #5a5fc3;
 }
 
+.iboard-arr-btn img,
+.iboard-arr-btn .iboard-arr-btn__glyph,
+.iboard-arr-btn .iboard-arr-btn__icon {
+  transition: color 160ms ease, transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .iboard-arr-btn:hover:not([data-active='true']) img,
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph,
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__icon {
-  transform: scale(1.06);
+  transform: scale(1.12);
 }
 
 .iboard-arr-btn:active:not(:disabled) {
@@ -2098,6 +2104,26 @@ html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-
   background-color: currentColor;
   -webkit-mask: var(--iboard-header-icon) center / contain no-repeat;
   mask: var(--iboard-header-icon) center / contain no-repeat;
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.iboard-header-icon-button > svg {
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) > .iboard-header-icon,
+.iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) > svg {
+  transform: scale(1.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iboard-header-icon,
+  .iboard-header-icon-button > svg,
+  .iboard-arr-btn img,
+  .iboard-arr-btn .iboard-arr-btn__glyph,
+  .iboard-arr-btn .iboard-arr-btn__icon {
+    transition: none;
+  }
 }
 
 .iboard-header-icon--fullscreen {

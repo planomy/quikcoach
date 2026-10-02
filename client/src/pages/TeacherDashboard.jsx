@@ -5195,7 +5195,7 @@ function TeacherDashboardInner() {
                           : 'border-transparent text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50 dark:hover:text-white'
                       }`}
                     >
-                      <CardViewIcon id={view.id} className={`h-4 w-4 shrink-0 transition-transform duration-150${active ? '' : ' group-hover:scale-[1.06]'}`} />
+                      <CardViewIcon id={view.id} className={`h-4 w-4 shrink-0 transition-transform duration-[260ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none${active ? '' : ' group-hover:scale-[1.15]'}`} />
                       <span>{view.id === 'full' ? 'Full' : view.label}</span>
                     </button>
                   </HintWrap>
