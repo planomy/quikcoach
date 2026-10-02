@@ -2334,6 +2334,7 @@ function TeacherDashboardInner() {
     setHelpOpen(false);
     setClearFixedArmed(false);
     setBreakoutSetupMode('auto');
+    setBroadcastPick({});
     setSettingsSection(section);
     setSettingsOpen(true);
   }
