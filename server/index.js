@@ -2717,7 +2717,9 @@ io.on('connection', (socket) => {
         return;
       }
       queries.deleteBoardPost(db, id);
-      if (row.image_filename) unlinkRoomMedia(code, row.image_filename);
+      // A handout sent to inboxes and the teacher panel shares one file; keep it for students.
+      const stillInInbox = materialHistoryForRoom(code).some((item) => item?.filename === row.image_filename);
+      if (row.image_filename && !stillInInbox) unlinkRoomMedia(code, row.image_filename);
       broadcastRoom(code);
       cb?.({ ok: true });
     } catch (e) {

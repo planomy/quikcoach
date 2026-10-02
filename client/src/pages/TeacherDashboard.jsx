@@ -2542,7 +2542,13 @@ function TeacherDashboardInner() {
       }
     setAddCardBusy(true);
     setAddCardError('');
-    socket.emit('teacher:distribute', { items: recipients }, (ack) => finish(ack, sentMessage));
+    socket.emit('teacher:distribute', { items: recipients }, (ack) => {
+      if (ack?.ok) {
+        // Keep a copy in the teacher's Resources panel as well as the inboxes.
+        socket.emit('teacher:board-post', { kind: 'text', title: noteTitle || 'Teacher note', text: text.slice(0, 4000) }, () => {});
+      }
+      finish(ack, sentMessage);
+    });
   }
 
   function deleteTeacherCard(postId) {
@@ -3980,7 +3986,7 @@ function TeacherDashboardInner() {
             <div className={`iboard-teacher-panel-list${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
               {posts.length === 0 && !addCardOpen && (
                 <p className="px-1 py-6 text-center text-xs font-semibold text-slate-400">
-                  Press + to send an image, PDF or text. It goes straight to students’ inboxes.
+                  No resources yet — press + to send an image, PDF or text
                 </p>
               )}
               {posts.map((post) => (
