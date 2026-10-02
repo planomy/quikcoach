@@ -2451,7 +2451,7 @@ function TeacherDashboardInner() {
   }
 
   function submitTeacherCard(recipientIds = null) {
-    const title = String(addCardTitle || '').trim() || 'Handout';
+    const title = String(addCardText || '').trim().split('\n')[0].slice(0, 80) || String(addCardTitle || '').trim() || 'Handout';
     const chosenIds = Array.isArray(recipientIds) ? recipientIds.map(Number).filter((id) => id > 0) : null;
     const recipientOption = chosenIds ? { studentIds: chosenIds } : {};
     const finish = (ack, message) => {
@@ -2528,15 +2528,14 @@ function TeacherDashboardInner() {
 
     const text = addCardText.trim();
     if (!text) {
-      setAddCardError('Choose a file or write a note first');
+      setAddCardError('Add text or choose a file first');
       return;
     }
-    const noteTitle = String(addCardTitle || '').trim();
     const recipients = orderedStudents
       .filter((student) => !chosenIds || chosenIds.includes(Number(student.id)))
       .map((student) => ({
         studentId: student.id,
-        text: (noteTitle ? `${noteTitle}: ${text}` : text).slice(0, 4000),
+        text: text.slice(0, 4000),
       }));
       if (!recipients.length) {
       setAddCardError(chosenIds ? 'Those students are no longer in this room — nothing was sent' : 'No students have joined yet — nothing was sent');
@@ -2547,7 +2546,7 @@ function TeacherDashboardInner() {
     socket.emit('teacher:distribute', { items: recipients }, (ack) => {
       if (ack?.ok) {
         // Keep a copy in the teacher's Resources panel as well as the inboxes.
-        socket.emit('teacher:board-post', { kind: 'text', title: noteTitle || 'Teacher note', text: text.slice(0, 4000) }, () => {});
+        socket.emit('teacher:board-post', { kind: 'text', title: 'Teacher note', text: text.slice(0, 4000) }, () => {});
       }
       finish(ack, sentMessage);
     });
@@ -3882,14 +3881,14 @@ function TeacherDashboardInner() {
                     </h2>
                     <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
                   </div>
-                  <input
+                  <textarea
                     autoFocus={addCardOpen}
-                    value={addCardTitle}
-                    onChange={(event) => setAddCardTitle(event.target.value)}
-                    maxLength={80}
-                    aria-label="Card title"
+                    value={addCardText}
+                    onChange={(event) => setAddCardText(event.target.value)}
+                    rows={3}
+                    aria-label="Add text"
                     className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    placeholder="Title"
+                    placeholder={addCardFile || addCardImage ? 'Add a title (optional)' : 'Add text'}
                   />
                   {addCardFile ? (
                     <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-950/40">
@@ -3907,7 +3906,6 @@ function TeacherDashboardInner() {
                       <button type="button" onClick={() => setAddCardImage('')} className="mt-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Clear image</button>
                     </div>
                   ) : (
-                    <>
                       <HintWrap hint="Pick a picture or PDF to share with the class" className="w-full">
                       <label
                         className={`flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed px-2.5 py-2 text-sm transition dark:border-indigo-800 dark:bg-indigo-950/30 ${
@@ -3936,53 +3934,8 @@ function TeacherDashboardInner() {
                         />
                       </label>
                       </HintWrap>
-                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
-                        <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-                        or write a note
-                        <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-                      </div>
-                      <textarea
-                        value={addCardText}
-                        onChange={(event) => setAddCardText(event.target.value)}
-                        rows={4}
-                        aria-label="Card text"
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                        placeholder="Write the note…"
-                      />
-                    </>
                   )}
                   {addCardError && <p className="text-xs font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
-                  <div className="flex flex-col gap-1.5 pt-1">
-                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Send it to every student’s inbox' : 'Choose a file or write a note first'} className="w-full">
-                      <button
-                        type="submit"
-                        disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                        className="w-full whitespace-nowrap rounded-md bg-[#5a5fc3] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
-                      >
-                        {addCardBusy && !addCardPickerOpen ? 'Sending…' : 'Send to inbox'}
-                      </button>
-                    </HintWrap>
-              <div className="flex items-center gap-1.5">
-                      <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Choose which students get it' : 'Choose a file or write a note first'} className="min-w-0 flex-1">
-                        <button
-                          type="button"
-                          disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                          onClick={() => {
-                            setAddCardError('');
-                            setAddCardPickerOpen(true);
-                          }}
-                          className="w-full whitespace-nowrap rounded-md border border-[#cfcce8] bg-white px-2 py-1 text-[11px] font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
-                        >
-                          Select students…
-                        </button>
-                      </HintWrap>
-                      <HintWrap hint="Close without sharing">
-                        <button type="button" disabled={addCardBusy} onClick={closeAddCard} className="rounded-md px-2 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
-                          Cancel
-                        </button>
-                      </HintWrap>
-                    </div>
-                  </div>
                   <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
                     <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                     or
@@ -4004,10 +3957,34 @@ function TeacherDashboardInner() {
                     </svg>
                   </button>
                   </HintWrap>
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Choose which students get it' : 'Add text or choose a file first'} className="w-full">
+                      <button
+                        type="button"
+                        disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
+                        onClick={() => {
+                          setAddCardError('');
+                          setAddCardPickerOpen(true);
+                        }}
+                        className="w-full whitespace-nowrap rounded-md border border-[#cfcce8] bg-white px-2 py-1.5 text-[11px] font-semibold text-[#5a5fc3] hover:border-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
+                      >
+                        Select students…
+                      </button>
+                    </HintWrap>
+                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Send it to every student’s inbox' : 'Add text or choose a file first'} className="w-full">
+                      <button
+                        type="submit"
+                        disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
+                        className="w-full whitespace-nowrap rounded-md bg-[#5a5fc3] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                      >
+                        {addCardBusy && !addCardPickerOpen ? 'Sending…' : 'Send to inbox'}
+                      </button>
+                    </HintWrap>
+                  </div>
                 </form>
                 <StudentPickerDialog
                   open={addCardOpen && addCardPickerOpen}
-                  subtitle={String(addCardTitle || '').trim() || (addCardFile ? addCardFile.name : addCardImage ? 'Pasted image' : 'Note')}
+                  subtitle={String(addCardText || '').trim().split('\n')[0].slice(0, 80) || (addCardFile ? addCardFile.name : addCardImage ? 'Pasted image' : 'Note')}
                   students={orderedStudents.map((student) => ({
                     ...student,
                     connected: livePulse.students?.length ? connectedStudents.some((item) => item.id === student.id) : undefined,
