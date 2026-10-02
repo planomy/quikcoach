@@ -2494,7 +2494,7 @@ function TeacherDashboardInner() {
               mimeType: addCardFile.type || '',
               originalName: addCardFile.name || 'handout',
               sendToInbox: true,
-              placeOnBoard: false,
+              placeOnBoard: true,
               ...recipientOption,
             },
             (ack) => finish(ack, sentMessage)
@@ -2518,7 +2518,7 @@ function TeacherDashboardInner() {
             mimeType: 'image/jpeg',
             originalName: `${title.replace(/\s+/g, '-').slice(0, 40) || 'handout'}.jpg`,
           sendToInbox: true,
-          placeOnBoard: false,
+          placeOnBoard: true,
           ...recipientOption,
         },
         (ack) => finish(ack, sentMessage)
