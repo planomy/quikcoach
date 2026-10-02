@@ -8,7 +8,7 @@ import { FULLSCREEN_UNAVAILABLE_MESSAGE, canFullscreen, isFullscreen, subscribeF
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import ClassInsightsPanel from '../components/ClassInsightsPanel.jsx';
-import { activityStatus, isNotStarted, wordCount } from '../lib/text.js';
+import { activityStatus, isNotStarted, parseServerDateMs, wordCount } from '../lib/text.js';
 import useActivityClock from '../hooks/useActivityClock.js';
 import {
   buildAiPrompt,
@@ -77,6 +77,7 @@ const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
 const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden-v2';
 const LESSON_BEGUN_KEY = 'iboard-lesson-begun';
 const LESSON_BEGUN_MAX_MS = 4 * 60 * 60 * 1000;
+const NO_TYPING_MS = 3 * 60 * 1000;
 
 function readLessonBegun(code) {
   try {
@@ -1399,18 +1400,35 @@ function TeacherDashboardInner() {
     return map;
   }, [audienceQuestions]);
 
+  const connectedIdSet = useMemo(() => new Set(connectedStudents.map((student) => Number(student.id))), [connectedStudents]);
+
+  const isNoTyping = useCallback(
+    (student) => {
+      if (!String(student.text || '').trim()) return false;
+      if (!connectedIdSet.has(Number(student.id))) return false;
+      if (awayByStudentId.get(Number(student.id))) return false;
+      if (room?.freeze_class || livePulse.activity) return false;
+      const target = Number(room?.word_target) || 0;
+      if (target > 0 && wordCount(student.text) >= target) return false;
+      const changedAt = parseServerDateMs(student.updated_at);
+      return Number.isFinite(changedAt) && activityNow - changedAt >= NO_TYPING_MS;
+    },
+    [connectedIdSet, awayByStudentId, room?.freeze_class, room?.word_target, livePulse.activity, activityNow]
+  );
+
   const matchesAttention = useCallback(
     (student, filter) => {
       if (filter === 'away') return !!awayByStudentId.get(Number(student.id));
       if (filter === 'notStarted') return isNotStarted(student, activityNow);
+      if (filter === 'noTyping') return isNoTyping(student);
       if (filter === 'pasted') return !!pasteCounts[student.id];
       return false;
     },
-    [awayByStudentId, activityNow, pasteCounts]
+    [awayByStudentId, activityNow, pasteCounts, isNoTyping]
   );
 
   const attentionCounts = useMemo(() => {
-    const counts = { away: 0, notStarted: 0, pasted: 0 };
+    const counts = { away: 0, notStarted: 0, noTyping: 0, pasted: 0 };
     for (const student of orderedStudents) {
       for (const filter of Object.keys(counts)) if (matchesAttention(student, filter)) counts[filter] += 1;
     }
@@ -3329,6 +3347,7 @@ function TeacherDashboardInner() {
   const attentionPills = [
     { id: 'away', label: `${attentionCounts.away} away` },
     { id: 'notStarted', label: `${attentionCounts.notStarted} not started` },
+    { id: 'noTyping', label: `${attentionCounts.noTyping} no typing` },
     { id: 'pasted', label: `${attentionCounts.pasted} pasted` },
   ].filter((pill) => attentionCounts[pill.id] > 0);
   const messageWaitCount = orderedStudents.reduce(
@@ -4114,6 +4133,7 @@ function TeacherDashboardInner() {
             const monitoring = monitoredIds.has(Number(s.id));
             const isAway = awayByStudentId.get(Number(s.id)) === true;
             const notStarted = isNotStarted(s, activityNow);
+            const noTyping = isNoTyping(s);
             const inboxWaiting = studentHasInboxWait(s, pendingHandByStudentId, noteReceiptByStudentId);
             const cardEmpty = !displayText && !s.image_url;
             const noteStatus = noteReceiptByStudentId[s.id] || '';
@@ -4213,6 +4233,16 @@ function TeacherDashboardInner() {
                           className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
                         >
                           Away
+                        </span>
+                        </HintWrap>
+                      ) : null}
+                      {noTyping ? (
+                        <HintWrap hint="No changes to their writing for 3 minutes or more" prefer="above">
+                        <span
+                          title=""
+                          className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
+                        >
+                          No typing
                         </span>
                         </HintWrap>
                       ) : null}
