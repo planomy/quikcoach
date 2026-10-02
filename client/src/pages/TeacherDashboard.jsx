@@ -5427,7 +5427,7 @@ function TeacherDashboardInner() {
             {settingsSection === 'class' && (
               <section className="iboard-room-settings__section">
                 <h3 className="iboard-room-settings__label">
-                  <HintWrap hint="Adds a timer to the teacher and student boards" prefer="right">Timer</HintWrap>
+                  <HintWrap hint="Adds a timer to the teacher and student boards">Timer</HintWrap>
                 </h3>
                 <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                   {!room?.timer?.active ? (
@@ -5583,7 +5583,7 @@ function TeacherDashboardInner() {
             <>
             <section className="iboard-room-settings__section" data-help-target="breakouts">
               <h3 className="iboard-room-settings__label">
-                <HintWrap hint="Student writing cards appear on group members' screens" prefer="right">Breakouts</HintWrap>
+                <HintWrap hint="Student writing cards appear on group members' screens">Breakouts</HintWrap>
               </h3>
               <div className={`iboard-room-settings__card iboard-room-settings__card-pad${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}>
                 {breakoutsActive ? (
@@ -5644,7 +5644,7 @@ function TeacherDashboardInner() {
 
             <section className="iboard-room-settings__section">
               <h3 className="iboard-room-settings__label">
-                <HintWrap hint="Students cannot type past the word limit" prefer="right">Word limit</HintWrap>
+                <HintWrap hint="Students cannot type past the word limit">Word limit</HintWrap>
               </h3>
               <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                 <div className="iboard-word-target-row">
