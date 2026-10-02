@@ -5517,22 +5517,26 @@ function TeacherDashboardInner() {
                 <HintWrap hint="Change the colours of your screen only" className="min-w-0 flex-1">
                   <button
                     type="button"
+                    role="switch"
                     onClick={toggleTheme}
-                    aria-pressed={isDark}
-                    className="iboard-room-settings__secondary"
+                    aria-checked={isDark}
+                    className="iboard-room-settings__secondary w-full justify-between gap-3"
                   >
-                    {isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                    <span>Dark mode</span>
+                    <span className="iboard-switch" data-on={isDark ? 'true' : 'false'} aria-hidden="true" />
                   </button>
                 </HintWrap>
               </div>
               <div className="iboard-room-settings__row">
                 <button
                   type="button"
+                  role="switch"
                   onClick={() => setHintsOff(!hintsOff)}
-                  aria-pressed={hintsOff}
-                  className="iboard-room-settings__secondary min-w-0 flex-1"
+                  aria-checked={!hintsOff}
+                  className="iboard-room-settings__secondary min-w-0 flex-1 justify-between gap-3"
                 >
-                  {hintsOff ? 'Turn tooltips on' : 'Turn tooltips off'}
+                  <span>Tooltips</span>
+                  <span className="iboard-switch" data-on={hintsOff ? 'false' : 'true'} aria-hidden="true" />
                 </button>
               </div>
               {fixedCommentCount > 0 && (
