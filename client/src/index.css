@@ -91,6 +91,17 @@ html.dark:-webkit-full-screen {
   max-height: 100dvh;
 }
 
+/* The dashboard owns all scrolling; the page behind it must never move. */
+html:has(.iboard-teacher-canvas),
+html:has(.iboard-teacher-canvas) body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.iboard-student-board {
+  overscroll-behavior: contain;
+}
+
 html:fullscreen .iboard-teacher-canvas,
 html:-webkit-full-screen .iboard-teacher-canvas,
 html:fullscreen .iboard-student-canvas,
@@ -4973,7 +4984,10 @@ html.dark .iboard-header-objective.is-empty {
 .iboard-student-card__fit-pane {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   cursor: pointer;
   margin-top: 0.35rem !important;
   padding: 0.35rem 0.5rem !important;
