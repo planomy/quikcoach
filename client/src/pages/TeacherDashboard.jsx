@@ -3206,8 +3206,17 @@ function TeacherDashboardInner() {
     setLibraryView('participation');
   }
 
+  function openAiFeedback() {
+    openLibrary('feedback');
+  }
+
   function openLibrary(panel, evidenceTab = 'lessons') {
     closeSettings();
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+    setAddCardOpen(false);
+    setViewOpen(false);
+    setHelpOpen(false);
     setLibraryPanel('evidence');
     if (panel === 'reports' || (panel === 'evidence' && evidenceTab === 'students')) {
       setLibraryView('portfolios');
@@ -3298,6 +3307,8 @@ function TeacherDashboardInner() {
     : '';
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
   const settingsTitle = settingsSection === 'class' ? 'Manage room' : settingsSection === 'records' ? 'Reports' : 'Settings';
+  const aiFeedbackOpen = !!libraryPanel && libraryView === 'feedback';
+  const reportsOpen = !!libraryPanel && libraryView !== 'feedback';
 
   return (
     <div className="iboard-teacher-canvas flex h-full min-h-[100dvh] flex-col overflow-hidden dark:bg-slate-950">
@@ -3714,6 +3725,20 @@ function TeacherDashboardInner() {
                 </HintWrap>
               );
             })}
+            <HintWrap hint="Get AI feedback on everyone's writing, then send it to students" suppressed={aiFeedbackOpen}>
+              <button
+                type="button"
+                data-help-target="ai"
+                onClick={() => (aiFeedbackOpen ? closeLibraryHub() : openAiFeedback())}
+                aria-expanded={aiFeedbackOpen}
+                data-active={aiFeedbackOpen ? 'true' : 'false'}
+                className={`iboard-arr-btn${helpFlash === 'ai' ? ' is-help-flash' : ''}`}
+                aria-label="AI feedback"
+              >
+                <span className="iboard-arr-btn__icon iboard-arr-btn__icon--ai" aria-hidden="true" />
+                <span className="iboard-arr-label">AI feedback</span>
+              </button>
+            </HintWrap>
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
             <div className="iboard-arr-rail__board" aria-label="Manage room">
@@ -3740,13 +3765,13 @@ function TeacherDashboardInner() {
                   )}
                 </button>
               </HintWrap>
-              <HintWrap hint="Lesson records, class insights, participant list" prefer="right" suppressed={settingsOpen && settingsSection === 'records'}>
+              <HintWrap hint="Snapshots, portfolios, participation and class insights" suppressed={reportsOpen}>
                 <button
                   ref={recordsButtonRef}
                   type="button"
-                  onClick={() => toggleSettings('records')}
-                  aria-expanded={settingsOpen && settingsSection === 'records'}
-                  data-active={settingsOpen && settingsSection === 'records' ? 'true' : 'false'}
+                  onClick={() => (reportsOpen ? closeLibraryHub() : openLibrary('evidence', 'lessons'))}
+                  aria-expanded={reportsOpen}
+                  data-active={reportsOpen ? 'true' : 'false'}
                   className="iboard-arr-btn"
                   aria-label="View reports"
                 >
@@ -4573,7 +4598,7 @@ function TeacherDashboardInner() {
           >
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3.5 dark:border-slate-700">
               <div className="flex min-w-0 items-center gap-1">
-                {libraryView !== 'home' ? (
+                {libraryView !== 'home' && libraryView !== 'feedback' ? (
                   <button
                     type="button"
                     onClick={goLibraryHome}
@@ -4597,7 +4622,7 @@ function TeacherDashboardInner() {
                             ? 'Session PDF'
                             : libraryView === 'portfolios'
                               ? 'Student portfolios'
-                              : 'Lesson records'}
+                              : 'Reports'}
               </h2>
                   {libraryView === 'feedback' ? (
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -4606,15 +4631,15 @@ function TeacherDashboardInner() {
                   ) : null}
             </div>
               </div>
-              <CloseButton onClick={closeLibraryHub} aria-label="Close Lesson records" />
+              <CloseButton onClick={closeLibraryHub} aria-label={libraryView === 'feedback' ? 'Close AI feedback' : 'Close Reports'} />
             </div>
             <div className={`overflow-y-auto scrollbar-thin${libraryView === 'feedback' || libraryView === 'pdf' ? ' p-4' : ' p-5'}`}>
         {libraryView === 'home' && (
           <section className="space-y-4">
               <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-              Capture and revisit today’s writing evidence. Use the save icon in the header to snapshot everyone’s writing; browse packs and tools below.
+              Everything from your lessons in one place. To capture today’s writing, use the save icon in the header and save a snapshot.
             </p>
-            <div className="flex flex-wrap gap-2" role="navigation" aria-label="Lesson records sections">
+            <div className="flex flex-wrap gap-2" role="navigation" aria-label="Report sections">
               <button
                 type="button"
                 onClick={() => setLibraryView('drafting')}
@@ -4622,13 +4647,6 @@ function TeacherDashboardInner() {
               >
                 Drafting evidence
               </button>
-                  <button
-                    type="button"
-                onClick={() => setLibraryView('feedback')}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                AI feedback
-                  </button>
                   <button
                     type="button"
                 onClick={() => setLibraryView('participation')}
@@ -4651,6 +4669,20 @@ function TeacherDashboardInner() {
               >
                 Student portfolios
                   </button>
+              <button
+                type="button"
+                onClick={() => { closeLibraryHub(); setInsightsOpen(true); }}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Class insights
+              </button>
+              <button
+                type="button"
+                onClick={downloadParticipantList}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Download participant list
+              </button>
                 </div>
 
             {snapshots.length === 0 ? (
@@ -4671,7 +4703,9 @@ function TeacherDashboardInner() {
                         <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                           <span className="text-slate-800 dark:text-slate-200">
                             <span className="font-medium">{sn.label || `Evidence #${sn.id}`}</span>
-                            <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{formatSqlUtc(sn.created_at)}</span>
+                            {String(sn.label || '').includes(formatSqlUtc(sn.created_at)) ? null : (
+                              <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{formatSqlUtc(sn.created_at)}</span>
+                            )}
                           </span>
                           <span className="flex gap-2">
                             <button

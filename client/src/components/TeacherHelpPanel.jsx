@@ -50,14 +50,14 @@ export const TEACHER_HELP_ITEMS = [
   },
   {
     id: 'records',
-    title: 'Lesson records',
-    body: 'Click the save icon at the top right, then Save a snapshot of everyone’s writing. Open View reports → Lesson records to browse class snapshots and portfolios.',
+    title: 'Reports',
+    body: 'Click the save icon at the top right, then Save a snapshot of everyone’s writing. Open View reports on the left to browse snapshots, portfolios, participation and class insights.',
     action: 'records',
   },
   {
     id: 'ai',
-    title: 'AI Feedback',
-    body: 'Open View reports, Lesson records, AI Feedback to prepare anonymised writing for an AI tool, then paste and distribute feedback to students.',
+    title: 'AI feedback',
+    body: 'Click AI feedback on the left to copy anonymised writing for an AI tool, then paste its reply back and send the feedback to students.',
     action: 'ai',
   },
   {

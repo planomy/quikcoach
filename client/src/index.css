@@ -1348,6 +1348,9 @@ html.dark .iboard-tour__close:hover {
 .iboard-arr-btn__icon--ask { --iboard-rail-icon: url('/brand/rail-ask.png'); }
 .iboard-arr-btn__icon--manage { --iboard-rail-icon: url('/brand/rail-manage.png'); }
 .iboard-arr-btn__icon--review { --iboard-rail-icon: url('/brand/rail-review.png'); }
+.iboard-arr-btn__icon--ai {
+  --iboard-rail-icon: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 3.5l1.9 5.1 5.1 1.9-5.1 1.9L11 17.5l-1.9-5.1L4 10.5l5.1-1.9z'/%3E%3Cpath d='M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z'/%3E%3C/svg%3E");
+}
 
 .iboard-arr-label {
   display: block;
