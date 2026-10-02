@@ -1878,6 +1878,9 @@ function TeacherDashboardInner() {
         if (recordsButtonRef.current?.contains(target)) return;
         if (settingsPanelRef.current?.contains(target)) return;
         if (breakoutAssignPanelRef.current?.contains(target)) return;
+        // Ask and Share close settings themselves; letting them through keeps one dock
+        // handing over to the next instead of closing first and re-opening cold.
+        if (target?.closest?.('.iboard-arr-rail__tools, .iboard-arr-rail__add')) return;
         // Native <select> menus are often outside the React tree; don't close while interacting.
         if (target?.closest?.('select') || document.activeElement?.tagName === 'SELECT') return;
       }
@@ -1959,14 +1962,16 @@ function TeacherDashboardInner() {
     const previous = railDockKeyRef.current;
     railDockKeyRef.current = railDockKey;
     if (!railDockKey || !previous || previous === railDockKey) return undefined;
-    // Same dock swapping content: glide to the new rail button and fade the content in.
-    if (previous.split(':')[0] !== railDockKey.split(':')[0]) return undefined;
+    // One rail dock handing over to another: glide from the old position to the new
+    // rail button and fade the content in, rather than sliding in from the rail again.
     const panel = railDockKey.startsWith('tools') ? teacherToolsPanelRef.current : settingsPanelRef.current;
     if (!panel) return undefined;
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    panel.style.animation = 'none';
     let glideTimer = null;
     if (!reduceMotion) {
       panel.style.transition = 'top 280ms cubic-bezier(0.22, 1, 0.36, 1)';
+      void panel.offsetHeight;
       glideTimer = window.setTimeout(() => {
         panel.style.transition = '';
       }, 320);
@@ -1985,6 +1990,7 @@ function TeacherDashboardInner() {
     return () => {
       if (glideTimer !== null) window.clearTimeout(glideTimer);
       panel.style.transition = '';
+      panel.style.animation = '';
     };
   }, [railDockKey]);
 
@@ -2223,19 +2229,19 @@ function TeacherDashboardInner() {
 
   function handleTeacherChatSent({ studentId, urgent, name }) {
     setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'waiting' }));
-    window.dispatchEvent(
-      new CustomEvent('iboard:note-send-status', {
+      window.dispatchEvent(
+        new CustomEvent('iboard:note-send-status', {
         detail: { studentId, status: 'waiting' },
-      })
-    );
-    setNoteReplyByStudentId((current) => {
+        })
+      );
+      setNoteReplyByStudentId((current) => {
       if (!current[studentId]) return current;
-      const next = { ...current };
+        const next = { ...current };
       delete next[studentId];
-      return next;
-    });
+        return next;
+      });
     setCopyToast(urgent ? `Urgent message sent to ${name}` : `Message sent to ${name}`);
-    setTimeout(() => setCopyToast(''), 2500);
+      setTimeout(() => setCopyToast(''), 2500);
   }
 
   function toggleBroadcastCard(key, event) {
@@ -2279,17 +2285,17 @@ function TeacherDashboardInner() {
       },
       (ack) => {
         if (!ack?.ok) setError(ack?.error || 'Send failed — check you opened the room and students are connected');
-        else {
+      else {
           const audience = recipients
             ? `${recipients.length} selected student${recipients.length === 1 ? '' : 's'}`
             : `${ack.reached ?? 0} student${(ack.reached ?? 0) === 1 ? '' : 's'}`;
-          if (ack.count > 0 && ack.reached === 0) {
-            setCopyToast('Sent, but 0 student tabs connected — ask students to refresh');
-          } else {
+        if (ack.count > 0 && ack.reached === 0) {
+          setCopyToast('Sent, but 0 student tabs connected — ask students to refresh');
+        } else {
             setCopyToast(`Sent ${ack.count} exemplar(s) → ${audience}`);
-          }
-          setTimeout(() => setCopyToast(''), 4000);
-          setBroadcastPick({});
+        }
+        setTimeout(() => setCopyToast(''), 4000);
+        setBroadcastPick({});
           setSendRecipientPick({});
           setSendToMenuOpen(false);
         }
@@ -2473,8 +2479,8 @@ function TeacherDashboardInner() {
       : 'Sent to students’ inboxes';
     if (chosenIds && !chosenIds.length) {
       setAddCardError('Tick at least one student first');
-      return;
-    }
+        return;
+      }
 
     if (addCardFile) {
       setAddCardBusy(true);
@@ -2505,13 +2511,13 @@ function TeacherDashboardInner() {
     if (addCardImage) {
       setAddCardBusy(true);
       setAddCardError('');
-      socket.emit(
-        'teacher:material-send',
-        {
-          title,
-          fileBase64: addCardImage,
-          mimeType: 'image/jpeg',
-          originalName: `${title.replace(/\s+/g, '-').slice(0, 40) || 'handout'}.jpg`,
+        socket.emit(
+          'teacher:material-send',
+          {
+            title,
+            fileBase64: addCardImage,
+            mimeType: 'image/jpeg',
+            originalName: `${title.replace(/\s+/g, '-').slice(0, 40) || 'handout'}.jpg`,
           sendToInbox: true,
           placeOnBoard: false,
           ...recipientOption,
@@ -2533,10 +2539,10 @@ function TeacherDashboardInner() {
         studentId: student.id,
         text: (noteTitle ? `${noteTitle}: ${text}` : text).slice(0, 4000),
       }));
-    if (!recipients.length) {
+      if (!recipients.length) {
       setAddCardError(chosenIds ? 'Those students are no longer in this room — nothing was sent' : 'No students have joined yet — nothing was sent');
-      return;
-    }
+        return;
+      }
     setAddCardBusy(true);
     setAddCardError('');
     socket.emit('teacher:distribute', { items: recipients }, (ack) => finish(ack, sentMessage));
@@ -2847,7 +2853,7 @@ function TeacherDashboardInner() {
       const { downloadPortfolioPdf } = await import('../lib/portfolioPdf.js');
       await downloadPortfolioPdf({ roomCode: codeInput, student: selectedEvidenceStudent });
       setCopyToast(`Downloaded ${selectedEvidenceStudent.name}’s portfolio PDF`);
-      setTimeout(() => setCopyToast(''), 3000);
+    setTimeout(() => setCopyToast(''), 3000);
     } catch (e) {
       setError(e?.message || 'Could not download that portfolio');
     } finally {
@@ -3308,14 +3314,14 @@ function TeacherDashboardInner() {
           <div className="iboard-teacher-header-rail">
             <div className="iboard-brand shrink-0" aria-label="TUIT">
               <img src="/brand/tuit-logo.png" alt="TUIT" className="iboard-brand-logo" />
-            </div>
+        </div>
           </div>
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
           <div className="iboard-teacher-header-main">
             <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
               <HintWrap hint="Show how students join, full screen" prefer="below">
-                <button
-                  type="button"
+                  <button
+                    type="button"
                   className="iboard-header-room"
                   onClick={openJoinScreen}
                   aria-label={`Room ${codeInput}. Show the join screen`}
@@ -3327,7 +3333,7 @@ function TeacherDashboardInner() {
               <span className="iboard-header-meta__dot" aria-hidden="true" />
               <span className="iboard-header-meta__online">
                 <b className="tabular-nums">{connectedStudents.length}</b> online
-              </span>
+                      </span>
               <HintWrap hint={room?.lesson_objective ? 'Change today’s objective' : 'Students see this at the top of their screen'} prefer="below">
                 <button
                   type="button"
@@ -3336,29 +3342,29 @@ function TeacherDashboardInner() {
                   aria-label={room?.lesson_objective ? `Today’s objective: ${room.lesson_objective}. Change it` : 'Add today’s objective'}
                 >
                   <span>{room?.lesson_objective || '+ Add today’s objective'}</span>
-                </button>
+                  </button>
               </HintWrap>
               {attentionPills.map((pill) => {
                 const on = attentionFocus === pill.id;
                 return (
                   <HintWrap key={pill.id} hint={on ? 'Show all cards' : 'Bring these cards to the top'} prefer="below">
-                    <button
-                      type="button"
+              <button
+                type="button"
                       onClick={() => setAttentionFocus(on ? null : pill.id)}
                       className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}`}
                       title=""
                       aria-pressed={on}
                     >
                       {pill.label}
-                    </button>
-                  </HintWrap>
+              </button>
+            </HintWrap>
                 );
               })}
               {inboxSummary ? (
                 <HintWrap hint={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'} prefer="below">
-                  <button
-                    type="button"
-                    onClick={() => {
+                <button
+                  type="button"
+                  onClick={() => {
                       setInboxFocus((on) => {
                         const next = !on;
                         if (next) {
@@ -3375,15 +3381,15 @@ function TeacherDashboardInner() {
                     aria-pressed={inboxFocus}
                   >
                     {inboxSummary}
-                  </button>
-                </HintWrap>
+                </button>
+              </HintWrap>
               ) : null}
-              {frozen && (
+            {frozen && (
                 <span className="iboard-header-pill iboard-header-pill--frozen">
-                  Frozen
-                </span>
-              )}
-            </div>
+                Frozen
+              </span>
+            )}
+          </div>
 
             <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
             <RoomTimerPill
@@ -3402,42 +3408,42 @@ function TeacherDashboardInner() {
               prefer="below"
               multiline
             >
-              <button
+            <button
                 ref={tourRecRef}
-                type="button"
-                disabled={draftTrailBusy || !socketConnected || !joined}
-                aria-pressed={!!room?.draftTrail?.active}
-                aria-label={
-                  draftTrailBusy
+              type="button"
+              disabled={draftTrailBusy || !socketConnected || !joined}
+              aria-pressed={!!room?.draftTrail?.active}
+              aria-label={
+                draftTrailBusy
                     ? 'Updating drafting evidence'
-                    : room?.draftTrail?.active
+                  : room?.draftTrail?.active
                       ? (room?.draftTrail?.label ? `Stop drafting evidence · ${room.draftTrail.label}` : 'Stop drafting evidence')
                       : 'Record written drafting evidence'
                 }
                 className={`iboard-rec-switch${room?.draftTrail?.active ? ' is-on' : ''}${draftTrailBusy ? ' is-busy' : ''}`}
-                onClick={() => {
-                  if (room?.draftTrail?.active) {
-                    setDraftTrailRecording(false);
-                    return;
-                  }
+              onClick={() => {
+                if (room?.draftTrail?.active) {
+                  setDraftTrailRecording(false);
+                  return;
+                }
                   setDraftTrailLabelDraft(room?.draftTrail?.label || room?.lesson_objective || '');
-                  setDraftTrailLabelOpen(true);
-                }}
-              >
+                setDraftTrailLabelOpen(true);
+              }}
+            >
                 <span className="iboard-rec-switch__word">{draftTrailBusy ? '…' : 'REC'}</span>
                 <span className="iboard-rec-switch__track" aria-hidden="true">
                   <span className="iboard-rec-switch__knob">
                     <span className="iboard-rec-switch__dot" />
                   </span>
                   <span className="iboard-rec-switch__on">ON</span>
-                </span>
-              </button>
+              </span>
+            </button>
             </HintWrap>
             <div ref={tourHeaderToolsRef} className="flex items-center gap-1.5">
             <div ref={sessionMenuRef} className="relative">
               <HintWrap hint="Save or load a lesson" prefer="below" suppressed={sessionMenuOpen}>
-                <button
-                  type="button"
+              <button
+                type="button"
                   data-help-target="session"
                   onClick={() => setSessionMenuOpen((open) => !open)}
                   aria-expanded={sessionMenuOpen}
@@ -3446,22 +3452,22 @@ function TeacherDashboardInner() {
                   aria-label="Save or open a lesson"
                 >
                   <span className="iboard-header-icon iboard-header-icon--save" aria-hidden="true" />
-                </button>
-              </HintWrap>
+              </button>
+            </HintWrap>
               {sessionMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
                   <HintWrap hint="Downloads this lesson so you can open it again later" prefer="side" className="w-full">
-                    <button
-                      type="button"
+          <button
+            type="button"
                       disabled={sessionBusy}
-                      onClick={() => {
+            onClick={() => {
                         setSessionMenuOpen(false);
                         void saveSessionFile();
-                      }}
+            }}
                       className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
-                    >
+          >
                       {sessionBusy ? 'Saving lesson…' : 'Save lesson to a file'}
-                    </button>
+          </button>
                   </HintWrap>
                   <HintWrap hint="Open a lesson you saved earlier" prefer="side" className="w-full">
                     <button
@@ -3474,7 +3480,7 @@ function TeacherDashboardInner() {
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                       {sessionBusy ? 'Opening…' : 'Open a saved lesson'}
-                    </button>
+          </button>
                   </HintWrap>
                   <HintWrap hint="Keeps a copy of every student’s writing right now. Find it later in Reports." prefer="side" className="w-full" multiline>
                     <button
@@ -3489,8 +3495,8 @@ function TeacherDashboardInner() {
                       {evidenceBusy ? 'Saving snapshot…' : 'Save a snapshot of everyone’s writing'}
                     </button>
                   </HintWrap>
-                </div>
-              )}
+        </div>
+      )}
             </div>
             <HintWrap hint="Student card view" prefer="below" suppressed={viewOpen}>
               <button
@@ -3681,7 +3687,7 @@ function TeacherDashboardInner() {
                 <span className="iboard-arr-label">Share resources</span>
               </button>
             </HintWrap>
-          </div>
+            </div>
           <div ref={tourEngageRef} className="iboard-arr-rail__tools">
             {TEACHER_TOOLS_TABS.map((tab) => {
               const active = toolsPanelOpen && (toolsTab === tab.id || (tab.id === 'ask' && toolsTab === 'responses'));
@@ -3912,7 +3918,7 @@ function TeacherDashboardInner() {
                         {addCardBusy && !addCardPickerOpen ? 'Sending…' : 'Send to inbox'}
                       </button>
                     </HintWrap>
-                    <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5">
                       <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Choose which students get it' : 'Choose a file or write a note first'} className="min-w-0 flex-1">
                         <button
                           type="button"
@@ -4007,28 +4013,28 @@ function TeacherDashboardInner() {
                   </label>
                 </HintWrap>
                 <div className="iboard-teacher-card__actions ml-auto flex shrink-0 items-center gap-0.5">
-                  <HintWrap hint="Edit card">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        window.dispatchEvent(
-                          new CustomEvent('iboard:edit-teacher-card', { detail: { post } }),
-                        );
-                      }}
-                      className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-100"
+                <HintWrap hint="Edit card">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.dispatchEvent(
+                        new CustomEvent('iboard:edit-teacher-card', { detail: { post } }),
+                      );
+                    }}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-100"
                       aria-label={`Edit ${post.title || 'teacher card'}`}
-                      title=""
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                      </svg>
-                    </button>
-                  </HintWrap>
-                  <HintWrap hint="Remove card">
+                    title=""
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </button>
+                </HintWrap>
+                <HintWrap hint="Remove card">
                     <RemoveButton onClick={() => deleteTeacherCard(post.id)} aria-label={`Remove ${post.title || 'teacher card'}`} title="" />
-                  </HintWrap>
-                </div>
+                </HintWrap>
+              </div>
               </div>
               <div className={`iboard-teacher-card-body mt-2 rounded-xl bg-white p-2.5 text-sm leading-relaxed text-slate-700 scrollbar-thin dark:bg-slate-950 dark:text-slate-300 ${teacherWritingPaneClass}`}>
                 {post.kind === 'image' && post.image_url ? (
@@ -4057,14 +4063,14 @@ function TeacherDashboardInner() {
                     {post.title && post.title !== 'Handout' ? (
                       <p className="mb-1 font-semibold text-slate-800 dark:text-slate-100">{post.title}</p>
                     ) : null}
-                    <p className="whitespace-pre-wrap break-words">{post.text}</p>
+                  <p className="whitespace-pre-wrap break-words">{post.text}</p>
                   </>
                 ) : (
                   <span className="italic text-slate-400">Empty card</span>
                 )}
               </div>
             </article>
-              ))}
+          ))}
             </div>
           </aside>
         </div>
@@ -4185,17 +4191,17 @@ function TeacherDashboardInner() {
                           cardView === 'overview' || cardView === 'all' ? 'text-[13px]' : 'text-[14px]'
                         } ${
                           handUp ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''
-                        }`}
-                        aria-label={handUp ? `${s.name} has a question` : undefined}
+                    }`}
+                    aria-label={handUp ? `${s.name} has a question` : undefined}
                         title=""
-                        onClick={(event) => {
+                    onClick={(event) => {
                           if (!handUp) return;
-                          event.stopPropagation();
-                          setHandQuestionTarget({ student: s, questions: handQuestions });
-                        }}
-                      >
-                        {s.name}
-                      </h2>
+                        event.stopPropagation();
+                        setHandQuestionTarget({ student: s, questions: handQuestions });
+                    }}
+                  >
+                    {s.name}
+                  </h2>
                       {gradeShortLabel(s.year_level) && (
                         <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           {gradeShortLabel(s.year_level)}
@@ -4271,25 +4277,25 @@ function TeacherDashboardInner() {
                         </span>
                         </HintWrap>
                       ) : null}
-                      {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(s.id)) ? (
+                  {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(s.id)) ? (
                         <HintWrap hint="Open drafting evidence" prefer="above">
-                        <button
-                          type="button"
+                    <button
+                      type="button"
                           title=""
                           aria-label={`Open drafting evidence for ${s.name}`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setDraftTrailFocusId(s.id);
-                            setDraftTrailOpen(true);
-                          }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setDraftTrailFocusId(s.id);
+                        setDraftTrailOpen(true);
+                      }}
                           className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-600 ring-1 ring-red-200 hover:ring-red-300 dark:ring-red-900"
-                        />
+                    />
                         </HintWrap>
-                      ) : null}
+                  ) : null}
                       {pasteCounts[s.id] ? (
                         <HintWrap hint={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'} this lesson`} prefer="above">
-                        <button
-                          type="button"
+                      <button
+                        type="button"
                           title=""
                           aria-label={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'}. Options for ${s.name}`}
                           aria-haspopup="menu"
@@ -4305,9 +4311,9 @@ function TeacherDashboardInner() {
                           className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50"
                         >
                           Pasted{pasteCounts[s.id] > 1 ? ` ×${pasteCounts[s.id]}` : ''}
-                        </button>
-                        </HintWrap>
-                      ) : null}
+                      </button>
+                    </HintWrap>
+                  ) : null}
                     </div>
                   </div>
                   </div>
@@ -4320,36 +4326,36 @@ function TeacherDashboardInner() {
                   <div className="iboard-student-card__head-end">
                   <HintWrap
                     hint={
-                      noteReceiptByStudentId[s.id] === 'replied'
+                        noteReceiptByStudentId[s.id] === 'replied'
                         ? 'Student replied — open chat'
-                        : noteReceiptByStudentId[s.id] === 'seen'
+                          : noteReceiptByStudentId[s.id] === 'seen'
                           ? 'Message seen'
-                          : noteReceiptByStudentId[s.id] === 'waiting'
+                            : noteReceiptByStudentId[s.id] === 'waiting'
                             ? 'Sent — waiting'
                             : 'Private chat'
                     }
                   >
-                    <button
-                      type="button"
-                      data-note-student-id={s.id}
-                      data-note-student-name={s.name}
+                        <button
+                          type="button"
+                          data-note-student-id={s.id}
+                          data-note-student-name={s.name}
                       data-note-status={noteStatus || undefined}
-                      onClick={(event) => openNoteForStudent(s, event)}
+                          onClick={(event) => openNoteForStudent(s, event)}
                       className={`iboard-student-card__chat relative mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
                         noteStatus === 'replied'
-                          ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
+                              ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
                           : noteStatus === 'seen'
-                            ? 'text-green-500 hover:text-green-600 dark:text-green-400'
+                                ? 'text-green-500 hover:text-green-600 dark:text-green-400'
                             : noteStatus === 'waiting'
-                              ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
-                              : 'text-slate-500 hover:text-indigo-700 dark:text-slate-300 dark:hover:text-indigo-300'
-                      }`}
-                      aria-label={
-                        noteReceiptByStudentId[s.id] === 'replied'
+                                  ? 'text-blue-600 hover:text-blue-700 dark:text-blue-400'
+                                  : 'text-slate-500 hover:text-indigo-700 dark:text-slate-300 dark:hover:text-indigo-300'
+                          }`}
+                          aria-label={
+                            noteReceiptByStudentId[s.id] === 'replied'
                           ? `Chat with ${s.name} — they replied`
-                          : noteReceiptByStudentId[s.id] === 'seen'
+                              : noteReceiptByStudentId[s.id] === 'seen'
                             ? `Chat with ${s.name} — seen`
-                            : noteReceiptByStudentId[s.id] === 'waiting'
+                                : noteReceiptByStudentId[s.id] === 'waiting'
                               ? `Chat with ${s.name} — waiting`
                               : `Chat with ${s.name}`
                       }
@@ -4358,8 +4364,8 @@ function TeacherDashboardInner() {
                       {noteReceiptByStudentId[s.id] === 'replied' ? (
                         <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
                       ) : null}
-                    </button>
-                  </HintWrap>
+                        </button>
+                      </HintWrap>
                   <div
                     className="iboard-student-card-actions ml-auto flex shrink-0 items-center gap-0.5"
                     data-open={studentActionMenuId === s.id ? 'true' : 'false'}
@@ -4403,28 +4409,28 @@ function TeacherDashboardInner() {
                       </HintWrap>
                       </>
                       ) : null}
-                      <div className="relative" data-student-actions-menu>
-                        <HintWrap hint="More actions">
-                          <button
-                            type="button"
+                    <div className="relative" data-student-actions-menu>
+                      <HintWrap hint="More actions">
+                        <button
+                          type="button"
                             ref={(node) => {
                               const id = Number(s.id);
                               if (node) studentActionMenuBtnRefs.current.set(id, node);
                               else studentActionMenuBtnRefs.current.delete(id);
                             }}
-                            onClick={() => setStudentActionMenuId((current) => current === s.id ? null : s.id)}
-                            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-                            aria-label={`More actions for ${s.name}`}
-                            aria-expanded={studentActionMenuId === s.id}
-                          >
-                            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                              <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
-                            </svg>
-                          </button>
-                        </HintWrap>
-                      </div>
+                          onClick={() => setStudentActionMenuId((current) => current === s.id ? null : s.id)}
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                          aria-label={`More actions for ${s.name}`}
+                          aria-expanded={studentActionMenuId === s.id}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                            <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+                          </svg>
+                        </button>
+                      </HintWrap>
+                        </div>
                     </div>
-                  </div>
+                    </div>
                   </div>
                 </div>
                 <div
@@ -4576,7 +4582,7 @@ function TeacherDashboardInner() {
                   </button>
                 ) : null}
                 <div className="min-w-0">
-                  <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+              <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
                     {libraryView === 'feedback'
                       ? 'AI feedback'
                       : libraryView === 'drafting'
@@ -4588,20 +4594,20 @@ function TeacherDashboardInner() {
                             : libraryView === 'portfolios'
                               ? 'Student portfolios'
                               : 'Lesson records'}
-                  </h2>
+              </h2>
                   {libraryView === 'feedback' ? (
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       Students are only identified by number — names are never sent to the AI.
                     </p>
                   ) : null}
-                </div>
+            </div>
               </div>
               <CloseButton onClick={closeLibraryHub} aria-label="Close Lesson records" />
             </div>
             <div className={`overflow-y-auto scrollbar-thin${libraryView === 'feedback' || libraryView === 'pdf' ? ' p-4' : ' p-5'}`}>
         {libraryView === 'home' && (
           <section className="space-y-4">
-            <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
+              <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
               Capture and revisit today’s writing evidence. Use the save icon in the header to snapshot everyone’s writing; browse packs and tools below.
             </p>
             <div className="flex flex-wrap gap-2" role="navigation" aria-label="Lesson records sections">
@@ -4612,15 +4618,15 @@ function TeacherDashboardInner() {
               >
                 Drafting evidence
               </button>
-              <button
-                type="button"
+                  <button
+                    type="button"
                 onClick={() => setLibraryView('feedback')}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 AI feedback
-              </button>
-              <button
-                type="button"
+                  </button>
+                  <button
+                    type="button"
                 onClick={() => setLibraryView('participation')}
                 className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
@@ -4640,8 +4646,8 @@ function TeacherDashboardInner() {
                 className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Student portfolios
-              </button>
-            </div>
+                  </button>
+                </div>
 
             {snapshots.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
@@ -4649,7 +4655,7 @@ function TeacherDashboardInner() {
                 <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
                   Snapshot everyone’s writing from the save icon in the header to unlock class packs and student portfolios.
                 </p>
-              </div>
+                    </div>
             ) : (
                   <div className="overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
                     <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
@@ -4685,7 +4691,7 @@ function TeacherDashboardInner() {
                   </div>
             )}
           </section>
-        )}
+                )}
 
         {libraryView === 'portfolios' && (
                 <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
@@ -4703,24 +4709,24 @@ function TeacherDashboardInner() {
                       >
                         {portfolioDownloadKind === 'all' ? 'Preparing PDFs…' : 'Download all PDFs (zip)'}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (reportMergeMode) cancelReportMerge();
-                          else {
-                            setReportMergeMode(true);
-                            setReportMergeKeys([]);
-                            setReportMergeCanonicalKey('');
-                          }
-                        }}
-                        className={`rounded-xl px-3 py-2 text-xs font-black transition ${
-                          reportMergeMode
-                            ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
-                            : 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200'
-                        }`}
-                      >
-                        {reportMergeMode ? 'Cancel combining' : 'Combine names'}
-                      </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (reportMergeMode) cancelReportMerge();
+                        else {
+                          setReportMergeMode(true);
+                          setReportMergeKeys([]);
+                          setReportMergeCanonicalKey('');
+                        }
+                      }}
+                      className={`rounded-xl px-3 py-2 text-xs font-black transition ${
+                        reportMergeMode
+                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
+                          : 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200'
+                      }`}
+                    >
+                      {reportMergeMode ? 'Cancel combining' : 'Combine names'}
+                    </button>
                     </div>
                   </div>
 
@@ -4900,7 +4906,7 @@ function TeacherDashboardInner() {
                   <p className="border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
                     iBoard still matches capital letters and extra spaces automatically. Other name variations are combined only when you approve them.
                   </p>
-                </section>
+          </section>
         )}
 
         {libraryView === 'feedback' && (
@@ -5022,16 +5028,16 @@ function TeacherDashboardInner() {
               className={`absolute left-1/2 ${pickMenuOpensUp ? 'bottom-[calc(100%+0.4rem)]' : 'top-[calc(100%+0.4rem)]'} z-50 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900`}
               role="menu"
               aria-label="Send selected cards"
-            >
-              <button
-                type="button"
+        >
+          <button
+            type="button"
                 role="menuitem"
                 onClick={() => sendBroadcastToClass(null)}
                 className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-bold text-[#3c3c45] hover:bg-[#ebeaf8] dark:text-slate-100 dark:hover:bg-slate-800"
               >
                 <span>All students</span>
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-[#5a5fc3]">Class</span>
-              </button>
+          </button>
               <div className="border-t border-[#d5d4e4] dark:border-slate-700">
                 <p className="px-3 pt-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#5a5fc3]">
                   Or choose students
@@ -5073,10 +5079,10 @@ function TeacherDashboardInner() {
                     {Object.values(sendRecipientPick).filter(Boolean).length
                       ? ` · ${Object.values(sendRecipientPick).filter(Boolean).length}`
                       : ''}
-                  </button>
-                </div>
-              </div>
+              </button>
             </div>
+          </div>
+        </div>
           )}
         </div>
         {selectedStudentPickCount > 0 ? (
@@ -5246,7 +5252,7 @@ function TeacherDashboardInner() {
                   </HintWrap>
                 );
               })}
-            </div>
+              </div>
             {overviewColsPeek ? (
               <div
                 className="flex items-center justify-start gap-1 border-t border-slate-200 px-2 py-1.5 dark:border-slate-700"
@@ -5279,11 +5285,11 @@ function TeacherDashboardInner() {
                     </button>
                   );
                 })}
-              </div>
+            </div>
             ) : null}
-          </div>
-        </div>
-      )}
+                </div>
+                </div>
+              )}
 
       {settingsOpen && settingsSection === 'class' && !breakoutsActive && breakoutSetupMode === 'manual' && (
         <div
@@ -5304,7 +5310,7 @@ function TeacherDashboardInner() {
             <span className="iboard-breakout-assign__meta">
               {Object.values(breakoutDraftAssign).filter(Boolean).length}/{orderedStudents.length} placed
             </span>
-          </div>
+            </div>
           <div className="iboard-breakout-assign__toolbar">
             <label className="iboard-breakout-assign__rooms">
               <span>Rooms</span>
@@ -5337,7 +5343,7 @@ function TeacherDashboardInner() {
                   +
                 </button>
               </div>
-            </label>
+              </label>
             <button
               type="button"
               disabled={
@@ -5352,7 +5358,7 @@ function TeacherDashboardInner() {
             >
               Start breakouts
             </button>
-          </div>
+            </div>
           <div className="iboard-breakout-assign__body scrollbar-thin">
             {!orderedStudents.length ? (
               <p className="px-3 py-4 text-[12px] font-medium text-[#8a8a96]">Waiting for students…</p>
@@ -5376,7 +5382,7 @@ function TeacherDashboardInner() {
                             title=""
                           >
                             —
-                          </button>
+              </button>
                         </HintWrap>
                         {Array.from({ length: roomCount }, (_, index) => {
                           const id = String(index + 1);
@@ -5389,7 +5395,7 @@ function TeacherDashboardInner() {
                               hint={full ? `Room ${id} is full (max ${MAX_BREAKOUT_ROOM})` : `Room ${id}`}
                               prefer="above"
                             >
-                              <button
+              <button
                                 type="button"
                                 aria-pressed={selectedHere}
                                 disabled={full}
@@ -5398,11 +5404,11 @@ function TeacherDashboardInner() {
                                 onClick={() => setDraftBreakoutRoom(student.id, id)}
                               >
                                 {id}
-                              </button>
+              </button>
                             </HintWrap>
                           );
                         })}
-                      </div>
+            </div>
                     </li>
                   );
                 })}
@@ -5432,8 +5438,8 @@ function TeacherDashboardInner() {
               <div className="iboard-room-settings__hero">
                 <div className="iboard-room-settings__row">
                   <HintWrap hint={frozen ? 'Lets students write again' : "Disables student writing until it's unfrozen"} className="min-w-0 flex-1">
-                    <button
-                      type="button"
+              <button
+                type="button"
                       data-help-target="freeze"
                       onClick={() => {
                         const v = !frozen;
@@ -5443,13 +5449,13 @@ function TeacherDashboardInner() {
                       className={`iboard-room-settings__secondary w-full${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                     >
                       {frozen ? 'Unfreeze board' : 'Freeze board'}
-                    </button>
+              </button>
                   </HintWrap>
-                </div>
+            </div>
                 <div className="iboard-room-settings__row">
                   <HintWrap hint="Keeps the Quick Question panel on top while you present other windows" className="min-w-0 flex-1">
-                    <button
-                      type="button"
+                  <button
+                    type="button"
                       onClick={() => {
                         window.dispatchEvent(new Event('iboard:open-presenter-dock'));
                         closeSettings();
@@ -5457,10 +5463,10 @@ function TeacherDashboardInner() {
                       className="iboard-room-settings__secondary w-full"
                     >
                       Present mode
-                    </button>
+                  </button>
                   </HintWrap>
-                </div>
               </div>
+            </div>
             )}
 
             {settingsSection === 'class' && (
@@ -5472,7 +5478,7 @@ function TeacherDashboardInner() {
                   {!room?.timer?.active ? (
                     <div className="iboard-room-settings__field-row">
                       <span className="iboard-room-settings__timer-label">Minutes</span>
-                      <input
+                <input
                         type="number"
                         min="1"
                         max="120"
@@ -5508,7 +5514,7 @@ function TeacherDashboardInner() {
                           Start
                         </button>
                       </HintWrap>
-                    </div>
+              </div>
                   ) : (
                     <div className="space-y-3">
                       <div className="iboard-room-settings__timer-head">
@@ -5517,18 +5523,18 @@ function TeacherDashboardInner() {
                           timer={room?.timer}
                           onFinishedClick={() => controlRoomTimer('end')}
                         />
-                      </div>
+            </div>
                       <div className="iboard-room-settings__field-row flex-wrap">
-                        <button
-                          type="button"
+              <button
+                type="button"
                           disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
                           onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
                           className="iboard-room-settings__mini-ghost"
                         >
                           {room.timer.running ? 'Pause' : 'Resume'}
-                        </button>
-                        <button
-                          type="button"
+              </button>
+              <button
+                type="button"
                           disabled={timerBusy}
                           onClick={() => controlRoomTimer('add', { seconds: 60 })}
                           className="iboard-room-settings__mini-ghost"
@@ -5557,18 +5563,18 @@ function TeacherDashboardInner() {
                   <button
                     type="button"
                     role="switch"
-                    onClick={toggleTheme}
+                onClick={toggleTheme}
                     aria-checked={isDark}
                     className="iboard-room-settings__secondary w-full justify-between gap-3"
-                  >
+              >
                     <span>Dark mode</span>
                     <span className="iboard-switch" data-on={isDark ? 'true' : 'false'} aria-hidden="true" />
-                  </button>
+              </button>
                 </HintWrap>
-              </div>
+            </div>
               <div className="iboard-room-settings__row">
-                <button
-                  type="button"
+                  <button
+                    type="button"
                   role="switch"
                   onClick={() => setHintsOff(!hintsOff)}
                   aria-checked={!hintsOff}
@@ -5582,39 +5588,39 @@ function TeacherDashboardInner() {
                 <div className="iboard-room-settings__cleanup">
                   {!clearFixedArmed ? (
                     <button type="button" onClick={() => setClearFixedArmed(true)}>
-                      <span>Clear fixed comments</span>
+                    <span>Clear fixed comments</span>
                       <span className="iboard-room-settings__cleanup-badge">{fixedCommentCount}</span>
-                    </button>
-                  ) : (
+                  </button>
+                ) : (
                     <div className="iboard-room-settings__cleanup-confirm">
                       <p>
-                        Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          disabled={clearFixedBusy}
-                          onClick={() => {
-                            window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
-                            setClearFixedArmed(false);
-                            closeSettings();
-                          }}
+                      Remove {fixedCommentCount} green tick{fixedCommentCount === 1 ? '' : 's'}? Purple comments stay.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={clearFixedBusy}
+                        onClick={() => {
+                          window.dispatchEvent(new Event('iboard:clear-fixed-comments'));
+                          setClearFixedArmed(false);
+                          closeSettings();
+                        }}
                           className="iboard-room-settings__mini flex-1"
-                        >
-                          {clearFixedBusy ? 'Clearing…' : 'Clear'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setClearFixedArmed(false)}
+                      >
+                        {clearFixedBusy ? 'Clearing…' : 'Clear'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setClearFixedArmed(false)}
                           className="iboard-room-settings__mini-ghost"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                      >
+                        Cancel
+                      </button>
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
+            )}
             </div>
             )}
 
@@ -5634,7 +5640,7 @@ function TeacherDashboardInner() {
                       className="iboard-room-settings__secondary"
                     >
                       Shuffle students
-                    </button>
+            </button>
                     <button
                       type="button"
                       disabled={breakoutBusy}
@@ -5642,38 +5648,38 @@ function TeacherDashboardInner() {
                       className="iboard-room-settings__secondary"
                     >
                       Close rooms
-                    </button>
+            </button>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
                     <div className="iboard-breakout-mode" role="group" aria-label="Breakout setup mode">
-                      <button
-                        type="button"
+              <button
+                type="button"
                         aria-pressed={breakoutSetupMode === 'auto'}
                         onClick={() => setBreakoutSetupMode('auto')}
                         className="iboard-breakout-mode__btn"
                       >
                         Auto
-                      </button>
-                      <button
-                        type="button"
+              </button>
+              <button
+                type="button"
                         aria-pressed={breakoutSetupMode === 'manual'}
                         onClick={() => setBreakoutSetupMode('manual')}
                         className="iboard-breakout-mode__btn"
-                      >
+              >
                         Manual
-                      </button>
-                    </div>
+              </button>
+            </div>
                     {breakoutSetupMode === 'auto' ? (
                       <HintWrap hint="Student writing cards appear on group members' screens" className="w-full">
-                        <button
-                          type="button"
+            <button
+              type="button"
                           disabled={breakoutBusy || !students.length}
                           onClick={startBreakoutsAuto}
                           className="iboard-room-settings__primary w-full"
                         >
                           Start breakouts
-                        </button>
+            </button>
                       </HintWrap>
                     ) : null}
                   </div>
@@ -5732,7 +5738,7 @@ function TeacherDashboardInner() {
                     {snapshots.length > 0 ? (
                       <span className="iboard-room-settings__badge">{snapshots.length}</span>
                     ) : null}
-                  </button>
+            </button>
                 </HintWrap>
                 <HintWrap hint="Participation and engagement across the class" className="w-full">
                   <button type="button" onClick={() => { closeSettings(); setInsightsOpen(true); }}>
@@ -5741,8 +5747,8 @@ function TeacherDashboardInner() {
                 </HintWrap>
                 <HintWrap hint="Download a list of everyone who joined" className="w-full">
                   <button type="button" onClick={() => { closeSettings(); downloadParticipantList(); }}>
-                    Download participant list
-                  </button>
+              Download participant list
+            </button>
                 </HintWrap>
               </div>
             </section>
@@ -5756,7 +5762,7 @@ function TeacherDashboardInner() {
                 className="iboard-room-settings__danger"
               >
                 Reset class board
-              </button>
+            </button>
             </HintWrap>
             )}
           </div>
@@ -5886,16 +5892,16 @@ function TeacherDashboardInner() {
                 </h2>
                 {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(focusedStudent.id)) ? (
                   <HintWrap hint="Open drafting evidence" prefer="below">
-                    <button
-                      type="button"
+                  <button
+                    type="button"
                       title=""
                       aria-label={`Open drafting evidence for ${focusedStudent.name}`}
-                      onClick={() => {
-                        setDraftTrailFocusId(focusedStudent.id);
-                        setDraftTrailOpen(true);
-                      }}
-                      className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 ring-2 ring-red-200 hover:ring-red-300 dark:ring-red-900"
-                    />
+                    onClick={() => {
+                      setDraftTrailFocusId(focusedStudent.id);
+                      setDraftTrailOpen(true);
+                    }}
+                    className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 ring-2 ring-red-200 hover:ring-red-300 dark:ring-red-900"
+                  />
                   </HintWrap>
                 ) : null}
                 <p className="text-xs text-slate-500 dark:text-slate-400">{wordCount(focusedStudent.text)} words · select text to add an inline comment</p>
@@ -5952,7 +5958,7 @@ function TeacherDashboardInner() {
                     {noteReceiptByStudentId[focusedStudent.id] === 'replied' ? (
                       <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
                     ) : null}
-                  </button>
+                </button>
                 </HintWrap>
                 {focusedStudent.image_url && (
                   <button type="button" onClick={() => setDrawingMarkupTarget(focusedStudent)} className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-black text-white hover:bg-indigo-700">
@@ -5997,7 +6003,7 @@ function TeacherDashboardInner() {
         >
           <article
             className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
-            role="dialog"
+          role="dialog"
             aria-modal="true"
             aria-labelledby="focused-teacher-card-title"
             onClick={(event) => event.stopPropagation()}
@@ -6007,11 +6013,11 @@ function TeacherDashboardInner() {
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#5a5fc3]">Teacher card</p>
                 <h2 id="focused-teacher-card-title" className="truncate font-display text-xl font-bold text-[#3c3c45] dark:text-slate-100">
                   {focusedPost.title || 'Card'}
-                </h2>
-              </div>
+            </h2>
+          </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+              <button
+                type="button"
                   onClick={() => {
                     const post = focusedPost;
                     setFocusedPostId(null);
@@ -6020,7 +6026,7 @@ function TeacherDashboardInner() {
                   className="rounded-xl border border-[#d5d4e4] bg-white px-3 py-2 text-sm font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-600 dark:bg-slate-800 dark:text-indigo-300"
                 >
                   Edit
-                </button>
+              </button>
                 <CloseButton onClick={() => setFocusedPostId(null)} aria-label="Close teacher card" />
               </div>
             </div>
@@ -6047,13 +6053,13 @@ function TeacherDashboardInner() {
                   >
                     {focusedPost.text || 'Download handout'}
                   </a>
-                </div>
+            </div>
               ) : focusedPost.text?.trim() ? (
                 <p className="whitespace-pre-wrap break-words">{focusedPost.text}</p>
               ) : (
                 <span className="italic text-slate-400">Empty card</span>
               )}
-            </div>
+          </div>
           </article>
         </div>
       )}
@@ -6177,16 +6183,16 @@ function TeacherDashboardInner() {
             </div>
             <div className="iboard-feedback-settings__body scrollbar-thin">
               <div className="iboard-feedback-settings__modes" role="group" aria-label="Feedback mode">
-                {FEEDBACK_MODES.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setFeedbackMode(id)}
+                  {FEEDBACK_MODES.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setFeedbackMode(id)}
                     data-active={feedbackMode === id ? 'true' : 'false'}
-                  >
-                    {MODE_LABELS[id]}
-                  </button>
-                ))}
+                    >
+                      {MODE_LABELS[id]}
+                    </button>
+                  ))}
               </div>
 
               <div className="iboard-feedback-settings__selects">
@@ -6203,7 +6209,7 @@ function TeacherDashboardInner() {
                       </option>
                     ))}
                   </select>
-                </label>
+                  </label>
                 <label>
                   <span>Year</span>
                   <select
@@ -6234,12 +6240,12 @@ function TeacherDashboardInner() {
                     <div className="iboard-feedback-settings__toggles">
                       {(extraFocusByMode.custom || []).map((item) => (
                         <div key={item.id} className="iboard-feedback-settings__toggle-row">
-                          <ToggleRow
+                        <ToggleRow
                             compact
-                            label={item.text}
-                            checked={item.enabled}
+                              label={item.text}
+                              checked={item.enabled}
                             onChange={(v) => setExtraFocusEnabled('custom', item.id, v)}
-                          />
+                            />
                           <RemoveButton onClick={() => removeExtraFocus('custom', item.id)} aria-label={`Remove ${item.text}`} />
                         </div>
                       ))}
@@ -6268,7 +6274,7 @@ function TeacherDashboardInner() {
                 <>
                   <div className="iboard-feedback-settings__toggles">
                     {Object.entries(visibleToggleLabels(feedbackMode, yearLevel)).map(([key, label]) => (
-                      <ToggleRow
+                          <ToggleRow
                         key={key}
                         compact
                         label={label}
@@ -6280,10 +6286,10 @@ function TeacherDashboardInner() {
                       <div key={item.id} className="iboard-feedback-settings__toggle-row">
                         <ToggleRow
                           compact
-                          label={item.text}
-                          checked={item.enabled}
+                            label={item.text}
+                            checked={item.enabled}
                           onChange={(v) => setExtraFocusEnabled(feedbackMode, item.id, v)}
-                        />
+                          />
                         <RemoveButton onClick={() => removeExtraFocus(feedbackMode, item.id)} aria-label={`Remove ${item.text}`} />
                       </div>
                     ))}
