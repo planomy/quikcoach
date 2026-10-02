@@ -495,6 +495,7 @@ function TeacherDashboardInner() {
   /** Pastes this lesson by student id, pushed live by the server whether REC is on or off. */
   const [pasteCounts, setPasteCounts] = useState({});
   const [pasteMenu, setPasteMenu] = useState(null); // { studentId, left, top }
+  const [pasteDetail, setPasteDetail] = useState(null); // { studentId, loading, pastes }
   /** Pin students who asked a question or replied to a teacher message to the top. */
   const [inboxFocus, setInboxFocus] = useState(false);
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
@@ -523,10 +524,7 @@ function TeacherDashboardInner() {
   const [sessionPdfOpen, setSessionPdfOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const closeInsights = useCallback(() => setInsightsOpen(false), []);
-  const [draftTrailBusy, setDraftTrailBusy] = useState(false);
   const [draftTrailFocusId, setDraftTrailFocusId] = useState(null);
-  const [draftTrailLabelOpen, setDraftTrailLabelOpen] = useState(false);
-  const [draftTrailLabelDraft, setDraftTrailLabelDraft] = useState('');
   const [addCardTitle, setAddCardTitle] = useState('');
   const [addCardText, setAddCardText] = useState('');
   const [addCardImage, setAddCardImage] = useState('');
@@ -1120,8 +1118,9 @@ function TeacherDashboardInner() {
     if (!pasteMenu) return undefined;
     const close = (event) => {
       if (event.type === 'keydown' && event.key !== 'Escape') return;
-      if (event.type === 'pointerdown' && event.target.closest?.('[data-paste-menu]')) return;
+      if ((event.type === 'pointerdown' || event.type === 'scroll') && event.target.closest?.('[data-paste-menu]')) return;
       setPasteMenu(null);
+      setPasteDetail(null);
     };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', close);
@@ -1133,8 +1132,20 @@ function TeacherDashboardInner() {
     };
   }, [pasteMenu]);
 
+  function openPasteDetail(studentId) {
+    setPasteDetail({ studentId, loading: true, pastes: [] });
+    socket.emit('teacher:paste-detail', { studentId }, (ack) => {
+      setPasteDetail((current) =>
+        current?.studentId === studentId
+          ? { studentId, loading: false, pastes: ack?.ok && Array.isArray(ack.pastes) ? ack.pastes : [] }
+          : current
+      );
+    });
+  }
+
   function clearPasteAlert(studentId) {
     setPasteMenu(null);
+    setPasteDetail(null);
     setPasteCounts((prev) => {
       const next = { ...prev };
       delete next[studentId];
@@ -2738,27 +2749,6 @@ function TeacherDashboardInner() {
     });
   }
 
-  function setDraftTrailRecording(active, label = '') {
-    setDraftTrailBusy(true);
-    setDraftTrailLabelOpen(false);
-    socket.timeout(10000).emit('teacher:draft-trail-control', { active, label }, (err, ack) => {
-      setDraftTrailBusy(false);
-      if (err || !ack?.ok) {
-        setError(ack?.error || 'Recording status could not be confirmed. Reconnect before trying again.');
-        return;
-      }
-      setRoom((prev) => ({ ...prev, draftTrail: ack.status }));
-      markSessionDirty();
-      if (!active) {
-        void saveSessionFile({
-          fromAuto: true,
-          label: 'drafting',
-          successToast: 'Drafting evidence saved — keep the .iboard file',
-        });
-      }
-    });
-  }
-
   function downloadOneStudent(s) {
     const names = evidenceFilenames(codeInput, s.name);
     const text = buildStudentEvidenceText({
@@ -3426,47 +3416,13 @@ function TeacherDashboardInner() {
               onFinishedClick={() => controlRoomTimer('end')}
             />
             {joined && <SaveStatusChip status={saveStatus} plain />}
-            <HintWrap
-              hint={
-                room?.draftTrail?.reason
-                || (room?.draftTrail?.active
-                  ? (room?.draftTrail?.label ? `Recording · ${room.draftTrail.label} — click to stop` : 'Recording drafting evidence — click to stop')
-                  : 'Record written drafting evidence')
-              }
-              prefer="below"
-              multiline
-            >
-            <button
-                ref={tourRecRef}
-              type="button"
-              disabled={draftTrailBusy || !socketConnected || !joined}
-              aria-pressed={!!room?.draftTrail?.active}
-              aria-label={
-                draftTrailBusy
-                    ? 'Updating drafting evidence'
-                  : room?.draftTrail?.active
-                      ? (room?.draftTrail?.label ? `Stop drafting evidence · ${room.draftTrail.label}` : 'Stop drafting evidence')
-                      : 'Record written drafting evidence'
-                }
-                className={`iboard-rec-switch${room?.draftTrail?.active ? ' is-on' : ''}${draftTrailBusy ? ' is-busy' : ''}`}
-              onClick={() => {
-                if (room?.draftTrail?.active) {
-                  setDraftTrailRecording(false);
-                  return;
-                }
-                  setDraftTrailLabelDraft(room?.draftTrail?.label || room?.lesson_objective || '');
-                setDraftTrailLabelOpen(true);
-              }}
-            >
-                <span className="iboard-rec-switch__word">{draftTrailBusy ? '…' : 'REC'}</span>
-                <span className="iboard-rec-switch__track" aria-hidden="true">
-                  <span className="iboard-rec-switch__knob">
-                    <span className="iboard-rec-switch__dot" />
-                  </span>
-                  <span className="iboard-rec-switch__on">ON</span>
-              </span>
-            </button>
-            </HintWrap>
+            {room?.draftTrail?.reason ? (
+              <HintWrap hint={room.draftTrail.reason} multiline>
+                <span role="status" className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                  Drafting evidence paused
+                </span>
+              </HintWrap>
+            ) : null}
             <div ref={tourHeaderToolsRef} className="flex items-center gap-1.5">
             <div ref={sessionMenuRef} className="relative">
               <HintWrap hint="Save or load a lesson" prefer="below" suppressed={sessionMenuOpen}>
@@ -3613,36 +3569,6 @@ function TeacherDashboardInner() {
             document.body
           )
         : null}
-      {draftTrailLabelOpen && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-4 shadow-2xl dark:bg-slate-900" role="dialog" aria-labelledby="draft-trail-label-title">
-            <h2 id="draft-trail-label-title" className="font-display text-lg font-black text-slate-950 dark:text-white">Start drafting evidence</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Optional name for this recording (e.g. Period 3 narrative).</p>
-            <input
-              value={draftTrailLabelDraft}
-              onChange={(event) => setDraftTrailLabelDraft(event.target.value.slice(0, 80))}
-              className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-950"
-              placeholder="Lesson or task name"
-              autoFocus
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') setDraftTrailRecording(true, draftTrailLabelDraft.trim());
-                if (event.key === 'Escape') setDraftTrailLabelOpen(false);
-              }}
-            />
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button type="button" disabled={draftTrailBusy} onClick={() => setDraftTrailRecording(true, draftTrailLabelDraft.trim())} className="rounded-lg bg-red-700 px-3 py-2 text-xs font-black text-white hover:bg-red-800 disabled:opacity-50">
-                Start recording
-              </button>
-              <button type="button" disabled={draftTrailBusy} onClick={() => setDraftTrailRecording(true, '')} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200">
-                Start without name
-              </button>
-              <button type="button" onClick={() => setDraftTrailLabelOpen(false)} className="rounded-lg px-3 py-2 text-xs font-bold text-slate-500">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {draftTrailOpen && (
         <DraftTrailPanel
           socket={socket}
@@ -4325,6 +4251,7 @@ function TeacherDashboardInner() {
                           onClick={(event) => {
                             event.stopPropagation();
                             const rect = event.currentTarget.getBoundingClientRect();
+                            setPasteDetail(null);
                             setPasteMenu((open) =>
                               open?.studentId === s.id ? null : { studentId: s.id, left: rect.left, top: rect.bottom + 6 }
                             );
@@ -4559,12 +4486,48 @@ function TeacherDashboardInner() {
         <div
           data-paste-menu
           role="menu"
-          style={{ left: pasteMenu.left, top: pasteMenu.top }}
+          style={{
+            left: Math.max(8, Math.min(pasteMenu.left, window.innerWidth - (pasteDetail?.studentId === pasteMenu.studentId ? 344 : 200))),
+            top: pasteDetail?.studentId === pasteMenu.studentId
+              ? Math.max(8, Math.min(pasteMenu.top, window.innerHeight - 400))
+              : pasteMenu.top,
+          }}
           className="fixed z-[80] min-w-[11rem] rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900"
         >
           <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
             Pasted {pasteCounts[pasteMenu.studentId]} {pasteCounts[pasteMenu.studentId] === 1 ? 'time' : 'times'} this lesson
           </p>
+          {pasteDetail?.studentId === pasteMenu.studentId ? (
+            <div className="max-h-72 w-80 max-w-[calc(100vw-2rem)] space-y-1.5 overflow-y-auto px-2 pb-1.5">
+              {pasteDetail.loading ? (
+                <p className="px-1 py-2 text-xs text-slate-500 dark:text-slate-400">Loading…</p>
+              ) : pasteDetail.pastes.length === 0 ? (
+                <p className="px-1 py-2 text-xs text-slate-500 dark:text-slate-400">
+                  The pasted text wasn’t captured. It may have been pasted before this update, or straight after the board was reset.
+                </p>
+              ) : (
+                pasteDetail.pastes.map((paste, index) => (
+                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-[#f1f0f8] px-2.5 py-2 dark:bg-slate-800">
+                    <p className="text-[10px] font-bold text-[#5a5fc3] dark:text-indigo-300">
+                      {paste.at ? new Date(paste.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''}
+                      {' · '}
+                      {paste.text.trim().split(/\s+/).filter(Boolean).length} words
+                    </p>
+                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-slate-700 dark:text-slate-200">{paste.text}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => openPasteDetail(pasteMenu.studentId)}
+              className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:bg-[rgba(90,95,195,0.22)]"
+            >
+              See what was pasted
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"

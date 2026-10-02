@@ -39,8 +39,8 @@ export const TEACHER_HELP_ITEMS = [
   },
   {
     id: 'rec',
-    title: 'Record drafting (REC)',
-    body: 'Turn REC on in the header to capture progression of student drafting.',
+    title: 'Drafting evidence',
+    body: 'TUIT records how each draft grows automatically. Click a red Pasted tag to see what was pasted, or open Reports → Drafting evidence.',
   },
   {
     id: 'session',

@@ -912,6 +912,15 @@ io.on('connection', (socket) => {
     if (socket.data.role !== 'teacher' || !code) return cb?.({ ok: false });
     cb?.({ ok: true, status: trailStatus(code), students: trailStudents(code), trail: studentId == null ? null : readTrail(code, studentId) });
   });
+  socket.on('teacher:paste-detail', ({ studentId } = {}, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code || !Number(studentId)) return cb?.({ ok: false });
+    const trail = readTrail(code, Number(studentId));
+    const pastes = (trail?.events || [])
+      .filter((event) => event.type === 'paste' && String(event.inserted || '').trim())
+      .map((event) => ({ at: Number(event.at) || 0, text: String(event.inserted || '').slice(0, 5000) }));
+    cb?.({ ok: true, pastes });
+  });
   socket.on('teacher:join', ({ code }, cb) => {
     try {
       const c = String(code || '').replace(/\D/g, '').slice(0, 4).padStart(4, '0');
@@ -2838,6 +2847,17 @@ setInterval(() => {
   const codes = new Set([...io.sockets.sockets.values()].map(s => s.data.roomCode).filter(Boolean));
   trailTick();
   for (const code of codes) {
+    const current = trailStatus(code);
+    if (!current.active && !current.reason) {
+      try {
+        const roomRow = queries.ensureRoom(db, code);
+        setTrailRecording(code, true, queries.listStudents(db, code), Date.now(), {
+          label: String(roomRow?.lesson_objective || '').trim(),
+        });
+      } catch (e) {
+        console.error(`Could not start drafting evidence for room ${code}`, e);
+      }
+    }
     const status = JSON.stringify(trailStatus(code));
     if (publishedTrailStatus.get(code) !== status) broadcastRoom(code);
     publishedTrailStatus.set(code, status);

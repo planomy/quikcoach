@@ -1832,16 +1832,11 @@ export default function StudentView() {
                         </button>
                       </HintWrap>
                     )}
-                    {room?.draftTrail?.active ? (
-                      <HintWrap hint="Drafting evidence is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)." prefer="above" multiline>
-                      <span
-                        role="status"
-                        title=""
-                        aria-label="Drafting evidence is on"
-                        className="inline-flex h-2 w-2 shrink-0 rounded-full bg-red-600"
-                      />
-                      </HintWrap>
-                    ) : null}
+                    <HintWrap hint="Your teacher can see how this draft grows, including anything pasted. Writing only — not your screen or audio." prefer="above" multiline>
+                      <span title="" className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        · Your teacher can see your drafts
+                      </span>
+                    </HintWrap>
                   </>
                 }
               />

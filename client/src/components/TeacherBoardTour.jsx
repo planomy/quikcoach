@@ -11,7 +11,6 @@ const STEPS = [
   { id: 'engage', text: 'Ask the class questions and watch the responses.', place: 'right', clip: 'rail' },
   { id: 'board', text: 'Manage the class (timer, freeze, breakouts), view reports, settings', place: 'right', clip: 'rail' },
   { id: 'view', text: 'Toggle student writing card view', place: 'right', clip: 'header' },
-  { id: 'rec', text: "Record your students' drafting", place: 'left', clip: 'header' },
   { id: 'headerTools', text: 'Go fullscreen, take a snapshot of all writing, view the help menu', place: 'left', clip: 'header' },
 ];
 
