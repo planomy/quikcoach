@@ -3586,7 +3586,7 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && (
         <div
           ref={teacherToolsPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail fixed z-[60] w-[min(29rem,calc(100vw-4.75rem))]"
+          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail fixed z-[60] ${toolsTab === 'sets' ? 'w-[min(27rem,calc(100vw-4.75rem))]' : 'w-[min(29rem,calc(100vw-4.75rem))]'}`}
           style={headerDockStyle}
           role="dialog"
           aria-label={toolsTab === 'sets' ? 'Question sets panel' : 'Ask the class panel'}

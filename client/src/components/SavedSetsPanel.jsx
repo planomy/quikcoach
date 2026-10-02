@@ -102,8 +102,7 @@ function loadCustomSets() {
 
 function formatSetCardMeta(set) {
   const years = set.years === 'All' ? 'All years' : set.years;
-  const mins = set.minutes ? `${set.minutes} min` : '';
-  return [set.subject, years, set.skill, mins].filter(Boolean).join(' · ');
+  return [set.subject, years, set.skill].filter(Boolean).join(' · ');
 }
 
 export default function SavedSetsPanel({
