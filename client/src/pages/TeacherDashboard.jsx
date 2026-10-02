@@ -3627,14 +3627,14 @@ function TeacherDashboardInner() {
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Share with class">
-            <HintWrap hint="Send resources to students" prefer="right" suppressed={addCardOpen || (toolsPanelOpen && toolsTab === 'sets')}>
+            <HintWrap hint="Send resources to students" prefer="right" suppressed={(addCardOpen && !teacherPanelHidden) || (toolsPanelOpen && toolsTab === 'sets')}>
               <button
                 type="button"
                 data-iboard-add-card-trigger="true"
                 data-help-target="share"
                 onClick={() => openAddCard()}
-                aria-expanded={addCardOpen}
-                data-active={addCardOpen || (toolsPanelOpen && toolsTab === 'sets') ? 'true' : 'false'}
+                aria-expanded={addCardOpen && !teacherPanelHidden}
+                data-active={(addCardOpen && !teacherPanelHidden) || (toolsPanelOpen && toolsTab === 'sets') ? 'true' : 'false'}
                 className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
                 aria-label="Share an image, PDF or text"
               >
@@ -3755,7 +3755,13 @@ function TeacherDashboardInner() {
                 <button
                   type="button"
                   className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
-                  onClick={() => setTeacherPanelHidden(true)}
+                  onClick={() => {
+                    setTeacherPanelHidden(true);
+                    if (!addCardBusy) {
+                      setAddCardPickerOpen(false);
+                      setAddCardOpen(false);
+                    }
+                  }}
                   aria-label="Hide resources"
                   title=""
                 >
