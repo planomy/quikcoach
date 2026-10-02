@@ -2816,6 +2816,45 @@ html.dark .iboard-feedback-settings__cancel:hover {
   gap: 0.45rem;
 }
 
+.iboard-room-settings__alerts-title {
+  margin: 0.35rem 0 -0.1rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b6b78;
+}
+
+.iboard-room-settings__alert {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.iboard-room-settings__alert-minutes {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0 0.35rem 0.15rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #5a5fc3;
+}
+
+.iboard-room-settings__alert-minutes span {
+  flex-shrink: 0;
+  min-width: 7.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark .iboard-room-settings__alerts-title {
+  color: #94a3b8;
+}
+
+html.dark .iboard-room-settings__alert-minutes {
+  color: #a5b4fc;
+}
+
 .iboard-room-settings__secondary {
   display: flex;
   min-width: 0;

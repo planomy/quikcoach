@@ -77,7 +77,17 @@ const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
 const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden-v2';
 const LESSON_BEGUN_KEY = 'iboard-lesson-begun';
 const LESSON_BEGUN_MAX_MS = 4 * 60 * 60 * 1000;
-const NO_TYPING_MS = 3 * 60 * 1000;
+const ALERT_PREFS_KEY = 'tuit-alert-prefs';
+const DEFAULT_ALERT_PREFS = { away: true, notStarted: true, notStartedMin: 4, noTyping: true, noTypingMin: 3, pasted: true };
+
+function readAlertPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ALERT_PREFS_KEY) || '{}');
+    return { ...DEFAULT_ALERT_PREFS, ...(saved && typeof saved === 'object' ? saved : {}) };
+  } catch {
+    return { ...DEFAULT_ALERT_PREFS };
+  }
+}
 
 function readLessonBegun(code) {
   try {
@@ -388,6 +398,18 @@ function TeacherDashboardInner() {
   const [newClassBusy, setNewClassBusy] = useState(false);
   const [newClassStep, setNewClassStep] = useState('');
   const hintsOff = useHintsOff();
+  const [alertPrefs, setAlertPrefs] = useState(readAlertPrefs);
+  const updateAlertPrefs = useCallback((patch) => {
+    setAlertPrefs((current) => {
+      const next = { ...current, ...patch };
+      try {
+        localStorage.setItem(ALERT_PREFS_KEY, JSON.stringify(next));
+      } catch {
+        /* storage may be unavailable */
+      }
+      return next;
+    });
+  }, []);
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [lessonBegun, setLessonBegun] = useState(false);
   const [entranceStep, setEntranceStep] = useState('join');
@@ -1402,8 +1424,19 @@ function TeacherDashboardInner() {
 
   const connectedIdSet = useMemo(() => new Set(connectedStudents.map((student) => Number(student.id))), [connectedStudents]);
 
+  const isAwayAlert = useCallback(
+    (student) => alertPrefs.away && awayByStudentId.get(Number(student.id)) === true,
+    [alertPrefs.away, awayByStudentId]
+  );
+
+  const isNotStartedAlert = useCallback(
+    (student) => alertPrefs.notStarted && isNotStarted(student, activityNow, Number(alertPrefs.notStartedMin) * 60 * 1000),
+    [alertPrefs.notStarted, alertPrefs.notStartedMin, activityNow]
+  );
+
   const isNoTyping = useCallback(
     (student) => {
+      if (!alertPrefs.noTyping) return false;
       if (!String(student.text || '').trim()) return false;
       if (!connectedIdSet.has(Number(student.id))) return false;
       if (awayByStudentId.get(Number(student.id))) return false;
@@ -1411,20 +1444,20 @@ function TeacherDashboardInner() {
       const target = Number(room?.word_target) || 0;
       if (target > 0 && wordCount(student.text) >= target) return false;
       const changedAt = parseServerDateMs(student.updated_at);
-      return Number.isFinite(changedAt) && activityNow - changedAt >= NO_TYPING_MS;
+      return Number.isFinite(changedAt) && activityNow - changedAt >= Number(alertPrefs.noTypingMin) * 60 * 1000;
     },
-    [connectedIdSet, awayByStudentId, room?.freeze_class, room?.word_target, livePulse.activity, activityNow]
+    [alertPrefs.noTyping, alertPrefs.noTypingMin, connectedIdSet, awayByStudentId, room?.freeze_class, room?.word_target, livePulse.activity, activityNow]
   );
 
   const matchesAttention = useCallback(
     (student, filter) => {
-      if (filter === 'away') return !!awayByStudentId.get(Number(student.id));
-      if (filter === 'notStarted') return isNotStarted(student, activityNow);
+      if (filter === 'away') return isAwayAlert(student);
+      if (filter === 'notStarted') return isNotStartedAlert(student);
       if (filter === 'noTyping') return isNoTyping(student);
-      if (filter === 'pasted') return !!pasteCounts[student.id];
+      if (filter === 'pasted') return alertPrefs.pasted && !!pasteCounts[student.id];
       return false;
     },
-    [awayByStudentId, activityNow, pasteCounts, isNoTyping]
+    [isAwayAlert, isNotStartedAlert, isNoTyping, alertPrefs.pasted, pasteCounts]
   );
 
   const attentionCounts = useMemo(() => {
@@ -4131,8 +4164,8 @@ function TeacherDashboardInner() {
             const handQuestions = pendingHandByStudentId.get(Number(s.id)) || [];
             const handUp = handQuestions.length > 0;
             const monitoring = monitoredIds.has(Number(s.id));
-            const isAway = awayByStudentId.get(Number(s.id)) === true;
-            const notStarted = isNotStarted(s, activityNow);
+            const isAway = isAwayAlert(s);
+            const notStarted = isNotStartedAlert(s);
             const noTyping = isNoTyping(s);
             const inboxWaiting = studentHasInboxWait(s, pendingHandByStudentId, noteReceiptByStudentId);
             const cardEmpty = !displayText && !s.image_url;
@@ -4237,7 +4270,7 @@ function TeacherDashboardInner() {
                         </HintWrap>
                       ) : null}
                       {noTyping ? (
-                        <HintWrap hint="No changes to their writing for 3 minutes or more" prefer="above">
+                        <HintWrap hint={`No changes to their writing for ${alertPrefs.noTypingMin} minutes or more`} prefer="above">
                         <span
                           title=""
                           className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
@@ -4304,7 +4337,7 @@ function TeacherDashboardInner() {
                     />
                         </HintWrap>
                   ) : null}
-                      {pasteCounts[s.id] ? (
+                      {alertPrefs.pasted && pasteCounts[s.id] ? (
                         <HintWrap hint={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'} this lesson`} prefer="above">
                       <button
                         type="button"
@@ -5644,6 +5677,43 @@ function TeacherDashboardInner() {
                   </button>
                 </HintWrap>
               </div>
+              <p className="iboard-room-settings__alerts-title">Alerts</p>
+              {[
+                { key: 'notStarted', label: 'Not started', hint: 'Flags an empty card a few minutes after the student joins', minutesKey: 'notStartedMin', minutesLabel: 'after joining' },
+                { key: 'noTyping', label: 'No typing', hint: 'Flags a student whose writing hasn’t changed for a while', minutesKey: 'noTypingMin', minutesLabel: 'without changes' },
+                { key: 'away', label: 'Away', hint: 'Flags a student whose TUIT tab has been in the background for a minute' },
+                { key: 'pasted', label: 'Pasted', hint: 'Flags a student who pastes into their writing. Pastes are still recorded when this is off.' },
+              ].map((alert) => (
+                <div key={alert.key} className="iboard-room-settings__alert">
+                  <HintWrap hint={alert.hint} className="w-full" multiline>
+                    <button
+                      type="button"
+                      role="switch"
+                      onClick={() => updateAlertPrefs({ [alert.key]: !alertPrefs[alert.key] })}
+                      aria-checked={!!alertPrefs[alert.key]}
+                      className="iboard-room-settings__secondary w-full justify-between gap-3"
+                    >
+                      <span>{alert.label}</span>
+                      <span className="iboard-switch" data-on={alertPrefs[alert.key] ? 'true' : 'false'} aria-hidden="true" />
+                    </button>
+                  </HintWrap>
+                  {alert.minutesKey && alertPrefs[alert.key] ? (
+                    <label className="iboard-room-settings__alert-minutes">
+                      <input
+                        type="range"
+                        min={2}
+                        max={10}
+                        step={1}
+                        value={alertPrefs[alert.minutesKey]}
+                        onChange={(event) => updateAlertPrefs({ [alert.minutesKey]: Number(event.target.value) })}
+                        className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
+                        aria-label={`${alert.label}: minutes ${alert.minutesLabel}`}
+                      />
+                      <span>{alertPrefs[alert.minutesKey]} min {alert.minutesLabel}</span>
+                    </label>
+                  ) : null}
+                </div>
+              ))}
               {fixedCommentCount > 0 && (
                 <div className="iboard-room-settings__cleanup">
                   {!clearFixedArmed ? (
