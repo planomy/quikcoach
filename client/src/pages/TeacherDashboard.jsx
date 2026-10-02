@@ -3,6 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
+import { setHintsOff, useHintsOff } from '../lib/hintPrefs.js';
 import { FULLSCREEN_UNAVAILABLE_MESSAGE, canFullscreen, isFullscreen, subscribeFullscreenChange, toggleFullscreen } from '../lib/fullscreen.js';
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
@@ -385,6 +386,7 @@ function TeacherDashboardInner() {
   const [newClassConfirmOpen, setNewClassConfirmOpen] = useState(false);
   const [newClassBusy, setNewClassBusy] = useState(false);
   const [newClassStep, setNewClassStep] = useState('');
+  const hintsOff = useHintsOff();
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [lessonBegun, setLessonBegun] = useState(false);
   const [pickAnchor, setPickAnchor] = useState(null);
@@ -3667,7 +3669,7 @@ function TeacherDashboardInner() {
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
             <div className="iboard-arr-rail__board" aria-label="Manage room">
-              <HintWrap hint="Timer, freeze board, breakouts, word target" prefer="right" suppressed={settingsOpen && settingsSection === 'class'}>
+              <HintWrap hint="Use a timer, freeze the room, create breakout rooms, enforce a word limit" prefer="right" suppressed={settingsOpen && settingsSection === 'class'}>
                 <button
                   ref={classButtonRef}
                   type="button"
@@ -5511,6 +5513,16 @@ function TeacherDashboardInner() {
                   </button>
                 </HintWrap>
               </div>
+              <div className="iboard-room-settings__row">
+                <button
+                  type="button"
+                  onClick={() => setHintsOff(!hintsOff)}
+                  aria-pressed={hintsOff}
+                  className="iboard-room-settings__secondary min-w-0 flex-1"
+                >
+                  {hintsOff ? 'Turn tooltips on' : 'Turn tooltips off'}
+                </button>
+              </div>
               {fixedCommentCount > 0 && (
                 <div className="iboard-room-settings__cleanup">
                   {!clearFixedArmed ? (
@@ -5615,7 +5627,7 @@ function TeacherDashboardInner() {
               <div className="iboard-room-settings__card iboard-room-settings__card-pad">
                 <div className="iboard-word-target-row">
                   <div className="iboard-room-settings__meta">
-                    <span>Word target</span>
+                    <span>Word limit</span>
                     <span>{wt}</span>
                   </div>
                   <div className="iboard-word-target-bar flex items-center gap-2">
@@ -5629,7 +5641,7 @@ function TeacherDashboardInner() {
                       onPointerUp={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
                       onBlur={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
                       className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
-                      aria-label="Word target"
+                      aria-label="Word limit"
                     />
                     <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                       <span>Enforce</span>

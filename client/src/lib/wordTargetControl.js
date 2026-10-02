@@ -1,5 +1,5 @@
 function tuneWordTargetSlider(root = document) {
-  const slider = root.querySelector?.('input[type="range"][aria-label="Word target"]');
+  const slider = root.querySelector?.('input[type="range"][aria-label="Word limit"]');
   if (!slider) return;
 
   slider.min = '0';

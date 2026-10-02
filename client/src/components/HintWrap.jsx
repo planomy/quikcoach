@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { placementNearAnchor } from '../lib/clampPopup.js';
 import { subscribeViewportChanges } from '../lib/viewport.js';
+import { useHintsOff } from '../lib/hintPrefs.js';
 
 const HINT_PAD = 8;
 const EST_HEIGHT = 22;
@@ -29,7 +30,9 @@ function measureAndPlace(wrapEl, tipEl, hint, prefer) {
 }
 
 /** Fast hover/focus hint chip — brand accent, flips below when there isn’t room above. */
-export default function HintWrap({ hint, children, className = '', prefer = 'above', multiline = false, tone: _tone = 'brand', suppressed = false }) {
+export default function HintWrap({ hint, children, className = '', prefer = 'above', multiline = false, tone: _tone = 'brand', suppressed: suppressedProp = false }) {
+  const hintsOff = useHintsOff();
+  const suppressed = suppressedProp || hintsOff;
   const wrapRef = useRef(null);
   const tipRef = useRef(null);
   const hoverTimerRef = useRef(null);
