@@ -4983,6 +4983,7 @@ function TeacherDashboardInner() {
             <button type="button" onClick={copyForAi} className="iboard-ai-feedback__copy">
               Copy prompt for AI
             </button>
+            <p className="iboard-ai-feedback__step">Paste it into your AI (ChatGPT, Gemini, Copilot)</p>
 
             <label className="iboard-ai-feedback__paste-label" htmlFor="ai-paste-back">
               Paste the feedback below

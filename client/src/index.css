@@ -2325,6 +2325,18 @@ html.dark .iboard-ai-feedback__paste-label {
   color: #94a3b8;
 }
 
+.iboard-ai-feedback__step {
+  margin: -0.125rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+html.dark .iboard-ai-feedback__step {
+  color: #94a3b8;
+}
+
 .iboard-ai-feedback__paste {
   width: 100%;
   min-height: 12rem;
