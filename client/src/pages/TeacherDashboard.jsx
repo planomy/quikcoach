@@ -4251,10 +4251,13 @@ function TeacherDashboardInner() {
                           onClick={(event) => {
                             event.stopPropagation();
                             const rect = event.currentTarget.getBoundingClientRect();
-                            setPasteDetail(null);
-                            setPasteMenu((open) =>
-                              open?.studentId === s.id ? null : { studentId: s.id, left: rect.left, top: rect.bottom + 6 }
-                            );
+                            if (pasteMenu?.studentId === s.id) {
+                              setPasteMenu(null);
+                              setPasteDetail(null);
+                              return;
+                            }
+                            setPasteMenu({ studentId: s.id, left: rect.left, top: rect.bottom + 6 });
+                            openPasteDetail(s.id);
                           }}
                           className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50"
                         >
@@ -4487,19 +4490,16 @@ function TeacherDashboardInner() {
           data-paste-menu
           role="menu"
           style={{
-            left: Math.max(8, Math.min(pasteMenu.left, window.innerWidth - (pasteDetail?.studentId === pasteMenu.studentId ? 344 : 200))),
-            top: pasteDetail?.studentId === pasteMenu.studentId
-              ? Math.max(8, Math.min(pasteMenu.top, window.innerHeight - 400))
-              : pasteMenu.top,
+            left: Math.max(8, Math.min(pasteMenu.left, window.innerWidth - 344)),
+            top: Math.max(8, Math.min(pasteMenu.top, window.innerHeight - 420)),
           }}
-          className="fixed z-[80] min-w-[11rem] rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900"
+          className="fixed z-[80] w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900"
         >
           <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
             Pasted {pasteCounts[pasteMenu.studentId]} {pasteCounts[pasteMenu.studentId] === 1 ? 'time' : 'times'} this lesson
           </p>
-          {pasteDetail?.studentId === pasteMenu.studentId ? (
-            <div className="max-h-72 w-80 max-w-[calc(100vw-2rem)] space-y-1.5 overflow-y-auto px-2 pb-1.5">
-              {pasteDetail.loading ? (
+            <div className="max-h-72 space-y-1.5 overflow-y-auto px-2 pb-1.5">
+              {!pasteDetail || pasteDetail.studentId !== pasteMenu.studentId || pasteDetail.loading ? (
                 <p className="px-1 py-2 text-xs text-slate-500 dark:text-slate-400">Loading…</p>
               ) : pasteDetail.pastes.length === 0 ? (
                 <p className="px-1 py-2 text-xs text-slate-500 dark:text-slate-400">
@@ -4518,24 +4518,16 @@ function TeacherDashboardInner() {
                 ))
               )}
             </div>
-          ) : (
+          <div className="flex justify-end px-2 pb-1 pt-0.5">
             <button
               type="button"
               role="menuitem"
-              onClick={() => openPasteDetail(pasteMenu.studentId)}
-              className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:bg-[rgba(90,95,195,0.22)]"
+              onClick={() => clearPasteAlert(pasteMenu.studentId)}
+              className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-400 dark:hover:bg-[rgba(90,95,195,0.22)] dark:hover:text-indigo-200"
             >
-              See what was pasted
+              Clear alert
             </button>
-          )}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => clearPasteAlert(pasteMenu.studentId)}
-            className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-          >
-            Clear alert
-          </button>
+          </div>
         </div>,
         document.body
       ) : null}
