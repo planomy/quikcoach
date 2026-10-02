@@ -192,11 +192,11 @@ const reopenAnnotationStmt = richDb.prepare(
 const deleteAnnotationStmt = richDb.prepare(`DELETE FROM teacher_annotations WHERE id = ?`);
 const bulkResolveFixedForRoomStmt = richDb.prepare(
   `DELETE FROM teacher_annotations
-   WHERE room_code = ? AND status IN ('fixed', 'resolved')`
+   WHERE room_code = ? AND status = 'resolved'`
 );
 const bulkResolveFixedForStudentStmt = richDb.prepare(
   `DELETE FROM teacher_annotations
-   WHERE room_code = ? AND student_id = ? AND status IN ('fixed', 'resolved')`
+   WHERE room_code = ? AND student_id = ? AND status = 'resolved'`
 );
 
 function listAnnotationsForStudent(studentId) {
@@ -554,10 +554,6 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           return;
         }
         const studentId = Number(payload.studentId);
-        const confirming = richDb
-          .prepare(`SELECT id, student_id FROM teacher_annotations WHERE room_code = ? AND status = 'fixed'`)
-          .all(roomCode)
-          .filter((row) => !(studentId > 0) || Number(row.student_id) === studentId);
         let result;
         if (studentId > 0) {
           const student = selectStudent.get(studentId);
@@ -570,13 +566,12 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
         } else {
           const studentRows = richDb
             .prepare(
-              `SELECT DISTINCT student_id FROM teacher_annotations WHERE room_code = ? AND status IN ('fixed', 'resolved')`
+              `SELECT DISTINCT student_id FROM teacher_annotations WHERE room_code = ? AND status = 'resolved'`
             )
             .all(roomCode);
           result = bulkResolveFixedForRoomStmt.run(roomCode);
           for (const row of studentRows) emitAnnotationUpdate(io, roomCode, row.student_id);
         }
-        for (const row of confirming) insightCommentConfirmed(roomCode, row.student_id, row.id);
         cb?.({ ok: true, count: Number(result?.changes) || 0 });
       } catch (error) {
         console.error('Could not bulk confirm teacher annotations', error);

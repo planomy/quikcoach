@@ -406,7 +406,7 @@ export default function TeacherAnnotationController() {
         (n, list) =>
           n +
           (Array.isArray(list)
-            ? list.filter((item) => item.status === 'fixed' || item.status === 'resolved').length
+            ? list.filter((item) => item.status === 'resolved').length
             : 0),
         0
       ),
