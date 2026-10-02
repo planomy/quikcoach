@@ -1832,11 +1832,6 @@ export default function StudentView() {
                         </button>
                       </HintWrap>
                     )}
-                    <HintWrap hint="Your teacher can see how this draft grows, including anything pasted. Writing only — not your screen or audio." prefer="above" multiline>
-                      <span title="" className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                        · Your teacher can see your drafts
-                      </span>
-                    </HintWrap>
                   </>
                 }
               />
