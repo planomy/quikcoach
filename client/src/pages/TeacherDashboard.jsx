@@ -2037,7 +2037,7 @@ function TeacherDashboardInner() {
       return null;
     }
 
-    function alignDockToRailButton() {
+    function alignDockToRailButton(event, { raiseOnly = false } = {}) {
       const button = currentDockAnchor();
       const panel = currentDockPanel();
       const viewport = window.innerHeight;
@@ -2078,7 +2078,10 @@ function TeacherDashboardInner() {
         : buttonBox.top + buttonBox.height / 2 - usedHeight / 2;
       const maxTop = viewport - margin - usedHeight;
       const nextTop = Math.round(Math.min(Math.max(margin, targetTop), Math.max(margin, maxTop)));
-      setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
+      setTeacherToolsTop((prev) => {
+        if (raiseOnly && nextTop >= prev) return prev;
+        return Math.abs(prev - nextTop) < 2 ? prev : nextTop;
+      });
     }
 
     alignDockToRailButton();
@@ -2086,14 +2089,25 @@ function TeacherDashboardInner() {
     const resizeObserver = typeof ResizeObserver === 'function'
       ? new ResizeObserver(alignDockToRailButton)
       : null;
+    // Panel content that arrives after opening may only lift the dock (so it fits on
+    // short screens like iPads) — re-centring on every content change flashed the shell.
+    const panelObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(() => alignDockToRailButton(null, { raiseOnly: true }))
+      : null;
     const button = currentDockAnchor();
-    // Observe the rail button only. Watching the panel re-centered the dock on every
-    // Ask content height change (Ask ↔ Responses, question type) and flashed the shell.
     if (button) resizeObserver?.observe(button);
+    const panel = currentDockPanel();
+    if (panel && !viewOpen) {
+      for (const child of panel.children) {
+        panelObserver?.observe(child);
+        for (const inner of child.children) panelObserver?.observe(inner);
+      }
+    }
     window.addEventListener('resize', alignDockToRailButton);
     return () => {
       cancelAnimationFrame(settleFrame);
       resizeObserver?.disconnect();
+      panelObserver?.disconnect();
       window.removeEventListener('resize', alignDockToRailButton);
     };
   }, [toolsPanelOpen, settingsOpen, settingsSection, viewOpen, toolsTab]);
