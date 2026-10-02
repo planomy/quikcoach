@@ -4985,7 +4985,7 @@ function TeacherDashboardInner() {
             </button>
 
             <label className="iboard-ai-feedback__paste-label" htmlFor="ai-paste-back">
-              Paste below
+              Paste the feedback below
             </label>
             <textarea
               id="ai-paste-back"
