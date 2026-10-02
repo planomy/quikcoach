@@ -411,10 +411,12 @@ export default function StudentInbox({
           <section
             key={item.id}
             data-inbox-item={item.id}
-            className={`relative overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-900 ${
+            className={`relative overflow-hidden rounded-2xl border shadow-sm transition-colors ${
               open && item.unread
-                ? 'border-indigo-400 ring-2 ring-indigo-300/70 dark:border-indigo-500 dark:ring-indigo-500/40'
-                : 'border-slate-200 dark:border-slate-700'
+                ? 'border-indigo-400 bg-white ring-2 ring-indigo-300/70 dark:border-indigo-500 dark:bg-slate-900 dark:ring-indigo-500/40'
+                : item.unread
+                  ? 'border-[#5a5fc3] bg-[#ebeaf8] dark:border-indigo-400 dark:bg-indigo-950/60'
+                  : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'
             }`}
           >
             <div className="flex items-stretch">

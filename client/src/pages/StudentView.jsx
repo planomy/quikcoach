@@ -673,8 +673,11 @@ export default function StudentView() {
       );
       if (!newest) return;
       // Quiet notes: badge only. Urgent inbox notes: toast + open Inbox.
+      // Prompt sets are work to do, so they open like handouts (no toast).
       // Private chat stays in the phone panel — toast only, no inbox card.
-      if (newest.urgent) {
+      if (newest.type === 'set-prompt' && !newest.urgent) {
+        queueMicrotask(() => activateInbox(newest.id));
+      } else if (newest.urgent) {
         queueMicrotask(() => {
           if (newest.type === 'chat') flagInboxUnread(newest.id);
           else activateInbox(newest.id);

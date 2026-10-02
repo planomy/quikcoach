@@ -82,6 +82,15 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
   });
   const panelRef = useRef(null);
   const activityIdRef = useRef('');
+  // Once answered, the collapsed card confirms briefly and then steps out of the
+  // Inbox so newer items stay at the top. It returns for anything actionable.
+  const [answeredHiddenId, setAnsweredHiddenId] = useState('');
+  const answeredId = activity?.id && response ? String(activity.id) : '';
+  useEffect(() => {
+    if (!answeredId || !collapsed || answeredHiddenId === answeredId) return undefined;
+    const timer = window.setTimeout(() => setAnsweredHiddenId(answeredId), 3000);
+    return () => window.clearTimeout(timer);
+  }, [answeredId, collapsed, answeredHiddenId]);
   const arrivalTimerRef = useRef(null);
   const pulseTimerRef = useRef(null);
   const titleTimerRef = useRef(null);
@@ -445,17 +454,15 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
         ? 'border border-indigo-200 bg-white text-slate-900 ring-indigo-100 dark:border-indigo-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-indigo-950'
         : 'from-indigo-600 to-indigo-700 text-white ring-indigo-300';
     } else if (activity && response) {
-      label = `Answered · Q${activity.questionNumber || 1}`;
-      detail = 'Tap to review';
+      if (answeredHiddenId === String(activity.id)) return checkInPortal || null;
+      label = `Answered ✓ · Q${activity.questionNumber || 1}`;
+      detail = 'Sent to your teacher';
       colour = quietAlerts
         ? 'border border-slate-200 bg-white text-slate-800 ring-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
         : 'from-emerald-500 to-teal-600 text-white ring-emerald-300';
     } else if (activity) {
-      label = `Question closed · Q${activity.questionNumber || 1}`;
-      detail = 'Tap to review';
-      colour = quietAlerts
-        ? 'border border-slate-200 bg-white text-slate-800 ring-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
-        : 'from-slate-600 to-slate-700 text-white ring-slate-300';
+      // Closed without an answer: nothing left to do, so keep the Inbox clear.
+      return checkInPortal || null;
     }
 
     return (
