@@ -3017,14 +3017,6 @@ function TeacherDashboardInner() {
       setLessonBegun(false);
       setCopyToast('Board reset — ready for a fresh lesson');
       setTimeout(() => setCopyToast(''), 3000);
-      const code = String(codeInput || '').replace(/\D/g, '').slice(0, 4);
-      if (code.length === 4) {
-        // Same named window as the old FULL SCREEN control — reopen/focus the live board.
-        window.open(
-          `${window.location.origin}/iboard?code=${encodeURIComponent(code)}`,
-          'iboard-fullscreen'
-        );
-      }
     });
   }
 
