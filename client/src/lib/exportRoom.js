@@ -99,7 +99,7 @@ export function buildEvidenceHtml({
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>iBOARD — Room ${escapeHtml(roomCode)}</title>
+<title>TUIT — Room ${escapeHtml(roomCode)}</title>
 <style>
   :root { color-scheme: light; }
   body { font-family: Georgia, "Times New Roman", serif; margin: 0; color: #1a1a1a; background: #f7f5f0; }
@@ -125,7 +125,7 @@ export function buildEvidenceHtml({
 </head>
 <body>
 <div class="wrap">
-  <span class="badge">iBOARD</span>
+  <span class="badge">TUIT</span>
   <h1>${escapeHtml(label || 'Student writing')}</h1>
   <p class="sub">Room <strong>${escapeHtml(roomCode)}</strong> · ${escapeHtml(when)}
   · ${list.length} student${list.length === 1 ? '' : 's'}
@@ -133,7 +133,7 @@ export function buildEvidenceHtml({
   ${subjectLabel ? ` · ${escapeHtml(subjectLabel)}` : ''}
   ${yearLabel ? ` · Year ${escapeHtml(yearLabel)}` : ''}</p>
   ${cards || '<p>No student writing yet.</p>'}
-  <footer>iBOARD</footer>
+  <footer>TUIT</footer>
 </div>
 </body>
 </html>`;
@@ -156,7 +156,7 @@ export function buildStudentEvidenceText({ roomCode, student, label, savedAt }) 
   const when = savedAt || new Date().toISOString();
   const s = student || {};
   return [
-    'iBOARD — Evidence of learning',
+    'TUIT — Evidence of learning',
     `Room: ${roomCode}`,
     label ? `Label: ${label}` : null,
     `Saved: ${when}`,
@@ -174,17 +174,24 @@ export function buildStudentEvidenceText({ roomCode, student, label, savedAt }) 
     .join('\n');
 }
 
+/** Saved times read the same everywhere: SQLite UTC (no zone) or ISO → local "26 Sept 2026, 5:36 pm". */
+export function formatSavedTime(value) {
+  if (!value) return '';
+  const date = new Date(typeof value === 'string' && /^\d{4}-\d\d-\d\d \d\d:/.test(value) ? `${value.replace(' ', 'T')}Z` : value);
+  return Number.isNaN(date.valueOf()) ? String(value) : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 export function buildStudentPortfolioText({ roomCode, studentName, entries }) {
   const list = Array.isArray(entries) ? entries : [];
   return [
-    'iBOARD — Student evidence portfolio',
+    'TUIT — Student evidence portfolio',
     `Student: ${studentName || 'Student'}`,
     `Room: ${roomCode}`,
     `Saved submissions: ${list.length}`,
     '',
     ...list.flatMap((entry, index) => [
       `${index + 1}. ${entry.label || 'Saved evidence'}`,
-      `Saved: ${entry.createdAt || ''}`,
+      `Saved: ${formatSavedTime(entry.createdAt)}`,
       `Words: ${wordCount(entry.text)}`,
       '',
       String(entry.text || '').trim() || '(No writing submitted.)',
@@ -201,14 +208,14 @@ export function buildStudentPortfolioHtml({ roomCode, studentName, entries }) {
     <section class="card">
       <p class="number">Submission ${index + 1}</p>
       <h2>${escapeHtml(entry.label || 'Saved evidence')}</h2>
-      <p class="meta">Saved ${escapeHtml(entry.createdAt || '')} · ${wordCount(entry.text)} words</p>
+      <p class="meta">Saved ${escapeHtml(formatSavedTime(entry.createdAt))} · ${wordCount(entry.text)} words</p>
       <div class="body">${escapeHtml(String(entry.text || '').trim() || '(No writing submitted.)').replace(/\n/g, '<br>')}</div>
     </section>`).join('\n');
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>iBOARD portfolio — ${escapeHtml(studentName || 'Student')}</title>
+<title>TUIT portfolio — ${escapeHtml(studentName || 'Student')}</title>
 <style>
   :root { color-scheme: light; }
   body { margin: 0; background: #f6f8f7; color: #17202a; font-family: Georgia, "Times New Roman", serif; }
@@ -226,7 +233,7 @@ export function buildStudentPortfolioHtml({ roomCode, studentName, entries }) {
 </head>
 <body>
   <main class="wrap">
-    <p class="brand">iBOARD evidence portfolio</p>
+    <p class="brand">TUIT evidence portfolio</p>
     <h1>${escapeHtml(studentName || 'Student')}</h1>
     <p class="summary">Room ${escapeHtml(roomCode)} · ${list.length} saved submission${list.length === 1 ? '' : 's'}</p>
     ${cards || '<p>No saved submissions.</p>'}
@@ -242,7 +249,7 @@ export function buildStudentDraftHtml({ roomCode, studentName, html, text }) {
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>iBOARD draft — ${escapeHtml(studentName || 'Student')}</title>
+<title>TUIT draft — ${escapeHtml(studentName || 'Student')}</title>
 <style>
   body { margin: 0; padding: 36px; color: #17202a; font-family: Arial, sans-serif; }
   main { max-width: 820px; margin: 0 auto; }
@@ -255,7 +262,7 @@ export function buildStudentDraftHtml({ roomCode, studentName, html, text }) {
 </head>
 <body>
 <main>
-  <h1>${escapeHtml(studentName || 'Student')} — iBOARD draft</h1>
+  <h1>${escapeHtml(studentName || 'Student')} — TUIT draft</h1>
   <p class="meta">Room ${escapeHtml(roomCode || '')} · Exported ${escapeHtml(new Date().toLocaleString())}</p>
   <section class="draft">${body || '<p>(Empty draft)</p>'}</section>
 </main>

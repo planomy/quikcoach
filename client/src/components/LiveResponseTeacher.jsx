@@ -467,7 +467,7 @@ export default function LiveResponseTeacher({
         delivered += Number(ack.count) || 0;
         if (Number(ack.count) !== chunk.length) throw new Error('Some recipients were unavailable.');
       }
-      const message = `${sets.length} set${sets.length === 1 ? '' : 's'} sent to ${studentIds.length} students’ inboxes.`;
+      const message = `${sets.length} set${sets.length === 1 ? '' : 's'} sent to ${studentIds.length === 1 ? '1 student’s inbox' : `${studentIds.length} students’ inboxes`}.`;
       setMessage(message);
       if (selected.length) onClearStudentSelection?.();
       return { ok: true, message };
@@ -558,7 +558,7 @@ export default function LiveResponseTeacher({
   }
   function downloadWall() {
     const body = featuredWall.map((item) => `<article><h2>Question ${item.questionNumber}: ${escapeHtml(item.prompt)}</h2><p>“${escapeHtml(formatLiveAnswer(item.value))}”</p><strong>${escapeHtml(item.label)}${item.name !== 'Anonymous' ? ` — ${escapeHtml(item.name)}` : ''}</strong></article>`).join('');
-    const html = `<!doctype html><meta charset="utf-8"><title>iBOARD Featured Wall</title><style>body{font-family:Arial;max-width:900px;margin:40px auto}article{padding:20px;margin:16px 0;border:2px solid #ddd;border-radius:18px}p{font-size:20px}</style><h1>iBOARD Featured Wall</h1>${body}`;
+    const html = `<!doctype html><meta charset="utf-8"><title>TUIT Featured Wall</title><style>body{font-family:Arial;max-width:900px;margin:40px auto}article{padding:20px;margin:16px 0;border:2px solid #ddd;border-radius:18px}p{font-size:20px}</style><h1>TUIT Featured Wall</h1>${body}`;
     void downloadTextFile('iboard-featured-wall.html', html, 'text/html;charset=utf-8');
   }
 
@@ -854,7 +854,7 @@ export default function LiveResponseTeacher({
       {!embedded && !overlay && (
         <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-indigo-700 to-indigo-700 px-4 py-3 text-white">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">iBOARD Pulse</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">TUIT Pulse</p>
             <h2 className="font-display text-lg font-black">Class response</h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">

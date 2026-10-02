@@ -560,10 +560,10 @@ export default function TeacherPresenterDock() {
     <>
       <style>{DOCK_CSS}</style>
       <div className="iboard-presenter-shell">
-        <section className="iboard-presenter-card" aria-label="iBOARD Presenter Dock">
+        <section className="iboard-presenter-card" aria-label="TUIT Presenter Dock">
           <header className="iboard-presenter-head">
             <div className="iboard-presenter-brand">
-              iBOARD <span className="iboard-presenter-room">{roomCode || '----'}</span>
+              TUIT <span className="iboard-presenter-room">{roomCode || '----'}</span>
             </div>
             <span className="iboard-presenter-chip">{onlineCount} online</span>
             <HintWrap hint="Waiting audience questions" prefer="below">
@@ -668,7 +668,7 @@ export default function TeacherPresenterDock() {
             )}
 
             {message && <p className={`iboard-presenter-message${connected ? '' : ' iboard-presenter-offline'}`}>{message}</p>}
-            {!connected && <p className="iboard-presenter-message iboard-presenter-offline">Reconnecting to iBOARD…</p>}
+            {!connected && <p className="iboard-presenter-message iboard-presenter-offline">Reconnecting to TUIT…</p>}
           </div>
         </section>
       </div>

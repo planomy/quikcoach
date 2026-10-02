@@ -145,7 +145,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   pdf.addFileToVFS('DejaVuSans.ttf', fontData);
   pdf.addFont('DejaVuSans.ttf', 'Report', 'normal');
   pdf.setFont('Report');
-  pdf.setProperties({ title: `iBoard session report - Room ${pack.sourceRoomCode}`, subject: 'Student writing, feedback and drafting evidence', author: 'iBoard' });
+  pdf.setProperties({ title: `TUIT session report - Room ${pack.sourceRoomCode}`, subject: 'Student writing, feedback and drafting evidence', author: 'TUIT' });
   const glyphs = pdf.getFont().metadata?.cmap?.unicode?.codeMap;
   let escapedGlyphs = false;
   function safe(value) {
@@ -177,10 +177,10 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   const pageNames = new Map();
   const addPage = pdf.addPage.bind(pdf);
   pdf.addPage = (...args) => { pageNames.set(pdf.getNumberOfPages(), studentName); return addPage(...args); };
-  paragraph('iBoard | Session report', { size: 22, colour: [25, 59, 89], gap: 5 });
+  paragraph('TUIT | Session report', { size: 22, colour: [25, 59, 89], gap: 5 });
   paragraph(`Room ${pack.sourceRoomCode || ''} | Captured ${when(pack.exportedAt)}`, { size: 10 });
   paragraph(`${people.length} student${people.length === 1 ? '' : 's'} | ${detailed ? 'Sampled drafting evidence checkpoints (up to 20 text changes)' : 'Drafting evidence summary (3 revision extracts)'}`, { size: 10 });
-  paragraph(`Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Writing reflects the latest version received by iBoard when this report was captured; it may not be a final submission.`, { size: 9, colour: [90, 102, 117] });
+  paragraph(`Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Writing reflects the latest version received by TUIT when this report was captured; it may not be a final submission.`, { size: 9, colour: [90, 102, 117] });
   heading('Reading this report');
   paragraph('Drafting evidence shows how writing developed. It does not verify identity or prove independent authorship. Pasted text may be legitimate. Inline comments appear only when a later recorded edit overlaps their uniquely matched passage. This shows sequence, not proof that feedback caused or successfully guided the change.');
   paragraph('Recording begins at the baseline. Paused and disconnected intervals are not continuous observation. This PDF is a readable report; retain the .iboard session file to reopen the lesson and explore its trails.');
@@ -253,7 +253,7 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   pageNames.set(pdf.getNumberOfPages(), studentName);
   for (let page = 1; page <= pdf.getNumberOfPages(); page++) {
     pdf.setPage(page); pdf.setFontSize(8); pdf.setTextColor(90, 102, 117);
-    pdf.text(`iBoard | Room ${pack.sourceRoomCode || ''}`, 18, 12);
+    pdf.text(`TUIT | Room ${pack.sourceRoomCode || ''}`, 18, 12);
     const name = safe(pageNames.get(page) || 'Session overview');
     pdf.text(pdf.splitTextToSize(name, 100)[0], 192, 12, { align: 'right' });
     pdf.setDrawColor(205, 215, 225); pdf.line(18, 284, 192, 284);
@@ -279,5 +279,5 @@ export async function downloadSessionPdf(pack, options) {
   const fontData = await loadReportFont();
   const pdf = buildSessionPdf(pack, { ...options, fontData });
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  pdf.save(`iBoard-session-${pack.sourceRoomCode || 'report'}-${stamp}.pdf`);
+  pdf.save(`TUIT-session-${pack.sourceRoomCode || 'report'}-${stamp}.pdf`);
 }

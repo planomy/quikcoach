@@ -131,7 +131,7 @@ function saveSnapshotCard(item) {
   ctx.fillRect(0, 0, canvas.width, 110);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 36px system-ui, sans-serif';
-  ctx.fillText('iBOARD handout', 40, 68);
+  ctx.fillText('TUIT handout', 40, 68);
   ctx.fillStyle = '#e2e8f0';
   ctx.font = 'bold 28px system-ui, sans-serif';
   const title = String(item.title || item.originalName || 'Handout').slice(0, 42);

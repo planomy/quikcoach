@@ -42,7 +42,7 @@ export default function SessionPdfExport({ socket, onClose, embedded = false }) 
       if (!cancelled) {
         const stale = isDynamicImportError(e);
         setRefreshRequired(stale);
-        setError(stale ? 'This iBOARD page is out of date. Refresh it, then try the PDF again.' : e.message);
+        setError(stale ? 'This TUIT page is out of date. Refresh it, then try the PDF again.' : e.message);
       }
     }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
@@ -57,7 +57,7 @@ export default function SessionPdfExport({ socket, onClose, embedded = false }) 
     } catch (e) {
       const stale = isDynamicImportError(e);
       setRefreshRequired(stale);
-      setError(stale ? 'This iBOARD page is out of date. Refresh it, then try the PDF again.' : (e.message || 'Could not export the PDF.'));
+      setError(stale ? 'This TUIT page is out of date. Refresh it, then try the PDF again.' : (e.message || 'Could not export the PDF.'));
       setMessage('');
     }
     finally { setBusy(false); }
@@ -95,7 +95,7 @@ export default function SessionPdfExport({ socket, onClose, embedded = false }) 
         <div role="alert" className="my-3 text-sm text-red-600 dark:text-red-300">
           <span>{error}</span>
           {refreshRequired ? (
-            <button type="button" className={`${buttonClass} ml-2`} onClick={refreshApp}>Refresh iBOARD</button>
+            <button type="button" className={`${buttonClass} ml-2`} onClick={refreshApp}>Refresh TUIT</button>
           ) : !pack ? (
             <button type="button" className={`${buttonClass} ml-2`} onClick={() => { setRefreshRequired(false); setReload((n) => n + 1); }}>Retry</button>
           ) : null}

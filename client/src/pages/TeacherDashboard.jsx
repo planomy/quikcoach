@@ -2465,14 +2465,14 @@ function TeacherDashboardInner() {
       setAddCardImage('');
       setAddCardFile(null);
       const toastMessage = chosenIds && ack.item && !Array.isArray(ack.item.studentIds)
-        ? 'Sent to every student — restart the iBOARD server to send files to chosen students only'
+        ? 'Sent to every student — restart the TUIT server to send files to chosen students only'
         : message;
       setCopyToast(toastMessage);
       setTimeout(() => setCopyToast(''), toastMessage === message ? 2500 : 6000);
     };
 
     const sentMessage = chosenIds
-      ? `Sent to ${chosenIds.length} student${chosenIds.length === 1 ? '' : 's'}’ inboxes`
+      ? (chosenIds.length === 1 ? 'Sent to 1 student’s inbox' : `Sent to ${chosenIds.length} students’ inboxes`)
       : 'Sent to students’ inboxes';
     if (chosenIds && !chosenIds.length) {
       setAddCardError('Tick at least one student first');
@@ -3818,7 +3818,8 @@ function TeacherDashboardInner() {
               ref={addCardPanelRef}
               className={`iboard-teacher-composer${addCardOpen ? ' is-open' : ''}`}
               data-iboard-add-card-panel="true"
-              inert={!addCardOpen ? true : undefined}
+              inert={!addCardOpen ? '' : undefined}
+              aria-hidden={!addCardOpen ? 'true' : undefined}
             >
               <div className="iboard-teacher-composer__inner">
                 <form
@@ -3979,7 +3980,7 @@ function TeacherDashboardInner() {
             <div className={`iboard-teacher-panel-list${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
               {posts.length === 0 && !addCardOpen && (
                 <p className="px-1 py-6 text-center text-xs font-semibold text-slate-400">
-                  No resources yet — press + to add an image, PDF or text
+                  Press + to send an image, PDF or text. It goes straight to students’ inboxes.
                 </p>
               )}
               {posts.map((post) => (
@@ -4879,7 +4880,7 @@ function TeacherDashboardInner() {
                                   <div>
                                     <p className="font-bold text-slate-900 dark:text-white">{entry.label}</p>
                                     <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                      {entry.createdAt} · {wordCount(entry.text)} words
+                                      {formatSqlUtc(entry.createdAt)} · {wordCount(entry.text)} words
                                       {(selectedEvidenceStudent.aliases || []).length > 1 && entry.sourceName ? ` · as ${entry.sourceName}` : ''}
                                     </p>
                                   </div>
@@ -4901,7 +4902,7 @@ function TeacherDashboardInner() {
                     </div>
                   </div>
                   <p className="border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                    iBoard still matches capital letters and extra spaces automatically. Other name variations are combined only when you approve them.
+                    TUIT still matches capital letters and extra spaces automatically. Other name variations are combined only when you approve them.
                   </p>
           </section>
         )}

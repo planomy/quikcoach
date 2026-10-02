@@ -85,7 +85,7 @@ export function buildLessonReportHtml(report) {
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>iBOARD participation report · Room ${escapeHtml(report.roomCode)}</title>
+  <title>TUIT participation report · Room ${escapeHtml(report.roomCode)}</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 980px; margin: 2rem auto; padding: 0 1rem; color: #0f172a; }
     h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }

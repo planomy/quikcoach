@@ -8,9 +8,9 @@ export function sessionFilename(roomCode, label = '') {
   const part = safeFilePart(label);
   const stamp = stampForFilename();
   if (part && part !== 'student') {
-    return `iBoard-${code}-${part}-${stamp}.${IBOARD_SESSION_EXT}`;
+    return `TUIT-${code}-${part}-${stamp}.${IBOARD_SESSION_EXT}`;
   }
-  return `iBoard-${code}-${stamp}.${IBOARD_SESSION_EXT}`;
+  return `TUIT-${code}-${stamp}.${IBOARD_SESSION_EXT}`;
 }
 
 export async function downloadSessionPack(pack, roomCode, label = '', { picker = true } = {}) {
@@ -27,7 +27,7 @@ export function parseSessionFileText(text) {
     throw new Error('That file is not valid JSON');
   }
   if (!pack || pack.format !== 'iboard') {
-    throw new Error('Not an iBoard session file (.iboard)');
+    throw new Error('Not a TUIT lesson file (.iboard)');
   }
   if (Number(pack.version) !== 1) {
     throw new Error('Unsupported session file version');

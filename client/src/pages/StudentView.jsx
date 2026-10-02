@@ -1737,7 +1737,7 @@ export default function StudentView() {
                 headerActions={
                   <>
                     <HintWrap
-                      hint={draftSaveState === 'offline' ? 'Your device has a local backup. iBOARD will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}
+                      hint={draftSaveState === 'offline' ? 'Your device has a local backup. TUIT will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}
                       prefer="above"
                       multiline
                     >

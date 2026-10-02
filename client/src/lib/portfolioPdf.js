@@ -1,16 +1,12 @@
 import { jsPDF } from 'jspdf';
-import { safeFilePart, stampForFilename } from './exportRoom.js';
+import { formatSavedTime, safeFilePart, stampForFilename } from './exportRoom.js';
 import { loadReportFont } from './sessionPdf.js';
 
 function words(text) {
   return String(text || '').trim().split(/\s+/).filter(Boolean).length;
 }
 
-function when(value) {
-  if (!value) return '';
-  const date = new Date(typeof value === 'string' && /^\d{4}-\d\d-\d\d \d\d:/.test(value) ? value.replace(' ', 'T') + 'Z' : value);
-  return Number.isNaN(date.valueOf()) ? String(value) : date.toLocaleString('en-AU');
-}
+const when = formatSavedTime;
 
 function downloadBlob(filename, blob) {
   const a = document.createElement('a');
@@ -50,9 +46,9 @@ export function buildPortfolioPdf({ roomCode, student, fontData, generatedAt } =
   pdf.addFont('DejaVuSans.ttf', 'Report', 'normal');
   pdf.setFont('Report');
   pdf.setProperties({
-    title: `iBoard portfolio — ${name}`,
+    title: `TUIT portfolio — ${name}`,
     subject: 'Student writing portfolio',
-    author: 'iBoard',
+    author: 'TUIT',
   });
   const glyphs = pdf.getFont().metadata?.cmap?.unicode?.codeMap;
   function safe(value) {
@@ -81,7 +77,7 @@ export function buildPortfolioPdf({ roomCode, student, fontData, generatedAt } =
   function heading(text) { space(14); y += 2; paragraph(text, { size: 12, colour: [29, 74, 116], gap: 2 }); }
 
   paragraph(name, { size: 22, colour: [25, 59, 89], gap: 4 });
-  paragraph('iBoard | Student writing portfolio', { size: 10, colour: [29, 74, 116] });
+  paragraph('TUIT | Student writing portfolio', { size: 10, colour: [29, 74, 116] });
   paragraph(
     [
       roomCode ? `Room ${roomCode}` : null,
@@ -120,7 +116,7 @@ export function buildPortfolioPdf({ roomCode, student, fontData, generatedAt } =
 
   for (let page = 1; page <= pdf.getNumberOfPages(); page++) {
     pdf.setPage(page); pdf.setFontSize(8); pdf.setTextColor(90, 102, 117);
-    pdf.text(`iBoard | Room ${roomCode || ''}`, 18, 12);
+    pdf.text(`TUIT | Room ${roomCode || ''}`, 18, 12);
     pdf.text(pdf.splitTextToSize(safe(name), 100)[0], 192, 12, { align: 'right' });
     pdf.setDrawColor(205, 215, 225); pdf.line(18, 284, 192, 284);
     pdf.text('Student portfolio — saved classroom writing', 18, 290);
