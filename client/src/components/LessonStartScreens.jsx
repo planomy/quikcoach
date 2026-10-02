@@ -181,7 +181,7 @@ export function BoardJoinGate({ code, joinUrl, students = [], rosterCount = 0, o
 }
 
 /** Change today's objective mid-lesson; recent objectives one tap away. */
-export function ObjectiveScreen({ initialObjective = '', busy = false, onSave, onClose }) {
+export function ObjectiveScreen({ initialObjective = '', busy = false, entrance = false, onSave, onClose }) {
   const [text, setText] = useState(initialObjective);
   const [recent] = useState(readRecentObjectives);
   const inputRef = useRef(null);
@@ -233,13 +233,13 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, onSave, o
         ) : null}
         <p className="iboard-objective-screen__hint">Students see this at the top of their screen.</p>
         <div className="iboard-start-screen__actions">
-          <button type="button" onClick={onClose} className="iboard-start-screen__secondary">Cancel</button>
-          {initialObjective ? (
+          <button type="button" onClick={onClose} className="iboard-start-screen__secondary">{entrance ? 'Back' : 'Cancel'}</button>
+          {initialObjective && !entrance ? (
             <button type="button" disabled={busy} onClick={() => onSave?.('')} className="iboard-start-screen__secondary">
               Clear objective
             </button>
           ) : null}
-          <button type="submit" disabled={busy} className="iboard-start-screen__primary">Save</button>
+          <button type="submit" disabled={busy} className="iboard-start-screen__primary">{entrance ? 'Enter' : 'Save'}</button>
         </div>
       </form>
     </StartShell>

@@ -389,6 +389,7 @@ function TeacherDashboardInner() {
   const hintsOff = useHintsOff();
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [lessonBegun, setLessonBegun] = useState(false);
+  const [entranceStep, setEntranceStep] = useState('join');
   const [pickAnchor, setPickAnchor] = useState(null);
   const [objectiveEditOpen, setObjectiveEditOpen] = useState(false);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
@@ -1308,6 +1309,7 @@ function TeacherDashboardInner() {
         rememberTeacherRoomCode(code);
         rememberedRoomRef.current = code;
         clearPrefilledCodeOnFocusRef.current = false;
+        setEntranceStep('join');
         if (skipJoinScreen) beginLesson(code);
         else setLessonBegun(showJoinScreen ? false : readLessonBegun(code));
         setJoined(true);
@@ -3063,6 +3065,7 @@ function TeacherDashboardInner() {
       clearSessionDirty();
       forgetLessonBegun();
       setLessonBegun(false);
+      setEntranceStep('join');
       setCopyToast('Board reset — ready for a fresh lesson');
       setTimeout(() => setCopyToast(''), 3000);
     });
@@ -4040,14 +4043,26 @@ function TeacherDashboardInner() {
 
       <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
-          {!lessonBegun && (
+          {!lessonBegun && entranceStep === 'join' && (
             <JoinScreen
               code={codeInput}
               joinUrl={studentJoinUrl()}
               joinedCount={connectedStudents.length}
               rosterCount={orderedStudents.length}
-              primaryLabel="Enter"
-              onClose={() => beginLesson(codeInput)}
+              primaryLabel="Next"
+              onClose={() => setEntranceStep('objective')}
+            />
+          )}
+          {!lessonBegun && entranceStep === 'objective' && (
+            <ObjectiveScreen
+              entrance
+              initialObjective={room?.lesson_objective || ''}
+              onClose={() => setEntranceStep('join')}
+              onSave={(text) => {
+                if (text !== (room?.lesson_objective || '')) setLessonObjective(text);
+                setEntranceStep('join');
+                beginLesson(codeInput);
+              }}
             />
           )}
 
