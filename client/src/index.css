@@ -4987,12 +4987,16 @@ html.dark .iboard-header-objective.is-empty {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   cursor: pointer;
   margin-top: 0.35rem !important;
   padding: 0.35rem 0.5rem !important;
   font-size: 0.72rem;
   line-height: 1.35;
+}
+
+.iboard-student-card__fit-pane::-webkit-scrollbar {
+  display: none;
 }
 
 .iboard-student-card__fit-pane img {
