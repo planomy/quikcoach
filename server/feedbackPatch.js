@@ -531,9 +531,10 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       const kind = feedbackKind(raw);
       const setMeta = kind === 'set-prompt' ? sanitizeSetPromptMeta(raw) : null;
       const urgent = (kind === 'note' || kind === 'chat') && !!raw?.urgent;
+      const fromAi = kind === 'note' && raw?.source === 'ai';
       const metaJson = setMeta
         ? JSON.stringify(setMeta)
-        : JSON.stringify(urgent ? { urgent: true } : {});
+        : JSON.stringify({ ...(urgent ? { urgent: true } : {}), ...(fromAi ? { source: 'ai' } : {}) });
 
       const result = feedbackDb
         .prepare(
@@ -623,6 +624,38 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
       }
     });
     socket.on('teacher:note-reply-seen', (payload, cb) => markNoteReplySeen(io, socket, payload, cb));
+    socket.on('teacher:ai-feedback-log', (_payload, cb) => {
+      const roomCode = normaliseRoomCode(socket.data.roomCode);
+      if (socket.data.role !== 'teacher' || roomCode.length !== 4) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      try {
+        const rows = feedbackDb
+          .prepare(
+            `SELECT f.id, f.student_id, f.text, f.created_at, f.seen_at, s.name AS student_name
+             FROM teacher_feedback_messages f
+             LEFT JOIN students s ON s.id = f.student_id
+             WHERE f.room_code = ? AND f.kind = 'note' AND json_extract(f.meta_json, '$.source') = 'ai'
+             ORDER BY f.id DESC LIMIT 600`
+          )
+          .all(roomCode);
+        cb?.({
+          ok: true,
+          items: rows.map((row) => ({
+            id: Number(row.id),
+            studentId: Number(row.student_id),
+            studentName: String(row.student_name || '').trim().slice(0, 80),
+            text: String(row.text || ''),
+            createdAt: row.created_at || '',
+            seen: !!row.seen_at,
+          })),
+        });
+      } catch (error) {
+        console.error('Could not load AI feedback log', error);
+        cb?.({ ok: false, error: 'Could not load sent feedback' });
+      }
+    });
     socket.on('teacher:chat-sync', (payload, cb) => {
       const roomCode = normaliseRoomCode(socket.data.roomCode);
       const studentId = Number(payload?.studentId);

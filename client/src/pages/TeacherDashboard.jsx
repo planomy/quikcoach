@@ -471,7 +471,9 @@ function TeacherDashboardInner() {
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
   const [libraryPanel, setLibraryPanel] = useState(null); // null | 'evidence' (Lesson records hub shell)
-  const [libraryView, setLibraryView] = useState('home'); // home | feedback | drafting | participation | pdf | portfolios
+  const [libraryView, setLibraryView] = useState('home'); // home | feedback | feedback-sent | drafting | participation | pdf | portfolios
+  const [aiFeedbackLog, setAiFeedbackLog] = useState(null);
+  const [aiFeedbackLogError, setAiFeedbackLogError] = useState('');
   const [fixedCommentCount, setFixedCommentCount] = useState(0);
   const [clearFixedBusy, setClearFixedBusy] = useState(false);
   const [clearFixedArmed, setClearFixedArmed] = useState(false);
@@ -2177,7 +2179,7 @@ function TeacherDashboardInner() {
       .map((s, i) => {
         const n = i + 1;
         const row = parsed.find((p) => p.index === n);
-        return row ? { studentId: s.id, text: row.text } : null;
+        return row ? { studentId: s.id, text: row.text, source: 'ai' } : null;
       })
       .filter(Boolean);
     if (!items.length) {
@@ -2189,7 +2191,7 @@ function TeacherDashboardInner() {
       if (!ack?.ok) setError('Could not send feedback.');
       else {
         setPasteBox('');
-        setCopyToast(`Sent to ${items.length} student(s)`);
+        setCopyToast(items.length === 1 ? 'Sent to 1 student' : `Sent to ${items.length} students`);
         setTimeout(() => setCopyToast(''), 2500);
       }
     });
@@ -3239,6 +3241,19 @@ function TeacherDashboardInner() {
 
   function goLibraryHome() {
     setLibraryView('home');
+  }
+
+  function openFeedbackSent() {
+    setLibraryView('feedback-sent');
+    setAiFeedbackLog(null);
+    setAiFeedbackLogError('');
+    socket.emit('teacher:ai-feedback-log', {}, (ack) => {
+      if (ack?.ok && Array.isArray(ack.items)) setAiFeedbackLog(ack.items);
+      else {
+        setAiFeedbackLog([]);
+        setAiFeedbackLogError(ack?.error || 'Could not load sent feedback');
+      }
+    });
   }
 
   async function downloadLessonReportQuick() {
@@ -4622,7 +4637,9 @@ function TeacherDashboardInner() {
                             ? 'Session PDF'
                             : libraryView === 'portfolios'
                               ? 'Student portfolios'
-                              : 'Reports'}
+                              : libraryView === 'feedback-sent'
+                                ? 'AI feedback sent'
+                                : 'Reports'}
               </h2>
                   {libraryView === 'feedback' ? (
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -4669,6 +4686,13 @@ function TeacherDashboardInner() {
               >
                 Student portfolios
                   </button>
+              <button
+                type="button"
+                onClick={openFeedbackSent}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                AI feedback sent
+              </button>
               <button
                 type="button"
                 onClick={() => { closeLibraryHub(); setInsightsOpen(true); }}
@@ -4730,6 +4754,62 @@ function TeacherDashboardInner() {
             )}
           </section>
                 )}
+
+        {libraryView === 'feedback-sent' && (
+          <section className="space-y-4">
+            <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
+              Every piece of AI feedback you’ve sent from this room, newest first.
+            </p>
+            {aiFeedbackLog === null ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
+            ) : aiFeedbackLogError ? (
+              <p className="text-sm font-semibold text-rose-600 dark:text-rose-300">{aiFeedbackLogError}</p>
+            ) : aiFeedbackLog.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
+                <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Nothing sent yet</h3>
+                <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
+                  Feedback you distribute from the AI feedback button on the rail will appear here.
+                </p>
+              </div>
+            ) : (
+              Object.entries(
+                aiFeedbackLog.reduce((groups, item) => {
+                  const key = String(item.createdAt || '').slice(0, 16);
+                  (groups[key] ||= []).push(item);
+                  return groups;
+                }, {})
+              ).map(([key, items]) => (
+                <div key={key} className="overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                  <div className="flex items-baseline justify-between gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                    <h3 className="font-display text-base font-semibold text-ink-900 dark:text-slate-100">{formatSqlUtc(items[0].createdAt)}</h3>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {items.length === 1 ? '1 student' : `${items.length} students`}
+                    </span>
+                  </div>
+                  <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {[...items]
+                      .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''))
+                      .map((item) => (
+                        <li key={item.id}>
+                          <details className="group px-4 py-2.5">
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm [&::-webkit-details-marker]:hidden">
+                              <span className="font-semibold text-slate-800 dark:text-slate-100">{item.studentName || 'Student who left'}</span>
+                              <span className={`text-xs font-semibold ${item.seen ? 'text-[#5a5fc3] dark:text-indigo-300' : 'text-slate-400 dark:text-slate-500'}`}>
+                                {item.seen ? 'Opened' : 'Not opened yet'}
+                              </span>
+                            </summary>
+                            <p className="mt-2 whitespace-pre-wrap rounded-xl bg-[#f1f0f8] px-3 py-2 text-sm leading-relaxed text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                              {item.text}
+                            </p>
+                          </details>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))
+            )}
+          </section>
+        )}
 
         {libraryView === 'portfolios' && (
                 <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
