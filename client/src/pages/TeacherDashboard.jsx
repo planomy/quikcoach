@@ -5187,10 +5187,10 @@ function TeacherDashboardInner() {
                       aria-pressed={active}
                       aria-expanded={isOverview ? overviewColsPeek : undefined}
                       title=""
-                      className={`group flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold leading-tight transition active:scale-[0.98] ${
+                      className={`group flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-bold leading-tight transition active:scale-[0.98] ${
                         active
-                          ? 'bg-[#5a5fc3] text-white shadow-sm'
-                          : 'text-slate-700 hover:bg-[#5a5fc3] hover:text-white dark:text-slate-200 dark:hover:bg-[#5a5fc3]'
+                          ? 'border-transparent bg-[#5a5fc3] text-white shadow-sm'
+                          : 'border-transparent text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50 dark:hover:text-white'
                       }`}
                     >
                       <CardViewIcon id={view.id} className={`h-4 w-4 shrink-0 transition-transform duration-150${active ? '' : ' group-hover:scale-[1.06]'}`} />
@@ -5222,10 +5222,10 @@ function TeacherDashboardInner() {
                         setCardView('overview');
                       }}
                       onFocus={() => setOverviewColsPeek(true)}
-                      className={`min-w-[1.75rem] rounded-md px-1.5 py-1 text-[11px] font-semibold tabular-nums transition ${
+                      className={`min-w-[1.75rem] rounded-md border px-1.5 py-1 text-[11px] font-semibold tabular-nums transition ${
                         active
-                          ? 'bg-[#5a5fc3] text-white shadow-sm'
-                          : 'text-[#52525c] hover:bg-[#5a5fc3] hover:text-white dark:text-slate-300 dark:hover:bg-[#5a5fc3]'
+                          ? 'border-transparent bg-[#5a5fc3] text-white shadow-sm'
+                          : 'border-transparent text-[#52525c] hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-300 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50 dark:hover:text-white'
                       }`}
                     >
                       {count}

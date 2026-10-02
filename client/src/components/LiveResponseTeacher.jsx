@@ -1086,7 +1086,7 @@ export default function LiveResponseTeacher({
             <div className="mt-3 flex flex-wrap gap-1.5">
               {TYPES.map(([value, label, hint]) => (
                 <HintWrap key={value} hint={hint} suppressed={type === value}>
-                  <button type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold ${type === value ? 'bg-[#5a5fc3] text-white' : 'border border-[#e2e2e8] bg-white text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'}`}>{label}</button>
+                  <button type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${type === value ? 'border-transparent bg-[#5a5fc3] text-white' : 'border-[#e2e2e8] bg-white text-[#3c3c45] hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50'}`}>{label}</button>
                 </HintWrap>
               ))}
             </div>
