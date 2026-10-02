@@ -1929,6 +1929,15 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
   }
 }
 
+@keyframes iboard-dock-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes iboard-rail-dock-in-top {
   from {
     opacity: 0;
@@ -4343,10 +4352,19 @@ html.dark .iboard-workspace-scrim {
   .iboard-teacher-panel-wrap,
   .iboard-teacher-panel,
   .iboard-teacher-panel-reveal,
-  .iboard-teacher-header-bar,
-  .iboard-header-dock--rail {
+  .iboard-teacher-header-bar {
     transition: none;
     animation: none;
+  }
+
+  .iboard-header-dock--rail {
+    transition: none;
+  }
+
+  .iboard-header-dock.iboard-header-dock--rail,
+  .iboard-header-dock.iboard-header-dock--from-rail,
+  .iboard-header-dock.iboard-header-dock--view {
+    animation: iboard-dock-fade-in 160ms ease;
   }
 
   .iboard-arr-btn img,

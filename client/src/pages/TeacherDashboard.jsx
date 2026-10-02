@@ -1958,18 +1958,34 @@ function TeacherDashboardInner() {
   useLayoutEffect(() => {
     const previous = railDockKeyRef.current;
     railDockKeyRef.current = railDockKey;
-    if (!railDockKey || !previous || previous === railDockKey) return;
-    // The CSS slide only runs on mount; replay it when one open dock swaps content.
-    if (previous.split(':')[0] !== railDockKey.split(':')[0]) return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (!railDockKey || !previous || previous === railDockKey) return undefined;
+    // Same dock swapping content: glide to the new rail button and fade the content in.
+    if (previous.split(':')[0] !== railDockKey.split(':')[0]) return undefined;
     const panel = railDockKey.startsWith('tools') ? teacherToolsPanelRef.current : settingsPanelRef.current;
-    panel?.animate?.(
-      [
-        { opacity: 0, transform: 'translateX(-12px)' },
-        { opacity: 1, transform: 'translateX(0)' },
-      ],
-      { duration: 210, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
-    );
+    if (!panel) return undefined;
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    let glideTimer = null;
+    if (!reduceMotion) {
+      panel.style.transition = 'top 280ms cubic-bezier(0.22, 1, 0.36, 1)';
+      glideTimer = window.setTimeout(() => {
+        panel.style.transition = '';
+      }, 320);
+    }
+    for (const child of panel.children) {
+      child.animate?.(
+        reduceMotion
+          ? [{ opacity: 0 }, { opacity: 1 }]
+          : [
+              { opacity: 0, transform: 'translateY(6px)' },
+              { opacity: 1, transform: 'translateY(0)' },
+            ],
+        { duration: reduceMotion ? 160 : 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+      );
+    }
+    return () => {
+      if (glideTimer !== null) window.clearTimeout(glideTimer);
+      panel.style.transition = '';
+    };
   }, [railDockKey]);
 
   useLayoutEffect(() => {
