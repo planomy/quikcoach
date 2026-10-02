@@ -5718,7 +5718,7 @@ function TeacherDashboardInner() {
                 <div className="iboard-room-settings__cleanup">
                   {!clearFixedArmed ? (
                     <HintWrap hint="Removes the green comment bubbles you’ve confirmed from student cards. Purple comments, including ones waiting for you to check, stay." className="w-full" multiline>
-                    <button type="button" className="w-full" onClick={() => setClearFixedArmed(true)}>
+                    <button type="button" className="iboard-room-settings__cleanup-btn" onClick={() => setClearFixedArmed(true)}>
                     <span>Clear confirmed comments</span>
                       <span className="iboard-room-settings__cleanup-badge">{fixedCommentCount}</span>
                   </button>

@@ -3255,8 +3255,8 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   height: 1.15rem;
   padding: 0 0.3rem;
   border-radius: 999px;
-  background: #ebeaf8;
-  color: #5a5fc3;
+  background: #d1fae5;
+  color: #047857;
   font-size: 0.62rem;
   font-weight: 800;
   line-height: 1;
@@ -3269,7 +3269,7 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   overflow: hidden;
 }
 
-.iboard-room-settings__cleanup > button {
+.iboard-room-settings__cleanup-btn {
   display: flex;
   width: 100%;
   align-items: center;
@@ -3286,11 +3286,11 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   cursor: pointer;
 }
 
-.iboard-room-settings__cleanup:has(> button:hover) {
+.iboard-room-settings__cleanup:has(.iboard-room-settings__cleanup-btn:hover) {
   border-color: #5a5fc3;
 }
 
-.iboard-room-settings__cleanup > button:hover {
+.iboard-room-settings__cleanup-btn:hover {
   background: #ebeaf8;
   color: #3c3f8f;
 }
@@ -3302,14 +3302,14 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   height: 1.2rem;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: #ebeaf8;
-  color: #5a5fc3;
+  background: #d1fae5;
+  color: #047857;
   font-size: 0.62rem;
   font-weight: 800;
 }
 
-.iboard-room-settings__cleanup > button:hover .iboard-room-settings__cleanup-badge {
-  background: #5a5fc3;
+.iboard-room-settings__cleanup-btn:hover .iboard-room-settings__cleanup-badge {
+  background: #10b981;
   color: #ffffff;
 }
 
@@ -3424,22 +3424,22 @@ html.dark .iboard-room-settings__cleanup {
   border-color: #3d4654;
 }
 
-html.dark .iboard-room-settings__cleanup > button,
+html.dark .iboard-room-settings__cleanup-btn,
 html.dark .iboard-room-settings__cleanup-confirm p {
   color: #e8edf3;
 }
 
-html.dark .iboard-room-settings__cleanup > button:hover {
+html.dark .iboard-room-settings__cleanup-btn:hover {
   background: rgba(90, 95, 195, 0.22);
 }
 
-html.dark .iboard-room-settings__cleanup:has(> button:hover) {
+html.dark .iboard-room-settings__cleanup:has(.iboard-room-settings__cleanup-btn:hover) {
   border-color: #818cf8;
 }
 
 html.dark .iboard-room-settings__cleanup-badge {
-  background: rgba(129, 140, 248, 0.2);
-  color: #c7d2fe;
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
 }
 
 html.dark .iboard-room-settings__danger {
