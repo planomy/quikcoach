@@ -5118,7 +5118,7 @@ function TeacherDashboardInner() {
       {newClassConfirmOpen && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-4 backdrop-blur-[2px] sm:items-center">
           <div
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-red-200 bg-white shadow-2xl dark:border-red-900 dark:bg-slate-900"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-class-confirm-title"
@@ -5132,12 +5132,11 @@ function TeacherDashboardInner() {
                 !
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600 dark:text-red-300">Room action</p>
                 <h2 id="new-class-confirm-title" className="mt-1 font-display text-xl font-black text-slate-950 dark:text-white">
                   Reset class board?
                 </h2>
                 <p id="new-class-confirm-description" className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  This clears every student card and teacher card in Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span>. Students will need to join again. Skip this if the class is still working on a draft — the board persists until you reset. A session file (.iboard) downloads automatically before the board clears so drafting evidence is kept.
+                  This clears every card in Room <span className="font-mono font-bold text-slate-900 dark:text-white">{codeInput}</span> and empties students’ screens. They’ll need to join again. A backup of the lesson saves automatically first.
                 </p>
               </div>
             </div>
@@ -5146,31 +5145,23 @@ function TeacherDashboardInner() {
                 {error}
               </p>
             )}
-            <div className="space-y-2 border-b border-slate-200 px-5 py-3 dark:border-slate-700">
-              <button
-                type="button"
-                disabled={newClassBusy || sessionBusy}
-                onClick={saveSessionFile}
-                className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-900 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
-              >
-                Save session (.iboard) first
-              </button>
+            <div className="border-b border-slate-200 px-5 py-3 dark:border-slate-700">
               <button
                 type="button"
                 disabled={newClassBusy}
                 onClick={downloadLessonReportQuick}
-                className="w-full rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200"
+                className="w-full rounded-xl border border-[#e2e2e8] bg-white px-4 py-2.5 text-sm font-bold text-[#3c3c45] transition-colors hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3] focus-visible:ring-offset-2 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50"
               >
                 Download participation report
               </button>
             </div>
-            <div className="flex flex-col-reverse gap-2 bg-slate-50 px-5 py-4 dark:bg-slate-950 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-2 bg-[#f7f6fb] px-5 py-4 dark:bg-slate-950 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 autoFocus
                 disabled={newClassBusy}
                 onClick={closeNewClassConfirmation}
-                className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="rounded-xl border border-[#e2e2e8] bg-white px-4 py-2.5 text-sm font-bold text-[#3c3c45] transition-colors hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3] focus-visible:ring-offset-2 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50"
               >
                 Keep board
               </button>
@@ -5178,7 +5169,7 @@ function TeacherDashboardInner() {
                 type="button"
                 disabled={newClassBusy}
                 onClick={startNewClass}
-                className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white shadow-sm hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
+                className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
               >
                 {newClassBusy ? newClassStep || 'Resetting…' : 'Reset board'}
               </button>

@@ -2810,7 +2810,9 @@ html.dark .iboard-feedback-settings__cancel:hover {
 }
 
 .iboard-room-settings__secondary:hover {
-  background: #f7f7f9;
+  border-color: #5a5fc3;
+  background: #ebeaf8;
+  color: #3c3f8f;
 }
 
 .iboard-switch {
@@ -3198,9 +3200,9 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
 }
 
 .iboard-room-settings__cleanup {
-  border: 1px solid #c6e9d4;
+  border: 1px solid #e2e2e8;
   border-radius: 0.75rem;
-  background: #f1faf5;
+  background: #ffffff;
   overflow: hidden;
 }
 
@@ -3214,15 +3216,20 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   padding: 0.45rem 0.8rem;
   border: 0;
   background: transparent;
-  color: #166534;
+  color: #3c3c45;
   font-size: 0.8125rem;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
 }
 
+.iboard-room-settings__cleanup:has(> button:hover) {
+  border-color: #5a5fc3;
+}
+
 .iboard-room-settings__cleanup > button:hover {
-  background: #e5f6ec;
+  background: #ebeaf8;
+  color: #3c3f8f;
 }
 
 .iboard-room-settings__cleanup-badge {
@@ -3232,10 +3239,15 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   height: 1.2rem;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: #16a34a;
-  color: #fff;
+  background: #ebeaf8;
+  color: #5a5fc3;
   font-size: 0.62rem;
   font-weight: 800;
+}
+
+.iboard-room-settings__cleanup > button:hover .iboard-room-settings__cleanup-badge {
+  background: #5a5fc3;
+  color: #ffffff;
 }
 
 .iboard-room-settings__cleanup-confirm {
@@ -3247,7 +3259,7 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.35;
-  color: #14532d;
+  color: #3c3c45;
 }
 
 .iboard-room-settings__danger {
@@ -3256,7 +3268,7 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   align-items: center;
   justify-content: center;
   min-height: 2.35rem;
-  border: 1px solid #f1d4d4;
+  border: 1px solid #e2e2e8;
   border-radius: 0.75rem;
   background: #fff;
   color: #dc2626;
@@ -3266,6 +3278,7 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
 }
 
 .iboard-room-settings__danger:hover {
+  border-color: #fca5a5;
   background: #fef2f2;
 }
 
@@ -3338,18 +3351,36 @@ html.dark .iboard-room-settings__badge {
   color: #c7d2fe;
 }
 
+html.dark .iboard-room-settings__secondary:hover {
+  border-color: #818cf8;
+  background: rgba(90, 95, 195, 0.22);
+}
+
 html.dark .iboard-room-settings__cleanup {
-  background: #052e1c;
-  border-color: #166534;
+  background: #252b32;
+  border-color: #3d4654;
 }
 
 html.dark .iboard-room-settings__cleanup > button,
 html.dark .iboard-room-settings__cleanup-confirm p {
-  color: #bbf7d0;
+  color: #e8edf3;
+}
+
+html.dark .iboard-room-settings__cleanup > button:hover {
+  background: rgba(90, 95, 195, 0.22);
+}
+
+html.dark .iboard-room-settings__cleanup:has(> button:hover) {
+  border-color: #818cf8;
+}
+
+html.dark .iboard-room-settings__cleanup-badge {
+  background: rgba(129, 140, 248, 0.2);
+  color: #c7d2fe;
 }
 
 html.dark .iboard-room-settings__danger {
-  border-color: #7f1d1d;
+  border-color: #3d4654;
   color: #fca5a5;
 }
 
