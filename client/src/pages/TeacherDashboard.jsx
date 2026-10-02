@@ -2201,12 +2201,13 @@ function TeacherDashboardInner() {
     setNoteTarget({ id: studentId, name: String(student.name || 'Student') });
     if (studentId && (noteReplyByStudentId[studentId] || noteReceiptByStudentId[studentId] === 'replied')) {
       socket.emit('teacher:note-reply-seen', { studentId });
-      setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'seen' }));
-      window.dispatchEvent(
-        new CustomEvent('iboard:note-send-status', {
-          detail: { studentId, status: 'seen' },
-        })
-      );
+      // The teacher is reading the reply now, so the card icon settles back to neutral.
+      setNoteReceiptByStudentId((current) => {
+        if (!(studentId in current)) return current;
+        const next = { ...current };
+        delete next[studentId];
+        return next;
+      });
     }
   }
 
