@@ -4035,6 +4035,7 @@ function TeacherDashboardInner() {
               onRemoveStudent={requestRemoveStudent}
               onBegin={() => {
                 rememberLessonBegun(String(codeInput || '').replace(/\D/g, '').slice(0, 4));
+                setCardView('all');
                 setLessonBegun(true);
               }}
             />
