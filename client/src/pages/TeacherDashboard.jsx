@@ -1133,14 +1133,10 @@ function TeacherDashboardInner() {
     };
   }, [pasteMenu]);
 
-  function openPasteDetail(studentId) {
-    setPasteDetail({ studentId, loading: true, pastes: [] });
-    socket.emit('teacher:paste-detail', { studentId }, (ack) => {
-      setPasteDetail((current) =>
-        current?.studentId === studentId
-          ? { studentId, loading: false, pastes: ack?.ok && Array.isArray(ack.pastes) ? ack.pastes : [] }
-          : current
-      );
+  function openPasteDetail(studentId, menu) {
+    socket.timeout(5000).emit('teacher:paste-detail', { studentId }, (err, ack) => {
+      setPasteDetail({ studentId, loading: false, pastes: !err && ack?.ok && Array.isArray(ack.pastes) ? ack.pastes : [] });
+      setPasteMenu(menu);
     });
   }
 
@@ -4281,8 +4277,7 @@ function TeacherDashboardInner() {
                               setPasteDetail(null);
                               return;
                             }
-                            setPasteMenu({ studentId: s.id, left: rect.left, top: rect.bottom + 6 });
-                            openPasteDetail(s.id);
+                            openPasteDetail(s.id, { studentId: s.id, left: rect.left, top: rect.bottom + 6 });
                           }}
                           className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50"
                         >
