@@ -14,24 +14,24 @@ const FOLLOW_ON_GRACE_PERIOD = 700;
 // feels quick after the user has deliberately opened one tooltip.
 let fastHoverUntil = 0;
 
-function measureAndPlace(wrapEl, tipEl, hint, prefer) {
+function measureAndPlace(wrapEl, tipEl, hint, prefer, pointerX) {
   const rect = wrapEl?.getBoundingClientRect();
   if (!rect) return null;
   const width = tipEl?.offsetWidth || Math.max(48, String(hint).length * 7 + 16);
   const height = tipEl?.offsetHeight || EST_HEIGHT;
-  // 'dock': every hint in a docked panel lines up just outside the panel's edge,
-  // level with the hovered item, so the eye always lands in the same column.
-  const dockBox = prefer === 'dock' ? wrapEl.closest('.iboard-header-dock')?.getBoundingClientRect() : null;
-  const anchor = dockBox
-    ? { top: rect.top, bottom: rect.bottom, height: rect.height, left: dockBox.left, right: dockBox.right, width: dockBox.width }
+  // Above/below hints sit over where the pointer entered, not the middle of a wide
+  // control, so the tip lands where the eye already is.
+  const followPointer = (prefer === 'above' || prefer === 'below') && Number.isFinite(pointerX);
+  const anchor = followPointer
+    ? { top: rect.top, bottom: rect.bottom, height: rect.height, left: pointerX, right: pointerX, width: 0 }
     : rect;
   return placementNearAnchor({
     anchor,
     width,
     height,
-    gap: dockBox ? 10 : 6,
+    gap: 6,
     padding: HINT_PAD,
-    prefer: dockBox ? 'side' : prefer === 'dock' ? 'above' : prefer,
+    prefer,
   });
 }
 
@@ -46,6 +46,7 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
   // Pointer activation focuses the control after pointerdown; skip that focus so the
   // tip does not flash open for a frame before clickCapture hides it again.
   const ignoreFocusUntilRef = useRef(0);
+  const pointerXRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState(null);
 
@@ -63,8 +64,9 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
     setOpen(false);
   };
 
-  const openFromHover = () => {
+  const openFromHover = (event) => {
     if (suppressed) return;
+    pointerXRef.current = Number.isFinite(event?.clientX) ? event.clientX : null;
     clearHoverTimer();
     const delay = Date.now() < fastHoverUntil ? FOLLOW_ON_HOVER_DELAY : FIRST_HOVER_DELAY;
     hoverTimerRef.current = window.setTimeout(() => {
@@ -82,6 +84,7 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
     if (suppressed) return;
     if (typeof performance !== 'undefined' && performance.now() < ignoreFocusUntilRef.current) return;
     clearHoverTimer();
+    pointerXRef.current = null;
     openedByHoverRef.current = false;
     setOpen(true);
   };
@@ -104,7 +107,7 @@ export default function HintWrap({ hint, children, className = '', prefer = 'abo
     }
 
     const place = () => {
-      setBox(measureAndPlace(wrapRef.current, tipRef.current, hint, prefer));
+      setBox(measureAndPlace(wrapRef.current, tipRef.current, hint, prefer, pointerXRef.current));
     };
 
     place();
