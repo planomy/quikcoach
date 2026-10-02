@@ -7,7 +7,7 @@ import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import StudentGradeSelect from '../components/StudentGradeSelect.jsx';
-import { SUPACOACH_URL } from '../components/SupaCoachLink.jsx';
+import { SHOW_SUPACOACH, SUPACOACH_URL } from '../components/SupaCoachLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseStudent from '../components/LiveResponseStudent.jsx';
 import StudentChatButton from '../components/StudentChatButton.jsx';
@@ -162,6 +162,23 @@ export default function StudentView() {
   const [recentDismissedCode, setRecentDismissedCode] = useState('');
   const [draftSaveState, setDraftSaveState] = useState('saved');
   const [exportBusy, setExportBusy] = useState(false);
+  const [saveMenuOpen, setSaveMenuOpen] = useState(false);
+  const saveMenuRef = useRef(null);
+  useEffect(() => {
+    if (!saveMenuOpen) return undefined;
+    const onPointer = (event) => {
+      if (!saveMenuRef.current?.contains(event.target)) setSaveMenuOpen(false);
+    };
+    const onKey = (event) => {
+      if (event.key === 'Escape') setSaveMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [saveMenuOpen]);
   const exportBusyRef = useRef(false);
   const [draftConflict, setDraftConflict] = useState(null);
   const [removedByTeacher, setRemovedByTeacher] = useState(null);
@@ -1169,7 +1186,7 @@ export default function StudentView() {
     setExportBusy(true);
     try {
       saveDraftBackup({ code: activeRoomCode, studentId: student.id, name: student.name, text: draft, richHtml: draftHtml });
-      const filename = `iboard-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.${format}`;
+      const filename = `TUIT-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.${format}`;
       const method = await saveStudentFile(filename, format === 'docx' ? WORD_MIME : 'text/plain',
         () => format === 'docx' ? buildStudentWord(draftHtml, draft) : new Blob([draft], { type: 'text/plain;charset=utf-8' }));
       if (method !== 'cancelled') setImageHint(method === 'saved' ? 'Writing saved' : 'Writing downloaded — check your downloads');
@@ -1497,6 +1514,67 @@ export default function StudentView() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <RoomTimerPill timer={room?.timer} />
+            <div ref={saveMenuRef} className="relative">
+              <HintWrap hint="Save your writing to this device" prefer="below" suppressed={saveMenuOpen}>
+                <button
+                  type="button"
+                  onClick={() => setSaveMenuOpen((open) => !open)}
+                  aria-expanded={saveMenuOpen}
+                  data-active={saveMenuOpen ? 'true' : 'false'}
+                  className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                  aria-label="Save my writing"
+                  title=""
+                >
+                  <span className="iboard-header-icon iboard-header-icon--save" aria-hidden="true" />
+                </button>
+              </HintWrap>
+              {saveMenuOpen && (
+                <div className="absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                  <p className="px-1 pb-1 text-xs leading-snug text-slate-500 dark:text-slate-400">
+                    The board is cleared after the lesson. Save a copy to keep your writing.
+                  </p>
+                  <HintWrap hint="Opens in Word or Google Docs" className="w-full">
+                    <button
+                      type="button"
+                      disabled={!draft.trim() || exportBusy}
+                      onClick={() => {
+                        setSaveMenuOpen(false);
+                        void saveDraftToDevice('docx');
+                      }}
+                      className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                    >
+                      {exportBusy ? 'Saving your writing…' : 'Save as a Word document'}
+                    </button>
+                  </HintWrap>
+                  <HintWrap hint="Just the words — opens on any device" className="w-full">
+                    <button
+                      type="button"
+                      disabled={!draft.trim() || exportBusy}
+                      onClick={() => {
+                        setSaveMenuOpen(false);
+                        void saveDraftToDevice('txt');
+                      }}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
+                    >
+                      Save as a text file
+                    </button>
+                  </HintWrap>
+                  <HintWrap hint="Copies your writing so you can paste it somewhere else" className="w-full">
+                    <button
+                      type="button"
+                      disabled={!draft.trim()}
+                      onClick={() => {
+                        setSaveMenuOpen(false);
+                        void copyFormattedDraft();
+                      }}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
+                    >
+                      Copy my writing
+                    </button>
+                  </HintWrap>
+                </div>
+              )}
+            </div>
             <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
             <button
               type="button"
@@ -1526,7 +1604,8 @@ export default function StudentView() {
                 </svg>
               </summary>
               <div className="absolute right-0 top-full z-50 mt-2 w-64 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <div>
+                <HintWrap hint="Helps pitch feedback at your year level" className="w-full">
+                <div className="w-full">
                   <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Year level</p>
                   <StudentGradeSelect
                     value={student?.year_level || yearInput}
@@ -1534,6 +1613,8 @@ export default function StudentView() {
                     className="w-full"
                   />
                 </div>
+                </HintWrap>
+                {SHOW_SUPACOACH ? (
                 <HintWrap hint="Feedback on how you express your ideas" prefer="above" className="w-full">
                   <a
                     href={SUPACOACH_URL}
@@ -1546,34 +1627,19 @@ export default function StudentView() {
                     Open SupaCoach
                   </a>
                 </HintWrap>
-                <ThemeToggle className="w-full justify-center" />
-                <button
-                  type="button"
-                  onClick={copyFormattedDraft}
-                  disabled={!draft.trim()}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  Copy my writing
-                </button>
-                <details className="rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-black text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200">
-                  <summary className="cursor-pointer px-3 py-2 text-center">Download my writing</summary>
-                  <div className="grid gap-1 border-t border-indigo-200 p-2 dark:border-indigo-900">
-                    <button type="button" disabled={!draft.trim() || exportBusy} onClick={() => saveDraftToDevice('docx')} className="rounded-lg px-3 py-2 text-left hover:bg-indigo-100 disabled:opacity-50 dark:hover:bg-indigo-900">
-                      Word document (.docx)
-                    </button>
-                    <button type="button" disabled={!draft.trim() || exportBusy} onClick={() => saveDraftToDevice('txt')} className="rounded-lg px-3 py-2 text-left hover:bg-indigo-100 disabled:opacity-50 dark:hover:bg-indigo-900">
-                      Text file (.txt)
-                    </button>
-                    {exportBusy && <p role="status" className="px-3 py-1 font-medium">Saving your writing…</p>}
-                  </div>
-                </details>
+                ) : null}
+                <HintWrap hint="Switch between a light and dark screen" className="w-full">
+                  <ThemeToggle className="w-full justify-center" />
+                </HintWrap>
+                <HintWrap hint="Leave this room and join a different one" className="w-full">
                 <button
                   type="button"
                   onClick={changeRoom}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
                 >
                   Change room
                 </button>
+                </HintWrap>
               </div>
             </details>
           </div>
@@ -1737,7 +1803,7 @@ export default function StudentView() {
                 headerActions={
                   <>
                     <HintWrap
-                      hint={draftSaveState === 'offline' ? 'Your device has a local backup. TUIT will sync this draft when the connection returns.' : 'Your draft is saved to the teacher board.'}
+                      hint={draftSaveState === 'offline' ? 'Your device has a local backup. TUIT will sync this draft when the connection returns.' : 'Your teacher can see this draft. The board is cleared after the lesson — use the save button at the top to keep a copy.'}
                       prefer="above"
                       multiline
                     >
@@ -1746,8 +1812,10 @@ export default function StudentView() {
                       title=""
                       className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-300'}`}
                     >
-                      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'saving' ? 'bg-indigo-500' : draftSaveState === 'error' ? 'bg-red-600' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                      {draftSaveState === 'saving' ? 'Saving…' : draftSaveState === 'error' ? 'Save failed · local copy kept' : draftSaveState === 'offline' ? 'Offline · local copy saved' : draftSaveState === 'local' ? 'Recovered local copy' : 'Saved'}
+                      {draftSaveState === 'saved' ? null : (
+                        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'saving' ? 'bg-indigo-500' : draftSaveState === 'error' ? 'bg-red-600' : 'bg-amber-500'}`} />
+                      )}
+                      {draftSaveState === 'saving' ? 'Sending…' : draftSaveState === 'error' ? 'Not sent · local copy kept' : draftSaveState === 'offline' ? 'Offline · local copy saved' : draftSaveState === 'local' ? 'Recovered local copy' : 'Sent to teacher'}
                     </span>
                     </HintWrap>
                     {room?.draftTrail?.active ? (

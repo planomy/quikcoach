@@ -9,7 +9,7 @@ import { buildEvidenceHtml, downloadTextFile, evidenceFilenames } from '../lib/e
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import { gradeShortLabel } from '../components/StudentGradeSelect.jsx';
-import SupaCoachLink from '../components/SupaCoachLink.jsx';
+import SupaCoachLink, { SHOW_SUPACOACH } from '../components/SupaCoachLink.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import FlipCountdown from '../components/FlipCountdown.jsx';
@@ -102,7 +102,7 @@ const BoardCard = memo(function BoardCard({ s, displayName, picked, selectMode, 
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <SupaCoachLink />
+          {SHOW_SUPACOACH ? <SupaCoachLink /> : null}
           <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-200">
             {wc}
           </span>

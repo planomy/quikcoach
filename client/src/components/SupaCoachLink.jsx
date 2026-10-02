@@ -1,6 +1,8 @@
 import HintWrap from './HintWrap.jsx';
 
 export const SUPACOACH_URL = 'https://planomy.github.io/supacoach/';
+/** Private-tutoring builds only: set VITE_SHOW_SUPACOACH=1 to show the SupaCoach links. */
+export const SHOW_SUPACOACH = import.meta.env.VITE_SHOW_SUPACOACH === '1';
 
 /** Small red circle with white S → SupaCoach expression feedback. */
 export default function SupaCoachLink({ className = '', size = 'sm' }) {
