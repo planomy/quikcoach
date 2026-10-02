@@ -4609,57 +4609,27 @@ function TeacherDashboardInner() {
               Everything from your lessons in one place. To capture today’s writing, use the save icon in the header and save a snapshot.
             </p>
             <div className="flex flex-wrap gap-2" role="navigation" aria-label="Report sections">
-              <button
-                type="button"
-                onClick={() => setLibraryView('drafting')}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Drafting evidence
-              </button>
+              {[
+                { label: 'Drafting evidence', hint: 'See how each student’s writing grew, including anything pasted', onClick: () => setLibraryView('drafting') },
+                { label: 'Participation', hint: 'Who answered your Ask class questions, and how often', onClick: () => setLibraryView('participation') },
+                { label: 'Session PDF', hint: 'Download a PDF of today’s writing and drafting evidence', onClick: () => setLibraryView('pdf'), disabled: sessionBusy },
+                { label: 'Student portfolios', hint: 'Download each student’s saved work as a PDF', onClick: () => setLibraryView('portfolios') },
+                { label: 'AI feedback sent', hint: 'Every piece of AI feedback you’ve sent, and who opened it', onClick: openFeedbackSent },
+                { label: 'Class insights', hint: 'Trends across your lessons and classes, with no student names', onClick: () => { closeLibraryHub(); setInsightsOpen(true); } },
+                { label: 'Download participant list', hint: 'A spreadsheet of names, year levels and word counts', onClick: downloadParticipantList },
+              ].map((item) => (
+                <HintWrap key={item.label} hint={item.hint}>
                   <button
                     type="button"
-                onClick={() => setLibraryView('participation')}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Participation
-              </button>
-              <button
-                type="button"
-                disabled={sessionBusy}
-                onClick={() => setLibraryView('pdf')}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Session PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => setLibraryView('portfolios')}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Student portfolios
+                    disabled={!!item.disabled}
+                    onClick={item.onClick}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
+                  >
+                    {item.label}
                   </button>
-              <button
-                type="button"
-                onClick={openFeedbackSent}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                AI feedback sent
-              </button>
-              <button
-                type="button"
-                onClick={() => { closeLibraryHub(); setInsightsOpen(true); }}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Class insights
-              </button>
-              <button
-                type="button"
-                onClick={downloadParticipantList}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Download participant list
-              </button>
-                </div>
+                </HintWrap>
+              ))}
+            </div>
 
             {snapshots.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
