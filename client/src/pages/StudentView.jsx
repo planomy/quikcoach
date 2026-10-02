@@ -163,6 +163,7 @@ export default function StudentView() {
   const [draftSaveState, setDraftSaveState] = useState('saved');
   const [exportBusy, setExportBusy] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [deviceSavedKey, setDeviceSavedKey] = useState(null);
   const saveMenuRef = useRef(null);
   useEffect(() => {
@@ -1590,10 +1591,11 @@ export default function StudentView() {
               <span className="iboard-header-icon iboard-header-icon--fullscreen" aria-hidden="true" />
             </button>
             </HintWrap>
-            <details className="group relative shrink-0">
+            <HintWrap hint="Settings" suppressed={settingsMenuOpen}>
+            <details className="group relative shrink-0" onToggle={(event) => setSettingsMenuOpen(event.currentTarget.open)}>
               <summary
                 className="iboard-header-icon-button grid h-8 w-8 cursor-pointer list-none place-items-center rounded-xl transition [&::-webkit-details-marker]:hidden"
-                aria-label="Student tools"
+                aria-label="Settings"
                 title=""
               >
                 <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1640,6 +1642,7 @@ export default function StudentView() {
                 </HintWrap>
               </div>
             </details>
+            </HintWrap>
           </div>
         </div>
       </header>
