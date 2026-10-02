@@ -3169,16 +3169,14 @@ function TeacherDashboardInner() {
                 Copy student link
               </button>
               <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">·</span>
-              <HintWrap hint="Open the board without the big join screen">
-                <button
-                  type="button"
-                  onClick={() => createOrJoin(undefined, { skipJoinScreen: true })}
-                  disabled={codeInput.length !== 4}
-                  className="font-medium text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:no-underline dark:text-slate-300"
-                >
-                  Go straight to room
-                </button>
-              </HintWrap>
+              <button
+                type="button"
+                onClick={() => createOrJoin(undefined, { skipJoinScreen: true })}
+                disabled={codeInput.length !== 4}
+                className="font-medium text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:no-underline dark:text-slate-300"
+              >
+                Go straight to room
+              </button>
             </div>
             {copyToast && (
               <p className="mt-3 text-sm font-medium text-[#5a5fc3] dark:text-indigo-300">{copyToast}</p>
