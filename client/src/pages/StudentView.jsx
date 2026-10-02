@@ -163,6 +163,7 @@ export default function StudentView() {
   const [draftSaveState, setDraftSaveState] = useState('saved');
   const [exportBusy, setExportBusy] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
+  const [deviceSavedKey, setDeviceSavedKey] = useState(null);
   const saveMenuRef = useRef(null);
   useEffect(() => {
     if (!saveMenuOpen) return undefined;
@@ -1189,6 +1190,7 @@ export default function StudentView() {
       const filename = `TUIT-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.${format}`;
       const method = await saveStudentFile(filename, format === 'docx' ? WORD_MIME : 'text/plain',
         () => format === 'docx' ? buildStudentWord(draftHtml, draft) : new Blob([draft], { type: 'text/plain;charset=utf-8' }));
+      if (method !== 'cancelled') setDeviceSavedKey(`${draft}\n${draftHtml}`);
       if (method !== 'cancelled') setImageHint(method === 'saved' ? 'Writing saved' : 'Writing downloaded — check your downloads');
     } catch {
       setImageHint('Could not save the file — please try again. Your writing is still here.');
@@ -1531,7 +1533,7 @@ export default function StudentView() {
               {saveMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
                   <p className="px-1 pb-1 text-xs leading-snug text-slate-500 dark:text-slate-400">
-                    The board is cleared after the lesson. Save a copy to keep your writing.
+                    Keep a copy of your writing on this device.
                   </p>
                   <HintWrap hint="Opens in Word or Google Docs" className="w-full">
                     <button
@@ -1802,22 +1804,35 @@ export default function StudentView() {
                 }
                 headerActions={
                   <>
-                    <HintWrap
-                      hint={draftSaveState === 'offline' ? 'Your device has a local backup. TUIT will sync this draft when the connection returns.' : 'Your teacher can see this draft. The board is cleared after the lesson — use the save button at the top to keep a copy.'}
-                      prefer="above"
-                      multiline
-                    >
-                    <span
-                      role="status"
-                      title=""
-                      className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : draftSaveState === 'offline' || draftSaveState === 'local' ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-300'}`}
-                    >
-                      {draftSaveState === 'saved' ? null : (
-                        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'saving' ? 'bg-indigo-500' : draftSaveState === 'error' ? 'bg-red-600' : 'bg-amber-500'}`} />
-                      )}
-                      {draftSaveState === 'saving' ? 'Sending…' : draftSaveState === 'error' ? 'Not sent · local copy kept' : draftSaveState === 'offline' ? 'Offline · local copy saved' : draftSaveState === 'local' ? 'Recovered local copy' : 'Sent to teacher'}
-                    </span>
-                    </HintWrap>
+                    {draftSaveState === 'offline' || draftSaveState === 'error' ? (
+                      <HintWrap hint="Your teacher can’t see new changes yet. TUIT keeps trying in the background." prefer="above" multiline>
+                        <span
+                          role="status"
+                          title=""
+                          className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-300'}`}
+                        >
+                          <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'error' ? 'bg-red-600' : 'bg-amber-500'}`} />
+                          {draftSaveState === 'error' ? 'Not sent to teacher' : 'Offline'}
+                        </span>
+                      </HintWrap>
+                    ) : (
+                      <HintWrap
+                        hint={deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim()
+                          ? 'A copy is saved on this device. Save again after more changes.'
+                          : 'Only backed up in this browser — not safe. Press to save a copy.'}
+                        prefer="above"
+                        multiline
+                      >
+                        <button
+                          type="button"
+                          title=""
+                          onClick={() => setSaveMenuOpen(true)}
+                          className={`inline-flex items-center gap-1 rounded-md px-1 text-xs font-medium transition hover:text-[#3c3f8f] dark:hover:text-indigo-200 ${deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim() ? 'text-[#5a5fc3] dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}
+                        >
+                          {deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim() ? '✓ Saved to device' : 'Not saved'}
+                        </button>
+                      </HintWrap>
+                    )}
                     {room?.draftTrail?.active ? (
                       <HintWrap hint="Drafting evidence is on — your teacher can see how this draft grows in today’s lesson (writing only, not screen or audio)." prefer="above" multiline>
                       <span
