@@ -1949,6 +1949,29 @@ function TeacherDashboardInner() {
     titleField?.focus();
   }, [addCardOpen]);
 
+  const railDockKey = toolsPanelOpen
+    ? `tools:${toolsTab === 'sets' ? 'sets' : 'ask'}`
+    : settingsOpen
+      ? `settings:${settingsSection}`
+      : '';
+  const railDockKeyRef = useRef('');
+  useLayoutEffect(() => {
+    const previous = railDockKeyRef.current;
+    railDockKeyRef.current = railDockKey;
+    if (!railDockKey || !previous || previous === railDockKey) return;
+    // The CSS slide only runs on mount; replay it when one open dock swaps content.
+    if (previous.split(':')[0] !== railDockKey.split(':')[0]) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const panel = railDockKey.startsWith('tools') ? teacherToolsPanelRef.current : settingsPanelRef.current;
+    panel?.animate?.(
+      [
+        { opacity: 0, transform: 'translateX(-12px)' },
+        { opacity: 1, transform: 'translateX(0)' },
+      ],
+      { duration: 210, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+    );
+  }, [railDockKey]);
+
   useLayoutEffect(() => {
     if (!toolsPanelOpen && !settingsOpen && !viewOpen) return undefined;
 
