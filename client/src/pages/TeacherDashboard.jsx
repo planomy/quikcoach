@@ -4450,7 +4450,6 @@ function TeacherDashboardInner() {
             >
               {actionMenuShareStep ? (
                 <>
-                  <p className="px-3 pb-1 pt-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">Share writing with (name hidden)</p>
                   <button type="button" onClick={() => { shareStudentWriting(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                     All students
                   </button>
