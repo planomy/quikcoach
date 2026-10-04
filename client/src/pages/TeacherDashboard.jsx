@@ -41,7 +41,6 @@ import {
   downloadTextFile,
   buildEvidenceHtml,
   evidenceFilenames,
-  buildStudentEvidenceText,
   buildStudentPortfolioText,
 } from '../lib/exportRoom.js';
 import { fileToCompressedJpegDataUrl } from '../lib/image.js';
@@ -2819,19 +2818,6 @@ function TeacherDashboardInner() {
     });
   }
 
-  function downloadOneStudent(s) {
-    const names = evidenceFilenames(codeInput, s.name);
-    const text = buildStudentEvidenceText({
-      roomCode: codeInput,
-      student: s,
-      label: `Individual evidence · Room ${codeInput}`,
-      savedAt: new Date().toISOString(),
-    });
-    downloadTextFile(names.studentTxt(s.name, s.id), text, 'text/plain;charset=utf-8');
-    setCopyToast(`Saved ${s.name}`);
-    setTimeout(() => setCopyToast(''), 2000);
-  }
-
   async function copyStudentText(student) {
     const text = String(student?.text || '');
     if (!text.trim()) return;
@@ -4551,9 +4537,6 @@ function TeacherDashboardInner() {
             >
               <button type="button" disabled={!menuText.trim()} onClick={() => { copyStudentText(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                 Copy draft
-              </button>
-              <button type="button" onClick={() => { downloadOneStudent(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
-                Save file
               </button>
               <button
                 type="button"
