@@ -2473,6 +2473,7 @@ io.on('connection', (socket) => {
           from: 'student',
         });
       }
+      if (items.length === 1) items[0].label = 'Shared writing';
       if (!items.length) {
         cb?.({
           ok: false,

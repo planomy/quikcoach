@@ -397,7 +397,7 @@ export default function StudentInbox({
         const large = isMaterial && largeMaterialId === item.id;
         const timeLabel = formatInboxTime(item.at);
         const preview = isBroadcast
-          ? `${item.exemplars?.length || 0} exemplar${(item.exemplars?.length || 0) === 1 ? '' : 's'}${timeLabel ? ` · ${timeLabel}` : ''}`
+          ? `${(item.exemplars?.length || 0) === 1 ? 'Shared writing' : `${item.exemplars?.length || 0} exemplars`}${timeLabel ? ` · ${timeLabel}` : ''}`
           : isMaterial
             ? `${item.originalName || item.title || 'Handout'}${timeLabel ? ` · ${timeLabel}` : ''}`
             : isSetPrompt

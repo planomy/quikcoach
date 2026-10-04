@@ -412,7 +412,6 @@ function TeacherDashboardInner() {
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [lessonBegun, setLessonBegun] = useState(false);
   const [entranceStep, setEntranceStep] = useState('join');
-  const [pickAnchor, setPickAnchor] = useState(null);
   const [objectiveEditOpen, setObjectiveEditOpen] = useState(false);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
@@ -435,11 +434,8 @@ function TeacherDashboardInner() {
   const [noteReplyByStudentId, setNoteReplyByStudentId] = useState({});
   const noteReplyByStudentIdRef = useRef({});
   const noteTargetIdRef = useRef(0);
-  const [broadcastPick, setBroadcastPick] = useState({});
-  const [sendToMenuOpen, setSendToMenuOpen] = useState(false);
-  const [sendRecipientPick, setSendRecipientPick] = useState({});
-  const [shareRecipientPickerOpen, setShareRecipientPickerOpen] = useState(false);
-  const sendToMenuRef = useRef(null);
+  const [shareTarget, setShareTarget] = useState(null);
+  const [actionMenuShareStep, setActionMenuShareStep] = useState(false);
   const [snapshots, setSnapshots] = useState([]);
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
   const [evidenceStudents, setEvidenceStudents] = useState([]);
@@ -746,26 +742,8 @@ function TeacherDashboardInner() {
   }, [studentActionMenuId]);
 
   useEffect(() => {
-    if (!sendToMenuOpen) return undefined;
-    const closeOutside = (event) => {
-      if (!event.target?.closest?.('[data-send-to-menu]')) setSendToMenuOpen(false);
-    };
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setSendToMenuOpen(false);
-    };
-    document.addEventListener('pointerdown', closeOutside);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOutside);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [sendToMenuOpen]);
-
-  useEffect(() => {
-    if (Object.values(broadcastPick).some(Boolean)) return;
-    setSendToMenuOpen(false);
-    setSendRecipientPick({});
-  }, [broadcastPick]);
+    if (studentActionMenuId == null) setActionMenuShareStep(false);
+  }, [studentActionMenuId]);
 
   useEffect(() => {
     try {
@@ -1718,21 +1696,6 @@ function TeacherDashboardInner() {
     });
   }
 
-  function monitorSelectedStudents() {
-    const ids = orderedStudents.filter((student) => broadcastPick[student.id]).map((student) => Number(student.id));
-    if (!ids.length) return;
-    setMonitoredIds((current) => {
-      const next = new Set(current);
-      ids.forEach((id) => next.add(id));
-      return next;
-    });
-    setBroadcastPick({});
-    setSendRecipientPick({});
-    setSendToMenuOpen(false);
-    setCopyToast(`Monitoring ${ids.length} student${ids.length === 1 ? '' : 's'}`);
-    setTimeout(() => setCopyToast(''), 2500);
-  }
-
   function clearMonitoredStudents() {
     setMonitoredIds(new Set());
   }
@@ -2328,30 +2291,9 @@ function TeacherDashboardInner() {
       setTimeout(() => setCopyToast(''), 2500);
   }
 
-  function toggleBroadcastCard(key, event) {
-    const rect = event?.currentTarget?.getBoundingClientRect?.();
-    if (rect) setPickAnchor({ x: rect.left + rect.width / 2, y: rect.top });
-    setBroadcastPick((current) => {
-      if (current[key]) return { ...current, [key]: false };
-      if (Object.values(current).filter(Boolean).length >= 6) {
-        setError('Broadcast is limited to 6 cards');
-        return current;
-      }
-      return { ...current, [key]: true };
-    });
-  }
-
-  function sendBroadcastToClass(recipientIds = null) {
-    /** Use everyone in the room, not only the group filter — otherwise a filter can hide checked cards and send zero IDs. */
-    const postIds = posts.filter((post) => broadcastPick[`post:${post.id}`]).map((post) => post.id).slice(0, 6);
-    const remaining = Math.max(0, 6 - postIds.length);
-    const ids = orderedStudents.filter((s) => broadcastPick[s.id]).map((s) => s.id).slice(0, remaining);
-    if (!ids.length && !postIds.length) {
-      setError(
-        'Tick cards to include (up to 6). Names are not sent — only Exemplar A, B, …'
-      );
-      return;
-    }
+  function shareStudentWriting(student, recipientIds = null) {
+    const id = Number(student?.id);
+    if (!id) return;
     const recipients = Array.isArray(recipientIds)
       ? recipientIds.map(Number).filter((id) => id > 0)
       : null;
@@ -2363,8 +2305,8 @@ function TeacherDashboardInner() {
     socket.emit(
       'teacher:broadcast',
       {
-        studentIds: ids,
-        postIds,
+        studentIds: [id],
+        postIds: [],
         ...(recipients ? { recipientIds: recipients } : {}),
       },
       (ack) => {
@@ -2376,12 +2318,9 @@ function TeacherDashboardInner() {
         if (ack.count > 0 && ack.reached === 0) {
           setCopyToast('Sent, but 0 student tabs connected — ask students to refresh');
         } else {
-            setCopyToast(`Sent ${ack.count} exemplar(s) → ${audience}`);
+            setCopyToast(`Shared ${student.name}’s writing with ${audience}`);
         }
         setTimeout(() => setCopyToast(''), 4000);
-        setBroadcastPick({});
-          setSendRecipientPick({});
-          setSendToMenuOpen(false);
         }
       }
     );
@@ -3350,18 +3289,6 @@ function TeacherDashboardInner() {
         : 'overflow-visible';
   const teacherWritingPaneClass = 'max-h-52 overflow-y-auto overflow-x-visible';
 
-  const broadcastPickCount = Object.values(broadcastPick).filter(Boolean).length;
-  const viewportWidth = typeof window === 'undefined' ? 1280 : window.innerWidth;
-  const viewportHeight = typeof window === 'undefined' ? 800 : window.innerHeight;
-  const pickPoint = pickAnchor || { x: viewportWidth / 2, y: 120 };
-  const pickBarBelow = pickPoint.y < 80;
-  const pickBarStyle = {
-    left: Math.min(Math.max(pickPoint.x, 210), viewportWidth - 210),
-    top: pickBarBelow ? pickPoint.y + 28 : pickPoint.y - 8,
-    transform: pickBarBelow ? 'translateX(-50%)' : 'translate(-50%, -100%)',
-  };
-  const pickMenuOpensUp = !pickBarBelow && pickPoint.y > viewportHeight / 2;
-  const selectedStudentPickCount = orderedStudents.filter((student) => broadcastPick[student.id]).length;
   const monitoredCount = monitoredIds.size;
   const attentionPills = [
     { id: 'away', label: `${attentionCounts.away} away` },
@@ -3670,9 +3597,7 @@ function TeacherDashboardInner() {
             onClearHighlight={() => setToolsHighlightStudentId(null)}
             onCopyStudentLink={copyStudentJoinLink}
             subjectAssist={promptSubjectAssist}
-            selectedStudentIds={orderedStudents.filter((s) => broadcastPick[s.id]).map((s) => s.id)}
             rosterStudentIds={orderedStudents.map((s) => s.id)}
-            onClearStudentSelection={() => setBroadcastPick({})}
             initialLive={livePulse}
             onThinkingSent={({ count, recipients }) => {
               setCopyToast(
@@ -3982,7 +3907,7 @@ function TeacherDashboardInner() {
                     ...student,
                     connected: livePulse.students?.length ? connectedStudents.some((item) => item.id === student.id) : undefined,
                   }))}
-                  initialIds={orderedStudents.filter((student) => broadcastPick[student.id]).map((student) => student.id)}
+                  initialIds={[]}
                   busy={addCardBusy}
                   error={addCardError}
                   onCancel={() => {
@@ -3993,7 +3918,7 @@ function TeacherDashboardInner() {
                 />
               </div>
             </div>
-            <div className={`iboard-teacher-panel-list${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
+            <div className="iboard-teacher-panel-list">
               {posts.length === 0 && !addCardOpen && (
                 <p className="px-1 py-6 text-center text-xs font-semibold text-slate-400">
                   No resources yet — press + to send an image, PDF or text
@@ -4002,7 +3927,7 @@ function TeacherDashboardInner() {
               {posts.map((post) => (
             <article
               key={`post-${post.id}`}
-              className={`iboard-teacher-card flex cursor-pointer flex-col rounded-xl border border-slate-300 bg-slate-100/80 p-3 transition hover:border-[#cfcce8] dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-indigo-500${broadcastPick[`post:${post.id}`] ? ' is-picked' : ''}`}
+              className={`iboard-teacher-card flex cursor-pointer flex-col rounded-xl border border-slate-300 bg-slate-100/80 p-3 transition hover:border-[#cfcce8] dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-indigo-500`}
               onClick={() => openFocusedTeacherPost(post.id)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
@@ -4015,17 +3940,6 @@ function TeacherDashboardInner() {
               aria-label={`Open larger view of ${post.title || 'teacher card'}`}
             >
               <div className="iboard-teacher-card__head flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-                <HintWrap hint="Include this card">
-                  <label className="iboard-teacher-card__pick flex shrink-0 cursor-pointer items-center">
-                    <input
-                      type="checkbox"
-                      checked={!!broadcastPick[`post:${post.id}`]}
-                      onChange={(event) => toggleBroadcastCard(`post:${post.id}`, event)}
-                      className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 dark:border-slate-600"
-                    />
-                    <span className="sr-only">Include teacher card</span>
-                  </label>
-                </HintWrap>
                 <div className="iboard-teacher-card__actions ml-auto flex shrink-0 items-center gap-0.5">
                 <HintWrap hint="Edit card">
                   <button
@@ -4089,7 +4003,7 @@ function TeacherDashboardInner() {
           </aside>
         </div>
 
-      <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto${broadcastPickCount > 0 ? ' is-picking' : ''}`}>
+      <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
           {!lessonBegun && entranceStep === 'join' && (
             <JoinScreen
@@ -4174,14 +4088,10 @@ function TeacherDashboardInner() {
                 className={`iboard-student-card group/student-card relative flex flex-col overflow-visible rounded-xl p-3 ${
                   cardView === 'overview' ? 'iboard-student-card--overview' : cardView === 'all' ? 'iboard-student-card--fit' : ''
                 } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${
-                  broadcastPick[s.id] ? 'is-picked' : ''
-                } ${
                   handUp
                     ? 'cursor-pointer border border-[#5a5fc3] bg-[#ebeaf8] shadow-[inset_4px_0_0_0_#5a5fc3] dark:border-indigo-400 dark:bg-indigo-950/70 dark:shadow-[inset_4px_0_0_0_#818cf8] dark:ring-1 dark:ring-indigo-500/40'
                     : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-slate-900'} ${
-                        broadcastPick[s.id]
-                          ? 'border border-indigo-400 ring-2 ring-indigo-200 dark:border-indigo-500 dark:ring-indigo-900/70'
-                          : monitoring
+                        monitoring
                           ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8] dark:border-indigo-400 dark:ring-indigo-900/50'
                           : notStarted
                           ? 'border border-[#d4d4dc] dark:border-slate-600'
@@ -4191,20 +4101,6 @@ function TeacherDashboardInner() {
               >
                 <div className="iboard-student-card__head group/card-head">
                   <div className="iboard-student-card__head-start">
-                  <HintWrap hint="Include this card">
-                    <label
-                      className="iboard-student-card__pick mt-0.5 flex shrink-0 cursor-pointer items-center"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={!!broadcastPick[s.id]}
-                        onChange={(event) => toggleBroadcastCard(s.id, event)}
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 dark:border-slate-600"
-                      />
-                      <span className="sr-only">Include this card</span>
-                    </label>
-                  </HintWrap>
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-1">
                       <h2
@@ -4552,8 +4448,23 @@ function TeacherDashboardInner() {
               className="fixed z-[90] w-44 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-2xl dark:border-slate-700 dark:bg-slate-900"
               style={{ left, bottom }}
             >
+              {actionMenuShareStep ? (
+                <>
+                  <p className="px-3 pb-1 pt-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">Share writing with (name hidden)</p>
+                  <button type="button" onClick={() => { shareStudentWriting(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                    All students
+                  </button>
+                  <button type="button" onClick={() => { setShareTarget(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                    Choose students…
+                  </button>
+                </>
+              ) : (
+              <>
               <button type="button" disabled={!menuText.trim()} onClick={() => { copyStudentText(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                 Copy draft
+              </button>
+              <button type="button" disabled={!menuText.trim() && !menuStudent.image_url} onClick={() => setActionMenuShareStep(true)} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                Share writing…
               </button>
               {menuStudent.image_url && (
                 <button type="button" onClick={() => { setDrawingMarkupTarget(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50" role="menuitem">
@@ -4564,6 +4475,8 @@ function TeacherDashboardInner() {
               <button type="button" onClick={() => { requestRemoveStudent(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40" role="menuitem">
                 Remove card
               </button>
+              </>
+              )}
             </div>
           );
         })(), document.body)}
@@ -5103,104 +5016,17 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      {broadcastPickCount > 0 && (
-        <div className="fixed z-[60] flex items-center gap-1.5 rounded-xl border border-[#d5d4e4] bg-white py-1 pl-2.5 pr-1 shadow-lg dark:border-slate-600 dark:bg-slate-900" style={pickBarStyle}>
-        <span className="whitespace-nowrap text-[11px] font-black text-[#3c3c45] dark:text-slate-100">
-          ✓ {broadcastPickCount} selected:
-        </span>
-        <div ref={sendToMenuRef} data-send-to-menu className="relative">
-          <HintWrap hint="Show the ticked students’ writing to the class or to chosen students" prefer="above" suppressed={sendToMenuOpen}>
-          <button
-            type="button"
-            onClick={() => {
-              closeSettings();
-              setSendToMenuOpen((open) => !open);
-            }}
-            className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-lg border border-[#5a5fc3] bg-white px-2.5 text-[11px] font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-400 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
-            aria-expanded={sendToMenuOpen}
-            aria-haspopup="menu"
-            aria-label={`Share the writing of ${Math.min(6, broadcastPickCount)} selected cards`}
-          >
-            Share their writing
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 opacity-70" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-          </HintWrap>
-          {sendToMenuOpen && (
-            <div
-              className={`absolute left-1/2 ${pickMenuOpensUp ? 'bottom-[calc(100%+0.4rem)]' : 'top-[calc(100%+0.4rem)]'} z-50 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900`}
-              role="menu"
-              aria-label="Send selected cards"
-        >
-          <button
-            type="button"
-                role="menuitem"
-                onClick={() => sendBroadcastToClass(null)}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-bold text-[#3c3c45] hover:bg-[#ebeaf8] dark:text-slate-100 dark:hover:bg-slate-800"
-              >
-                <span>All students</span>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#5a5fc3]">Class</span>
-          </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setSendToMenuOpen(false);
-                  setShareRecipientPickerOpen(true);
-                }}
-                className="flex w-full items-center justify-between gap-2 border-t border-[#d5d4e4] px-3 py-2.5 text-left text-sm font-bold text-[#3c3c45] hover:bg-[#ebeaf8] dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
-              >
-                <span>Choose students…</span>
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 text-[#5a5fc3]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m9 6 6 6-6 6" />
-                </svg>
-              </button>
-        </div>
-          )}
-        </div>
-        {selectedStudentPickCount > 0 ? (
-          <HintWrap hint="Keep a close eye on these students’ writing" prefer="above">
-          <button
-            type="button"
-            onClick={monitorSelectedStudents}
-            className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-lg border border-[#5a5fc3] bg-white px-2.5 text-[11px] font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-400 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
-            aria-label={`Monitor ${selectedStudentPickCount} selected students`}
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
-              <circle cx="12" cy="12" r="2.5" />
-            </svg>
-            Monitor
-          </button>
-          </HintWrap>
-        ) : null}
-        <HintWrap hint="Untick everyone" prefer="above">
-          <button
-            type="button"
-            onClick={() => {
-              setBroadcastPick({});
-              setSendRecipientPick({});
-              setSendToMenuOpen(false);
-            }}
-            className="grid h-7 w-7 place-items-center rounded-lg text-base font-bold text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            aria-label="Untick everyone"
-          >
-            ×
-          </button>
-        </HintWrap>
-        </div>
-      )}
       <StudentPickerDialog
-        open={shareRecipientPickerOpen && broadcastPickCount > 0}
-        title="Who should see their writing?"
-        subtitle={`Sharing ${Math.min(6, broadcastPickCount)} card${Math.min(6, broadcastPickCount) === 1 ? '' : 's'} — names are hidden`}
-        students={orderedStudents}
+        open={!!shareTarget}
+        title="Who should see this writing?"
+        subtitle="The writer’s name is hidden"
+        students={orderedStudents.filter((student) => Number(student.id) !== Number(shareTarget?.id))}
         initialIds={[]}
-        onCancel={() => setShareRecipientPickerOpen(false)}
+        onCancel={() => setShareTarget(null)}
         onConfirm={(ids) => {
-          setShareRecipientPickerOpen(false);
-          sendBroadcastToClass(ids);
+          const target = shareTarget;
+          setShareTarget(null);
+          shareStudentWriting(target, ids);
         }}
       />
       {joinScreenOpen && (
