@@ -4431,6 +4431,18 @@ function TeacherDashboardInner() {
                           setTimeout(() => setCopyToast(''), 2500);
                         }}
                       />
+                      <HintWrap hint="Open full draft">
+                        <button
+                          type="button"
+                          onClick={() => setFocusedStudentId(s.id)}
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                          aria-label={`Open ${s.name}'s full draft`}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />
+                          </svg>
+                        </button>
+                      </HintWrap>
                       {cardView !== 'all' ? (
                       <>
                       <HintWrap hint="Smaller text">
@@ -4486,18 +4498,6 @@ function TeacherDashboardInner() {
                   data-card-font="true"
                   style={cardView === 'all' ? undefined : { fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
                   className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 leading-relaxed scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
-                  {...(cardView === 'all' && !handUp ? {
-                    role: 'button',
-                    tabIndex: 0,
-                    'aria-label': `Open ${s.name}'s full draft`,
-                    onClick: () => setFocusedStudentId(s.id),
-                    onKeyDown: (event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        setFocusedStudentId(s.id);
-                      }
-                    },
-                  } : {})}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
@@ -4554,9 +4554,6 @@ function TeacherDashboardInner() {
               </button>
               <button type="button" onClick={() => { downloadOneStudent(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                 Save file
-              </button>
-              <button type="button" onClick={() => { setFocusedStudentId(menuStudent.id); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
-                Open full draft
               </button>
               <button
                 type="button"
