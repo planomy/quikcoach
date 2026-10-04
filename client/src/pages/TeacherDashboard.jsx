@@ -4454,7 +4454,7 @@ function TeacherDashboardInner() {
                     All students
                   </button>
                   <button type="button" onClick={() => { setShareTarget(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
-                    Choose students…
+                    Choose students
                   </button>
                 </>
               ) : (
