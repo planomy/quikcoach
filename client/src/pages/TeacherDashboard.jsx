@@ -4429,6 +4429,24 @@ function TeacherDashboardInner() {
                           </svg>
                         </button>
                       </HintWrap>
+                      <HintWrap hint={monitoredIds.has(Number(s.id)) ? 'Stop monitoring' : 'Monitor'}>
+                        <button
+                          type="button"
+                          onClick={() => toggleMonitorStudent(s.id)}
+                          aria-pressed={monitoredIds.has(Number(s.id))}
+                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-md ${
+                            monitoredIds.has(Number(s.id))
+                              ? 'bg-[#ebeaf8] text-[#5a5fc3] hover:bg-[#e0dff5] dark:bg-[rgba(90,95,195,0.22)] dark:text-[#a5b4fc]'
+                              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                          }`}
+                          aria-label={monitoredIds.has(Number(s.id)) ? `Stop monitoring ${s.name}` : `Monitor ${s.name}`}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill={monitoredIds.has(Number(s.id)) ? 'currentColor' : 'none'} fillOpacity="0.18" />
+                            <circle cx="12" cy="12" r="2.8" fill={monitoredIds.has(Number(s.id)) ? 'currentColor' : 'none'} />
+                          </svg>
+                        </button>
+                      </HintWrap>
                       {cardView !== 'all' ? (
                       <>
                       <HintWrap hint="Smaller text">
@@ -4519,7 +4537,6 @@ function TeacherDashboardInner() {
         && createPortal((() => {
           const menuStudent = visibleStudents.find((student) => Number(student.id) === Number(studentActionMenuId));
           if (!menuStudent) return null;
-          const menuMonitoring = monitoredIds.has(Number(menuStudent.id));
           const menuText = String(menuStudent.text || '');
           const menuWidth = 176;
           const gap = 6;
@@ -4537,17 +4554,6 @@ function TeacherDashboardInner() {
             >
               <button type="button" disabled={!menuText.trim()} onClick={() => { copyStudentText(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                 Copy draft
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  toggleMonitorStudent(menuStudent.id);
-                  setStudentActionMenuId(null);
-                }}
-                className="w-full rounded-lg px-3 py-2 text-left font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:text-indigo-300 dark:hover:bg-indigo-950/40"
-                role="menuitem"
-              >
-                {menuMonitoring ? 'Stop monitoring' : 'Monitor'}
               </button>
               {menuStudent.image_url && (
                 <button type="button" onClick={() => { setDrawingMarkupTarget(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50" role="menuitem">
