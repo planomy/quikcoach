@@ -6,6 +6,7 @@ import { createSocket } from '../lib/socket.js';
 import { setHintsOff, useHintsOff } from '../lib/hintPrefs.js';
 import { FULLSCREEN_UNAVAILABLE_MESSAGE, canFullscreen, isFullscreen, subscribeFullscreenChange, toggleFullscreen } from '../lib/fullscreen.js';
 import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
+import LearningTrailView from '../components/LearningTrailView.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import ClassInsightsPanel from '../components/ClassInsightsPanel.jsx';
 import { activityStatus, isNotStarted, parseServerDateMs, wordCount } from '../lib/text.js';
@@ -544,6 +545,7 @@ function TeacherDashboardInner() {
   const [insightsOpen, setInsightsOpen] = useState(false);
   const closeInsights = useCallback(() => setInsightsOpen(false), []);
   const [draftTrailFocusId, setDraftTrailFocusId] = useState(null);
+  const [learningTrailId, setLearningTrailId] = useState(null);
   const [addCardTitle, setAddCardTitle] = useState('');
   const [addCardText, setAddCardText] = useState('');
   const [addCardImage, setAddCardImage] = useState('');
@@ -1971,7 +1973,7 @@ function TeacherDashboardInner() {
     if (!focusedStudentId) return undefined;
     function closeFullDraftOnEscape(event) {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
-      if (event.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      if (event.target.closest?.('input, textarea, select, [contenteditable="true"], .iboard-learning-trail')) return;
       setFocusedStudentId(null);
     }
     document.addEventListener('keydown', closeFullDraftOnEscape);
@@ -3563,6 +3565,18 @@ function TeacherDashboardInner() {
             document.body
           )
         : null}
+      {learningTrailId != null && (
+        <LearningTrailView
+          socket={socket}
+          studentId={learningTrailId}
+          onClose={() => setLearningTrailId(null)}
+          onOpenDrafts={(id) => {
+            setLearningTrailId(null);
+            setDraftTrailFocusId(id);
+            setDraftTrailOpen(true);
+          }}
+        />
+      )}
       {draftTrailOpen && (
         <DraftTrailPanel
           socket={socket}
@@ -4107,13 +4121,23 @@ function TeacherDashboardInner() {
                         className={`iboard-student-card__name min-w-0 truncate ${
                           cardView === 'overview' || cardView === 'all' ? 'text-[13px]' : 'text-[14px]'
                         } ${
-                          handUp ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : ''
+                          handUp ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : 'cursor-pointer hover:text-[#5a5fc3] dark:hover:text-[#818cf8]'
                     }`}
-                    aria-label={handUp ? `${s.name} has a question` : undefined}
+                    aria-label={handUp ? `${s.name} has a question` : `Open ${s.name}’s learning trail`}
                         title=""
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (handUp || (event.key !== 'Enter' && event.key !== ' ')) return;
+                      event.preventDefault();
+                      setLearningTrailId(s.id);
+                    }}
                     onClick={(event) => {
-                          if (!handUp) return;
                         event.stopPropagation();
+                        if (!handUp) {
+                          setLearningTrailId(s.id);
+                          return;
+                        }
                         setHandQuestionTarget({ student: s, questions: handQuestions });
                     }}
                   >
@@ -4212,8 +4236,7 @@ function TeacherDashboardInner() {
                           aria-label={`Open learning trail for ${s.name}`}
                       onClick={(event) => {
                         event.stopPropagation();
-                        setDraftTrailFocusId(s.id);
-                        setDraftTrailOpen(true);
+                        setLearningTrailId(s.id);
                       }}
                           className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-600 ring-1 ring-red-200 hover:ring-red-300 dark:ring-red-900"
                     />
@@ -5839,10 +5862,7 @@ function TeacherDashboardInner() {
                     type="button"
                       title=""
                       aria-label={`Open learning trail for ${focusedStudent.name}`}
-                    onClick={() => {
-                      setDraftTrailFocusId(focusedStudent.id);
-                      setDraftTrailOpen(true);
-                    }}
+                    onClick={() => setLearningTrailId(focusedStudent.id)}
                     className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-600 ring-2 ring-red-200 hover:ring-red-300 dark:ring-red-900"
                   />
                   </HintWrap>
@@ -5850,6 +5870,15 @@ function TeacherDashboardInner() {
                 <p className="text-xs text-slate-500 dark:text-slate-400">{wordCount(focusedStudent.text)} words · select text to add an inline comment</p>
               </div>
               <div className="flex items-center gap-2">
+                <HintWrap hint="How this draft grew and the support you gave">
+                  <button
+                    type="button"
+                    onClick={() => setLearningTrailId(focusedStudent.id)}
+                    className="h-9 shrink-0 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-600 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-700 dark:text-slate-300 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
+                  >
+                    Learning trail
+                  </button>
+                </HintWrap>
                 <HintWrap hint="Smaller text">
                   <button
                     type="button"

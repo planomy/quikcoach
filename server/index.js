@@ -921,6 +921,82 @@ io.on('connection', (socket) => {
       .map((event) => ({ at: Number(event.at) || 0, text: String(event.inserted || '').slice(0, 5000) }));
     cb?.({ ok: true, pastes });
   });
+  socket.on('teacher:learning-trail', ({ studentId } = {}, cb) => {
+    const code = socket.data.roomCode;
+    const sid = Number(studentId);
+    if (socket.data.role !== 'teacher' || !code || !sid) return cb?.({ ok: false });
+    try {
+      const student = queries.getStudent(db, sid);
+      if (!student || normalizeRoomCode(student.room_code) !== code) return cb?.({ ok: false, error: 'Student not found' });
+      const sqlMs = (value) => {
+        if (!value) return 0;
+        const raw = String(value);
+        const ms = Date.parse(/^\d{4}-\d\d-\d\d \d\d:/.test(raw) ? `${raw.replace(' ', 'T')}Z` : raw);
+        return Number.isFinite(ms) ? ms : 0;
+      };
+      const comments = db.prepare(
+        `SELECT id, quote, note, status, created_at, student_fixed_at, resolved_at
+         FROM teacher_annotations WHERE room_code = ? AND student_id = ? ORDER BY id ASC`
+      ).all(code, sid).map((row) => ({
+        id: Number(row.id),
+        quote: String(row.quote || '').slice(0, 300),
+        note: String(row.note || '').slice(0, 600),
+        status: String(row.status || 'open'),
+        at: sqlMs(row.created_at),
+        fixedAt: sqlMs(row.student_fixed_at),
+        resolvedAt: sqlMs(row.resolved_at),
+      }));
+      const messages = db.prepare(
+        `SELECT id, kind, text, meta_json, created_at, seen_at
+         FROM teacher_feedback_messages WHERE room_code = ? AND student_id = ? ORDER BY id ASC`
+      ).all(code, sid).map((row) => {
+        let meta = {};
+        try { meta = JSON.parse(row.meta_json || '{}') || {}; } catch { meta = {}; }
+        const kind = String(row.kind || 'note');
+        return {
+          id: Number(row.id),
+          type: kind === 'chat' ? 'chat' : kind === 'set-prompt' ? 'set' : String(meta.type || (meta.source === 'ai' ? 'ai' : 'note')),
+          text: String(row.text || '').slice(0, 600),
+          title: kind === 'set-prompt' ? String(meta.title || '').slice(0, 120) : '',
+          categories: Array.isArray(meta.thinking?.categories) ? meta.thinking.categories.map(String).slice(0, 6) : [],
+          urgent: !!meta.urgent,
+          at: sqlMs(row.created_at),
+          seenAt: sqlMs(row.seen_at),
+        };
+      });
+      const asked = db.prepare(
+        `SELECT q.activity_id, q.question_number, q.prompt, q.launched_at, c.value, c.submitted_at
+         FROM lesson_pulse_opportunities o
+         JOIN lesson_pulse_questions q ON q.activity_id = o.activity_id
+         LEFT JOIN lesson_pulse_cells c ON c.activity_id = o.activity_id AND c.student_id = o.student_id
+         WHERE o.room_code = ? AND o.student_id = ? ORDER BY q.question_number ASC`
+      ).all(code, sid).map((row) => ({
+        number: Number(row.question_number) || 0,
+        prompt: String(row.prompt || '').slice(0, 300),
+        at: sqlMs(row.launched_at),
+        answered: row.submitted_at != null && String(row.value || '').trim() !== '',
+        answeredAt: sqlMs(row.submitted_at),
+      }));
+      cb?.({
+        ok: true,
+        student: {
+          id: sid,
+          name: String(student.name || ''),
+          text: String(student.text || ''),
+          joinedAt: sqlMs(student.created_at),
+          updatedAt: sqlMs(student.updated_at),
+          away: isStudentAway(sid),
+        },
+        events: readTrail(code, sid)?.events || [],
+        comments,
+        messages,
+        asked,
+      });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not load the learning trail' });
+    }
+  });
   socket.on('teacher:join', ({ code }, cb) => {
     try {
       const c = String(code || '').replace(/\D/g, '').slice(0, 4).padStart(4, '0');

@@ -5050,6 +5050,22 @@ html.dark .iboard-header-objective.is-empty {
   display: none;
 }
 
+.iboard-learning-trail {
+  scrollbar-width: none;
+}
+
+.iboard-learning-trail::-webkit-scrollbar {
+  display: none;
+}
+
+.iboard-learning-trail__away {
+  background: repeating-linear-gradient(135deg, #cbd5e1 0 2px, #e2e8f0 2px 5px);
+}
+
+html.dark .iboard-learning-trail__away {
+  background: repeating-linear-gradient(135deg, #475569 0 2px, #334155 2px 5px);
+}
+
 .iboard-student-card__fit-pane img {
   max-height: 4.5rem;
 }
