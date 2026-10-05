@@ -3454,6 +3454,7 @@ function TeacherDashboardInner() {
           </div>
 
             <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
+            {joined && <SaveStatusChip status={saveStatus} plain />}
             {attentionPills.length || inboxSummary ? (
               <div className="iboard-attention-home" role="group" aria-label="Needs a look">
                 {attentionPills.map((pill) => {
@@ -3503,7 +3504,6 @@ function TeacherDashboardInner() {
               onClick={openTimerDock}
               onFinishedClick={() => controlRoomTimer('end')}
             />
-            {joined && <SaveStatusChip status={saveStatus} plain />}
             {independentSince ? (
               <HintWrap hint="Feedback asks before sending while this is on. Click to end." prefer="below" multiline>
                 <button
