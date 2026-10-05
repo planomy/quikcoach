@@ -39,8 +39,8 @@ export const TEACHER_HELP_ITEMS = [
   },
   {
     id: 'rec',
-    title: 'Drafting evidence',
-    body: 'TUIT records how each draft grows automatically. Click a red Pasted tag to see what was pasted, or open Reports → Drafting evidence.',
+    title: 'Learning trail',
+    body: 'TUIT records how each draft grows and the support you give, automatically. Click a red Pasted tag to see what was pasted, or open Reports → Learning trail.',
   },
   {
     id: 'session',

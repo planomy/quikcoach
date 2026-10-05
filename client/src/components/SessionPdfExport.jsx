@@ -79,7 +79,7 @@ export default function SessionPdfExport({ socket, onClose, embedded = false }) 
         </div>
       ) : null}
       <p className={`${embedded ? 'mb-3' : 'my-3'} text-sm text-slate-500 dark:text-slate-400`}>
-        Includes writing, student images and compact named drafting evidence, with inline feedback linked to subsequent passage revisions.
+        An Evidence of learning report: writing, student images and each student’s learning trail, with inline feedback linked to later revisions of that passage.
       </p>
       {pack && (
         <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
@@ -88,7 +88,7 @@ export default function SessionPdfExport({ socket, onClose, embedded = false }) 
       )}
       {noDraftTrail && (
         <p role="status" className="my-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-          <strong>No drafting evidence was recorded for this session.</strong> The PDF will still include writing and other session evidence.
+          <strong>No learning trail was recorded for this session.</strong> The PDF will still include writing and other session evidence.
         </p>
       )}
       {error && (
@@ -125,7 +125,7 @@ export default function SessionPdfExport({ socket, onClose, embedded = false }) 
           <label className="my-4 flex items-start gap-2 text-sm">
             <input type="checkbox" disabled={busy} checked={detailed} onChange={(e) => setDetailed(e.target.checked)} className="mt-1" />
             <span>
-              More drafting evidence checkpoints
+              More learning trail checkpoints
               <br />
               <span className="text-slate-500 dark:text-slate-400">
                 Checking this selects up to 20 checkpoints with short passages. Default is up to 3 meaningful revision extracts.
@@ -134,7 +134,7 @@ export default function SessionPdfExport({ socket, onClose, embedded = false }) 
           </label>
         </>
       )}
-      {!busy && pack && !people.length && <p className="my-5 text-sm">No students or archived drafting evidence in this session yet.</p>}
+      {!busy && pack && !people.length && <p className="my-5 text-sm">No students or archived learning trails in this session yet.</p>}
       <button
         type="button"
         disabled={busy || !pack || !selected.length}

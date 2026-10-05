@@ -2617,7 +2617,7 @@ function TeacherDashboardInner() {
       }
       const result = await downloadSessionPack(ack.pack, codeInput, label, { picker: !silent });
       if (result.method === 'cancelled') {
-        setCopyToast(fromAuto ? 'Save cancelled — drafting evidence still live until you save' : 'Save cancelled');
+        setCopyToast(fromAuto ? 'Save cancelled — learning trail still live until you save' : 'Save cancelled');
         setTimeout(() => setCopyToast(''), 3500);
         return { ok: false, cancelled: true };
       }
@@ -3413,7 +3413,7 @@ function TeacherDashboardInner() {
             {room?.draftTrail?.reason ? (
               <HintWrap hint={room.draftTrail.reason} multiline>
                 <span role="status" className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
-                  Drafting evidence paused
+                  Learning trail paused
                 </span>
               </HintWrap>
             ) : null}
@@ -4205,11 +4205,11 @@ function TeacherDashboardInner() {
                         </HintWrap>
                       ) : null}
                   {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(s.id)) ? (
-                        <HintWrap hint="Open drafting evidence" prefer="above">
+                        <HintWrap hint="Open learning trail" prefer="above">
                     <button
                       type="button"
                           title=""
-                          aria-label={`Open drafting evidence for ${s.name}`}
+                          aria-label={`Open learning trail for ${s.name}`}
                       onClick={(event) => {
                         event.stopPropagation();
                         setDraftTrailFocusId(s.id);
@@ -4557,7 +4557,7 @@ function TeacherDashboardInner() {
                     {libraryView === 'feedback'
                       ? 'AI feedback'
                       : libraryView === 'drafting'
-                        ? 'Drafting evidence'
+                        ? 'Learning trail'
                         : libraryView === 'participation'
                           ? 'Participation'
                           : libraryView === 'pdf'
@@ -4585,9 +4585,9 @@ function TeacherDashboardInner() {
             </p>
             <div className="flex flex-wrap gap-2" role="navigation" aria-label="Report sections">
               {[
-                { label: 'Drafting evidence', hint: 'See how each student’s writing grew, including anything pasted', onClick: () => setLibraryView('drafting') },
+                { label: 'Learning trail', hint: 'See how each student’s writing grew, the support you gave, and anything pasted', onClick: () => setLibraryView('drafting') },
                 { label: 'Participation', hint: 'Who answered your Ask class questions, and how often', onClick: () => setLibraryView('participation') },
-                { label: 'Session PDF', hint: 'Download a PDF of today’s writing and drafting evidence', onClick: () => setLibraryView('pdf'), disabled: sessionBusy },
+                { label: 'Session PDF', hint: 'Download an Evidence of learning PDF: today’s writing and each student’s learning trail', onClick: () => setLibraryView('pdf'), disabled: sessionBusy },
                 { label: 'Student portfolios', hint: 'Download each student’s saved work as a PDF', onClick: () => setLibraryView('portfolios') },
                 { label: 'AI feedback sent', hint: 'Every piece of AI feedback you’ve sent, and who opened it', onClick: openFeedbackSent },
                 { label: 'Class insights', hint: 'Trends across your lessons and classes, with no student names', onClick: () => { closeLibraryHub(); setInsightsOpen(true); } },
@@ -5834,11 +5834,11 @@ function TeacherDashboardInner() {
                   {focusedStudent.name}
                 </h2>
                 {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(focusedStudent.id)) ? (
-                  <HintWrap hint="Open drafting evidence" prefer="below">
+                  <HintWrap hint="Open learning trail" prefer="below">
                   <button
                     type="button"
                       title=""
-                      aria-label={`Open drafting evidence for ${focusedStudent.name}`}
+                      aria-label={`Open learning trail for ${focusedStudent.name}`}
                     onClick={() => {
                       setDraftTrailFocusId(focusedStudent.id);
                       setDraftTrailOpen(true);

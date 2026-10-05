@@ -30,11 +30,11 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
     setBusy(true);
     setError('');
     setTrail(null);
-    if (!socket.connected) { setError('Reconnect to view drafting evidence.'); setBusy(false); return; }
+    if (!socket.connected) { setError('Reconnect to view the learning trail.'); setBusy(false); return; }
     socket.timeout(10000).emit('teacher:draft-trail-view', { studentId: selected === '' ? undefined : Number(selected) }, (err, ack) => {
       if (cancelled) return;
       setBusy(false);
-      if (err || !ack?.ok) { setError(ack?.error || 'Could not load drafting evidence. Try Refresh.'); return; }
+      if (err || !ack?.ok) { setError(ack?.error || 'Could not load the learning trail. Try Refresh.'); return; }
       setStudents(ack.students || []);
       setLabel(String(ack.status?.label || '').trim());
       if (selected === '' && ack.students?.length) { setSelected(String(ack.students[0].id)); return; }
@@ -69,7 +69,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
       {!embedded ? (
         <div className="flex items-center justify-between gap-4">
           <h2 id="draft-trail-title" className={`text-lg font-bold ${empty ? 'sr-only' : ''}`}>
-            Drafting evidence{label ? ` · ${label}` : ''}
+            Learning trail{label ? ` · ${label}` : ''}
           </h2>
           <CloseButton onClick={onClose} label="Close" className={empty ? 'ml-auto' : undefined} />
         </div>
@@ -79,7 +79,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
 
       {empty ? (
         <p className={`text-center text-sm font-semibold text-slate-700 dark:text-slate-200 ${embedded ? 'py-6' : 'py-10'}`}>
-          No drafting evidence captured yet. Hit the recording button to begin.
+          No learning trail yet. It builds automatically as students write.
         </p>
       ) : (
         <>
@@ -87,7 +87,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
             <label className="text-sm font-semibold">
               Student{' '}
               <select
-                aria-label="Student drafting evidence"
+                aria-label="Student learning trail"
                 value={selected}
                 onChange={(e) => setSelected(e.target.value)}
                 className="ml-2 max-w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-slate-600 dark:bg-slate-800"
