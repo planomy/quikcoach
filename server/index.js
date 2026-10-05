@@ -921,6 +921,32 @@ io.on('connection', (socket) => {
       .map((event) => ({ at: Number(event.at) || 0, text: String(event.inserted || '').slice(0, 5000) }));
     cb?.({ ok: true, pastes });
   });
+  socket.on('teacher:thinking-counts', ({ studentIds } = {}, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) return cb?.({ ok: false });
+    try {
+      const ids = new Set((Array.isArray(studentIds) ? studentIds : []).map(Number).filter((id) => id > 0));
+      const counts = {};
+      if (ids.size) {
+        const rows = db.prepare(
+          `SELECT student_id, meta_json FROM teacher_feedback_messages
+           WHERE room_code = ? AND kind = 'note' AND json_extract(meta_json, '$.type') = 'thinking'`
+        ).all(code);
+        for (const row of rows) {
+          if (!ids.has(Number(row.student_id))) continue;
+          let meta = {};
+          try { meta = JSON.parse(row.meta_json || '{}') || {}; } catch { meta = {}; }
+          for (const id of Array.isArray(meta.thinking?.categories) ? meta.thinking.categories : []) {
+            counts[id] = (counts[id] || 0) + 1;
+          }
+        }
+      }
+      cb?.({ ok: true, counts });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false });
+    }
+  });
   socket.on('teacher:learning-trail', ({ studentId } = {}, cb) => {
     const code = socket.data.roomCode;
     const sid = Number(studentId);

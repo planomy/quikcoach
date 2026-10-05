@@ -53,6 +53,7 @@ export function ThinkingPopover({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
+  const [sentCounts, setSentCounts] = useState(null);
 
   const grouped = useMemo(() => promptsByCategory(subjectAssist), [subjectAssist]);
   const selectedList = useMemo(() => [...selected.values()], [selected]);
@@ -69,6 +70,21 @@ export function ThinkingPopover({
     setStatus('');
     setSending(false);
   }, [open, anchorRect?.top, anchorRect?.left]);
+
+  const studentKey = [...new Set((studentIds || []).map(Number).filter((id) => id > 0))].sort((a, b) => a - b).join(',');
+  useEffect(() => {
+    setSentCounts(null);
+    if (!open || !studentKey) return undefined;
+    const sock = socket || (typeof window !== 'undefined' ? window.__iboardTeacherSocket : null);
+    if (!sock?.connected) return undefined;
+    let cancelled = false;
+    sock.timeout(5000).emit('teacher:thinking-counts', { studentIds: studentKey.split(',').map(Number) }, (err, ack) => {
+      if (cancelled || err || !ack?.ok) return;
+      const counts = ack.counts || {};
+      setSentCounts(Object.values(counts).some((n) => n > 0) ? counts : null);
+    });
+    return () => { cancelled = true; };
+  }, [open, studentKey, socket]);
 
   useLayoutEffect(() => {
     if (!open || !anchorRect) {
@@ -215,8 +231,13 @@ export function ThinkingPopover({
             key={category.id}
             className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-1.5 dark:border-slate-700 dark:bg-slate-950/50"
           >
-            <p className="px-1 pb-1 text-[10px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <p className="flex items-baseline justify-between gap-1 px-1 pb-1 text-[10px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
               {category.label}
+              {sentCounts ? (
+                <span className={`text-[10px] font-semibold normal-case tracking-normal ${sentCounts[category.id] ? 'text-[#5a5fc3] dark:text-indigo-300' : 'text-slate-400 dark:text-slate-500'}`}>
+                  {sentCounts[category.id] || 0} sent
+                </span>
+              ) : null}
             </p>
             <div className="space-y-0.5">
               {(grouped[category.id] || []).map((prompt) => {
