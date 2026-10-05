@@ -14,6 +14,7 @@ No TLS and **no port 443** — the app container maps host **80 → 3001**.
 | `iboard-poc.tar` | Docker image (built on your Mac) |
 | `docker-compose.yml` | Starts the app on **TCP 80** |
 | `LOAD-AND-RUN.sh` | Double-click or run in Terminal on the NUC |
+| `BACKUP.sh` | Copies class data off the NUC into `backups/` |
 | `README.md` | This file |
 
 Data (SQLite + uploaded images) lives in Docker volume `iboard-data` on the NUC — survives container restarts.
@@ -22,8 +23,7 @@ Data (SQLite + uploaded images) lives in Docker volume `iboard-data` on the NUC 
 
 ## On your iMac (before Rob arrives)
 
-1. **Install Docker Desktop** if you have not already: https://www.docker.com/products/docker-desktop/  
-   Open it and wait until it says **Docker is running**.
+1. Docker: no install needed on this iMac. The build script uses the Colima tools in the repo's `.tools/` folder when Docker Desktop isn't present.
 
 2. From the **Feedback** repo root:
 
@@ -97,6 +97,29 @@ Then use this folder’s `docker-compose.yml` + `LOAD-AND-RUN.sh` as usual.
 Or run without Docker: see `DEPLOY.md` in the repo root (`npm run install:all`, `npm run build`, `npm start`) — that path still defaults to port **3001** unless you put a reverse proxy in front.
 
 ---
+
+## Backup
+
+```bash
+cd nuc-handoff
+./BACKUP.sh
+```
+
+Pauses the app for a few seconds and writes `backups/iboard-data-<date>.tgz` (database, images, learning trails). It contains student writing, so keep it on school storage only.
+
+Restore onto a fresh NUC (app stopped first):
+
+```bash
+docker compose stop iboard
+docker run --rm -v iboard-data:/data -v "$PWD/backups":/backup --entrypoint sh iboard:poc \
+  -c 'rm -rf /data/* && tar xzf /backup/iboard-data-<date>.tgz -C /data'
+docker compose start iboard
+```
+
+## Known differences from Railway
+
+- Plain HTTP (no padlock). Everything works, including copy buttons; the browser may show "Not secure" in the address bar.
+- The NUC volume is separate from Railway. Classes and reports on one don't appear on the other.
 
 ## Stop / reset
 
