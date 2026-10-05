@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { independentWindowsFor } from './independentWriting.js';
 
 export function reportStudents(pack) {
   const students = (pack.students || []).map(s => ({ ...s, key: s.exportId,
@@ -199,6 +200,10 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
     if (summary.spanMinutes !== null) {
       paragraph(`Recorded span: ${when(summary.start)} to ${when(summary.finish)} | ${summary.spanMinutes < 1 ? 'Under 1 minute' : `${summary.spanMinutes} minutes`}`, { size: 9 });
       paragraph('Elapsed time between first and last records; not continuous working time or the full lesson duration.', { size: 8, colour: [90, 102, 117] });
+    }
+    const capturedAt = Date.parse(pack.exportedAt) || Date.now();
+    for (const w of independentWindowsFor(pack.draftTrail?.independent, student.trail?.events, 0, capturedAt)) {
+      paragraph(`Independent writing (set by the teacher) ${w.range}. ${w.support}.`, { size: 10, colour: [60, 63, 143] });
     }
     heading(student.archived ? 'Last recorded writing' : 'Writing at export');
     paragraph(student.archived ? events.at(-1)?.after || '(No recorded writing)' : student.text || '(No writing received)');

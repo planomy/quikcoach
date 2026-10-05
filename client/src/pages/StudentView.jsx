@@ -1652,6 +1652,12 @@ export default function StudentView() {
           <span className="iboard-lesson-objective__text">{room.lesson_objective}</span>
         </div>
       ) : null}
+      {room?.draftTrail?.independentSince ? (
+        <div className="iboard-lesson-objective" role="status">
+          <span className="iboard-lesson-objective__label">Now</span>
+          <span className="iboard-lesson-objective__text">Independent writing. Show what you can do on your own.</span>
+        </div>
+      ) : null}
       <main className="mx-auto flex w-full min-h-0 flex-1 flex-col px-4 py-6 sm:px-6">
         <div
           ref={splitGridRef}

@@ -263,6 +263,10 @@ const TEACHER_TOOLS_TABS = [
   { id: 'ask', label: 'Ask the class', rail: 'Ask class', hint: 'Ask the class a question and see their answers' },
 ];
 
+function clockTime(ms) {
+  return ms ? new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+}
+
 function csvCell(value) {
   const text = String(value ?? '');
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -564,6 +568,57 @@ function TeacherDashboardInner() {
   const [timerBusy, setTimerBusy] = useState(false);
 
   const socket = useMemo(() => createSocket(), []);
+  const independentSince = Number(room?.draftTrail?.independentSince) || 0;
+  const independentRef = useRef(0);
+  independentRef.current = independentSince;
+  useEffect(() => {
+    const guarded = new Set(['teacher:distribute', 'teacher:annotation-add', 'teacher:material-send', 'teacher:broadcast']);
+    const innerEmit = socket.emit;
+    let asking = null;
+    let allowUntil = 0;
+    const askOnce = () => {
+      if (!asking) {
+        asking = confirmDialog({
+          title: 'Independent writing is on',
+          message: 'This will show as teacher support on the Learning trail. Send anyway?',
+          confirmLabel: 'Send anyway',
+          cancelLabel: 'Don’t send',
+          tone: 'brand',
+        }).then((ok) => {
+          asking = null;
+          if (ok) allowUntil = Date.now() + 15000;
+          return ok;
+        });
+      }
+      return asking;
+    };
+    socket.emit = (eventName, ...args) => {
+      if (!independentRef.current || !guarded.has(eventName) || Date.now() < allowUntil) {
+        return innerEmit.call(socket, eventName, ...args);
+      }
+      // Deferred emit: keep socket.timeout() flags for this call only.
+      const flags = { ...(socket.flags || {}) };
+      socket.flags = {};
+      askOnce().then((ok) => {
+        if (ok) {
+          socket.flags = flags;
+          innerEmit.call(socket, eventName, ...args);
+          return;
+        }
+        window.__iboardPendingNoteStudentId = 0;
+        const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+        const ack = { ok: false, error: 'Not sent. Independent writing is on.' };
+        if (cb) {
+          if (flags.timeout !== undefined) cb(null, ack);
+          else cb(ack);
+        }
+      });
+      return socket;
+    };
+    return () => {
+      socket.emit = innerEmit;
+    };
+  }, [socket]);
   const teacherRoomRef = useRef('');
   const joinedRef = useRef(false);
   const autoJoinTriedRef = useRef(false);
@@ -3017,6 +3072,30 @@ function TeacherDashboardInner() {
     setJoinScreenOpen(true);
   }
 
+  function setIndependentWriting(active) {
+    socket.emit('teacher:independent', { active }, (ack) => {
+      if (!ack?.ok) {
+        setError(ack?.error || 'Could not change independent writing');
+        return;
+      }
+      setRoom((current) => (current
+        ? { ...current, draftTrail: { ...(current.draftTrail || {}), independentSince: Number(ack.independentSince) || 0 } }
+        : current));
+      setCopyToast(active ? 'Independent writing on. The start time is on the Learning trail.' : 'Independent writing ended');
+      setTimeout(() => setCopyToast(''), 3000);
+    });
+  }
+
+  async function endIndependentWriting() {
+    const ok = await confirmDialog({
+      title: 'End independent writing?',
+      message: `Started at ${clockTime(independentSince)}. The end time goes on the Learning trail.`,
+      confirmLabel: 'End independent writing',
+      tone: 'brand',
+    });
+    if (ok) setIndependentWriting(false);
+  }
+
   function setLessonObjective(text) {
     const clean = String(text || '').trim();
     rememberObjective(clean);
@@ -3448,6 +3527,18 @@ function TeacherDashboardInner() {
               onFinishedClick={() => controlRoomTimer('end')}
             />
             {joined && <SaveStatusChip status={saveStatus} plain />}
+            {independentSince ? (
+              <HintWrap hint="Feedback asks before sending while this is on. Click to end." prefer="below" multiline>
+                <button
+                  type="button"
+                  onClick={endIndependentWriting}
+                  className="rounded-full border border-[#5a5fc3]/30 bg-[#ebeaf8] px-2.5 py-0.5 text-[11px] font-semibold text-[#3c3f8f] transition hover:border-[#5a5fc3] dark:border-[#818cf8]/40 dark:bg-[rgba(90,95,195,0.22)] dark:text-[#c7d2fe]"
+                  aria-label={`Independent writing since ${clockTime(independentSince)}. End it`}
+                >
+                  Independent writing · {clockTime(independentSince)}
+                </button>
+              </HintWrap>
+            ) : null}
             {room?.draftTrail?.reason ? (
               <HintWrap hint={room.draftTrail.reason} multiline>
                 <span role="status" className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
@@ -5593,6 +5684,20 @@ function TeacherDashboardInner() {
 
             {settingsSection === 'settings' && (
             <div className="iboard-room-settings__hero">
+              <div className="iboard-room-settings__row">
+                <HintWrap hint="Stamps the start and end on the Learning trail. Feedback asks before sending. Students see a calm banner." className="min-w-0 flex-1" multiline>
+                  <button
+                    type="button"
+                    role="switch"
+                    onClick={() => (independentSince ? endIndependentWriting() : setIndependentWriting(true))}
+                    aria-checked={!!independentSince}
+                    className="iboard-room-settings__secondary w-full justify-between gap-3"
+                  >
+                    <span>Independent writing</span>
+                    <span className="iboard-switch" data-on={independentSince ? 'true' : 'false'} aria-hidden="true" />
+                  </button>
+                </HintWrap>
+              </div>
               <div className="iboard-room-settings__row">
                 <HintWrap hint="Change the colours of your screen only" className="min-w-0 flex-1">
                   <button

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CloseButton } from './PanelActions.jsx';
 import { THINKING_CATEGORIES } from '../lib/thinkingPrompts.js';
+import { independentWindowsFor } from '../lib/independentWriting.js';
 
 const SUPPORT_LABELS = {
   comment: 'Inline comments',
@@ -149,6 +150,10 @@ function buildTimeline(events, data) {
       detail: snippet(question.prompt),
     });
   }
+  for (const w of data.independentRows || []) {
+    rows.push({ at: w.start, kind: 'independent', title: 'Independent writing started', detail: w.end ? '' : w.support });
+    if (w.end) rows.push({ at: w.end, kind: 'independent', title: 'Independent writing ended', detail: w.support });
+  }
   return rows.filter((row) => row.at).sort((a, b) => b.at - a.at).slice(0, 200);
 }
 
@@ -195,6 +200,7 @@ const DOT = {
   away: 'bg-slate-300 dark:bg-slate-600',
   missing: 'bg-amber-400',
   start: 'bg-slate-400',
+  independent: 'bg-[#3c3f8f] dark:bg-[#818cf8]',
 };
 
 export default function LearningTrailView({ socket, studentId, onClose, onOpenDrafts }) {
@@ -230,6 +236,7 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
         comments: Array.isArray(ack.comments) ? ack.comments : [],
         messages: Array.isArray(ack.messages) ? ack.messages : [],
         asked: Array.isArray(ack.asked) ? ack.asked : [],
+        independent: Array.isArray(ack.independent) ? ack.independent : [],
       });
     });
     return () => { cancelled = true; };
@@ -241,13 +248,24 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
     const pastes = events.filter((e) => e.type === 'paste').length;
     const startWords = events.length ? words(events[0].text) : null;
     const nowWords = words(data.student.text);
+    const independent = independentWindowsFor(data.independent, events, data.student.joinedAt, now);
+    const activity = buildActivity(events, now);
+    const span = activity ? Math.max(60000, activity.end - activity.start) : 0;
     return {
       events,
       pastes,
       nowWords,
       gained: startWords == null ? null : nowWords - startWords,
-      activity: buildActivity(events, now),
-      timeline: buildTimeline(events, data),
+      activity,
+      independent,
+      bands: activity
+        ? independent.map((w) => {
+            const left = Math.max(0, ((w.start - activity.start) / span) * 100);
+            const right = Math.min(100, (((w.end || now) - activity.start) / span) * 100);
+            return { left, width: Math.max(0.8, right - left) };
+          })
+        : [],
+      timeline: buildTimeline(events, { ...data, independentRows: independent }),
       support: buildSupport(events, data),
       notYet: buildNotYet(data),
     };
@@ -307,6 +325,18 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                     />
                   ))}
                 </div>
+                {view.bands.length ? (
+                  <div className="relative mt-0.5 h-1">
+                    {view.bands.map((band, n) => (
+                      <span
+                        key={n}
+                        className="absolute top-0 h-1 rounded-full bg-[#3c3f8f] dark:bg-[#818cf8]"
+                        style={{ left: `${band.left}%`, width: `${band.width}%` }}
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </div>
+                ) : null}
                 <div className="mt-1 flex justify-between text-[10px] font-semibold text-slate-400">
                   <span>{clock(view.activity.start)}</span>
                   <span>{clock(view.activity.end)}</span>
@@ -317,11 +347,25 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                   <span className="inline-flex items-center gap-1"><span className="iboard-learning-trail__away h-2 w-3 rounded-sm" />Away</span>
                   <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#5a5fc3]" />Support</span>
                   <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-500" />Paste</span>
+                  {view.bands.length ? (
+                    <span className="inline-flex items-center gap-1"><span className="h-1 w-3 rounded-full bg-[#3c3f8f] dark:bg-[#818cf8]" />Independent writing</span>
+                  ) : null}
                 </p>
               </section>
             ) : (
               <p className="text-sm text-slate-500 dark:text-slate-400">No writing recorded yet. The trail builds automatically as they write.</p>
             )}
+
+            {view.independent.length ? (
+              <ul className="space-y-1 rounded-xl bg-[#ebeaf8] px-3 py-2 text-sm text-[#3c3f8f] dark:bg-[rgba(90,95,195,0.22)] dark:text-indigo-100">
+                {view.independent.map((w) => (
+                  <li key={w.start}>
+                    <span className="font-bold">Independent writing {w.range}</span>
+                    <span className="text-[#3c3f8f]/80 dark:text-indigo-200"> · {w.support}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <section>

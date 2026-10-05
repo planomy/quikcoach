@@ -34,6 +34,7 @@ function writeRoomFile(code) {
     token: room.token,
     reason: room.reason,
     label: room.label,
+    independent: room.independent,
     changed: room.changed,
     students: [...room.students.values()].map((s) => ({
       id: s.id,
@@ -93,6 +94,7 @@ function restoreRoom(code, data) {
   room.token = String(data.token || '');
   room.reason = String(data.reason || '');
   room.label = String(data.label || '');
+  room.independent = cleanWindows(data.independent);
   room.changed = Number(data.changed) || Date.now();
   for (const item of data.students) {
     const events = Array.isArray(item.events) ? item.events : [];
@@ -128,8 +130,31 @@ export function textDelta(before, after) {
   return { start, removed: before.length - start - end, inserted: after.slice(start, after.length - end) };
 }
 function get(code) {
-  if (!rooms.has(code)) rooms.set(code, { code, active: false, token: '', reason: '', label: '', students: new Map(), bytes: 0, changed: Date.now() });
+  if (!rooms.has(code)) rooms.set(code, { code, active: false, token: '', reason: '', label: '', independent: [], students: new Map(), bytes: 0, changed: Date.now() });
   return rooms.get(code);
+}
+
+function cleanWindows(raw) {
+  return (Array.isArray(raw) ? raw : [])
+    .slice(-50)
+    .map((w) => ({ start: Number(w?.start) || 0, end: w?.end == null ? null : Number(w.end) || 0 }))
+    .filter((w) => w.start > 0 && (w.end === null || w.end >= w.start));
+}
+
+/** Teacher-declared independent writing: a room-wide window stamped on the trail. */
+export function setIndependentWriting(code, on, at = Date.now()) {
+  const room = get(code);
+  const open = room.independent.at(-1);
+  if (on && !(open && open.end === null)) room.independent.push({ start: at, end: null });
+  if (!on && open && open.end === null) open.end = at;
+  room.changed = at;
+  markDirty(code);
+  persistTrails(at, { force: true });
+  return trailStatus(code);
+}
+
+export function independentWindows(code) {
+  return (rooms.get(code)?.independent || []).map((w) => ({ ...w }));
 }
 
 /** Quiet red-dot signal: look at this trail first — not a cheating verdict. */
@@ -170,6 +195,7 @@ export function trailStatus(code) {
     reason: room?.reason || '',
     label: room?.label || '',
     attentionIds: attentionIdsForRoom(room),
+    independentSince: room?.independent?.at(-1)?.end === null ? room.independent.at(-1).start : 0,
   };
 }
 function append(room, student, event) {
@@ -340,6 +366,7 @@ export function exportTrails(code, idToExport) {
     version: 1,
     reason: room.reason,
     label: room.label || '',
+    independent: room.independent.map((w) => ({ ...w })),
     students: [...room.students.values()].map(s => {
       flush(room, s);
       return { exportId: idToExport.get(s.id) || null, name: s.name, events: s.events.map(e => ({ ...e })) };
@@ -349,6 +376,7 @@ export function exportTrails(code, idToExport) {
 export function validateTrails(raw) {
   if (raw == null) return;
   if (raw.version !== 1 || !Array.isArray(raw.students) || raw.students.length > 500 || Buffer.byteLength(JSON.stringify(raw)) > MAX_ROOM_BYTES + 256000) throw new Error('Invalid or oversized Learning trail');
+  if (raw.independent !== undefined && (!Array.isArray(raw.independent) || raw.independent.length > 50)) throw new Error('Invalid Learning trail independent writing');
   const identities = new Set();
   let eventBytes = 0;
   for (const student of raw.students) {
@@ -385,6 +413,8 @@ export function importTrails(code, raw, exportToId) {
   const room = get(code);
   room.reason = String(raw.reason || '').slice(0, 200);
   room.label = String(raw.label || '').trim().slice(0, 80);
+  const lastAt = raw.students.reduce((max, s) => Math.max(max, Number(s.events.at(-1)?.at) || 0), 0);
+  room.independent = cleanWindows(raw.independent).map((w) => (w.end === null ? { start: w.start, end: Math.max(w.start, lastAt) } : w));
   let archivedId = -1;
   for (const item of raw.students) {
     const id = exportToId.get(item.exportId) || archivedId--;

@@ -10,7 +10,7 @@ import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
 import { VERBAL_PROMPT, decideVerbalResponseAction } from './verbalResponse.js';
 import { buildSessionPack, importSessionPack } from './sessionPack.js';
-import { trailStatus, setTrailRecording, recordTrailText, recordTrailFeedback, recordTrailPresence, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail, configureTrailPersistence, persistTrails } from './draftTrail.js';
+import { trailStatus, setTrailRecording, recordTrailText, recordTrailFeedback, recordTrailPresence, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail, setIndependentWriting, independentWindows, configureTrailPersistence, persistTrails } from './draftTrail.js';
 import {
   BREAKOUT_SIZE,
   autoAssignBreakouts,
@@ -921,6 +921,18 @@ io.on('connection', (socket) => {
       .map((event) => ({ at: Number(event.at) || 0, text: String(event.inserted || '').slice(0, 5000) }));
     cb?.({ ok: true, pastes });
   });
+  socket.on('teacher:independent', ({ active } = {}, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) return cb?.({ ok: false });
+    try {
+      const status = setIndependentWriting(code, !!active);
+      broadcastRoom(code);
+      cb?.({ ok: true, independentSince: status.independentSince });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not change independent writing' });
+    }
+  });
   socket.on('teacher:thinking-counts', ({ studentIds } = {}, cb) => {
     const code = socket.data.roomCode;
     if (socket.data.role !== 'teacher' || !code) return cb?.({ ok: false });
@@ -1017,6 +1029,7 @@ io.on('connection', (socket) => {
         comments,
         messages,
         asked,
+        independent: independentWindows(code),
       });
     } catch (e) {
       console.error(e);
