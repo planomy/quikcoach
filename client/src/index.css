@@ -2181,6 +2181,13 @@ html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-
 
 .iboard-header-icon--save {
   --iboard-header-icon: url('/brand/header-save.png');
+  transition:
+    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 400ms ease;
+}
+
+.iboard-header-icon--save.is-saved {
+  background-color: #10b981;
 }
 
 .iboard-header-icon--view {

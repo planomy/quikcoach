@@ -3454,7 +3454,7 @@ function TeacherDashboardInner() {
           </div>
 
             <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
-            {joined && <SaveStatusChip status={saveStatus} plain />}
+            {joined && saveStatus === 'error' ? <SaveStatusChip status="error" plain /> : null}
             {attentionPills.length || inboxSummary ? (
               <div className="iboard-attention-home" role="group" aria-label="Needs a look">
                 {attentionPills.map((pill) => {
@@ -3535,7 +3535,7 @@ function TeacherDashboardInner() {
                   className={`iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'session' ? ' is-help-flash' : ''}`}
                   aria-label="Save or open a lesson"
                 >
-                  <span className="iboard-header-icon iboard-header-icon--save" aria-hidden="true" />
+                  <span className={`iboard-header-icon iboard-header-icon--save${joined && saveStatus === 'saved' ? ' is-saved' : ''}`} aria-hidden="true" />
               </button>
             </HintWrap>
               {sessionMenuOpen && (
