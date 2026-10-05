@@ -336,12 +336,12 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b 
 }
 
 .iboard-header-pill--attention {
-  background: #f1f1f5;
+  background: #f9f9fb;
   color: #5c5c68;
 }
 
 .iboard-header-pill--attention:hover {
-  background: #e7e7ee;
+  background: #ffffff;
 }
 
 .iboard-header-pill--attention.is-on {
