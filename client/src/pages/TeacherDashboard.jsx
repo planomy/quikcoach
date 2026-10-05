@@ -3446,46 +3446,6 @@ function TeacherDashboardInner() {
                   <span>{room?.lesson_objective || '+ Add today’s objective'}</span>
                   </button>
               </HintWrap>
-              {attentionPills.map((pill) => {
-                const on = attentionFocus === pill.id;
-                return (
-                  <HintWrap key={pill.id} hint={on ? 'Show all cards' : 'Bring these cards to the top'} prefer="below">
-              <button
-                type="button"
-                      onClick={() => setAttentionFocus(on ? null : pill.id)}
-                      className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}`}
-                      title=""
-                      aria-pressed={on}
-                    >
-                      {pill.label}
-              </button>
-            </HintWrap>
-                );
-              })}
-              {inboxSummary ? (
-                <HintWrap hint={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'} prefer="below">
-                <button
-                  type="button"
-                  onClick={() => {
-                      setInboxFocus((on) => {
-                        const next = !on;
-                        if (next) {
-                          window.requestAnimationFrame(() => {
-                            document.querySelector('[data-inbox-waiting="true"]')
-                              ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                          });
-                        }
-                        return next;
-                      });
-                    }}
-                    className={`iboard-header-pill iboard-header-pill--inbox${inboxFocus ? ' is-on' : ''}`}
-                    title=""
-                    aria-pressed={inboxFocus}
-                  >
-                    {inboxSummary}
-                </button>
-              </HintWrap>
-              ) : null}
             {frozen && (
                 <span className="iboard-header-pill iboard-header-pill--frozen">
                 Frozen
@@ -3494,6 +3454,50 @@ function TeacherDashboardInner() {
           </div>
 
             <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
+            {attentionPills.length || inboxSummary ? (
+              <div className="iboard-attention-home" role="group" aria-label="Needs a look">
+                {attentionPills.map((pill) => {
+                  const on = attentionFocus === pill.id;
+                  return (
+                    <HintWrap key={pill.id} hint={on ? 'Show all cards' : 'Bring these cards to the top'} prefer="below">
+                      <button
+                        type="button"
+                        onClick={() => setAttentionFocus(on ? null : pill.id)}
+                        className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}`}
+                        title=""
+                        aria-pressed={on}
+                      >
+                        {pill.label}
+                      </button>
+                    </HintWrap>
+                  );
+                })}
+                {inboxSummary ? (
+                  <HintWrap hint={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'} prefer="below">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInboxFocus((on) => {
+                          const next = !on;
+                          if (next) {
+                            window.requestAnimationFrame(() => {
+                              document.querySelector('[data-inbox-waiting="true"]')
+                                ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            });
+                          }
+                          return next;
+                        });
+                      }}
+                      className={`iboard-header-pill iboard-header-pill--attention${inboxFocus ? ' is-on' : ''}`}
+                      title=""
+                      aria-pressed={inboxFocus}
+                    >
+                      {inboxSummary}
+                    </button>
+                  </HintWrap>
+                ) : null}
+              </div>
+            ) : null}
             <RoomTimerPill
               timer={room?.timer}
               onClick={openTimerDock}
