@@ -336,6 +336,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b 
 }
 
 .iboard-header-pill--attention {
+  border-radius: 0.5rem;
   background: #f9f9fb;
   color: #5c5c68;
 }
