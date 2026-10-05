@@ -332,16 +332,16 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b 
   padding: 0.2rem;
   border: 1px solid #c1c2e7;
   border-radius: 0.7rem;
-  background: #f8f8fc;
+  background: #f0effa;
 }
 
 .iboard-header-pill--attention {
-  background: #ececf2;
+  background: #e6e6ee;
   color: #5c5c68;
 }
 
 .iboard-header-pill--attention:hover {
-  background: #e2e2ea;
+  background: #dcdce6;
 }
 
 .iboard-header-pill--attention.is-on {
