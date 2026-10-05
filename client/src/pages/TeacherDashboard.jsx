@@ -38,6 +38,7 @@ import RoomTimerPill, { formatTimer } from '../components/RoomTimerPill.jsx';
 import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
 import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
+import { copyText } from '../lib/copyText.js';
 import QuestionInboxReply from '../components/QuestionInboxReply.jsx';
 import {
   downloadTextFile,
@@ -2288,7 +2289,7 @@ function TeacherDashboardInner() {
 
   async function copyForAi() {
     try {
-      await navigator.clipboard.writeText(aiTask === 'summary' ? classSummaryPrompt : assembledAiPrompt);
+      await copyText(aiTask === 'summary' ? classSummaryPrompt : assembledAiPrompt);
       setCopyToast('Copied prompt');
       setTimeout(() => setCopyToast(''), 2500);
     } catch {
@@ -2842,22 +2843,7 @@ function TeacherDashboardInner() {
     if (!text.trim()) return;
 
     try {
-      if (navigator.clipboard?.writeText && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const copyBox = document.createElement('textarea');
-        copyBox.value = text;
-        copyBox.setAttribute('readonly', '');
-        copyBox.style.position = 'fixed';
-        copyBox.style.left = '-9999px';
-        document.body.appendChild(copyBox);
-        copyBox.select();
-        copyBox.setSelectionRange(0, copyBox.value.length);
-        const copied = document.execCommand('copy');
-        copyBox.remove();
-        if (!copied) throw new Error('Copy command failed');
-      }
-
+      await copyText(text);
       const toast = `Copied ${student.name}'s work`;
       setCopiedStudentId(student.id);
       setCopyToast(toast);
@@ -2906,7 +2892,7 @@ function TeacherDashboardInner() {
       entries: selectedEvidenceStudent.entries,
     });
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopyToast(`Copied ${selectedEvidenceStudent.name}’s evidence`);
     } catch {
       setCopyToast('Copy failed — download the portfolio instead');
@@ -3047,7 +3033,7 @@ function TeacherDashboardInner() {
 
   async function copyStudentJoinLink() {
     try {
-      await navigator.clipboard.writeText(studentJoinUrl());
+      await copyText(studentJoinUrl());
       setCopyToast('Participant join link copied');
       setTimeout(() => setCopyToast(''), 3000);
     } catch {
@@ -3248,7 +3234,7 @@ function TeacherDashboardInner() {
                 type="button"
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(studentJoinUrl());
+                    await copyText(studentJoinUrl());
                     setCopyToast('Student link copied');
                   } catch {
                     setError('Could not copy — select and copy the link manually');
