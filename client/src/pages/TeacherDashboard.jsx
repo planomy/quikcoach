@@ -3337,7 +3337,7 @@ function TeacherDashboardInner() {
   }
 
   function goLibraryHome() {
-    setLibraryView('home');
+    setLibraryView((view) => (view === 'pdf' ? 'drafting' : 'home'));
   }
 
   function openFeedbackSent() {
@@ -4712,7 +4712,7 @@ function TeacherDashboardInner() {
                         : libraryView === 'participation'
                           ? 'Participation'
                           : libraryView === 'pdf'
-                            ? 'Session PDF'
+                            ? 'Evidence of learning PDF'
                             : libraryView === 'portfolios'
                               ? 'Student portfolios'
                               : libraryView === 'feedback-sent'
@@ -4736,13 +4736,11 @@ function TeacherDashboardInner() {
             </p>
             <div className="flex flex-wrap gap-2" role="navigation" aria-label="Report sections">
               {[
-                { label: 'Learning trail', hint: 'See how each student’s writing grew, the support you gave, and anything pasted', onClick: () => setLibraryView('drafting') },
-                { label: 'Participation', hint: 'Who answered your Ask class questions, and how often', onClick: () => setLibraryView('participation') },
-                { label: 'Session PDF', hint: 'Download an Evidence of learning PDF: today’s writing and each student’s learning trail', onClick: () => setLibraryView('pdf'), disabled: sessionBusy },
+                { label: 'Learning trail', hint: 'How each student’s writing grew, the support you gave, and anything pasted. Download the Evidence of learning PDF here too.', onClick: () => setLibraryView('drafting') },
+                { label: 'Participation', hint: 'Who answered your Ask class questions, and how often. Download the participant list here too.', onClick: () => setLibraryView('participation') },
                 { label: 'Student portfolios', hint: 'Download each student’s saved work as a PDF', onClick: () => setLibraryView('portfolios') },
                 { label: 'AI feedback & summaries', hint: 'Class summaries you saved, plus every piece of AI feedback you sent and who opened it', onClick: openFeedbackSent },
                 { label: 'Class insights', hint: 'Trends across your lessons and classes, with no student names', onClick: () => { closeLibraryHub(); setInsightsOpen(true); } },
-                { label: 'Download participant list', hint: 'A spreadsheet of names, year levels and word counts', onClick: downloadParticipantList },
               ].map((item) => (
                 <HintWrap key={item.label} hint={item.hint}>
                   <button
@@ -5210,22 +5208,47 @@ function TeacherDashboardInner() {
         )}
 
         {libraryView === 'drafting' && (
-          <DraftTrailPanel
-            key="library-drafting"
-            embedded
-            socket={socket}
-            onClose={goLibraryHome}
-            onOpenSummary={(id) => setLearningTrailId(id)}
-          />
+          <>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#ebeaf8] px-3 py-2 dark:bg-[rgba(90,95,195,0.22)]">
+              <p className="text-xs text-[#3c3f8f] dark:text-indigo-100">Today’s writing and every learning trail, as one PDF.</p>
+              <button
+                type="button"
+                disabled={sessionBusy}
+                onClick={() => setLibraryView('pdf')}
+                className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+              >
+                Evidence of learning PDF
+              </button>
+            </div>
+            <DraftTrailPanel
+              key="library-drafting"
+              embedded
+              socket={socket}
+              onClose={goLibraryHome}
+              onOpenSummary={(id) => setLearningTrailId(id)}
+            />
+          </>
         )}
 
         {libraryView === 'participation' && (
-          <LessonReportPanel
-            key="library-participation"
-            embedded
-            roomCode={codeInput}
-            onClose={goLibraryHome}
-          />
+          <>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#ebeaf8] px-3 py-2 dark:bg-[rgba(90,95,195,0.22)]">
+              <p className="text-xs text-[#3c3f8f] dark:text-indigo-100">Names, year levels and word counts for everyone who joined.</p>
+              <button
+                type="button"
+                onClick={downloadParticipantList}
+                className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0]"
+              >
+                Download participant list
+              </button>
+            </div>
+            <LessonReportPanel
+              key="library-participation"
+              embedded
+              roomCode={codeInput}
+              onClose={goLibraryHome}
+            />
+          </>
         )}
 
         {libraryView === 'pdf' && (

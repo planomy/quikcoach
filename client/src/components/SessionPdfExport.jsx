@@ -74,7 +74,7 @@ export default function SessionPdfExport({ socket, onClose, embedded = false }) 
     <>
       {!embedded ? (
         <div className="flex items-center justify-between gap-3">
-          <h2 id="session-pdf-title" className="text-lg font-bold">Session PDF</h2>
+          <h2 id="session-pdf-title" className="text-lg font-bold">Evidence of learning PDF</h2>
           <CloseButton onClick={onClose} disabled={busy} label="Close session report" />
         </div>
       ) : null}
