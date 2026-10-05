@@ -984,15 +984,12 @@ function TeacherDashboardInner() {
       if (!modalOpen && r?.feedback_toggles) {
         hydrateFeedbackStateFromRoom(r);
       }
-      markSaved();
       if (sessionHydratedRef.current) markSessionDirty();
       else sessionHydratedRef.current = true;
     };
     const onLive = ({ student: s }) => {
       if (!s?.id) return;
       const row = normalizeStudentFromServer(s);
-      // student:live is emitted only after the server has committed the draft.
-      markSaved();
       setStudents((prev) => {
         const i = prev.findIndex((x) => x.id === row.id);
         if (i === -1) {
@@ -3061,6 +3058,7 @@ function TeacherDashboardInner() {
         setError(ack?.error || 'Could not change independent writing');
         return;
       }
+      markSaved();
       setRoom((current) => (current
         ? { ...current, draftTrail: { ...(current.draftTrail || {}), independentSince: Number(ack.independentSince) || 0 } }
         : current));
