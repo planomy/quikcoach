@@ -2443,7 +2443,6 @@ function TeacherDashboardInner() {
     setHelpOpen(false);
     setClearFixedArmed(false);
     setBreakoutSetupMode('auto');
-    setBroadcastPick({});
     setSettingsSection(section);
     setSettingsOpen(true);
   }
@@ -2488,11 +2487,6 @@ function TeacherDashboardInner() {
         return;
       }
       setStudents((prev) => prev.filter((x) => x.id !== removeStudentTarget.id));
-      setBroadcastPick((p) => {
-        const next = { ...p };
-        delete next[removeStudentTarget.id];
-        return next;
-      });
       setRemoveStudentTarget(null);
     });
   }
@@ -2667,13 +2661,7 @@ function TeacherDashboardInner() {
     socket.emit('teacher:board-post-delete', { postId }, (ack) => {
       if (!ack?.ok) {
         setError(ack?.error || 'Could not remove teacher card');
-        return;
       }
-      setBroadcastPick((current) => {
-        const next = { ...current };
-        delete next[`post:${postId}`];
-        return next;
-      });
     });
   }
 
@@ -3157,7 +3145,6 @@ function TeacherDashboardInner() {
       }
       setStudents([]);
       setPosts([]);
-      setBroadcastPick({});
       setFixedCommentCount(0);
       setClearFixedArmed(false);
       setToolsPanelOpen(false);
@@ -4475,6 +4462,20 @@ function TeacherDashboardInner() {
                           </svg>
                         </button>
                       </HintWrap>
+                      <HintWrap hint="Learning trail">
+                        <button
+                          type="button"
+                          onClick={() => setLearningTrailId(s.id)}
+                          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                          aria-label={`Open ${s.name}'s learning trail`}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="6" cy="19" r="2.5" />
+                            <circle cx="18" cy="5" r="2.5" />
+                            <path d="M8.5 19H17a3.5 3.5 0 0 0 0-7H7a3.5 3.5 0 0 1 0-7h8.5" />
+                          </svg>
+                        </button>
+                      </HintWrap>
                       <HintWrap hint={monitoredIds.has(Number(s.id)) ? 'Stop monitoring' : 'Monitor'}>
                         <button
                           type="button"
@@ -5214,6 +5215,7 @@ function TeacherDashboardInner() {
             embedded
             socket={socket}
             onClose={goLibraryHome}
+            onOpenSummary={(id) => setLearningTrailId(id)}
           />
         )}
 

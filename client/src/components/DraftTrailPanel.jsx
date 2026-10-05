@@ -6,7 +6,7 @@ const feedbackLabels = { note: 'Teacher note sent', chat: 'Chat message sent', s
 const eventLabel = (event) => (event.type === 'feedback' && feedbackLabels[event.via]) || labels[event.type] || 'Recorded event';
 const buttonClass = 'rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-800';
 
-export default function DraftTrailPanel({ socket, onClose, initialStudentId = null, embedded = false }) {
+export default function DraftTrailPanel({ socket, onClose, initialStudentId = null, embedded = false, onOpenSummary = null }) {
   const dialogRef = useRef(null);
   const [students, setStudents] = useState([]);
   const [selected, setSelected] = useState(() => (initialStudentId != null ? String(initialStudentId) : ''));
@@ -101,6 +101,11 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
                 ))}
               </select>
             </label>
+            {onOpenSummary && selected !== '' && Number(selected) > 0 ? (
+              <button type="button" className={buttonClass} onClick={() => onOpenSummary(Number(selected))}>
+                Summary
+              </button>
+            ) : null}
             <button type="button" className={buttonClass} disabled={busy} onClick={() => setRefresh((n) => n + 1)}>
               Refresh
             </button>
