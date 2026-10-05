@@ -13,6 +13,7 @@ import { activityStatus, isNotStarted, parseServerDateMs, wordCount } from '../l
 import useActivityClock from '../hooks/useActivityClock.js';
 import {
   buildAiPrompt,
+  buildClassSummaryPrompt,
   parseNumberedPaste,
   normalizeFeedbackMode,
   FEEDBACK_MODES,
@@ -493,6 +494,10 @@ function TeacherDashboardInner() {
   const [libraryPanel, setLibraryPanel] = useState(null); // null | 'evidence' (Lesson records hub shell)
   const [libraryView, setLibraryView] = useState('home'); // home | feedback | feedback-sent | drafting | participation | pdf | portfolios
   const [aiFeedbackLog, setAiFeedbackLog] = useState(null);
+  const [aiSummaries, setAiSummaries] = useState([]);
+  const [aiTask, setAiTask] = useState('feedback');
+  const [summaryBox, setSummaryBox] = useState('');
+  const [summarySaving, setSummarySaving] = useState(false);
   const [aiFeedbackLogError, setAiFeedbackLogError] = useState('');
   const [fixedCommentCount, setFixedCommentCount] = useState(0);
   const [clearFixedBusy, setClearFixedBusy] = useState(false);
@@ -1818,6 +1823,16 @@ function TeacherDashboardInner() {
     room?.enforce_word_count,
   ]);
 
+  const classSummaryPrompt = useMemo(() => {
+    if (aiTask !== 'summary') return '';
+    return buildClassSummaryPrompt({
+      students: visibleStudents,
+      yearLevel: promptYearLevel,
+      subjectAssist: promptSubjectAssist,
+      objective: room?.lesson_objective || '',
+    });
+  }, [aiTask, visibleStudents, promptYearLevel, promptSubjectAssist, room?.lesson_objective]);
+
   const aiPayloadStats = useMemo(() => {
     const promptChars = assembledAiPrompt.length;
     const draftChars = visibleStudents.reduce((n, s) => n + (s.text || '').length, 0);
@@ -2196,9 +2211,29 @@ function TeacherDashboardInner() {
     [teacherToolsTop, windowHeight]
   );
 
+  function saveClassSummary() {
+    const text = summaryBox.trim();
+    if (!text || summarySaving) return;
+    setSummarySaving(true);
+    socket.timeout(8000).emit(
+      'teacher:class-summary-save',
+      { text, roster: visibleStudents.map((s) => String(s.name || '')) },
+      (err, ack) => {
+        setSummarySaving(false);
+        if (err || !ack?.ok) {
+          setError(ack?.error || 'Could not save the summary.');
+          return;
+        }
+        setSummaryBox('');
+        setCopyToast('Summary saved — find it in Reports → AI feedback & summaries');
+        setTimeout(() => setCopyToast(''), 3500);
+      }
+    );
+  }
+
   async function copyForAi() {
     try {
-      await navigator.clipboard.writeText(assembledAiPrompt);
+      await navigator.clipboard.writeText(aiTask === 'summary' ? classSummaryPrompt : assembledAiPrompt);
       setCopyToast('Copied prompt');
       setTimeout(() => setCopyToast(''), 2500);
     } catch {
@@ -3244,6 +3279,7 @@ function TeacherDashboardInner() {
     setAiFeedbackLog(null);
     setAiFeedbackLogError('');
     socket.emit('teacher:ai-feedback-log', {}, (ack) => {
+      setAiSummaries(ack?.ok && Array.isArray(ack.summaries) ? ack.summaries : []);
       if (ack?.ok && Array.isArray(ack.items)) setAiFeedbackLog(ack.items);
       else {
         setAiFeedbackLog([]);
@@ -4588,7 +4624,7 @@ function TeacherDashboardInner() {
                             : libraryView === 'portfolios'
                               ? 'Student portfolios'
                               : libraryView === 'feedback-sent'
-                                ? 'AI feedback sent'
+                                ? 'AI feedback & summaries'
                                 : 'Reports'}
               </h2>
                   {libraryView === 'feedback' ? (
@@ -4612,7 +4648,7 @@ function TeacherDashboardInner() {
                 { label: 'Participation', hint: 'Who answered your Ask class questions, and how often', onClick: () => setLibraryView('participation') },
                 { label: 'Session PDF', hint: 'Download an Evidence of learning PDF: today’s writing and each student’s learning trail', onClick: () => setLibraryView('pdf'), disabled: sessionBusy },
                 { label: 'Student portfolios', hint: 'Download each student’s saved work as a PDF', onClick: () => setLibraryView('portfolios') },
-                { label: 'AI feedback sent', hint: 'Every piece of AI feedback you’ve sent, and who opened it', onClick: openFeedbackSent },
+                { label: 'AI feedback & summaries', hint: 'Class summaries you saved, plus every piece of AI feedback you sent and who opened it', onClick: openFeedbackSent },
                 { label: 'Class insights', hint: 'Trends across your lessons and classes, with no student names', onClick: () => { closeLibraryHub(); setInsightsOpen(true); } },
                 { label: 'Download participant list', hint: 'A spreadsheet of names, year levels and word counts', onClick: downloadParticipantList },
               ].map((item) => (
@@ -4678,19 +4714,48 @@ function TeacherDashboardInner() {
         {libraryView === 'feedback-sent' && (
           <section className="space-y-4">
             <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-              Every piece of AI feedback you’ve sent from this room, newest first.
+              Class summaries you saved, then every piece of AI feedback you’ve sent from this room. Newest first.
             </p>
+            {aiSummaries.length ? (
+              <div className="space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Class summaries · only you see these</h3>
+                {aiSummaries.map((summary, index) => (
+                  <details key={summary.id} open={index === 0} className="group overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <summary className="flex cursor-pointer list-none items-baseline justify-between gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                      <span className="font-display text-base font-semibold text-ink-900 dark:text-slate-100">{formatSqlUtc(summary.createdAt)}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{summary.roster.length} students</span>
+                    </summary>
+                    <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-800">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-200">{summary.text}</p>
+                      {summary.roster.length ? (
+                        <details className="mt-3">
+                          <summary className="cursor-pointer text-xs font-bold text-[#5a5fc3] dark:text-indigo-300">Who is Student 1, 2, 3…?</summary>
+                          <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                            {summary.roster.map((name, i) => `${i + 1}. ${name || 'Unnamed'}`).join(' · ')}
+                          </p>
+                        </details>
+                      ) : null}
+                    </div>
+                  </details>
+                ))}
+                {aiFeedbackLog?.length ? (
+                  <h3 className="pt-2 text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Feedback sent to students</h3>
+                ) : null}
+              </div>
+            ) : null}
             {aiFeedbackLog === null ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
             ) : aiFeedbackLogError ? (
               <p className="text-sm font-semibold text-rose-600 dark:text-rose-300">{aiFeedbackLogError}</p>
             ) : aiFeedbackLog.length === 0 ? (
+              aiSummaries.length ? null : (
               <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
-                <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Nothing sent yet</h3>
+                <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Nothing here yet</h3>
                 <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-                  Feedback you distribute from the AI feedback button on the rail will appear here.
+                  Feedback you distribute and class summaries you save from the AI feedback button on the rail will appear here.
                 </p>
               </div>
+              )
             ) : (
               Object.entries(
                 aiFeedbackLog.reduce((groups, item) => {
@@ -4980,30 +5045,75 @@ function TeacherDashboardInner() {
               </p>
             )}
 
+            <div className="iboard-ai-feedback__tasks" role="tablist" aria-label="What do you want back?">
+              {[
+                { id: 'feedback', label: 'Feedback for students', hint: 'Personal feedback for each student, sent to their inbox' },
+                { id: 'summary', label: 'Class summary for me', hint: 'Strengths, misconceptions and next teaching steps across the class. Only you see it.' },
+              ].map((task) => (
+                <HintWrap key={task.id} hint={task.hint}>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={aiTask === task.id}
+                    onClick={() => setAiTask(task.id)}
+                    className={`iboard-ai-feedback__task${aiTask === task.id ? ' is-active' : ''}`}
+                  >
+                    {task.label}
+                  </button>
+                </HintWrap>
+              ))}
+            </div>
+
             <button type="button" onClick={copyForAi} className="iboard-ai-feedback__copy">
               Copy prompt for AI
             </button>
             <p className="iboard-ai-feedback__step">Paste it into your AI (ChatGPT, Gemini, Copilot)</p>
 
-            <label className="iboard-ai-feedback__paste-label" htmlFor="ai-paste-back">
-              Paste the feedback below
-            </label>
-            <textarea
-              id="ai-paste-back"
-              value={pasteBox}
-              onChange={(e) => setPasteBox(e.target.value)}
-              rows={10}
-              className="iboard-ai-feedback__paste"
-            />
-            <button
-              type="button"
-              onClick={distributePaste}
-              disabled={!distributeReady}
-              className={`iboard-ai-feedback__distribute${distributeReady ? ' is-ready' : ''}`}
-            >
-              Distribute to students
-            </button>
-            {aiPasteHint ? <p className="iboard-ai-feedback__hint">{aiPasteHint}</p> : null}
+            {aiTask === 'summary' ? (
+              <>
+                <label className="iboard-ai-feedback__paste-label" htmlFor="ai-summary-back">
+                  Paste the summary below
+                </label>
+                <textarea
+                  id="ai-summary-back"
+                  value={summaryBox}
+                  onChange={(e) => setSummaryBox(e.target.value)}
+                  rows={10}
+                  className="iboard-ai-feedback__paste"
+                />
+                <button
+                  type="button"
+                  onClick={saveClassSummary}
+                  disabled={!summaryBox.trim() || summarySaving}
+                  className={`iboard-ai-feedback__distribute${summaryBox.trim() && !summarySaving ? ' is-ready' : ''}`}
+                >
+                  {summarySaving ? 'Saving…' : 'Save to Reports'}
+                </button>
+                <p className="iboard-ai-feedback__hint">Only you see this. Students are not sent anything.</p>
+              </>
+            ) : (
+              <>
+                <label className="iboard-ai-feedback__paste-label" htmlFor="ai-paste-back">
+                  Paste the feedback below
+                </label>
+                <textarea
+                  id="ai-paste-back"
+                  value={pasteBox}
+                  onChange={(e) => setPasteBox(e.target.value)}
+                  rows={10}
+                  className="iboard-ai-feedback__paste"
+                />
+                <button
+                  type="button"
+                  onClick={distributePaste}
+                  disabled={!distributeReady}
+                  className={`iboard-ai-feedback__distribute${distributeReady ? ' is-ready' : ''}`}
+                >
+                  Distribute to students
+                </button>
+                {aiPasteHint ? <p className="iboard-ai-feedback__hint">{aiPasteHint}</p> : null}
+              </>
+            )}
           </section>
         )}
 

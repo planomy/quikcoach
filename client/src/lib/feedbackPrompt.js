@@ -633,6 +633,37 @@ export function buildAiPrompt(params) {
   return assembleAiPrompt(buildAiPromptParts(params));
 }
 
+export const CLASS_SUMMARY_HEADINGS = [
+  'Common strengths',
+  'Common misconceptions or gaps',
+  'Next teaching steps',
+  'Students worth a quick check-in',
+];
+
+/** Teacher-only planning summary across the class. Never distributed to students. */
+export function buildClassSummaryPrompt({ students = [], yearLevel = 'general', subjectAssist = 'general', objective = '' } = {}) {
+  const list = students || [];
+  const n = list.length;
+  const classYearId = normalizeYearLevelId(yearLevel) || 'general';
+  const goal = String(objective || '').trim();
+  const rules = `CRITICAL — how you must reply (do not skip):
+- You are helping a teacher plan their next lesson. Below are ${n || 'the'} student draft${n === 1 ? '' : 's'} from today, labelled Student 1 to Student ${n || 'N'}. Names are hidden.
+- Reply in plain text only: no markdown, no asterisks, no bold.
+- Use exactly these four headings, in this order, each on its own line:
+${CLASS_SUMMARY_HEADINGS.map((h) => `  ${h}`).join('\n')}
+- Under each heading write 2 to 4 short lines, each starting with "- ".
+- Base every point on evidence in the drafts. Quote a few words where it helps. Do not invent problems that are not there.
+- Refer to writers only as Student 1, Student 2, etc. For check-ins, say briefly why (for example: "Student 4 — has not started the second paragraph").
+- Write for the teacher, not the students. Do not write feedback addressed to students.`;
+  const context = [
+    goal ? `Lesson objective: ${goal}` : '',
+    yearLevelLine(classYearId),
+    subjectAssist && subjectAssist !== 'general' ? `Subject context: ${subjectLabel(subjectAssist)}.` : '',
+  ].filter(Boolean).join('\n');
+  const closing = `END OF DRAFTS. Reply now with the four headings only: ${CLASS_SUMMARY_HEADINGS.join(', ')}.`;
+  return [rules, context, buildLockedRoster(list, classYearId), closing].filter((part) => String(part || '').trim()).join('\n\n');
+}
+
 export function parseNumberedPaste(raw) {
   if (!raw || !String(raw).trim()) return [];
   const text = String(raw).trim();

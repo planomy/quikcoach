@@ -29,6 +29,18 @@ for (const sql of [
   }
 }
 
+// Teacher-only AI class summaries (never sent to students). Roster maps Student N to a name for the teacher.
+feedbackDb.exec(`
+  CREATE TABLE IF NOT EXISTS class_summaries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_code TEXT NOT NULL,
+    text TEXT NOT NULL,
+    roster_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )
+`);
+feedbackDb.exec(`CREATE INDEX IF NOT EXISTS idx_class_summaries_room ON class_summaries(room_code)`);
+
 feedbackDb.exec(`
   CREATE TABLE IF NOT EXISTS student_note_replies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -645,6 +657,36 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
       }
     });
     socket.on('teacher:note-reply-seen', (payload, cb) => markNoteReplySeen(io, socket, payload, cb));
+    socket.on('teacher:class-summary-save', (payload, cb) => {
+      const roomCode = normaliseRoomCode(socket.data.roomCode);
+      if (socket.data.role !== 'teacher' || roomCode.length !== 4) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      try {
+        const text = String(payload?.text || '').trim().slice(0, 20000);
+        if (!text) {
+          cb?.({ ok: false, error: 'Paste the summary first' });
+          return;
+        }
+        const roster = (Array.isArray(payload?.roster) ? payload.roster : [])
+          .slice(0, 200)
+          .map((name) => String(name || '').trim().slice(0, 80));
+        feedbackDb
+          .prepare(`INSERT INTO class_summaries (room_code, text, roster_json) VALUES (?, ?, ?)`)
+          .run(roomCode, text, JSON.stringify(roster));
+        feedbackDb
+          .prepare(
+            `DELETE FROM class_summaries WHERE room_code = ? AND id NOT IN
+             (SELECT id FROM class_summaries WHERE room_code = ? ORDER BY id DESC LIMIT 30)`
+          )
+          .run(roomCode, roomCode);
+        cb?.({ ok: true });
+      } catch (error) {
+        console.error('Could not save class summary', error);
+        cb?.({ ok: false, error: 'Could not save the summary' });
+      }
+    });
     socket.on('teacher:ai-feedback-log', (_payload, cb) => {
       const roomCode = normaliseRoomCode(socket.data.roomCode);
       if (socket.data.role !== 'teacher' || roomCode.length !== 4) {
@@ -661,8 +703,22 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
              ORDER BY f.id DESC LIMIT 600`
           )
           .all(roomCode);
+        const summaries = feedbackDb
+          .prepare(`SELECT id, text, roster_json, created_at FROM class_summaries WHERE room_code = ? ORDER BY id DESC LIMIT 30`)
+          .all(roomCode)
+          .map((row) => {
+            let roster = [];
+            try { roster = JSON.parse(row.roster_json || '[]'); } catch { roster = []; }
+            return {
+              id: Number(row.id),
+              text: String(row.text || ''),
+              roster: Array.isArray(roster) ? roster.map((name) => String(name || '').slice(0, 80)) : [],
+              createdAt: row.created_at || '',
+            };
+          });
         cb?.({
           ok: true,
+          summaries,
           items: rows.map((row) => ({
             id: Number(row.id),
             studentId: Number(row.student_id),
