@@ -1,0 +1,31 @@
+name: Undefined names
+
+on:
+  pull_request:
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - '.oxlintrc.json'
+      - '.github/workflows/lint.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - '.oxlintrc.json'
+      - '.github/workflows/lint.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  no-undef:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.1'
+      - name: Fail on references to undefined variables
+        run: npx -y oxlint@1.86.0 -A all -D no-undef -c .oxlintrc.json client/src client/scripts server
