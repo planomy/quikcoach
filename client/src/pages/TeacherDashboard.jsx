@@ -3408,12 +3408,16 @@ function TeacherDashboardInner() {
       .map((student) => student.name || 'Unnamed')
     : [];
   const attentionHint = (names, on) => (
-    <span className="block">
-      <span className="block text-[9px] font-semibold opacity-75">{on ? 'Click to show all cards' : 'Click to bring to the top'}</span>
-      {names.slice(0, 8).map((name, n) => (
-        <span key={`${name}-${n}`} className="block">{name}</span>
-      ))}
-      {names.length > 8 ? <span className="block opacity-75">and {names.length - 8} more</span> : null}
+    <span className="block min-w-[9rem]">
+      <span className="block whitespace-nowrap bg-[#3c3f8f] px-2.5 py-1 text-[9px] font-semibold text-white dark:bg-[#5a5fc3]">
+        {on ? 'Click to show all cards' : 'Click to bring to the top'}
+      </span>
+      <span className="block px-2.5 py-1.5 text-[#5a5fc3] dark:text-indigo-200">
+        {names.slice(0, 8).map((name, n) => (
+          <span key={`${name}-${n}`} className="block truncate">{name}</span>
+        ))}
+        {names.length > 8 ? <span className="block font-semibold opacity-70">and {names.length - 8} more</span> : null}
+      </span>
     </span>
   );
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
@@ -3483,7 +3487,7 @@ function TeacherDashboardInner() {
                 {attentionPills.map((pill) => {
                   const on = attentionFocus === pill.id;
                   return (
-                    <HintWrap key={pill.id} hint={attentionHint(attentionNames[pill.id], on)} prefer="below" multiline>
+                    <HintWrap key={pill.id} hint={attentionHint(attentionNames[pill.id], on)} prefer="below" tone="card">
                       <button
                         type="button"
                         onClick={() => setAttentionFocus(on ? null : pill.id)}
@@ -3497,7 +3501,7 @@ function TeacherDashboardInner() {
                   );
                 })}
                 {inboxSummary ? (
-                  <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" multiline>
+                  <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" tone="card">
                     <button
                       type="button"
                       onClick={() => {

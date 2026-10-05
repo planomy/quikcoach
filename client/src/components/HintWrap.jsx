@@ -31,7 +31,7 @@ function measureAndPlace(wrapEl, tipEl, hint, pointerX) {
 }
 
 /** Fast hover/focus hint chip — brand accent, flips below when there isn’t room above. */
-export default function HintWrap({ hint, children, className = '', prefer: _prefer, multiline = false, tone: _tone = 'brand', suppressed: suppressedProp = false }) {
+export default function HintWrap({ hint, children, className = '', prefer: _prefer, multiline = false, tone = 'brand', suppressed: suppressedProp = false }) {
   const hintsOff = useHintsOff();
   const suppressed = suppressedProp || hintsOff;
   const wrapRef = useRef(null);
@@ -136,9 +136,13 @@ export default function HintWrap({ hint, children, className = '', prefer: _pref
         <span
           ref={tipRef}
           role="tooltip"
-          className={`pointer-events-none fixed z-[200] rounded-lg px-2 py-1 text-[10px] font-black text-white shadow-lg ring-1 ring-white/20 ${
-            multiline ? 'max-w-[min(22rem,calc(100vw-1rem))] whitespace-normal text-left leading-relaxed' : 'whitespace-nowrap leading-none'
-          } bg-[#5a5fc3] dark:bg-[var(--iboard-accent,#818cf8)] dark:text-slate-950 dark:ring-white/25`}
+          className={
+            tone === 'card'
+              ? 'pointer-events-none fixed z-[200] max-w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-[#5a5fc3] bg-white text-left text-[10px] font-black leading-relaxed shadow-lg dark:border-[#818cf8] dark:bg-slate-900'
+              : `pointer-events-none fixed z-[200] rounded-lg px-2 py-1 text-[10px] font-black text-white shadow-lg ring-1 ring-white/20 ${
+                  multiline ? 'max-w-[min(22rem,calc(100vw-1rem))] whitespace-normal text-left leading-relaxed' : 'whitespace-nowrap leading-none'
+                } bg-[#5a5fc3] dark:bg-[var(--iboard-accent,#818cf8)] dark:text-slate-950 dark:ring-white/25`
+          }
           style={{
             top: box ? box.top : -9999,
             left: box ? box.left : -9999,
