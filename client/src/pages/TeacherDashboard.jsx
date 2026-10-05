@@ -3821,7 +3821,9 @@ function TeacherDashboardInner() {
                   )}
                 </button>
               </HintWrap>
-              <HintWrap hint="Snapshots, portfolios, participation and class insights" suppressed={reportsOpen}>
+            </div>
+            <div className="iboard-arr-rail__foot">
+              <HintWrap hint="Snapshots, portfolios, participation and class insights" prefer="right" suppressed={reportsOpen}>
                 <button
                   ref={recordsButtonRef}
                   type="button"
@@ -3835,8 +3837,6 @@ function TeacherDashboardInner() {
                   <span className="iboard-arr-label">View reports</span>
                 </button>
               </HintWrap>
-            </div>
-            <div className="iboard-arr-rail__foot">
               <HintWrap hint="Settings" prefer="right" suppressed={settingsOpen && settingsSection === 'settings'}>
                 <button
                   ref={settingsButtonRef}
