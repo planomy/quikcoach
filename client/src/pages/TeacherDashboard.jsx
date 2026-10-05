@@ -1500,13 +1500,22 @@ function TeacherDashboardInner() {
     [isAwayAlert, isNotStartedAlert, isNoTyping, alertPrefs.pasted, pasteCounts]
   );
 
-  const attentionCounts = useMemo(() => {
-    const counts = { away: 0, notStarted: 0, noTyping: 0, pasted: 0 };
+  const attentionNames = useMemo(() => {
+    const names = { away: [], notStarted: [], noTyping: [], pasted: [] };
     for (const student of orderedStudents) {
-      for (const filter of Object.keys(counts)) if (matchesAttention(student, filter)) counts[filter] += 1;
+      for (const filter of Object.keys(names)) {
+        if (!matchesAttention(student, filter)) continue;
+        const pastes = filter === 'pasted' ? Number(pasteCounts[student.id]) || 0 : 0;
+        names[filter].push(`${student.name || 'Unnamed'}${pastes > 1 ? ` (${pastes})` : ''}`);
+      }
     }
-    return counts;
-  }, [orderedStudents, matchesAttention]);
+    return names;
+  }, [orderedStudents, matchesAttention, pasteCounts]);
+
+  const attentionCounts = useMemo(
+    () => Object.fromEntries(Object.entries(attentionNames).map(([filter, list]) => [filter, list.length])),
+    [attentionNames]
+  );
 
   useEffect(() => {
     if (attentionFocus && !attentionCounts[attentionFocus]) setAttentionFocus(null);
@@ -3393,6 +3402,20 @@ function TeacherDashboardInner() {
   const inboxSummary = messageWaitCount > 0
     ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
     : '';
+  const inboxNames = messageWaitCount > 0
+    ? orderedStudents
+      .filter((student) => studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId))
+      .map((student) => student.name || 'Unnamed')
+    : [];
+  const attentionHint = (names, on) => (
+    <span className="block">
+      <span className="block text-[9px] font-semibold opacity-75">{on ? 'Click to show all cards' : 'Click to bring to the top'}</span>
+      {names.slice(0, 8).map((name, n) => (
+        <span key={`${name}-${n}`} className="block">{name}</span>
+      ))}
+      {names.length > 8 ? <span className="block opacity-75">and {names.length - 8} more</span> : null}
+    </span>
+  );
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
   const settingsTitle = settingsSection === 'class' ? 'Manage room' : settingsSection === 'records' ? 'Reports' : 'Settings';
   const aiFeedbackOpen = !!libraryPanel && libraryView === 'feedback';
@@ -3460,7 +3483,7 @@ function TeacherDashboardInner() {
                 {attentionPills.map((pill) => {
                   const on = attentionFocus === pill.id;
                   return (
-                    <HintWrap key={pill.id} hint={on ? 'Show all cards' : 'Bring these cards to the top'} prefer="below">
+                    <HintWrap key={pill.id} hint={attentionHint(attentionNames[pill.id], on)} prefer="below" multiline>
                       <button
                         type="button"
                         onClick={() => setAttentionFocus(on ? null : pill.id)}
@@ -3474,7 +3497,7 @@ function TeacherDashboardInner() {
                   );
                 })}
                 {inboxSummary ? (
-                  <HintWrap hint={inboxFocus ? 'Show all cards' : 'Bring students with waiting messages to the top'} prefer="below">
+                  <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" multiline>
                     <button
                       type="button"
                       onClick={() => {
