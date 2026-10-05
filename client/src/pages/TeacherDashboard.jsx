@@ -3538,6 +3538,12 @@ function TeacherDashboardInner() {
                   <span className={`iboard-header-icon iboard-header-icon--save${joined && saveStatus === 'saved' ? ' is-saved' : ''}`} aria-hidden="true" />
               </button>
             </HintWrap>
+              <span
+                aria-hidden="true"
+                className={`iboard-header-saved-label${joined && saveStatus === 'saved' ? ' is-on' : ''}`}
+              >
+                Saved
+              </span>
               {sessionMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
                   <HintWrap hint="Downloads this lesson so you can open it again later" prefer="side" className="w-full">

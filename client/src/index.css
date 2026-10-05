@@ -2190,6 +2190,31 @@ html:not(.dark) .iboard-teacher-canvas :is(.iboard-header-dock, .iboard-teacher-
   background-color: #10b981;
 }
 
+.iboard-header-saved-label {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #059669;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+
+.iboard-header-saved-label.is-on {
+  opacity: 1;
+}
+
+html.dark .iboard-header-saved-label {
+  color: #34d399;
+}
+
 .iboard-header-icon--view {
   --iboard-header-icon: url('/brand/rail-view.png');
   width: 1.45rem;
