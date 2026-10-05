@@ -230,17 +230,37 @@ export function isThinkingInboxNote(text) {
 }
 
 /**
+ * @param {Array<string>} [promptIds]
+ */
+export function thinkingMetaForPromptIds(promptIds) {
+  const byId = new Map(THINKING_PROMPTS.map((prompt) => [prompt.id, prompt]));
+  const prompts = [];
+  const categories = [];
+  for (const id of promptIds || []) {
+    const prompt = byId.get(String(id));
+    if (prompt) {
+      prompts.push(prompt.id);
+      categories.push(prompt.category);
+    } else {
+      categories.push('custom');
+    }
+  }
+  return { prompts, categories };
+}
+
+/**
  * @param {import('socket.io-client').Socket | null | undefined} socket
- * @param {{ studentIds: Array<number|string>, texts: string[] }} payload
+ * @param {{ studentIds: Array<number|string>, texts: string[], promptIds?: string[] }} payload
  * @param {(ack: { ok?: boolean, error?: string, count?: number, reached?: number }) => void} [cb]
  */
-export function sendThinkingToInbox(socket, { studentIds, texts }, cb) {
+export function sendThinkingToInbox(socket, { studentIds, texts, promptIds }, cb) {
   const text = buildThinkingInboxText(texts);
   const ids = [...new Set((studentIds || []).map((id) => Number(id)).filter((id) => id > 0))];
   if (!socket || !text || !ids.length) {
     cb?.({ ok: false, error: !ids.length ? 'No students to send to' : 'Nothing to send' });
     return;
   }
-  const items = ids.map((studentId) => ({ studentId, text }));
+  const thinking = thinkingMetaForPromptIds(promptIds);
+  const items = ids.map((studentId) => ({ studentId, text, type: 'thinking', thinking }));
   socket.emit('teacher:distribute', { items }, cb);
 }

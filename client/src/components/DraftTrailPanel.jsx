@@ -1,7 +1,9 @@
 import { CloseButton } from './PanelActions.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-const labels = { baseline: 'Recording baseline', resume: 'Recording resumed · unrecorded interval before this', gap: 'Unrecorded / reconnect interval', stop: 'Recording stopped', feedback: 'Teacher feedback sent', paste: 'Paste reported by student browser', change: 'Writing changed' };
+const labels = { baseline: 'Recording baseline', resume: 'Recording resumed · unrecorded interval before this', gap: 'Unrecorded / reconnect interval', stop: 'Recording stopped', feedback: 'Teacher feedback sent', paste: 'Paste reported by student browser', change: 'Writing changed', away: 'Left the TUIT tab', back: 'Back on the TUIT tab' };
+const feedbackLabels = { note: 'Teacher note sent', chat: 'Chat message sent', set: 'Question set sent', thinking: 'Thinking prompt sent', ai: 'AI-assisted teacher feedback sent', comment: 'Inline comment added', resource: 'Resource sent', shared: 'Writing shared (name hidden)' };
+const eventLabel = (event) => (event.type === 'feedback' && feedbackLabels[event.via]) || labels[event.type] || 'Recorded event';
 const buttonClass = 'rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-800';
 
 export default function DraftTrailPanel({ socket, onClose, initialStudentId = null, embedded = false }) {
@@ -109,7 +111,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
           ) : (
             <>
               <p className="text-sm font-semibold">
-                {trail.name} · {labels[event.type]}
+                {trail.name} · {eventLabel(event)}
               </p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {new Date(event.at).toLocaleString()} · Event {index + 1} of {trail.events.length}
@@ -145,7 +147,7 @@ export default function DraftTrailPanel({ socket, onClose, initialStudentId = nu
                 <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm dark:bg-blue-950">
                   <p className="font-semibold">
                     {event.type === 'feedback'
-                      ? 'Teacher feedback'
+                      ? eventLabel(event).replace(/ sent$| added$/, '')
                       : 'Earlier feedback — later changes do not establish that it was addressed'}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap">{view.feedback.text}</p>

@@ -426,7 +426,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
         const update = emitAnnotationUpdate(io, roomCode, studentId);
         const annotation = update.annotations.find((item) => item.id === Number(result.lastInsertRowid)) || null;
         insightCommentAdded(roomCode, studentId, Number(result.lastInsertRowid));
-        recordTrailFeedback(roomCode, student, `${quote}\nTeacher comment: ${note}`);
+        recordTrailFeedback(roomCode, student, `${quote}\nTeacher comment: ${note}`, Date.now(), 'comment');
         cb?.({ ok: true, annotation });
       } catch (error) {
         console.error('Could not add teacher annotation', error);

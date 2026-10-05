@@ -270,13 +270,26 @@ export function disconnectTrail(code, id) {
   flush(room, student);
   student.gap = true;
 }
-export function recordTrailFeedback(code, row, text, at = Date.now()) {
+const FEEDBACK_VIA = new Set(['note', 'chat', 'set', 'thinking', 'ai', 'comment', 'resource', 'shared']);
+
+export function recordTrailFeedback(code, row, text, at = Date.now(), via = '') {
   const room = rooms.get(code);
   if (!room?.active) return;
   const student = ensureStudent(room, row, 'baseline', at);
   if (!student || !room.active) return;
   flush(room, student, at);
-  append(room, student, { type: 'feedback', at, text: String(text).slice(0, 5000) });
+  const tag = FEEDBACK_VIA.has(via) ? { via } : {};
+  append(room, student, { type: 'feedback', at, text: String(text).slice(0, 5000), ...tag });
+}
+
+/** Tab hidden / visible again, as reported by the student's browser. */
+export function recordTrailPresence(code, row, away, at = Date.now()) {
+  const room = rooms.get(code);
+  if (!room?.active) return;
+  const student = ensureStudent(room, row, 'baseline', at);
+  if (!student || !room.active) return;
+  flush(room, student, at);
+  append(room, student, { type: away ? 'away' : 'back', at });
 }
 export function trailTick(at = Date.now()) {
   for (const [code, room] of rooms) {
@@ -294,7 +307,7 @@ export function trailStudents(code) {
   return [...room.students.values()].map((s) => ({
     id: s.id,
     name: s.name,
-    checkpoints: s.events.filter(e => e.type !== 'feedback' && e.type !== 'stop').length,
+    checkpoints: s.events.filter(e => !['feedback', 'stop', 'away', 'back'].includes(e.type)).length,
     pasteEvents: s.events.filter(e => e.type === 'paste').length,
     attention: studentTrailAttention(s),
   }));
@@ -360,7 +373,8 @@ export function validateTrails(raw) {
         if (text.length > 50000) throw new Error('Oversized Drafting evidence text');
       } else if (e.type === 'feedback') {
         if (typeof e.text !== 'string' || e.text.length > 5000) throw new Error('Invalid Drafting evidence feedback');
-      } else if (e.type !== 'stop') throw new Error('Unknown Drafting evidence event');
+        if (e.via !== undefined && !FEEDBACK_VIA.has(e.via)) throw new Error('Invalid Drafting evidence feedback');
+      } else if (!['stop', 'away', 'back'].includes(e.type)) throw new Error('Unknown Drafting evidence event');
     }
   }
   if (totalBytes + Buffer.byteLength(JSON.stringify(raw)) > MAX_TOTAL_BYTES) throw new Error('Drafting evidence memory limit reached');
@@ -377,8 +391,8 @@ export function importTrails(code, raw, exportToId) {
     const student = { id, name: String(item.name || '').slice(0, 160), text: '', pending: null, events: [] };
     room.students.set(id, student);
     for (const rawEvent of item.events) {
-      const { type, at, text, start, removed, inserted } = rawEvent;
-      const e = { type, at, ...(text !== undefined ? { text } : {}), ...(start !== undefined ? { start, removed, inserted } : {}) };
+      const { type, at, text, start, removed, inserted, via } = rawEvent;
+      const e = { type, at, ...(text !== undefined ? { text } : {}), ...(start !== undefined ? { start, removed, inserted } : {}), ...(via !== undefined ? { via } : {}) };
       append(room, student, e);
       if (['baseline', 'resume', 'gap'].includes(type)) student.text = text;
       if (['change', 'paste'].includes(type)) student.text = student.text.slice(0, start) + inserted + student.text.slice(start + removed);

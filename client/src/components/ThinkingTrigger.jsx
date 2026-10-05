@@ -156,7 +156,7 @@ export function ThinkingPopover({
     const sock = socket || (typeof window !== 'undefined' ? window.__iboardTeacherSocket : null);
     setSending(true);
     setError('');
-    sendThinkingToInbox(sock, { studentIds, texts: selectedList }, (ack) => {
+    sendThinkingToInbox(sock, { studentIds, texts: selectedList, promptIds: [...selected.keys()] }, (ack) => {
       setSending(false);
       if (!ack?.ok) {
         setError(ack?.error || 'Could not send.');

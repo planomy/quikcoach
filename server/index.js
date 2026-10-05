@@ -10,7 +10,7 @@ import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
 import { VERBAL_PROMPT, decideVerbalResponseAction } from './verbalResponse.js';
 import { buildSessionPack, importSessionPack } from './sessionPack.js';
-import { trailStatus, setTrailRecording, recordTrailText, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail, configureTrailPersistence, persistTrails } from './draftTrail.js';
+import { trailStatus, setTrailRecording, recordTrailText, recordTrailFeedback, recordTrailPresence, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail, configureTrailPersistence, persistTrails } from './draftTrail.js';
 import {
   BREAKOUT_SIZE,
   autoAssignBreakouts,
@@ -1612,6 +1612,8 @@ io.on('connection', (socket) => {
       const wasAway = isStudentAway(sid);
       setStudentAway(sid, away);
       if (wasAway !== away) {
+        const row = queries.getStudent(db, sid);
+        if (row) recordTrailPresence(code, row, away);
         emitStudentPresence(code, sid);
         io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
       }
@@ -2359,6 +2361,10 @@ io.on('connection', (socket) => {
           ...(recipientIds ? { studentIds: recipientIds } : {}),
         };
         emitMaterialToRoom(code, item);
+        const recipients = recipientIds ? new Set(recipientIds.map(Number)) : null;
+        for (const row of queries.listStudents(db, code)) {
+          if (!recipients || recipients.has(Number(row.id))) recordTrailFeedback(code, row, `Resource: ${handoutTitle}`, Date.now(), 'resource');
+        }
       }
       let post = null;
       if (onBoard) {
@@ -2497,6 +2503,13 @@ io.on('connection', (socket) => {
       } else {
         emitBroadcastToRoom(code, payload);
         reached = studentSockets.length;
+      }
+      const audience = rIds.length ? `${rIds.length} student${rIds.length === 1 ? '' : 's'}` : 'the class';
+      for (const id of sIds) {
+        const row = queries.getStudent(db, id);
+        if (row && normalizeRoomCode(row.room_code) === code) {
+          recordTrailFeedback(code, row, `Writing shared with ${audience} (name hidden)`, Date.now(), 'shared');
+        }
       }
       cb?.({
         ok: true,

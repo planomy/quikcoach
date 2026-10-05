@@ -120,6 +120,20 @@ function sanitizeSetPromptMeta(raw) {
   };
 }
 
+const NOTE_TYPES = new Set(['note', 'thinking']);
+const THINKING_ID = /^[a-z0-9-]{1,60}$/;
+
+/** Which Thinking prompts were sent (bank ids) and their categories; custom prompts count as 'custom'. */
+function sanitizeThinkingMeta(raw) {
+  const pick = (list) => (Array.isArray(list) ? list : [])
+    .map((value) => String(value || '').trim().toLowerCase())
+    .filter((value) => THINKING_ID.test(value))
+    .slice(0, 6);
+  const categories = pick(raw?.categories);
+  const prompts = pick(raw?.prompts);
+  return categories.length || prompts.length ? { categories, prompts } : null;
+}
+
 function feedbackKind(raw) {
   const value = String(raw?.kind || raw?.channel || '').toLowerCase();
   if (value === 'set-prompt') return 'set-prompt';
@@ -532,9 +546,16 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       const setMeta = kind === 'set-prompt' ? sanitizeSetPromptMeta(raw) : null;
       const urgent = (kind === 'note' || kind === 'chat') && !!raw?.urgent;
       const fromAi = kind === 'note' && raw?.source === 'ai';
+      const noteType = kind !== 'note' ? '' : fromAi ? 'ai' : NOTE_TYPES.has(raw?.type) ? raw.type : 'note';
+      const thinking = noteType === 'thinking' ? sanitizeThinkingMeta(raw?.thinking) : null;
       const metaJson = setMeta
         ? JSON.stringify(setMeta)
-        : JSON.stringify({ ...(urgent ? { urgent: true } : {}), ...(fromAi ? { source: 'ai' } : {}) });
+        : JSON.stringify({
+          ...(urgent ? { urgent: true } : {}),
+          ...(fromAi ? { source: 'ai' } : {}),
+          ...(noteType ? { type: noteType } : {}),
+          ...(thinking ? { thinking } : {}),
+        });
 
       const result = feedbackDb
         .prepare(
@@ -548,7 +569,7 @@ function deliverFeedback(io, socket, payload = {}, cb) {
       if (!item) continue;
 
       saved.push(item);
-      recordTrailFeedback(roomCode, student, text);
+      recordTrailFeedback(roomCode, student, text, Date.now(), kind === 'chat' ? 'chat' : kind === 'set-prompt' ? 'set' : noteType);
       const targetRoom = `student:${studentId}`;
       const targetCount = io.sockets.adapter.rooms.get(targetRoom)?.size || 0;
       if (targetCount > 0) reachedStudents.add(studentId);
