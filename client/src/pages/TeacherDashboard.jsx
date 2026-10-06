@@ -2156,7 +2156,18 @@ function TeacherDashboardInner() {
         setTeacherToolsDockHeight(null);
         return;
       }
-      const desired = settingsOpen ? 560 : toolsTab === 'ask' ? 420 : 480;
+      let desired = settingsOpen ? 560 : toolsTab === 'ask' ? 720 : 480;
+      if (toolsTab === 'ask' && panel) {
+        const section = panel.querySelector('section');
+        if (section) {
+          let content = 0;
+          for (const child of section.children) {
+            if (window.getComputedStyle(child).position === 'absolute') continue;
+            content += Math.max(child.scrollHeight, child.offsetHeight);
+          }
+          if (content > 160) desired = content + 12;
+        }
+      }
       const dockHeight = Math.min(desired, maxHeight);
       const preferredTop = settingsOpen
         ? (buttonBox?.top ?? offsetTop + margin)
