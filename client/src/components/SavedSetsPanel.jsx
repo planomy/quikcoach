@@ -143,7 +143,6 @@ export default function SavedSetsPanel({
   const [draftName, setDraftName] = useState('');
   const [draftPaste, setDraftPaste] = useState('');
   const [draftQuestions, setDraftQuestions] = useState([]);
-  const [setNameDraft, setSetNameDraft] = useState('');
   const [queueOpen, setQueueOpen] = useState(false);
   const [previewFlyout, setPreviewFlyout] = useState(null);
   const setsRootRef = useRef(null);
@@ -166,7 +165,6 @@ export default function SavedSetsPanel({
 
   useEffect(() => {
     if (!showQueue) return;
-    // Expand when something lands; stay quiet when empty.
     setQueueOpen(queue.length > 0);
   }, [showQueue, queue.length]);
 
@@ -419,29 +417,6 @@ export default function SavedSetsPanel({
     onMessage?.(`Saved set “${name}”.`);
   }
 
-  function saveQueueAsSet() {
-    const questions = normalizeSetQuestions(queue);
-    if (questions.length < 2) {
-      onMessage?.('Queue at least two questions, then save them as a set.');
-      return;
-    }
-    const name = String(setNameDraft || '').trim().slice(0, 80) || `Set · ${questions.length} questions`;
-    const next = {
-      id: newId('set'),
-      name,
-      subject: 'General',
-      years: 'All',
-      skill: 'Custom',
-      minutes: Math.max(5, questions.length * 2),
-      note: '',
-      bank: false,
-      questions,
-    };
-    setCustomSets((items) => [next, ...items].slice(0, 40));
-    setSetNameDraft('');
-    onMessage?.(`Saved set “${name}”.`);
-  }
-
   function deleteCustomSet(id) {
     setCustomSets((items) => items.filter((item) => item.id !== id));
     if (activeSet?.id === id) {
@@ -497,22 +472,6 @@ export default function SavedSetsPanel({
 
           {queueOpen && queue.length > 0 && (
             <>
-              {queue.length >= 2 && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/50">
-                  <input
-                    value={setNameDraft}
-                    onChange={(event) => setSetNameDraft(event.target.value.slice(0, 80))}
-                    placeholder="Name this set…"
-                    className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                  />
-                  <HintWrap hint="Keep these questions as a set under Share → Question sets">
-                    <button type="button" onClick={saveQueueAsSet} className="rounded-lg bg-[#5a5fc3] px-2.5 py-1.5 text-[10px] font-black text-white">
-                      Save queue as set
-                    </button>
-                  </HintWrap>
-                </div>
-              )}
-
               <div className="mt-3 space-y-2">
                 {queue.map((item, index) => (
                   <div key={item.id} className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700">

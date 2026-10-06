@@ -14,7 +14,6 @@ import {
   buildSetInboxDistributeItems,
   getSetAnswerPairs,
   newId,
-  normalizeSetQuestion,
   normalizeSetQuestions,
 } from '../lib/liveResponseSets.js';
 import SavedSetsPanel from './SavedSetsPanel.jsx';
@@ -410,34 +409,6 @@ export default function LiveResponseTeacher({
     setQueue((items) => [...items, { ...question, id: crypto.randomUUID?.() || `q-${Date.now()}` }]);
     setMessage('Question added to your queue.');
     setPrompt(''); setOptions(['', '', '', '']); setCorrectAnswer(''); setImageUrl('');
-  }
-
-  function saveDraftAsSet() {
-    const question = normalizeSetQuestion(currentDraft());
-    if (!question) {
-      setMessage(type === 'choice' ? 'Add a question and at least two choices.' : 'Add a question first.');
-      return;
-    }
-    const CUSTOM_SETS_KEY = 'iboard-pulse-custom-sets';
-    const next = {
-      id: newId('set'),
-      name: question.prompt.slice(0, 48),
-      subject: 'General',
-      years: 'All',
-      skill: 'Custom',
-      minutes: 5,
-      note: '',
-      bank: false,
-      questions: [question],
-    };
-    try {
-      const existing = JSON.parse(localStorage.getItem(CUSTOM_SETS_KEY) || '[]');
-      const list = Array.isArray(existing) ? existing : [];
-      localStorage.setItem(CUSTOM_SETS_KEY, JSON.stringify([next, ...list].slice(0, 40)));
-    } catch { /* ignore */ }
-    setMessage('Saved as a set on this browser. Find it under Share → Question sets.');
-    if (usingPanelTabs) switchPanelTab('sets');
-    else setActiveView('prepared');
   }
 
   function emitSetAction(event, payload) {
@@ -1195,9 +1166,6 @@ export default function LiveResponseTeacher({
               </div>
             </details>
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
-              <HintWrap hint="Keep this question under Share → Question sets">
-                <button type="button" onClick={saveDraftAsSet} className="rounded-lg border border-[#cfcce8] bg-white px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200">Save as set</button>
-              </HintWrap>
               <HintWrap hint="Line it up to ask later in the lesson">
                 <button type="button" onClick={addToQueue} className="rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2]">Add to queue</button>
               </HintWrap>
@@ -1222,7 +1190,7 @@ export default function LiveResponseTeacher({
         
 
         {(effectivePanelTab === 'sets' || ((!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'prepared')) && (
-          <SavedSetsPanel
+            <SavedSetsPanel
             panel="sets"
             queue={queue}
             setQueue={setQueue}
