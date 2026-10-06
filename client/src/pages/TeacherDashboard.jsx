@@ -1,6 +1,7 @@
 import { RemoveButton, CloseButton } from '../components/PanelActions.jsx';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { getOverlayRoot } from '../lib/overlayRoot.js';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import { setHintsOff, useHintsOff } from '../lib/hintPrefs.js';
@@ -494,7 +495,9 @@ function TeacherDashboardInner() {
   const breakoutAssignPanelRef = useRef(null);
   const [settingsChromeHeight, setSettingsChromeHeight] = useState(44);
   const [teacherToolsTop, setTeacherToolsTop] = useState(0);
-  const [teacherToolsDockHeight, setTeacherToolsDockHeight] = useState(null);
+  const [teacherToolsDockHeight, setTeacherToolsDockHeight] = useState(() => (
+    typeof window === 'undefined' ? 560 : Math.min(560, Math.max(220, window.innerHeight - 20))
+  ));
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
   const [libraryPanel, setLibraryPanel] = useState(null); // null | 'evidence' (Lesson records hub shell)
@@ -2130,58 +2133,58 @@ function TeacherDashboardInner() {
       return null;
     }
 
-    function alignDockToRailButton(event, { raiseOnly = false } = {}) {
+    function alignDockToRailButton() {
       const button = currentDockAnchor();
       const panel = currentDockPanel();
-      const viewport = window.innerHeight;
-      const margin = 8;
-      if (!button) {
-        setTeacherToolsTop(margin);
-        return;
-      }
-      const buttonBox = button.getBoundingClientRect();
+      const visual = window.visualViewport;
+      const viewport = visual?.height ?? window.innerHeight;
+      const offsetTop = visual?.offsetTop ?? 0;
+      const margin = 10;
       if (viewOpen) {
-        const headerBottom = button.closest('.iboard-teacher-header-bar')?.getBoundingClientRect().bottom;
-        const nextTop = Math.round(headerBottom ?? buttonBox.bottom + margin);
+        const headerBottom = button?.closest('.iboard-teacher-header-bar')?.getBoundingClientRect().bottom;
+        const nextTop = Math.round(headerBottom ?? (button?.getBoundingClientRect().bottom ?? 0) + margin);
         setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
+        setTeacherToolsDockHeight(null);
         return;
       }
-      const rawPanelHeight = panel
-        ? [...panel.children].reduce(
-            (sum, child) => sum + Math.max(child.scrollHeight, child.offsetHeight),
-            0
-          ) || Math.max(panel.scrollHeight, panel.getBoundingClientRect().height)
-        : 0;
-      // Safari reports a collapsed auto-height dock. Never trust a tiny measurement.
-      const panelHeight = rawPanelHeight >= 160 ? rawPanelHeight : 0;
-      const maxHeight = Math.max(220, viewport - margin * 2);
-      const askCompact = toolsPanelOpen && toolsTab === 'ask';
+      const buttonBox = button?.getBoundingClientRect();
       const setsOpen = Boolean(panel?.querySelector('#sets-subject-filter'));
-      const settingsSheet = settingsOpen;
-      // Explicit pixel height — WebKit will not size overflow+flex children from height:auto.
-      const floor = settingsSheet
-        ? Math.min(maxHeight, 560)
-        : askCompact
-          ? Math.min(maxHeight, 380)
-          : Math.min(maxHeight, 420);
-      const usedHeight = setsOpen ? null : Math.min(maxHeight, Math.max(panelHeight, floor));
-      const posHeight = usedHeight ?? Math.min(maxHeight, Math.max(240, viewport - buttonBox.top - margin));
-      const targetTop = settingsSheet
-        ? buttonBox.top
-        : askCompact
-          ? buttonBox.bottom - posHeight
-          : buttonBox.top + buttonBox.height / 2 - posHeight / 2;
-      const maxTop = viewport - margin - posHeight;
-      const nextTop = Math.round(Math.min(Math.max(margin, targetTop), Math.max(margin, maxTop)));
-      setTeacherToolsTop((prev) => {
-        if (raiseOnly && nextTop >= prev) return prev;
-        return Math.abs(prev - nextTop) < 2 ? prev : nextTop;
-      });
-      setTeacherToolsDockHeight((prev) => {
-        if (usedHeight == null) return null;
-        if (raiseOnly && prev != null && usedHeight <= prev) return prev;
-        return Math.abs((prev || 0) - usedHeight) < 2 ? prev : usedHeight;
-      });
+      const maxHeight = Math.max(220, viewport - margin * 2);
+      if (setsOpen) {
+        const nextTop = Math.round(Math.max(offsetTop + margin, buttonBox?.top ?? offsetTop + margin));
+        setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
+        setTeacherToolsDockHeight(null);
+        return;
+      }
+      const desired = settingsOpen ? 560 : toolsTab === 'ask' ? 420 : 480;
+      const dockHeight = Math.min(desired, maxHeight);
+      const preferredTop = settingsOpen
+        ? (buttonBox?.top ?? offsetTop + margin)
+        : (buttonBox ? buttonBox.top + buttonBox.height / 2 - 48 : offsetTop + margin);
+      const nextTop = Math.round(Math.max(
+        offsetTop + margin,
+        Math.min(preferredTop, offsetTop + viewport - dockHeight - margin)
+      ));
+      setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
+      setTeacherToolsDockHeight((prev) => (Math.abs((prev || 0) - dockHeight) < 2 ? prev : dockHeight));
+      if (typeof location !== 'undefined' && /[?&]dockdebug=1/.test(location.search) && panel) {
+        const body = panel.querySelector('.iboard-room-settings__body') || panel.querySelector('section');
+        const rect = panel.getBoundingClientRect();
+        console.table({
+          innerHeight: window.innerHeight,
+          visualHeight: visual?.height,
+          dockOffsetHeight: panel.offsetHeight,
+          dockScrollHeight: panel.scrollHeight,
+          dockRectHeight: rect.height,
+          dockTop: rect.top,
+          dockBottom: rect.bottom,
+          bodyOffsetHeight: body?.offsetHeight,
+          bodyScrollHeight: body?.scrollHeight,
+          bodyRectHeight: body?.getBoundingClientRect().height,
+          inlineHeight: dockHeight,
+          inlineTop: nextTop,
+        });
+      }
     }
 
     alignDockToRailButton();
@@ -2189,26 +2192,17 @@ function TeacherDashboardInner() {
     const resizeObserver = typeof ResizeObserver === 'function'
       ? new ResizeObserver(alignDockToRailButton)
       : null;
-    // Panel content that arrives after opening may only lift the dock (so it fits on
-    // short screens like iPads) — re-centring on every content change flashed the shell.
-    const panelObserver = typeof ResizeObserver === 'function'
-      ? new ResizeObserver(() => alignDockToRailButton(null, { raiseOnly: true }))
-      : null;
     const button = currentDockAnchor();
     if (button) resizeObserver?.observe(button);
-    const panel = currentDockPanel();
-    if (panel && !viewOpen) {
-      for (const child of panel.children) {
-        panelObserver?.observe(child);
-        for (const inner of child.children) panelObserver?.observe(inner);
-      }
-    }
     window.addEventListener('resize', alignDockToRailButton);
+    window.visualViewport?.addEventListener('resize', alignDockToRailButton);
+    window.visualViewport?.addEventListener('scroll', alignDockToRailButton);
     return () => {
       cancelAnimationFrame(settleFrame);
       resizeObserver?.disconnect();
-      panelObserver?.disconnect();
       window.removeEventListener('resize', alignDockToRailButton);
+      window.visualViewport?.removeEventListener('resize', alignDockToRailButton);
+      window.visualViewport?.removeEventListener('scroll', alignDockToRailButton);
     };
   }, [toolsPanelOpen, settingsOpen, settingsSection, viewOpen, toolsTab]);
 
@@ -2274,15 +2268,11 @@ function TeacherDashboardInner() {
   }, [pasteBox, aiPasteParsed, visibleStudents.length, distributeReady]);
 
   const headerDockStyle = useMemo(
-    () => {
-      const maxHeight = Math.max(220, windowHeight - teacherToolsTop - 8);
-      return {
-        top: teacherToolsTop,
-        maxHeight,
-        ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
-      };
-    },
-    [teacherToolsTop, windowHeight, teacherToolsDockHeight]
+    () => ({
+      top: teacherToolsTop,
+      ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
+    }),
+    [teacherToolsTop, teacherToolsDockHeight]
   );
 
   function saveClassSummary() {
@@ -3742,7 +3732,7 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && createPortal(
         <div
           ref={teacherToolsPanelRef}
-          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail fixed z-[60] ${toolsTab === 'sets' ? 'w-[min(27rem,calc(100vw-4.75rem))]' : 'w-[min(29rem,calc(100vw-4.75rem))]'}`}
+          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail z-[60] ${toolsTab === 'sets' ? 'w-[min(27rem,calc(100vw-4.75rem))]' : 'w-[min(29rem,calc(100vw-4.75rem))]'}`}
           style={headerDockStyle}
           role="dialog"
           aria-label={toolsTab === 'sets' ? 'Question sets panel' : 'Ask the class panel'}
@@ -3770,7 +3760,7 @@ function TeacherDashboardInner() {
             }}
           />
         </div>,
-        document.body
+        getOverlayRoot()
       )}
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -4264,7 +4254,8 @@ function TeacherDashboardInner() {
                 <div className="iboard-student-card__head group/card-head">
                   <div className="iboard-student-card__head-start">
                   <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 items-center gap-1">
+                    <div className="flex min-w-0 flex-wrap items-center gap-1">
+                      <HintWrap hint={s.name} prefer="above">
                       <h2
                         className={`iboard-student-card__name min-w-0 truncate ${
                           cardView === 'overview' || cardView === 'all' ? 'text-[13px]' : 'text-[14px]'
@@ -4291,6 +4282,7 @@ function TeacherDashboardInner() {
                   >
                     {s.name}
                   </h2>
+                      </HintWrap>
                       {gradeShortLabel(s.year_level) && (
                         <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           {gradeShortLabel(s.year_level)}
@@ -5479,7 +5471,7 @@ function TeacherDashboardInner() {
       {settingsOpen && settingsSection === 'class' && !breakoutsActive && breakoutSetupMode === 'manual' && createPortal(
         <div
           ref={breakoutAssignPanelRef}
-          className="iboard-breakout-assign fixed z-[60]"
+          className="iboard-breakout-assign z-[60]"
           style={{
             top: teacherToolsTop + settingsChromeHeight,
             maxHeight: Math.max(220, windowHeight - teacherToolsTop - settingsChromeHeight),
@@ -5601,13 +5593,13 @@ function TeacherDashboardInner() {
             )}
           </div>
         </div>,
-        document.body
+        getOverlayRoot()
       )}
 
       {settingsOpen && createPortal(
         <div
           ref={settingsPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail iboard-room-settings fixed z-[60] w-[min(22rem,calc(100vw-4.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail iboard-room-settings z-[60] w-[min(22rem,calc(100vw-4.75rem))]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
@@ -6008,7 +6000,7 @@ function TeacherDashboardInner() {
             )}
           </div>
         </div>,
-        document.body
+        getOverlayRoot()
       )}
 
       {removeStudentTarget && (

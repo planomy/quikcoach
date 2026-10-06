@@ -1,8 +1,7 @@
-/* Ask dock: parent height is set in px. Then flex children may scroll. */
+/* Ask dock: JS sets height. Do not override it here. */
 
 .iboard-header-dock--rail:has(nav[aria-label="Ask options"]) {
-  min-height: min(22rem, calc(100dvh - 1.25rem));
-  overflow: hidden;
+  overflow: visible;
 }
 
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section {
