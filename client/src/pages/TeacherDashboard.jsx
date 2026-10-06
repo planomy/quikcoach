@@ -3949,19 +3949,22 @@ function TeacherDashboardInner() {
             >
               <div className="iboard-teacher-composer__inner">
                 <form
-                  className="iboard-teacher-composer__form"
+                  className="iboard-teacher-composer__form relative"
                   onPaste={handleAddCardPaste}
                   onSubmit={(event) => {
                     event.preventDefault();
                     submitTeacherCard();
                   }}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 id="add-teacher-card-title" className="text-[13px] font-semibold text-[#3c3c45] dark:text-white">
-                      Add image, PDF or send text
-                    </h2>
-                    <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
-                  </div>
+                  <CloseButton
+                    onClick={closeAddCard}
+                    disabled={addCardBusy}
+                    label="Close"
+                    className="absolute right-1.5 top-1.5"
+                  />
+                  <h2 id="add-teacher-card-title" className="whitespace-nowrap pr-7 text-[13px] font-semibold leading-6 text-[#3c3c45] dark:text-white">
+                    Add image, PDF or send text
+                  </h2>
                   {addCardFile ? (
                     <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-950/40">
                       <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">
