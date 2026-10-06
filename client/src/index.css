@@ -1998,6 +1998,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-dock--rail {
 .iboard-header-dock--start.iboard-header-dock--from-rail {
   left: 4.75rem;
   transform: none;
+  min-height: min(22rem, calc(100dvh - 1.25rem));
   animation: iboard-rail-dock-in-top 210ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -2802,10 +2803,13 @@ html.dark .iboard-feedback-settings__cancel:hover {
   background: #4338ca;
 }
 
-/* Room settings — Keynote-like inspector sheet */
+/* Room settings — Keynote-like inspector sheet.
+   Parent height is set in px by JS. Grid + a definite height is the Safari-safe
+   pattern; height:auto + overflow + flex:1 collapses to the chrome row. */
 .iboard-header-dock.iboard-room-settings {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: min(32rem, calc(100dvh - 1.25rem));
   overflow: hidden;
   border-top: 0;
   background: #f4f4f6;
@@ -2843,10 +2847,10 @@ html.dark .iboard-feedback-settings__cancel:hover {
 }
 
 .iboard-room-settings__body {
-  flex: 1;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 0.85rem 0.85rem 1.1rem;
   display: flex;
   flex-direction: column;

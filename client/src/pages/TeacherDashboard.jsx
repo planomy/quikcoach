@@ -494,6 +494,7 @@ function TeacherDashboardInner() {
   const breakoutAssignPanelRef = useRef(null);
   const [settingsChromeHeight, setSettingsChromeHeight] = useState(44);
   const [teacherToolsTop, setTeacherToolsTop] = useState(0);
+  const [teacherToolsDockHeight, setTeacherToolsDockHeight] = useState(null);
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
   const [libraryPanel, setLibraryPanel] = useState(null); // null | 'evidence' (Lesson records hub shell)
@@ -2145,34 +2146,41 @@ function TeacherDashboardInner() {
         setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
         return;
       }
-      const panelHeight = panel
+      const rawPanelHeight = panel
         ? [...panel.children].reduce(
             (sum, child) => sum + Math.max(child.scrollHeight, child.offsetHeight),
             0
           ) || Math.max(panel.scrollHeight, panel.getBoundingClientRect().height)
         : 0;
-      const maxHeight = Math.max(120, viewport - margin * 2);
-      // Ask sub-tabs share one header band. Bottom-align the compact Ask shell
-      // with the Ask rail button so the tabs sit higher; Sets keeps that top and stretches down.
+      // Safari reports a collapsed auto-height dock. Never trust a tiny measurement.
+      const panelHeight = rawPanelHeight >= 160 ? rawPanelHeight : 0;
+      const maxHeight = Math.max(220, viewport - margin * 2);
       const askCompact = toolsPanelOpen && toolsTab === 'ask';
       const setsOpen = Boolean(panel?.querySelector('#sets-subject-filter'));
-      const compactHeight = Math.min(340, maxHeight);
-      let usedHeight;
-      if (askCompact) {
-        usedHeight = setsOpen
-          ? compactHeight
-          : (panelHeight ? Math.min(panelHeight, maxHeight) : compactHeight);
-      } else {
-        usedHeight = panelHeight ? Math.min(panelHeight, maxHeight) : Math.min(240, maxHeight);
-      }
-      const targetTop = askCompact
-        ? buttonBox.bottom - usedHeight
-        : buttonBox.top + buttonBox.height / 2 - usedHeight / 2;
-      const maxTop = viewport - margin - usedHeight;
+      const settingsSheet = settingsOpen;
+      // Explicit pixel height — WebKit will not size overflow+flex children from height:auto.
+      const floor = settingsSheet
+        ? Math.min(maxHeight, 560)
+        : askCompact
+          ? Math.min(maxHeight, 380)
+          : Math.min(maxHeight, 420);
+      const usedHeight = setsOpen ? null : Math.min(maxHeight, Math.max(panelHeight, floor));
+      const posHeight = usedHeight ?? Math.min(maxHeight, Math.max(240, viewport - buttonBox.top - margin));
+      const targetTop = settingsSheet
+        ? buttonBox.top
+        : askCompact
+          ? buttonBox.bottom - posHeight
+          : buttonBox.top + buttonBox.height / 2 - posHeight / 2;
+      const maxTop = viewport - margin - posHeight;
       const nextTop = Math.round(Math.min(Math.max(margin, targetTop), Math.max(margin, maxTop)));
       setTeacherToolsTop((prev) => {
         if (raiseOnly && nextTop >= prev) return prev;
         return Math.abs(prev - nextTop) < 2 ? prev : nextTop;
+      });
+      setTeacherToolsDockHeight((prev) => {
+        if (usedHeight == null) return null;
+        if (raiseOnly && prev != null && usedHeight <= prev) return prev;
+        return Math.abs((prev || 0) - usedHeight) < 2 ? prev : usedHeight;
       });
     }
 
@@ -2266,11 +2274,15 @@ function TeacherDashboardInner() {
   }, [pasteBox, aiPasteParsed, visibleStudents.length, distributeReady]);
 
   const headerDockStyle = useMemo(
-    () => ({
-      top: teacherToolsTop,
-      maxHeight: Math.max(220, windowHeight - teacherToolsTop - 8),
-    }),
-    [teacherToolsTop, windowHeight]
+    () => {
+      const maxHeight = Math.max(220, windowHeight - teacherToolsTop - 8);
+      return {
+        top: teacherToolsTop,
+        maxHeight,
+        ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
+      };
+    },
+    [teacherToolsTop, windowHeight, teacherToolsDockHeight]
   );
 
   function saveClassSummary() {
@@ -3727,7 +3739,7 @@ function TeacherDashboardInner() {
       ) : null}
       {insightsOpen ? <ClassInsightsPanel socket={socket} onClose={closeInsights} /> : null}
 
-      {toolsPanelOpen && (
+      {toolsPanelOpen && createPortal(
         <div
           ref={teacherToolsPanelRef}
           className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail fixed z-[60] ${toolsTab === 'sets' ? 'w-[min(27rem,calc(100vw-4.75rem))]' : 'w-[min(29rem,calc(100vw-4.75rem))]'}`}
@@ -3757,7 +3769,8 @@ function TeacherDashboardInner() {
               setTimeout(() => setCopyToast(''), 2500);
             }}
           />
-        </div>
+        </div>,
+        document.body
       )}
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -5463,7 +5476,7 @@ function TeacherDashboardInner() {
                 </div>
               )}
 
-      {settingsOpen && settingsSection === 'class' && !breakoutsActive && breakoutSetupMode === 'manual' && (
+      {settingsOpen && settingsSection === 'class' && !breakoutsActive && breakoutSetupMode === 'manual' && createPortal(
         <div
           ref={breakoutAssignPanelRef}
           className="iboard-breakout-assign fixed z-[60]"
@@ -5587,10 +5600,11 @@ function TeacherDashboardInner() {
               </ul>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {settingsOpen && (
+      {settingsOpen && createPortal(
         <div
           ref={settingsPanelRef}
           className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail iboard-room-settings fixed z-[60] w-[min(22rem,calc(100vw-4.75rem))]"
@@ -5993,7 +6007,8 @@ function TeacherDashboardInner() {
             </HintWrap>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {removeStudentTarget && (

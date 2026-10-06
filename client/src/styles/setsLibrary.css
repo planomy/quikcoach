@@ -1,13 +1,14 @@
-/* Ask dock: hug content while centered. Sets fills the dock and scrolls its catalogue. */
+/* Ask dock: parent height is set in px. Then flex children may scroll. */
 
 .iboard-header-dock--rail:has(nav[aria-label="Ask options"]) {
+  min-height: min(22rem, calc(100dvh - 1.25rem));
   overflow: hidden;
 }
 
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section {
   position: relative;
   display: flex;
-  height: auto;
+  height: 100%;
   max-height: 100%;
   min-height: 0;
   flex-direction: column;
@@ -35,11 +36,11 @@
   padding-right: 3.25rem;
 }
 
-/* Ask (quick checks + write your own): size to content (no forced empty scroll region). */
+/* Ask body fills the measured dock and scrolls. */
 .iboard-header-dock--start:has(nav[aria-label="Ask options"]) > section > div.min-h-0.flex-1 {
-  flex: 0 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
-  max-height: 100%;
+  max-height: none;
   overflow-y: auto;
 }
 
@@ -132,16 +133,14 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   display: none;
 }
 
-/* Lock chits + response controls; only the lower answer names scroll. */
+/* Lock chits + response controls; parent height is set in px. */
 .iboard-header-dock--rail:has([aria-label="Responses"]) {
-  height: min(max-content, calc(100dvh - 1.25rem));
-  max-height: calc(100dvh - 1.25rem);
   overflow: hidden;
 }
 
 .iboard-header-dock--start:has([aria-label="Responses"]) > section {
   display: flex;
-  height: auto;
+  height: 100%;
   max-height: 100%;
   min-height: 0;
   flex-direction: column;
