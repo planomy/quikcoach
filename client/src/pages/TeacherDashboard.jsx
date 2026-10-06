@@ -3958,7 +3958,7 @@ function TeacherDashboardInner() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h2 id="add-teacher-card-title" className="text-[13px] font-semibold text-[#3c3c45] dark:text-white">
-                      Add image, PDF or text
+                      Add image, PDF or send text
                     </h2>
                     <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
                   </div>
