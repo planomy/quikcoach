@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { setTrailRecording, recordTrailText, trailTick, readTrail, exportTrails, importTrails, validateTrails, clearTrail, recordTrailFeedback, disconnectTrail, textDelta, trailStatus, studentTrailAttention, configureTrailPersistence, persistTrails, dropTrailsFromMemory } from './draftTrail.js';
+import { setTrailRecording, recordTrailText, trailTick, readTrail, pastesFromTrail, exportTrails, importTrails, validateTrails, clearTrail, recordTrailFeedback, disconnectTrail, textDelta, trailStatus, studentTrailAttention, configureTrailPersistence, persistTrails, dropTrailsFromMemory } from './draftTrail.js';
 
 test('compact delta reconstructs insertion, deletion, replacement and Unicode', () => {
   for (const [before, after] of [['abc', 'axbc'], ['abc', 'ac'], ['', 'Hi 👋'], ['Hi 👋', 'Hello 🌏'], ['abc', ''], ['same', 'same']]) {
@@ -40,6 +40,18 @@ test('off, pause, paste, feedback, reconnect, export/import and invalid packs', 
   assert.equal(readTrail('2200', 42).name, 'Mia');
   assert.throws(() => validateTrails({ version: 1, students: [{ events: [{ type: 'change', at: 1, start: 100, removed: 0, inserted: '' }] }] }));
   clearTrail('1100'); clearTrail('2200');
+});
+test('paste after a drop still stores the pasted words, not a silent gap', () => {
+  const row = { id: 3, name: 'Leo', text: 'Draft so far' };
+  const { token } = setTrailRecording('6600', true, [row], 1000);
+  recordTrailText('6600', row, 'Draft so far, typed', { token }, 2000);
+  disconnectTrail('6600', 3);
+  recordTrailText('6600', row, 'Draft so far, typed\n\nPasted paragraph from notes', { token: 'stale', paste: true }, 3000);
+  const trail = readTrail('6600', 3);
+  assert.equal(trail.events.at(-1).type, 'paste');
+  assert.match(trail.events.at(-1).inserted, /Pasted paragraph/);
+  assert.deepEqual(pastesFromTrail(trail).map((item) => item.text), ['Pasted paragraph from notes']);
+  clearTrail('6600');
 });
 test('attention flags large paste and clears for quiet typing', () => {
   const row = { id: 7, name: 'Alex', text: 'Start' };

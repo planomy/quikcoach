@@ -327,6 +327,7 @@ html.iboard-student-splitting iframe {
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .iboard-student-workspace .iboard-student-writing-pane > div > .relative:has([role='textbox']) {
@@ -345,6 +346,8 @@ html.iboard-student-splitting iframe {
     max-width: none;
     margin-right: 0;
     margin-left: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }

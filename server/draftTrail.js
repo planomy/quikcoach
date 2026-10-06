@@ -272,16 +272,17 @@ export function recordTrailText(code, beforeRow, text, metadata = {}, at = Date.
   const student = ensureStudent(room, beforeRow, 'baseline', at);
   if (!room.active || !student) return;
   const accepted = String(text).slice(0, 50000);
-  if (metadata.token !== room.token || student.gap) {
-    flush(room, student, at);
-    if (append(room, student, { type: 'gap', at, text: accepted })) student.text = accepted;
-    student.gap = false;
-    return;
-  }
   if (metadata.paste === true) {
     flush(room, student, at);
     const delta = textDelta(student.text, accepted);
     if (append(room, student, { type: 'paste', at, ...delta })) student.text = accepted;
+    student.gap = false;
+    return;
+  }
+  if (metadata.token !== room.token || student.gap) {
+    flush(room, student, at);
+    if (append(room, student, { type: 'gap', at, text: accepted })) student.text = accepted;
+    student.gap = false;
     return;
   }
   if (accepted === (student.pending?.text ?? student.text)) return;
@@ -344,6 +345,37 @@ export function readTrail(code, id) {
   if (!student) return null;
   flush(room, student);
   return { id: student.id, name: student.name, events: student.events };
+}
+
+/** Paste snippets for the teacher popup: typed paste events, plus gap snapshots that were actually pastes. */
+export function pastesFromTrail(trail) {
+  const out = [];
+  let text = '';
+  for (const event of trail?.events || []) {
+    if (event.type === 'baseline' || event.type === 'resume' || event.type === 'stop') {
+      if (event.text != null) text = String(event.text);
+      continue;
+    }
+    if (event.type === 'paste') {
+      const inserted = String(event.inserted || '').trim();
+      if (inserted) out.push({ at: Number(event.at) || 0, text: inserted.slice(0, 5000) });
+      if (Number.isInteger(event.start) && event.inserted != null) {
+        text = text.slice(0, event.start) + event.inserted + text.slice(event.start + (Number(event.removed) || 0));
+      }
+      continue;
+    }
+    if (event.type === 'change' && Number.isInteger(event.start) && event.inserted != null) {
+      text = text.slice(0, event.start) + event.inserted + text.slice(event.start + (Number(event.removed) || 0));
+      continue;
+    }
+    if (event.type === 'gap' && event.text != null) {
+      const next = String(event.text);
+      const inserted = String(textDelta(text, next).inserted || '').trim();
+      if (inserted) out.push({ at: Number(event.at) || 0, text: inserted.slice(0, 5000) });
+      text = next;
+    }
+  }
+  return out;
 }
 export function clearTrail(code) {
   const room = rooms.get(code);

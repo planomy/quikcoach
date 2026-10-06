@@ -10,7 +10,7 @@ import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
 import { VERBAL_PROMPT, decideVerbalResponseAction } from './verbalResponse.js';
 import { buildSessionPack, importSessionPack } from './sessionPack.js';
-import { trailStatus, setTrailRecording, recordTrailText, recordTrailFeedback, recordTrailPresence, trailTick, trailStudents, readTrail, clearTrail, disconnectTrail, setIndependentWriting, independentWindows, configureTrailPersistence, persistTrails } from './draftTrail.js';
+import { trailStatus, setTrailRecording, recordTrailText, recordTrailFeedback, recordTrailPresence, trailTick, trailStudents, readTrail, pastesFromTrail, clearTrail, disconnectTrail, setIndependentWriting, independentWindows, configureTrailPersistence, persistTrails } from './draftTrail.js';
 import {
   BREAKOUT_SIZE,
   autoAssignBreakouts,
@@ -916,10 +916,7 @@ io.on('connection', (socket) => {
     const code = socket.data.roomCode;
     if (socket.data.role !== 'teacher' || !code || !Number(studentId)) return cb?.({ ok: false });
     const trail = readTrail(code, Number(studentId));
-    const pastes = (trail?.events || [])
-      .filter((event) => event.type === 'paste' && String(event.inserted || '').trim())
-      .map((event) => ({ at: Number(event.at) || 0, text: String(event.inserted || '').slice(0, 5000) }));
-    cb?.({ ok: true, pastes });
+    cb?.({ ok: true, pastes: pastesFromTrail(trail) });
   });
   socket.on('teacher:independent', ({ active } = {}, cb) => {
     const code = socket.data.roomCode;

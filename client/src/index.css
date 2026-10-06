@@ -817,6 +817,9 @@ html:not(.dark) .iboard-student-canvas footer {
 .iboard-student-writing-page {
   box-sizing: border-box;
   width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-top: 1.15rem;
   padding-bottom: 1.75rem;
   padding-left: clamp(1.15rem, 3.5%, 2rem);
@@ -1820,6 +1823,9 @@ html.dark .iboard-teacher-panel-reveal:hover {
   aspect-ratio: 1 / 1;
   min-width: 0;
   min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .iboard-student-card--overview .iboard-writing-surface {
@@ -1919,11 +1925,13 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
   color: #ffffff;
 }
 
-/* Header docks hug their content, then scroll once they hit the viewport floor. */
+/* Header docks hug their content, then scroll once they hit the viewport floor.
+   Safari will not form a scrollport with height:max-content + overflow:auto. */
 .iboard-header-dock {
-  height: max-content;
-  overflow-x: hidden;
+  height: auto;
+  overflow-x: visible;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   border-top: 1px solid #e2e8f0;
   background: #ffffff;
 }
@@ -5111,6 +5119,9 @@ html.dark .iboard-header-objective.is-empty {
 .iboard-student-card--fit {
   min-width: 0;
   min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   padding: 0.5rem 0.6rem;
 }
 

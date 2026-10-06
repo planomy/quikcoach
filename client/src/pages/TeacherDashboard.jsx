@@ -4234,7 +4234,7 @@ function TeacherDashboardInner() {
                     setHandQuestionTarget({ student: s, questions: handQuestions });
                   }
                 } : undefined}
-                className={`iboard-student-card group/student-card relative flex flex-col overflow-visible rounded-xl p-3 ${
+                className={`iboard-student-card group/student-card relative flex min-h-0 flex-col overflow-hidden rounded-xl p-3 ${
                   cardView === 'overview' ? 'iboard-student-card--overview' : cardView === 'all' ? 'iboard-student-card--fit' : ''
                 } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${
                   handUp
@@ -4670,7 +4670,7 @@ function TeacherDashboardInner() {
                 <p className="px-1 py-2 text-xs text-slate-500 dark:text-slate-400">Loading…</p>
               ) : pasteDetail.pastes.length === 0 ? (
                 <p className="px-1 py-2 text-xs text-slate-500 dark:text-slate-400">
-                  The pasted text wasn’t captured. It may have been pasted before this update, or straight after the board was reset.
+                  No pasted words are in this lesson’s learning trail yet.
                 </p>
               ) : (
                 pasteDetail.pastes.map((paste, index) => (
