@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { beginMouseSelectIntent, clampMouseSelectSnap, noteMouseSelectIntent } from '../lib/mouseSelect.js';
 import { plainTextToRichHtml, richHtmlToPlainText, sanitizeRichHtml } from '../lib/richText.js';
 import StudentDrawPad from './StudentDrawPad.jsx';
 import HintWrap from './HintWrap.jsx';
@@ -156,6 +157,32 @@ export default function RichTextEditor({
       if (drawMode) document.documentElement.classList.remove('iboard-student-draw-mode');
     };
   }, [drawMode]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || disabled) return undefined;
+    let intent = null;
+    const onDown = (event) => {
+      intent = beginMouseSelectIntent(event, editor);
+    };
+    const onMove = (event) => {
+      intent = noteMouseSelectIntent(intent, event);
+    };
+    const onUp = (event) => {
+      clampMouseSelectSnap(intent, event);
+      intent = null;
+    };
+    editor.addEventListener('pointerdown', onDown);
+    editor.addEventListener('pointermove', onMove);
+    editor.addEventListener('pointerup', onUp);
+    editor.addEventListener('pointercancel', onUp);
+    return () => {
+      editor.removeEventListener('pointerdown', onDown);
+      editor.removeEventListener('pointermove', onMove);
+      editor.removeEventListener('pointerup', onUp);
+      editor.removeEventListener('pointercancel', onUp);
+    };
+  }, [disabled]);
 
   useEffect(() => {
     if (!formatMenuOpen) return undefined;

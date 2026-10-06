@@ -19,6 +19,7 @@ import {
   stackGutterMarkers,
   writingRootForPane,
 } from '../lib/annotations.js';
+import { beginMouseSelectIntent, clampMouseSelectSnap, isMousePointer, noteMouseSelectIntent } from '../lib/mouseSelect.js';
 import { clampFixedBox, placementNearAnchor } from '../lib/clampPopup.js';
 import { clientLayoutScale, rectRelativeToScrollElement, subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
 import { promptDialog } from './ConfirmDialogHost.jsx';
@@ -338,6 +339,7 @@ export default function TeacherAnnotationController() {
   const openPlaceSideRef = useRef(null);
   const openPlaceKeyRef = useRef('');
   const selectingInPaneRef = useRef(false);
+  const selectIntentRef = useRef(null);
   const selectionSettleRef = useRef(null);
   const draftNoteRef = useRef(null);
   const pendingPanelRef = useRef(null);
@@ -652,7 +654,10 @@ export default function TeacherAnnotationController() {
       setOpenMarker((prev) => (teacherMarkerKey(prev) === key ? prev : marker));
     };
     const onMove = (event) => {
-      if (selectingInPaneRef.current) return;
+      if (selectingInPaneRef.current) {
+        selectIntentRef.current = noteMouseSelectIntent(selectIntentRef.current, event);
+        return;
+      }
       const { clientX: x, clientY: y } = event;
       const under = document.elementFromPoint(x, y);
       const fromMark = under?.closest?.('.iboard-ann-mark')?.dataset?.annKey;
@@ -773,10 +778,14 @@ export default function TeacherAnnotationController() {
       dismissCommentPopup();
     }
 
-    function onMouseDown(event) {
+    function onPointerDown(event) {
       const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
       if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
-      selectingInPaneRef.current = !!target?.closest?.('[data-student-writing-pane]');
+      const pane = target?.closest?.('[data-student-writing-pane]');
+      selectingInPaneRef.current = !!pane;
+      selectIntentRef.current = pane
+        ? beginMouseSelectIntent(event, contentRootForPane(pane) || pane)
+        : null;
       // Review/open marker cards dismiss on outside click (bubble buttons keep data-teacher-annotation-ui).
       dismissCommentPopup();
     }
@@ -786,7 +795,12 @@ export default function TeacherAnnotationController() {
       if (now - lastPointerUpAt < 40) return;
       lastPointerUpAt = now;
       const wasSelecting = selectingInPaneRef.current;
+      const intent = selectIntentRef.current;
       selectingInPaneRef.current = false;
+      selectIntentRef.current = null;
+      if (wasSelecting && isMousePointer(event)) {
+        clampMouseSelectSnap(intent, event);
+      }
       if (wasSelecting) {
         requestAnimationFrame(() => requestAnimationFrame(refreshHighlights));
       }
@@ -800,16 +814,18 @@ export default function TeacherAnnotationController() {
       capturePendingFromSelection({ allowCollapsedClear: true });
       if (selectionSettleRef.current != null) window.clearTimeout(selectionSettleRef.current);
       // iPad expands a tap-select to the whole word after the first pointerup.
+      // A laser mouse bounce in that window would lock in a whole-paragraph range.
+      if (isMousePointer(event)) return;
       selectionSettleRef.current = window.setTimeout(() => {
         selectionSettleRef.current = null;
         capturePendingFromSelection({ allowCollapsedClear: false });
       }, 90);
     }
-    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('pointerup', onPointerUp);
     document.addEventListener('touchend', onPointerUp, { passive: true });
     return () => {
-      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('pointerup', onPointerUp);
       document.removeEventListener('touchend', onPointerUp);
       if (selectionSettleRef.current != null) window.clearTimeout(selectionSettleRef.current);
