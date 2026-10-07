@@ -4266,13 +4266,13 @@ html.dark .iboard-student-note__full {
   height: 16px;
   margin: 0;
   padding: 0;
-  border: 1.5px solid color-mix(in srgb, var(--ann-pip) 70%, transparent);
+  border: 0;
   border-radius: 999px;
   background: color-mix(in srgb, var(--ann-pip) 32%, transparent);
-  color: var(--ann-pip);
+  color: color-mix(in srgb, var(--ann-pip) 48%, transparent);
   cursor: pointer;
   pointer-events: auto;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .iboard-student-note__check svg {
@@ -4281,7 +4281,10 @@ html.dark .iboard-student-note__full {
   height: 8px;
 }
 
-.iboard-student-note__check:hover {
+.iboard-student-note__check:hover,
+.iboard-student-note.is-lit .iboard-student-note__check {
+  background: color-mix(in srgb, var(--ann-pip) 48%, transparent);
+  color: color-mix(in srgb, var(--ann-pip) 62%, transparent);
   transform: scale(1.04);
 }
 
@@ -4340,14 +4343,14 @@ html.dark .iboard-student-note__check {
   box-sizing: border-box;
   width: 18px;
   height: 18px;
-  border: 1.5px solid color-mix(in srgb, var(--ann-pip) 72%, transparent);
+  border: 0;
   border-radius: 999px;
   background: color-mix(in srgb, var(--ann-pip) 36%, transparent);
+  color: color-mix(in srgb, var(--ann-pip) 48%, transparent);
   pointer-events: auto;
   filter: none;
   transition:
     background-color 160ms ease,
-    border-color 160ms ease,
     color 160ms ease,
     transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -4356,12 +4359,11 @@ html.dark .iboard-student-note__check {
   display: block;
   width: 10px;
   height: 10px;
-  color: var(--ann-pip);
+  color: inherit;
 }
 
 .iboard-ann-mark--open .iboard-ann-mark__pip {
   background: color-mix(in srgb, var(--ann-pip) 22%, transparent);
-  border-color: color-mix(in srgb, var(--ann-pip) 68%, transparent);
 }
 
 .iboard-ann-mark--compact {
@@ -4384,23 +4386,8 @@ html.dark .iboard-student-note__check {
 .iboard-ann-mark.is-lit .iboard-ann-mark__pip,
 .iboard-ann-mark:focus-visible .iboard-ann-mark__pip {
   background: color-mix(in srgb, var(--ann-pip) 52%, transparent);
+  color: color-mix(in srgb, var(--ann-pip) 62%, transparent);
 }
-
-.iboard-ann-mark--open:hover,
-.iboard-ann-mark--open.is-lit,
-.iboard-ann-mark--open:focus-visible { --ann-pip: #3d4299; }
-
-.iboard-ann-mark--fixed:hover,
-.iboard-ann-mark--fixed.is-lit,
-.iboard-ann-mark--fixed:focus-visible { --ann-pip: #3d4299; }
-
-.iboard-ann-mark--reopen:hover,
-.iboard-ann-mark--reopen.is-lit,
-.iboard-ann-mark--reopen:focus-visible { --ann-pip: #d11d3c; }
-
-.iboard-ann-mark--resolved:hover,
-.iboard-ann-mark--resolved.is-lit,
-.iboard-ann-mark--resolved:focus-visible { --ann-pip: #0b8f64; }
 
 html.dark .iboard-ann-mark__pip {
   background: color-mix(in srgb, var(--ann-pip) 40%, transparent);
