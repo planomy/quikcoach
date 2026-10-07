@@ -4278,11 +4278,21 @@ html.dark .iboard-student-note__full {
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ann-pip) 32%, transparent);
-  color: color-mix(in srgb, var(--ann-pip) 48%, transparent);
+  background: var(--ann-pip);
+  color: #ffffff;
   cursor: pointer;
   pointer-events: auto;
   transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.iboard-student-note--open .iboard-student-note__check {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 0 0 1.5px var(--ann-pip);
+  color: var(--ann-pip);
+}
+
+html.dark .iboard-student-note--open .iboard-student-note__check {
+  background: rgba(15, 23, 42, 0.92);
 }
 
 .iboard-student-note__check svg {
@@ -4293,9 +4303,18 @@ html.dark .iboard-student-note__full {
 
 .iboard-student-note__check:hover,
 .iboard-student-note.is-lit .iboard-student-note__check {
-  background: color-mix(in srgb, var(--ann-pip) 48%, transparent);
-  color: color-mix(in srgb, var(--ann-pip) 62%, transparent);
+  background: color-mix(in srgb, var(--ann-pip) 84%, #000000);
   transform: scale(1.04);
+}
+
+.iboard-student-note--open .iboard-student-note__check:hover,
+.iboard-student-note--open.is-lit .iboard-student-note__check {
+  background: color-mix(in srgb, var(--ann-pip) 18%, #ffffff);
+}
+
+html.dark .iboard-student-note--open .iboard-student-note__check:hover,
+html.dark .iboard-student-note--open.is-lit .iboard-student-note__check {
+  background: color-mix(in srgb, var(--ann-pip) 22%, #0f172a);
 }
 
 .iboard-student-note--open { --ann-pip: #7c7c8a; }
@@ -4303,10 +4322,6 @@ html.dark .iboard-student-note--open { --ann-pip: #94a3b8; }
 .iboard-student-note--fixed { --ann-pip: #5a5fc3; }
 .iboard-student-note--reopen { --ann-pip: #f43f5e; }
 .iboard-student-note--resolved { --ann-pip: #10b981; }
-
-html.dark .iboard-student-note__check {
-  background: color-mix(in srgb, var(--ann-pip) 38%, transparent);
-}
 
 .iboard-ann-hover-wash {
   position: fixed;
@@ -4364,8 +4379,8 @@ html.dark .iboard-student-note__check {
   height: 18px;
   border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ann-pip) 36%, transparent);
-  color: color-mix(in srgb, var(--ann-pip) 48%, transparent);
+  background: var(--ann-pip);
+  color: #ffffff;
   pointer-events: auto;
   filter: none;
   transition:
@@ -4381,11 +4396,18 @@ html.dark .iboard-student-note__check {
   color: inherit;
 }
 
+/* Sent, not yet acted on: hollow ring, so it differs from the solid states even in greyscale. */
 .iboard-ann-mark--open .iboard-ann-mark__pip {
-  background: color-mix(in srgb, var(--ann-pip) 28%, transparent);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 0 0 1.5px var(--ann-pip);
+  color: var(--ann-pip);
 }
 
 html.dark .iboard-ann-mark--open { --ann-pip: #94a3b8; }
+
+html.dark .iboard-ann-mark--open .iboard-ann-mark__pip {
+  background: rgba(15, 23, 42, 0.92);
+}
 
 .iboard-ann-mark--compact {
   width: 13px;
@@ -4406,12 +4428,19 @@ html.dark .iboard-ann-mark--open { --ann-pip: #94a3b8; }
 .iboard-ann-mark:hover .iboard-ann-mark__pip,
 .iboard-ann-mark.is-lit .iboard-ann-mark__pip,
 .iboard-ann-mark:focus-visible .iboard-ann-mark__pip {
-  background: color-mix(in srgb, var(--ann-pip) 52%, transparent);
-  color: color-mix(in srgb, var(--ann-pip) 62%, transparent);
+  background: color-mix(in srgb, var(--ann-pip) 84%, #000000);
 }
 
-html.dark .iboard-ann-mark__pip {
-  background: color-mix(in srgb, var(--ann-pip) 40%, transparent);
+.iboard-ann-mark--open:hover .iboard-ann-mark__pip,
+.iboard-ann-mark--open.is-lit .iboard-ann-mark__pip,
+.iboard-ann-mark--open:focus-visible .iboard-ann-mark__pip {
+  background: color-mix(in srgb, var(--ann-pip) 18%, #ffffff);
+}
+
+html.dark .iboard-ann-mark--open:hover .iboard-ann-mark__pip,
+html.dark .iboard-ann-mark--open.is-lit .iboard-ann-mark__pip,
+html.dark .iboard-ann-mark--open:focus-visible .iboard-ann-mark__pip {
+  background: color-mix(in srgb, var(--ann-pip) 22%, #0f172a);
 }
 
 .iboard-workspace-scrim {
