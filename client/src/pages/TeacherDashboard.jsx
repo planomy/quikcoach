@@ -122,6 +122,7 @@ const LEGACY_WATCH_STORAGE_KEY = 'iboard-teacher-watch';
 /** Per-card writing size steps (applied as rem so rich HTML inherits). */
 const CARD_FONT_REMS = [0.75, 0.875, 1, 1.125, 1.25];
 const CARD_FONT_DEFAULT = 2; /* index of 1rem */
+const FIT_CARD_FONT_BASE = 0.72; /* Fit all cards are small; A−/A+ scale from this */
 const CARD_VIEWS = [
   { id: 'all', label: 'Fit all', hint: 'Every student on one screen' },
   { id: 'overview', label: 'Columns' },
@@ -918,6 +919,8 @@ function TeacherDashboardInner() {
     } catch {
       /* Font preference is optional. */
     }
+    const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
+    return () => cancelAnimationFrame(frame);
   }, [cardFontById]);
 
 
@@ -4535,8 +4538,6 @@ function TeacherDashboardInner() {
                           </svg>
                         </button>
                       </HintWrap>
-                      {cardView !== 'all' ? (
-                      <>
                       <HintWrap hint="Smaller text">
                         <button
                           type="button"
@@ -4559,8 +4560,6 @@ function TeacherDashboardInner() {
                           <span className="text-[12px] font-black leading-none">A+</span>
                         </button>
                       </HintWrap>
-                      </>
-                      ) : null}
                     <div className="relative" data-student-actions-menu>
                       <HintWrap hint="More actions">
                         <button
@@ -4588,7 +4587,7 @@ function TeacherDashboardInner() {
                 <div
                   data-student-writing-pane
                   data-card-font="true"
-                  style={cardView === 'all' ? undefined : { fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
+                  style={{ fontSize: `${(cardView === 'all' ? FIT_CARD_FONT_BASE : 1) * cardFontRem(cardFontById, s.id)}rem` }}
                   className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
                 >
                   {s.image_url && (

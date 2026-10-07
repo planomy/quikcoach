@@ -4288,7 +4288,8 @@ html.dark .iboard-student-note__full {
   transform: scale(1.04);
 }
 
-.iboard-student-note--open { --ann-pip: #5a5fc3; }
+.iboard-student-note--open { --ann-pip: #7c7c8a; }
+html.dark .iboard-student-note--open { --ann-pip: #94a3b8; }
 .iboard-student-note--fixed { --ann-pip: #5a5fc3; }
 .iboard-student-note--reopen { --ann-pip: #f43f5e; }
 .iboard-student-note--resolved { --ann-pip: #10b981; }
