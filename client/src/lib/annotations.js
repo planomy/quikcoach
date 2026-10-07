@@ -661,14 +661,14 @@ export function writingRootForPane(textPane) {
 }
 
 export const COMMENT_HOVER_WASH = {
-  open: 'rgba(90, 95, 195, 0.5)',
+  open: 'rgba(124, 124, 138, 0.38)',
   reopen: 'rgba(244, 63, 94, 0.46)',
   fixed: 'rgba(90, 95, 195, 0.46)',
   resolved: 'rgba(16, 185, 129, 0.48)',
 };
 
 export const COMMENT_IDLE_LINE = {
-  open: 'color-mix(in srgb, #5a5fc3 52%, transparent)',
+  open: 'color-mix(in srgb, #7c7c8a 52%, transparent)',
   reopen: 'color-mix(in srgb, #f43f5e 52%, transparent)',
   fixed: 'color-mix(in srgb, #5a5fc3 52%, transparent)',
   resolved: 'color-mix(in srgb, #10b981 52%, transparent)',

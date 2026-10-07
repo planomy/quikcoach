@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const CHECK_LABEL = {
   open: 'Mark this comment as checked',
@@ -22,6 +22,20 @@ function NoteIcon({ tone }) {
   );
 }
 
+function visibleBoxFor(node) {
+  const box = { top: 0, left: 0, right: window.innerWidth, bottom: window.innerHeight };
+  for (let el = node; el && el !== document.body; el = el.parentElement) {
+    const style = window.getComputedStyle(el);
+    if (style.overflowX === 'visible' && style.overflowY === 'visible') continue;
+    const rect = el.getBoundingClientRect();
+    box.top = Math.max(box.top, rect.top);
+    box.left = Math.max(box.left, rect.left);
+    box.right = Math.min(box.right, rect.right);
+    box.bottom = Math.min(box.bottom, rect.bottom);
+  }
+  return box;
+}
+
 export default function StudentCommentNote({
   tone = 'open',
   note = '',
@@ -39,6 +53,22 @@ export default function StudentCommentNote({
   const [pinned, setPinned] = useState(false);
   const [hovered, setHovered] = useState(false);
   const open = pinned || hovered;
+  const fullRef = useRef(null);
+  const [placement, setPlacement] = useState('');
+
+  useLayoutEffect(() => {
+    const full = fullRef.current;
+    if (!open || !full) {
+      setPlacement('');
+      return;
+    }
+    const anchor = full.parentElement.getBoundingClientRect();
+    const rect = full.getBoundingClientRect();
+    const box = visibleBoxFor(full.parentElement.parentElement);
+    const below = rect.top < box.top + 4 && box.bottom - anchor.bottom > anchor.top - box.top;
+    const shiftRight = rect.left < box.left + 4;
+    setPlacement(`${below ? ' is-below' : ''}${shiftRight ? ' is-shifted' : ''}`);
+  }, [open]);
 
   useEffect(() => {
     if (!pinned) return undefined;
@@ -90,7 +120,8 @@ export default function StudentCommentNote({
       </button>
       {open ? (
         <div
-          className="iboard-student-note__full"
+          ref={fullRef}
+          className={`iboard-student-note__full${placement}`}
           onMouseEnter={keepOpen}
           onMouseLeave={scheduleClose}
         >

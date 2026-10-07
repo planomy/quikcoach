@@ -4226,6 +4226,16 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   isolation: isolate;
 }
 
+.iboard-student-note__full.is-below {
+  top: calc(100% + 1.6rem);
+  bottom: auto;
+}
+
+.iboard-student-note__full.is-shifted {
+  left: 0;
+  right: auto;
+}
+
 .iboard-student-note__body {
   margin: 0;
 }
