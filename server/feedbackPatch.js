@@ -546,7 +546,7 @@ function deliverFeedback(io, socket, payload = {}, cb) {
 
     for (const raw of rawItems.slice(0, 100)) {
       const studentId = Number(raw?.studentId);
-      const text = String(raw?.text || '').trim().slice(0, 5000);
+      const text = String(raw?.text || '').trim().slice(0, 20_000);
       if (!studentId || !text) continue;
 
       const student = feedbackDb

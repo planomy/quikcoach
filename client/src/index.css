@@ -826,7 +826,7 @@ html:not(.dark) .iboard-student-canvas footer {
     0 10px 22px -14px rgba(15, 23, 42, 0.16);
 }
 
-/* Inset the prose so the comment + pip sit in the card, not past the edge. */
+/* Match left inset; a little extra right so end-of-line pips stay in the card. */
 .iboard-student-writing-page {
   box-sizing: border-box;
   width: 100%;
@@ -836,14 +836,8 @@ html:not(.dark) .iboard-student-canvas footer {
   padding-top: 1.15rem;
   padding-bottom: 1.75rem;
   padding-left: clamp(1.15rem, 3.5%, 2rem);
-  padding-right: 14rem;
+  padding-right: calc(clamp(1.15rem, 3.5%, 2rem) + 1.25rem);
   font-size: 16px;
-}
-
-@media (max-width: 767px) {
-  .iboard-student-writing-page {
-    padding-right: 9.5rem;
-  }
 }
 
 .iboard-student-writing-placeholder {
@@ -1737,7 +1731,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card__wordcount {
   justify-self: center;
-  margin: 0.4rem 0 0;
+  margin: 0;
   color: #8b8b96;
   font-size: 11px;
   font-weight: 600;
@@ -1843,7 +1837,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card--overview .iboard-writing-surface {
   margin-top: 0.4rem;
-  padding: 0.45rem 2.1rem 0.45rem 0.55rem;
+  padding: 0.45rem 0.65rem 0.45rem 0.55rem;
   font-size: 0.78em;
   line-height: 1.45;
 }
@@ -1866,7 +1860,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card .iboard-writing-surface {
   box-shadow: none;
-  padding-right: 2.1rem;
+  padding-right: 0.65rem;
 }
 
 /* Descendants inherit the pane's inline rem size (do not override the pane itself). */
@@ -4187,16 +4181,14 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 }
 
 .iboard-student-note {
-  --ann-stem: #b8b8c0;
-  --ann-stem-width: 1.5px;
   --ann-pip: #5a5fc3;
   position: relative;
   display: flex;
-  flex-direction: row;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
-  min-width: 0;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -4205,59 +4197,15 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   pointer-events: none;
 }
 
-.iboard-student-note__stem {
-  position: relative;
-  flex: 1 1 auto;
-  align-self: flex-end;
-  min-width: 8px;
-  height: 0;
-  margin-right: 6px;
-  border-top: var(--ann-stem-width) dotted var(--ann-stem);
-  pointer-events: none;
-  transition: border-color 160ms ease;
-}
-
-.iboard-student-note.is-detached .iboard-student-note__stem,
-.iboard-student-note.is-stacked .iboard-student-note__stem {
-  display: none;
-}
-
-.iboard-student-note.is-detached,
-.iboard-student-note.is-stacked {
-  justify-content: flex-end;
-}
-
-.iboard-student-note__text {
-  flex: 0 1 9.25rem;
-  min-width: 0;
-  max-width: 9.25rem;
-  overflow: hidden;
-  border: 0;
-  padding: 0 0 1px;
-  background: transparent;
-  color: #3c3c45;
-  cursor: default;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  pointer-events: auto;
-}
-
-.iboard-student-note__text[aria-expanded] {
-  cursor: pointer;
-}
-
 .iboard-student-note__full {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 5px);
+  bottom: calc(100% + 6px);
   top: auto;
   z-index: 60;
   box-sizing: border-box;
+  display: grid;
+  gap: 0.45rem;
   width: max-content;
   max-width: min(16.5rem, 70vw);
   padding: 0.55rem 0.7rem;
@@ -4277,7 +4225,27 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   isolation: isolate;
 }
 
-/* Expanded note sits above neighbouring rail labels so they can’t show “through” it. */
+.iboard-student-note__body {
+  margin: 0;
+}
+
+.iboard-student-note__fix {
+  justify-self: start;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--ann-pip);
+  border-radius: 999px;
+  background: var(--ann-pip);
+  color: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.iboard-student-note__fix:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .iboard-student-note.is-open {
   z-index: 80;
 }
@@ -4293,14 +4261,13 @@ html.dark .iboard-student-note__full {
 .iboard-student-note__check {
   display: grid;
   place-items: center;
-  flex: 0 0 16px;
   width: 16px;
   height: 16px;
-  margin: 0 0 0 4px;
+  margin: 0;
   padding: 0;
   border: 1.5px solid var(--ann-pip);
   border-radius: 999px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.72);
   color: var(--ann-pip);
   cursor: pointer;
   pointer-events: auto;
@@ -4313,11 +4280,7 @@ html.dark .iboard-student-note__full {
   height: 8px;
 }
 
-.iboard-student-note__check:disabled {
-  cursor: default;
-}
-
-.iboard-student-note__check:not(:disabled):hover {
+.iboard-student-note__check:hover {
   transform: scale(1.04);
 }
 
@@ -4342,19 +4305,14 @@ html.dark .iboard-student-note__full {
   color: #fff;
 }
 
-.iboard-student-note:hover,
-.iboard-student-note.is-lit,
-.iboard-student-note:focus-within {
-  --ann-stem: var(--ann-pip);
-  --ann-stem-width: 2px;
+html.dark .iboard-student-note__check {
+  background: rgba(15, 23, 42, 0.72);
 }
 
-html.dark .iboard-student-note__text {
-  color: #e2e8f0;
-}
-
-html.dark .iboard-student-note {
-  --ann-stem: #64748b;
+html.dark .iboard-student-note--fixed .iboard-student-note__check,
+html.dark .iboard-student-note--reopen .iboard-student-note__check,
+html.dark .iboard-student-note--resolved .iboard-student-note__check {
+  background: var(--ann-pip);
 }
 
 .iboard-ann-hover-wash {
@@ -4365,14 +4323,13 @@ html.dark .iboard-student-note {
 }
 
 .iboard-ann-mark {
-  --ann-stem: #b8b8c0;
-  --ann-stem-width: 1.5px;
   --ann-pip: #5a5fc3;
   display: flex;
   flex-direction: row;
   align-items: flex-end;
   justify-content: flex-end;
   box-sizing: border-box;
+  width: 18px;
   min-width: 18px;
   height: 18px;
   padding: 0;
@@ -4409,10 +4366,12 @@ html.dark .iboard-student-note {
   background: var(--ann-pip);
   pointer-events: auto;
   filter: none;
+  opacity: 0.92;
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
     color 160ms ease,
+    opacity 160ms ease,
     transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -4432,32 +4391,8 @@ html.dark .iboard-student-note {
   color: var(--ann-pip);
 }
 
-.iboard-ann-mark__stem {
-  position: relative;
-  flex: 1 1 auto;
-  align-self: flex-end;
-  min-width: 4px;
-  height: 0;
-  margin-right: 3px;
-  border: 0;
-  border-top: var(--ann-stem-width) dotted var(--ann-stem);
-  border-radius: 0;
-  background: none;
-  pointer-events: none;
-  transition: border-color 160ms ease;
-}
-
-.iboard-ann-mark__stem::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -8px;
-  height: 16px;
-  pointer-events: none;
-}
-
 .iboard-ann-mark--compact {
+  width: 13px;
   min-width: 13px;
   height: 13px;
 }
@@ -4467,21 +4402,15 @@ html.dark .iboard-student-note {
   height: 13px;
 }
 
-.iboard-ann-mark--orphan .iboard-ann-mark__stem,
-.iboard-ann-mark--stacked .iboard-ann-mark__stem {
-  display: none;
-}
-
 .iboard-ann-mark--open { --ann-pip: #5a5fc3; }
 .iboard-ann-mark--fixed { --ann-pip: #5a5fc3; }
 .iboard-ann-mark--reopen { --ann-pip: #f43f5e; }
 .iboard-ann-mark--resolved { --ann-pip: #10b981; }
 
-.iboard-ann-mark:hover,
-.iboard-ann-mark.is-lit,
-.iboard-ann-mark:focus-visible {
-  --ann-stem: var(--ann-pip);
-  --ann-stem-width: 2px;
+.iboard-ann-mark:hover .iboard-ann-mark__pip,
+.iboard-ann-mark.is-lit .iboard-ann-mark__pip,
+.iboard-ann-mark:focus-visible .iboard-ann-mark__pip {
+  opacity: 1;
 }
 
 .iboard-ann-mark--open:hover,
@@ -4500,14 +4429,8 @@ html.dark .iboard-student-note {
 .iboard-ann-mark--resolved.is-lit,
 .iboard-ann-mark--resolved:focus-visible { --ann-pip: #0b8f64; }
 
-html.dark .iboard-ann-mark {
-  --ann-stem: #5c5c68;
-}
-
-html.dark .iboard-ann-mark:hover,
-html.dark .iboard-ann-mark.is-lit,
-html.dark .iboard-ann-mark:focus-visible {
-  --ann-stem: var(--ann-pip);
+html.dark .iboard-ann-mark--open .iboard-ann-mark__pip {
+  background: rgba(15, 23, 42, 0.55);
 }
 
 .iboard-workspace-scrim {
@@ -5131,12 +5054,12 @@ html.dark .iboard-lesson-objective__label {
 .iboard-student-card__fit-pane {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-x: hidden;
+  overflow-x: visible;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
   margin-top: 0.35rem !important;
-  padding: 0.35rem 2.1rem 0.35rem 0.5rem !important;
+  padding: 0.35rem 0.65rem 0.35rem 0.5rem !important;
   font-size: 0.72rem;
   line-height: 1.45;
 }

@@ -158,7 +158,11 @@ function primaryRangeClientRect(range) {
 }
 
 function markerSizeFor(marker) {
-  return marker?.layout === 'compact' || marker?.layout === 'orphan-compact' ? INLINE_MARKER_SIZE : MARKER_SIZE;
+  return marker?.layout === 'compact'
+    || marker?.layout === 'inline-compact'
+    || marker?.layout === 'orphan-compact'
+    ? INLINE_MARKER_SIZE
+    : MARKER_SIZE;
 }
 
 function markerViewportBox(marker) {
@@ -233,18 +237,14 @@ function markerPosition(range, card) {
   const maxTop = paneHeight - size - MARKER_MARGIN;
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
-  // Stem sits on the highlight baseline and runs out to one right-edge pip column.
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  const inset = gutterInset(compact);
-  const gutterLeft = (pane.scrollLeft || 0) + (pane.clientWidth || paneRect.width) - size - inset;
-  const left = Math.max(minLeft, Math.min(gutterLeft, local.left));
-  const width = Math.max(size, gutterLeft + size - left);
+  const left = Math.max(minLeft, Math.min(maxLeft, local.left + local.width - size));
   const top = Math.max(minTop, Math.min(maxTop, local.top + local.height - size));
   return {
     top,
     left,
-    width,
-    layout: compact ? 'compact' : 'gutter',
+    width: size,
+    layout: compact ? 'inline-compact' : 'inline',
     position: 'absolute',
     root: pane,
   };
@@ -452,7 +452,7 @@ export default function TeacherAnnotationController() {
                 lane,
                 top: position.top,
                 left: position.left,
-                layout: position.layout || 'gutter',
+                layout: position.layout || 'orphan',
                 width: position.width,
                 position: position.position,
               });
@@ -475,7 +475,7 @@ export default function TeacherAnnotationController() {
           lane,
           top: position.top,
           left: position.left,
-          layout: position.layout || 'gutter',
+          layout: position.layout || 'inline',
           width: position.width,
           position: position.position,
         });
@@ -492,7 +492,9 @@ export default function TeacherAnnotationController() {
     if (lit?.range) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, lit.range);
     else if (!hoveredKeyRef.current) setCommentHoverHighlight(HOVER_HIGHLIGHT_NAME, null);
     const stacked = stackGutterMarkers(nextMarkers, (marker) => (
-      (marker.layout === 'compact' || marker.layout === 'orphan-compact' ? INLINE_MARKER_SIZE : MARKER_SIZE) + 6
+      (marker.layout === 'compact' || marker.layout === 'inline-compact' || marker.layout === 'orphan-compact'
+        ? INLINE_MARKER_SIZE
+        : MARKER_SIZE) + 6
     ));
     setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
     setOpenMarker((previous) => {
@@ -1306,7 +1308,7 @@ export default function TeacherAnnotationController() {
       <AnnotationMark
         key={`${marker.studentId}-${marker.annotation.id}`}
         tone={tone}
-        layout={marker.layout || 'gutter'}
+        layout={marker.layout || 'inline'}
         stacked={Boolean(marker.stacked)}
         lit={hoveredKey === `${marker.studentId}:${marker.annotation.id}`}
         data-ann-key={`${marker.studentId}:${marker.annotation.id}`}

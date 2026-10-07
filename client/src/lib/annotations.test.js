@@ -95,29 +95,29 @@ test('a full rewrite with no leftover quote detaches', () => {
   assert.equal(inferReplacementPassage(spelling, 'Completely different sentences about the weekend.'), null);
 });
 
-test('same-line gutter bubbles stack instead of overlapping', () => {
+test('attached highlight pips stay on their words instead of stacking', () => {
   const stacked = stackGutterMarkers(
     [
-      { id: 1, top: 100, left: 40 },
-      { id: 2, top: 102, left: 80 },
-      { id: 3, top: 104, left: 120 },
+      { id: 1, top: 100, left: 40, layout: 'inline' },
+      { id: 2, top: 102, left: 80, layout: 'inline' },
+      { id: 3, top: 104, left: 120, layout: 'inline-compact' },
     ],
     () => 18,
   );
-  assert.deepEqual(stacked.map((marker) => marker.top), [100, 118, 136]);
-  assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, true, true]);
+  assert.deepEqual(stacked.map((marker) => marker.top), [100, 102, 104]);
+  assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, false, false]);
 });
 
-test('all comment tones share one gutter column and stack when they collide', () => {
+test('orphan ticks still share one corner and stack when they collide', () => {
   assert.equal(commentGutterLane('open'), 'gutter');
   assert.equal(commentGutterLane('reopen'), 'gutter');
   assert.equal(commentGutterLane('fixed'), 'gutter');
   assert.equal(commentGutterLane('resolved'), 'gutter');
   const stacked = stackGutterMarkers(
     [
-      { id: 1, top: 100, left: 40, lane: 'gutter' },
-      { id: 2, top: 102, left: 80, lane: 'gutter' },
-      { id: 3, top: 104, left: 90, lane: 'gutter' },
+      { id: 1, top: 100, left: 200, layout: 'orphan', lane: 'gutter' },
+      { id: 2, top: 102, left: 200, layout: 'orphan', lane: 'gutter' },
+      { id: 3, top: 104, left: 200, layout: 'orphan-compact', lane: 'gutter' },
     ],
     () => 18,
   );
@@ -125,24 +125,24 @@ test('all comment tones share one gutter column and stack when they collide', ()
   assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, true, true]);
 });
 
-test('stems drop when comments sit on neighbouring lines at the stack gap', () => {
+test('nearby attached comments do not pick up a stacked flag', () => {
   const stacked = stackGutterMarkers(
     [
-      { id: 1, top: 9, left: 40, lane: 'gutter' },
-      { id: 2, top: 28, left: 40, lane: 'gutter' },
-      { id: 3, top: 47, left: 80, lane: 'gutter' },
+      { id: 1, top: 9, left: 40, layout: 'inline', lane: 'gutter' },
+      { id: 2, top: 28, left: 40, layout: 'inline', lane: 'gutter' },
+      { id: 3, top: 47, left: 80, layout: 'inline', lane: 'gutter' },
     ],
     () => 19,
   );
   assert.deepEqual(stacked.map((marker) => marker.top), [9, 28, 47]);
-  assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, true, true]);
+  assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, false, false]);
 });
 
-test('detached notes with a rematched range still stack in the margin', () => {
+test('detached orphan notes still stack in the corner', () => {
   const stacked = stackGutterMarkers(
     [
-      { id: 1, top: 100, left: 40, lane: 'note', detached: true },
-      { id: 2, top: 102, left: 40, lane: 'note', detached: true },
+      { id: 1, top: 100, left: 40, layout: 'orphan', lane: 'note', detached: true },
+      { id: 2, top: 102, left: 40, layout: 'orphan', lane: 'note', detached: true },
     ],
     () => 26,
   );
@@ -165,7 +165,7 @@ test('confirming a grey bubble rematches so the pip can turn green', () => {
     annotation: { id: 12, status: 'fixed', student_fixed_at: '2026-09-22' },
     detached: true,
     lane: 'done',
-    layout: 'gutter',
+    layout: 'inline',
     top: 40,
     left: 200,
     width: 18,

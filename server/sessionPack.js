@@ -481,7 +481,7 @@ export function importSessionPack(db, roomCode, pack, media) {
       const sid = exportToId.get(exportId);
       if (!sid) continue;
       for (const note of items || []) {
-        const text = String(note.text || '').trim().slice(0, 5000);
+        const text = String(note.text || '').trim().slice(0, 20_000);
         if (!text) continue;
         insertNote.run(code, sid, text, note.createdAt || null);
       }

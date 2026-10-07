@@ -1,6 +1,6 @@
 export default function AnnotationMark({
   tone = 'open',
-  layout = 'gutter',
+  layout = 'inline',
   stacked = false,
   lit = false,
   className = '',
@@ -9,15 +9,15 @@ export default function AnnotationMark({
 }) {
   const icon = tone === 'open' || tone === 'reopen' ? 'comment' : 'check';
   const orphan = layout === 'orphan' || layout === 'orphan-compact';
-  const compact = layout === 'compact' || layout === 'orphan-compact';
+  const compact = layout === 'compact' || layout === 'inline-compact' || layout === 'orphan-compact';
+  const inline = layout === 'inline' || layout === 'inline-compact' || layout === 'compact' || layout === 'gutter';
   return (
     <button
       type="button"
       data-teacher-annotation-ui
-      className={`iboard-ann-mark iboard-ann-mark--${tone}${orphan ? ' iboard-ann-mark--orphan' : ''}${stacked ? ' iboard-ann-mark--stacked' : ''}${compact ? ' iboard-ann-mark--compact' : ''}${lit ? ' is-lit' : ''} ${className}`.trim()}
+      className={`iboard-ann-mark iboard-ann-mark--${tone}${orphan ? ' iboard-ann-mark--orphan' : ''}${inline ? ' iboard-ann-mark--inline' : ''}${stacked ? ' iboard-ann-mark--stacked' : ''}${compact ? ' iboard-ann-mark--compact' : ''}${lit ? ' is-lit' : ''} ${className}`.trim()}
       {...props}
     >
-      <span className="iboard-ann-mark__stem" aria-hidden="true" />
       <span className="iboard-ann-mark__pip" aria-hidden="true">
         {icon === 'comment' ? (
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">

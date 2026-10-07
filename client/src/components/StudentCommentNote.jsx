@@ -1,6 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import HintWrap from './HintWrap.jsx';
-import { COMMENT_PIP_HINT } from '../lib/annotations.js';
+import { useEffect, useRef, useState } from 'react';
 
 const CHECK_LABEL = {
   open: 'Mark this comment as checked',
@@ -37,44 +35,16 @@ export default function StudentCommentNote({
 }) {
   const label = String(note || '').trim() || 'Teacher comment';
   const canCheck = (tone === 'open' || tone === 'reopen') && typeof onCheck === 'function';
-  const textRef = useRef(null);
   const hoverTimerRef = useRef(null);
-  const [clipped, setClipped] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const open = clipped && (pinned || hovered);
-
-  useLayoutEffect(() => {
-    const node = textRef.current;
-    if (!node) {
-      setClipped(false);
-      return undefined;
-    }
-    const measure = () => {
-      setClipped(node.scrollWidth > node.clientWidth + 1);
-    };
-    measure();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
-    observer?.observe(node);
-    window.addEventListener('resize', measure);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-  }, [label]);
-
-  useEffect(() => {
-    if (!clipped) {
-      setPinned(false);
-      setHovered(false);
-    }
-  }, [clipped]);
+  const open = pinned || hovered;
 
   useEffect(() => {
     if (!pinned) return undefined;
     function onDown(event) {
       const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
-      if (target?.closest?.('.iboard-student-note__full, .iboard-student-note__text')) return;
+      if (target?.closest?.('.iboard-student-note')) return;
       setPinned(false);
     }
     document.addEventListener('pointerdown', onDown);
@@ -86,7 +56,7 @@ export default function StudentCommentNote({
       window.clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
     }
-    if (clipped) setHovered(true);
+    setHovered(true);
   }
 
   function scheduleClose() {
@@ -105,22 +75,18 @@ export default function StudentCommentNote({
     <div
       data-teacher-annotation-ui
       className={`iboard-student-note iboard-student-note--${tone}${detached ? ' is-detached' : ''}${stacked ? ' is-stacked' : ''}${lit ? ' is-lit' : ''}${open ? ' is-open' : ''} ${className}`.trim()}
+      onMouseEnter={keepOpen}
+      onMouseLeave={scheduleClose}
       {...props}
     >
-      <span className="iboard-student-note__stem" aria-hidden="true" />
       <button
         type="button"
-        ref={textRef}
-        className="iboard-student-note__text"
-        aria-expanded={clipped ? open : undefined}
-        onMouseEnter={keepOpen}
-        onMouseLeave={scheduleClose}
-        onClick={() => {
-          if (!clipped) return;
-          setPinned((current) => !current);
-        }}
+        className="iboard-student-note__check"
+        aria-expanded={open}
+        aria-label={canCheck ? CHECK_LABEL[tone] || CHECK_LABEL.open : label}
+        onClick={() => setPinned((current) => !current)}
       >
-        {label}
+        <NoteIcon tone={tone} />
       </button>
       {open ? (
         <div
@@ -128,20 +94,19 @@ export default function StudentCommentNote({
           onMouseEnter={keepOpen}
           onMouseLeave={scheduleClose}
         >
-          {label}
+          <p className="iboard-student-note__body">{label}</p>
+          {canCheck ? (
+            <button
+              type="button"
+              className="iboard-student-note__fix"
+              disabled={busy}
+              onClick={onCheck}
+            >
+              Mark as checked
+            </button>
+          ) : null}
         </div>
       ) : null}
-      <HintWrap hint={COMMENT_PIP_HINT[tone] || COMMENT_PIP_HINT.open} prefer="above" className="pointer-events-auto">
-        <button
-          type="button"
-          className="iboard-student-note__check"
-          disabled={!canCheck || busy}
-          onClick={canCheck ? onCheck : undefined}
-          aria-label={CHECK_LABEL[tone] || CHECK_LABEL.open}
-        >
-          <NoteIcon tone={tone} />
-        </button>
-      </HintWrap>
     </div>
   );
 }

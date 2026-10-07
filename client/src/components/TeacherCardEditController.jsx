@@ -128,7 +128,7 @@ export default function TeacherCardEditController() {
           });
           return;
         }
-        const noteText = `${cleanTitle}: ${cleanText}`.slice(0, 4000);
+        const noteText = `${cleanTitle}: ${cleanText}`.slice(0, 20_000);
         const recipients = studentIdsRef.current.map((studentId) => ({ studentId, text: noteText }));
         if (!recipients.length) {
           setBusy(false);

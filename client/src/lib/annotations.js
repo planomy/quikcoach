@@ -199,7 +199,7 @@ export function commentTone(annotation, detached = false) {
   return 'open';
 }
 
-/** All teacher pips share one right-edge rail — colour and outline/fill carry status. */
+/** Orphan ticks still share one corner lane. Attached pips sit on the highlight. */
 export function commentGutterLane(_tone) {
   return 'gutter';
 }
@@ -211,7 +211,7 @@ export const COMMENT_PIP_HINT = {
   resolved: 'Confirmed',
 };
 
-/** Keep cached gutter pips in lockstep with confirm/reopen — same lane is not enough. */
+/** Keep cached pips in lockstep with confirm/reopen — same lane is not enough. */
 export function annotationMarkersMatch(a, b) {
   if (a === b) return true;
   if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
@@ -752,20 +752,21 @@ export function hoverRangeBoxes(range) {
   }
 }
 
-/** Keep same-line margin bubbles from sitting on top of each other. */
+/** Stack only orphaned corner ticks. Attached highlight pips stay on their words. */
 export function stackGutterMarkers(markers, gapFor = () => 18) {
-  const orphans = [];
+  const attached = [];
   const groups = new Map();
   for (const marker of markers || []) {
-    if (marker.layout === 'orphan' || marker.layout === 'orphan-compact') {
-      orphans.push(marker);
+    const orphan = marker.layout === 'orphan' || marker.layout === 'orphan-compact';
+    if (!orphan) {
+      attached.push(marker);
       continue;
     }
-    const key = `${marker.studentId != null ? marker.studentId : 'self'}:${marker.lane || 'done'}`;
+    const key = `${marker.studentId != null ? marker.studentId : 'self'}:${marker.lane || 'orphan'}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(marker);
   }
-  const next = [];
+  const next = [...attached];
   for (const group of groups.values()) {
     group.sort((a, b) => (a.top - b.top) || (a.left - b.left));
     let last = -Infinity;
@@ -777,5 +778,5 @@ export function stackGutterMarkers(markers, gapFor = () => 18) {
       next.push(near ? { ...marker, top, stacked: true } : marker);
     }
   }
-  return next.concat(orphans);
+  return next;
 }

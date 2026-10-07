@@ -82,6 +82,7 @@ const LESSON_BEGUN_KEY = 'iboard-lesson-begun';
 const LESSON_BEGUN_MAX_MS = 4 * 60 * 60 * 1000;
 const ALERT_PREFS_KEY = 'tuit-alert-prefs';
 const DEFAULT_ALERT_PREFS = { away: true, notStarted: true, notStartedMin: 4, noTyping: true, noTypingMin: 3, pasted: true };
+const INBOX_NOTE_MAX = 20_000;
 
 function readAlertPrefs() {
   try {
@@ -2659,7 +2660,7 @@ function TeacherDashboardInner() {
       .filter((student) => !chosenIds || chosenIds.includes(Number(student.id)))
       .map((student) => ({
         studentId: student.id,
-        text: text.slice(0, 4000),
+        text: text.slice(0, INBOX_NOTE_MAX),
       }));
       if (!recipients.length) {
       setAddCardError(chosenIds ? 'Those students are no longer in this room — nothing was sent' : 'No students have joined yet — nothing was sent');
@@ -2667,12 +2668,18 @@ function TeacherDashboardInner() {
       }
     setAddCardBusy(true);
     setAddCardError('');
+    const clipped = text.length > INBOX_NOTE_MAX;
     socket.emit('teacher:distribute', { items: recipients }, (ack) => {
       if (ack?.ok) {
         // Keep a copy in the teacher's Resources panel as well as the inboxes.
-        socket.emit('teacher:board-post', { kind: 'text', title: 'Teacher note', text: text.slice(0, 4000) }, () => {});
+        socket.emit('teacher:board-post', { kind: 'text', title: 'Teacher note', text: text.slice(0, INBOX_NOTE_MAX) }, () => {});
       }
-      finish(ack, sentMessage);
+      finish(
+        ack,
+        clipped
+          ? `${sentMessage} · first ${INBOX_NOTE_MAX.toLocaleString()} characters`
+          : sentMessage
+      );
     });
   }
 
@@ -4010,6 +4017,11 @@ function TeacherDashboardInner() {
                     className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-indigo-400 focus:border-indigo-400 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                     placeholder={addCardFile || addCardImage ? 'Add a title (optional)' : 'Add text'}
                   />
+                  {addCardText.trim() && !addCardFile && !addCardImage ? (
+                    <p className={`text-[10px] font-semibold tabular-nums ${addCardText.trim().length > INBOX_NOTE_MAX ? 'text-red-600 dark:text-red-300' : 'text-slate-400'}`}>
+                      {addCardText.trim().length.toLocaleString()} / {INBOX_NOTE_MAX.toLocaleString()}
+                    </p>
+                  ) : null}
                   {addCardError && <p className="text-xs font-semibold text-red-600 dark:text-red-300">{addCardError}</p>}
                   <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" aria-hidden="true">
                     <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
@@ -4258,10 +4270,8 @@ function TeacherDashboardInner() {
               >
                 <div className="iboard-student-card__head group/card-head">
                   <div className="iboard-student-card__head-start">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-col gap-1">
-                    <div className="flex min-w-0 items-center gap-1">
-                      <HintWrap hint={s.name} prefer="above">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+                      <HintWrap hint={s.name} prefer="above" className="min-w-0">
                       <h2
                         className={`iboard-student-card__name min-w-0 truncate ${
                           cardView === 'overview' || cardView === 'all' ? 'text-[13px]' : 'text-[14px]'
@@ -4303,8 +4313,6 @@ function TeacherDashboardInner() {
                         />
                         </HintWrap>
                       ) : null}
-                    </div>
-                    <div className="flex min-w-0 flex-wrap items-center gap-1">
                       {breakoutsActive ? (
                         <label className="ml-auto shrink-0" onClick={(event) => event.stopPropagation()}>
                           <span className="sr-only">Breakout room for {s.name}</span>
@@ -4416,8 +4424,6 @@ function TeacherDashboardInner() {
                     </HintWrap>
                   ) : null}
                     </div>
-                  </div>
-                  </div>
                   </div>
                   <p
                     className="iboard-student-card__wordcount"
@@ -4583,7 +4589,7 @@ function TeacherDashboardInner() {
                   data-student-writing-pane
                   data-card-font="true"
                   style={cardView === 'all' ? undefined : { fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">
@@ -6215,7 +6221,7 @@ function TeacherDashboardInner() {
               data-full-draft-pane="true"
               data-card-font="true"
               style={{ fontSize: `${cardFontRem(cardFontById, focusedStudent.id)}rem` }}
-              className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 pr-14 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
+              className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
             >
               {focusedStudent.image_url && (
                 <AnnotatedStudentImage
