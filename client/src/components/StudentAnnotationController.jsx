@@ -44,9 +44,12 @@ function writingCard() {
 }
 
 function markerPosition(rangeRect, editorRect) {
-  const top = rangeRect.bottom - NOTE_HEIGHT;
+  const top = rangeRect.top - NOTE_HEIGHT - 2;
   const maxLeft = editorRect.right - NOTE_HEIGHT - 4;
-  const left = Math.max(editorRect.left + 4, Math.min(maxLeft, rangeRect.right - NOTE_HEIGHT));
+  const left = Math.max(
+    editorRect.left + 4,
+    Math.min(maxLeft, rangeRect.left + rangeRect.width / 2 - NOTE_HEIGHT / 2)
+  );
   return { top, left, width: NOTE_HEIGHT };
 }
 

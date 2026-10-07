@@ -1837,7 +1837,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card--overview .iboard-writing-surface {
   margin-top: 0.4rem;
-  padding: 0.45rem 0.65rem 0.45rem 0.55rem;
+  padding: 1.15rem 0.65rem 0.45rem 0.55rem;
   font-size: 0.78em;
   line-height: 1.45;
 }
@@ -1860,6 +1860,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card .iboard-writing-surface {
   box-shadow: none;
+  padding-top: 1.15rem;
   padding-right: 0.65rem;
 }
 
@@ -4265,9 +4266,9 @@ html.dark .iboard-student-note__full {
   height: 16px;
   margin: 0;
   padding: 0;
-  border: 1.5px solid var(--ann-pip);
+  border: 1.5px solid color-mix(in srgb, var(--ann-pip) 70%, transparent);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--ann-pip) 32%, transparent);
   color: var(--ann-pip);
   cursor: pointer;
   pointer-events: auto;
@@ -4285,34 +4286,12 @@ html.dark .iboard-student-note__full {
 }
 
 .iboard-student-note--open { --ann-pip: #5a5fc3; }
-.iboard-student-note--fixed {
-  --ann-pip: #5a5fc3;
-}
-.iboard-student-note--fixed .iboard-student-note__check {
-  background: #5a5fc3;
-  color: #fff;
-}
+.iboard-student-note--fixed { --ann-pip: #5a5fc3; }
 .iboard-student-note--reopen { --ann-pip: #f43f5e; }
-.iboard-student-note--reopen .iboard-student-note__check {
-  background: #f43f5e;
-  border-color: #f43f5e;
-  color: #fff;
-}
 .iboard-student-note--resolved { --ann-pip: #10b981; }
-.iboard-student-note--resolved .iboard-student-note__check {
-  background: #10b981;
-  border-color: #10b981;
-  color: #fff;
-}
 
 html.dark .iboard-student-note__check {
-  background: rgba(15, 23, 42, 0.72);
-}
-
-html.dark .iboard-student-note--fixed .iboard-student-note__check,
-html.dark .iboard-student-note--reopen .iboard-student-note__check,
-html.dark .iboard-student-note--resolved .iboard-student-note__check {
-  background: var(--ann-pip);
+  background: color-mix(in srgb, var(--ann-pip) 38%, transparent);
 }
 
 .iboard-ann-hover-wash {
@@ -4361,17 +4340,15 @@ html.dark .iboard-student-note--resolved .iboard-student-note__check {
   box-sizing: border-box;
   width: 18px;
   height: 18px;
-  border: 1.5px solid transparent;
+  border: 1.5px solid color-mix(in srgb, var(--ann-pip) 72%, transparent);
   border-radius: 999px;
-  background: var(--ann-pip);
+  background: color-mix(in srgb, var(--ann-pip) 36%, transparent);
   pointer-events: auto;
   filter: none;
-  opacity: 0.92;
   transition:
     background-color 160ms ease,
     border-color 160ms ease,
     color 160ms ease,
-    opacity 160ms ease,
     transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -4379,16 +4356,12 @@ html.dark .iboard-student-note--resolved .iboard-student-note__check {
   display: block;
   width: 10px;
   height: 10px;
-  color: #ffffff;
+  color: var(--ann-pip);
 }
 
 .iboard-ann-mark--open .iboard-ann-mark__pip {
-  background: transparent;
-  border-color: var(--ann-pip);
-}
-
-.iboard-ann-mark--open .iboard-ann-mark__pip svg {
-  color: var(--ann-pip);
+  background: color-mix(in srgb, var(--ann-pip) 22%, transparent);
+  border-color: color-mix(in srgb, var(--ann-pip) 68%, transparent);
 }
 
 .iboard-ann-mark--compact {
@@ -4410,7 +4383,7 @@ html.dark .iboard-student-note--resolved .iboard-student-note__check {
 .iboard-ann-mark:hover .iboard-ann-mark__pip,
 .iboard-ann-mark.is-lit .iboard-ann-mark__pip,
 .iboard-ann-mark:focus-visible .iboard-ann-mark__pip {
-  opacity: 1;
+  background: color-mix(in srgb, var(--ann-pip) 52%, transparent);
 }
 
 .iboard-ann-mark--open:hover,
@@ -4429,8 +4402,8 @@ html.dark .iboard-student-note--resolved .iboard-student-note__check {
 .iboard-ann-mark--resolved.is-lit,
 .iboard-ann-mark--resolved:focus-visible { --ann-pip: #0b8f64; }
 
-html.dark .iboard-ann-mark--open .iboard-ann-mark__pip {
-  background: rgba(15, 23, 42, 0.55);
+html.dark .iboard-ann-mark__pip {
+  background: color-mix(in srgb, var(--ann-pip) 40%, transparent);
 }
 
 .iboard-workspace-scrim {
@@ -5059,7 +5032,7 @@ html.dark .iboard-lesson-objective__label {
   overscroll-behavior: contain;
   scrollbar-width: none;
   margin-top: 0.35rem !important;
-  padding: 0.35rem 0.65rem 0.35rem 0.5rem !important;
+  padding: 1.05rem 0.65rem 0.35rem 0.5rem !important;
   font-size: 0.72rem;
   line-height: 1.45;
 }
