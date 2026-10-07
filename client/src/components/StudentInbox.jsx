@@ -534,7 +534,7 @@ export default function StudentInbox({
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                       {item.text}
                     </div>
-                    {item.type !== 'set-prompt' && Number(item.feedbackId) ? (
+                    {item.type !== 'set-prompt' && !item.resource && Number(item.feedbackId) ? (
                       <StudentNoteReply
                         socket={socket}
                         feedbackId={item.feedbackId}

@@ -132,7 +132,7 @@ function sanitizeSetPromptMeta(raw) {
   };
 }
 
-const NOTE_TYPES = new Set(['note', 'thinking']);
+const NOTE_TYPES = new Set(['note', 'thinking', 'resource']);
 const THINKING_ID = /^[a-z0-9-]{1,60}$/;
 
 /** Which Thinking prompts were sent (bank ids) and their categories; custom prompts count as 'custom'. */
@@ -176,6 +176,7 @@ function feedbackForClient(row) {
     item.questions = Array.isArray(meta.questions) ? meta.questions : [];
   }
   if ((kind === 'note' || kind === 'chat') && meta.urgent) item.urgent = true;
+  if (kind === 'note' && meta.type === 'resource') item.resource = true;
   if (row.seen_at) {
     item.seenAt = row.seen_at;
     item.seenAtMs = parseSqliteUtcMs(row.seen_at) || undefined;
@@ -429,7 +430,11 @@ function saveStudentNoteReply(io, socket, payload = {}, cb) {
          WHERE id = ? AND student_id = ? AND room_code = ?`
       )
       .get(feedbackId, studentId, roomCode);
-    if (!parent || String(parent.kind || 'note') === 'set-prompt') {
+    if (
+      !parent
+      || String(parent.kind || 'note') === 'set-prompt'
+      || parseMetaJson(parent.meta_json).type === 'resource'
+    ) {
       cb?.({ ok: false, error: 'That note is no longer available' });
       return;
     }

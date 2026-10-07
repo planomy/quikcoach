@@ -57,6 +57,7 @@ function feedbackInboxItem(item, { fallbackAt = 0 } = {}) {
     at,
     feedbackId: feedbackId || undefined,
     urgent: (kind === 'note' || kind === 'chat') && !!item?.urgent,
+    resource: kind === 'note' && !!item?.resource,
   };
   if (kind === 'set-prompt') {
     base.title = String(item?.title || '').trim() || 'Prompt set';

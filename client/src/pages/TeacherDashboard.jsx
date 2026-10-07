@@ -2664,6 +2664,7 @@ function TeacherDashboardInner() {
       .map((student) => ({
         studentId: student.id,
         text: text.slice(0, INBOX_NOTE_MAX),
+        type: 'resource',
       }));
       if (!recipients.length) {
       setAddCardError(chosenIds ? 'Those students are no longer in this room — nothing was sent' : 'No students have joined yet — nothing was sent');
