@@ -1209,9 +1209,16 @@ export const queries = {
   listSnapshotMeta(db, roomCode) {
     return all(
       db,
-      `SELECT id, label, created_at FROM room_snapshots WHERE room_code = ? ORDER BY id DESC`,
+      `SELECT id, label, created_at,
+              TRIM(COALESCE(json_extract(payload_json, '$.lesson_objective'), '')) AS lesson_objective
+       FROM room_snapshots WHERE room_code = ? ORDER BY id DESC`,
       [roomCode]
-    );
+    ).map((row) => ({
+      id: row.id,
+      label: row.label,
+      created_at: row.created_at,
+      lesson_objective: String(row.lesson_objective || ''),
+    }));
   },
 
   listSnapshots(db, roomCode) {

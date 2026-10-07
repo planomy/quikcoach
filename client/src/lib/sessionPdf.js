@@ -180,6 +180,9 @@ export function buildSessionPdf(pack, { selectedKeys, detailed = false, fontData
   pdf.addPage = (...args) => { pageNames.set(pdf.getNumberOfPages(), studentName); return addPage(...args); };
   paragraph('TUIT | Evidence of learning', { size: 22, colour: [25, 59, 89], gap: 5 });
   paragraph(`Room ${pack.sourceRoomCode || ''} | Captured ${when(pack.exportedAt)}`, { size: 10 });
+  if (String(pack.room?.lesson_objective || '').trim()) {
+    paragraph(`Today’s objective: ${String(pack.room.lesson_objective).trim()}`, { size: 10, colour: [60, 63, 143] });
+  }
   paragraph(`${people.length} student${people.length === 1 ? '' : 's'} | ${detailed ? 'Sampled learning trail checkpoints (up to 20 text changes)' : 'Learning trail summary (3 revision extracts)'}`, { size: 10 });
   paragraph(`Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Writing reflects the latest version received by TUIT when this report was captured; it may not be a final submission.`, { size: 9, colour: [90, 102, 117] });
   heading('Reading this report');

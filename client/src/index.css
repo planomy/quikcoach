@@ -341,7 +341,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b 
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  margin-right: 0.35rem;
+  margin-left: 0.15rem;
   padding: 0.2rem;
   border: 1px solid #c1c2e7;
   border-radius: 0.7rem;
@@ -5044,7 +5044,7 @@ html.dark .iboard-workspace-scrim {
   color: rgba(255, 255, 255, 0.65);
 }
 
-/* Today's objective strip (student screen) and chip (teacher header). */
+/* Today's objective strip — student screen only. */
 .iboard-lesson-objective {
   display: flex;
   align-items: baseline;
@@ -5078,45 +5078,6 @@ html.dark .iboard-lesson-objective {
 
 html.dark .iboard-lesson-objective__label {
   color: #a5b4fc;
-}
-
-.iboard-header-objective {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  max-width: min(22rem, 28vw);
-  border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #5a5fc3;
-  background: #ebeaf8;
-  border: 1px dashed transparent;
-}
-
-.iboard-header-objective span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.iboard-header-objective.is-empty {
-  background: transparent;
-  border-color: #cfcce8;
-}
-
-.iboard-header-objective:hover {
-  background: #dcdaf5;
-}
-
-html.dark .iboard-header-objective {
-  color: #c7d2fe;
-  background: rgba(90, 95, 195, 0.25);
-}
-
-html.dark .iboard-header-objective.is-empty {
-  background: transparent;
-  border-color: #444e5b;
 }
 
 /* Fit all: every student on one screen; the grid sizes rows from the board area. */

@@ -105,6 +105,7 @@ function buildEvidenceStudentProfiles(code) {
         updatedAt: student.updated_at || '',
         classGroup: student.class_group != null ? String(student.class_group) : '',
         sourceName: name,
+        lessonObjective: String(snapshot.payload?.lesson_objective || '').trim(),
         text,
       });
     }
@@ -2697,9 +2698,11 @@ io.on('connection', (socket) => {
         return;
       }
       const rows = queries.listStudents(db, code);
+      const roomRow = queries.ensureRoom(db, code);
       const payload = {
         room_code: code,
         saved_at: new Date().toISOString(),
+        lesson_objective: String(roomRow?.lesson_objective || '').replace(/\s+/g, ' ').trim().slice(0, 200),
         students: rows.map((s) => ({
           id: s.id,
           name: s.name,

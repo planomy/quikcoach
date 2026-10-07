@@ -107,6 +107,7 @@ export function buildPortfolioPdf({ roomCode, student, fontData, generatedAt } =
         when(entry.createdAt) && `Saved ${when(entry.createdAt)}`,
         `${words(entry.text)} words`,
         entry.classGroup && `Group ${entry.classGroup}`,
+        entry.lessonObjective && `Today’s objective: ${entry.lessonObjective}`,
         aliases.length && entry.sourceName && entry.sourceName !== name ? `as ${entry.sourceName}` : null,
       ].filter(Boolean).join(' | ') || 'Saved writing',
       { size: 9, colour: [90, 102, 117] }

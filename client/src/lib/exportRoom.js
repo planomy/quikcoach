@@ -55,6 +55,7 @@ export function buildEvidenceHtml({
   modeLabel = '',
   yearLabel = '',
   subjectLabel = '',
+  objective = '',
   origin = '',
 }) {
   const when = savedAt || new Date().toISOString();
@@ -132,6 +133,7 @@ export function buildEvidenceHtml({
   ${modeLabel ? ` · ${escapeHtml(modeLabel)}` : ''}
   ${subjectLabel ? ` · ${escapeHtml(subjectLabel)}` : ''}
   ${yearLabel ? ` · Year ${escapeHtml(yearLabel)}` : ''}</p>
+  ${objective ? `<p class="sub">Today’s objective: ${escapeHtml(objective)}</p>` : ''}
   ${cards || '<p>No student writing yet.</p>'}
   <footer>TUIT</footer>
 </div>
@@ -152,13 +154,14 @@ export function evidenceFilenames(roomCode, label) {
   };
 }
 
-export function buildStudentEvidenceText({ roomCode, student, label, savedAt }) {
+export function buildStudentEvidenceText({ roomCode, student, label, savedAt, objective = '' }) {
   const when = savedAt || new Date().toISOString();
   const s = student || {};
   return [
     'TUIT — Evidence of learning',
     `Room: ${roomCode}`,
     label ? `Label: ${label}` : null,
+    objective ? `Today’s objective: ${objective}` : null,
     `Saved: ${when}`,
     `Student: ${s.name || ''}`,
     `ID: ${s.id ?? ''}`,
@@ -191,6 +194,7 @@ export function buildStudentPortfolioText({ roomCode, studentName, entries }) {
     '',
     ...list.flatMap((entry, index) => [
       `${index + 1}. ${entry.label || 'Saved evidence'}`,
+      entry.lessonObjective ? `Today’s objective: ${entry.lessonObjective}` : null,
       `Saved: ${formatSavedTime(entry.createdAt)}`,
       `Words: ${wordCount(entry.text)}`,
       '',
@@ -208,7 +212,9 @@ export function buildStudentPortfolioHtml({ roomCode, studentName, entries }) {
     <section class="card">
       <p class="number">Submission ${index + 1}</p>
       <h2>${escapeHtml(entry.label || 'Saved evidence')}</h2>
-      <p class="meta">Saved ${escapeHtml(formatSavedTime(entry.createdAt))} · ${wordCount(entry.text)} words</p>
+      <p class="meta">Saved ${escapeHtml(formatSavedTime(entry.createdAt))} · ${wordCount(entry.text)} words${
+        entry.lessonObjective ? ` · Today’s objective: ${escapeHtml(entry.lessonObjective)}` : ''
+      }</p>
       <div class="body">${escapeHtml(String(entry.text || '').trim() || '(No writing submitted.)').replace(/\n/g, '<br>')}</div>
     </section>`).join('\n');
   return `<!DOCTYPE html>

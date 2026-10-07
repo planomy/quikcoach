@@ -420,7 +420,6 @@ function TeacherDashboardInner() {
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [lessonBegun, setLessonBegun] = useState(false);
   const [entranceStep, setEntranceStep] = useState('join');
-  const [objectiveEditOpen, setObjectiveEditOpen] = useState(false);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
   const [handQuestionTarget, setHandQuestionTarget] = useState(null);
@@ -2787,7 +2786,7 @@ function TeacherDashboardInner() {
     }
   }
 
-  function downloadEvidenceHtml({ label, students: packStudents }) {
+  function downloadEvidenceHtml({ label, students: packStudents, objective } = {}) {
     const names = evidenceFilenames(codeInput, label);
     const savedAt = new Date().toISOString();
     const modeLabel = MODE_LABELS[normalizeFeedbackMode(room?.genre)] || '';
@@ -2803,6 +2802,7 @@ function TeacherDashboardInner() {
       modeLabel,
       subjectLabel: subjectLabel !== 'General' ? subjectLabel : '',
       yearLabel: yearLabel && !String(yearLabel).startsWith('General') ? yearLabel : '',
+      objective: objective || room?.lesson_objective || '',
       origin: window.location.origin,
     });
     downloadTextFile(names.html, html, 'text/html;charset=utf-8');
@@ -2895,6 +2895,7 @@ function TeacherDashboardInner() {
       downloadEvidenceHtml({
         label: data.label || `Evidence #${id}`,
         students,
+        objective: data.payload?.lesson_objective || '',
       });
       setCopyToast('Saved — open the HTML file to view or print');
       setTimeout(() => setCopyToast(''), 4000);
@@ -3474,25 +3475,6 @@ function TeacherDashboardInner() {
               <span className="iboard-header-meta__online">
                 <b className="tabular-nums">{connectedStudents.length}</b> online
                       </span>
-              <HintWrap hint={room?.lesson_objective ? 'Change today’s objective' : 'Students see this at the top of their screen'} prefer="below">
-                <button
-                  type="button"
-                  onClick={() => setObjectiveEditOpen(true)}
-                  className={`iboard-header-objective${room?.lesson_objective ? '' : ' is-empty'}`}
-                  aria-label={room?.lesson_objective ? `Today’s objective: ${room.lesson_objective}. Change it` : 'Add today’s objective'}
-                >
-                  <span>{room?.lesson_objective || '+ Add today’s objective'}</span>
-                  </button>
-              </HintWrap>
-            {frozen && (
-                <span className="iboard-header-pill iboard-header-pill--frozen">
-                Frozen
-              </span>
-            )}
-          </div>
-
-            <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
-            {joined && saveStatus === 'error' ? <SaveStatusChip status="error" plain /> : null}
             {attentionPills.length || inboxSummary ? (
               <div className="iboard-attention-home" role="group" aria-label="Needs a look">
                 {attentionPills.map((pill) => {
@@ -3537,6 +3519,15 @@ function TeacherDashboardInner() {
                 ) : null}
               </div>
             ) : null}
+            {frozen && (
+                <span className="iboard-header-pill iboard-header-pill--frozen">
+                Frozen
+              </span>
+            )}
+          </div>
+
+            <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
+            {joined && saveStatus === 'error' ? <SaveStatusChip status="error" plain /> : null}
             <RoomTimerPill
               timer={room?.timer}
               onClick={openTimerDock}
@@ -4816,6 +4807,9 @@ function TeacherDashboardInner() {
                             {String(sn.label || '').includes(formatSqlUtc(sn.created_at)) ? null : (
                               <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{formatSqlUtc(sn.created_at)}</span>
                             )}
+                            {sn.lesson_objective ? (
+                              <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Today: {sn.lesson_objective}</span>
+                            ) : null}
                           </span>
                           <span className="flex gap-2">
                             <button
@@ -5117,6 +5111,7 @@ function TeacherDashboardInner() {
                                     <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                                       {formatSqlUtc(entry.createdAt)} · {wordCount(entry.text)} words
                                       {(selectedEvidenceStudent.aliases || []).length > 1 && entry.sourceName ? ` · as ${entry.sourceName}` : ''}
+                                      {entry.lessonObjective ? ` · Today: ${entry.lessonObjective}` : ''}
                                     </p>
                                   </div>
                                   <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">Open class snapshot</button>
@@ -5326,17 +5321,6 @@ function TeacherDashboardInner() {
           onClose={() => setJoinScreenOpen(false)}
         />
       )}
-      {objectiveEditOpen && (
-        <ObjectiveScreen
-          initialObjective={room?.lesson_objective || ''}
-          onClose={() => setObjectiveEditOpen(false)}
-          onSave={(text) => {
-            setLessonObjective(text);
-            setObjectiveEditOpen(false);
-          }}
-        />
-      )}
-
       {newClassConfirmOpen && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-4 backdrop-blur-[2px] sm:items-center">
           <div
@@ -6407,6 +6391,11 @@ function TeacherDashboardInner() {
             </div>
             <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5 text-sm scrollbar-thin">
               <p className="text-xs text-slate-500 dark:text-slate-400">{formatSqlUtc(snapshotViewer.created_at)}</p>
+              {snapshotViewer.payload?.lesson_objective ? (
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Today’s objective: {snapshotViewer.payload.lesson_objective}
+                </p>
+              ) : null}
               {(snapshotViewer.payload?.students || []).map((st) => (
                 <div key={st.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3">
                   <p className="font-semibold text-ink-900 dark:text-slate-100">
