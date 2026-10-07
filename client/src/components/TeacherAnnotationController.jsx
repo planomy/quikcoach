@@ -238,8 +238,8 @@ function markerPosition(range, card) {
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  const left = Math.max(minLeft, Math.min(maxLeft, local.left + local.width / 2 - size / 2));
-  const top = Math.max(minTop, Math.min(maxTop, local.top - size - 2));
+  const left = Math.max(minLeft, Math.min(maxLeft, local.left + local.width - size * 0.45));
+  const top = Math.max(minTop, Math.min(maxTop, local.top - size * 0.55));
   return {
     top,
     left,
