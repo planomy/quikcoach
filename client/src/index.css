@@ -4371,8 +4371,10 @@ html.dark .iboard-student-note__check {
 }
 
 .iboard-ann-mark--open .iboard-ann-mark__pip {
-  background: color-mix(in srgb, var(--ann-pip) 22%, transparent);
+  background: color-mix(in srgb, var(--ann-pip) 28%, transparent);
 }
+
+html.dark .iboard-ann-mark--open { --ann-pip: #94a3b8; }
 
 .iboard-ann-mark--compact {
   width: 13px;
@@ -4385,7 +4387,7 @@ html.dark .iboard-student-note__check {
   height: 13px;
 }
 
-.iboard-ann-mark--open { --ann-pip: #5a5fc3; }
+.iboard-ann-mark--open { --ann-pip: #7c7c8a; }
 .iboard-ann-mark--fixed { --ann-pip: #5a5fc3; }
 .iboard-ann-mark--reopen { --ann-pip: #f43f5e; }
 .iboard-ann-mark--resolved { --ann-pip: #10b981; }
