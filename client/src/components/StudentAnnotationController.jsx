@@ -2,14 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   COMMENT_HOVER_WASH,
+  COMMENT_IDLE_LINE,
   annotationMarkersMatch,
   commentTone,
+  commentUnderlineBoxes,
   locateAnnotationRange,
   plainTextFromElement,
   rangeContainsPoint,
   clearNamedHighlights,
   setCommentHoverHighlight,
-  setNamedHighlight,
   stackGutterMarkers,
 } from '../lib/annotations.js';
 import { subscribeViewportChanges, viewportBox } from '../lib/viewport.js';
@@ -61,11 +62,26 @@ function detachedMarkerPosition(editorRect, index) {
   };
 }
 
+function underlinesMatch(left, right) {
+  if (left.length !== right.length) return false;
+  return left.every((item, index) => {
+    const other = right[index];
+    return (
+      item.id === other.id &&
+      item.tone === other.tone &&
+      item.top === other.top &&
+      item.left === other.left &&
+      item.width === other.width
+    );
+  });
+}
+
 
 export default function StudentAnnotationController({ socket, studentId: suppliedStudentId }) {
   const studentId = Number(suppliedStudentId) || currentStudentId();
   const [annotations, setAnnotations] = useState([]);
   const [markers, setMarkers] = useState([]);
+  const [underlines, setUnderlines] = useState([]);
   const [actionBusy, setActionBusy] = useState(false);
   const [editorTextTick, setEditorTextTick] = useState(0);
   const [hoveredId, setHoveredId] = useState(null);
@@ -93,14 +109,12 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       ]);
       hoverTargetsRef.current = [];
       setMarkers([]);
+      setUnderlines([]);
       return;
     }
     const text = plainTextFromElement(editor);
-    const ranges = [];
-    const reopenRanges = [];
-    const awaitingRanges = [];
-    const resolvedRanges = [];
     const nextMarkers = [];
+    const nextUnderlines = [];
     const hoverTargets = [];
     let detachedCount = 0;
     const editorRect = editor.getBoundingClientRect();
@@ -130,11 +144,15 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         }
         continue;
       }
-      if (tone === 'resolved') resolvedRanges.push(range);
-      else if (tone === 'fixed') awaitingRanges.push(range);
-      else if (tone === 'reopen') reopenRanges.push(range);
-      else ranges.push(range);
       hoverTargets.push({ key: String(annotation.id), range, tone });
+      for (const box of commentUnderlineBoxes(range)) {
+        nextUnderlines.push({
+          id: `${annotation.id}:${nextUnderlines.length}`,
+          annotationId: String(annotation.id),
+          tone,
+          ...box,
+        });
+      }
       const rects = Array.from(range.getClientRects()).filter((item) => item.width || item.height);
       const rect = rects[rects.length - 1] || range.getBoundingClientRect();
       if (rect.width || rect.height) {
@@ -151,10 +169,12 @@ export default function StudentAnnotationController({ socket, studentId: supplie
         });
       }
     }
-    setNamedHighlight(HIGHLIGHT_NAME, ranges);
-    setNamedHighlight(REOPEN_HIGHLIGHT_NAME, reopenRanges);
-    setNamedHighlight(AWAITING_HIGHLIGHT_NAME, awaitingRanges);
-    setNamedHighlight(RESOLVED_HIGHLIGHT_NAME, resolvedRanges);
+    clearNamedHighlights([
+      HIGHLIGHT_NAME,
+      REOPEN_HIGHLIGHT_NAME,
+      AWAITING_HIGHLIGHT_NAME,
+      RESOLVED_HIGHLIGHT_NAME,
+    ]);
     hoverTargetsRef.current = hoverTargets;
     const lit = hoverTargets.find((item) => item.key === hoveredIdRef.current);
     if (lit?.range) {
@@ -164,6 +184,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
     }
     const stacked = stackGutterMarkers(nextMarkers, () => NOTE_HEIGHT + 4);
     setMarkers((prev) => (annotationMarkersMatch(prev, stacked) ? prev : stacked));
+    setUnderlines((prev) => (underlinesMatch(prev, nextUnderlines) ? prev : nextUnderlines));
   }, [annotations]);
 
   const adoptAnnotations = useCallback((list) => {
@@ -500,15 +521,30 @@ export default function StudentAnnotationController({ socket, studentId: supplie
   return (
     <>
       <style>{`
-        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.16); }
-        ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.16); }
-        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.16); }
-        ::highlight(${RESOLVED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
         ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
       `}</style>
       {(() => {
         const board = writingCard();
         const boardRect = board?.getBoundingClientRect();
+        const lines = underlines
+          .filter((line) => line.annotationId !== hoveredId)
+          .map((line) => {
+            const style = boardRect
+              ? {
+                  top: line.top - boardRect.top,
+                  left: line.left - boardRect.left,
+                  width: line.width,
+                  background: COMMENT_IDLE_LINE[line.tone] || COMMENT_IDLE_LINE.open,
+                }
+              : {
+                  position: 'fixed',
+                  top: line.top,
+                  left: line.left,
+                  width: line.width,
+                  background: COMMENT_IDLE_LINE[line.tone] || COMMENT_IDLE_LINE.open,
+                };
+            return <span key={line.id} className="iboard-ann-idle-underline" style={style} />;
+          });
         const notes = markers.map((marker) => {
           const live =
             annotations.find((item) => Number(item.id) === Number(marker.annotation.id)) || marker.annotation;
@@ -542,7 +578,8 @@ export default function StudentAnnotationController({ socket, studentId: supplie
             />
           );
         });
-        return board ? createPortal(notes, board) : notes;
+        const layer = [...lines, ...notes];
+        return board ? createPortal(layer, board) : layer;
       })()}
     </>
   );

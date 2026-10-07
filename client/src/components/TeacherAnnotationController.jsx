@@ -421,10 +421,6 @@ export default function TeacherAnnotationController() {
     // DOM and makes Chromium expand right-to-left selections.
     if (selectingInPaneRef.current) return;
 
-    const ranges = [];
-    const reopenRanges = [];
-    const awaitingRanges = [];
-    const resolvedRanges = [];
     const nextMarkers = [];
     const hoverTargets = [];
 
@@ -461,10 +457,6 @@ export default function TeacherAnnotationController() {
           }
           continue;
         }
-        if (tone === 'resolved') resolvedRanges.push(range);
-        else if (tone === 'fixed') awaitingRanges.push(range);
-        else if (tone === 'reopen') reopenRanges.push(range);
-        else ranges.push(range);
         hoverTargets.push({ key: `${studentId}:${annotation.id}`, range, tone });
         const position = markerPosition(range, card);
         if (!position) continue;
@@ -482,10 +474,12 @@ export default function TeacherAnnotationController() {
       }
     }
 
-    setNamedHighlight(HIGHLIGHT_NAME, ranges);
-    setNamedHighlight(REOPEN_HIGHLIGHT_NAME, reopenRanges);
-    setNamedHighlight(AWAITING_HIGHLIGHT_NAME, awaitingRanges);
-    setNamedHighlight(FIXED_HIGHLIGHT_NAME, resolvedRanges);
+    clearNamedHighlights([
+      HIGHLIGHT_NAME,
+      REOPEN_HIGHLIGHT_NAME,
+      AWAITING_HIGHLIGHT_NAME,
+      FIXED_HIGHLIGHT_NAME,
+    ]);
     paintPendingSelection();
     hoverTargetsRef.current = hoverTargets;
     const lit = hoverTargets.find((item) => item.key === hoveredKeyRef.current);
@@ -1338,10 +1332,6 @@ export default function TeacherAnnotationController() {
   return (
     <>
       <style>{`
-        ::highlight(${HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.16); }
-        ::highlight(${REOPEN_HIGHLIGHT_NAME}) { background: rgba(248, 113, 113, 0.16); }
-        ::highlight(${AWAITING_HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.16); }
-        ::highlight(${FIXED_HIGHLIGHT_NAME}) { background: rgba(167, 243, 208, 0.5); }
         ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
         ::highlight(${PENDING_HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.4); }
       `}</style>

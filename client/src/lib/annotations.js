@@ -667,6 +667,13 @@ export const COMMENT_HOVER_WASH = {
   resolved: 'rgba(16, 185, 129, 0.48)',
 };
 
+export const COMMENT_IDLE_LINE = {
+  open: 'color-mix(in srgb, #5a5fc3 52%, transparent)',
+  reopen: 'color-mix(in srgb, #f43f5e 52%, transparent)',
+  fixed: 'color-mix(in srgb, #5a5fc3 52%, transparent)',
+  resolved: 'color-mix(in srgb, #10b981 52%, transparent)',
+};
+
 const highlightSignatureCache = new Map();
 
 function highlightSignature(ranges) {
@@ -746,6 +753,22 @@ export function hoverRangeBoxes(range) {
         left: rect.left,
         width: rect.width,
         height: rect.height,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+/** Hairline under the quoted words so students can see the mark without a wash. */
+export function commentUnderlineBoxes(range) {
+  if (!range) return [];
+  try {
+    return Array.from(range.getClientRects())
+      .filter((rect) => rect.width > 1)
+      .map((rect) => ({
+        top: rect.bottom - 1.5,
+        left: rect.left,
+        width: rect.width,
       }));
   } catch {
     return [];

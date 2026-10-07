@@ -4304,6 +4304,14 @@ html.dark .iboard-student-note__check {
   pointer-events: none;
 }
 
+.iboard-ann-idle-underline {
+  position: absolute;
+  z-index: 4;
+  height: 1.5px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
 .iboard-ann-mark {
   --ann-pip: #5a5fc3;
   display: flex;
