@@ -1,6 +1,7 @@
 export default function AnnotationMark({
   tone = 'open',
   layout = 'gutter',
+  stacked = false,
   lit = false,
   className = '',
   children: _children,
@@ -13,7 +14,7 @@ export default function AnnotationMark({
     <button
       type="button"
       data-teacher-annotation-ui
-      className={`iboard-ann-mark iboard-ann-mark--${tone}${orphan ? ' iboard-ann-mark--orphan' : ''}${compact ? ' iboard-ann-mark--compact' : ''}${lit ? ' is-lit' : ''} ${className}`.trim()}
+      className={`iboard-ann-mark iboard-ann-mark--${tone}${orphan ? ' iboard-ann-mark--orphan' : ''}${stacked ? ' iboard-ann-mark--stacked' : ''}${compact ? ' iboard-ann-mark--compact' : ''}${lit ? ' is-lit' : ''} ${className}`.trim()}
       {...props}
     >
       <span className="iboard-ann-mark__stem" aria-hidden="true" />

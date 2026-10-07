@@ -227,6 +227,7 @@ export function annotationMarkersMatch(a, b) {
       left.position !== right.position ||
       left.layout !== right.layout ||
       left.lane !== right.lane ||
+      Boolean(left.stacked) !== Boolean(right.stacked) ||
       Math.abs((left.top || 0) - (right.top || 0)) > 0.5 ||
       Math.abs((left.left || 0) - (right.left || 0)) > 0.5 ||
       Math.abs((left.width || 0) - (right.width || 0)) > 0.5
@@ -770,9 +771,10 @@ export function stackGutterMarkers(markers, gapFor = () => 18) {
     let last = -Infinity;
     for (const marker of group) {
       const gap = Number(gapFor(marker)) || 18;
+      const near = last !== -Infinity && marker.top <= last + gap;
       const top = marker.top < last + gap ? last + gap : marker.top;
       last = top;
-      next.push(top === marker.top ? marker : { ...marker, top });
+      next.push(near ? { ...marker, top, stacked: true } : marker);
     }
   }
   return next.concat(orphans);

@@ -29,6 +29,7 @@ export default function StudentCommentNote({
   note = '',
   lit = false,
   detached = false,
+  stacked = false,
   busy = false,
   onCheck,
   className = '',
@@ -103,7 +104,7 @@ export default function StudentCommentNote({
   return (
     <div
       data-teacher-annotation-ui
-      className={`iboard-student-note iboard-student-note--${tone}${detached ? ' is-detached' : ''}${lit ? ' is-lit' : ''}${open ? ' is-open' : ''} ${className}`.trim()}
+      className={`iboard-student-note iboard-student-note--${tone}${detached ? ' is-detached' : ''}${stacked ? ' is-stacked' : ''}${lit ? ' is-lit' : ''}${open ? ' is-open' : ''} ${className}`.trim()}
       {...props}
     >
       <span className="iboard-student-note__stem" aria-hidden="true" />

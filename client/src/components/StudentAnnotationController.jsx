@@ -534,6 +534,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
               tone={tone}
               note={live.note}
               detached={marker.detached}
+              stacked={Boolean(marker.stacked)}
               lit={hoveredId === String(marker.annotation.id)}
               busy={actionBusy}
               data-ann-key={String(marker.annotation.id)}

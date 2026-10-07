@@ -105,6 +105,7 @@ test('same-line gutter bubbles stack instead of overlapping', () => {
     () => 18,
   );
   assert.deepEqual(stacked.map((marker) => marker.top), [100, 118, 136]);
+  assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, true, true]);
 });
 
 test('all comment tones share one gutter column and stack when they collide', () => {
@@ -121,6 +122,20 @@ test('all comment tones share one gutter column and stack when they collide', ()
     () => 18,
   );
   assert.deepEqual(stacked.map((marker) => marker.top), [100, 118, 136]);
+  assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, true, true]);
+});
+
+test('stems drop when comments sit on neighbouring lines at the stack gap', () => {
+  const stacked = stackGutterMarkers(
+    [
+      { id: 1, top: 9, left: 40, lane: 'gutter' },
+      { id: 2, top: 28, left: 40, lane: 'gutter' },
+      { id: 3, top: 47, left: 80, lane: 'gutter' },
+    ],
+    () => 19,
+  );
+  assert.deepEqual(stacked.map((marker) => marker.top), [9, 28, 47]);
+  assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, true, true]);
 });
 
 test('detached notes with a rematched range still stack in the margin', () => {
@@ -132,6 +147,7 @@ test('detached notes with a rematched range still stack in the margin', () => {
     () => 26,
   );
   assert.deepEqual(stacked.map((marker) => marker.top), [100, 126]);
+  assert.deepEqual(stacked.map((marker) => Boolean(marker.stacked)), [false, true]);
 });
 
 test('comment colours follow unseen, dealt with, check again, dealt with again, confirmed', () => {

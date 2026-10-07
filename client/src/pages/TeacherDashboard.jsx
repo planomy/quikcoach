@@ -4259,7 +4259,8 @@ function TeacherDashboardInner() {
                 <div className="iboard-student-card__head group/card-head">
                   <div className="iboard-student-card__head-start">
                   <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-1">
+                    <div className="flex min-w-0 flex-col gap-1">
+                    <div className="flex min-w-0 items-center gap-1">
                       <HintWrap hint={s.name} prefer="above">
                       <h2
                         className={`iboard-student-card__name min-w-0 truncate ${
@@ -4293,6 +4294,17 @@ function TeacherDashboardInner() {
                           {gradeShortLabel(s.year_level)}
                         </span>
                       )}
+                      {writingNow ? (
+                        <HintWrap hint="Writing now" prefer="above">
+                        <span
+                          title=""
+                          aria-label="Writing now"
+                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.55)]"
+                        />
+                        </HintWrap>
+                      ) : null}
+                    </div>
+                    <div className="flex min-w-0 flex-wrap items-center gap-1">
                       {breakoutsActive ? (
                         <label className="ml-auto shrink-0" onClick={(event) => event.stopPropagation()}>
                           <span className="sr-only">Breakout room for {s.name}</span>
@@ -4336,15 +4348,6 @@ function TeacherDashboardInner() {
                         >
                           {engagementLabel}
                         </span>
-                      ) : null}
-                      {writingNow ? (
-                        <HintWrap hint="Writing now" prefer="above">
-                        <span
-                          title=""
-                          aria-label="Writing now"
-                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.55)]"
-                        />
-                        </HintWrap>
                       ) : null}
                       {askedIn ? (
                         <HintWrap hint="Answered" prefer="above">
@@ -4413,6 +4416,7 @@ function TeacherDashboardInner() {
                     </HintWrap>
                   ) : null}
                     </div>
+                  </div>
                   </div>
                   </div>
                   <p
@@ -4579,7 +4583,7 @@ function TeacherDashboardInner() {
                   data-student-writing-pane
                   data-card-font="true"
                   style={cardView === 'all' ? undefined : { fontSize: `${cardFontRem(cardFontById, s.id)}rem` }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 leading-relaxed scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 pr-10 scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">

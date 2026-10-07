@@ -1307,6 +1307,7 @@ export default function TeacherAnnotationController() {
         key={`${marker.studentId}-${marker.annotation.id}`}
         tone={tone}
         layout={marker.layout || 'gutter'}
+        stacked={Boolean(marker.stacked)}
         lit={hoveredKey === `${marker.studentId}:${marker.annotation.id}`}
         data-ann-key={`${marker.studentId}:${marker.annotation.id}`}
         onClick={() => pinCommentPopup(marker)}

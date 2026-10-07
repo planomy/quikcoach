@@ -1717,7 +1717,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 .iboard-student-card__head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   column-gap: 0.4rem;
 }
 
@@ -1737,7 +1737,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card__wordcount {
   justify-self: center;
-  margin: 0;
+  margin: 0.4rem 0 0;
   color: #8b8b96;
   font-size: 11px;
   font-weight: 600;
@@ -1845,13 +1845,23 @@ html.dark .iboard-teacher-panel-reveal:hover {
   margin-top: 0.4rem;
   padding: 0.45rem 2.1rem 0.45rem 0.55rem;
   font-size: 0.78em;
-  line-height: 1.35;
+  line-height: 1.45;
 }
 
 .iboard-writing-surface {
   background: transparent;
   color: #3c3c45;
   box-shadow: none;
+  line-height: 1.45;
+}
+
+.iboard-rich-text,
+.iboard-rich-text :is(p, div, li, span, ul, ol) {
+  line-height: inherit;
+}
+
+.iboard-student-card .iboard-rich-text :is(div, p) + :is(div, p) {
+  margin-top: 0;
 }
 
 .iboard-student-card .iboard-writing-surface {
@@ -4207,11 +4217,13 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   transition: border-color 160ms ease;
 }
 
-.iboard-student-note.is-detached .iboard-student-note__stem {
+.iboard-student-note.is-detached .iboard-student-note__stem,
+.iboard-student-note.is-stacked .iboard-student-note__stem {
   display: none;
 }
 
-.iboard-student-note.is-detached {
+.iboard-student-note.is-detached,
+.iboard-student-note.is-stacked {
   justify-content: flex-end;
 }
 
@@ -4455,7 +4467,8 @@ html.dark .iboard-student-note {
   height: 13px;
 }
 
-.iboard-ann-mark--orphan .iboard-ann-mark__stem {
+.iboard-ann-mark--orphan .iboard-ann-mark__stem,
+.iboard-ann-mark--stacked .iboard-ann-mark__stem {
   display: none;
 }
 
@@ -5114,6 +5127,7 @@ html.dark .iboard-lesson-objective__label {
   margin-top: 0.05rem;
 }
 
+.iboard-student-card--fit .iboard-student-card__fit-pane,
 .iboard-student-card__fit-pane {
   flex: 1 1 auto;
   min-height: 0;
@@ -5122,9 +5136,9 @@ html.dark .iboard-lesson-objective__label {
   overscroll-behavior: contain;
   scrollbar-width: none;
   margin-top: 0.35rem !important;
-  padding: 0.35rem 0.5rem !important;
+  padding: 0.35rem 2.1rem 0.35rem 0.5rem !important;
   font-size: 0.72rem;
-  line-height: 1.35;
+  line-height: 1.45;
 }
 
 .iboard-student-card__fit-pane::-webkit-scrollbar {
