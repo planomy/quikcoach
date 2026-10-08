@@ -990,17 +990,60 @@ html.dark .iboard-brand-word {
 }
 
 .iboard-command-bar {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: end;
   column-gap: 0.85rem;
 }
 
+/* One lilac strip runs under both tool groups and behind the gauge. */
+.iboard-command-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2rem;
+  border: 1px solid #c1c2e7;
+  border-radius: 0.7rem;
+  background: #e1defc;
+  pointer-events: none;
+}
+
+html.dark .iboard-command-bar::before {
+  border-color: #334155;
+  background: rgba(15, 23, 42, 0.6);
+}
+
 .iboard-command-bar__side {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
   min-width: 0;
+}
+
+.iboard-command-bar__side .iboard-attention-home,
+.iboard-command-bar__side .iboard-manage-tools,
+html.dark .iboard-command-bar__side .iboard-attention-home,
+html.dark .iboard-command-bar__side .iboard-manage-tools {
+  box-sizing: border-box;
+  height: 2rem;
+  padding: 0 0.25rem;
+  border: 0;
+  background: transparent;
+}
+
+.iboard-header-pill--attention.is-zero {
+  background: rgba(255, 255, 255, 0.55);
+  color: #9a9aa6;
+  cursor: default;
+}
+
+html.dark .iboard-header-pill--attention.is-zero {
+  background: rgba(30, 41, 59, 0.6);
+  color: #64748b;
 }
 
 .iboard-command-bar__side--monitor {
@@ -1024,17 +1067,6 @@ html.dark .iboard-brand-word {
 
 .iboard-command-bar__side .iboard-attention-home {
   margin: 0;
-}
-
-.iboard-attention-home__clear {
-  display: inline-flex;
-  align-items: center;
-  height: 1.5rem;
-  padding: 0 0.65rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: #7c7c8a;
-  white-space: nowrap;
 }
 
 .iboard-manage-tools {

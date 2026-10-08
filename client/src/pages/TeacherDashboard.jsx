@@ -3464,7 +3464,7 @@ function TeacherDashboardInner() {
     { id: 'notStarted', label: `${attentionCounts.notStarted} not started` },
     { id: 'noTyping', label: `${attentionCounts.noTyping} no typing` },
     { id: 'pasted', label: `${attentionCounts.pasted} pasted` },
-  ].filter((pill) => attentionCounts[pill.id] > 0);
+  ].filter((pill) => alertPrefs[pill.id] !== false);
   const messageWaitCount = orderedStudents.reduce(
     (n, student) => n + (studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId) ? 1 : 0),
     0
@@ -3555,16 +3555,16 @@ function TeacherDashboardInner() {
               <div className="iboard-command-bar__side iboard-command-bar__side--monitor">
                 <span className="iboard-command-bar__title">Monitor class</span>
                 <div className="iboard-attention-home" role="group" aria-label="Needs a look">
-                  {attentionPills.length || inboxSummary ? (
-                    <>
                     {attentionPills.map((pill) => {
                       const on = attentionFocus === pill.id;
+                      const zero = !attentionCounts[pill.id];
                       return (
-                        <HintWrap key={pill.id} hint={attentionHint(attentionNames[pill.id], on)} prefer="below" tone="card">
+                        <HintWrap key={pill.id} hint={zero ? null : attentionHint(attentionNames[pill.id], on)} prefer="below" tone="card">
                           <button
                             type="button"
+                            disabled={zero}
                             onClick={() => setAttentionFocus(on ? null : pill.id)}
-                            className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}`}
+                            className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}${zero ? ' is-zero' : ''}`}
                             title=""
                             aria-pressed={on}
                           >
@@ -3573,7 +3573,11 @@ function TeacherDashboardInner() {
                         </HintWrap>
                       );
                     })}
-                    {inboxSummary ? (
+                    {!inboxSummary ? (
+                      <button type="button" disabled className="iboard-header-pill iboard-header-pill--attention is-zero">
+                        0 messages
+                      </button>
+                    ) : (
                       <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" tone="card">
                         <button
                           type="button"
@@ -3596,11 +3600,7 @@ function TeacherDashboardInner() {
                           {inboxSummary}
                         </button>
                       </HintWrap>
-                    ) : null}
-                    </>
-                  ) : (
-                    <span className="iboard-attention-home__clear">All clear</span>
-                  )}
+                    )}
                 </div>
               </div>
               <div className="iboard-command-bar__gauge">
