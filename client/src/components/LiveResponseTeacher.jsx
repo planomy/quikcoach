@@ -188,6 +188,8 @@ export default function LiveResponseTeacher({
   /** Responses open from the header gauge instead of a tab in this panel. */
   hideResponsesTab = false,
   responsesOnly = false,
+  presentAnswers = false,
+  onExitPresent,
 }) {
   const [internalPanelTab, setInternalPanelTab] = useState('ask');
   const effectivePanelTab = panelTab ?? (panelTabs ? internalPanelTab : null);
@@ -993,6 +995,8 @@ export default function LiveResponseTeacher({
             onOpenAsk={() => switchPanelTab('ask')}
             onClose={onClose}
             onThinkingSent={onThinkingSent}
+            presentAnswers={presentAnswers}
+            onExitPresent={onExitPresent}
           />
         )}
 

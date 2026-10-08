@@ -14,7 +14,7 @@ function ringGradient(segments, total) {
   return `conic-gradient(from 0deg, ${stops.join(', ')})`;
 }
 
-export default function ClassGauge({ title, caption, done, total, online, segments, onClick, expanded = false, opens = '' }) {
+export default function ClassGauge({ title, caption, done, total, online, segments, onClick, expanded = false, opens = '', notice = '' }) {
   const hint = (
     <span className="block min-w-[11rem]">
       <span className="block whitespace-nowrap bg-[#3c3f8f] px-2.5 py-1 text-[9px] font-semibold text-white dark:bg-[#5a5fc3]">
@@ -52,6 +52,11 @@ export default function ClassGauge({ title, caption, done, total, online, segmen
               <span className="iboard-class-gauge__live" aria-hidden="true" />
               <b className="tabular-nums">{online}</b> online
             </span>
+            {notice ? (
+              <span className="iboard-class-gauge__notice" role="status">
+                {notice}
+              </span>
+            ) : null}
           </span>
         </span>
       </button>

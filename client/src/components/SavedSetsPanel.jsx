@@ -454,7 +454,7 @@ export default function SavedSetsPanel({
   return (
     <div
       ref={showSets ? setsRootRef : undefined}
-      className={showQueue ? 'border-t border-slate-200 px-4 py-2.5 dark:border-slate-700' : 'flex h-full min-h-0 flex-col p-4'}
+      className={showQueue ? 'border-t border-slate-200 px-3 py-1.5 dark:border-slate-700' : 'flex h-full min-h-0 flex-col p-4'}
     >
       {showQueue && (
         <section>
@@ -487,25 +487,25 @@ export default function SavedSetsPanel({
 
           {queueOpen && queue.length > 0 && (
             <>
-              <div className="mt-3 space-y-2">
+              <div className="mt-1.5 max-h-36 space-y-1 overflow-y-auto">
                 {queue.map((item, index) => {
                   const editing = editingQueueId === item.id;
                   return (
-                  <div key={item.id} className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700">
-                    <div className="flex items-start gap-2">
-                      <span className="mt-0.5 w-4 shrink-0 text-[10px] font-black tabular-nums text-slate-400">{index + 1}</span>
+                  <div key={item.id} className="rounded-lg border border-slate-200 px-2 py-1 dark:border-slate-700">
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 shrink-0 text-[10px] font-black tabular-nums text-slate-400">{index + 1}</span>
                       {editing ? (
                         <textarea
                           value={queueEditDraft}
                           onChange={(event) => setQueueEditDraft(event.target.value.slice(0, 500))}
-                          className="min-h-[3.25rem] min-w-0 flex-1 rounded-lg border border-[#cfcce8] bg-white px-2.5 py-1.5 text-[13px] font-semibold leading-snug text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
+                          rows={2}
+                          className="min-h-0 min-w-0 flex-1 rounded-md border border-[#cfcce8] bg-white px-2 py-1 text-[13px] font-semibold leading-snug text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
                           aria-label={`Edit queued question ${index + 1}`}
                         />
                       ) : (
-                        <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-slate-900 dark:text-white">{item.prompt}</p>
+                        <p className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-tight text-slate-900 dark:text-white">{item.prompt}</p>
                       )}
-                    </div>
-                    <div className="mt-2 flex items-center justify-end gap-2 pl-6">
+                    <div className="flex shrink-0 items-center gap-1">
                       {editing ? (
                         <>
                           <button
@@ -561,6 +561,7 @@ export default function SavedSetsPanel({
                           <RemoveButton onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} aria-label="Remove from queue" />
                         </>
                       )}
+                    </div>
                     </div>
                   </div>
                   );

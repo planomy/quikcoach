@@ -641,6 +641,7 @@ function TeacherDashboardInner() {
   const gaugeSlotRef = useRef(null);
   const gaugePanelRef = useRef(null);
   const [gaugePanelOpen, setGaugePanelOpen] = useState(false);
+  const [answerPresent, setAnswerPresent] = useState(false);
   const [gaugeBox, setGaugeBox] = useState(null);
   useLayoutEffect(() => {
     if (!gaugePanelOpen) return undefined;
@@ -2315,7 +2316,9 @@ function TeacherDashboardInner() {
       const dockHeight = Math.min(desired, maxHeight);
       const preferredTop = settingsOpen
         ? (buttonBox?.top ?? offsetTop + margin)
-        : (buttonBox ? buttonBox.top + buttonBox.height / 2 - 48 : offsetTop + margin);
+        : toolsPanelOpen && toolsTab === 'ask'
+          ? offsetTop + (viewport - dockHeight) / 2
+          : (buttonBox ? buttonBox.top + buttonBox.height / 2 - 48 : offsetTop + margin);
       const nextTop = Math.round(Math.max(
         offsetTop + margin,
         Math.min(preferredTop, offsetTop + viewport - dockHeight - margin)
@@ -2600,6 +2603,7 @@ function TeacherDashboardInner() {
       closeSettings();
       return;
     }
+    closeLibraryHub();
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
@@ -2624,6 +2628,7 @@ function TeacherDashboardInner() {
   }
 
   function openAddCard({ forceOpen = false } = {}) {
+    closeLibraryHub();
     closeSettings();
     setViewOpen(false);
     setHelpOpen(false);
@@ -3462,6 +3467,7 @@ function TeacherDashboardInner() {
   }
 
   function openGaugePanel() {
+    closeLibraryHub();
     closeSettings();
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
@@ -3473,12 +3479,19 @@ function TeacherDashboardInner() {
     setGaugePanelOpen(true);
   }
 
+  function showLaunchedAnswers() {
+    setAnswerPresent(true);
+    openGaugePanel();
+  }
+
   function openTeacherTools(tab = 'ask', { highlightStudentId = null } = {}) {
     if (tab === 'responses') {
       openGaugePanel();
       return;
     }
+    closeLibraryHub();
     setGaugePanelOpen(false);
+    setAnswerPresent(false);
     closeSettings();
     setAddCardOpen(false);
     setViewOpen(false);
@@ -3589,9 +3602,9 @@ function TeacherDashboardInner() {
 
   const monitoredCount = monitoredIds.size;
   const attentionPills = [
-    { id: 'away', label: `${attentionCounts.away} away` },
     { id: 'notStarted', label: `${attentionCounts.notStarted} not started` },
     { id: 'noTyping', label: `${attentionCounts.noTyping} no typing` },
+    { id: 'away', label: `${attentionCounts.away} away` },
     { id: 'pasted', label: `${attentionCounts.pasted} pasted` },
   ].filter((pill) => alertPrefs[pill.id] !== false);
   const messageWaitCount = orderedStudents.reduce(
@@ -4078,6 +4091,7 @@ function TeacherDashboardInner() {
                   done={classGauge.done}
                   total={classGauge.total}
                   online={connectedStudents.length}
+                  notice={copyToast}
                   segments={classGauge.segments}
                   onClick={() => (gaugePanelOpen ? setGaugePanelOpen(false) : openGaugePanel())}
                   expanded={gaugePanelOpen}
@@ -4241,12 +4255,13 @@ function TeacherDashboardInner() {
               </div>
             )}
                   </div>
-                  <HintWrap hint="Present mode: keeps the question panel on top while you show other windows" prefer="below" multiline>
+                  <HintWrap hint={livePulse.activity ? 'Show student answers full screen' : 'Ask a question to show answers full screen'} prefer="below" multiline>
                     <button
                       type="button"
-                      onClick={() => window.dispatchEvent(new Event("iboard:open-presenter-dock"))}
+                      onClick={() => (livePulse.activity ? showLaunchedAnswers() : openTeacherTools('ask'))}
                       className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
-                      aria-label="Present mode"
+                      aria-label="Present answers"
+                      data-active={answerPresent ? 'true' : 'false'}
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="4" width="18" height="12" rx="2" />
@@ -4351,19 +4366,6 @@ function TeacherDashboardInner() {
         }
       />
       </div>
-      {copyToast
-        ? createPortal(
-            <div
-              role="status"
-              aria-live="polite"
-              className="iboard-header-whisper iboard-header-whisper--float pointer-events-none"
-              title={copyToast}
-            >
-              {copyToast}
-            </div>,
-            document.body
-          )
-        : null}
       {learningTrailId != null && (
         <LearningTrailView
           socket={socket}
@@ -4405,7 +4407,7 @@ function TeacherDashboardInner() {
             panelTab={toolsTab}
             onPanelTabChange={(tab) => (tab === 'responses' ? openGaugePanel() : setToolsTab(tab))}
             onClose={closeTeacherTools}
-            onQuestionLaunched={openGaugePanel}
+            onQuestionLaunched={showLaunchedAnswers}
             hideResponsesTab
             highlightStudentId={toolsHighlightStudentId}
             onClearHighlight={() => setToolsHighlightStudentId(null)}
@@ -4450,6 +4452,8 @@ function TeacherDashboardInner() {
                 openTeacherTools(tab);
               }}
               onClose={() => setGaugePanelOpen(false)}
+              presentAnswers={answerPresent}
+              onExitPresent={() => setAnswerPresent(false)}
               subjectAssist={promptSubjectAssist}
               rosterStudentIds={orderedStudents.map((s) => s.id)}
               initialLive={livePulse}
@@ -5395,7 +5399,7 @@ function TeacherDashboardInner() {
       ) : null}
 
       {libraryPanel && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
+        <div className="iboard-library-scrim fixed bottom-0 right-0 top-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div
             className={`flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900${
               helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''

@@ -1121,7 +1121,7 @@ html.dark .iboard-alert-chip.is-on {
   padding: 0 0.6rem;
   border: 0;
   border-radius: 999px;
-  background: #f3f3fb;
+  background: #f9f9fd;
   box-shadow: none;
 }
 
@@ -1464,6 +1464,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 }
 
 .iboard-class-gauge__face {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1473,6 +1474,28 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   border-radius: 999px;
   background: #ffffff;
   line-height: 1;
+}
+
+/* Sits in the band under the online count, inside the white circle. */
+.iboard-class-gauge__notice {
+  position: absolute;
+  left: 50%;
+  bottom: 0.14rem;
+  z-index: 2;
+  max-width: 9.5rem;
+  transform: translateX(-50%);
+  padding: 0.04rem 0.4rem;
+  overflow: hidden;
+  border: 1px solid #cfcce8;
+  border-radius: 999px;
+  background: #ebeaf8;
+  color: #5a5fc3;
+  font-size: 0.58rem;
+  font-weight: 650;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .iboard-class-gauge__count {
@@ -1538,6 +1561,12 @@ html.dark {
 
 html.dark .iboard-class-gauge__face {
   background: #0f172a;
+}
+
+html.dark .iboard-class-gauge__notice {
+  border-color: #312e81;
+  background: #1e1b4b;
+  color: #c7d2fe;
 }
 
 html.dark .iboard-class-gauge__count,
@@ -1992,6 +2021,11 @@ html.dark .iboard-board-empty__code {
   border-right: 1px solid #e2e8ef;
   padding: 0.45rem 0 0.45rem;
   min-height: 0;
+}
+
+/* Reports and AI feedback cover the board, but the rail stays clickable so another tool can take over. */
+.iboard-library-scrim {
+  left: 4.75rem;
 }
 
 .iboard-arr-rail__add,
@@ -3795,8 +3829,8 @@ html.dark .iboard-feedback-settings__cancel:hover {
   position: relative;
   min-height: 2.5rem;
   padding: 0.55rem 2.75rem;
-  border-bottom: 1px solid #e4e4ea;
-  background: #ebebed;
+  border-bottom: 1px solid #d5d4e4;
+  background: #ebeaf8;
 }
 
 .iboard-room-settings__chrome h2 {
@@ -4436,8 +4470,8 @@ html.dark .iboard-room-settings {
 }
 
 html.dark .iboard-room-settings__chrome {
-  background: #222830;
-  border-bottom-color: #334155;
+  background: rgba(30, 27, 75, 0.55);
+  border-bottom-color: #312e81;
 }
 
 html.dark .iboard-room-settings__chrome h2 {

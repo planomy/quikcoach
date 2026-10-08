@@ -208,6 +208,8 @@ export default function TeacherAnswerRail({
   onClearHighlight,
   onOpenAsk,
   onThinkingSent,
+  presentAnswers = false,
+  onExitPresent,
 }) {
   const listRef = useRef(null);
   const panelRef = useRef(null);
@@ -241,7 +243,30 @@ export default function TeacherAnswerRail({
 
   function exitPresent() {
     setPresenting(false);
+    onExitPresent?.();
   }
+
+  useEffect(() => {
+    if (presentAnswers && activity) setPresenting(true);
+  }, [presentAnswers, activity]);
+
+  useEffect(() => {
+    if (!presenting || activity) return undefined;
+    setPresenting(false);
+    onExitPresent?.();
+    return undefined;
+  }, [presenting, activity, onExitPresent]);
+
+  useEffect(() => {
+    if (!presenting) return undefined;
+    function exitOnEscape(event) {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      exitPresent();
+    }
+    document.addEventListener('keydown', exitOnEscape);
+    return () => document.removeEventListener('keydown', exitOnEscape);
+  }, [presenting]);
 
   useEffect(() => {
     if (!open || highlightStudentId == null) return undefined;
@@ -342,7 +367,7 @@ export default function TeacherAnswerRail({
           </div>
         ) : null}
         {createPortal(
-          <div className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
+          <div data-iboard-dialog className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
             <button
               type="button"
               onClick={exitPresent}
@@ -610,7 +635,7 @@ export default function TeacherAnswerRail({
 
       {presenting && activity
         ? createPortal(
-            <div className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
+            <div data-iboard-dialog className="fixed inset-0 z-[95] flex h-[100dvh] w-screen flex-col overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-950 to-slate-950 text-white">
               <button
                 type="button"
                 onClick={exitPresent}
