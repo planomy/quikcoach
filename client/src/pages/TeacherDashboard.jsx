@@ -196,6 +196,22 @@ function cardFontRem(map, studentId) {
   return CARD_FONT_REMS[cardFontIndex(map, studentId)];
 }
 
+const ALERT_ICON_PATHS = {
+  away: <path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10Z" />,
+  notStarted: <><path d="M7 3.5h6.5L18 8v12.5H7z" /><path d="M13.5 3.5V8H18" /></>,
+  noTyping: <path d="M9.5 6.5v11M14.5 6.5v11" />,
+  pasted: <><rect x="6" y="4.5" width="12" height="16" rx="2" /><path d="M9.5 3.5h5v3h-5z" /></>,
+  messages: <path d="M4.5 5.5h15v10h-9l-4.5 3.5v-3.5H4.5z" />,
+};
+
+function AlertIcon({ id }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {ALERT_ICON_PATHS[id]}
+    </svg>
+  );
+}
+
 function CardViewIcon({ id, className = 'h-5 w-5' }) {
   if (id === 'all') {
     return (
@@ -3512,9 +3528,10 @@ function TeacherDashboardInner() {
       .filter((student) => studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId))
       .map((student) => student.name || 'Unnamed')
     : [];
-  const attentionHint = (names, on) => (
+  const attentionHint = (names, on, title = '') => (
     <span className="block min-w-[9rem]">
       <span className="block whitespace-nowrap bg-[#3c3f8f] px-2.5 py-1 text-[9px] font-semibold text-white dark:bg-[#5a5fc3]">
+        {title ? <b className="mr-1 font-extrabold">{title} ·</b> : null}
         {on ? 'Click to show all cards' : 'Click to bring to the top'}
       </span>
       <span className="block px-2.5 py-1.5 text-[#5a5fc3] dark:text-indigo-200">
@@ -3764,18 +3781,25 @@ function TeacherDashboardInner() {
                 <div className="iboard-attention-home" role="group" aria-label="Needs a look">
                     {attentionPills.map((pill) => {
                       const on = attentionFocus === pill.id;
-                      const zero = !attentionCounts[pill.id];
+                      const count = attentionCounts[pill.id] || 0;
                       return (
-                        <HintWrap key={pill.id} hint={zero ? null : attentionHint(attentionNames[pill.id], on)} prefer="below" tone="card">
+                        <HintWrap
+                          key={pill.id}
+                          hint={count ? attentionHint(attentionNames[pill.id], on, pill.label) : pill.label}
+                          prefer="below"
+                          tone={count ? 'card' : 'brand'}
+                        >
                           <button
                             type="button"
-                            disabled={zero}
-                            onClick={() => setAttentionFocus(on ? null : pill.id)}
-                            className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}${zero ? ' is-zero' : ''}`}
+                            onClick={() => { if (count) setAttentionFocus(on ? null : pill.id); }}
+                            className={`iboard-alert-chip${count ? ' has-count' : ''}${on ? ' is-on' : ''}`}
                             title=""
+                            aria-disabled={!count}
                             aria-pressed={on}
+                            aria-label={pill.label}
                           >
-                            {pill.label}
+                            <AlertIcon id={pill.id} />
+                            <span className="tabular-nums">{count}</span>
                           </button>
                         </HintWrap>
                       );
@@ -3795,15 +3819,15 @@ function TeacherDashboardInner() {
               <div className="iboard-command-bar__side iboard-command-bar__side--manage">
                 <span className="iboard-command-bar__title">Manage class</span>
                 <div className="iboard-manage-tools" role="group" aria-label="Manage class">
-                  {!inboxSummary ? (
-                    <button type="button" disabled className="iboard-header-pill iboard-header-pill--attention is-zero">
-                      0 messages
-                    </button>
-                  ) : (
-                    <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" tone="card">
+                  <HintWrap
+                    hint={messageWaitCount ? attentionHint(inboxNames, inboxFocus, inboxSummary) : 'No messages waiting'}
+                    prefer="below"
+                    tone={messageWaitCount ? 'card' : 'brand'}
+                  >
                       <button
                         type="button"
                         onClick={() => {
+                          if (!messageWaitCount) return;
                           setInboxFocus((on) => {
                             const next = !on;
                             if (next) {
@@ -3815,14 +3839,16 @@ function TeacherDashboardInner() {
                             return next;
                           });
                         }}
-                        className={`iboard-header-pill iboard-header-pill--attention${inboxFocus ? ' is-on' : ''}`}
+                        className={`iboard-alert-chip${messageWaitCount ? ' has-count' : ''}${inboxFocus ? ' is-on' : ''}`}
                         title=""
+                        aria-disabled={!messageWaitCount}
                         aria-pressed={inboxFocus}
+                        aria-label={inboxSummary || 'No messages waiting'}
                       >
-                        {inboxSummary}
+                        <AlertIcon id="messages" />
+                        <span className="tabular-nums">{messageWaitCount}</span>
                       </button>
-                    </HintWrap>
-                  )}
+                  </HintWrap>
                   <div ref={breakoutsMenuRef} className="relative">
                   <HintWrap hint={breakoutsActive ? "Breakouts are running. Open to shuffle or close rooms" : "Breakout rooms"} prefer="below" suppressed={breakoutsMenuOpen}>
                     <button

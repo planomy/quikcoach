@@ -1005,15 +1005,74 @@ html.dark .iboard-brand-word {
   right: 0;
   bottom: 0;
   height: 2rem;
-  border: 1px solid #c1c2e7;
+  border: 1px solid #d6d6ef;
   border-radius: 0.7rem;
-  background: #e1defc;
+  background: #fafaff;
   pointer-events: none;
 }
 
 html.dark .iboard-command-bar::before {
   border-color: #334155;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+/* Alerts read as icon + number; colour only appears when a count is above zero. */
+.iboard-alert-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #b4b4c0;
+  font-size: 0.75rem;
+  font-weight: 750;
+  line-height: 1;
+  cursor: default;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.iboard-alert-chip svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+}
+
+.iboard-alert-chip.has-count {
+  background: #ebeaf8;
+  color: #3c3f8f;
+  cursor: pointer;
+}
+
+.iboard-alert-chip.has-count:hover {
+  background: #dedcf6;
+}
+
+.iboard-alert-chip.is-on,
+.iboard-alert-chip.is-on:hover {
+  background: #5a5fc3;
+  color: #ffffff;
+}
+
+.iboard-alert-chip:focus-visible {
+  outline: 2px solid #5a5fc3;
+  outline-offset: 2px;
+}
+
+html.dark .iboard-alert-chip {
+  color: #475569;
+}
+
+html.dark .iboard-alert-chip.has-count {
+  background: rgba(90, 95, 195, 0.22);
+  color: #c7d2fe;
+}
+
+html.dark .iboard-alert-chip.is-on {
+  background: #818cf8;
+  color: #1e1b4b;
 }
 
 .iboard-command-bar__side {
@@ -1035,16 +1094,6 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   background: transparent;
 }
 
-.iboard-header-pill--attention.is-zero {
-  background: rgba(255, 255, 255, 0.55);
-  color: #9a9aa6;
-  cursor: default;
-}
-
-html.dark .iboard-header-pill--attention.is-zero {
-  background: rgba(30, 41, 59, 0.6);
-  color: #64748b;
-}
 
 .iboard-command-bar__side--monitor {
   align-items: flex-end;
@@ -1062,7 +1111,7 @@ html.dark .iboard-header-pill--attention.is-zero {
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #5a5fc3;
+  color: #a3a6db;
 }
 
 .iboard-command-bar__side .iboard-attention-home {
@@ -1090,12 +1139,12 @@ html.dark .iboard-header-pill--attention.is-zero {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools .iboard-header-icon-button:not([data-active='true']) {
-  background: #f9f9fb;
-  color: #5c5c68;
+  background: transparent;
+  color: #6b6b78;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools .iboard-header-icon-button:not([data-active='true']):hover {
-  background: #ffffff;
+  background: #ebeaf8;
   color: #3c3f8f;
 }
 
@@ -1190,7 +1239,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 .iboard-command-bar__gauge {
   position: relative;
   align-self: stretch;
-  width: 5rem;
+  width: 5.6rem;
   min-height: 2.6rem;
 }
 
@@ -1213,17 +1262,21 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   gap: 0.15rem;
   padding: 0.3rem 0.4rem 0.3rem;
   border: 1px solid #c1c2e7;
-  border-radius: 1.4rem;
+  border-radius: 1.55rem;
   background: #ffffff;
-  box-shadow: 0 8px 20px rgba(60, 63, 143, 0.16), 0 1px 3px rgba(60, 63, 143, 0.12);
+  /* The white halo cuts a notch in the strip so the bar reads as built around the gauge. */
+  box-shadow:
+    0 0 0 5px #ffffff,
+    0 10px 24px rgba(60, 63, 143, 0.18),
+    0 1px 3px rgba(60, 63, 143, 0.12);
   cursor: default;
 }
 
 .iboard-class-gauge__ring {
   display: grid;
   place-items: center;
-  width: 3.4rem;
-  height: 3.4rem;
+  width: 3.75rem;
+  height: 3.75rem;
   border-radius: 999px;
   transition: background 400ms ease;
 }
@@ -1233,15 +1286,15 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: calc(100% - 0.8rem);
-  height: calc(100% - 0.8rem);
+  width: calc(100% - 0.85rem);
+  height: calc(100% - 0.85rem);
   border-radius: 999px;
   background: #ffffff;
   line-height: 1;
 }
 
 .iboard-class-gauge__count {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #3c3f8f;
@@ -1300,7 +1353,7 @@ html.dark .iboard-class-gauge {
   --class-gauge-track: #1e293b;
   border-color: #334155;
   background: #0f172a;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 5px #20262d, 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 html.dark .iboard-class-gauge__face {
@@ -1318,7 +1371,12 @@ html.dark .iboard-class-gauge__online {
 }
 
 html.dark .iboard-command-bar__title {
-  color: #a5b4fc;
+  color: #64748b;
+}
+
+/* Clear air under the hanging gauge so it never sits on the first row of cards. */
+.iboard-teacher-canvas .iboard-student-board {
+  padding-top: 2.5rem;
 }
 
 .iboard-board-empty {
