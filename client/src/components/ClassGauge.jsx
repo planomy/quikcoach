@@ -39,12 +39,12 @@ export default function ClassGauge({ title, caption, done, total, online, segmen
           <div className="iboard-class-gauge__face">
             <span className="iboard-class-gauge__count tabular-nums">{total ? `${done}/${total}` : '—'}</span>
             <span className="iboard-class-gauge__caption">{caption}</span>
+            <span className="iboard-class-gauge__online">
+              <span className="iboard-class-gauge__live" aria-hidden="true" />
+              <b className="tabular-nums">{online}</b> online
+            </span>
           </div>
         </div>
-        <span className="iboard-class-gauge__online">
-          <span className="iboard-class-gauge__live" aria-hidden="true" />
-          <b className="tabular-nums">{online}</b> online
-        </span>
       </div>
     </HintWrap>
   );
