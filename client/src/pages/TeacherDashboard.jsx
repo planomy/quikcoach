@@ -56,7 +56,7 @@ import StudentPickerDialog from '../components/StudentPickerDialog.jsx';
 import { JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
 import { fitGrid } from '../lib/fitGrid.js';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
-import TeacherHelpPanel, { TeacherHelpButton } from '../components/TeacherHelpPanel.jsx';
+import TeacherHelpPanel from '../components/TeacherHelpPanel.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import ConversationModal, { ChatIcon } from '../components/ConversationModal.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
@@ -905,6 +905,35 @@ function TeacherDashboardInner() {
     syncFullscreen();
     return subscribeFullscreenChange(syncFullscreen);
   }, []);
+
+  // Browsers only allow full screen from a user gesture, so the teacher's first click enters it. Esc leaves.
+  useEffect(() => {
+    if (!canFullscreen()) return undefined;
+    const enter = () => {
+      document.removeEventListener('click', enter, true);
+      if (!isFullscreen()) toggleFullscreen().catch(() => {});
+    };
+    document.addEventListener('click', enter, true);
+    return () => document.removeEventListener('click', enter, true);
+  }, []);
+
+  const moreMenuRef = useRef(null);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!moreMenuOpen) return undefined;
+    const onPointerDown = (event) => {
+      if (!moreMenuRef.current?.contains(event.target)) setMoreMenuOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMoreMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [moreMenuOpen]);
 
   async function toggleBrowserFullscreen() {
     try {
@@ -4004,33 +4033,39 @@ function TeacherDashboardInner() {
                 </span>
               </HintWrap>
             ) : null}
-            <div ref={tourHeaderToolsRef} className="flex items-center gap-1.5">
-            <HintWrap hint="Student card view" prefer="below" suppressed={viewOpen}>
+            <div ref={(node) => { tourHeaderToolsRef.current = node; moreMenuRef.current = node; }} className="relative flex items-center">
+            <HintWrap hint="Card view, full screen and help" prefer="below" suppressed={moreMenuOpen || viewOpen || helpOpen}>
               <button
-                ref={viewButtonRef}
+                ref={(node) => { viewButtonRef.current = node; helpButtonRef.current = node; }}
                 type="button"
-                onClick={openViewDock}
-                aria-expanded={viewOpen}
-                data-active={viewOpen ? 'true' : 'false'}
+                onClick={() => setMoreMenuOpen((open) => !open)}
+                aria-expanded={moreMenuOpen}
+                aria-haspopup="menu"
+                data-active={moreMenuOpen || viewOpen || helpOpen ? 'true' : 'false'}
                 className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
-                aria-label="View"
+                aria-label="More: card view, full screen and help"
               >
-                <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="5" cy="12" r="1.9" /><circle cx="12" cy="12" r="1.9" /><circle cx="19" cy="12" r="1.9" />
+                </svg>
               </button>
             </HintWrap>
-            <HintWrap hint={browserFullscreen ? 'Exit fullscreen' : 'Fullscreen (fills the display)'} prefer="below">
-              <button
-                type="button"
-                onClick={() => void toggleBrowserFullscreen()}
-                aria-pressed={browserFullscreen}
-                data-active={browserFullscreen ? 'true' : 'false'}
-                className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
-                aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              >
-                <span className="iboard-header-icon iboard-header-icon--fullscreen" aria-hidden="true" />
-              </button>
-            </HintWrap>
-            <TeacherHelpButton open={helpOpen} onClick={openHelpDock} buttonRef={helpButtonRef} />
+            {moreMenuOpen ? (
+              <div className="iboard-more-menu" role="menu">
+                <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); openViewDock(); }}>
+                  <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
+                  Card view
+                </button>
+                <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); void toggleBrowserFullscreen(); }}>
+                  <span className="iboard-header-icon iboard-header-icon--fullscreen" aria-hidden="true" />
+                  {browserFullscreen ? 'Exit full screen' : 'Full screen'}
+                </button>
+                <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); openHelpDock(); }}>
+                  <span className="iboard-header-icon iboard-header-icon--help" aria-hidden="true" />
+                  How to use TUIT
+                </button>
+              </div>
+            ) : null}
             </div>
           </div>
           </div>
