@@ -130,6 +130,33 @@ html.dark.iboard-student-splitting .iboard-student-split__arrow {
   height: clamp(16rem, calc(var(--student-inbox-fr, 0.4) * 100dvh - 8rem), 76dvh);
 }
 
+/* Images: the frame hugs the picture. A fixed-height box left a loose border around empty space. */
+.iboard-inbox-material-preview--image {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.iboard-inbox-material-preview__image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(22rem, 42dvh);
+  object-fit: contain;
+}
+
+html.dark .iboard-inbox-material-preview--image {
+  border-color: #334155;
+  background: #020617;
+}
+
 html.iboard-student-splitting,
 html.iboard-student-splitting * {
   cursor: row-resize !important;

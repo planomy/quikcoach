@@ -366,8 +366,11 @@ function MaterialBody({ item, large, onToggleLarge, compact = false }) {
           {item.size ? ` · ${Math.max(1, Math.round(item.size / 1024))} KB` : ''}
         </p>
       ) : null}
-      <div className="iboard-inbox-material-preview overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
-        {renderMedia('h-full w-full object-contain')}
+      <div className={image
+        ? 'iboard-inbox-material-preview iboard-inbox-material-preview--image'
+        : 'iboard-inbox-material-preview overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950'}
+      >
+        {renderMedia(image ? 'iboard-inbox-material-preview__image' : 'h-full w-full object-contain')}
       </div>
       {actions}
       {message ? <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{message}</p> : null}
