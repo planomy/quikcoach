@@ -3,9 +3,18 @@ import { clampInboxShare, INBOX_SHARE_MAX, INBOX_SHARE_MIN } from '../lib/studen
 import HintWrap from './HintWrap.jsx';
 
 const WIDE_QUERY = '(min-width: 768px)';
+/** Dragging the handle this close to the right edge folds the Inbox into its slim tab. */
+const COLLAPSE_SHARE = 0.16;
 
 function isWideSplit() {
   return typeof window !== 'undefined' && window.matchMedia(WIDE_QUERY).matches;
+}
+
+function wantsCollapse(event, grid) {
+  if (!grid || !isWideSplit()) return false;
+  const rect = grid.getBoundingClientRect();
+  if (rect.width < 8) return false;
+  return 1 - (event.clientX - rect.left) / rect.width < COLLAPSE_SHARE;
 }
 
 function shareFromPointer(event, grid) {
@@ -44,12 +53,18 @@ function SplitChevron({ dir }) {
 }
 
 /** Drag gutter between writing and Inbox. */
-export default function StudentWorkspaceSplit({ share, onShare, gridRef }) {
+export default function StudentWorkspaceSplit({ share, onShare, onCollapse, gridRef }) {
   const draggingRef = useRef(false);
 
   useEffect(() => {
     function onMove(event) {
       if (!draggingRef.current) return;
+      if (onCollapse && wantsCollapse(event, gridRef.current)) {
+        draggingRef.current = false;
+        document.documentElement.classList.remove('iboard-student-splitting');
+        onCollapse();
+        return;
+      }
       const next = shareFromPointer(event, gridRef.current);
       if (next != null) onShare(next);
     }
@@ -67,7 +82,7 @@ export default function StudentWorkspaceSplit({ share, onShare, gridRef }) {
       window.removeEventListener('pointercancel', onUp);
       document.documentElement.classList.remove('iboard-student-splitting');
     };
-  }, [gridRef, onShare]);
+  }, [gridRef, onShare, onCollapse]);
 
   function startDrag(event) {
     event.preventDefault();
@@ -113,7 +128,7 @@ export default function StudentWorkspaceSplit({ share, onShare, gridRef }) {
         onPointerDown={startDrag}
         onKeyDown={onKeyDown}
       >
-        <HintWrap hint="Drag to make Inbox or writing bigger" prefer="above" className="iboard-student-split__hint">
+        <HintWrap hint={onCollapse ? 'Drag to resize. Drag to the right edge to hide Inbox' : 'Drag to make Inbox or writing bigger'} prefer="above" className="iboard-student-split__hint">
           <span className="iboard-student-split__glyph">
             <SplitChevron dir="left" />
             <span className="iboard-student-split__bar" />

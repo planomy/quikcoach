@@ -4150,10 +4150,10 @@ function TeacherDashboardInner() {
                       aria-label="Breakout rooms and class wall"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="7.5" height="7.5" rx="2" />
-                        <rect x="13.5" y="3" width="7.5" height="7.5" rx="2" />
-                        <rect x="3" y="13.5" width="7.5" height="7.5" rx="2" />
-                        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2" />
+                        <rect x="5.5" y="2.5" width="13" height="10" rx="3" />
+                        <rect x="2.5" y="15.5" width="5.5" height="5.5" rx="1.8" />
+                        <rect x="9.25" y="15.5" width="5.5" height="5.5" rx="1.8" />
+                        <rect x="16" y="15.5" width="5.5" height="5.5" rx="1.8" />
                       </svg>
                     </button>
                   </HintWrap>

@@ -170,6 +170,7 @@ export default function StudentView() {
   const setInboxShareAndSave = useCallback((next) => {
     setInboxShare(persistInboxShare(next));
   }, []);
+  const collapseInbox = useCallback(() => setInboxCollapsed(true), []);
   const [timesUp, setTimesUp] = useState(false);
   const [connBanner, setConnBanner] = useState(null); // 'lost' | 'online' | null
   const [helpSeenToast, setHelpSeenToast] = useState(false);
@@ -1280,6 +1281,11 @@ export default function StudentView() {
   }, [feedbackInbox, broadcastHistory, materialHistory, inboxUnreadIds, dismissedInboxIds]);
   const inboxTabCount = inboxItems.filter((item) => item.unread).length + (liveInboxAlert ? 1 : 0);
   const chatUnread = feedbackInbox.some((item) => item.type === 'chat' && inboxUnreadIds.has(item.id));
+  const lastInboxTabCountRef = useRef(inboxTabCount);
+  useEffect(() => {
+    if (inboxTabCount > lastInboxTabCountRef.current) setInboxCollapsed(false);
+    lastInboxTabCountRef.current = inboxTabCount;
+  }, [inboxTabCount]);
 
   if (removedByTeacher) {
     const roomLabel = String(removedByTeacher.code || '').replace(/\D/g, '').slice(0, 4);
@@ -1789,19 +1795,17 @@ export default function StudentView() {
                   ) : null}
                 </div>
                 <StudentVerbalRespond socket={socket} variant="chip" />
-                {classWallActive ? (
-                  <button
-                    type="button"
-                    className="iboard-inbox-head__collapse"
-                    onClick={() => setInboxCollapsed(true)}
-                    aria-label="Hide inbox to see more of the class wall"
-                    title="Hide inbox"
-                  >
-                    <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m6 3.5 4.5 4.5L6 12.5" />
-                    </svg>
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  className="iboard-inbox-head__collapse"
+                  onClick={() => setInboxCollapsed(true)}
+                  aria-label={classWallActive ? 'Hide inbox to see more of the class wall' : 'Hide inbox'}
+                  title="Hide inbox"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 3.5 4.5 4.5L6 12.5" />
+                  </svg>
+                </button>
               </div>
             </div>
 
@@ -1844,6 +1848,7 @@ export default function StudentView() {
             <StudentWorkspaceSplit
               share={inboxShare}
               onShare={setInboxShareAndSave}
+              onCollapse={collapseInbox}
               gridRef={splitGridRef}
             />
           )}
