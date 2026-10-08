@@ -34,7 +34,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'freeze',
     title: 'Freeze the board',
-    body: 'Open Manage room, freeze the board to stop all student board writing. The class timer is in Manage room too.',
+    body: 'The snowflake under Manage class in the header stops all student writing. The timer and word limit sit beside it.',
     action: 'freeze',
   },
   {
@@ -63,7 +63,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'breakouts',
     title: 'Breakout rooms',
-    body: 'Open Manage room, start auto or manual breakout rooms allowing students to write collaboratively with peers.',
+    body: 'Open Breakouts under Manage class in the header to start auto or manual rooms, or the class wall.',
     action: 'breakouts',
   },
   {

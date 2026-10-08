@@ -35,8 +35,7 @@ import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
 import SaveStatusChip from '../components/SaveStatusChip.jsx';
-import RoomTimerPill, { formatTimer } from '../components/RoomTimerPill.jsx';
-import useEndsAtCountdown from '../hooks/useEndsAtCountdown.js';
+import RoomTimerPill from '../components/RoomTimerPill.jsx';
 import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
 import { copyText } from '../lib/copyText.js';
@@ -262,18 +261,7 @@ function studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStude
   return noteReceiptByStudentId[id] === 'replied';
 }
 
-function RailTimerLabel({ timer }) {
-  const running = !!timer?.active && !!timer?.running && !!timer?.endsAt;
-  const liveSeconds = useEndsAtCountdown(timer?.endsAt, { enabled: running });
-  if (!timer?.active) return 'Timer';
-  const seconds = running && liveSeconds != null
-    ? liveSeconds
-    : Math.max(0, Number(timer.remainingSeconds) || 0);
-  if (seconds === 0) return 'Time up';
-  return formatTimer(seconds);
-}
-
-function timerKeepsRailLit(timer) {
+function timerIsCounting(timer) {
   if (!timer?.active) return false;
   if (timer.finishedAt) return false;
   if (timer.running) return true;
@@ -503,7 +491,6 @@ function TeacherDashboardInner() {
   const teacherToolsPanelRef = useRef(null);
   const addCardPanelRef = useRef(null);
   const settingsButtonRef = useRef(null);
-  const classButtonRef = useRef(null);
   const recordsButtonRef = useRef(null);
   const settingsPanelRef = useRef(null);
   const viewPanelRef = useRef(null);
@@ -665,16 +652,16 @@ function TeacherDashboardInner() {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [sessionMenuOpen]);
-  const breakoutsMenuRef = useRef(null);
-  const [breakoutsMenuOpen, setBreakoutsMenuOpen] = useState(false);
+  const [headerTool, setHeaderTool] = useState(null);
+  const breakoutsMenuOpen = headerTool === 'breakouts';
   useEffect(() => {
-    if (!breakoutsMenuOpen) return undefined;
+    if (!headerTool) return undefined;
     const close = () => {
-      setBreakoutsMenuOpen(false);
+      setHeaderTool(null);
       setBreakoutSetupMode('auto');
     };
     const onPointerDown = (event) => {
-      if (breakoutsMenuRef.current?.contains(event.target)) return;
+      if (event.target?.closest?.(`[data-header-tool="${headerTool}"]`)) return;
       if (event.target?.closest?.('select')) return;
       close();
     };
@@ -687,7 +674,7 @@ function TeacherDashboardInner() {
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [breakoutsMenuOpen]);
+  }, [headerTool]);
   const saveStatusClearRef = useRef(null);
 
   const markSaved = useCallback(() => {
@@ -1120,7 +1107,7 @@ function TeacherDashboardInner() {
   }
 
   function openTimerDock() {
-    toggleSettings('class');
+    toggleHeaderTool('timer');
   }
 
   function openViewDock() {
@@ -1167,8 +1154,9 @@ function TeacherDashboardInner() {
       window.requestAnimationFrame(() => flashHelpTarget(target));
       return;
     }
-    setSettingsSection('class');
-    setSettingsOpen(true);
+    setSettingsOpen(false);
+    setSessionMenuOpen(false);
+    setHeaderTool(target === 'breakouts' ? 'breakouts' : null);
     window.requestAnimationFrame(() => {
       flashHelpTarget(target);
       const el = document.querySelector(`[data-help-target="${target}"]`);
@@ -2101,7 +2089,6 @@ function TeacherDashboardInner() {
       }
       if (settingsOpen) {
         if (settingsButtonRef.current?.contains(target)) return;
-        if (classButtonRef.current?.contains(target)) return;
         if (recordsButtonRef.current?.contains(target)) return;
         if (settingsPanelRef.current?.contains(target)) return;
         if (breakoutAssignPanelRef.current?.contains(target)) return;
@@ -2227,7 +2214,6 @@ function TeacherDashboardInner() {
     function currentDockAnchor() {
       if (viewOpen) return viewButtonRef.current;
       if (settingsOpen) {
-        if (settingsSection === 'class') return classButtonRef.current;
         if (settingsSection === 'records') return recordsButtonRef.current;
         return settingsButtonRef.current;
       }
@@ -2575,20 +2561,20 @@ function TeacherDashboardInner() {
     setHelpOpen(false);
     setClearFixedArmed(false);
     setBreakoutSetupMode('auto');
-    setBreakoutsMenuOpen(false);
+    setHeaderTool(null);
     setSettingsSection(section);
     setSettingsOpen(true);
   }
 
-  function toggleBreakoutsMenu() {
-    if (breakoutsMenuOpen) {
-      setBreakoutsMenuOpen(false);
-      setBreakoutSetupMode('auto');
+  function toggleHeaderTool(id) {
+    setBreakoutSetupMode('auto');
+    if (headerTool === id) {
+      setHeaderTool(null);
       return;
     }
     closeSettings();
     setSessionMenuOpen(false);
-    setBreakoutsMenuOpen(true);
+    setHeaderTool(id);
   }
 
   function openAddCard({ forceOpen = false } = {}) {
@@ -3743,8 +3729,157 @@ function TeacherDashboardInner() {
           </div>
     </>
   );
+  const timerControls = !room?.timer?.active ? (
+    <div className="iboard-room-settings__field-row">
+      <span className="iboard-room-settings__timer-label">Minutes</span>
+      <input
+        type="number"
+        min="1"
+        max="120"
+        inputMode="numeric"
+        value={timerMinutes}
+        onFocus={() => setTimerMinutes('')}
+        onChange={(event) => {
+          const raw = event.target.value;
+          if (raw === '') {
+            setTimerMinutes('');
+            return;
+          }
+          const next = Math.floor(Number(raw));
+          if (!Number.isFinite(next)) return;
+          setTimerMinutes(String(Math.max(1, Math.min(120, next))));
+        }}
+        onBlur={() => {
+          if (timerMinutes === '' || !Number(timerMinutes)) setTimerMinutes('5');
+        }}
+        aria-label="Timer minutes"
+      />
+      <button
+        type="button"
+        disabled={timerBusy || !Number(timerMinutes)}
+        onClick={() =>
+          controlRoomTimer('start', {
+            seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
+          })
+        }
+        className="iboard-room-settings__mini"
+      >
+        Start
+      </button>
+    </div>
+  ) : (
+    <div className="space-y-3">
+      <div className="iboard-room-settings__timer-head">
+        <span>Running</span>
+        <RoomTimerPill timer={room?.timer} onFinishedClick={() => controlRoomTimer('end')} />
+      </div>
+      <div className="iboard-room-settings__field-row flex-wrap">
+        <button
+          type="button"
+          disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
+          onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
+          className="iboard-room-settings__mini-ghost"
+        >
+          {room.timer.running ? 'Pause' : 'Resume'}
+        </button>
+        <button
+          type="button"
+          disabled={timerBusy}
+          onClick={() => controlRoomTimer('add', { seconds: 60 })}
+          className="iboard-room-settings__mini-ghost"
+        >
+          +1m
+        </button>
+        <button
+          type="button"
+          disabled={timerBusy}
+          onClick={() => controlRoomTimer('end')}
+          className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
+        >
+          End
+        </button>
+      </div>
+    </div>
+  );
+  const classWallControls = (
+    <div className="space-y-2.5">
+      {room?.class_wall_active ? (
+        <button
+          type="button"
+          onClick={() => {
+            setRoom((r) => (r ? { ...r, class_wall_active: false } : r));
+            pushSettings({ class_wall_active: false });
+          }}
+          className="iboard-room-settings__secondary w-full"
+        >
+          Close class wall
+        </button>
+      ) : (
+        <HintWrap hint={breakoutsActive ? 'Close breakouts first' : 'Students see each other’s writing as equal cards'} className="w-full">
+          <button
+            type="button"
+            disabled={breakoutsActive}
+            onClick={() => {
+              setRoom((r) => (r ? { ...r, class_wall_active: true } : r));
+              pushSettings({ class_wall_active: true });
+            }}
+            className="iboard-room-settings__primary w-full"
+          >
+            Start class wall
+          </button>
+        </HintWrap>
+      )}
+      <label className="flex cursor-pointer items-center justify-between gap-3 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+        <HintWrap hint="Peers see Classmate instead of names">Hide names</HintWrap>
+        <input
+          type="checkbox"
+          checked={!!room?.class_wall_hide_names}
+          onChange={(e) => {
+            const v = e.target.checked;
+            setRoom((r) => (r ? { ...r, class_wall_hide_names: v } : r));
+            pushSettings({ class_wall_hide_names: v });
+          }}
+          className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
+        />
+      </label>
+    </div>
+  );
+  const wordLimitControls = (
+    <div className="iboard-word-target-row">
+      <div className="iboard-word-target-bar flex items-center gap-2">
+        <span className="w-8 shrink-0 text-right font-mono text-[0.72rem] font-bold tabular-nums text-[#5a5fc3] dark:text-indigo-300">{wt}</span>
+        <input
+          type="range"
+          min={0}
+          max={500}
+          step={10}
+          value={wt}
+          onChange={(e) => commitWordTarget(e.target.value)}
+          onPointerUp={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
+          onBlur={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
+          className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
+          aria-label="Word limit"
+        />
+        <HintWrap hint="Students cannot type past the word limit" className="shrink-0">
+          <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+            <span>Enforce</span>
+            <input
+              type="checkbox"
+              checked={enforceWords}
+              onChange={(e) => {
+                const v = e.target.checked;
+                setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
+                pushSettings({ enforce_word_count: v });
+              }}
+              className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
+            />
+          </label>
+        </HintWrap>
+      </div>
+    </div>
+  );
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
-  const settingsTitle = settingsSection === 'class' ? 'Manage room' : settingsSection === 'records' ? 'Reports' : 'Settings';
+  const settingsTitle = settingsSection === 'records' ? 'Reports' : 'Settings';
   const aiFeedbackOpen = !!libraryPanel && libraryView === 'feedback';
   const reportsOpen = !!libraryPanel && libraryView !== 'feedback';
 
@@ -3833,21 +3968,7 @@ function TeacherDashboardInner() {
                         </HintWrap>
                       );
                     })}
-                </div>
-              </div>
-              <div className="iboard-command-bar__gauge">
-                <ClassGauge
-                  title={classGauge.title}
-                  caption={classGauge.caption}
-                  done={classGauge.done}
-                  total={classGauge.total}
-                  online={connectedStudents.length}
-                  segments={classGauge.segments}
-                />
-              </div>
-              <div className="iboard-command-bar__side iboard-command-bar__side--manage">
-                <span className="iboard-command-bar__title">Manage class</span>
-                <div className="iboard-manage-tools" role="group" aria-label="Manage class">
+                  <span className="iboard-command-bar__divider" aria-hidden="true" />
                   <HintWrap
                     hint={messageWaitCount ? attentionHint(inboxNames, inboxFocus, inboxSummary) : 'No messages waiting'}
                     prefer="below"
@@ -3878,15 +3999,82 @@ function TeacherDashboardInner() {
                         <span className="tabular-nums">{messageWaitCount}</span>
                       </button>
                   </HintWrap>
-                  <div ref={breakoutsMenuRef} className="relative">
-                  <HintWrap hint={breakoutsActive ? "Breakouts are running. Open to shuffle or close rooms" : "Breakout rooms"} prefer="below" suppressed={breakoutsMenuOpen}>
+                </div>
+              </div>
+              <div className="iboard-command-bar__gauge">
+                <ClassGauge
+                  title={classGauge.title}
+                  caption={classGauge.caption}
+                  done={classGauge.done}
+                  total={classGauge.total}
+                  online={connectedStudents.length}
+                  segments={classGauge.segments}
+                />
+              </div>
+              <div className="iboard-command-bar__side iboard-command-bar__side--manage">
+                <span className="iboard-command-bar__title">Manage class</span>
+                <div className="iboard-manage-tools" role="group" aria-label="Manage class">
+                  <div className="relative" data-header-tool="timer">
+                  <HintWrap hint={room?.timer?.active ? 'Timer running. Open to pause, add time or end' : 'Class timer'} prefer="below" suppressed={headerTool === 'timer'}>
                     <button
                       type="button"
-                      onClick={toggleBreakoutsMenu}
-                      aria-expanded={breakoutsMenuOpen}
-                      data-active={breakoutsActive || breakoutsMenuOpen ? "true" : "false"}
+                      onClick={() => toggleHeaderTool('timer')}
+                      aria-expanded={headerTool === 'timer'}
+                      data-active={headerTool === 'timer' || timerIsCounting(room?.timer) ? 'true' : 'false'}
                       className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
-                      aria-label="Breakout rooms"
+                      aria-label="Timer"
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="13.5" r="7.5" />
+                        <path d="M12 9.5v4l2.5 2M9.5 2.5h5M12 2.5V6" />
+                      </svg>
+                    </button>
+                  </HintWrap>
+                  {headerTool === 'timer' ? (
+                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Timer">
+                      <div className="iboard-tool-popover__head">
+                        <h2>Timer</h2>
+                        <span>Shows on the teacher and student boards</span>
+                      </div>
+                      <div className="iboard-tool-popover__body">{timerControls}</div>
+                    </div>
+                  ) : null}
+                  </div>
+                  <div className="relative" data-header-tool="words">
+                  <HintWrap hint={wt ? `Word limit: ${wt}${enforceWords ? ', enforced' : ''}` : 'Word limit'} prefer="below" suppressed={headerTool === 'words'}>
+                    <button
+                      type="button"
+                      onClick={() => toggleHeaderTool('words')}
+                      aria-expanded={headerTool === 'words'}
+                      data-active={headerTool === 'words' || (wt > 0 && enforceWords) ? 'true' : 'false'}
+                      className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      aria-label="Word limit"
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 6h16M4 11h16M4 16h9" />
+                        <path d="M17 14v6M15 18l2 2 2-2" />
+                      </svg>
+                    </button>
+                  </HintWrap>
+                  {headerTool === 'words' ? (
+                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Word limit">
+                      <div className="iboard-tool-popover__head">
+                        <h2>Word limit</h2>
+                        <span>Tick Enforce to stop students typing past it</span>
+                      </div>
+                      <div className="iboard-tool-popover__body">{wordLimitControls}</div>
+                    </div>
+                  ) : null}
+                  </div>
+                  <div className="relative" data-header-tool="breakouts">
+                  <HintWrap hint={breakoutsActive ? 'Breakouts are running. Open to shuffle or close rooms' : room?.class_wall_active ? 'Class wall is on. Open to close it' : 'Breakout rooms and class wall'} prefer="below" suppressed={breakoutsMenuOpen}>
+                    <button
+                      type="button"
+                      onClick={() => toggleHeaderTool('breakouts')}
+                      aria-expanded={breakoutsMenuOpen}
+                      data-active={breakoutsActive || room?.class_wall_active || breakoutsMenuOpen ? 'true' : 'false'}
+                      className={`iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
+                      aria-label="Breakout rooms and class wall"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="7.5" height="7.5" rx="2" />
@@ -3897,17 +4085,22 @@ function TeacherDashboardInner() {
                     </button>
                   </HintWrap>
                   {breakoutsMenuOpen ? (
-                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Breakout rooms">
+                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Breakout rooms and class wall">
                       <div className="iboard-tool-popover__head">
                         <h2>Breakouts</h2>
                         <span>{breakoutsActive ? 'Running' : 'Student writing cards appear on group members’ screens'}</span>
                       </div>
-                      <div className="iboard-tool-popover__body">{breakoutControls}</div>
+                      <div className="iboard-tool-popover__body" data-help-target="breakouts">{breakoutControls}</div>
                       {!breakoutsActive && breakoutSetupMode === 'manual' ? (
                         <div className="iboard-breakout-assign iboard-breakout-assign--inline" aria-label="Assign breakout rooms">
                           {breakoutAssignContent}
                         </div>
                       ) : null}
+                      <div className="iboard-tool-popover__section">
+                        <h3>Class wall</h3>
+                        <span>Every student sees the class writing as equal cards</span>
+                      </div>
+                      <div className="iboard-tool-popover__body">{classWallControls}</div>
                     </div>
                   ) : null}
                   </div>
@@ -3991,10 +4184,11 @@ function TeacherDashboardInner() {
                   <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze board: stops student writing"} prefer="below">
                     <button
                       type="button"
+                      data-help-target="freeze"
                       onClick={toggleFreeze}
                       aria-pressed={frozen}
                       data-active={frozen ? "true" : "false"}
-                      className={`iboard-header-icon-button iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${frozen ? " is-frozen" : ""}`}
+                      className={`iboard-header-icon-button iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                       aria-label={frozen ? "Unfreeze board" : "Freeze board"}
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -4220,31 +4414,6 @@ function TeacherDashboardInner() {
             </HintWrap>
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
-            <div className="iboard-arr-rail__board" aria-label="Manage room">
-              <HintWrap hint="Use a timer, freeze the room, create breakout rooms, enforce a word limit" prefer="right" suppressed={settingsOpen && settingsSection === 'class'}>
-                <button
-                  ref={classButtonRef}
-                  type="button"
-                  onClick={() => toggleSettings('class')}
-                  aria-expanded={settingsOpen && settingsSection === 'class'}
-                  data-active={(settingsOpen && settingsSection === 'class') || timerKeepsRailLit(room?.timer) ? 'true' : 'false'}
-                  className="iboard-arr-btn"
-                  aria-label="Manage room"
-                >
-                  {room?.timer?.active ? (
-                    <>
-                      <span className="iboard-arr-btn__icon iboard-arr-btn__icon--timer" aria-hidden="true" />
-                      <span className="iboard-arr-label"><RailTimerLabel timer={room.timer} /></span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="iboard-arr-btn__icon iboard-arr-btn__icon--manage" aria-hidden="true" />
-                      <span className="iboard-arr-label">Manage room</span>
-                    </>
-                  )}
-                </button>
-              </HintWrap>
-            </div>
             <div className="iboard-arr-rail__foot">
               <HintWrap hint="Snapshots, portfolios, participation and class insights" prefer="right" suppressed={reportsOpen}>
                 <button
@@ -5858,25 +6027,6 @@ function TeacherDashboardInner() {
                 </div>
               )}
 
-      {settingsOpen && settingsSection === 'class' && !breakoutsActive && breakoutSetupMode === 'manual' && createPortal(
-        <div
-          ref={breakoutAssignPanelRef}
-          className="iboard-breakout-assign z-[60]"
-          style={{
-            top: teacherToolsTop + settingsChromeHeight,
-            maxHeight: Math.max(220, windowHeight - teacherToolsTop - settingsChromeHeight),
-            left: 'calc(4.75rem + min(22rem, calc(100vw - 4.75rem)))',
-          }}
-          role="dialog"
-          aria-modal="false"
-          aria-label="Assign breakout rooms"
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          {breakoutAssignContent}
-        </div>,
-        getOverlayRoot()
-      )}
-
       {settingsOpen && createPortal(
         <div
           ref={settingsPanelRef}
@@ -5893,124 +6043,6 @@ function TeacherDashboardInner() {
             </div>
           </div>
           <div className="iboard-room-settings__body scrollbar-thin">
-            {settingsSection === 'class' && (
-              <div className="iboard-room-settings__hero">
-                <div className="iboard-room-settings__row">
-                  <HintWrap hint={frozen ? 'Lets students write again' : "Disables student writing until it's unfrozen"} className="min-w-0 flex-1">
-              <button
-                type="button"
-                      data-help-target="freeze"
-                      onClick={toggleFreeze}
-                      className={`iboard-room-settings__secondary w-full${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
-                    >
-                      {frozen ? 'Unfreeze board' : 'Freeze board'}
-              </button>
-                  </HintWrap>
-            </div>
-                <div className="iboard-room-settings__row">
-                  <HintWrap hint="Keeps the Quick Question panel on top while you present other windows" className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                      onClick={() => {
-                        window.dispatchEvent(new Event('iboard:open-presenter-dock'));
-                        closeSettings();
-                      }}
-                      className="iboard-room-settings__secondary w-full"
-                    >
-                      Present mode
-                  </button>
-                  </HintWrap>
-              </div>
-            </div>
-            )}
-
-            {settingsSection === 'class' && (
-              <section className="iboard-room-settings__section">
-                <h3 className="iboard-room-settings__label">
-                  <HintWrap hint="Adds a timer to the teacher and student boards">Timer</HintWrap>
-                </h3>
-                <div className="iboard-room-settings__card iboard-room-settings__card-pad">
-                  {!room?.timer?.active ? (
-                    <div className="iboard-room-settings__field-row">
-                      <span className="iboard-room-settings__timer-label">Minutes</span>
-                <input
-                        type="number"
-                        min="1"
-                        max="120"
-                        inputMode="numeric"
-                        value={timerMinutes}
-                        onFocus={() => setTimerMinutes('')}
-                        onChange={(event) => {
-                          const raw = event.target.value;
-                          if (raw === '') {
-                            setTimerMinutes('');
-                            return;
-                          }
-                          const next = Math.floor(Number(raw));
-                          if (!Number.isFinite(next)) return;
-                          setTimerMinutes(String(Math.max(1, Math.min(120, next))));
-                        }}
-                        onBlur={() => {
-                          if (timerMinutes === '' || !Number(timerMinutes)) setTimerMinutes('5');
-                        }}
-                        aria-label="Timer minutes"
-                      />
-                      <HintWrap hint="Adds a timer to the teacher and student boards">
-                        <button
-                          type="button"
-                          disabled={timerBusy || !Number(timerMinutes)}
-                          onClick={() =>
-                            controlRoomTimer('start', {
-                              seconds: Math.max(1, Math.min(120, Number(timerMinutes) || 5)) * 60,
-                            })
-                          }
-                          className="iboard-room-settings__mini"
-                        >
-                          Start
-                        </button>
-                      </HintWrap>
-              </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="iboard-room-settings__timer-head">
-                        <span>Running</span>
-                        <RoomTimerPill
-                          timer={room?.timer}
-                          onFinishedClick={() => controlRoomTimer('end')}
-                        />
-            </div>
-                      <div className="iboard-room-settings__field-row flex-wrap">
-              <button
-                type="button"
-                          disabled={timerBusy || Number(room.timer.remainingSeconds) <= 0}
-                          onClick={() => controlRoomTimer(room.timer.running ? 'pause' : 'resume')}
-                          className="iboard-room-settings__mini-ghost"
-                        >
-                          {room.timer.running ? 'Pause' : 'Resume'}
-              </button>
-              <button
-                type="button"
-                          disabled={timerBusy}
-                          onClick={() => controlRoomTimer('add', { seconds: 60 })}
-                          className="iboard-room-settings__mini-ghost"
-                        >
-                          +1m
-                        </button>
-                        <button
-                          type="button"
-                          disabled={timerBusy}
-                          onClick={() => controlRoomTimer('end')}
-                          className="iboard-room-settings__mini-ghost iboard-room-settings__mini-danger"
-                        >
-                          End
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-
             {settingsSection === 'settings' && (
             <div className="iboard-room-settings__hero">
               <div className="iboard-room-settings__row">
@@ -6132,108 +6164,6 @@ function TeacherDashboardInner() {
               </div>
             )}
             </div>
-            )}
-
-            {settingsSection === 'class' && (
-            <>
-            <section className="iboard-room-settings__section" data-help-target="breakouts">
-              <h3 className="iboard-room-settings__label">
-                <HintWrap hint="Student writing cards appear on group members' screens">Breakouts</HintWrap>
-              </h3>
-              <div className={`iboard-room-settings__card iboard-room-settings__card-pad${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}>
-                {breakoutControls}
-              </div>
-            </section>
-
-            <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">
-                <HintWrap hint="Every student sees the class writing wall as equal cards">Class wall</HintWrap>
-              </h3>
-              <div className="iboard-room-settings__card iboard-room-settings__card-pad">
-                <div className="space-y-2.5">
-                  {room?.class_wall_active ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRoom((r) => (r ? { ...r, class_wall_active: false } : r));
-                        pushSettings({ class_wall_active: false });
-                      }}
-                      className="iboard-room-settings__secondary w-full"
-                    >
-                      Close class wall
-                    </button>
-                  ) : (
-                    <HintWrap hint={breakoutsActive ? 'Close breakouts first' : 'Students see each other’s writing as equal cards'} className="w-full">
-                      <button
-                        type="button"
-                        disabled={breakoutsActive}
-                        onClick={() => {
-                          setRoom((r) => (r ? { ...r, class_wall_active: true } : r));
-                          pushSettings({ class_wall_active: true });
-                        }}
-                        className="iboard-room-settings__primary w-full"
-                      >
-                        Start class wall
-                      </button>
-                    </HintWrap>
-                  )}
-                  <label className="flex cursor-pointer items-center justify-between gap-3 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                    <HintWrap hint="Peers see Classmate instead of names">Hide names</HintWrap>
-                    <input
-                      type="checkbox"
-                      checked={!!room?.class_wall_hide_names}
-                      onChange={(e) => {
-                        const v = e.target.checked;
-                        setRoom((r) => (r ? { ...r, class_wall_hide_names: v } : r));
-                        pushSettings({ class_wall_hide_names: v });
-                      }}
-                      className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
-                    />
-                  </label>
-                </div>
-              </div>
-            </section>
-
-            <section className="iboard-room-settings__section">
-              <h3 className="iboard-room-settings__label">
-                <HintWrap hint="Students cannot type past the word limit">Word limit</HintWrap>
-              </h3>
-              <div className="iboard-room-settings__card iboard-room-settings__card-pad">
-                <div className="iboard-word-target-row">
-                  <div className="iboard-word-target-bar flex items-center gap-2">
-                    <span className="w-8 shrink-0 text-right font-mono text-[0.72rem] font-bold tabular-nums text-[#5a5fc3] dark:text-indigo-300">{wt}</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={500}
-                      step={10}
-                      value={wt}
-                      onChange={(e) => commitWordTarget(e.target.value)}
-                      onPointerUp={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
-                      onBlur={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
-                      className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
-                      aria-label="Word limit"
-                    />
-                    <HintWrap hint="Students cannot type past the word limit" className="shrink-0">
-                    <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                      <span>Enforce</span>
-                      <input
-                        type="checkbox"
-                        checked={enforceWords}
-                        onChange={(e) => {
-                          const v = e.target.checked;
-                          setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
-                          pushSettings({ enforce_word_count: v });
-                        }}
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
-                      />
-                    </label>
-                    </HintWrap>
-                  </div>
-                </div>
-              </div>
-            </section>
-            </>
             )}
 
             {settingsSection === 'records' && (

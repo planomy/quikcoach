@@ -1128,8 +1128,15 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   background: #e1defc;
 }
 
-.iboard-manage-tools > :first-child {
-  margin-right: 0.3rem;
+.iboard-command-bar__divider {
+  width: 1px;
+  height: 1.1rem;
+  margin: 0 0.2rem;
+  background: #c1c2e7;
+}
+
+html.dark .iboard-command-bar__divider {
+  background: #334155;
 }
 
 .iboard-manage-tools .iboard-header-icon-button {
@@ -1264,6 +1271,38 @@ html.dark .iboard-more-menu button:hover {
 
 .iboard-tool-popover__body {
   padding: 0.75rem 0.8rem;
+}
+
+.iboard-tool-popover__section {
+  padding: 0.6rem 0.8rem 0;
+  border-top: 1px solid #e8e8ee;
+}
+
+.iboard-tool-popover__section h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #3c3f8f;
+}
+
+.iboard-tool-popover__section span {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #7c7c8a;
+}
+
+html.dark .iboard-tool-popover__section {
+  border-top-color: #334155;
+}
+
+html.dark .iboard-tool-popover__section h3 {
+  color: #c7d2fe;
+}
+
+html.dark .iboard-tool-popover__section span {
+  color: #94a3b8;
 }
 
 .iboard-breakout-assign.iboard-breakout-assign--inline {
