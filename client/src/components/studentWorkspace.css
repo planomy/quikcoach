@@ -744,3 +744,83 @@ html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-
 html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-pane > div {
   min-height: 0;
 }
+
+/* Class wall: inbox folds to a slim tab so classmates' cards get the width. */
+.iboard-inbox-collapsed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.75rem 0;
+  border: 1px solid #d5d4e4;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  color: #3c3f8f;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(60, 60, 69, 0.04);
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.iboard-inbox-collapsed:hover {
+  border-color: #5a5fc3;
+  background: #f7f7fc;
+}
+
+.iboard-inbox-collapsed__label {
+  writing-mode: vertical-rl;
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+.iboard-inbox-head__collapse {
+  display: grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  place-items: center;
+  margin-left: auto;
+  border: 1px solid #d5d4e4;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #5a5fc3;
+  cursor: pointer;
+}
+
+.iboard-inbox-head__collapse svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.iboard-inbox-head__collapse:hover {
+  border-color: #5a5fc3;
+}
+
+html.dark .iboard-inbox-collapsed,
+html.dark .iboard-inbox-head__collapse {
+  border-color: #334155;
+  background: #0f172a;
+  color: #c7d2fe;
+}
+
+@media (min-width: 768px) {
+  html.iboard-student-workspace main > .iboard-student-workspace-grid.is-inbox-collapsed {
+    grid-template-columns: minmax(0, 1fr) 0.75rem 2.75rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .iboard-student-workspace main > .iboard-student-workspace-grid.is-inbox-collapsed > aside {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  .iboard-inbox-collapsed {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .iboard-inbox-collapsed__label {
+    writing-mode: horizontal-tb;
+  }
+}

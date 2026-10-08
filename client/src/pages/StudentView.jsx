@@ -159,6 +159,13 @@ export default function StudentView() {
   const [liveInboxAlert, setLiveInboxAlert] = useState(false);
   const [largeMaterialId, setLargeMaterialId] = useState(null);
   const [inboxShare, setInboxShare] = useState(readInboxShare);
+  const [inboxCollapsed, setInboxCollapsed] = useState(false);
+  useEffect(() => {
+    setInboxCollapsed(classWallActive);
+  }, [classWallActive]);
+  useEffect(() => {
+    if (liveInboxAlert) setInboxCollapsed(false);
+  }, [liveInboxAlert]);
   const splitGridRef = useRef(null);
   const setInboxShareAndSave = useCallback((next) => {
     setInboxShare(persistInboxShare(next));
@@ -1738,7 +1745,7 @@ export default function StudentView() {
       <main className="mx-auto flex w-full min-h-0 flex-1 flex-col px-4 py-6 sm:px-6">
         <div
           ref={splitGridRef}
-          className="iboard-student-workspace-grid mx-auto flex w-full min-h-0 flex-col gap-4"
+          className={`iboard-student-workspace-grid mx-auto flex w-full min-h-0 flex-col gap-4${inboxCollapsed ? ' is-inbox-collapsed' : ''}`}
           style={{
             '--student-inbox-fr': inboxShare,
             '--student-writing-fr': 1 - inboxShare,
@@ -1750,6 +1757,19 @@ export default function StudentView() {
             data-iboard-student-support
             className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden"
           >
+            {inboxCollapsed ? (
+              <button
+                type="button"
+                className="iboard-inbox-collapsed"
+                onClick={() => setInboxCollapsed(false)}
+                aria-label={inboxTabCount ? `Open inbox, ${inboxTabCount} unread` : 'Open inbox'}
+              >
+                <span className="iboard-inbox-head__mark" aria-hidden="true" />
+                <span className="iboard-inbox-collapsed__label">Inbox</span>
+                {inboxTabCount ? <span className="iboard-inbox-head__count">{inboxTabCount}</span> : null}
+              </button>
+            ) : (
+            <>
             <div className={`iboard-inbox-head ${liveInboxAlert ? 'iboard-inbox-head--live-alert' : ''}`}>
               <div className="iboard-inbox-head__row">
                 <div className="iboard-inbox-head__title-wrap">
@@ -1769,6 +1789,19 @@ export default function StudentView() {
                   ) : null}
                 </div>
                 <StudentVerbalRespond socket={socket} variant="chip" />
+                {classWallActive ? (
+                  <button
+                    type="button"
+                    className="iboard-inbox-head__collapse"
+                    onClick={() => setInboxCollapsed(true)}
+                    aria-label="Hide inbox to see more of the class wall"
+                    title="Hide inbox"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m6 3.5 4.5 4.5L6 12.5" />
+                    </svg>
+                  </button>
+                ) : null}
               </div>
             </div>
 
@@ -1801,13 +1834,19 @@ export default function StudentView() {
               />
             </div>
             </div>
+            </>
+            )}
           </aside>
 
-          <StudentWorkspaceSplit
-            share={inboxShare}
-            onShare={setInboxShareAndSave}
-            gridRef={splitGridRef}
-          />
+          {inboxCollapsed ? (
+            <span className="iboard-student-split iboard-student-split--collapsed" aria-hidden="true" />
+          ) : (
+            <StudentWorkspaceSplit
+              share={inboxShare}
+              onShare={setInboxShareAndSave}
+              gridRef={splitGridRef}
+            />
+          )}
 
           <section className={`iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4${classWallActive ? ' overflow-y-auto' : ''}`}>
             {classWallActive ? null : (
