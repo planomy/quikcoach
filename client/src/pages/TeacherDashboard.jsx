@@ -31,6 +31,7 @@ import { gradeShortLabel } from '../components/StudentGradeSelect.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
+import TeacherAnswerRail from '../components/TeacherAnswerRail.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
@@ -3480,7 +3481,6 @@ function TeacherDashboardInner() {
   }
 
   function showLaunchedAnswers() {
-    setAnswerPresent(true);
     openGaugePanel();
   }
 
@@ -4257,10 +4257,10 @@ function TeacherDashboardInner() {
               </div>
             )}
                   </div>
-                  <HintWrap hint={livePulse.activity ? 'Show student answers full screen' : 'Ask a question to show answers full screen'} prefer="below" multiline>
+                  <HintWrap hint="Show student answers full screen" prefer="below">
                     <button
                       type="button"
-                      onClick={() => (livePulse.activity ? showLaunchedAnswers() : openTeacherTools('ask'))}
+                      onClick={() => setAnswerPresent(true)}
                       className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                       aria-label="Present answers"
                       data-active={answerPresent ? 'true' : 'false'}
@@ -4454,8 +4454,6 @@ function TeacherDashboardInner() {
                 openTeacherTools(tab);
               }}
               onClose={() => setGaugePanelOpen(false)}
-              presentAnswers={answerPresent}
-              onExitPresent={() => setAnswerPresent(false)}
               subjectAssist={promptSubjectAssist}
               rosterStudentIds={orderedStudents.map((s) => s.id)}
               initialLive={livePulse}
@@ -5398,6 +5396,19 @@ function TeacherDashboardInner() {
           </div>
         </div>,
         document.body
+      ) : null}
+
+      {answerPresent ? (
+        <TeacherAnswerRail
+          screenOnly
+          presentAnswers
+          activity={livePulse.activity}
+          responses={livePulse.responses || []}
+          classStudentIds={orderedStudents.map((student) => student.id)}
+          onlineStudentIds={connectedStudents.map((student) => student.id)}
+          subjectAssist={promptSubjectAssist}
+          onExitPresent={() => setAnswerPresent(false)}
+        />
       ) : null}
 
       {boardDimOpen ? (

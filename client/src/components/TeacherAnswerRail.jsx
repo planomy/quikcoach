@@ -210,6 +210,7 @@ export default function TeacherAnswerRail({
   onThinkingSent,
   presentAnswers = false,
   onExitPresent,
+  screenOnly = false,
 }) {
   const listRef = useRef(null);
   const panelRef = useRef(null);
@@ -247,15 +248,8 @@ export default function TeacherAnswerRail({
   }
 
   useEffect(() => {
-    if (presentAnswers && activity) setPresenting(true);
-  }, [presentAnswers, activity]);
-
-  useEffect(() => {
-    if (!presenting || activity) return undefined;
-    setPresenting(false);
-    onExitPresent?.();
-    return undefined;
-  }, [presenting, activity, onExitPresent]);
+    if (presentAnswers) setPresenting(true);
+  }, [presentAnswers]);
 
   useEffect(() => {
     if (!presenting) return undefined;
@@ -358,7 +352,7 @@ export default function TeacherAnswerRail({
   if (!activity && presenting) {
     return (
       <>
-        {embedded ? (
+        {embedded && !screenOnly ? (
           <div className="grid place-items-center px-6 py-10 text-center">
             <p className="text-sm font-semibold text-[#3c3c45] dark:text-slate-100">No live question right now</p>
             <p className="mt-1 text-xs text-[#6b6b78] dark:text-slate-400">
@@ -377,10 +371,10 @@ export default function TeacherAnswerRail({
             </button>
             <div className="grid flex-1 place-items-center px-6 text-center">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Watch mode</p>
-                <h2 className="mt-2 font-display text-3xl font-black">Waiting for the next answer…</h2>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Present</p>
+                <h2 className="mt-2 font-display text-3xl font-black">No question yet</h2>
                 <p className="mt-3 text-sm font-semibold text-indigo-200">
-                  Ask aloud — Present updates when the first + Answer lands.
+                  Ask the class a question. Student answers will appear here.
                 </p>
               </div>
             </div>
@@ -401,7 +395,7 @@ export default function TeacherAnswerRail({
 
   return (
     <>
-      <PanelTag
+      {!screenOnly && <PanelTag
         ref={panelRef}
         className={panelClass}
         aria-hidden={embedded ? undefined : !open}
@@ -631,7 +625,7 @@ export default function TeacherAnswerRail({
             </div>
           )}
         </div>
-      </PanelTag>
+      </PanelTag>}
 
       {presenting && activity
         ? createPortal(

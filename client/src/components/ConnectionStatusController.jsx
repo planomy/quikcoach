@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /** How long a blip can last before we treat it as a real connection problem. */
 const PROBLEM_AFTER_MS = 45000;
@@ -116,6 +117,24 @@ export default function ConnectionStatusController() {
   }, [socket]);
 
   if (state === 'hidden') return null;
+
+  const teacherFace = typeof document !== 'undefined' && window.location.pathname === '/teacher'
+    ? document.querySelector('.iboard-class-gauge__face')
+    : null;
+  if (teacherFace) {
+    const label = state === 'online'
+      ? 'Back online'
+      : state === 'failed'
+        ? 'Can’t reconnect'
+        : 'Reconnecting';
+    return createPortal(
+      <div className="iboard-class-gauge__notice" role="status" aria-live="polite">
+        {label}
+        {state === 'reconnecting' ? <ReconnectingDots /> : null}
+      </div>,
+      teacherFace
+    );
+  }
 
   if (state === 'online') {
     return (

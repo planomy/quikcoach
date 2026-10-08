@@ -1482,7 +1482,10 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   left: 50%;
   bottom: 0.14rem;
   z-index: 2;
-  max-width: 9.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  max-width: 11rem;
   transform: translateX(-50%);
   padding: 0.04rem 0.4rem;
   overflow: hidden;
