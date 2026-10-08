@@ -4006,6 +4006,12 @@ function TeacherDashboardInner() {
             </div>
 
             <div className="iboard-command-bar">
+              <div className="iboard-command-frame" aria-hidden="true">
+                <svg viewBox="-56 -52 112 104">
+                  <path className="iboard-command-frame__fill" d="M54.11 -25.5 A22 22 0 0 1 37.58 -32.99 A50 50 0 0 0 -37.58 -32.99 A22 22 0 0 1 -54.11 -25.5 L-54.11 25.5 A22 22 0 0 1 -37.58 32.99 A50 50 0 0 0 37.58 32.99 A22 22 0 0 1 54.11 25.5 Z" />
+                  <path className="iboard-command-frame__line" d="M54.11 -25.5 A22 22 0 0 1 37.58 -32.99 A50 50 0 0 0 -37.58 -32.99 A22 22 0 0 1 -54.11 -25.5 M-54.11 25.5 A22 22 0 0 1 -37.58 32.99 A50 50 0 0 0 37.58 32.99 A22 22 0 0 1 54.11 25.5 M-45.83 -20 A50 50 0 0 0 -45.83 20 M45.83 20 A50 50 0 0 0 45.83 -20" />
+                </svg>
+              </div>
               <div className="iboard-command-bar__side iboard-command-bar__side--monitor">
                 <span className="iboard-command-bar__title">Monitor class</span>
                 <div className="iboard-attention-home" role="group" aria-label="Needs a look">
@@ -4068,15 +4074,6 @@ function TeacherDashboardInner() {
                 </div>
               </div>
               <div ref={gaugeSlotRef} className="iboard-command-bar__gauge">
-                <svg className="iboard-gauge-collar" viewBox="-56 -51 112 102" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="iboard-gauge-collar-fill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" className="iboard-gauge-collar__top" />
-                      <stop offset="1" className="iboard-gauge-collar__bottom" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M51.38 -20 A10 10 0 0 1 42.75 -24.96 A49.5 49.5 0 0 0 -42.75 -24.96 A10 10 0 0 1 -51.38 -20 L-45.28 -20 A49.5 49.5 0 0 0 -45.28 20 L-51.38 20 A10 10 0 0 1 -42.75 24.96 A49.5 49.5 0 0 0 42.75 24.96 A10 10 0 0 1 51.38 20 L45.28 20 A49.5 49.5 0 0 0 45.28 -20 Z" />
-                </svg>
                 <ClassGauge
                   title={classGauge.title}
                   caption={classGauge.caption}
