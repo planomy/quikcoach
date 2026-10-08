@@ -3955,6 +3955,8 @@ function TeacherDashboardInner() {
     </div>
   );
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
+  const askClassOpen = toolsPanelOpen && toolsTab !== 'sets';
+  const boardDimOpen = askClassOpen || settingsOpen;
   const settingsTitle = settingsSection === 'records' ? 'Reports' : 'Settings';
   const aiFeedbackOpen = !!libraryPanel && libraryView === 'feedback';
   const reportsOpen = !!libraryPanel && libraryView !== 'feedback';
@@ -4480,7 +4482,7 @@ function TeacherDashboardInner() {
       )}
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      {headerDockOpen ? (
+      {headerDockOpen && !boardDimOpen ? (
         <div className="iboard-workspace-scrim pointer-events-none absolute inset-0 z-[55]" aria-hidden="true" />
       ) : null}
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
@@ -5396,6 +5398,10 @@ function TeacherDashboardInner() {
           </div>
         </div>,
         document.body
+      ) : null}
+
+      {boardDimOpen ? (
+        <div className="iboard-library-scrim fixed bottom-0 right-0 top-0 z-50 bg-slate-900/50" aria-hidden="true" />
       ) : null}
 
       {libraryPanel && (
