@@ -87,6 +87,16 @@ export function migrate(db) {
     /* column already exists */
   }
   try {
+    db.exec(`ALTER TABLE rooms ADD COLUMN class_wall_active INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    /* column already exists */
+  }
+  try {
+    db.exec(`ALTER TABLE rooms ADD COLUMN class_wall_hide_names INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    /* column already exists */
+  }
+  try {
     db.exec(`ALTER TABLE students ADD COLUMN breakout_room_id TEXT NOT NULL DEFAULT ''`);
   } catch {
     /* column already exists */
@@ -436,6 +446,14 @@ export const queries = {
     if (settings.lesson_objective !== undefined) {
       fields.push('lesson_objective = ?');
       values.push(String(settings.lesson_objective ?? '').replace(/\s+/g, ' ').trim().slice(0, 200));
+    }
+    if (settings.class_wall_active !== undefined) {
+      fields.push('class_wall_active = ?');
+      values.push(settings.class_wall_active ? 1 : 0);
+    }
+    if (settings.class_wall_hide_names !== undefined) {
+      fields.push('class_wall_hide_names = ?');
+      values.push(settings.class_wall_hide_names ? 1 : 0);
     }
     if (settings.genre !== undefined) {
       fields.push('genre = ?');
@@ -1436,6 +1454,8 @@ export const queries = {
       lesson_objective: String(row.lesson_objective || ''),
       breakouts_active: !!row.breakouts_active,
       breakout_count: Math.max(0, Math.min(40, Number(row.breakout_count) || 0)),
+      class_wall_active: !!row.class_wall_active,
+      class_wall_hide_names: !!row.class_wall_hide_names,
       genre: normalizeFeedbackMode(row.genre),
       feedback_toggles,
     };

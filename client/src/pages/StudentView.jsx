@@ -19,6 +19,7 @@ import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import StudentWorkspaceSplit from '../components/StudentWorkspaceSplit.jsx';
+import ClassWall from '../components/ClassWall.jsx';
 import HintWrap from '../components/HintWrap.jsx';
 import { persistInboxShare, readInboxShare } from '../lib/studentSplit.js';
 import '../components/studentWorkspace.css';
@@ -121,6 +122,17 @@ function draftFromJoin({ raw, richHtml, serverUpdatedAt, code, studentId, limit 
   };
 }
 
+function applyPeerScope(payload, sid, { setBreakoutsActive, setClassWallActive, setBreakoutPeers, setWallStudents }) {
+  const breakoutsOn = !!payload?.breakouts?.active || !!payload?.room?.breakouts_active;
+  const wallOn = !!payload?.room?.class_wall_active && !breakoutsOn;
+  setBreakoutsActive(breakoutsOn);
+  setClassWallActive(wallOn);
+  const list = Array.isArray(payload?.students) ? payload.students : [];
+  const others = list.filter((row) => Number(row.id) !== Number(sid));
+  setBreakoutPeers(breakoutsOn ? others.slice(0, 4) : []);
+  setWallStudents(wallOn ? list : []);
+}
+
 export default function StudentView() {
   const [searchParams] = useSearchParams();
   const codeFromLink = String(searchParams.get('code') || '')
@@ -132,6 +144,8 @@ export default function StudentView() {
   const [room, setRoom] = useState(null);
   const [breakoutPeers, setBreakoutPeers] = useState([]);
   const [breakoutsActive, setBreakoutsActive] = useState(false);
+  const [classWallActive, setClassWallActive] = useState(false);
+  const [wallStudents, setWallStudents] = useState([]);
   const [draft, setDraft] = useState('');
   const [draftHtml, setDraftHtml] = useState('');
   const [joined, setJoined] = useState(false);
@@ -284,8 +298,12 @@ export default function StudentView() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('iboard-student-breakouts', !!joined && !!breakoutsActive);
-    return () => document.documentElement.classList.remove('iboard-student-breakouts');
-  }, [joined, breakoutsActive]);
+    document.documentElement.classList.toggle('iboard-student-class-wall', !!joined && !!classWallActive);
+    return () => {
+      document.documentElement.classList.remove('iboard-student-breakouts');
+      document.documentElement.classList.remove('iboard-student-class-wall');
+    };
+  }, [joined, breakoutsActive, classWallActive]);
 
   useEffect(() => {
     function syncFullscreen() {
@@ -631,19 +649,12 @@ export default function StudentView() {
     const onState = (payload) => {
       setRoom(payload.room || null);
       const sid = studentRef.current?.id ?? hydrateStudentIdRef.current;
-      const active = !!payload.breakouts?.active || !!payload.room?.breakouts_active;
-      setBreakoutsActive(active);
+      applyPeerScope(payload, sid, { setBreakoutsActive, setClassWallActive, setBreakoutPeers, setWallStudents });
       if (!sid || !payload.students) return;
       const me = payload.students.find((s) => s.id === sid);
       if (!me) return;
       hydrateStudentIdRef.current = null;
       setStudent(me);
-      const peers = active
-        ? payload.students
-            .filter((s) => Number(s.id) !== Number(sid))
-            .slice(0, 4)
-        : [];
-      setBreakoutPeers(peers);
       const typing = !!document.activeElement?.isContentEditable;
       const r = payload.room;
       const lim =
@@ -665,11 +676,25 @@ export default function StudentView() {
       if (!sid || !s?.id) return;
       if (Number(s.id) === Number(sid)) {
         setStudent((prev) => ({ ...(prev || {}), ...s }));
+        setWallStudents((prev) => {
+          const i = prev.findIndex((p) => Number(p.id) === Number(s.id));
+          if (i === -1) return prev.length ? [...prev, s] : prev;
+          const next = [...prev];
+          next[i] = { ...next[i], ...s };
+          return next;
+        });
         return;
       }
       setBreakoutPeers((prev) => {
         const i = prev.findIndex((p) => Number(p.id) === Number(s.id));
         if (i === -1) return prev;
+        const next = [...prev];
+        next[i] = { ...next[i], ...s };
+        return next;
+      });
+      setWallStudents((prev) => {
+        const i = prev.findIndex((p) => Number(p.id) === Number(s.id));
+        if (i === -1) return prev.length ? [...prev, s] : prev;
         const next = [...prev];
         next[i] = { ...next[i], ...s };
         return next;
@@ -989,15 +1014,7 @@ export default function StudentView() {
         setCodeInput(code);
         setStudent(ack.student);
         if (ack.room) setRoom(ack.room);
-        {
-          const active = !!ack.breakouts?.active || !!ack.room?.breakouts_active;
-          setBreakoutsActive(active);
-          setBreakoutPeers(
-            active && Array.isArray(ack.students)
-              ? ack.students.filter((s) => Number(s.id) !== Number(ack.student?.id)).slice(0, 4)
-              : []
-          );
-        }
+        applyPeerScope(ack, ack.student?.id, { setBreakoutsActive, setClassWallActive, setBreakoutPeers, setWallStudents });
         const lim =
           ack.room?.enforce_word_count && (ack.room?.word_target ?? 0) > 0
             ? Number(ack.room.word_target)
@@ -1059,6 +1076,7 @@ export default function StudentView() {
       setCodeInput(saved.code);
       setStudent(ack.student);
       if (ack.room) setRoom(ack.room);
+      applyPeerScope(ack, ack.student.id, { setBreakoutsActive, setClassWallActive, setBreakoutPeers, setWallStudents });
 
       const limit =
         ack.room?.enforce_word_count && (ack.room?.word_target ?? 0) > 0
@@ -1097,15 +1115,7 @@ export default function StudentView() {
       saveStudentSession({ code: c, studentId: ack.student.id, name: ack.student?.name || n });
       setStudent(ack.student);
       if (ack.room) setRoom(ack.room);
-      {
-        const active = !!ack.breakouts?.active || !!ack.room?.breakouts_active;
-        setBreakoutsActive(active);
-        setBreakoutPeers(
-          active && Array.isArray(ack.students)
-            ? ack.students.filter((s) => Number(s.id) !== Number(ack.student?.id)).slice(0, 4)
-            : []
-        );
-      }
+      applyPeerScope(ack, ack.student?.id, { setBreakoutsActive, setClassWallActive, setBreakoutPeers, setWallStudents });
       const lim =
         ack.room?.enforce_word_count && (ack.room?.word_target ?? 0) > 0
           ? Number(ack.room.word_target)
@@ -1414,6 +1424,72 @@ export default function StudentView() {
       </div>
     );
   }
+
+  const writingEditor = (
+    <RichTextEditor
+      text={draft}
+      html={draftHtml}
+      onChange={({ text, html, paste }) => {
+        draftTrailTokenRef.current = socket.connected ? room?.draftTrail?.token || '' : '';
+        if (paste && socket.connected) {
+          socket.emit('student:text', { text, richTextHtml: html, draftTrail: { token: draftTrailTokenRef.current, paste: true } });
+        }
+        setDraft(text);
+        setDraftHtml(html);
+      }}
+      onPaste={onDraftPaste}
+      disabled={frozen}
+      maxWords={enforce && wt > 0 ? wt : 0}
+      placeholder="Write here… or paste an image"
+      headerEndActions={
+        student?.id ? (
+          <StudentChatButton
+            socket={socket}
+            studentId={student.id}
+            unread={chatUnread}
+            onOpen={() => {
+              for (const item of feedbackInbox) {
+                if (item.type === 'chat' && inboxUnreadIds.has(item.id)) markFeedbackSeen(item.id);
+              }
+            }}
+          />
+        ) : null
+      }
+      headerActions={
+        <>
+          {draftSaveState === 'offline' || draftSaveState === 'error' ? (
+            <HintWrap hint="Your teacher can’t see new changes yet. TUIT keeps trying in the background." prefer="above" multiline>
+              <span
+                role="status"
+                title=""
+                className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-300'}`}
+              >
+                <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'error' ? 'bg-red-600' : 'bg-amber-500'}`} />
+                {draftSaveState === 'error' ? 'Not sent to teacher' : 'Offline'}
+              </span>
+            </HintWrap>
+          ) : (
+            <HintWrap
+              hint={deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim()
+                ? 'A copy is saved on this device. Save again after more changes.'
+                : 'Only backed up in this browser — not safe. Press to save a copy.'}
+              prefer="above"
+              multiline
+            >
+              <button
+                type="button"
+                title=""
+                onClick={() => setSaveMenuOpen(true)}
+                className={`inline-flex items-center gap-1 rounded-md px-1 text-xs font-medium transition hover:text-[#3c3f8f] dark:hover:text-indigo-200 ${deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim() ? 'text-[#5a5fc3] dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}
+              >
+                {deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim() ? '✓ Saved to device' : 'Not saved'}
+              </button>
+            </HintWrap>
+          )}
+        </>
+      }
+    />
+  );
 
   return (
     <div className="iboard-student-canvas flex min-h-screen w-full min-w-0 flex-col dark:bg-slate-950">
@@ -1733,11 +1809,13 @@ export default function StudentView() {
             gridRef={splitGridRef}
           />
 
-          <section className="iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4">
+          <section className={`iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4${classWallActive ? ' overflow-y-auto' : ''}`}>
+            {classWallActive ? null : (
             <p className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
               Tip: paste a screenshot into the box to add an image to your board card.
             </p>
-            {student?.image_url && (
+            )}
+            {student?.image_url && !classWallActive && (
               <div
                 data-student-image-preview
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900"
@@ -1778,71 +1856,25 @@ export default function StudentView() {
               </div>
             )}
             <StudentAnnotationController socket={socket} studentId={student?.id} />
-            <div className="iboard-student-writing-pane min-h-0 flex-1">
-              <RichTextEditor
-                text={draft}
-                html={draftHtml}
-                onChange={({ text, html, paste }) => {
-                  draftTrailTokenRef.current = socket.connected ? room?.draftTrail?.token || '' : '';
-                  if (paste && socket.connected) {
-                    socket.emit('student:text', { text, richTextHtml: html, draftTrail: { token: draftTrailTokenRef.current, paste: true } });
-                  }
-                  setDraft(text);
-                  setDraftHtml(html);
-                }}
-                onPaste={onDraftPaste}
-                disabled={frozen}
-                maxWords={enforce && wt > 0 ? wt : 0}
-                placeholder="Write here… or paste an image"
-                headerEndActions={
-                  student?.id ? (
-                    <StudentChatButton
-                      socket={socket}
-                      studentId={student.id}
-                      unread={chatUnread}
-                      onOpen={() => {
-                        for (const item of feedbackInbox) {
-                          if (item.type === 'chat' && inboxUnreadIds.has(item.id)) markFeedbackSeen(item.id);
-                        }
-                      }}
-                    />
-                  ) : null
-                }
-                headerActions={
-                  <>
-                    {draftSaveState === 'offline' || draftSaveState === 'error' ? (
-                      <HintWrap hint="Your teacher can’t see new changes yet. TUIT keeps trying in the background." prefer="above" multiline>
-                        <span
-                          role="status"
-                          title=""
-                          className={`inline-flex items-center gap-1.5 text-xs font-medium ${draftSaveState === 'error' ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-300'}`}
-                        >
-                          <span aria-hidden="true" className={`h-2 w-2 rounded-full ${draftSaveState === 'error' ? 'bg-red-600' : 'bg-amber-500'}`} />
-                          {draftSaveState === 'error' ? 'Not sent to teacher' : 'Offline'}
-                        </span>
-                      </HintWrap>
-                    ) : (
-                      <HintWrap
-                        hint={deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim()
-                          ? 'A copy is saved on this device. Save again after more changes.'
-                          : 'Only backed up in this browser — not safe. Press to save a copy.'}
-                        prefer="above"
-                        multiline
-                      >
-                        <button
-                          type="button"
-                          title=""
-                          onClick={() => setSaveMenuOpen(true)}
-                          className={`inline-flex items-center gap-1 rounded-md px-1 text-xs font-medium transition hover:text-[#3c3f8f] dark:hover:text-indigo-200 ${deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim() ? 'text-[#5a5fc3] dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}
-                        >
-                          {deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim() ? '✓ Saved to device' : 'Not saved'}
-                        </button>
-                      </HintWrap>
-                    )}
-                  </>
-                }
+            {classWallActive ? (
+              <ClassWall
+                students={wallStudents.length ? wallStudents : (student ? [student] : [])}
+                selfId={student?.id}
+                hideNames={!!room?.class_wall_hide_names}
+                youCard={(
+                  <div className="iboard-student-writing-pane min-h-0 flex-1">
+                    {student?.image_url ? (
+                      <img src={student.image_url} alt="" className="iboard-class-wall__image" />
+                    ) : null}
+                    {writingEditor}
+                  </div>
+                )}
               />
-            </div>
+            ) : (
+              <div className="iboard-student-writing-pane min-h-0 flex-1">
+                {writingEditor}
+              </div>
+            )}
           </section>
         </div>
         {breakoutsActive ? (
@@ -1870,7 +1902,7 @@ export default function StudentView() {
           </section>
         ) : null}
       </main>
-      {!breakoutsActive ? <AppFooter /> : null}
+      {!breakoutsActive && !classWallActive ? <AppFooter /> : null}
     </div>
   );
 }

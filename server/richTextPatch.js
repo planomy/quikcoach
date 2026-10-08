@@ -319,9 +319,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           const updated = selectStudent.get(studentId);
           const student = queries.rowToStudent(updated);
           const roomRow = queries.ensureRoom(richDb, roomCode);
-          if (!Number(roomRow?.breakouts_active)) {
-            io.to(`room:${roomCode}`).emit('student:live', { student });
-          } else {
+          if (Number(roomRow?.breakouts_active)) {
             io.to(`teacher:${roomCode}`).emit('student:live', { student });
             const roomId = String(student.breakout_room_id || '').trim();
             const peers = queries
@@ -335,6 +333,11 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
             for (const peer of peers) {
               io.to(`student:${peer.id}`).emit('student:live', { student });
             }
+          } else if (Number(roomRow?.class_wall_active)) {
+            io.to(`room:${roomCode}`).emit('student:live', { student });
+          } else {
+            io.to(`teacher:${roomCode}`).emit('student:live', { student });
+            io.to(`student:${student.id}`).emit('student:live', { student });
           }
         } catch (error) {
           console.error('Could not persist student rich text', error);

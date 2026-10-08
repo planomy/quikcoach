@@ -17,6 +17,10 @@ export function isBreakoutsActive(roomRow) {
   return Number(roomRow?.breakouts_active) === 1;
 }
 
+export function isClassWallActive(roomRow) {
+  return Number(roomRow?.class_wall_active) === 1;
+}
+
 export function clampBreakoutCount(raw, { min = 1, max = 40 } = {}) {
   const n = Math.floor(Number(raw) || 0);
   if (!Number.isFinite(n)) return min;
@@ -73,18 +77,24 @@ export function buildBreakoutsMeta(studentRows, active, roomCount = 0) {
   };
 }
 
-/** Students only ever see themselves (+ breakout peers when active). */
-export function scopeStudentsForViewer(allStudents, viewerStudentId, breakoutsOn) {
+/** Students see themselves, breakout peers, or the whole class wall. */
+export function scopeStudentsForViewer(allStudents, viewerStudentId, breakoutsOnOrOpts = false) {
+  const opts = typeof breakoutsOnOrOpts === 'object' && breakoutsOnOrOpts
+    ? breakoutsOnOrOpts
+    : { breakoutsOn: !!breakoutsOnOrOpts, classWallOn: false };
   const viewerId = Number(viewerStudentId);
   const list = Array.isArray(allStudents) ? allStudents : [];
   const me = list.find((s) => Number(s.id) === viewerId);
   if (!me) return [];
-  if (!breakoutsOn) return [me];
-  const roomId = normalizeBreakoutRoomId(me.breakout_room_id);
-  if (!roomId) return [me];
-  return list.filter(
-    (s) => Number(s.id) === viewerId || normalizeBreakoutRoomId(s.breakout_room_id) === roomId
-  );
+  if (opts.breakoutsOn) {
+    const roomId = normalizeBreakoutRoomId(me.breakout_room_id);
+    if (!roomId) return [me];
+    return list.filter(
+      (s) => Number(s.id) === viewerId || normalizeBreakoutRoomId(s.breakout_room_id) === roomId
+    );
+  }
+  if (opts.classWallOn) return list;
+  return [me];
 }
 
 export function peerStudentIds(allStudents, authorStudent, breakoutsOn) {

@@ -17,6 +17,7 @@ import {
   buildBreakoutsMeta,
   clampBreakoutCount,
   isBreakoutsActive,
+  isClassWallActive,
   normalizeBreakoutRoomId,
   peerStudentIds,
   scopeStudentsForViewer,
@@ -461,51 +462,56 @@ function buildRoomPayload(code) {
   };
 }
 
-function buildScopedRoomPayload(code, viewerStudentId) {
-  const full = buildRoomPayload(code);
-  const active = !!full.breakouts?.active;
+function viewerScopeOpts(full) {
+  const breakoutsOn = !!full.breakouts?.active;
   return {
-    ...full,
-    students: scopeStudentsForViewer(full.students, viewerStudentId, active),
+    breakoutsOn,
+    classWallOn: !!full.room?.class_wall_active && !breakoutsOn,
   };
 }
 
-function emitRoomState(code, payload) {
-  io.to(roomSocketName(code)).emit('room:state', payload);
+function buildScopedRoomPayload(code, viewerStudentId) {
+  const full = buildRoomPayload(code);
+  return {
+    ...full,
+    students: scopeStudentsForViewer(full.students, viewerStudentId, viewerScopeOpts(full)),
+  };
 }
 
-/** Teachers always get the full roster; students get self (+ breakout peers when active). */
+/** Teachers always get the full roster; students get self, breakout peers, or the class wall. */
 function broadcastRoom(code) {
   const c = normalizeRoomCode(code);
   const full = buildRoomPayload(c);
-  if (!full.breakouts?.active) {
-    emitRoomState(c, full);
-    return full;
-  }
+  const scope = viewerScopeOpts(full);
   io.to(teacherSocketName(c)).emit('room:state', full);
   for (const student of full.students) {
     io.to(studentSocketName(student.id)).emit('room:state', {
       ...full,
-      students: scopeStudentsForViewer(full.students, student.id, true),
+      students: scopeStudentsForViewer(full.students, student.id, scope),
     });
   }
   return full;
 }
 
-/** Live draft patches — scope to breakout peers when breakouts are on. */
+/** Live draft patches — wall and breakouts decide who else sees the typing. */
 function emitStudentLive(code, student) {
   const c = normalizeRoomCode(code);
   const roomRow = queries.ensureRoom(db, c);
-  if (!isBreakoutsActive(roomRow)) {
+  if (isBreakoutsActive(roomRow)) {
+    io.to(teacherSocketName(c)).emit('student:live', { student });
+    const all = queries.listStudents(db, c).map(queries.rowToStudent);
+    const peers = peerStudentIds(all, student, true) || [Number(student.id)];
+    for (const sid of peers) {
+      io.to(studentSocketName(sid)).emit('student:live', { student });
+    }
+    return;
+  }
+  if (isClassWallActive(roomRow)) {
     io.to(roomSocketName(c)).emit('student:live', { student });
     return;
   }
   io.to(teacherSocketName(c)).emit('student:live', { student });
-  const all = queries.listStudents(db, c).map(queries.rowToStudent);
-  const peers = peerStudentIds(all, student, true) || [Number(student.id)];
-  for (const sid of peers) {
-    io.to(studentSocketName(sid)).emit('student:live', { student });
-  }
+  io.to(studentSocketName(student.id)).emit('student:live', { student });
 }
 
 const BROADCAST_HISTORY_LIMIT = 10;
@@ -2088,6 +2094,13 @@ io.on('connection', (socket) => {
         };
         delete payload.teacherYearLevel;
       }
+      if (payload?.class_wall_active) {
+        const roomRow = queries.ensureRoom(db, code);
+        if (isBreakoutsActive(roomRow)) {
+          cb?.({ ok: false, error: 'Close breakouts first' });
+          return;
+        }
+      }
       queries.updateRoomSettings(db, code, payload);
       broadcastRoom(code);
       cb?.({ ok: true });
@@ -2151,6 +2164,11 @@ io.on('connection', (socket) => {
       const rows = queries.listStudents(db, code);
       if (!rows.length) {
         cb?.({ ok: false, error: 'No students in the room yet' });
+        return;
+      }
+      const roomRow = queries.ensureRoom(db, code);
+      if (isClassWallActive(roomRow)) {
+        cb?.({ ok: false, error: 'Close class wall first' });
         return;
       }
       const mode = String(payload?.mode || 'auto') === 'manual' ? 'manual' : 'auto';

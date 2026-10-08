@@ -1631,7 +1631,7 @@ function TeacherDashboardInner() {
   ]);
 
   function startBreakoutsAuto() {
-    if (!socket || breakoutBusy) return;
+    if (!socket || breakoutBusy || room?.class_wall_active) return;
     setBreakoutBusy(true);
     socket.emit('teacher:breakouts-start', { mode: 'auto' }, (ack) => {
       setBreakoutBusy(false);
@@ -1640,7 +1640,7 @@ function TeacherDashboardInner() {
   }
 
   function startBreakoutsManual() {
-    if (!socket || breakoutBusy) return;
+    if (!socket || breakoutBusy || room?.class_wall_active) return;
     const roomCount = Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)));
     const assignments = orderedStudents.map((student) => ({
       studentId: Number(student.id),
@@ -5533,6 +5533,7 @@ function TeacherDashboardInner() {
               type="button"
               disabled={
                 breakoutBusy ||
+                !!room?.class_wall_active ||
                 !orderedStudents.length ||
                 !Object.values(breakoutDraftAssign).some(Boolean)
               }
@@ -5912,10 +5913,10 @@ function TeacherDashboardInner() {
               </button>
             </div>
                     {breakoutSetupMode === 'auto' ? (
-                      <HintWrap hint="Student writing cards appear on group members' screens" className="w-full">
+                      <HintWrap hint={room?.class_wall_active ? 'Close class wall first' : "Student writing cards appear on group members' screens"} className="w-full">
             <button
               type="button"
-                          disabled={breakoutBusy || !students.length}
+                          disabled={breakoutBusy || !students.length || !!room?.class_wall_active}
                           onClick={startBreakoutsAuto}
                           className="iboard-room-settings__primary w-full"
                         >
@@ -5925,6 +5926,55 @@ function TeacherDashboardInner() {
                     ) : null}
                   </div>
                 )}
+              </div>
+            </section>
+
+            <section className="iboard-room-settings__section">
+              <h3 className="iboard-room-settings__label">
+                <HintWrap hint="Every student sees the class writing wall as equal cards">Class wall</HintWrap>
+              </h3>
+              <div className="iboard-room-settings__card iboard-room-settings__card-pad">
+                <div className="space-y-2.5">
+                  {room?.class_wall_active ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRoom((r) => (r ? { ...r, class_wall_active: false } : r));
+                        pushSettings({ class_wall_active: false });
+                      }}
+                      className="iboard-room-settings__secondary w-full"
+                    >
+                      Close class wall
+                    </button>
+                  ) : (
+                    <HintWrap hint={breakoutsActive ? 'Close breakouts first' : 'Students see each other’s writing as equal cards'} className="w-full">
+                      <button
+                        type="button"
+                        disabled={breakoutsActive}
+                        onClick={() => {
+                          setRoom((r) => (r ? { ...r, class_wall_active: true } : r));
+                          pushSettings({ class_wall_active: true });
+                        }}
+                        className="iboard-room-settings__primary w-full"
+                      >
+                        Start class wall
+                      </button>
+                    </HintWrap>
+                  )}
+                  <label className="flex cursor-pointer items-center justify-between gap-3 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                    <HintWrap hint="Peers see Classmate instead of names">Hide names</HintWrap>
+                    <input
+                      type="checkbox"
+                      checked={!!room?.class_wall_hide_names}
+                      onChange={(e) => {
+                        const v = e.target.checked;
+                        setRoom((r) => (r ? { ...r, class_wall_hide_names: v } : r));
+                        pushSettings({ class_wall_hide_names: v });
+                      }}
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
+                    />
+                  </label>
+                </div>
               </div>
             </section>
 
