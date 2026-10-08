@@ -4360,6 +4360,7 @@ function TeacherDashboardInner() {
       <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Share with class">
+            <span className="iboard-command-bar__title iboard-rail-title">Teach class</span>
             <HintWrap hint="Send resources to students" prefer="right" suppressed={(addCardOpen && !teacherPanelHidden) || (toolsPanelOpen && toolsTab === 'sets')}>
               <button
                 type="button"

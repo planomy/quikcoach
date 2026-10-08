@@ -1130,6 +1130,14 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   color: #a3a6db;
 }
 
+.iboard-rail-title {
+  max-width: 100%;
+  padding: 0 0.2rem 0.15rem;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
 .iboard-command-bar__side .iboard-attention-home {
   margin: 0;
 }
