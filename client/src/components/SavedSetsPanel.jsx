@@ -138,6 +138,9 @@ export default function SavedSetsPanel({
   const [sendStatus, setSendStatus] = useState('');
   const [pickerSets, setPickerSets] = useState(null);
   const [pickerError, setPickerError] = useState('');
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState([]);
+  const [editingQueueId, setEditingQueueId] = useState(null);
+  const [queueEditDraft, setQueueEditDraft] = useState('');
   const sendingRef = useRef(false);
   const [mode, setMode] = useState(''); // preview | edit | create
   const [draftName, setDraftName] = useState('');
@@ -230,6 +233,16 @@ export default function SavedSetsPanel({
     setSelectedSetIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
     setSendStatus('');
   }
+  function toggleQuestion(id) {
+    if (sendingRef.current) return;
+    setSelectedQuestionIds((ids) => (ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]));
+    setSendStatus('');
+  }
+  function setForSend(set) {
+    if (!set) return set;
+    const picked = (set.questions || []).filter((question) => selectedQuestionIds.includes(question.id));
+    return picked.length ? { ...set, questions: picked } : set;
+  }
   function openStudentPicker(sets) {
     if (!sets.length || sendingRef.current) return;
     setPickerSets(sets);
@@ -251,6 +264,7 @@ export default function SavedSetsPanel({
       setSendStatus(result.message);
       if (result.ok) {
         setSelectedSetIds(ids => ids.filter(id => !sets.some(set => set.id === id)));
+        setSelectedQuestionIds([]);
         setMode('');
         setActiveSet(null);
         setPickerSets(null);
@@ -271,6 +285,7 @@ export default function SavedSetsPanel({
   function openPreview(set) {
     if (sendingRef.current) return;
     setActiveSet(set);
+    setSelectedQuestionIds([]);
     setMode('preview');
   }
 
@@ -465,7 +480,7 @@ export default function SavedSetsPanel({
             </HintWrap>
             {queue.length > 0 && (
               <HintWrap hint="Remove every question from the queue">
-                <button type="button" onClick={() => setQueue([])} className="text-xs font-black text-red-600">Clear</button>
+                <button type="button" onClick={() => { setQueue([]); setEditingQueueId(null); setQueueEditDraft(''); }} className="text-xs font-black text-red-600">Clear</button>
               </HintWrap>
             )}
           </div>
@@ -473,26 +488,83 @@ export default function SavedSetsPanel({
           {queueOpen && queue.length > 0 && (
             <>
               <div className="mt-3 space-y-2">
-                {queue.map((item, index) => (
+                {queue.map((item, index) => {
+                  const editing = editingQueueId === item.id;
+                  return (
                   <div key={item.id} className="rounded-xl border border-slate-200 px-3 py-2.5 dark:border-slate-700">
                     <div className="flex items-start gap-2">
                       <span className="mt-0.5 w-4 shrink-0 text-[10px] font-black tabular-nums text-slate-400">{index + 1}</span>
-                      <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-slate-900 dark:text-white">{item.prompt}</p>
+                      {editing ? (
+                        <textarea
+                          value={queueEditDraft}
+                          onChange={(event) => setQueueEditDraft(event.target.value.slice(0, 500))}
+                          className="min-h-[3.25rem] min-w-0 flex-1 rounded-lg border border-[#cfcce8] bg-white px-2.5 py-1.5 text-[13px] font-semibold leading-snug text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
+                          aria-label={`Edit queued question ${index + 1}`}
+                        />
+                      ) : (
+                        <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-slate-900 dark:text-white">{item.prompt}</p>
+                      )}
                     </div>
                     <div className="mt-2 flex items-center justify-end gap-2 pl-6">
-                      <HintWrap hint="Ask this question now">
-                        <button
-                          type="button"
-                          onClick={() => onLaunchQuestion(item, item.id)}
-                          className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-900"
-                        >
-                          Launch
-                        </button>
-                      </HintWrap>
-                      <RemoveButton onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} aria-label="Remove from queue" />
+                      {editing ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingQueueId(null);
+                              setQueueEditDraft('');
+                            }}
+                            className="rounded px-2 py-0.5 text-[10px] font-black text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!queueEditDraft.trim()}
+                            onClick={() => {
+                              const prompt = queueEditDraft.trim().slice(0, 500);
+                              if (!prompt) return;
+                              setQueue((items) => items.map((question) => (
+                                question.id === item.id ? { ...question, prompt } : question
+                              )));
+                              setEditingQueueId(null);
+                              setQueueEditDraft('');
+                            }}
+                            className="rounded bg-[#5a5fc3] px-2 py-0.5 text-[10px] font-black text-white disabled:opacity-40"
+                          >
+                            Save
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <HintWrap hint="Change this question before you launch it">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingQueueId(item.id);
+                                setQueueEditDraft(String(item.prompt || ''));
+                              }}
+                              className="rounded px-2 py-0.5 text-[10px] font-black text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                            >
+                              Edit
+                            </button>
+                          </HintWrap>
+                          <HintWrap hint="Ask this question now">
+                            <button
+                              type="button"
+                              onClick={() => onLaunchQuestion(item, item.id)}
+                              className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-900"
+                            >
+                              Launch
+                            </button>
+                          </HintWrap>
+                          <RemoveButton onClick={() => setQueue((items) => items.filter((question) => question.id !== item.id))} aria-label="Remove from queue" />
+                        </>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
@@ -699,20 +771,55 @@ export default function SavedSetsPanel({
               <h4 className="mt-0.5 text-base font-bold text-slate-950 dark:text-white">{activeSet.name}</h4>
               <p className="mt-0.5 text-[11px] font-bold text-slate-400">{formatSetMeta(activeSet)}</p>
             </div>
-            <CloseButton onClick={() => { setMode(''); setActiveSet(null); }} label="Close" />
+            <CloseButton onClick={() => { setMode(''); setActiveSet(null); setSelectedQuestionIds([]); }} label="Close" />
           </div>
 
           <div className="preview-questions min-h-0 flex-[0_1_auto] overflow-y-auto mx-3 mb-3 rounded-md px-3 py-2 scrollbar-thin">
+            {(activeSet.questions || []).length > 1 ? (
+              <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
+                <p className="text-[11px] font-medium text-[#6b6b78] dark:text-slate-400">
+                  {selectedQuestionIds.length
+                    ? `${selectedQuestionIds.length} selected`
+                    : 'Tick questions to send a few, or send the whole set'}
+                </p>
+                {selectedQuestionIds.length ? (
+                  <button type="button" disabled={sending} onClick={() => setSelectedQuestionIds([])} className="text-[11px] font-semibold text-[#5a5fc3] hover:underline disabled:opacity-50">
+                    Clear
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={sending}
+                    onClick={() => setSelectedQuestionIds((activeSet.questions || []).map((question) => question.id))}
+                    className="text-[11px] font-semibold text-[#5a5fc3] hover:underline disabled:opacity-50"
+                  >
+                    Tick all
+                  </button>
+                )}
+              </div>
+            ) : null}
             <ol className="space-y-2">
               {(activeSet.questions || []).map((question, index) => (
-                <li key={question.id} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold leading-snug text-slate-800 dark:border-slate-700 dark:text-slate-100">
-                  <span className="mr-1.5 text-[10px] font-black text-slate-400">{index + 1}.</span>
-                  {question.prompt}
-                  {question.helper ? (
-                    <span className="mt-0.5 block text-[11px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-                      {question.helper}
+                <li key={question.id}>
+                  <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold leading-snug text-slate-800 dark:border-slate-700 dark:text-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={selectedQuestionIds.includes(question.id)}
+                      disabled={sending}
+                      onChange={() => toggleQuestion(question.id)}
+                      aria-label={`Select question ${index + 1}`}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-[#5a5fc3]"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="mr-1.5 text-[10px] font-black text-slate-400">{index + 1}.</span>
+                      {question.prompt}
+                      {question.helper ? (
+                        <span className="mt-0.5 block text-[11px] font-medium leading-snug text-slate-500 dark:text-slate-400">
+                          {question.helper}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
+                  </label>
                 </li>
               ))}
             </ol>
@@ -721,10 +828,14 @@ export default function SavedSetsPanel({
           <div className="preview-actions shrink-0 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
             <div className="flex items-center justify-end gap-2">
             <HintWrap hint="Choose which students get it">
-              <button type="button" disabled={sending} onClick={() => openStudentPicker([activeSet])} className="rounded-lg border border-[#cfcce8] bg-white px-3 py-2 text-xs font-black text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-40 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950">Select students…</button>
+              <button type="button" disabled={sending} onClick={() => openStudentPicker([setForSend(activeSet)])} className="rounded-lg border border-[#cfcce8] bg-white px-3 py-2 text-xs font-black text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-40 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950">Select students…</button>
             </HintWrap>
-            <HintWrap hint={sendHint}>
-              <button type="button" disabled={sending} onClick={() => sendToInbox([activeSet])} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-40">Send to inbox</button>
+            <HintWrap hint={selectedQuestionIds.length ? `Send ${selectedQuestionIds.length} question${selectedQuestionIds.length === 1 ? '' : 's'} · ${sendHint}` : sendHint}>
+              <button type="button" disabled={sending} onClick={() => sendToInbox([setForSend(activeSet)])} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-40">
+                {selectedQuestionIds.length
+                  ? `Send ${selectedQuestionIds.length} question${selectedQuestionIds.length === 1 ? '' : 's'}`
+                  : 'Send to inbox'}
+              </button>
             </HintWrap>
             </div>
             {sendStatus && <p role="status" className="mt-2 text-right text-xs text-slate-600 dark:text-slate-300">{sendStatus}</p>}
@@ -758,7 +869,11 @@ export default function SavedSetsPanel({
 
       <StudentPickerDialog
         open={!!pickerSets}
-        subtitle={pickerSets?.length === 1 ? pickerSets[0].name : `${pickerSets?.length || 0} question sets`}
+        subtitle={
+          pickerSets?.length === 1
+            ? `${pickerSets[0].name}${Array.isArray(pickerSets[0].questions) && selectedQuestionIds.length ? ` · ${pickerSets[0].questions.length} question${pickerSets[0].questions.length === 1 ? '' : 's'}` : ''}`
+            : `${pickerSets?.length || 0} question sets`
+        }
         students={students}
         initialIds={selectedStudentIds}
         busy={sending}
