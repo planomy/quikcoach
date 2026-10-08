@@ -615,15 +615,26 @@ html.dark .iboard-breakout-peers__body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
-/* Outer ring, not inset: the writing card's white fill would paint over an inset one. */
+/* Ring is an overlay inside the card: an inset shadow gets painted over by the writing card,
+   and an outer one gets clipped by the wall's scroll container. */
 .iboard-class-wall__card.is-you {
+  position: relative;
   border-color: #5a5fc3;
-  box-shadow: 0 0 0 1px #5a5fc3;
 }
 
-html.dark .iboard-class-wall__card.is-you {
+.iboard-class-wall__card.is-you::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 1px solid #5a5fc3;
+  border-radius: calc(1rem - 1px);
+  pointer-events: none;
+}
+
+html.dark .iboard-class-wall__card.is-you,
+html.dark .iboard-class-wall__card.is-you::after {
   border-color: #818cf8;
-  box-shadow: 0 0 0 1px #818cf8;
 }
 
 /* Hidden scrollbar chrome — wheel/trackpad/touch still scroll. */
