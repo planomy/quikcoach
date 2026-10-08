@@ -2991,6 +2991,17 @@ html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) .iboard-header-d
   }
 }
 
+@keyframes iboard-dock-glide-out {
+  from {
+    opacity: 0;
+    transform: translateX(-1.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes iboard-rail-dock-in-top {
   from {
     opacity: 0;
@@ -3002,12 +3013,12 @@ html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) .iboard-header-d
   }
 }
 
-/* Sit beside the rail. Overlay root is the containing block — not position:fixed. */
+/* Sit beside the rail, on the bottom of the app. Overlay root is the containing block. */
 .iboard-header-dock--start.iboard-header-dock--from-rail {
   position: absolute;
   left: 4.75rem;
   transform: none;
-  animation: iboard-dock-fade-in 160ms ease;
+  animation: iboard-dock-glide-out 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* View is a tiny on-top popup — never a scroll pane — dropping from its header icon. */

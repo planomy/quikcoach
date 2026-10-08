@@ -2231,54 +2231,6 @@ function TeacherDashboardInner() {
     titleField?.focus();
   }, [addCardOpen]);
 
-  const railDockKey = libraryPanel
-    ? `library:${libraryView === 'feedback' ? 'ai' : 'reports'}`
-    : toolsPanelOpen
-    ? `tools:${toolsTab === 'sets' ? 'sets' : 'ask'}`
-    : settingsOpen
-      ? `settings:${settingsSection}`
-      : '';
-  const railDockKeyRef = useRef('');
-  useLayoutEffect(() => {
-    const previous = railDockKeyRef.current;
-    railDockKeyRef.current = railDockKey;
-    if (!railDockKey || !previous || previous === railDockKey) return undefined;
-    // One rail dock handing over to another: glide from the old position to the new
-    // rail button and fade the content in, rather than sliding in from the rail again.
-    const panel = railDockKey.startsWith('library')
-      ? libraryDockRef.current
-      : railDockKey.startsWith('tools')
-        ? teacherToolsPanelRef.current
-        : settingsPanelRef.current;
-    if (!panel) return undefined;
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    panel.style.animation = 'none';
-    let glideTimer = null;
-    if (!reduceMotion) {
-      panel.style.transition = 'top 280ms cubic-bezier(0.22, 1, 0.36, 1)';
-      void panel.offsetHeight;
-      glideTimer = window.setTimeout(() => {
-        panel.style.transition = '';
-      }, 320);
-    }
-    for (const child of panel.children) {
-      child.animate?.(
-        reduceMotion
-          ? [{ opacity: 0 }, { opacity: 1 }]
-          : [
-              { opacity: 0, transform: 'translateY(6px)' },
-              { opacity: 1, transform: 'translateY(0)' },
-            ],
-        { duration: reduceMotion ? 160 : 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
-      );
-    }
-    return () => {
-      if (glideTimer !== null) window.clearTimeout(glideTimer);
-      panel.style.transition = '';
-      panel.style.animation = '';
-    };
-  }, [railDockKey]);
-
   useLayoutEffect(() => {
     if (!toolsPanelOpen && !settingsOpen && !viewOpen && !libraryPanel) return undefined;
 
@@ -2449,12 +2401,21 @@ function TeacherDashboardInner() {
     return '';
   }, [pasteBox, aiPasteParsed, visibleStudents.length, distributeReady]);
 
+  const bottomAnchoredDock = libraryPanel || settingsOpen || (toolsPanelOpen && toolsTab !== 'sets');
   const headerDockStyle = useMemo(
-    () => ({
-      top: teacherToolsTop,
-      ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
-    }),
-    [teacherToolsTop, teacherToolsDockHeight]
+    () => (
+      bottomAnchoredDock
+        ? {
+            top: 'auto',
+            bottom: 10,
+            ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
+          }
+        : {
+            top: teacherToolsTop,
+            ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
+          }
+    ),
+    [bottomAnchoredDock, teacherToolsTop, teacherToolsDockHeight]
   );
 
   function saveClassSummary() {
