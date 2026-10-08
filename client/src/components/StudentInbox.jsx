@@ -16,6 +16,14 @@ function isPdfMime(mime, name = '') {
   return String(mime || '') === 'application/pdf' || /\.pdf$/i.test(name);
 }
 
+function officeKind(mime, name = '') {
+  const file = `${mime || ''} ${name || ''}`.toLowerCase();
+  if (/\.docx?$/.test(name) || file.includes('wordprocessing') || file.includes('msword')) return 'Word';
+  if (/\.pptx?$/.test(name) || file.includes('presentation')) return 'PowerPoint';
+  if (/\.xlsx?$/.test(name) || file.includes('spreadsheet') || file.includes('ms-excel')) return 'Excel';
+  return '';
+}
+
 function materialMimeFromUrl(url) {
   const extension = String(url || '').split('?')[0].match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase();
   if (extension === 'pdf') return 'application/pdf';
@@ -213,6 +221,7 @@ function MaterialBody({ item, large, onToggleLarge, compact = false }) {
   const previewRef = useRef(null);
   const image = isImageMime(item.mimeType);
   const pdf = isPdfMime(item.mimeType, item.originalName);
+  const office = officeKind(item.mimeType, item.originalName);
 
   useEffect(() => {
     if (!large || typeof onToggleLarge !== 'function') return undefined;
@@ -277,8 +286,10 @@ function MaterialBody({ item, large, onToggleLarge, compact = false }) {
     }
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">Preview not available for this file type</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Download it, or save a snapshot card.</p>
+        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+          {office ? `Download to open in ${office}` : 'Download this file'}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">This file is not shown in class.</p>
       </div>
     );
   }
@@ -301,7 +312,7 @@ function MaterialBody({ item, large, onToggleLarge, compact = false }) {
       >
         <IconSnapshot />
       </MaterialIconButton>
-      {typeof onToggleLarge === 'function' ? (
+      {typeof onToggleLarge === 'function' && !office ? (
         <MaterialIconButton
           label={large ? 'Close full screen' : 'View full screen'}
           busyLabel={large ? 'Close full screen' : 'View full screen'}

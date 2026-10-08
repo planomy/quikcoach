@@ -224,7 +224,16 @@ const MATERIAL_TYPES = {
   'image/jpg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
 };
+const PREVIEW_EXTENSIONS = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp']);
+const OFFICE_EXTENSIONS = new Set(['doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx']);
+const OFFICE_MAX_BYTES = 20 * 1024 * 1024;
 
 function extFromName(name) {
   const match = String(name || '').toLowerCase().match(/\.([a-z0-9]{1,8})$/);
@@ -238,6 +247,12 @@ function mimeFromExt(ext) {
     jpeg: 'image/jpeg',
     png: 'image/png',
     webp: 'image/webp',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   };
   return map[String(ext || '').toLowerCase()] || 'application/octet-stream';
 }
@@ -253,17 +268,20 @@ function decodeMaterialBase64(fileBase64, mimeType, originalName) {
     return { error: 'Could not read that file' };
   }
   if (!buf.length) return { error: 'Could not read that file' };
-  if (buf.length > MATERIAL_MAX_BYTES) return { error: 'File too large — keep under 5 MB' };
 
   const mime = String(mimeType || '').toLowerCase().split(';')[0].trim();
   let ext = MATERIAL_TYPES[mime] || '';
   if (!ext) {
     const fromName = extFromName(originalName);
-    if (['pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(fromName)) {
+    if (PREVIEW_EXTENSIONS.has(fromName) || OFFICE_EXTENSIONS.has(fromName)) {
       ext = fromName === 'jpeg' ? 'jpg' : fromName;
     }
   }
-  if (!ext) return { error: 'Use a PDF or image — Word and PowerPoint can’t be previewed in class' };
+  if (!ext) return { error: 'Use a PDF, image, Word, PowerPoint, or Excel file' };
+  const office = OFFICE_EXTENSIONS.has(ext);
+  if (buf.length > (office ? OFFICE_MAX_BYTES : MATERIAL_MAX_BYTES)) {
+    return { error: office ? 'File too large — keep under 20 MB' : 'File too large — keep under 5 MB' };
+  }
   return { buf, ext, mime: mimeFromExt(ext) };
 }
 
@@ -415,7 +433,7 @@ app.get('/api/board-media/:code/:filename', (req, res) => {
     const ext = extFromName(filename);
     res.type(mimeFromExt(ext));
     res.setHeader('Cache-Control', 'private, max-age=3600');
-    if (String(req.query.download || '') === '1') {
+    if (!PREVIEW_EXTENSIONS.has(ext) || String(req.query.download || '') === '1') {
       const downloadName = safeMediaFilename(req.query.name) || filename;
       res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
     }

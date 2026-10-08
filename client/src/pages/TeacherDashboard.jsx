@@ -87,6 +87,20 @@ const ALERT_PREFS_KEY = 'tuit-alert-prefs';
 const DEFAULT_ALERT_PREFS = { away: true, notStarted: true, notStartedMin: 4, noTyping: true, noTypingMin: 3, pasted: true };
 const INBOX_NOTE_MAX = 20_000;
 
+function sharedFileLabel(file) {
+  const name = String(file?.name || file?.type || '').toLowerCase();
+  if (name.includes('pdf')) return 'PDF';
+  if (/\.docx?$/.test(name) || name.includes('word')) return 'Word';
+  if (/\.pptx?$/.test(name) || name.includes('powerpoint') || name.includes('presentation')) return 'PowerPoint';
+  if (/\.xlsx?$/.test(name) || name.includes('excel') || name.includes('spreadsheet')) return 'Excel';
+  return 'Image';
+}
+
+function isPreviewableHandout(post) {
+  const file = `${post?.mime_type || ''} ${post?.text || ''}`.toLowerCase();
+  return file.includes('pdf') || /\.(jpe?g|png|webp)$/.test(file) || /^image\//.test(file);
+}
+
 function readAlertPrefs() {
   try {
     const saved = JSON.parse(localStorage.getItem(ALERT_PREFS_KEY) || '{}');
@@ -438,9 +452,9 @@ function TeacherDashboardInner() {
   const [shareTarget, setShareTarget] = useState(null);
   const [actionMenuShareStep, setActionMenuShareStep] = useState(false);
   const [snapshots, setSnapshots] = useState([]);
-  const [snapshotsOpen, setSnapshotsOpen] = useState(false);
   const [evidenceStudents, setEvidenceStudents] = useState([]);
   const [evidenceStudentsBusy, setEvidenceStudentsBusy] = useState(false);
+  const [evidenceStudentsError, setEvidenceStudentsError] = useState('');
   const [selectedEvidenceStudentKey, setSelectedEvidenceStudentKey] = useState('');
   const [reportSearch, setReportSearch] = useState('');
   const [reportMergeMode, setReportMergeMode] = useState(false);
@@ -1932,9 +1946,10 @@ function TeacherDashboardInner() {
   }, [joined, codeInput]);
 
   useEffect(() => {
-    if (!joined || !snapshotsOpen || codeInput.length !== 4 || !snapshots.length) return;
+    if (!joined || libraryView !== 'portfolios' || codeInput.length !== 4 || !snapshots.length) return;
     let cancelled = false;
     setEvidenceStudentsBusy(true);
+    setEvidenceStudentsError('');
     fetch(`/api/rooms/${codeInput}/evidence-students`)
       .then((r) => {
         if (!r.ok) throw new Error('Could not load student evidence');
@@ -1954,13 +1969,13 @@ function TeacherDashboardInner() {
         setReportMergeCanonicalKey('');
       })
       .catch(() => {
-        if (!cancelled) setError('Could not load student evidence history');
+        if (!cancelled) setEvidenceStudentsError('Could not load student portfolios');
       })
       .finally(() => {
         if (!cancelled) setEvidenceStudentsBusy(false);
       });
     return () => { cancelled = true; };
-  }, [joined, codeInput, snapshotsOpen, snapshots.length]);
+  }, [joined, codeInput, libraryView, snapshots.length]);
 
   const selectedEvidenceStudent = useMemo(
     () => evidenceStudents.find((profile) => profile.key === selectedEvidenceStudentKey) || null,
@@ -2724,17 +2739,18 @@ function TeacherDashboardInner() {
   }
 
   function acceptAddCardFile(file) {
-    if (file.size > 5 * 1024 * 1024) {
-      setAddCardError('File too large — keep under 5 MB');
-      return;
-    }
     const name = String(file.name || '').toLowerCase();
     const imageExt = /\.(jpe?g|png|webp)$/.test(name);
     const imageMime = /^image\/(jpeg|jpg|png|webp)$/i.test(file.type || '');
     const pdfExt = /\.pdf$/.test(name);
     const pdfMime = /^application\/pdf$/i.test(file.type || '');
-    if (!pdfExt && !pdfMime && !imageExt && !imageMime) {
-      setAddCardError('Use a PDF or image (JPG, PNG, WebP) — Word/PowerPoint can’t preview in class');
+    const officeExt = /\.(docx?|pptx?|xlsx?)$/.test(name);
+    if (file.size > (officeExt ? 20 : 5) * 1024 * 1024) {
+      setAddCardError(officeExt ? 'File too large — keep under 20 MB' : 'File too large — keep under 5 MB');
+      return;
+    }
+    if (!pdfExt && !pdfMime && !imageExt && !imageMime && !officeExt) {
+      setAddCardError('Use a PDF, image, Word, PowerPoint, or Excel file');
       return;
     }
     setAddCardImage('');
@@ -3534,16 +3550,13 @@ function TeacherDashboardInner() {
     setLibraryPanel('evidence');
     if (panel === 'reports' || (panel === 'evidence' && evidenceTab === 'students')) {
       setLibraryView('portfolios');
-      setSnapshotsOpen(true);
       return;
     }
     if (panel === 'feedback') {
       setLibraryView('feedback');
-      setSnapshotsOpen(true);
       return;
     }
     setLibraryView('home');
-    setSnapshotsOpen(true);
   }
 
   function closeLibraryHub() {
@@ -4653,13 +4666,13 @@ function TeacherDashboardInner() {
                     className="absolute right-1.5 top-1.5"
                   />
                   <h2 id="add-teacher-card-title" className="whitespace-nowrap pr-7 text-[13px] font-semibold leading-6 text-[#3c3c45] dark:text-white">
-                    Add image, PDF or send text
+                    Add a file or send text
                   </h2>
                   {addCardFile ? (
                     <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-950/40">
                       <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">
                         <span className="mr-1.5 rounded bg-[#ebeaf8] px-1 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-300">
-                          {/pdf$/i.test(addCardFile.type || addCardFile.name || '') ? 'PDF' : 'Image'}
+                          {sharedFileLabel(addCardFile)}
                         </span>
                         {addCardFile.name}
                       </p>
@@ -4671,7 +4684,7 @@ function TeacherDashboardInner() {
                       <button type="button" onClick={() => setAddCardImage('')} className="mt-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Clear image</button>
                     </div>
                   ) : (
-                      <HintWrap hint="Pick a picture or PDF to share with the class" className="w-full">
+                      <HintWrap hint="Pick an image, PDF, Word, PowerPoint, or Excel file. Office files download only — they are not shown in class." className="w-full" multiline>
                       <label
                         className={`flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed px-2.5 py-2 text-sm transition dark:border-indigo-800 dark:bg-indigo-950/30 ${
                           addCardDragOver ? 'border-[#5a5fc3] bg-[#dcdaf5]' : 'border-[#cfcce8] bg-[#ebeaf8]/70'
@@ -4687,13 +4700,13 @@ function TeacherDashboardInner() {
                           Choose file
                         </span>
                         <span className="min-w-0 text-[11px] font-semibold leading-tight text-[#5a5fc3]/80 dark:text-indigo-300/80">
-                          Image or PDF — or drop it here
+                          Image, PDF, Word, PowerPoint, or Excel — or drop it here
                         </span>
                         <input
                           type="file"
-                          accept=".pdf,application/pdf,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                          accept=".pdf,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                           className="sr-only"
-                          aria-label="Choose an image or PDF"
+                          aria-label="Choose an image, PDF, Word, PowerPoint, or Excel file"
                           onChange={handleAddCardFileChange}
                           disabled={addCardBusy}
                         />
@@ -4830,14 +4843,16 @@ function TeacherDashboardInner() {
                   <img src={post.image_url} alt={post.title || 'Teacher card'} className="mx-auto max-h-80 w-full object-contain" />
                 ) : post.kind === 'file' && post.file_url ? (
                   <div className="space-y-2">
-                    {String(post.mime_type || '').includes('pdf') || /\.pdf$/i.test(post.text || '') ? (
+                    {isPreviewableHandout(post) && (String(post.mime_type || '').includes('pdf') || /\.pdf$/i.test(post.text || '')) ? (
                       <iframe
                         title={post.title || 'Handout'}
                         src={post.file_url}
                         className="pointer-events-none h-64 w-full rounded-lg border-0 bg-slate-50 outline-none dark:bg-slate-900"
                         tabIndex={-1}
                       />
-                    ) : null}
+                    ) : isPreviewableHandout(post) ? null : (
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Download to open. This file is not shown in class.</p>
+                    )}
                     <a
                       href={`${post.file_url}${post.file_url.includes('?') ? '&' : '?'}download=1&name=${encodeURIComponent(post.text || 'handout')}`}
                       className="inline-flex text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
@@ -5688,6 +5703,9 @@ function TeacherDashboardInner() {
                       </div>
 
                       <div className="max-h-52 overflow-y-auto p-2 scrollbar-thin">
+                        {evidenceStudentsError ? (
+                          <p className="p-3 text-sm font-semibold text-red-600">{evidenceStudentsError}</p>
+                        ) : null}
                         {evidenceStudentsBusy && (
                           <p className="p-3 text-sm text-slate-500 dark:text-slate-400">Loading students…</p>
                         )}
@@ -6641,13 +6659,15 @@ function TeacherDashboardInner() {
                 />
               ) : focusedPost.kind === 'file' && focusedPost.file_url ? (
                 <div className="space-y-3">
-                  {String(focusedPost.mime_type || '').includes('pdf') || /\.pdf$/i.test(focusedPost.text || '') ? (
+                  {isPreviewableHandout(focusedPost) && (String(focusedPost.mime_type || '').includes('pdf') || /\.pdf$/i.test(focusedPost.text || '')) ? (
                     <iframe
                       title={focusedPost.title || 'Handout'}
                       src={focusedPost.file_url}
                       className="h-[70vh] w-full rounded-xl border-0 bg-slate-50 outline-none dark:bg-slate-900"
                     />
-                  ) : null}
+                  ) : isPreviewableHandout(focusedPost) ? null : (
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Download to open. This file is not shown in class.</p>
+                  )}
                   <a
                     href={`${focusedPost.file_url}${focusedPost.file_url.includes('?') ? '&' : '?'}download=1&name=${encodeURIComponent(focusedPost.text || 'handout')}`}
                     className="inline-flex text-sm font-bold text-[#5a5fc3] hover:underline"
