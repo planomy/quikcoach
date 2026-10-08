@@ -3573,34 +3573,6 @@ function TeacherDashboardInner() {
                         </HintWrap>
                       );
                     })}
-                    {!inboxSummary ? (
-                      <button type="button" disabled className="iboard-header-pill iboard-header-pill--attention is-zero">
-                        0 messages
-                      </button>
-                    ) : (
-                      <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" tone="card">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setInboxFocus((on) => {
-                              const next = !on;
-                              if (next) {
-                                window.requestAnimationFrame(() => {
-                                  document.querySelector('[data-inbox-waiting="true"]')
-                                    ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                                });
-                              }
-                              return next;
-                            });
-                          }}
-                          className={`iboard-header-pill iboard-header-pill--attention${inboxFocus ? ' is-on' : ''}`}
-                          title=""
-                          aria-pressed={inboxFocus}
-                        >
-                          {inboxSummary}
-                        </button>
-                      </HintWrap>
-                    )}
                 </div>
               </div>
               <div className="iboard-command-bar__gauge">
@@ -3616,6 +3588,34 @@ function TeacherDashboardInner() {
               <div className="iboard-command-bar__side iboard-command-bar__side--manage">
                 <span className="iboard-command-bar__title">Manage class</span>
                 <div className="iboard-manage-tools" role="group" aria-label="Manage class">
+                  {!inboxSummary ? (
+                    <button type="button" disabled className="iboard-header-pill iboard-header-pill--attention is-zero">
+                      0 messages
+                    </button>
+                  ) : (
+                    <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" tone="card">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInboxFocus((on) => {
+                            const next = !on;
+                            if (next) {
+                              window.requestAnimationFrame(() => {
+                                document.querySelector('[data-inbox-waiting="true"]')
+                                  ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                              });
+                            }
+                            return next;
+                          });
+                        }}
+                        className={`iboard-header-pill iboard-header-pill--attention${inboxFocus ? ' is-on' : ''}`}
+                        title=""
+                        aria-pressed={inboxFocus}
+                      >
+                        {inboxSummary}
+                      </button>
+                    </HintWrap>
+                  )}
                   <HintWrap hint={breakoutsActive ? "Breakouts are running. Open to shuffle or close rooms" : "Breakout rooms"} prefer="below">
                     <button
                       type="button"

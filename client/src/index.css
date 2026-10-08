@@ -1079,6 +1079,10 @@ html.dark .iboard-header-pill--attention.is-zero {
   background: #e1defc;
 }
 
+.iboard-manage-tools > :first-child {
+  margin-right: 0.3rem;
+}
+
 .iboard-manage-tools .iboard-header-icon-button {
   width: 1.75rem;
   height: 1.75rem;
