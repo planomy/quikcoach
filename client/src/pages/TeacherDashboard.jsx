@@ -2279,8 +2279,9 @@ function TeacherDashboardInner() {
         setTeacherToolsDockHeight(null);
         return;
       }
-      let desired = libraryPanel ? 360 : settingsOpen ? 560 : toolsTab === 'ask' ? 720 : 480;
-      const measureRoot = libraryPanel ? panel : (toolsPanelOpen && toolsTab === 'ask' ? panel?.querySelector('section') : null);
+      const askOpen = toolsPanelOpen && toolsTab === 'ask';
+      let desired = askOpen ? maxHeight : libraryPanel ? 360 : settingsOpen ? 560 : 480;
+      const measureRoot = askOpen ? null : libraryPanel ? panel : null;
       if (measureRoot) {
         let content = 0;
         for (const child of measureRoot.children) {
