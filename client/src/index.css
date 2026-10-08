@@ -1458,24 +1458,21 @@ html.dark .iboard-command-bar .iboard-command-bar__gauge > .iboard-gauge-collar 
   --class-gauge-rest: #dedded;
   --class-gauge-track: #e6e5f6;
   display: block;
-  padding: 0.32rem;
-  border: 1px solid #e2e1f2;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
-  background: linear-gradient(180deg, #fbfbff 0%, #efeefb 100%);
-  box-shadow:
-    0 6px 14px rgba(60, 63, 143, 0.14),
-    0 1px 3px rgba(60, 63, 143, 0.1);
+  background: transparent;
   cursor: default;
 }
 
+/* The collar outline is the only outer edge; the ring sits just inside it. */
 .iboard-class-gauge__ring {
   display: grid;
   place-items: center;
-  width: 4.3rem;
-  height: 4.3rem;
+  width: 5.375rem;
+  height: 5.375rem;
   border-radius: 999px;
-  box-shadow: 0 1px 2px rgba(60, 63, 143, 0.14);
-  transition: background 400ms ease;
+  transition: background 400ms ease, box-shadow 160ms ease;
 }
 
 .iboard-class-gauge__face {
@@ -1483,16 +1480,15 @@ html.dark .iboard-command-bar .iboard-command-bar__gauge > .iboard-gauge-collar 
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: calc(100% - 0.7rem);
-  height: calc(100% - 0.7rem);
+  width: calc(100% - 1rem);
+  height: calc(100% - 1rem);
   border-radius: 999px;
   background: #ffffff;
-  box-shadow: inset 0 1px 3px rgba(60, 63, 143, 0.1);
   line-height: 1;
 }
 
 .iboard-class-gauge__count {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #3c3f8f;
@@ -1550,14 +1546,10 @@ html.dark .iboard-class-gauge {
   --class-gauge-mid: rgba(129, 140, 248, 0.42);
   --class-gauge-rest: #334155;
   --class-gauge-track: #1e293b;
-  border-color: #334155;
-  background: linear-gradient(180deg, #1e293b 0%, #111827 100%);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
 }
 
 html.dark .iboard-class-gauge__face {
   background: #0f172a;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 html.dark .iboard-class-gauge__count,
@@ -1577,26 +1569,21 @@ html.dark .iboard-command-bar__title {
 button.iboard-class-gauge {
   font: inherit;
   cursor: pointer;
-  transition: box-shadow 160ms ease, border-color 160ms ease;
 }
 
-button.iboard-class-gauge:hover,
-button.iboard-class-gauge[data-active='true'] {
-  border-color: #b9bae6;
-  box-shadow:
-    0 0 0 3px rgba(90, 95, 195, 0.18),
-    0 6px 14px rgba(60, 63, 143, 0.18);
+button.iboard-class-gauge:hover .iboard-class-gauge__ring,
+button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
+  box-shadow: 0 0 0 3px rgba(90, 95, 195, 0.16);
 }
 
 button.iboard-class-gauge:focus-visible {
   outline: 2px solid #5a5fc3;
-  outline-offset: 6px;
+  outline-offset: 4px;
 }
 
-html.dark button.iboard-class-gauge:hover,
-html.dark button.iboard-class-gauge[data-active='true'] {
-  border-color: #818cf8;
-  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3), 0 6px 14px rgba(0, 0, 0, 0.4);
+html.dark button.iboard-class-gauge:hover .iboard-class-gauge__ring,
+html.dark button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.28);
 }
 
 /* Opens from the gauge: Responses while a question is live, Class writing otherwise. */

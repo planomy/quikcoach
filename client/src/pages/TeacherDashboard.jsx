@@ -646,7 +646,7 @@ function TeacherDashboardInner() {
     if (!gaugePanelOpen) return undefined;
     const place = () => {
       const rect = gaugeSlotRef.current?.querySelector('.iboard-class-gauge')?.getBoundingClientRect();
-      if (rect) setGaugeBox({ top: Math.round(rect.bottom + 12), centre: Math.round(rect.left + rect.width / 2) });
+      if (rect) setGaugeBox({ top: Math.round(rect.bottom + 18), centre: Math.round(rect.left + rect.width / 2) });
     };
     place();
     window.addEventListener('resize', place);
