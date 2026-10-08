@@ -1436,11 +1436,15 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   transform: translate(-50%, 50%);
 }
 
-.iboard-class-gauge {
+/* On :root because the gauge's hover card (a portal on body) uses the same swatches. */
+:root {
   --class-gauge-done: #5a5fc3;
   --class-gauge-mid: #b4b6ec;
   --class-gauge-rest: #dedded;
   --class-gauge-track: #e6e5f6;
+}
+
+.iboard-class-gauge {
   display: block;
   padding: 0;
   border: 0;
@@ -1525,7 +1529,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   box-shadow: inset 0 0 0 1px rgba(60, 63, 143, 0.18);
 }
 
-html.dark .iboard-class-gauge {
+html.dark {
   --class-gauge-done: #818cf8;
   --class-gauge-mid: rgba(129, 140, 248, 0.42);
   --class-gauge-rest: #334155;
