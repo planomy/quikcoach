@@ -1129,17 +1129,17 @@ html.dark .iboard-alert-chip.is-on {
   height: 2.5rem;
   gap: 0.35rem;
   padding: 0 0.6rem;
-  border: 1px solid #e2e1f3;
+  border: 0;
   border-radius: 999px;
-  background: #f5f5fc;
-  box-shadow: inset 0 1px 3px rgba(60, 63, 143, 0.08);
+  background: #f3f3fb;
+  box-shadow: none;
 }
 
 html.dark .iboard-command-bar__side .iboard-attention-home,
 html.dark .iboard-command-bar__side .iboard-manage-tools {
-  border-color: #334155;
+  border: 0;
   background: #0f172a;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 /* One frame, one border: a white band behind both capsules that swells around the gauge. */
@@ -1162,7 +1162,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 7rem;
+  width: 8.75rem;
   height: 6.5rem;
   overflow: visible;
   transform: translate(-50%, -50%);
