@@ -10,7 +10,7 @@ import { openDatabase, queries } from './db.js';
 import { truncateToWordLimit } from './text.js';
 import { VERBAL_PROMPT, decideVerbalResponseAction } from './verbalResponse.js';
 import { buildSessionPack, importSessionPack } from './sessionPack.js';
-import { trailStatus, setTrailRecording, recordTrailText, recordTrailFeedback, recordTrailPresence, trailTick, trailStudents, readTrail, pastesFromTrail, clearTrail, disconnectTrail, setIndependentWriting, independentWindows, configureTrailPersistence, persistTrails } from './draftTrail.js';
+import { trailStatus, setTrailRecording, recordTrailText, recordTrailFeedback, recordTrailPresence, trailTick, trailStudents, readTrail, pastesFromTrail, clearTrail, disconnectTrail, setIndependentWriting, independentWindows, configureTrailPersistence, persistTrails, trailStrips } from './draftTrail.js';
 import {
   BREAKOUT_SIZE,
   autoAssignBreakouts,
@@ -918,6 +918,16 @@ io.on('connection', (socket) => {
     const code = socket.data.roomCode;
     if (socket.data.role !== 'teacher' || !code) return cb?.({ ok: false });
     cb?.({ ok: true, status: trailStatus(code), students: trailStudents(code), trail: studentId == null ? null : readTrail(code, studentId) });
+  });
+  socket.on('teacher:trail-strips', (_payload, cb) => {
+    const code = socket.data.roomCode;
+    if (socket.data.role !== 'teacher' || !code) return cb?.({ ok: false });
+    try {
+      cb?.({ ok: true, ...trailStrips(code) });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false });
+    }
   });
   socket.on('teacher:paste-detail', ({ studentId } = {}, cb) => {
     const code = socket.data.roomCode;

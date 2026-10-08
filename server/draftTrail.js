@@ -465,3 +465,68 @@ export function importTrails(code, raw, exportToId) {
   markDirty(code);
   persistTrails(Date.now(), { force: true });
 }
+
+// Events only ever append, so each student's replay picks up where the last poll stopped.
+const revisingCache = new WeakMap();
+function revisingFlags(student) {
+  let cache = revisingCache.get(student);
+  if (!cache || cache.n > student.events.length) cache = { n: 0, text: '', flags: [] };
+  for (let n = cache.n; n < student.events.length; n++) {
+    const e = student.events[n];
+    const before = cache.text;
+    if (['baseline', 'resume', 'gap'].includes(e.type)) cache.text = String(e.text || '');
+    if (['change', 'paste'].includes(e.type)) {
+      cache.text = before.slice(0, e.start) + String(e.inserted || '') + before.slice(e.start + e.removed);
+    }
+    cache.flags[n] = e.type === 'change' && (e.removed > 0 || e.start < before.trimEnd().length);
+  }
+  cache.n = student.events.length;
+  revisingCache.set(student, cache);
+  return cache.flags;
+}
+
+/** Mini learning trails for the class writing panel: one cell per slice of the last hour. */
+export function trailStrips(code, at = Date.now(), { count = 30, windowMs = 3600000 } = {}) {
+  const room = rooms.get(code);
+  let first = Infinity;
+  for (const s of room?.students.values() || []) {
+    const t = Number(s.events[0]?.at);
+    if (t && t < first) first = t;
+  }
+  const start = Math.max(at - windowMs, Number.isFinite(first) ? first : at - windowMs);
+  const span = Math.max(60000, at - start);
+  const index = (t) => Math.min(count - 1, Math.max(0, Math.floor(((t - start) / span) * count)));
+  const position = (t) => Math.round(((t - start) / span) * 1000) / 10;
+  const students = [...(room?.students.values() || [])].filter((s) => s.id > 0).map((s) => {
+    const flags = revisingFlags(s);
+    const cells = new Array(count).fill(0);
+    const marks = [];
+    let awaySince = null;
+    const fillAway = (from, to) => {
+      for (let n = index(Math.max(from, start)); n <= index(to); n++) cells[n] |= 4;
+    };
+    s.events.forEach((e, n) => {
+      const t = Number(e.at) || 0;
+      if (e.type === 'away') awaySince = t;
+      if (e.type === 'back' || e.type === 'gap') {
+        if (awaySince != null && t >= start) fillAway(awaySince, t);
+        awaySince = null;
+      }
+      if (t < start) return;
+      if (e.type === 'change') cells[index(t)] |= flags[n] ? 2 : 1;
+      if (e.type === 'paste') {
+        cells[index(t)] |= 1;
+        marks.push({ p: position(t), k: 'paste' });
+      }
+      if (e.type === 'feedback') marks.push({ p: position(t), k: 'support' });
+    });
+    if (awaySince != null) fillAway(awaySince, at);
+    if (s.pending && s.pending.receivedAt >= start) cells[index(s.pending.receivedAt)] |= 1;
+    return {
+      id: s.id,
+      cells: cells.map((c) => (c & 2 ? 'r' : c & 1 ? 'w' : c & 4 ? 'a' : '-')).join(''),
+      marks: marks.slice(-40),
+    };
+  });
+  return { active: !!room?.active, start, end: at, students };
+}

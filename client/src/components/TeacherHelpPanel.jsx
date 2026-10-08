@@ -18,7 +18,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'responses',
     title: 'Read Responses',
-    body: "Open Ask, then Responses, to watch live answers, remind anyone who hasn't responded, project responses then tap End question when finished.",
+    body: "While a question is live, click the gauge in the header to watch answers, remind anyone who hasn't responded, project responses, then tap End question. With no question live, the gauge opens Class writing.",
     action: 'responses',
   },
   {

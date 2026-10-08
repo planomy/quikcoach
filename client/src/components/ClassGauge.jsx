@@ -14,7 +14,7 @@ function ringGradient(segments, total) {
   return `conic-gradient(from 0deg, ${stops.join(', ')})`;
 }
 
-export default function ClassGauge({ title, caption, done, total, online, segments }) {
+export default function ClassGauge({ title, caption, done, total, online, segments, onClick, expanded = false, opens = '' }) {
   const hint = (
     <span className="block min-w-[11rem]">
       <span className="block whitespace-nowrap bg-[#3c3f8f] px-2.5 py-1 text-[9px] font-semibold text-white dark:bg-[#5a5fc3]">
@@ -28,24 +28,33 @@ export default function ClassGauge({ title, caption, done, total, online, segmen
             <b className="tabular-nums">{segment.count}</b>
           </span>
         ))}
+        {opens ? <span className="mt-1 block text-[9px] font-semibold text-[#8b8b96] dark:text-slate-400">Click to open {opens}</span> : null}
       </span>
     </span>
   );
   const summary = segments.map((segment) => `${segment.count} ${segment.label.toLowerCase()}`).join(', ');
   return (
-    <HintWrap hint={hint} prefer="below" tone="card">
-      <div className="iboard-class-gauge" role="img" aria-label={`${title}: ${summary}. ${online} online`} title="">
-        <div className="iboard-class-gauge__ring" style={{ background: ringGradient(segments, total) }}>
-          <div className="iboard-class-gauge__face">
+    <HintWrap hint={hint} prefer="below" tone="card" suppressed={expanded}>
+      <button
+        type="button"
+        className="iboard-class-gauge"
+        onClick={onClick}
+        aria-expanded={expanded}
+        data-active={expanded ? 'true' : 'false'}
+        aria-label={`${title}: ${summary}. ${online} online.${opens ? ` Open ${opens}` : ''}`}
+        title=""
+      >
+        <span className="iboard-class-gauge__ring" style={{ background: ringGradient(segments, total) }}>
+          <span className="iboard-class-gauge__face">
             <span className="iboard-class-gauge__count tabular-nums">{total ? `${done}/${total}` : '—'}</span>
             <span className="iboard-class-gauge__caption">{caption}</span>
             <span className="iboard-class-gauge__online">
               <span className="iboard-class-gauge__live" aria-hidden="true" />
               <b className="tabular-nums">{online}</b> online
             </span>
-          </div>
-        </div>
-      </div>
+          </span>
+        </span>
+      </button>
     </HintWrap>
   );
 }

@@ -3,7 +3,24 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { setTrailRecording, recordTrailText, trailTick, readTrail, pastesFromTrail, exportTrails, importTrails, validateTrails, clearTrail, recordTrailFeedback, disconnectTrail, textDelta, trailStatus, studentTrailAttention, configureTrailPersistence, persistTrails, dropTrailsFromMemory } from './draftTrail.js';
+import { setTrailRecording, recordTrailText, trailTick, readTrail, pastesFromTrail, exportTrails, importTrails, validateTrails, clearTrail, recordTrailFeedback, disconnectTrail, textDelta, trailStatus, studentTrailAttention, configureTrailPersistence, persistTrails, dropTrailsFromMemory, trailStrips, recordTrailPresence } from './draftTrail.js';
+
+test('trail strips mark adding, revising, away and paste in time order', () => {
+  const t0 = 1_700_000_000_000;
+  const row = { id: 7, name: 'Ava', text: 'One' };
+  const { token } = setTrailRecording('3399', true, [row], t0);
+  recordTrailText('3399', row, 'One two', { token }, t0 + 60000);
+  trailTick(t0 + 80000);
+  recordTrailText('3399', row, 'Uno two', { token }, t0 + 120000);
+  trailTick(t0 + 140000);
+  recordTrailPresence('3399', row, true, t0 + 180000);
+  recordTrailPresence('3399', row, false, t0 + 240000);
+  recordTrailText('3399', row, 'Uno two pasted', { token, paste: true }, t0 + 270000);
+  const strips = trailStrips('3399', t0 + 300000, { count: 5 });
+  assert.equal(strips.students[0].cells, '-wraw');
+  assert.deepEqual(strips.students[0].marks.map((m) => m.k), ['paste']);
+  clearTrail('3399');
+});
 
 test('compact delta reconstructs insertion, deletion, replacement and Unicode', () => {
   for (const [before, after] of [['abc', 'axbc'], ['abc', 'ac'], ['', 'Hi 👋'], ['Hi 👋', 'Hello 🌏'], ['abc', ''], ['same', 'same']]) {

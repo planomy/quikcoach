@@ -36,6 +36,8 @@ import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
 import SaveStatusChip from '../components/SaveStatusChip.jsx';
 import RoomTimerPill from '../components/RoomTimerPill.jsx';
+import AlertIcon from '../components/AlertIcon.jsx';
+import WritingPulsePanel from '../components/WritingPulsePanel.jsx';
 import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
 import { copyText } from '../lib/copyText.js';
@@ -193,22 +195,6 @@ function cardFontIndex(map, studentId) {
 
 function cardFontRem(map, studentId) {
   return CARD_FONT_REMS[cardFontIndex(map, studentId)];
-}
-
-const ALERT_ICON_PATHS = {
-  away: <path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10Z" />,
-  notStarted: <><path d="M7 3.5h6.5L18 8v12.5H7z" /><path d="M13.5 3.5V8H18" /></>,
-  noTyping: <path d="M9.5 6.5v11M14.5 6.5v11" />,
-  pasted: <><rect x="6" y="4.5" width="12" height="16" rx="2" /><path d="M9.5 3.5h5v3h-5z" /></>,
-  messages: <path d="M4.5 5.5h15v10h-9l-4.5 3.5v-3.5H4.5z" />,
-};
-
-function AlertIcon({ id }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      {ALERT_ICON_PATHS[id]}
-    </svg>
-  );
 }
 
 function CardViewIcon({ id, className = 'h-5 w-5' }) {
@@ -652,6 +638,45 @@ function TeacherDashboardInner() {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [sessionMenuOpen]);
+  const gaugeSlotRef = useRef(null);
+  const gaugePanelRef = useRef(null);
+  const [gaugePanelOpen, setGaugePanelOpen] = useState(false);
+  const [gaugeBox, setGaugeBox] = useState(null);
+  useLayoutEffect(() => {
+    if (!gaugePanelOpen) return undefined;
+    const place = () => {
+      const rect = gaugeSlotRef.current?.querySelector('.iboard-class-gauge')?.getBoundingClientRect();
+      if (rect) setGaugeBox({ top: Math.round(rect.bottom + 12), centre: Math.round(rect.left + rect.width / 2) });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('iboard:teacher-layout', place);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('iboard:teacher-layout', place);
+    };
+  }, [gaugePanelOpen]);
+  useEffect(() => {
+    if (!gaugePanelOpen) return undefined;
+    // Learning trails, presenting and pickers open on top; the panel waits underneath.
+    const overlayOpen = () => document.querySelector('dialog[open], [data-iboard-dialog]');
+    const onPointerDown = (event) => {
+      const target = event.target;
+      if (gaugeSlotRef.current?.contains(target) || gaugePanelRef.current?.contains(target)) return;
+      if (target?.closest?.('dialog, [role="dialog"], [role="menu"], [data-iboard-sets-preview], .fixed.inset-0, select')) return;
+      if (overlayOpen()) return;
+      setGaugePanelOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape' && !overlayOpen()) setGaugePanelOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [gaugePanelOpen]);
   const [headerTool, setHeaderTool] = useState(null);
   const breakoutsMenuOpen = headerTool === 'breakouts';
   useEffect(() => {
@@ -1621,6 +1646,27 @@ function TeacherDashboardInner() {
       ],
     };
   }, [livePulse.activity, livePulse.students, orderedStudents, connectedIdSet, awayByStudentId, activityNow]);
+
+  const writingPulseStudents = useMemo(() => {
+    if (!gaugePanelOpen || livePulse.activity) return [];
+    return orderedStudents.map((student) => {
+      const id = Number(student.id);
+      let state = 'offline';
+      if (connectedIdSet.has(id)) {
+        if (awayByStudentId.get(id)) state = 'away';
+        else if (isDraftEmpty(student)) state = 'empty';
+        else state = activityStatus(student.updated_at, activityNow) !== 'idle' ? 'writing' : 'paused';
+      }
+      return {
+        id,
+        name: student.name,
+        words: wordCount(student.text),
+        state,
+        pasted: !!(alertPrefs.pasted && pasteCounts[id]),
+        inbox: studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId),
+      };
+    });
+  }, [gaugePanelOpen, livePulse.activity, orderedStudents, connectedIdSet, awayByStudentId, activityNow, alertPrefs.pasted, pasteCounts, pendingHandByStudentId, noteReceiptByStudentId]);
 
   const visibleStudents = useMemo(
     () =>
@@ -3415,7 +3461,24 @@ function TeacherDashboardInner() {
     pushSettings({ freeze_class: next });
   }
 
+  function openGaugePanel() {
+    closeSettings();
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+    setViewOpen(false);
+    setHelpOpen(false);
+    setHeaderTool(null);
+    setSessionMenuOpen(false);
+    setMoreMenuOpen(false);
+    setGaugePanelOpen(true);
+  }
+
   function openTeacherTools(tab = 'ask', { highlightStudentId = null } = {}) {
+    if (tab === 'responses') {
+      openGaugePanel();
+      return;
+    }
+    setGaugePanelOpen(false);
     closeSettings();
     setAddCardOpen(false);
     setViewOpen(false);
@@ -4004,7 +4067,7 @@ function TeacherDashboardInner() {
                   </HintWrap>
                 </div>
               </div>
-              <div className="iboard-command-bar__gauge">
+              <div ref={gaugeSlotRef} className="iboard-command-bar__gauge">
                 <ClassGauge
                   title={classGauge.title}
                   caption={classGauge.caption}
@@ -4012,6 +4075,9 @@ function TeacherDashboardInner() {
                   total={classGauge.total}
                   online={connectedStudents.length}
                   segments={classGauge.segments}
+                  onClick={() => (gaugePanelOpen ? setGaugePanelOpen(false) : openGaugePanel())}
+                  expanded={gaugePanelOpen}
+                  opens={livePulse.activity ? 'responses' : 'class writing'}
                 />
               </div>
               <div className="iboard-command-bar__side iboard-command-bar__side--manage">
@@ -4334,9 +4400,10 @@ function TeacherDashboardInner() {
             socket={socket}
             overlay
             panelTab={toolsTab}
-            onPanelTabChange={setToolsTab}
+            onPanelTabChange={(tab) => (tab === 'responses' ? openGaugePanel() : setToolsTab(tab))}
             onClose={closeTeacherTools}
-            onQuestionLaunched={() => setToolsTab('responses')}
+            onQuestionLaunched={openGaugePanel}
+            hideResponsesTab
             highlightStudentId={toolsHighlightStudentId}
             onClearHighlight={() => setToolsHighlightStudentId(null)}
             onCopyStudentLink={copyStudentJoinLink}
@@ -4352,6 +4419,55 @@ function TeacherDashboardInner() {
               setTimeout(() => setCopyToast(''), 2500);
             }}
           />
+        </div>,
+        getOverlayRoot()
+      )}
+
+      {gaugePanelOpen && gaugeBox && createPortal(
+        <div
+          ref={gaugePanelRef}
+          className={`iboard-gauge-panel z-[60]${livePulse.activity ? ' is-responses' : ''}`}
+          style={{
+            top: gaugeBox.top,
+            left: gaugeBox.centre,
+            maxHeight: `calc(100dvh - ${gaugeBox.top + 16}px)`,
+            ...(livePulse.activity ? { height: `min(42rem, calc(100dvh - ${gaugeBox.top + 16}px))` } : {}),
+          }}
+          aria-label={livePulse.activity ? 'Responses' : 'Class writing'}
+        >
+          {livePulse.activity ? (
+            <LiveResponseTeacher
+              socket={socket}
+              overlay
+              panelTab="responses"
+              responsesOnly
+              onPanelTabChange={(tab) => {
+                if (tab === 'responses') return;
+                setGaugePanelOpen(false);
+                openTeacherTools(tab);
+              }}
+              onClose={() => setGaugePanelOpen(false)}
+              subjectAssist={promptSubjectAssist}
+              rosterStudentIds={orderedStudents.map((s) => s.id)}
+              initialLive={livePulse}
+              onThinkingSent={({ count, recipients }) => {
+                setCopyToast(
+                  recipients > 1
+                    ? `Thinking: ${count} prompt${count === 1 ? '' : 's'} → ${recipients} students`
+                    : `Thinking prompt${count === 1 ? '' : 's'} sent`
+                );
+                setTimeout(() => setCopyToast(''), 2500);
+              }}
+            />
+          ) : (
+            <WritingPulsePanel
+              socket={socket}
+              students={writingPulseStudents}
+              trailActive={!!room?.draftTrail?.active}
+              onOpenTrail={(id) => setLearningTrailId(id)}
+              onClose={() => setGaugePanelOpen(false)}
+            />
+          )}
         </div>,
         getOverlayRoot()
       )}

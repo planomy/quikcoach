@@ -48,7 +48,7 @@ function readSavedAskTab() {
 const PANEL_TAB_LABELS = {
   ask: { title: 'Ask the class', hint: 'Send a question to your class' },
   respond: { title: 'Reply', hint: 'Questions waiting from students' },
-  responses: { title: 'Ask the class', hint: 'Answers coming back from your live question' },
+  responses: { title: 'Responses', hint: 'Answers coming back from your live question' },
   sets: { title: 'Question sets', hint: 'Send a set to student inboxes, then watch their boards' },
 };
 
@@ -185,6 +185,9 @@ export default function LiveResponseTeacher({
   onClearStudentSelection,
   /** Seed from teacher board live:teacher cache so Responses doesn’t flash empty on open. */
   initialLive = null,
+  /** Responses open from the header gauge instead of a tab in this panel. */
+  hideResponsesTab = false,
+  responsesOnly = false,
 }) {
   const [internalPanelTab, setInternalPanelTab] = useState('ask');
   const effectivePanelTab = panelTab ?? (panelTabs ? internalPanelTab : null);
@@ -742,7 +745,7 @@ export default function LiveResponseTeacher({
       {[
         ['compose', 'Ask', 'Send a quick check or write your own question'],
         ['responses', activity ? `Responses · ${responses.length}` : 'Responses', 'See the class’s answers as they come in'],
-      ].map(([view, label, hint]) => (
+      ].filter(([view]) => !(hideResponsesTab && view === 'responses')).map(([view, label, hint]) => (
         <HintWrap key={view} hint={hint} prefer="below" suppressed={view === 'responses' ? effectivePanelTab === 'responses' : effectivePanelTab === 'ask' && activeView === view}>
         <button
           type="button"
@@ -865,7 +868,7 @@ export default function LiveResponseTeacher({
       {!overlay && !usingPanelTabs && awarenessStrip}
 
       {panelTabNav}
-      {usingPanelTabs && (effectivePanelTab === 'ask' || effectivePanelTab === 'responses') && askSubNav}
+      {usingPanelTabs && !responsesOnly && !(hideResponsesTab && !featuredWall.length) && (effectivePanelTab === 'ask' || effectivePanelTab === 'responses') && askSubNav}
       {usingPanelTabs && effectivePanelTab === 'responses' && awarenessStrip}
 
       {!usingPanelTabs && (
