@@ -1120,6 +1120,72 @@ html.dark .iboard-manage-tools__freeze.is-frozen {
   color: #ffffff;
 }
 
+/* Small dialogs that drop from the Manage class icons. */
+.iboard-tool-popover {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 0;
+  z-index: 70;
+  width: 17rem;
+  overflow: hidden;
+  border: 1px solid #c1c2e7;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(60, 63, 143, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.iboard-tool-popover:has(.iboard-breakout-assign--inline) {
+  width: 22rem;
+}
+
+.iboard-tool-popover__head {
+  padding: 0.55rem 0.8rem 0.5rem;
+  background: #3c3f8f;
+  color: #ffffff;
+}
+
+.iboard-tool-popover__head h2 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.iboard-tool-popover__head span {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.iboard-tool-popover__body {
+  padding: 0.75rem 0.8rem;
+}
+
+.iboard-breakout-assign.iboard-breakout-assign--inline {
+  position: static;
+  width: auto;
+  max-height: min(24rem, calc(100vh - 16rem));
+  border: 0;
+  border-top: 1px solid #e8e8ee;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html.dark .iboard-tool-popover {
+  border-color: #334155;
+  background: #0f172a;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .iboard-tool-popover__head {
+  background: #5a5fc3;
+}
+
+html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
+  border-top-color: #334155;
+}
+
 /* The gauge keeps a header-height slot and hangs a little below the bar. */
 .iboard-command-bar__gauge {
   position: relative;

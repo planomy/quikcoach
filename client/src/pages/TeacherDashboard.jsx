@@ -649,6 +649,29 @@ function TeacherDashboardInner() {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [sessionMenuOpen]);
+  const breakoutsMenuRef = useRef(null);
+  const [breakoutsMenuOpen, setBreakoutsMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!breakoutsMenuOpen) return undefined;
+    const close = () => {
+      setBreakoutsMenuOpen(false);
+      setBreakoutSetupMode('auto');
+    };
+    const onPointerDown = (event) => {
+      if (breakoutsMenuRef.current?.contains(event.target)) return;
+      if (event.target?.closest?.('select')) return;
+      close();
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') close();
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [breakoutsMenuOpen]);
   const saveStatusClearRef = useRef(null);
 
   const markSaved = useCallback(() => {
@@ -2507,8 +2530,20 @@ function TeacherDashboardInner() {
     setHelpOpen(false);
     setClearFixedArmed(false);
     setBreakoutSetupMode('auto');
+    setBreakoutsMenuOpen(false);
     setSettingsSection(section);
     setSettingsOpen(true);
+  }
+
+  function toggleBreakoutsMenu() {
+    if (breakoutsMenuOpen) {
+      setBreakoutsMenuOpen(false);
+      setBreakoutSetupMode('auto');
+      return;
+    }
+    closeSettings();
+    setSessionMenuOpen(false);
+    setBreakoutsMenuOpen(true);
   }
 
   function openAddCard({ forceOpen = false } = {}) {
@@ -3490,6 +3525,178 @@ function TeacherDashboardInner() {
       </span>
     </span>
   );
+  const breakoutControls = (
+    <>
+      {breakoutsActive ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={breakoutBusy}
+                      onClick={startBreakoutsAuto}
+                      className="iboard-room-settings__secondary"
+                    >
+                      Shuffle students
+            </button>
+                    <button
+                      type="button"
+                      disabled={breakoutBusy}
+                      onClick={endBreakouts}
+                      className="iboard-room-settings__secondary"
+                    >
+                      Close rooms
+            </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    <div className="iboard-breakout-mode" role="group" aria-label="Breakout setup mode">
+              <button
+                type="button"
+                        aria-pressed={breakoutSetupMode === 'auto'}
+                        onClick={() => setBreakoutSetupMode('auto')}
+                        className="iboard-breakout-mode__btn"
+                      >
+                        Auto
+              </button>
+              <button
+                type="button"
+                        aria-pressed={breakoutSetupMode === 'manual'}
+                        onClick={() => setBreakoutSetupMode('manual')}
+                        className="iboard-breakout-mode__btn"
+              >
+                        Manual
+              </button>
+            </div>
+                    {breakoutSetupMode === 'auto' ? (
+                      <HintWrap hint={room?.class_wall_active ? 'Close class wall first' : "Student writing cards appear on group members' screens"} className="w-full">
+            <button
+              type="button"
+                          disabled={breakoutBusy || !students.length || !!room?.class_wall_active}
+                          onClick={startBreakoutsAuto}
+                          className="iboard-room-settings__primary w-full"
+                        >
+                          Start breakouts
+            </button>
+                      </HintWrap>
+                    ) : null}
+                  </div>
+                )}
+    </>
+  );
+  const breakoutAssignContent = (
+    <>
+          <div className="iboard-breakout-assign__chrome">
+            <h2>Assign rooms</h2>
+            <span className="iboard-breakout-assign__meta">
+              {Object.values(breakoutDraftAssign).filter(Boolean).length}/{orderedStudents.length} placed
+            </span>
+            </div>
+          <div className="iboard-breakout-assign__toolbar">
+            <label className="iboard-breakout-assign__rooms">
+              <span>Rooms</span>
+              <div className="iboard-breakout-assign__stepper">
+                <button
+                  type="button"
+                  aria-label="Fewer rooms"
+                  disabled={Math.floor(Number(breakoutRoomCountDraft) || 1) <= 1}
+                  onClick={() => {
+                    setBreakoutRoomCountDraft((n) => Math.max(1, Math.floor(Number(n) || 1) - 1));
+                  }}
+                >
+                  −
+                </button>
+                <span className="iboard-breakout-assign__stepper-value" aria-live="polite">
+                  {Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)))}
+                </span>
+                <button
+                  type="button"
+                  aria-label="More rooms"
+                  disabled={
+                    Math.floor(Number(breakoutRoomCountDraft) || 1) >=
+                    Math.max(1, Math.min(40, orderedStudents.length || 1))
+                  }
+                  onClick={() => {
+                    const maxRooms = Math.max(1, Math.min(40, orderedStudents.length || 1));
+                    setBreakoutRoomCountDraft((n) => Math.min(maxRooms, Math.floor(Number(n) || 1) + 1));
+                  }}
+                >
+                  +
+                </button>
+              </div>
+              </label>
+            <button
+              type="button"
+              disabled={
+                breakoutBusy ||
+                !!room?.class_wall_active ||
+                !orderedStudents.length ||
+                !Object.values(breakoutDraftAssign).some(Boolean)
+              }
+              onClick={startBreakoutsManual}
+              className={`iboard-breakout-assign__start${
+                Object.values(breakoutDraftAssign).some(Boolean) ? ' is-ready' : ''
+              }`}
+            >
+              Start breakouts
+            </button>
+            </div>
+          <div className="iboard-breakout-assign__body scrollbar-thin">
+            {!orderedStudents.length ? (
+              <p className="px-3 py-4 text-[12px] font-medium text-[#8a8a96]">Waiting for students…</p>
+            ) : (
+              <ul className="iboard-breakout-assign__list">
+                {orderedStudents.map((student) => {
+                  const selected = String(breakoutDraftAssign[String(student.id)] || '');
+                  const roomCount = Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)));
+                  return (
+                    <li key={student.id} className="iboard-breakout-assign__row">
+                      <span className="iboard-breakout-assign__name" title={student.name}>
+                        {student.name}
+                      </span>
+                      <div className="iboard-breakout-assign__chips" role="group" aria-label={`Room for ${student.name}`}>
+                        <HintWrap hint="Unassigned" prefer="above">
+                          <button
+                            type="button"
+                            aria-pressed={selected === ''}
+                            className="iboard-breakout-assign__chip"
+                            onClick={() => setDraftBreakoutRoom(student.id, '')}
+                            title=""
+                          >
+                            —
+              </button>
+                        </HintWrap>
+                        {Array.from({ length: roomCount }, (_, index) => {
+                          const id = String(index + 1);
+                          const selectedHere = selected === id;
+                          const full =
+                            !selectedHere && countDraftInRoom(id, student.id) >= MAX_BREAKOUT_ROOM;
+                          return (
+                            <HintWrap
+                              key={id}
+                              hint={full ? `Room ${id} is full (max ${MAX_BREAKOUT_ROOM})` : `Room ${id}`}
+                              prefer="above"
+                            >
+              <button
+                                type="button"
+                                aria-pressed={selectedHere}
+                                disabled={full}
+                                title=""
+                                className="iboard-breakout-assign__chip"
+                                onClick={() => setDraftBreakoutRoom(student.id, id)}
+                              >
+                                {id}
+              </button>
+                            </HintWrap>
+                          );
+                        })}
+            </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+    </>
+  );
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
   const settingsTitle = settingsSection === 'class' ? 'Manage room' : settingsSection === 'records' ? 'Reports' : 'Settings';
   const aiFeedbackOpen = !!libraryPanel && libraryView === 'feedback';
@@ -3616,11 +3823,13 @@ function TeacherDashboardInner() {
                       </button>
                     </HintWrap>
                   )}
-                  <HintWrap hint={breakoutsActive ? "Breakouts are running. Open to shuffle or close rooms" : "Breakout rooms"} prefer="below">
+                  <div ref={breakoutsMenuRef} className="relative">
+                  <HintWrap hint={breakoutsActive ? "Breakouts are running. Open to shuffle or close rooms" : "Breakout rooms"} prefer="below" suppressed={breakoutsMenuOpen}>
                     <button
                       type="button"
-                      onClick={() => openSessionFromHelp("breakouts")}
-                      data-active={breakoutsActive ? "true" : "false"}
+                      onClick={toggleBreakoutsMenu}
+                      aria-expanded={breakoutsMenuOpen}
+                      data-active={breakoutsActive || breakoutsMenuOpen ? "true" : "false"}
                       className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                       aria-label="Breakout rooms"
                     >
@@ -3632,6 +3841,21 @@ function TeacherDashboardInner() {
                       </svg>
                     </button>
                   </HintWrap>
+                  {breakoutsMenuOpen ? (
+                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Breakout rooms">
+                      <div className="iboard-tool-popover__head">
+                        <h2>Breakouts</h2>
+                        <span>{breakoutsActive ? 'Running' : 'Student writing cards appear on group members’ screens'}</span>
+                      </div>
+                      <div className="iboard-tool-popover__body">{breakoutControls}</div>
+                      {!breakoutsActive && breakoutSetupMode === 'manual' ? (
+                        <div className="iboard-breakout-assign iboard-breakout-assign--inline" aria-label="Assign breakout rooms">
+                          {breakoutAssignContent}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  </div>
                   <div ref={sessionMenuRef} className="relative">
                     <HintWrap hint="Save or load a lesson" prefer="below" suppressed={sessionMenuOpen}>
                     <button
@@ -5587,117 +5811,7 @@ function TeacherDashboardInner() {
           aria-label="Assign breakout rooms"
           onPointerDown={(event) => event.stopPropagation()}
         >
-          <div className="iboard-breakout-assign__chrome">
-            <h2>Assign rooms</h2>
-            <span className="iboard-breakout-assign__meta">
-              {Object.values(breakoutDraftAssign).filter(Boolean).length}/{orderedStudents.length} placed
-            </span>
-            </div>
-          <div className="iboard-breakout-assign__toolbar">
-            <label className="iboard-breakout-assign__rooms">
-              <span>Rooms</span>
-              <div className="iboard-breakout-assign__stepper">
-                <button
-                  type="button"
-                  aria-label="Fewer rooms"
-                  disabled={Math.floor(Number(breakoutRoomCountDraft) || 1) <= 1}
-                  onClick={() => {
-                    setBreakoutRoomCountDraft((n) => Math.max(1, Math.floor(Number(n) || 1) - 1));
-                  }}
-                >
-                  −
-                </button>
-                <span className="iboard-breakout-assign__stepper-value" aria-live="polite">
-                  {Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)))}
-                </span>
-                <button
-                  type="button"
-                  aria-label="More rooms"
-                  disabled={
-                    Math.floor(Number(breakoutRoomCountDraft) || 1) >=
-                    Math.max(1, Math.min(40, orderedStudents.length || 1))
-                  }
-                  onClick={() => {
-                    const maxRooms = Math.max(1, Math.min(40, orderedStudents.length || 1));
-                    setBreakoutRoomCountDraft((n) => Math.min(maxRooms, Math.floor(Number(n) || 1) + 1));
-                  }}
-                >
-                  +
-                </button>
-              </div>
-              </label>
-            <button
-              type="button"
-              disabled={
-                breakoutBusy ||
-                !!room?.class_wall_active ||
-                !orderedStudents.length ||
-                !Object.values(breakoutDraftAssign).some(Boolean)
-              }
-              onClick={startBreakoutsManual}
-              className={`iboard-breakout-assign__start${
-                Object.values(breakoutDraftAssign).some(Boolean) ? ' is-ready' : ''
-              }`}
-            >
-              Start breakouts
-            </button>
-            </div>
-          <div className="iboard-breakout-assign__body scrollbar-thin">
-            {!orderedStudents.length ? (
-              <p className="px-3 py-4 text-[12px] font-medium text-[#8a8a96]">Waiting for students…</p>
-            ) : (
-              <ul className="iboard-breakout-assign__list">
-                {orderedStudents.map((student) => {
-                  const selected = String(breakoutDraftAssign[String(student.id)] || '');
-                  const roomCount = Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)));
-                  return (
-                    <li key={student.id} className="iboard-breakout-assign__row">
-                      <span className="iboard-breakout-assign__name" title={student.name}>
-                        {student.name}
-                      </span>
-                      <div className="iboard-breakout-assign__chips" role="group" aria-label={`Room for ${student.name}`}>
-                        <HintWrap hint="Unassigned" prefer="above">
-                          <button
-                            type="button"
-                            aria-pressed={selected === ''}
-                            className="iboard-breakout-assign__chip"
-                            onClick={() => setDraftBreakoutRoom(student.id, '')}
-                            title=""
-                          >
-                            —
-              </button>
-                        </HintWrap>
-                        {Array.from({ length: roomCount }, (_, index) => {
-                          const id = String(index + 1);
-                          const selectedHere = selected === id;
-                          const full =
-                            !selectedHere && countDraftInRoom(id, student.id) >= MAX_BREAKOUT_ROOM;
-                          return (
-                            <HintWrap
-                              key={id}
-                              hint={full ? `Room ${id} is full (max ${MAX_BREAKOUT_ROOM})` : `Room ${id}`}
-                              prefer="above"
-                            >
-              <button
-                                type="button"
-                                aria-pressed={selectedHere}
-                                disabled={full}
-                                title=""
-                                className="iboard-breakout-assign__chip"
-                                onClick={() => setDraftBreakoutRoom(student.id, id)}
-                              >
-                                {id}
-              </button>
-                            </HintWrap>
-                          );
-                        })}
-            </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+          {breakoutAssignContent}
         </div>,
         getOverlayRoot()
       )}
@@ -5966,59 +6080,7 @@ function TeacherDashboardInner() {
                 <HintWrap hint="Student writing cards appear on group members' screens">Breakouts</HintWrap>
               </h3>
               <div className={`iboard-room-settings__card iboard-room-settings__card-pad${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}>
-                {breakoutsActive ? (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={breakoutBusy}
-                      onClick={startBreakoutsAuto}
-                      className="iboard-room-settings__secondary"
-                    >
-                      Shuffle students
-            </button>
-                    <button
-                      type="button"
-                      disabled={breakoutBusy}
-                      onClick={endBreakouts}
-                      className="iboard-room-settings__secondary"
-                    >
-                      Close rooms
-            </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    <div className="iboard-breakout-mode" role="group" aria-label="Breakout setup mode">
-              <button
-                type="button"
-                        aria-pressed={breakoutSetupMode === 'auto'}
-                        onClick={() => setBreakoutSetupMode('auto')}
-                        className="iboard-breakout-mode__btn"
-                      >
-                        Auto
-              </button>
-              <button
-                type="button"
-                        aria-pressed={breakoutSetupMode === 'manual'}
-                        onClick={() => setBreakoutSetupMode('manual')}
-                        className="iboard-breakout-mode__btn"
-              >
-                        Manual
-              </button>
-            </div>
-                    {breakoutSetupMode === 'auto' ? (
-                      <HintWrap hint={room?.class_wall_active ? 'Close class wall first' : "Student writing cards appear on group members' screens"} className="w-full">
-            <button
-              type="button"
-                          disabled={breakoutBusy || !students.length || !!room?.class_wall_active}
-                          onClick={startBreakoutsAuto}
-                          className="iboard-room-settings__primary w-full"
-                        >
-                          Start breakouts
-            </button>
-                      </HintWrap>
-                    ) : null}
-                  </div>
-                )}
+                {breakoutControls}
               </div>
             </section>
 
