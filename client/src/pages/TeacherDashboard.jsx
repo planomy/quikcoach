@@ -300,6 +300,19 @@ function formatSqlUtc(value) {
   return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+/** One stamp per snapshot. Older labels baked in a second, differently worded time. */
+function snapshotRowTitle(snapshot) {
+  const when = formatSqlUtc(snapshot?.created_at);
+  const label = String(snapshot?.label || '').trim();
+  if (!label) return when || `Evidence #${snapshot?.id || ''}`;
+  if (!when || label.includes(when)) return label;
+  const datedRoom = label.match(/^(Room\s+\S+)\s·\s(.+)$/);
+  const suffix = datedRoom?.[2] || '';
+  const suffixIsDate = /\d{4}|\d{1,2}:\d{2}|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)/i.test(suffix);
+  if (datedRoom && suffixIsDate) return `${datedRoom[1]} · ${when}`;
+  return label;
+}
+
 function initialOverviewColumns() {
   if (typeof window === 'undefined') return OVERVIEW_COLUMNS_DEFAULT;
   try {
@@ -5492,10 +5505,7 @@ function TeacherDashboardInner() {
                       {snapshots.map((sn) => (
                         <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                           <span className="text-slate-800 dark:text-slate-200">
-                            <span className="font-medium">{sn.label || `Evidence #${sn.id}`}</span>
-                            {String(sn.label || '').includes(formatSqlUtc(sn.created_at)) ? null : (
-                              <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{formatSqlUtc(sn.created_at)}</span>
-                            )}
+                            <span className="font-medium">{snapshotRowTitle(sn)}</span>
                             {sn.lesson_objective ? (
                               <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Today: {sn.lesson_objective}</span>
                             ) : null}
