@@ -487,7 +487,7 @@ export default function SavedSetsPanel({
 
           {queueOpen && queue.length > 0 && (
             <>
-              <div className="mt-1.5 max-h-36 space-y-1 overflow-y-auto">
+              <div className="mt-1.5 space-y-1">
                 {queue.map((item, index) => {
                   const editing = editingQueueId === item.id;
                   return (

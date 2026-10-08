@@ -953,7 +953,9 @@ export default function LiveResponseTeacher({
 
       <div
         className={`min-h-0 flex-1 ${
-          (activeView === 'prepared' && (!usingPanelTabs || effectivePanelTab === 'ask'))
+          ((!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'compose')
+            ? 'iboard-ask-compose flex flex-col overflow-hidden'
+            : (activeView === 'prepared' && (!usingPanelTabs || effectivePanelTab === 'ask'))
           || effectivePanelTab === 'sets'
           || (usingPanelTabs && effectivePanelTab === 'responses')
             ? 'overflow-hidden'
@@ -1048,14 +1050,17 @@ export default function LiveResponseTeacher({
         )}
 
         {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'compose' && (
+          <>
+            <div className="shrink-0 border-b border-[#e4e4ea] bg-[var(--iboard-tool-surface,#f6f5fb)] px-4 pb-3 pt-4 dark:border-slate-700 dark:bg-slate-900">
+              <QuikPulsePanel onLaunch={launchQuikPulse} />
+            </div>
           <div
-            className="p-4"
+            className="iboard-ask-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4 scrollbar-thin"
             onPaste={(event) => {
               const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/'));
               if (file) { event.preventDefault(); loadImage(file); }
             }}
           >
-            <QuikPulsePanel onLaunch={launchQuikPulse} />
             <div className="my-3 flex items-center gap-2" role="separator" aria-label="or write your own">
               <span className="h-px flex-1 bg-[#e4e4ea] dark:bg-slate-700" aria-hidden />
               <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8a96] dark:text-slate-500">or write your own</span>
@@ -1192,6 +1197,7 @@ export default function LiveResponseTeacher({
             selectedStudentIds={selectedStudentIds}
             />
           </div>
+          </>
         )}
 
         
