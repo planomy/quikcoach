@@ -979,7 +979,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 1rem;
-  padding-top: 0.55rem;
+  padding-top: 0.95rem;
   padding-bottom: 0.55rem;
 }
 
@@ -1005,6 +1005,13 @@ html:not(.dark) .iboard-teacher-canvas .iboard-more-button:not([data-active='tru
 
 .iboard-teacher-header-main--command .iboard-header-actions {
   justify-self: end;
+}
+
+/* Room code and the ⋯ menu line up with the capsule centre, not the taller title row. */
+.iboard-teacher-header-main--command > .iboard-header-meta,
+.iboard-teacher-header-main--command > .iboard-header-actions {
+  align-self: end;
+  min-height: 2.5rem;
 }
 
 .iboard-brand--stacked,
@@ -1102,7 +1109,7 @@ html.dark .iboard-alert-chip.is-on {
   color: #1e1b4b;
 }
 
-/* Each side is a recessed capsule whose inner end tucks under the gauge bezel. */
+/* Each side is a recessed capsule whose inner end cups the gauge collar. */
 .iboard-command-bar__side {
   position: relative;
   display: grid;
@@ -1112,17 +1119,12 @@ html.dark .iboard-alert-chip.is-on {
   min-width: 0;
 }
 
-.iboard-command-bar__side--monitor {
-  justify-content: end;
-}
-
-.iboard-command-bar__side--manage {
-  justify-content: start;
-}
-
+/* Both capsules fill equal columns so the gauge sits dead centre between them. */
 .iboard-command-bar__side .iboard-attention-home,
 .iboard-command-bar__side .iboard-manage-tools {
   box-sizing: border-box;
+  justify-self: stretch;
+  justify-content: center;
   height: 2.5rem;
   gap: 0.35rem;
   padding: 0 0.6rem;
@@ -1134,20 +1136,20 @@ html.dark .iboard-alert-chip.is-on {
 
 .iboard-command-bar__side--monitor .iboard-attention-home {
   margin-right: -1.6rem;
-  padding-right: 2.3rem;
+  padding-right: 2.7rem;
 }
 
 .iboard-command-bar__side--manage .iboard-manage-tools {
   margin-left: -1.6rem;
-  padding-left: 2.3rem;
+  padding-left: 2.7rem;
 }
 
 .iboard-command-bar__side--monitor .iboard-command-bar__title {
-  margin-right: -1.6rem;
+  margin-right: 0.8rem;
 }
 
 .iboard-command-bar__side--manage .iboard-command-bar__title {
-  margin-left: -1.6rem;
+  margin-left: 0.8rem;
 }
 
 html.dark .iboard-command-bar__side .iboard-attention-home,
@@ -1395,7 +1397,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   border-top-color: #334155;
 }
 
-/* The gauge is centred on the capsules and hangs a little below the header. */
+/* Gauge and collar share one centre: the middle of the capsules (half their 2.5rem height). */
 .iboard-command-bar__gauge {
   position: relative;
   align-self: stretch;
@@ -1404,10 +1406,50 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 .iboard-command-bar .iboard-command-bar__gauge > * {
   position: absolute;
-  bottom: -1.3rem;
+  bottom: 1.25rem;
   left: 50%;
   z-index: 6;
-  transform: translateX(-50%);
+  transform: translate(-50%, 50%);
+}
+
+/* Raised collar whose top and bottom edges flare out of the capsule edges. */
+.iboard-command-bar .iboard-command-bar__gauge > .iboard-gauge-collar {
+  z-index: 5;
+  width: 7rem;
+  height: 6.375rem;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 5px 10px rgba(60, 63, 143, 0.13));
+}
+
+.iboard-gauge-collar path {
+  fill: url(#iboard-gauge-collar-fill);
+  stroke: #e4e3f0;
+  stroke-width: 1;
+}
+
+.iboard-gauge-collar__top {
+  stop-color: #ffffff;
+}
+
+.iboard-gauge-collar__bottom {
+  stop-color: #f2f1fb;
+}
+
+html.dark .iboard-gauge-collar path {
+  stroke: #334155;
+}
+
+html.dark .iboard-gauge-collar__top {
+  stop-color: #1e2633;
+}
+
+html.dark .iboard-gauge-collar__bottom {
+  stop-color: #161c27;
+}
+
+html.dark .iboard-command-bar .iboard-command-bar__gauge > .iboard-gauge-collar {
+  filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.4));
 }
 
 .iboard-class-gauge {
@@ -1420,11 +1462,9 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   border: 1px solid #e2e1f2;
   border-radius: 999px;
   background: linear-gradient(180deg, #fbfbff 0%, #efeefb 100%);
-  /* The white halo separates the bezel from the capsule ends tucked beneath it. */
   box-shadow:
-    0 0 0 4px #ffffff,
-    0 10px 24px rgba(60, 63, 143, 0.16),
-    0 2px 5px rgba(60, 63, 143, 0.1);
+    0 6px 14px rgba(60, 63, 143, 0.14),
+    0 1px 3px rgba(60, 63, 143, 0.1);
   cursor: default;
 }
 
@@ -1512,7 +1552,7 @@ html.dark .iboard-class-gauge {
   --class-gauge-track: #1e293b;
   border-color: #334155;
   background: linear-gradient(180deg, #1e293b 0%, #111827 100%);
-  box-shadow: 0 0 0 4px #20262d, 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
 }
 
 html.dark .iboard-class-gauge__face {
@@ -1544,9 +1584,8 @@ button.iboard-class-gauge:hover,
 button.iboard-class-gauge[data-active='true'] {
   border-color: #b9bae6;
   box-shadow:
-    0 0 0 4px #ffffff,
-    0 0 0 6px rgba(90, 95, 195, 0.18),
-    0 10px 24px rgba(60, 63, 143, 0.2);
+    0 0 0 3px rgba(90, 95, 195, 0.18),
+    0 6px 14px rgba(60, 63, 143, 0.18);
 }
 
 button.iboard-class-gauge:focus-visible {
@@ -1557,7 +1596,7 @@ button.iboard-class-gauge:focus-visible {
 html.dark button.iboard-class-gauge:hover,
 html.dark button.iboard-class-gauge[data-active='true'] {
   border-color: #818cf8;
-  box-shadow: 0 0 0 4px #20262d, 0 0 0 6px rgba(129, 140, 248, 0.3), 0 8px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3), 0 6px 14px rgba(0, 0, 0, 0.4);
 }
 
 /* Opens from the gauge: Responses while a question is live, Class writing otherwise. */

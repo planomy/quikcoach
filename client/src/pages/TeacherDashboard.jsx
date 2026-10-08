@@ -4068,6 +4068,15 @@ function TeacherDashboardInner() {
                 </div>
               </div>
               <div ref={gaugeSlotRef} className="iboard-command-bar__gauge">
+                <svg className="iboard-gauge-collar" viewBox="-56 -51 112 102" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="iboard-gauge-collar-fill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" className="iboard-gauge-collar__top" />
+                      <stop offset="1" className="iboard-gauge-collar__bottom" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M51.38 -20 A10 10 0 0 1 42.75 -24.96 A49.5 49.5 0 0 0 -42.75 -24.96 A10 10 0 0 1 -51.38 -20 L-45.28 -20 A49.5 49.5 0 0 0 -45.28 20 L-51.38 20 A10 10 0 0 1 -42.75 24.96 A49.5 49.5 0 0 0 42.75 24.96 A10 10 0 0 1 51.38 20 L45.28 20 A49.5 49.5 0 0 0 45.28 -20 Z" />
+                </svg>
                 <ClassGauge
                   title={classGauge.title}
                   caption={classGauge.caption}
