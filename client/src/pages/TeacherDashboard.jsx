@@ -479,6 +479,8 @@ function TeacherDashboardInner() {
   const addCardPanelRef = useRef(null);
   const settingsButtonRef = useRef(null);
   const recordsButtonRef = useRef(null);
+  const aiButtonRef = useRef(null);
+  const libraryDockRef = useRef(null);
   const settingsPanelRef = useRef(null);
   const viewPanelRef = useRef(null);
   const helpButtonRef = useRef(null);
@@ -2214,7 +2216,9 @@ function TeacherDashboardInner() {
     titleField?.focus();
   }, [addCardOpen]);
 
-  const railDockKey = toolsPanelOpen
+  const railDockKey = libraryPanel
+    ? `library:${libraryView === 'feedback' ? 'ai' : 'reports'}`
+    : toolsPanelOpen
     ? `tools:${toolsTab === 'sets' ? 'sets' : 'ask'}`
     : settingsOpen
       ? `settings:${settingsSection}`
@@ -2226,7 +2230,11 @@ function TeacherDashboardInner() {
     if (!railDockKey || !previous || previous === railDockKey) return undefined;
     // One rail dock handing over to another: glide from the old position to the new
     // rail button and fade the content in, rather than sliding in from the rail again.
-    const panel = railDockKey.startsWith('tools') ? teacherToolsPanelRef.current : settingsPanelRef.current;
+    const panel = railDockKey.startsWith('library')
+      ? libraryDockRef.current
+      : railDockKey.startsWith('tools')
+        ? teacherToolsPanelRef.current
+        : settingsPanelRef.current;
     if (!panel) return undefined;
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     panel.style.animation = 'none';
@@ -2257,9 +2265,10 @@ function TeacherDashboardInner() {
   }, [railDockKey]);
 
   useLayoutEffect(() => {
-    if (!toolsPanelOpen && !settingsOpen && !viewOpen) return undefined;
+    if (!toolsPanelOpen && !settingsOpen && !viewOpen && !libraryPanel) return undefined;
 
     function currentDockAnchor() {
+      if (libraryPanel) return libraryView === 'feedback' ? aiButtonRef.current : recordsButtonRef.current;
       if (viewOpen) return viewButtonRef.current;
       if (settingsOpen) {
         if (settingsSection === 'records') return recordsButtonRef.current;
@@ -2273,6 +2282,7 @@ function TeacherDashboardInner() {
     }
 
     function currentDockPanel() {
+      if (libraryPanel) return libraryDockRef.current;
       if (viewOpen) return viewPanelRef.current;
       if (settingsOpen) return settingsPanelRef.current;
       if (toolsPanelOpen) return teacherToolsPanelRef.current;
@@ -2302,20 +2312,18 @@ function TeacherDashboardInner() {
         setTeacherToolsDockHeight(null);
         return;
       }
-      let desired = settingsOpen ? 560 : toolsTab === 'ask' ? 720 : 480;
-      if (toolsTab === 'ask' && panel) {
-        const section = panel.querySelector('section');
-        if (section) {
-          let content = 0;
-          for (const child of section.children) {
-            if (window.getComputedStyle(child).position === 'absolute') continue;
-            content += Math.max(child.scrollHeight, child.offsetHeight);
-          }
-          if (content > 160) desired = content + 12;
+      let desired = libraryPanel ? 360 : settingsOpen ? 560 : toolsTab === 'ask' ? 720 : 480;
+      const measureRoot = libraryPanel ? panel : (toolsPanelOpen && toolsTab === 'ask' ? panel?.querySelector('section') : null);
+      if (measureRoot) {
+        let content = 0;
+        for (const child of measureRoot.children) {
+          if (window.getComputedStyle(child).position === 'absolute') continue;
+          content += Math.max(child.scrollHeight, child.offsetHeight);
         }
+        if (content > 160) desired = content + 12;
       }
       const dockHeight = Math.min(desired, maxHeight);
-      const preferredTop = settingsOpen
+      const preferredTop = settingsOpen || libraryPanel
         ? (buttonBox?.top ?? offsetTop + margin)
         : toolsPanelOpen && toolsTab === 'ask'
           ? offsetTop + (viewport - dockHeight) / 2
@@ -2363,7 +2371,7 @@ function TeacherDashboardInner() {
       window.visualViewport?.removeEventListener('resize', alignDockToRailButton);
       window.visualViewport?.removeEventListener('scroll', alignDockToRailButton);
     };
-  }, [toolsPanelOpen, settingsOpen, settingsSection, viewOpen, toolsTab]);
+  }, [toolsPanelOpen, settingsOpen, settingsSection, viewOpen, toolsTab, libraryPanel, libraryView]);
 
   useEffect(() => {
     if (!handQuestionTarget) return;
@@ -3544,7 +3552,7 @@ function TeacherDashboardInner() {
   }
 
   function goLibraryHome() {
-    setLibraryView((view) => (view === 'pdf' ? 'drafting' : 'home'));
+    setLibraryView('home');
   }
 
   function openFeedbackSent() {
@@ -3956,7 +3964,7 @@ function TeacherDashboardInner() {
   );
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
   const askClassOpen = toolsPanelOpen && toolsTab !== 'sets';
-  const boardDimOpen = askClassOpen || settingsOpen;
+  const boardDimOpen = askClassOpen || settingsOpen || !!libraryPanel;
   const settingsTitle = settingsSection === 'records' ? 'Reports' : 'Settings';
   const aiFeedbackOpen = !!libraryPanel && libraryView === 'feedback';
   const reportsOpen = !!libraryPanel && libraryView !== 'feedback';
@@ -4529,6 +4537,7 @@ function TeacherDashboardInner() {
             <HintWrap hint="Get AI feedback on everyone's writing, then send it to students" suppressed={aiFeedbackOpen}>
               <button
                 type="button"
+                ref={aiButtonRef}
                 data-help-target="ai"
                 onClick={() => (aiFeedbackOpen ? closeLibraryHub() : openAiFeedback())}
                 aria-expanded={aiFeedbackOpen}
@@ -5415,33 +5424,33 @@ function TeacherDashboardInner() {
         <div className="iboard-library-scrim fixed bottom-0 right-0 top-0 z-50 bg-slate-900/50" aria-hidden="true" />
       ) : null}
 
-      {libraryPanel && (
-        <div className="iboard-library-scrim fixed bottom-0 right-0 top-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div
-            className={`flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900${
-              helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''
-            }${helpFlash === 'ai' && libraryView === 'feedback' ? ' is-help-flash' : ''}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="library-panel-title"
-            data-help-target={libraryView === 'feedback' ? 'ai' : 'records'}
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3.5 dark:border-slate-700">
-              <div className="flex min-w-0 items-center gap-1">
+      {libraryPanel && createPortal(
+        <div
+          ref={libraryDockRef}
+          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex w-[min(29rem,calc(100vw-4.75rem))] flex-col${
+            helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''
+          }${helpFlash === 'ai' && libraryView === 'feedback' ? ' is-help-flash' : ''}`}
+          style={headerDockStyle}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="library-panel-title"
+          data-help-target={libraryView === 'feedback' ? 'ai' : 'records'}
+        >
+            <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' ? ' iboard-library-dock__chrome--back' : ''}`}>
                 {libraryView !== 'home' && libraryView !== 'feedback' ? (
                   <button
                     type="button"
                     onClick={goLibraryHome}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                    aria-label="Back"
+                    className="iboard-library-dock__back"
+                    aria-label="Back to reports"
                   >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M15 18l-6-6 6-6" />
                     </svg>
+                    Back
                   </button>
                 ) : null}
-                <div className="min-w-0">
-              <h2 id="library-panel-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+              <h2 id="library-panel-title">
                     {libraryView === 'feedback'
                       ? 'AI feedback'
                       : libraryView === 'drafting'
@@ -5454,18 +5463,15 @@ function TeacherDashboardInner() {
                               ? 'Student portfolios'
                               : libraryView === 'feedback-sent'
                                 ? 'AI feedback & summaries'
-                                : 'Reports'}
+                                : libraryView === 'insights'
+                                  ? 'Class insights'
+                                  : 'Reports'}
               </h2>
-                  {libraryView === 'feedback' ? (
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      Students are only identified by number — names are never sent to the AI.
-                    </p>
-                  ) : null}
-            </div>
-              </div>
+              <div className="iboard-room-settings__chrome-close">
               <CloseButton onClick={closeLibraryHub} aria-label={libraryView === 'feedback' ? 'Close AI feedback' : 'Close Reports'} />
+              </div>
             </div>
-            <div className={`overflow-y-auto scrollbar-thin${libraryView === 'feedback' || libraryView === 'pdf' ? ' p-4' : ' p-5'}`}>
+            <div className="iboard-room-settings__body scrollbar-thin">
         {libraryView === 'home' && (
           <section className="space-y-4">
               <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
@@ -5477,7 +5483,7 @@ function TeacherDashboardInner() {
                 { label: 'Participation', hint: 'Who answered your Ask class questions, and how often. Download the participant list here too.', onClick: () => setLibraryView('participation') },
                 { label: 'Student portfolios', hint: 'Download each student’s saved work as a PDF', onClick: () => setLibraryView('portfolios') },
                 { label: 'AI feedback & summaries', hint: 'Class summaries you saved, plus every piece of AI feedback you sent and who opened it', onClick: openFeedbackSent },
-                { label: 'Class insights', hint: 'Trends across your lessons and classes, with no student names', onClick: () => { closeLibraryHub(); setInsightsOpen(true); } },
+                { label: 'Class insights', hint: 'Trends across your lessons and classes, with no student names', onClick: () => setLibraryView('insights') },
               ].map((item) => (
                 <HintWrap key={item.label} hint={item.hint}>
                   <button
@@ -5505,7 +5511,7 @@ function TeacherDashboardInner() {
                       <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Class snapshots</h3>
                       <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Whole-class packs from each snapshot. View or download HTML again.</p>
                     </div>
-                    <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto px-4 scrollbar-thin dark:divide-slate-800">
+                    <ul className="divide-y divide-slate-100 px-4 dark:divide-slate-800">
                       {snapshots.map((sn) => (
                         <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                           <span className="text-slate-800 dark:text-slate-200">
@@ -5663,7 +5669,7 @@ function TeacherDashboardInner() {
                     </div>
                   </div>
 
-                  <div className="grid min-h-[34rem] border-t border-indigo-100 dark:border-slate-700 md:grid-cols-[17rem_minmax(0,1fr)]">
+                  <div className="flex flex-col border-t border-indigo-100 dark:border-slate-700">
                     <aside className="flex min-h-0 flex-col border-b border-indigo-100 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-950/40 md:border-b-0 md:border-r">
                       <div className="border-b border-slate-200 p-3 dark:border-slate-700">
                         <label htmlFor="report-student-search" className="sr-only">Search students</label>
@@ -5681,7 +5687,7 @@ function TeacherDashboardInner() {
                         )}
                       </div>
 
-                      <div className="max-h-[32rem] flex-1 overflow-y-auto p-2 scrollbar-thin">
+                      <div className="max-h-52 overflow-y-auto p-2 scrollbar-thin">
                         {evidenceStudentsBusy && (
                           <p className="p-3 text-sm text-slate-500 dark:text-slate-400">Loading students…</p>
                         )}
@@ -5808,7 +5814,7 @@ function TeacherDashboardInner() {
                               <button type="button" disabled={!!portfolioDownloadKind} onClick={downloadStudentPortfolio} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-50">{portfolioDownloadKind === 'one' ? 'Preparing PDF…' : 'Download PDF'}</button>
                             </div>
                           </div>
-                          <div className="mt-3 max-h-[34rem] space-y-3 overflow-y-auto pr-1 scrollbar-thin">
+                          <div className="mt-3 space-y-3">
                             {selectedEvidenceStudent.entries.map((entry) => (
                               <article key={`${entry.snapshotId}-${entry.studentId}-${entry.updatedAt}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950">
                                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -5828,7 +5834,7 @@ function TeacherDashboardInner() {
                           </div>
                         </>
                       ) : (
-                        <div className="grid min-h-[28rem] place-items-center text-center">
+                        <div className="grid place-items-center py-8 text-center">
                           <div>
                             <p className="font-display text-lg font-black text-slate-700 dark:text-slate-200">Choose a student</p>
                             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Their saved work will appear here.</p>
@@ -5845,6 +5851,9 @@ function TeacherDashboardInner() {
 
         {libraryView === 'feedback' && (
           <section data-help-target="ai" className="iboard-ai-feedback">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Students are only identified by number — names are never sent to the AI.
+            </p>
             <div className="iboard-ai-feedback__bar">
               <div className="min-w-0">
                 <p className="iboard-ai-feedback__meta">
@@ -6000,9 +6009,13 @@ function TeacherDashboardInner() {
             onClose={goLibraryHome}
           />
         )}
+
+        {libraryView === 'insights' && (
+          <ClassInsightsPanel embedded socket={socket} onClose={goLibraryHome} />
+        )}
             </div>
-          </div>
-        </div>
+        </div>,
+        getOverlayRoot()
       )}
 
       <StudentPickerDialog

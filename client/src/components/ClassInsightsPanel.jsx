@@ -61,7 +61,7 @@ function pctText(value) {
   return value == null ? '—' : `${value}%`;
 }
 
-export default function ClassInsightsPanel({ socket, onClose }) {
+export default function ClassInsightsPanel({ socket, onClose, embedded = false }) {
   const [scope, setScope] = useState('room');
   const [lessonId, setLessonId] = useState(null);
   const [data, setData] = useState(null);
@@ -89,12 +89,13 @@ export default function ClassInsightsPanel({ socket, onClose }) {
   }, [load]);
 
   useEffect(() => {
+    if (embedded) return undefined;
     const onKey = (event) => {
       if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, embedded]);
 
   const lessons = data?.lessons || [];
   const totals = useMemo(() => headlineTotals(lessons), [lessons]);
@@ -122,33 +123,20 @@ export default function ClassInsightsPanel({ socket, onClose }) {
   const chipBtn =
     'rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800';
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center" onClick={onClose}>
-      <div
-        className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="class-insights-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3.5 dark:border-slate-700">
-          <h2 id="class-insights-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
-            Class insights
-          </h2>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800" role="group" aria-label="Which classes">
-              <button type="button" className={segBtn(scope === 'room')} aria-pressed={scope === 'room'} onClick={() => { setScope('room'); setLessonId(null); }}>
-                This class
-              </button>
-              <button type="button" className={segBtn(scope === 'all')} aria-pressed={scope === 'all'} onClick={() => { setScope('all'); setLessonId(null); }}>
-                All classes
-              </button>
-            </div>
-            <CloseButton onClick={onClose} aria-label="Close Class insights" />
-          </div>
-        </div>
+  const scopeControl = (
+    <div className="flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800" role="group" aria-label="Which classes">
+      <button type="button" className={segBtn(scope === 'room')} aria-pressed={scope === 'room'} onClick={() => { setScope('room'); setLessonId(null); }}>
+        This class
+      </button>
+      <button type="button" className={segBtn(scope === 'all')} aria-pressed={scope === 'all'} onClick={() => { setScope('all'); setLessonId(null); }}>
+        All classes
+      </button>
+    </div>
+  );
 
-        <div className="space-y-4 overflow-y-auto p-5 scrollbar-thin">
+  const insightsBody = (
+        <div className={embedded ? 'space-y-4' : 'space-y-4 overflow-y-auto p-5 scrollbar-thin'}>
+          {embedded ? <div className="flex justify-end">{scopeControl}</div> : null}
           {error ? <p className="text-sm font-semibold text-red-600 dark:text-red-400">{error}</p> : null}
           {!data && loading ? <p className="text-sm text-slate-500">Loading…</p> : null}
           {data && !lessons.length ? (
@@ -300,6 +288,29 @@ export default function ClassInsightsPanel({ socket, onClose }) {
             </>
           ) : null}
         </div>
+  );
+
+  if (embedded) return insightsBody;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center" onClick={onClose}>
+      <div
+        className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="class-insights-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3.5 dark:border-slate-700">
+          <h2 id="class-insights-title" className="font-display text-lg font-bold text-ink-900 dark:text-slate-100">
+            Class insights
+          </h2>
+          <div className="flex items-center gap-2">
+            {scopeControl}
+            <CloseButton onClick={onClose} aria-label="Close Class insights" />
+          </div>
+        </div>
+        {insightsBody}
       </div>
     </div>
   );

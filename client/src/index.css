@@ -3851,6 +3851,41 @@ html.dark .iboard-feedback-settings__cancel:hover {
   transform: translateY(-50%);
 }
 
+.iboard-library-dock {
+  overflow: hidden;
+}
+
+.iboard-library-dock__chrome--back {
+  padding-left: 4.6rem;
+}
+
+.iboard-library-dock__chrome--back h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iboard-library-dock__back {
+  position: absolute;
+  left: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.05rem;
+  border: 0;
+  background: transparent;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #5a5fc3;
+  cursor: pointer;
+}
+
+.iboard-library-dock__back:hover {
+  color: #4347a8;
+}
+
 .iboard-room-settings__body {
   flex: 1 1 auto;
   min-height: 0;
@@ -4475,6 +4510,10 @@ html.dark .iboard-room-settings {
 html.dark .iboard-room-settings__chrome {
   background: rgba(30, 27, 75, 0.55);
   border-bottom-color: #312e81;
+}
+
+html.dark .iboard-library-dock__back {
+  color: #c7d2fe;
 }
 
 html.dark .iboard-room-settings__chrome h2 {
