@@ -10,7 +10,7 @@ import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import LearningTrailView from '../components/LearningTrailView.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import ClassInsightsPanel from '../components/ClassInsightsPanel.jsx';
-import { activityStatus, isNotStarted, parseServerDateMs, wordCount } from '../lib/text.js';
+import { activityStatus, isDraftEmpty, isNotStarted, parseServerDateMs, wordCount } from '../lib/text.js';
 import useActivityClock from '../hooks/useActivityClock.js';
 import {
   buildAiPrompt,
@@ -51,6 +51,7 @@ import { fileToCompressedJpegDataUrl } from '../lib/image.js';
 import { LIVE_STATUS_LABELS } from '../lib/liveResponseMeta.js';
 import { useTheme } from '../lib/theme.jsx';
 import HintWrap from '../components/HintWrap.jsx';
+import ClassGauge from '../components/ClassGauge.jsx';
 import StudentPickerDialog from '../components/StudentPickerDialog.jsx';
 import { JoinScreen, ObjectiveScreen, rememberObjective } from '../components/LessonStartScreens.jsx';
 import { fitGrid } from '../lib/fitGrid.js';
@@ -1524,6 +1525,46 @@ function TeacherDashboardInner() {
   useEffect(() => {
     if (attentionFocus && !attentionCounts[attentionFocus]) setAttentionFocus(null);
   }, [attentionFocus, attentionCounts]);
+
+  const classGauge = useMemo(() => {
+    if (livePulse.activity) {
+      const asked = (livePulse.students || []).filter(
+        (student) => !student.promptExcluded && (student.connected || student.hasResponded)
+      );
+      const answered = asked.filter((student) => student.hasResponded).length;
+      const thinking = asked.filter((student) => !student.hasResponded && student.engagement_status === 'unsure').length;
+      return {
+        title: 'Live question',
+        caption: 'answered',
+        done: answered,
+        total: asked.length,
+        segments: [
+          { key: 'answered', label: 'Answered', count: answered, color: 'var(--class-gauge-done)' },
+          { key: 'thinking', label: 'Still thinking', count: thinking, color: 'var(--class-gauge-mid)' },
+          { key: 'waiting', label: 'Not answered yet', count: asked.length - answered - thinking, color: 'var(--class-gauge-rest)' },
+        ],
+      };
+    }
+    const online = orderedStudents.filter((student) => connectedIdSet.has(Number(student.id)));
+    let writing = 0;
+    let paused = 0;
+    for (const student of online) {
+      if (isDraftEmpty(student)) continue;
+      if (!awayByStudentId.get(Number(student.id)) && activityStatus(student.updated_at, activityNow) !== 'idle') writing += 1;
+      else paused += 1;
+    }
+    return {
+      title: 'Class writing',
+      caption: 'writing',
+      done: writing,
+      total: online.length,
+      segments: [
+        { key: 'writing', label: 'Writing now', count: writing, color: 'var(--class-gauge-done)' },
+        { key: 'paused', label: 'Paused or away', count: paused, color: 'var(--class-gauge-mid)' },
+        { key: 'empty', label: 'Not started', count: online.length - writing - paused, color: 'var(--class-gauge-rest)' },
+      ],
+    };
+  }, [livePulse.activity, livePulse.students, orderedStudents, connectedIdSet, awayByStudentId, activityNow]);
 
   const visibleStudents = useMemo(
     () =>
@@ -3302,6 +3343,12 @@ function TeacherDashboardInner() {
   const enforceWords = !!room?.enforce_word_count;
   const frozen = !!room?.freeze_class;
 
+  function toggleFreeze() {
+    const next = !frozen;
+    setRoom((r) => (r ? { ...r, freeze_class: next } : r));
+    pushSettings({ freeze_class: next });
+  }
+
   function openTeacherTools(tab = 'ask', { highlightStudentId = null } = {}) {
     closeSettings();
     setAddCardOpen(false);
@@ -3464,80 +3511,224 @@ function TeacherDashboardInner() {
       >
         <div className="iboard-teacher-header-bar relative">
           <div className="iboard-teacher-header-rail">
-            <div className="iboard-brand shrink-0" aria-label="TUIT">
-              <img src="/brand/tuit-logo.png" alt="TUIT" className="iboard-brand-logo" />
-        </div>
+            <div className="iboard-brand iboard-brand--stacked shrink-0" aria-label="TUIT">
+              <img src="/brand/tuit-mark.png?v=2" alt="" className="iboard-brand-mark" />
+              <span className="iboard-brand-word" aria-hidden="true">TUIT</span>
+            </div>
           </div>
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
-          <div className="iboard-teacher-header-main">
-            <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
+          <div className="iboard-teacher-header-main iboard-teacher-header-main--command">
+            <div className="iboard-header-meta flex min-w-0 items-center gap-2.5">
               <HintWrap hint="Show how students join, full screen" prefer="below">
-                  <button
-                    type="button"
+                <button
+                  type="button"
                   className="iboard-header-room"
                   onClick={openJoinScreen}
                   aria-label={`Room ${codeInput}. Show the join screen`}
                 >
-                  <span className="iboard-header-room__label">Room</span>
                   <span className="iboard-header-code">{codeInput}</span>
                 </button>
               </HintWrap>
-              <span className="iboard-header-meta__dot" aria-hidden="true" />
-              <span className="iboard-header-meta__online">
-                <b className="tabular-nums">{connectedStudents.length}</b> online
-                      </span>
-            {attentionPills.length || inboxSummary ? (
-              <div className="iboard-attention-home" role="group" aria-label="Needs a look">
-                {attentionPills.map((pill) => {
-                  const on = attentionFocus === pill.id;
-                  return (
-                    <HintWrap key={pill.id} hint={attentionHint(attentionNames[pill.id], on)} prefer="below" tone="card">
-                      <button
-                        type="button"
-                        onClick={() => setAttentionFocus(on ? null : pill.id)}
-                        className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}`}
-                        title=""
-                        aria-pressed={on}
-                      >
-                        {pill.label}
-                      </button>
-                    </HintWrap>
-                  );
-                })}
-                {inboxSummary ? (
-                  <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" tone="card">
+              {socketConnected && monitoredCount > 0 ? (
+                <div className="inline-flex h-7 min-w-0 items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-2.5 text-white shadow-sm">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 opacity-90" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                  <span className="truncate text-[11px] font-black">Monitoring · {monitoredCount}</span>
+                  <HintWrap hint="Clear monitor list" prefer="below">
                     <button
                       type="button"
-                      onClick={() => {
-                        setInboxFocus((on) => {
-                          const next = !on;
-                          if (next) {
-                            window.requestAnimationFrame(() => {
-                              document.querySelector('[data-inbox-waiting="true"]')
-                                ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                            });
-                          }
-                          return next;
-                        });
-                      }}
-                      className={`iboard-header-pill iboard-header-pill--attention${inboxFocus ? ' is-on' : ''}`}
+                      onClick={clearMonitoredStudents}
+                      className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-white/80 hover:bg-white/15 hover:text-white"
+                      aria-label="Clear monitor list"
                       title=""
-                      aria-pressed={inboxFocus}
                     >
-                      {inboxSummary}
+                      ×
                     </button>
                   </HintWrap>
-                ) : null}
-              </div>
-            ) : null}
-            {frozen && (
-                <span className="iboard-header-pill iboard-header-pill--frozen">
-                Frozen
-              </span>
-            )}
-          </div>
+                </div>
+              ) : null}
+            </div>
 
-            <div className="iboard-header-actions ml-auto flex shrink-0 items-center justify-end gap-1.5">
+            <div className="iboard-command-bar">
+              <div className="iboard-command-bar__side iboard-command-bar__side--monitor">
+                <span className="iboard-command-bar__title">Monitor class</span>
+                <div className="iboard-attention-home" role="group" aria-label="Needs a look">
+                  {attentionPills.length || inboxSummary ? (
+                    <>
+                    {attentionPills.map((pill) => {
+                      const on = attentionFocus === pill.id;
+                      return (
+                        <HintWrap key={pill.id} hint={attentionHint(attentionNames[pill.id], on)} prefer="below" tone="card">
+                          <button
+                            type="button"
+                            onClick={() => setAttentionFocus(on ? null : pill.id)}
+                            className={`iboard-header-pill iboard-header-pill--attention${on ? ' is-on' : ''}`}
+                            title=""
+                            aria-pressed={on}
+                          >
+                            {pill.label}
+                          </button>
+                        </HintWrap>
+                      );
+                    })}
+                    {inboxSummary ? (
+                      <HintWrap hint={attentionHint(inboxNames, inboxFocus)} prefer="below" tone="card">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInboxFocus((on) => {
+                              const next = !on;
+                              if (next) {
+                                window.requestAnimationFrame(() => {
+                                  document.querySelector('[data-inbox-waiting="true"]')
+                                    ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                                });
+                              }
+                              return next;
+                            });
+                          }}
+                          className={`iboard-header-pill iboard-header-pill--attention${inboxFocus ? ' is-on' : ''}`}
+                          title=""
+                          aria-pressed={inboxFocus}
+                        >
+                          {inboxSummary}
+                        </button>
+                      </HintWrap>
+                    ) : null}
+                    </>
+                  ) : (
+                    <span className="iboard-attention-home__clear">All clear</span>
+                  )}
+                </div>
+              </div>
+              <div className="iboard-command-bar__gauge">
+                <ClassGauge
+                  title={classGauge.title}
+                  caption={classGauge.caption}
+                  done={classGauge.done}
+                  total={classGauge.total}
+                  online={connectedStudents.length}
+                  segments={classGauge.segments}
+                />
+              </div>
+              <div className="iboard-command-bar__side iboard-command-bar__side--manage">
+                <span className="iboard-command-bar__title">Manage class</span>
+                <div className="iboard-manage-tools" role="group" aria-label="Manage class">
+                  <HintWrap hint={breakoutsActive ? "Breakouts are running. Open to shuffle or close rooms" : "Breakout rooms"} prefer="below">
+                    <button
+                      type="button"
+                      onClick={() => openSessionFromHelp("breakouts")}
+                      data-active={breakoutsActive ? "true" : "false"}
+                      className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      aria-label="Breakout rooms"
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="7.5" height="7.5" rx="2" />
+                        <rect x="13.5" y="3" width="7.5" height="7.5" rx="2" />
+                        <rect x="3" y="13.5" width="7.5" height="7.5" rx="2" />
+                        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2" />
+                      </svg>
+                    </button>
+                  </HintWrap>
+                  <div ref={sessionMenuRef} className="relative">
+                    <HintWrap hint="Save or load a lesson" prefer="below" suppressed={sessionMenuOpen}>
+                    <button
+                      type="button"
+                        data-help-target="session"
+                        onClick={() => setSessionMenuOpen((open) => !open)}
+                        aria-expanded={sessionMenuOpen}
+                        data-active={sessionMenuOpen ? 'true' : 'false'}
+                        className={`iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'session' ? ' is-help-flash' : ''}`}
+                        aria-label="Save or open a lesson"
+                      >
+                        <span className={`iboard-header-icon iboard-header-icon--save${joined && saveStatus === 'saved' ? ' is-saved' : ''}`} aria-hidden="true" />
+                    </button>
+                  </HintWrap>
+                    <span
+                      aria-hidden="true"
+                      className={`iboard-header-saved-label${joined && saveStatus === 'saved' ? ' is-on' : ''}`}
+                    >
+                      Saved
+                    </span>
+                    {sessionMenuOpen && (
+                      <div className="absolute left-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                        <HintWrap hint="Downloads this lesson so you can open it again later" prefer="side" className="w-full">
+                <button
+                  type="button"
+                            disabled={sessionBusy}
+                  onClick={() => {
+                              setSessionMenuOpen(false);
+                              void saveSessionFile();
+                  }}
+                            className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                >
+                            {sessionBusy ? 'Saving lesson…' : 'Save lesson to a file'}
+                </button>
+                        </HintWrap>
+                        <HintWrap hint="Open a lesson you saved earlier" prefer="side" className="w-full">
+                          <button
+                            type="button"
+                            disabled={sessionBusy}
+                            onClick={() => {
+                              setSessionMenuOpen(false);
+                              void openSessionFilePicker();
+                            }}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                          >
+                            {sessionBusy ? 'Opening…' : 'Open a saved lesson'}
+                </button>
+                        </HintWrap>
+                        <HintWrap hint="Keeps a copy of every student’s writing right now. Find it later in Reports." prefer="side" className="w-full" multiline>
+                          <button
+                            type="button"
+                            disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
+                            onClick={() => {
+                              setSessionMenuOpen(false);
+                              quickSnapshotWriting();
+                            }}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                          >
+                            {evidenceBusy ? 'Saving snapshot…' : 'Save a snapshot of everyone’s writing'}
+                          </button>
+                        </HintWrap>
+              </div>
+            )}
+                  </div>
+                  <HintWrap hint="Present mode: keeps the question panel on top while you show other windows" prefer="below" multiline>
+                    <button
+                      type="button"
+                      onClick={() => window.dispatchEvent(new Event("iboard:open-presenter-dock"))}
+                      className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      aria-label="Present mode"
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="12" rx="2" />
+                        <path d="M12 16v4M8 20h8" />
+                      </svg>
+                    </button>
+                  </HintWrap>
+                  <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze board: stops student writing"} prefer="below">
+                    <button
+                      type="button"
+                      onClick={toggleFreeze}
+                      aria-pressed={frozen}
+                      data-active={frozen ? "true" : "false"}
+                      className={`iboard-header-icon-button iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${frozen ? " is-frozen" : ""}`}
+                      aria-label={frozen ? "Unfreeze board" : "Freeze board"}
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2.5v19M3.8 7.25l16.4 9.5M3.8 16.75l16.4-9.5" />
+                        <path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2" />
+                      </svg>
+                    </button>
+                  </HintWrap>
+                </div>
+              </div>
+            </div>
+
+            <div className="iboard-header-actions flex shrink-0 items-center justify-end gap-1.5">
             {joined && saveStatus === 'error' ? <SaveStatusChip status="error" plain /> : null}
             <RoomTimerPill
               timer={room?.timer}
@@ -3564,70 +3755,6 @@ function TeacherDashboardInner() {
               </HintWrap>
             ) : null}
             <div ref={tourHeaderToolsRef} className="flex items-center gap-1.5">
-            <div ref={sessionMenuRef} className="relative">
-              <HintWrap hint="Save or load a lesson" prefer="below" suppressed={sessionMenuOpen}>
-              <button
-                type="button"
-                  data-help-target="session"
-                  onClick={() => setSessionMenuOpen((open) => !open)}
-                  aria-expanded={sessionMenuOpen}
-                  data-active={sessionMenuOpen ? 'true' : 'false'}
-                  className={`iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'session' ? ' is-help-flash' : ''}`}
-                  aria-label="Save or open a lesson"
-                >
-                  <span className={`iboard-header-icon iboard-header-icon--save${joined && saveStatus === 'saved' ? ' is-saved' : ''}`} aria-hidden="true" />
-              </button>
-            </HintWrap>
-              <span
-                aria-hidden="true"
-                className={`iboard-header-saved-label${joined && saveStatus === 'saved' ? ' is-on' : ''}`}
-              >
-                Saved
-              </span>
-              {sessionMenuOpen && (
-                <div className="absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-                  <HintWrap hint="Downloads this lesson so you can open it again later" prefer="side" className="w-full">
-          <button
-            type="button"
-                      disabled={sessionBusy}
-            onClick={() => {
-                        setSessionMenuOpen(false);
-                        void saveSessionFile();
-            }}
-                      className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
-          >
-                      {sessionBusy ? 'Saving lesson…' : 'Save lesson to a file'}
-          </button>
-                  </HintWrap>
-                  <HintWrap hint="Open a lesson you saved earlier" prefer="side" className="w-full">
-                    <button
-                      type="button"
-                      disabled={sessionBusy}
-                      onClick={() => {
-                        setSessionMenuOpen(false);
-                        void openSessionFilePicker();
-                      }}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      {sessionBusy ? 'Opening…' : 'Open a saved lesson'}
-          </button>
-                  </HintWrap>
-                  <HintWrap hint="Keeps a copy of every student’s writing right now. Find it later in Reports." prefer="side" className="w-full" multiline>
-                    <button
-                      type="button"
-                      disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
-                      onClick={() => {
-                        setSessionMenuOpen(false);
-                        quickSnapshotWriting();
-                      }}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      {evidenceBusy ? 'Saving snapshot…' : 'Save a snapshot of everyone’s writing'}
-                    </button>
-                  </HintWrap>
-        </div>
-      )}
-            </div>
             <HintWrap hint="Student card view" prefer="below" suppressed={viewOpen}>
               <button
                 ref={viewButtonRef}
@@ -3658,36 +3785,6 @@ function TeacherDashboardInner() {
           </div>
           </div>
 
-          <div className="pointer-events-none absolute inset-y-0 left-1/2 z-[1] flex max-w-[min(24rem,calc(100vw-40rem))] -translate-x-1/2 items-center justify-center">
-            {!socketConnected ? null : monitoredCount > 0 ? (
-              <div className="pointer-events-auto inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-3 text-white shadow-sm">
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 opacity-90" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
-                  <circle cx="12" cy="12" r="2.5" />
-                </svg>
-                <span className="truncate text-[11px] font-black">Monitoring · {monitoredCount}</span>
-                <HintWrap hint="Clear monitor list" prefer="below">
-                  <button
-                    type="button"
-                    onClick={clearMonitoredStudents}
-                    className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-white/80 hover:bg-white/15 hover:text-white"
-                    aria-label="Clear monitor list"
-                    title=""
-                  >
-                    ×
-                  </button>
-                </HintWrap>
-              </div>
-            ) : room?.draftTrail?.reason ? (
-              <div
-                role="alert"
-                className="pointer-events-auto inline-flex h-8 max-w-full items-center truncate rounded-lg bg-amber-500 px-3 text-[11px] font-black text-amber-950 shadow-sm"
-                title={room.draftTrail.reason}
-              >
-                {room.draftTrail.reason}
-              </div>
-            ) : null}
-          </div>
         </div>
       </header>
       <TeacherHelpPanel
@@ -5628,11 +5725,7 @@ function TeacherDashboardInner() {
               <button
                 type="button"
                       data-help-target="freeze"
-                      onClick={() => {
-                        const v = !frozen;
-                        setRoom((r) => (r ? { ...r, freeze_class: v } : r));
-                        pushSettings({ freeze_class: v });
-                      }}
+                      onClick={toggleFreeze}
                       className={`iboard-room-settings__secondary w-full${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                     >
                       {frozen ? 'Unfreeze board' : 'Freeze board'}
