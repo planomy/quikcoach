@@ -285,6 +285,22 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b 
   color: #8b8b96;
 }
 
+.iboard-header-room--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.iboard-header-room--stacked .iboard-header-room__label {
+  font-size: 0.55rem;
+  line-height: 1;
+  color: #a3a6db;
+}
+
+html.dark .iboard-header-room--stacked .iboard-header-room__label {
+  color: #94a3b8;
+}
+
 .iboard-header-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 1.2rem;
@@ -1548,7 +1564,7 @@ html.dark .iboard-board-empty__code {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: stretch;
+  justify-content: center;
   gap: 0;
   background: #ffffff;
   border-right: 1px solid #e2e8ef;
@@ -1570,16 +1586,12 @@ html.dark .iboard-board-empty__code {
 
 /* Share / Ask / Manage / Review stack at the top; settings sits at the bottom. */
 .iboard-arr-rail__lower {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 0;
   width: 100%;
-}
-
-.iboard-arr-rail__foot {
-  margin-top: auto;
 }
 
 .iboard-arr-rail__foot {

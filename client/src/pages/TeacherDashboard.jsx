@@ -3910,10 +3910,11 @@ function TeacherDashboardInner() {
               <HintWrap hint="Show how students join, full screen" prefer="below">
                 <button
                   type="button"
-                  className="iboard-header-room"
+                  className="iboard-header-room iboard-header-room--stacked"
                   onClick={openJoinScreen}
                   aria-label={`Room ${codeInput}. Show the join screen`}
                 >
+                  <span className="iboard-header-room__label" aria-hidden="true">Room</span>
                   <span className="iboard-header-code">{codeInput}</span>
                 </button>
               </HintWrap>
