@@ -1564,7 +1564,7 @@ html.dark .iboard-board-empty__code {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: stretch;
   gap: 0;
   background: #ffffff;
   border-right: 1px solid #e2e8ef;
@@ -1584,7 +1584,15 @@ html.dark .iboard-board-empty__code {
   padding-bottom: 0.35rem;
 }
 
-/* Share / Ask / Manage / Review stack at the top; settings sits at the bottom. */
+/* Share / Ask / AI centre in the space above Reports and Settings, which stay at the bottom. */
+.iboard-arr-rail > :first-child {
+  margin-top: auto;
+}
+
+.iboard-arr-rail .iboard-arr-rail__tools {
+  margin-bottom: auto;
+}
+
 .iboard-arr-rail__lower {
   flex: 0 0 auto;
   display: flex;
