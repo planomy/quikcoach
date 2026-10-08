@@ -615,8 +615,26 @@ html.dark .iboard-breakout-peers__body {
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
+/* Outer ring, not inset: the writing card's white fill would paint over an inset one. */
 .iboard-class-wall__card.is-you {
-  box-shadow: inset 0 0 0 2px #5a5fc3;
+  border-color: #5a5fc3;
+  box-shadow: 0 0 0 1px #5a5fc3;
+}
+
+html.dark .iboard-class-wall__card.is-you {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 1px #818cf8;
+}
+
+/* Hidden scrollbar chrome — wheel/trackpad/touch still scroll. */
+.iboard-class-wall__card *,
+html.iboard-student-workspace.iboard-student-class-wall main > .iboard-student-workspace-grid > .iboard-student-writing-col {
+  scrollbar-width: none;
+}
+
+.iboard-class-wall__card *::-webkit-scrollbar,
+html.iboard-student-workspace.iboard-student-class-wall main > .iboard-student-workspace-grid > .iboard-student-writing-col::-webkit-scrollbar {
+  display: none;
 }
 
 .iboard-class-wall__head {
