@@ -485,6 +485,8 @@ function TeacherDashboardInner() {
   const teacherHeaderRef = useRef(null);
   const teacherToolsNavRef = useRef(null);
   const tourShareRef = useRef(null);
+  const shareRailBtnRef = useRef(null);
+  const resourcesRevealRef = useRef(null);
   const tourEngageRef = useRef(null);
   const tourBoardRef = useRef(null);
   const tourRecRef = useRef(null);
@@ -996,6 +998,32 @@ function TeacherDashboardInner() {
     const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
     return () => cancelAnimationFrame(frame);
   }, [teacherPanelHidden]);
+
+  useLayoutEffect(() => {
+    const share = shareRailBtnRef.current;
+    const reveal = resourcesRevealRef.current;
+    if (!share || !reveal) return undefined;
+    const place = () => {
+      const button = shareRailBtnRef.current;
+      const arrow = resourcesRevealRef.current;
+      const wrap = arrow?.offsetParent;
+      if (!button || !arrow || !wrap) return;
+      const shareBox = button.getBoundingClientRect();
+      const wrapBox = wrap.getBoundingClientRect();
+      const top = shareBox.top - wrapBox.top + (shareBox.height - arrow.offsetHeight) / 2;
+      arrow.style.top = `${Math.max(0, Math.round(top))}px`;
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(share);
+    const rail = share.closest('.iboard-arr-rail');
+    if (rail) observer.observe(rail);
+    window.addEventListener('resize', place);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', place);
+    };
+  }, [teacherPanelHidden, joined]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -4492,6 +4520,7 @@ function TeacherDashboardInner() {
                 onClick={() => openAddCard()}
                 aria-expanded={addCardOpen && !teacherPanelHidden}
                 data-active={(addCardOpen && !teacherPanelHidden) || (toolsPanelOpen && toolsTab === 'sets') ? 'true' : 'false'}
+                ref={shareRailBtnRef}
                 className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
                 aria-label="Share an image, PDF or text"
               >
@@ -4578,9 +4607,10 @@ function TeacherDashboardInner() {
         {tourKey > 0 ? <TeacherBoardTour key={tourKey} anchors={tourAnchors} /> : null}
 
         <div className="iboard-teacher-panel-wrap">
-          <HintWrap hint="Show resources" prefer="right" suppressed={!teacherPanelHidden}>
+          <HintWrap hint="Show resources" prefer="right" suppressed={!teacherPanelHidden} className="static">
             <button
               type="button"
+              ref={resourcesRevealRef}
               className="iboard-teacher-panel-reveal"
               onPointerDown={revealTeacherPanel}
               onClick={(event) => event.preventDefault()}
