@@ -4327,6 +4327,19 @@ function TeacherDashboardInner() {
                       </svg>
                     </button>
                   </HintWrap>
+                  <HintWrap hint="Change how big the student cards are" prefer="below" suppressed={viewOpen}>
+                    <button
+                      ref={viewButtonRef}
+                      type="button"
+                      onClick={openViewDock}
+                      aria-expanded={viewOpen}
+                      data-active={viewOpen ? 'true' : 'false'}
+                      className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      aria-label="Card view"
+                    >
+                      <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
+                    </button>
+                  </HintWrap>
                 </div>
               </div>
             </div>
@@ -4358,16 +4371,16 @@ function TeacherDashboardInner() {
               </HintWrap>
             ) : null}
             <div ref={(node) => { tourHeaderToolsRef.current = node; moreMenuRef.current = node; }} className="relative flex items-center">
-            <HintWrap hint="Card view, full screen and help" prefer="below" suppressed={moreMenuOpen || viewOpen || helpOpen}>
+            <HintWrap hint="Full screen and help" prefer="below" suppressed={moreMenuOpen || helpOpen}>
               <button
-                ref={(node) => { viewButtonRef.current = node; helpButtonRef.current = node; }}
+                ref={helpButtonRef}
                 type="button"
                 onClick={() => setMoreMenuOpen((open) => !open)}
                 aria-expanded={moreMenuOpen}
                 aria-haspopup="menu"
-                data-active={moreMenuOpen || viewOpen || helpOpen ? 'true' : 'false'}
+                data-active={moreMenuOpen || helpOpen ? 'true' : 'false'}
                 className="iboard-header-icon-button iboard-more-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
-                aria-label="More: card view, full screen and help"
+                aria-label="More: full screen and help"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="5" cy="12" r="1.9" /><circle cx="12" cy="12" r="1.9" /><circle cx="19" cy="12" r="1.9" />
@@ -4376,10 +4389,6 @@ function TeacherDashboardInner() {
             </HintWrap>
             {moreMenuOpen ? (
               <div className="iboard-more-menu" role="menu">
-                <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); openViewDock(); }}>
-                  <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
-                  Card view
-                </button>
                 <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); void toggleBrowserFullscreen(); }}>
                   <span className="iboard-header-icon iboard-header-icon--fullscreen" aria-hidden="true" />
                   {browserFullscreen ? 'Exit full screen' : 'Full screen'}

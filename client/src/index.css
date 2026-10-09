@@ -1488,11 +1488,11 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   line-height: 1;
 }
 
-/* Sits in the band under the online count, inside the white circle. */
+/* Hangs in the gap under the gauge, between the header and the student cards. */
 .iboard-class-gauge__notice {
   position: absolute;
   left: 50%;
-  bottom: 0.14rem;
+  top: calc(100% - 0.15rem);
   z-index: 2;
   display: inline-flex;
   align-items: center;
