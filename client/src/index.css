@@ -5871,7 +5871,9 @@ html.dark .iboard-workspace-scrim {
 
 .iboard-join-screen__mark {
   width: clamp(4.25rem, 8vh, 6.25rem);
-  height: auto;
+  height: clamp(4.25rem, 8vh, 6.25rem);
+  aspect-ratio: 1;
+  object-fit: contain;
   filter: brightness(0) invert(1);
 }
 
