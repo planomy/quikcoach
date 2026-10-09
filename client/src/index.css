@@ -5863,11 +5863,10 @@ html.dark .iboard-workspace-scrim {
 .iboard-join-screen {
   flex: 0 0 auto;
   align-self: center;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  row-gap: clamp(1.5rem, 4vh, 3rem);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
+  gap: clamp(2.75rem, 7vh, 5rem);
   width: 100%;
   max-width: 72rem;
   height: 70vh;
@@ -5907,17 +5906,10 @@ html.dark .iboard-workspace-scrim {
 }
 
 .iboard-join-screen__details {
-  align-self: end;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.85rem, 2vh, 1.35rem);
-  width: 100%;
-}
-
-.iboard-join-screen__middle {
-  display: flex;
-  justify-content: center;
+  gap: clamp(1rem, 2.2vh, 1.45rem);
   width: 100%;
 }
 
@@ -5965,11 +5957,11 @@ html.dark .iboard-workspace-scrim {
 .iboard-join-screen__qr-code {
   position: absolute;
   top: 50%;
-  left: calc(100% + clamp(2.25rem, 5vw, 4.5rem));
-  width: min(18vh, 13rem);
+  left: calc(100% + clamp(1.35rem, 2.5vw, 2.25rem));
+  width: min(14vh, 10.5rem);
   aspect-ratio: 1;
   border-radius: 0.85rem;
-  padding: 0.65rem;
+  padding: 0.55rem;
   background: #ffffff;
   transform: translateY(-50%);
 }
@@ -5981,6 +5973,7 @@ html.dark .iboard-workspace-scrim {
 }
 
 .iboard-join-screen__count {
+  margin-top: clamp(1.75rem, 4.5vh, 3.25rem);
   font-weight: 700;
   color: #ffffff;
 }
@@ -6023,11 +6016,10 @@ html.dark .iboard-workspace-scrim {
 }
 
 .iboard-objective-screen {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  row-gap: clamp(1.5rem, 4vh, 3rem);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
+  gap: clamp(3.25rem, 8.5vh, 5.75rem);
   width: 100%;
   max-width: 46rem;
   height: 70vh;
@@ -6037,11 +6029,14 @@ html.dark .iboard-workspace-scrim {
 }
 
 .iboard-objective-screen__body {
-  align-self: end;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   width: 100%;
+}
+
+.iboard-objective-screen .iboard-start-screen__actions {
+  margin-top: clamp(2.75rem, 7vh, 4.75rem);
 }
 
 .iboard-objective-screen__title {

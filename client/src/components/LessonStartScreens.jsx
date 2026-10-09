@@ -87,20 +87,17 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
         </div>
 
         <div className="iboard-join-screen__details">
-          <div className="iboard-join-screen__middle">
-            <div className="iboard-join-screen__lines">
-              <h2 id="join-screen-title" className="iboard-join-screen__lead">Students go to :</h2>
-              <p className="iboard-join-screen__url">{address}</p>
-              <p className="iboard-join-screen__code-line">
-                Enter Code : <span aria-label={`Room code ${code.split('').join(' ')}`}>{code}</span>
-              </p>
-              <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
-              {qrSvg ? (
-                <div className="iboard-join-screen__qr-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-              ) : null}
-            </div>
+          <div className="iboard-join-screen__lines">
+            <h2 id="join-screen-title" className="iboard-join-screen__lead">Students go to :</h2>
+            <p className="iboard-join-screen__url">{address}</p>
+            <p className="iboard-join-screen__code-line">
+              Enter Code : <span aria-label={`Room code ${code.split('').join(' ')}`}>{code}</span>
+            </p>
+            {qrSvg ? (
+              <div className="iboard-join-screen__qr-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+            ) : null}
           </div>
-
+          <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
           <button ref={closeRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
             {primaryLabel}
           </button>
