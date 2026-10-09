@@ -211,8 +211,15 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
 
   useEffect(() => {
     const prior = document.activeElement;
+    // A mouse click focuses the name. Putting that focus back when the trail
+    // closes leaves the ring and the name hint up until the next click.
+    const fromPointer = prior instanceof HTMLElement && !prior.matches(':focus-visible');
+    if (fromPointer) prior.blur();
     dialogRef.current?.showModal();
-    return () => prior?.focus?.();
+    return () => {
+      if (fromPointer) return;
+      if (prior instanceof HTMLElement) prior.focus();
+    };
   }, []);
 
   useEffect(() => {
