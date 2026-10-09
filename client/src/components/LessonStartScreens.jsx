@@ -86,24 +86,26 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
           <p className="iboard-join-screen__tag" aria-hidden="true">Focused Teaching & Learning</p>
         </div>
 
-        <h2 id="join-screen-title" className="iboard-join-screen__lead">Students go to :</h2>
+        <div className="iboard-join-screen__details">
+          <h2 id="join-screen-title" className="iboard-join-screen__lead">Students go to :</h2>
 
-        <div className="iboard-join-screen__url-row">
-          <p className="iboard-join-screen__url">{address}</p>
-          {qrSvg ? (
-            <div className="iboard-join-screen__qr-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-          ) : null}
+          <div className="iboard-join-screen__url-row">
+            <p className="iboard-join-screen__url">{address}</p>
+            {qrSvg ? (
+              <div className="iboard-join-screen__qr-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+            ) : null}
+          </div>
+
+          <p className="iboard-join-screen__code-line">
+            Enter Code : <span aria-label={`Room code ${code.split('').join(' ')}`}>{code}</span>
+          </p>
+
+          <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
+
+          <button ref={closeRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
+            {primaryLabel}
+          </button>
         </div>
-
-        <p className="iboard-join-screen__code-line">
-          Enter Code : <span aria-label={`Room code ${code.split('').join(' ')}`}>{code}</span>
-        </p>
-
-        <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
-
-        <button ref={closeRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
-          {primaryLabel}
-        </button>
       </div>
     </div>,
     getOverlayRoot()
@@ -192,10 +194,9 @@ export function BoardJoinGate({ code, joinUrl, students = [], rosterCount = 0, o
   );
 }
 
-/** Change today's objective mid-lesson; recent objectives one tap away. */
+/** Change today's objective mid-lesson. */
 export function ObjectiveScreen({ initialObjective = '', busy = false, entrance = false, onSave, onClose }) {
   const [text, setText] = useState(initialObjective);
-  const [recent] = useState(readRecentObjectives);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -218,6 +219,11 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, entrance 
   return (
     <StartShell labelledBy="objective-screen-title" onKeyDown={handleKeyDown}>
       <form className="iboard-objective-screen" onSubmit={submit}>
+        <div className="iboard-join-screen__brand" role="img" aria-label="TUIT, Focused Teaching and Learning">
+          <img src="/brand/tuit-mark.png?v=2" alt="" className="iboard-join-screen__mark" />
+          <p className="iboard-join-screen__word" aria-hidden="true">TUIT</p>
+          <p className="iboard-join-screen__tag" aria-hidden="true">Focused Teaching & Learning</p>
+        </div>
         <h2 id="objective-screen-title" className="iboard-objective-screen__title">Today’s objective</h2>
         <label className="iboard-objective-screen__field">
           <span>Today we are learning to…</span>
@@ -232,18 +238,8 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, entrance 
             }}
             placeholder="e.g. write a strong opening sentence"
           />
+          <p className="iboard-objective-screen__hint">Students see this at the top of their screen.</p>
         </label>
-        {recent.length ? (
-          <div className="iboard-objective-screen__recent">
-            <p>Recent</p>
-            <div>
-              {recent.map((item) => (
-                <button key={item} type="button" onClick={() => setText(item)}>{item}</button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        <p className="iboard-objective-screen__hint">Students see this at the top of their screen.</p>
         <div className="iboard-start-screen__actions">
           <button type="button" onClick={onClose} className="iboard-start-screen__secondary">{entrance ? 'Back' : 'Cancel'}</button>
           {initialObjective && !entrance ? (
