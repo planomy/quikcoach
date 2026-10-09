@@ -1,0 +1,14 @@
+---
+description: Commit and push finished work unless the user says not to
+alwaysApply: true
+---
+
+# Push when the work is done
+
+After a requested change is finished and checked, commit it and push to the current branch. Do not wait for a separate "push".
+
+Skip the commit and the push only when the user says not to, or the change is not ready.
+
+The user has given standing permission to push to `main`. Push with full permissions. If the push is blocked, retry that exact command with the approval request and the exact block reason. Do not ask in chat first.
+
+Leave `server/data/` untracked. Commit messages are one sentence and contain no apostrophes.
