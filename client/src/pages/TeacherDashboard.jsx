@@ -958,35 +958,61 @@ function TeacherDashboardInner() {
     if (joinPhase !== 'settling') return undefined;
     let cancel = false;
     let stop = () => {};
-    let timer = 0;
+    let waitTimer = 0;
+    let capTimer = 0;
+    let raf = 0;
+    let lastSize = '';
+    let quietSince = 0;
+    // Chrome reports fullscreen while the window is still growing. Reveal once
+    // the size has sat still, which is immediate on Safari.
+    const QUIET_MS = 80;
     const reveal = () => {
       if (cancel) return;
       cancel = true;
       stop();
-      clearTimeout(timer);
-      // Two frames so the new viewport size is committed before the slide fades in.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setJoinPhase((phase) => (phase === 'settling' ? 'arrived' : phase));
-        });
-      });
+      clearTimeout(waitTimer);
+      clearTimeout(capTimer);
+      cancelAnimationFrame(raf);
+      setJoinPhase((phase) => (phase === 'settling' ? 'arrived' : phase));
+    };
+    const watchSize = (now) => {
+      if (cancel) return;
+      const size = `${window.innerWidth}x${window.innerHeight}`;
+      if (size !== lastSize) {
+        lastSize = size;
+        quietSince = now;
+      }
+      if (now - quietSince >= QUIET_MS) {
+        reveal();
+        return;
+      }
+      raf = requestAnimationFrame(watchSize);
+    };
+    const startWatch = () => {
+      if (cancel || raf) return;
+      lastSize = '';
+      quietSince = performance.now();
+      raf = requestAnimationFrame(watchSize);
     };
     const request = joinFullscreenRef.current || Promise.resolve('already');
     request.then((result) => {
       if (cancel) return;
       if (result === 'ok' && !isFullscreen()) {
         stop = subscribeFullscreenChange(() => {
-          if (isFullscreen()) reveal();
+          if (isFullscreen()) startWatch();
         });
-        timer = window.setTimeout(reveal, 1200);
+        waitTimer = window.setTimeout(startWatch, 1200);
         return;
       }
-      reveal();
+      startWatch();
     });
+    capTimer = window.setTimeout(reveal, 2000);
     return () => {
       cancel = true;
       stop();
-      clearTimeout(timer);
+      clearTimeout(waitTimer);
+      clearTimeout(capTimer);
+      cancelAnimationFrame(raf);
     };
   }, [joinPhase]);
 
@@ -1518,7 +1544,7 @@ function TeacherDashboardInner() {
     }
     const code = digits.padStart(4, '0');
     // Blue covers the code form in this click. The slide stays hidden until
-    // fullscreen has finished resizing, then it fades in at the final size.
+    // the window size has stopped changing, then it fades in.
     if (showJoinScreen) {
       setCodeInput(code);
       setEntranceStep('join');
