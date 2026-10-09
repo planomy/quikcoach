@@ -2654,17 +2654,9 @@ html.dark .iboard-room-section__head h3 {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
   cursor: pointer;
   padding: 0;
-  opacity: 0;
-  pointer-events: none;
   transition:
     background-color 160ms ease,
-    border-color 160ms ease,
-    opacity 160ms ease;
-}
-
-.iboard-teacher-shell.is-teacher-hidden .iboard-teacher-panel-reveal {
-  opacity: 1;
-  pointer-events: auto;
+    border-color 160ms ease;
 }
 
 .iboard-teacher-panel-reveal:hover {
@@ -5786,12 +5778,6 @@ html.dark .iboard-workspace-scrim {
   padding: clamp(1rem, 3vw, 2.5rem);
   color: #ffffff;
   background: radial-gradient(120% 90% at 20% 0%, #4b4fa8 0%, #2e2f6b 45%, #191a3c 100%);
-  animation: iboard-start-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes iboard-start-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .iboard-start-screen__body {

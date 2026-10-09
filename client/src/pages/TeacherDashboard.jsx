@@ -1048,6 +1048,20 @@ function TeacherDashboardInner() {
     }, 350);
   }
 
+  function toggleResourcesPanel(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (teacherPanelHidden) {
+      revealTeacherPanel(event);
+      return;
+    }
+    setTeacherPanelHidden(true);
+    if (!addCardBusy) {
+      setAddCardPickerOpen(false);
+      setAddCardOpen(false);
+    }
+  }
+
   function openFocusedTeacherPost(postId) {
     if (teacherRevealLockRef.current) return;
     setFocusedPostId(postId);
@@ -4607,19 +4621,17 @@ function TeacherDashboardInner() {
         {tourKey > 0 ? <TeacherBoardTour key={tourKey} anchors={tourAnchors} /> : null}
 
         <div className="iboard-teacher-panel-wrap">
-          <HintWrap hint="Show resources" prefer="right" suppressed={!teacherPanelHidden} className="static">
+          <HintWrap hint={teacherPanelHidden ? 'Show resources' : 'Hide resources'} prefer="right" className="static">
             <button
               type="button"
               ref={resourcesRevealRef}
               className="iboard-teacher-panel-reveal"
-              onPointerDown={revealTeacherPanel}
+              onPointerDown={toggleResourcesPanel}
               onClick={(event) => event.preventDefault()}
-              aria-label="Show resources"
+              aria-label={teacherPanelHidden ? 'Show resources' : 'Hide resources'}
               title=""
-              tabIndex={teacherPanelHidden ? 0 : -1}
-              aria-hidden={!teacherPanelHidden}
             >
-              <span aria-hidden="true">&gt;</span>
+              <span aria-hidden="true">{teacherPanelHidden ? '>' : '<'}</span>
             </button>
           </HintWrap>
           <aside
@@ -4628,25 +4640,6 @@ function TeacherDashboardInner() {
             aria-hidden={teacherPanelHidden}
           >
             <div className="iboard-teacher-panel-head">
-              <HintWrap hint="Hide resources" prefer="below">
-                <button
-                  type="button"
-                  className="iboard-teacher-panel-action iboard-teacher-panel-action--icon"
-                  onClick={() => {
-                    setTeacherPanelHidden(true);
-                    if (!addCardBusy) {
-                      setAddCardPickerOpen(false);
-                      setAddCardOpen(false);
-                    }
-                  }}
-                  aria-label="Hide resources"
-                  title=""
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 6 9 12l6 6" />
-                  </svg>
-                </button>
-              </HintWrap>
               <h2>Resources</h2>
             </div>
             <div
