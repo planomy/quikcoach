@@ -951,17 +951,6 @@ function TeacherDashboardInner() {
     return subscribeFullscreenChange(syncFullscreen);
   }, []);
 
-  // Browsers only allow full screen from a user gesture, so the teacher's first click enters it. Esc leaves.
-  useEffect(() => {
-    if (!canFullscreen()) return undefined;
-    const enter = () => {
-      document.removeEventListener('click', enter, true);
-      if (!isFullscreen()) toggleFullscreen().catch(() => {});
-    };
-    document.addEventListener('click', enter, true);
-    return () => document.removeEventListener('click', enter, true);
-  }, []);
-
   const moreMenuRef = useRef(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   useEffect(() => {
@@ -1483,6 +1472,15 @@ function TeacherDashboardInner() {
       return;
     }
     const code = digits.padStart(4, '0');
+    // Full screen has to start in this click. Show the blue screen in the same
+    // turn so the code form does not resize and then get replaced.
+    if (showJoinScreen) {
+      if (!isFullscreen()) toggleFullscreen().catch(() => {});
+      setCodeInput(code);
+      setEntranceStep('join');
+      setLessonBegun(false);
+      setJoined(true);
+    }
     try {
       const res = await fetch('/api/rooms', {
         method: 'POST',
@@ -1512,6 +1510,7 @@ function TeacherDashboardInner() {
             socket.once('connect_error', onErr);
           });
         } catch {
+          if (showJoinScreen) setJoined(false);
           setError('TUIT can’t reach the class server. Check the Wi-Fi, or ask IT to check the TUIT server is running.');
           return;
         }
@@ -1520,6 +1519,7 @@ function TeacherDashboardInner() {
         if (!ack?.ok) {
           teacherRoomRef.current = '';
           joinedRef.current = false;
+          if (showJoinScreen) setJoined(false);
           setError(ack?.error || 'Could not join room');
           return;
         }
@@ -1550,6 +1550,7 @@ function TeacherDashboardInner() {
         }
       });
     } catch {
+      if (showJoinScreen) setJoined(false);
       setError('TUIT can’t reach the class server. Check the Wi-Fi, or ask IT to check the TUIT server is running.');
     }
   }
