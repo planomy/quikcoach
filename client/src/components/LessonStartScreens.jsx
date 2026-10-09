@@ -61,17 +61,18 @@ function joinedLabel(joinedCount, rosterCount) {
 }
 
 /** Full-screen join view for projecting, opened from the header room code. */
-export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, primaryLabel = 'Back to the board', onClose }) {
+export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, primaryLabel = 'Back to the board', phase = 'still', onClose }) {
   const { qrSvg, address } = useJoinInfo(joinUrl);
   const closeRef = useRef(null);
 
   useEffect(() => {
+    if (phase === 'settling') return;
     closeRef.current?.focus();
-  }, []);
+  }, [phase]);
 
   return createPortal(
     <div
-      className="iboard-start-screen"
+      className={`iboard-start-screen${phase === 'settling' ? ' is-settling' : ''}${phase === 'arrived' ? ' is-arrived' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="join-screen-title"
@@ -79,7 +80,7 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
         if (event.key === 'Escape') onClose?.();
       }}
     >
-      <div className="iboard-join-screen">
+      <div className="iboard-join-screen" aria-hidden={phase === 'settling' ? true : undefined}>
         <div className="iboard-join-screen__brand" role="img" aria-label="TUIT, Focused Teaching and Learning">
           <img src="/brand/tuit-mark.png?v=2" alt="" className="iboard-join-screen__mark" />
           <p className="iboard-join-screen__word" aria-hidden="true">TUIT</p>

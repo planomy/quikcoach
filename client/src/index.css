@@ -5861,6 +5861,35 @@ html.dark .iboard-workspace-scrim {
   text-align: center;
 }
 
+/* Open room: the blue is up immediately. The slide waits out the fullscreen
+   resize, then arrives once, at the final size. */
+.iboard-start-screen.is-settling .iboard-join-screen {
+  opacity: 0;
+}
+
+.iboard-start-screen.is-arrived .iboard-join-screen {
+  animation: iboard-join-arrive 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes iboard-join-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iboard-start-screen.is-arrived .iboard-join-screen {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .iboard-join-screen__brand {
   display: flex;
   flex-direction: column;

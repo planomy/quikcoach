@@ -441,6 +441,9 @@ function TeacherDashboardInner() {
   const [joinScreenOpen, setJoinScreenOpen] = useState(false);
   const [lessonBegun, setLessonBegun] = useState(false);
   const [entranceStep, setEntranceStep] = useState('join');
+  // Open room: hold the join slide until fullscreen has resized, then bring it in.
+  const [joinPhase, setJoinPhase] = useState('still');
+  const joinFullscreenRef = useRef(null);
   const [drawingMarkupTarget, setDrawingMarkupTarget] = useState(null);
   const [audienceQuestions, setAudienceQuestions] = useState([]);
   const [handQuestionTarget, setHandQuestionTarget] = useState(null);
@@ -950,6 +953,48 @@ function TeacherDashboardInner() {
     syncFullscreen();
     return subscribeFullscreenChange(syncFullscreen);
   }, []);
+
+  useEffect(() => {
+    if (joinPhase !== 'settling') return undefined;
+    let cancel = false;
+    let stop = () => {};
+    let timer = 0;
+    const reveal = () => {
+      if (cancel) return;
+      cancel = true;
+      stop();
+      clearTimeout(timer);
+      // Two frames so the new viewport size is committed before the slide fades in.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setJoinPhase((phase) => (phase === 'settling' ? 'arrived' : phase));
+        });
+      });
+    };
+    const request = joinFullscreenRef.current || Promise.resolve('already');
+    request.then((result) => {
+      if (cancel) return;
+      if (result === 'ok' && !isFullscreen()) {
+        stop = subscribeFullscreenChange(() => {
+          if (isFullscreen()) reveal();
+        });
+        timer = window.setTimeout(reveal, 1200);
+        return;
+      }
+      reveal();
+    });
+    return () => {
+      cancel = true;
+      stop();
+      clearTimeout(timer);
+    };
+  }, [joinPhase]);
+
+  useEffect(() => {
+    if (joinPhase !== 'arrived') return undefined;
+    const timer = window.setTimeout(() => setJoinPhase('still'), 400);
+    return () => clearTimeout(timer);
+  }, [joinPhase]);
 
   const moreMenuRef = useRef(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -1472,14 +1517,19 @@ function TeacherDashboardInner() {
       return;
     }
     const code = digits.padStart(4, '0');
-    // Full screen has to start in this click. Show the blue screen in the same
-    // turn so the code form does not resize and then get replaced.
+    // Blue covers the code form in this click. The slide stays hidden until
+    // fullscreen has finished resizing, then it fades in at the final size.
     if (showJoinScreen) {
-      if (!isFullscreen()) toggleFullscreen().catch(() => {});
       setCodeInput(code);
       setEntranceStep('join');
       setLessonBegun(false);
       setJoined(true);
+      if (isFullscreen()) {
+        setJoinPhase('still');
+      } else {
+        setJoinPhase('settling');
+        joinFullscreenRef.current = toggleFullscreen().then(() => 'ok').catch(() => 'denied');
+      }
     }
     try {
       const res = await fetch('/api/rooms', {
@@ -1510,7 +1560,10 @@ function TeacherDashboardInner() {
             socket.once('connect_error', onErr);
           });
         } catch {
-          if (showJoinScreen) setJoined(false);
+          if (showJoinScreen) {
+            setJoined(false);
+            setJoinPhase('still');
+          }
           setError('TUIT can’t reach the class server. Check the Wi-Fi, or ask IT to check the TUIT server is running.');
           return;
         }
@@ -1519,7 +1572,10 @@ function TeacherDashboardInner() {
         if (!ack?.ok) {
           teacherRoomRef.current = '';
           joinedRef.current = false;
-          if (showJoinScreen) setJoined(false);
+          if (showJoinScreen) {
+            setJoined(false);
+            setJoinPhase('still');
+          }
           setError(ack?.error || 'Could not join room');
           return;
         }
@@ -1550,7 +1606,10 @@ function TeacherDashboardInner() {
         }
       });
     } catch {
-      if (showJoinScreen) setJoined(false);
+      if (showJoinScreen) {
+        setJoined(false);
+        setJoinPhase('still');
+      }
       setError('TUIT can’t reach the class server. Check the Wi-Fi, or ask IT to check the TUIT server is running.');
     }
   }
@@ -4897,6 +4956,7 @@ function TeacherDashboardInner() {
               joinedCount={connectedStudents.length}
               rosterCount={orderedStudents.length}
               primaryLabel="Next"
+              phase={joinPhase}
               onClose={() => setEntranceStep('objective')}
             />
           )}
