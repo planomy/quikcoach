@@ -648,7 +648,7 @@ function sourceStudentIdForActivity(activity) {
 }
 
 function activityForStudent(activity, studentId) {
-  if (!activity) return null;
+  if (!activity || activity.closed) return null;
   const excludedId = sourceStudentIdForActivity(activity);
   if (excludedId && Number(studentId) === excludedId) return null;
   const targets = Array.isArray(activity.targetStudentIds)
@@ -1569,7 +1569,7 @@ io.on('connection', (socket) => {
         return;
       }
       const activity = queries.getLiveActivity(db, code);
-      if (!activity || activity.id !== String(activityId || '')) {
+      if (!activity || activity.closed || activity.id !== String(activityId || '')) {
         cb?.({ ok: false, error: 'That question has finished' });
         return;
       }
@@ -1776,7 +1776,7 @@ io.on('connection', (socket) => {
       const code = socket.data.roomCode;
       const sid = Number(socket.data.studentId);
       const activity = queries.getLiveActivity(db, code);
-      if (socket.data.role !== 'student' || !sid || !activity || activity.id !== String(activityId || '')) {
+      if (socket.data.role !== 'student' || !sid || !activity || activity.closed || activity.id !== String(activityId || '')) {
         cb?.({ ok: false }); return;
       }
       queries.setLiveResponseConfidence(db, activity.id, sid, confidence);
@@ -1805,7 +1805,7 @@ io.on('connection', (socket) => {
         cb?.({ ok: false });
         return;
       }
-      if (action === 'clear') queries.clearLiveActivity(db, code);
+      if (action === 'clear') queries.closeLiveActivity(db, code);
       else if (action === 'lock') queries.updateLiveActivity(db, code, { locked: true });
       else if (action === 'unlock') queries.updateLiveActivity(db, code, { locked: false });
       else if (action === 'reveal') queries.updateLiveActivity(db, code, { revealed: true });

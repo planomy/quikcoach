@@ -1597,7 +1597,7 @@ function TeacherDashboardInner() {
       if (!String(student.text || '').trim()) return false;
       if (!connectedIdSet.has(Number(student.id))) return false;
       if (awayByStudentId.get(Number(student.id))) return false;
-      if (room?.freeze_class || livePulse.activity) return false;
+      if (room?.freeze_class || (livePulse.activity && !livePulse.activity.closed)) return false;
       const target = Number(room?.word_target) || 0;
       if (target > 0 && wordCount(student.text) >= target) return false;
       const changedAt = parseServerDateMs(student.updated_at);
@@ -1644,9 +1644,11 @@ function TeacherDashboardInner() {
         (student) => !student.promptExcluded && (student.connected || student.hasResponded)
       );
       const answered = asked.filter((student) => student.hasResponded).length;
-      const thinking = asked.filter((student) => !student.hasResponded && student.engagement_status === 'unsure').length;
+      const thinking = livePulse.activity.closed
+        ? 0
+        : asked.filter((student) => !student.hasResponded && student.engagement_status === 'unsure').length;
       return {
-        title: 'Live question',
+        title: livePulse.activity.closed ? 'Last question' : 'Live question',
         caption: 'answered',
         done: answered,
         total: asked.length,
@@ -3969,7 +3971,7 @@ function TeacherDashboardInner() {
       <div className="shrink-0">
       <header
         ref={teacherHeaderRef}
-        className={`iboard-app-header relative z-50 shrink-0 border-b backdrop-blur${teacherPanelHidden ? ' is-teacher-hidden' : ''}`}
+        className={`iboard-app-header relative z-[70] shrink-0 border-b backdrop-blur${teacherPanelHidden ? ' is-teacher-hidden' : ''}`}
       >
         <div className="iboard-teacher-header-bar relative">
           <div className="iboard-teacher-header-rail">
@@ -4904,7 +4906,7 @@ function TeacherDashboardInner() {
             const wc = wordCount(s.text);
             const st = activityStatus(s.updated_at, activityNow);
             const pulseStudent = liveStudentById.get(Number(s.id));
-            const inQuestion = !!livePulse.activity;
+            const inQuestion = !!livePulse.activity && !livePulse.activity.closed;
             const askedIn = inQuestion && !!pulseStudent?.hasResponded;
             const engagementKey = String(pulseStudent?.engagement_status || '');
             const engagementLabel =
@@ -4952,7 +4954,7 @@ function TeacherDashboardInner() {
               >
                 <div className="iboard-student-card__head group/card-head">
                   <div className="iboard-student-card__head-start">
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+                    <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1">
                       <HintWrap hint={s.name} prefer="above" className="min-w-0">
                       <h2
                         className={`iboard-student-card__name min-w-0 truncate ${

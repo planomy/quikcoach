@@ -1185,13 +1185,13 @@ html.dark .iboard-command-frame__line {
 
 .iboard-command-bar__title {
   padding: 0 0.3rem;
-  font-size: 0.55rem;
+  font-size: 0.65rem;
   font-weight: 800;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.12em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #a3a6db;
+  color: #5a5fc3;
 }
 
 .iboard-rail-title {
@@ -1583,7 +1583,7 @@ html.dark .iboard-class-gauge__online {
 }
 
 html.dark .iboard-command-bar__title {
-  color: #64748b;
+  color: #a5b4fc;
 }
 
 button.iboard-class-gauge {
@@ -2712,7 +2712,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 
 .iboard-student-card__head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: start;
   column-gap: 0.4rem;
 }

@@ -1795,17 +1795,18 @@ export default function StudentView() {
                   ) : null}
                 </div>
                 <StudentVerbalRespond socket={socket} variant="chip" />
+                <HintWrap hint="Hide inbox" prefer="below">
                 <button
                   type="button"
                   className="iboard-inbox-head__collapse"
                   onClick={() => setInboxCollapsed(true)}
                   aria-label={classWallActive ? 'Hide inbox to see more of the class wall' : 'Hide inbox'}
-                  title="Hide inbox"
                 >
                   <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m6 3.5 4.5 4.5L6 12.5" />
                   </svg>
                 </button>
+                </HintWrap>
               </div>
             </div>
 

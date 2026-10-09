@@ -218,6 +218,7 @@ export function migrate(db) {
     `ALTER TABLE live_activities ADD COLUMN source_question_id INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE live_activities ADD COLUMN questions_json TEXT NOT NULL DEFAULT '[]'`,
     `ALTER TABLE live_activities ADD COLUMN target_ids_json TEXT NOT NULL DEFAULT '[]'`,
+    `ALTER TABLE live_activities ADD COLUMN closed INTEGER NOT NULL DEFAULT 0`,
   ]) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
@@ -944,6 +945,7 @@ export const queries = {
          source_question_id = excluded.source_question_id,
          target_ids_json = excluded.target_ids_json,
          locked = 0,
+         closed = 0,
          revealed = 0,
          launched_at = excluded.launched_at`,
       [
@@ -1002,6 +1004,15 @@ export const queries = {
     if (current?.id) queries.endLessonPulseQuestion(db, current.id);
     run(db, `DELETE FROM live_responses WHERE room_code = ?`, [roomCode]);
     run(db, `DELETE FROM live_activities WHERE room_code = ?`, [roomCode]);
+  },
+
+  /** Stop the class answering, but keep the question and responses for the teacher to reread. */
+  closeLiveActivity(db, roomCode) {
+    const current = queries.getLiveActivity(db, roomCode);
+    if (!current?.id) return null;
+    queries.endLessonPulseQuestion(db, current.id);
+    run(db, `UPDATE live_activities SET closed = 1, locked = 1 WHERE room_code = ?`, [roomCode]);
+    return queries.getLiveActivity(db, roomCode);
   },
 
   resetLiveQuestionNumber(db, roomCode) {
@@ -1575,6 +1586,7 @@ function rowToLiveActivity(row) {
     imageUrl: row.image_url || '',
     timerSeconds,
     locked: !!row.locked,
+    closed: !!row.closed,
     revealed: !!row.revealed,
     launchedAt: new Date(launchedMs).toISOString(),
     endsAt: timerSeconds > 0 ? new Date(launchedMs + timerSeconds * 1000).toISOString() : '',

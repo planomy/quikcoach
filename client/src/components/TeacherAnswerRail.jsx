@@ -291,9 +291,7 @@ export default function TeacherAnswerRail({
   function finishQuestion() {
     const socket = teacherSocket();
     if (!socket?.connected) return;
-    socket.emit('teacher:live-control', { action: 'clear' }, (ack) => {
-      if (ack?.ok) onClose?.();
-    });
+    socket.emit('teacher:live-control', { action: 'clear' }, () => {});
   }
 
   function repeatQuestion() {
@@ -409,7 +407,7 @@ export default function TeacherAnswerRail({
                 {isVerbal ? `Q${questionNumber}` : activity.prompt}
               </p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">
-                {responded} in{onlineCount ? ` · ${onlineCount} online` : ''}
+                {activity.closed ? 'Ended · ' : ''}{responded} in{onlineCount ? ` · ${onlineCount} online` : ''}
               </p>
             </div>
             {!embedded && (
@@ -435,6 +433,7 @@ export default function TeacherAnswerRail({
                 <AskIcon />
               </ControlIcon>
             )}
+            {!activity.closed && (
             <ControlIcon
               label={activity.locked ? 'Reopen answers' : 'Pause answers'}
               hint={activity.locked ? 'Reopen' : 'Pause'}
@@ -443,9 +442,12 @@ export default function TeacherAnswerRail({
             >
               <PauseIcon paused={!!activity.locked} />
             </ControlIcon>
+            )}
+            {!activity.closed && (
             <ControlIcon label="Nudge non-responders" hint="Nudge non-responders" onClick={remindUnanswered}>
               <BellIcon />
             </ControlIcon>
+            )}
             <ThinkingTrigger
               size="md"
               hint="Thinking prompts"
@@ -454,9 +456,11 @@ export default function TeacherAnswerRail({
               subjectAssist={subjectAssist}
               onSent={onThinkingSent}
             />
+            {!activity.closed && (
             <ControlIcon label="End question for the class" hint="End question" onClick={finishQuestion} primary>
               <EndQuestionIcon />
             </ControlIcon>
+            )}
             {activity.correctAnswer && !activity.revealed && (
               <details className="relative">
                 <HintWrap hint="More">

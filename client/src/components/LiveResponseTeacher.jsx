@@ -478,9 +478,7 @@ export default function LiveResponseTeacher({
     socket.emit('teacher:live-control', { action }, (ack) => {
       if (!ack?.ok) setMessage(ack?.error || 'Could not update question');
       if (action === 'clear' && ack?.ok) {
-        setActiveView(readSavedAskTab());
-        if (usingPanelTabs) onClose?.();
-        else setMessage('Question ended. Ready for the next one.');
+        setMessage('Question ended. These answers stay until the next question.');
       }
     });
   }
@@ -1007,7 +1005,7 @@ export default function LiveResponseTeacher({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 max-w-2xl">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">Live</span>
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${activity.closed ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100' : 'bg-emerald-100 text-emerald-800'}`}>{activity.closed ? 'Ended' : 'Live'}</span>
                   <span className="text-xs font-bold text-slate-500">{responseSummary}</span>
                   {secondsLeft !== null && (
                     <span className={`rounded-lg px-2.5 py-1 font-mono text-[11px] font-black tabular-nums ${secondsLeft === 0 ? 'bg-slate-100 text-slate-600' : secondsLeft <= 5 ? 'iboard-timer-urgent bg-red-600 text-white' : 'bg-indigo-100 text-indigo-900'}`}>
@@ -1026,7 +1024,9 @@ export default function LiveResponseTeacher({
                     <button type="button" onClick={() => setActiveView('compose')} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700">Ask another</button>
                   </>
                 )}
+                {!activity.closed && (
                 <button type="button" onClick={() => control('clear')} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white dark:bg-white dark:text-slate-900">Done</button>
+                )}
                 <details
                   ref={liveMoreMenuRef}
                   className="relative"
