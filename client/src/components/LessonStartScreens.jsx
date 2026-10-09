@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { renderSVG } from 'uqr';
+import { getOverlayRoot } from '../lib/overlayRoot.js';
 import HintWrap from './HintWrap.jsx';
 
 const RECENT_OBJECTIVES_KEY = 'tuit-recent-objectives';
@@ -26,7 +28,7 @@ export function rememberObjective(text) {
 }
 
 function StartShell({ labelledBy, onKeyDown, children }) {
-  return (
+  return createPortal(
     <div
       className="iboard-start-screen"
       role="dialog"
@@ -35,7 +37,8 @@ function StartShell({ labelledBy, onKeyDown, children }) {
       onKeyDown={onKeyDown}
     >
       <div className="iboard-start-screen__body">{children}</div>
-    </div>
+    </div>,
+    getOverlayRoot()
   );
 }
 
@@ -66,7 +69,7 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
     closeRef.current?.focus();
   }, []);
 
-  return (
+  return createPortal(
     <div
       className="iboard-start-screen"
       role="dialog"
@@ -77,16 +80,24 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
       }}
     >
       <div className="iboard-join-screen">
-        <h2 id="join-screen-title" className="iboard-join-screen__address">
-          Students enter code at: <strong>{address}</strong>
-        </h2>
+        <div className="iboard-join-screen__brand" role="img" aria-label="TUIT, Focused Teaching and Learning">
+          <img src="/brand/tuit-mark.png?v=2" alt="" className="iboard-join-screen__mark" />
+          <p className="iboard-join-screen__word" aria-hidden="true">TUIT</p>
+          <p className="iboard-join-screen__tag" aria-hidden="true">Focused Teaching & Learning</p>
+        </div>
 
-        <div className="iboard-join-screen__code-row">
-          <p className="iboard-join-screen__code" aria-label={`Room code ${code.split('').join(' ')}`}>{code}</p>
+        <h2 id="join-screen-title" className="iboard-join-screen__lead">Students go to :</h2>
+
+        <div className="iboard-join-screen__url-row">
+          <p className="iboard-join-screen__url">{address}</p>
           {qrSvg ? (
             <div className="iboard-join-screen__qr-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
           ) : null}
         </div>
+
+        <p className="iboard-join-screen__code-line">
+          Enter Code : <span aria-label={`Room code ${code.split('').join(' ')}`}>{code}</span>
+        </p>
 
         <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
 
@@ -94,7 +105,8 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
           {primaryLabel}
         </button>
       </div>
-    </div>
+    </div>,
+    getOverlayRoot()
   );
 }
 

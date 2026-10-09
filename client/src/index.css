@@ -1020,6 +1020,14 @@ html:not(.dark) .iboard-teacher-canvas .iboard-brand--stacked {
   object-fit: contain;
 }
 
+.iboard-brand-corner {
+  display: block;
+  width: auto;
+  height: 3.15rem;
+  max-width: 3.5rem;
+  object-fit: contain;
+}
+
 .iboard-brand-word {
   font-size: 0.6rem;
   font-weight: 900;
@@ -1192,6 +1200,10 @@ html.dark .iboard-command-frame__line {
   text-transform: uppercase;
   white-space: nowrap;
   color: #5a5fc3;
+}
+
+.iboard-command-bar__side .iboard-command-bar__title {
+  letter-spacing: 0.18em;
 }
 
 .iboard-rail-title {
@@ -1489,10 +1501,10 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   transform: translateX(-50%);
   padding: 0.04rem 0.4rem;
   overflow: hidden;
-  border: 1px solid #cfcce8;
+  border: 1px solid #2c2c34;
   border-radius: 999px;
-  background: #ebeaf8;
-  color: #5a5fc3;
+  background: #2c2c34;
+  color: #ffffff;
   font-size: 0.58rem;
   font-weight: 650;
   line-height: 1.15;
@@ -1567,9 +1579,9 @@ html.dark .iboard-class-gauge__face {
 }
 
 html.dark .iboard-class-gauge__notice {
-  border-color: #312e81;
-  background: #1e1b4b;
-  color: #c7d2fe;
+  border-color: #3a3a44;
+  background: #3a3a44;
+  color: #ffffff;
 }
 
 html.dark .iboard-class-gauge__count,
@@ -5853,50 +5865,87 @@ html.dark .iboard-workspace-scrim {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: clamp(0.7rem, 1.8vh, 1.15rem);
   width: 100%;
-  max-width: 72rem;
+  max-width: 52rem;
   margin: 0 auto;
   text-align: center;
 }
 
-.iboard-join-screen__address {
-  margin: 0;
-  font-size: clamp(2rem, 4.2vw, 4rem);
-  font-weight: 600;
-  line-height: 1.15;
-  color: rgba(255, 255, 255, 0.75);
+.iboard-join-screen__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  margin-bottom: clamp(0.35rem, 1.5vh, 1rem);
 }
 
-.iboard-join-screen__address strong {
-  display: inline-block;
+.iboard-join-screen__mark {
+  width: clamp(3.25rem, 7vw, 4.75rem);
+  height: auto;
+  filter: brightness(0) invert(1);
+}
+
+.iboard-join-screen__word {
+  margin: 0.15rem 0 0;
+  font-size: clamp(2.1rem, 4.5vw, 3rem);
   font-weight: 800;
-  color: #ffffff;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.iboard-join-screen__tag {
+  margin: 0;
+  font-size: clamp(0.72rem, 1.3vw, 0.9rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.iboard-join-screen__lead,
+.iboard-join-screen__code-line,
+.iboard-join-screen__count {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.45rem, 3.1vw, 2.2rem);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.iboard-join-screen__lead {
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.iboard-join-screen__url-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.iboard-join-screen__url {
+  margin: 0;
+  font-size: clamp(1.45rem, 3.1vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
-.iboard-join-screen__code-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(2rem, 5vw, 4rem);
-  margin-top: clamp(2.5rem, 8vh, 5rem);
-}
-
-.iboard-join-screen__code {
-  margin: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: clamp(5rem, 14vw, 10rem);
-  font-weight: 900;
-  line-height: 1;
+.iboard-join-screen__code-line span {
+  font-weight: 800;
   letter-spacing: 0.08em;
 }
 
 .iboard-join-screen__qr-code {
-  width: clamp(8rem, 15vw, 12rem);
+  width: clamp(2.75rem, 5vw, 3.75rem);
+  flex: 0 0 auto;
   aspect-ratio: 1;
-  border-radius: 1rem;
-  padding: 0.6rem;
+  border-radius: 0.45rem;
+  padding: 0.28rem;
   background: #ffffff;
 }
 
@@ -5907,10 +5956,8 @@ html.dark .iboard-workspace-scrim {
 }
 
 .iboard-join-screen__count {
-  margin: clamp(1.5rem, 4vh, 2.5rem) 0 0;
-  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .iboard-join-screen__enter {
@@ -6165,7 +6212,17 @@ html.dark .iboard-room-settings__list > span:not(:last-child) > button {
 }
 
 .iboard-join-screen > .iboard-start-screen__primary {
-  margin-top: clamp(1.5rem, 4vh, 2.5rem);
+  margin-top: clamp(0.6rem, 2vh, 1.15rem);
+  border-radius: 0.85rem;
+  padding: 0.7rem 1.35rem;
+  font-size: 1rem;
+  color: #3730a3;
+  background: #ffffff;
+  box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.55);
+}
+
+.iboard-join-screen > .iboard-start-screen__primary:hover:not(:disabled) {
+  background: #eef2ff;
 }
 
 .iboard-join-gate {

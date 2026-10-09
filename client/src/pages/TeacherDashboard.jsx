@@ -3976,8 +3976,7 @@ function TeacherDashboardInner() {
         <div className="iboard-teacher-header-bar relative">
           <div className="iboard-teacher-header-rail">
             <div className="iboard-brand iboard-brand--stacked shrink-0" aria-label="TUIT">
-              <img src="/brand/tuit-mark.png?v=2" alt="" className="iboard-brand-mark" />
-              <span className="iboard-brand-word" aria-hidden="true">TUIT</span>
+              <img src="/brand/tuit-corner.png?v=1" alt="" className="iboard-brand-corner" />
             </div>
           </div>
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
