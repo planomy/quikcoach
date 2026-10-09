@@ -87,20 +87,19 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
         </div>
 
         <div className="iboard-join-screen__details">
-          <h2 id="join-screen-title" className="iboard-join-screen__lead">Students go to :</h2>
-
-          <div className="iboard-join-screen__url-row">
-            <p className="iboard-join-screen__url">{address}</p>
-            {qrSvg ? (
-              <div className="iboard-join-screen__qr-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
-            ) : null}
+          <div className="iboard-join-screen__middle">
+            <div className="iboard-join-screen__lines">
+              <h2 id="join-screen-title" className="iboard-join-screen__lead">Students go to :</h2>
+              <p className="iboard-join-screen__url">{address}</p>
+              <p className="iboard-join-screen__code-line">
+                Enter Code : <span aria-label={`Room code ${code.split('').join(' ')}`}>{code}</span>
+              </p>
+              <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
+              {qrSvg ? (
+                <div className="iboard-join-screen__qr-code" aria-hidden="true" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+              ) : null}
+            </div>
           </div>
-
-          <p className="iboard-join-screen__code-line">
-            Enter Code : <span aria-label={`Room code ${code.split('').join(' ')}`}>{code}</span>
-          </p>
-
-          <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
 
           <button ref={closeRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
             {primaryLabel}
@@ -224,6 +223,7 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, entrance 
           <p className="iboard-join-screen__word" aria-hidden="true">TUIT</p>
           <p className="iboard-join-screen__tag" aria-hidden="true">Focused Teaching & Learning</p>
         </div>
+        <div className="iboard-objective-screen__body">
         <h2 id="objective-screen-title" className="iboard-objective-screen__title">Today’s objective</h2>
         <label className="iboard-objective-screen__field">
           <span>Today we are learning to…</span>
@@ -248,6 +248,7 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, entrance 
             </button>
           ) : null}
           <button type="submit" disabled={busy} className="iboard-start-screen__primary">{entrance ? 'Enter' : 'Save'}</button>
+        </div>
         </div>
       </form>
     </StartShell>

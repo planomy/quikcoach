@@ -5911,8 +5911,26 @@ html.dark .iboard-workspace-scrim {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.75rem, 1.8vh, 1.35rem);
+  gap: clamp(0.85rem, 2vh, 1.35rem);
   width: 100%;
+}
+
+.iboard-join-screen__middle {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.iboard-join-screen__lines {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.iboard-join-screen__lines :is(.iboard-join-screen__lead, .iboard-join-screen__url, .iboard-join-screen__code-line, .iboard-join-screen__count) {
+  line-height: 1.05;
 }
 
 .iboard-join-screen__lead,
@@ -5931,15 +5949,6 @@ html.dark .iboard-workspace-scrim {
   color: rgba(255, 255, 255, 0.92);
 }
 
-.iboard-join-screen__url-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(1rem, 2.5vh, 2rem);
-  width: 100%;
-  max-width: 100%;
-}
-
 .iboard-join-screen__url {
   margin: 0;
   font-size: clamp(1.7rem, 3.4vh, 2.6rem);
@@ -5954,12 +5963,15 @@ html.dark .iboard-workspace-scrim {
 }
 
 .iboard-join-screen__qr-code {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + clamp(2.25rem, 5vw, 4.5rem));
   width: min(18vh, 13rem);
-  flex: 0 0 auto;
   aspect-ratio: 1;
   border-radius: 0.85rem;
   padding: 0.65rem;
   background: #ffffff;
+  transform: translateY(-50%);
 }
 
 .iboard-join-screen__qr-code svg {
@@ -6011,26 +6023,25 @@ html.dark .iboard-workspace-scrim {
 }
 
 .iboard-objective-screen {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  row-gap: clamp(1.5rem, 4vh, 3rem);
+  align-items: center;
+  justify-items: center;
   width: 100%;
   max-width: 46rem;
+  height: 70vh;
+  min-height: 0;
   margin: 0 auto;
   text-align: center;
 }
 
-.iboard-objective-screen .iboard-join-screen__mark {
-  width: clamp(3.25rem, 7vw, 4.75rem);
-}
-
-.iboard-objective-screen .iboard-join-screen__word {
-  font-size: clamp(2.1rem, 4.5vw, 3rem);
-}
-
-.iboard-objective-screen .iboard-join-screen__tag {
-  margin: 0;
-  font-size: clamp(0.72rem, 1.3vw, 0.9rem);
+.iboard-objective-screen__body {
+  align-self: end;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
 }
 
 .iboard-objective-screen__title {
@@ -6093,13 +6104,13 @@ html.dark .iboard-workspace-scrim {
 
 .iboard-objective-screen .iboard-start-screen__secondary {
   border-radius: 0.85rem;
-  border-color: #2c2c34;
+  border-color: #4a4a54;
   color: #ffffff;
-  background: #2c2c34;
+  background: #4a4a54;
 }
 
 .iboard-objective-screen .iboard-start-screen__secondary:hover:not(:disabled) {
-  background: #3a3a44;
+  background: #5a5a64;
 }
 
 /* Today's objective strip — student screen only. */
