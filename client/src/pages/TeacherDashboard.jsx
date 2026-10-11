@@ -3728,10 +3728,10 @@ function TeacherDashboardInner() {
 
   const monitoredCount = monitoredIds.size;
   const attentionPills = [
-    { id: 'notStarted', label: `${attentionCounts.notStarted} not started` },
-    { id: 'noTyping', label: `${attentionCounts.noTyping} no typing` },
-    { id: 'away', label: `${attentionCounts.away} away` },
-    { id: 'pasted', label: `${attentionCounts.pasted} pasted` },
+    { id: 'notStarted', name: 'Not started', label: `${attentionCounts.notStarted} not started` },
+    { id: 'noTyping', name: 'No typing', label: `${attentionCounts.noTyping} no typing` },
+    { id: 'away', name: 'Away', label: `${attentionCounts.away} away` },
+    { id: 'pasted', name: 'Pasted', label: `${attentionCounts.pasted} pasted` },
   ].filter((pill) => alertPrefs[pill.id] !== false);
   const messageWaitCount = orderedStudents.reduce(
     (n, student) => n + (studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId) ? 1 : 0),
@@ -4172,8 +4172,11 @@ function TeacherDashboardInner() {
                             aria-pressed={on}
                             aria-label={pill.label}
                           >
-                            <AlertIcon id={pill.id} />
-                            <span className="tabular-nums">{count}</span>
+                            <span className="iboard-alert-chip__mark">
+                              <AlertIcon id={pill.id} />
+                              <span className="tabular-nums">{count}</span>
+                            </span>
+                            <span className="iboard-alert-chip__name">{pill.name}</span>
                           </button>
                         </HintWrap>
                       );
@@ -4205,8 +4208,11 @@ function TeacherDashboardInner() {
                         aria-pressed={inboxFocus}
                         aria-label={inboxSummary || 'No messages waiting'}
                       >
-                        <AlertIcon id="messages" />
-                        <span className="tabular-nums">{messageWaitCount}</span>
+                        <span className="iboard-alert-chip__mark">
+                          <AlertIcon id="messages" />
+                          <span className="tabular-nums">{messageWaitCount}</span>
+                        </span>
+                        <span className="iboard-alert-chip__name">Waiting</span>
                       </button>
                   </HintWrap>
                 </div>
@@ -4235,13 +4241,14 @@ function TeacherDashboardInner() {
                       onClick={() => toggleHeaderTool('timer')}
                       aria-expanded={headerTool === 'timer'}
                       data-active={headerTool === 'timer' || timerIsCounting(room?.timer) ? 'true' : 'false'}
-                      className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                       aria-label="Timer"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="13.5" r="7.5" />
                         <path d="M12 9.5v4l2.5 2M9.5 2.5h5M12 2.5V6" />
                       </svg>
+                      <span className="iboard-wing-caption">Timer</span>
                     </button>
                   </HintWrap>
                   {headerTool === 'timer' ? (
@@ -4261,13 +4268,14 @@ function TeacherDashboardInner() {
                       onClick={() => toggleHeaderTool('words')}
                       aria-expanded={headerTool === 'words'}
                       data-active={headerTool === 'words' || (wt > 0 && enforceWords) ? 'true' : 'false'}
-                      className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                       aria-label="Word limit"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 6h16M4 11h16M4 16h9" />
                         <path d="M17 14v6M15 18l2 2 2-2" />
                       </svg>
+                      <span className="iboard-wing-caption">Word limit</span>
                     </button>
                   </HintWrap>
                   {headerTool === 'words' ? (
@@ -4287,7 +4295,7 @@ function TeacherDashboardInner() {
                       onClick={() => toggleHeaderTool('breakouts')}
                       aria-expanded={breakoutsMenuOpen}
                       data-active={breakoutsActive || room?.class_wall_active || breakoutsMenuOpen ? 'true' : 'false'}
-                      className={`iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
+                      className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
                       aria-label="Breakout rooms and class wall"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -4296,6 +4304,7 @@ function TeacherDashboardInner() {
                         <rect x="9.25" y="15.5" width="5.5" height="5.5" rx="1.8" />
                         <rect x="16" y="15.5" width="5.5" height="5.5" rx="1.8" />
                       </svg>
+                      <span className="iboard-wing-caption">Breakouts</span>
                     </button>
                   </HintWrap>
                   {breakoutsMenuOpen ? (
@@ -4326,10 +4335,11 @@ function TeacherDashboardInner() {
                         onClick={() => setSessionMenuOpen((open) => !open)}
                         aria-expanded={sessionMenuOpen}
                         data-active={sessionMenuOpen ? 'true' : 'false'}
-                        className={`iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'session' ? ' is-help-flash' : ''}`}
+                        className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'session' ? ' is-help-flash' : ''}`}
                         aria-label="Save or open a lesson"
                       >
                         <span className={`iboard-header-icon iboard-header-icon--save${joined && saveStatus === 'saved' ? ' is-saved' : ''}`} aria-hidden="true" />
+                        <span className="iboard-wing-caption">{joined && saveStatus === 'saved' ? 'Saved' : 'Save'}</span>
                     </button>
                   </HintWrap>
                     <span
@@ -4386,7 +4396,7 @@ function TeacherDashboardInner() {
                     <button
                       type="button"
                       onClick={() => setAnswerPresent(true)}
-                      className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                       aria-label="Present answers"
                       data-active={answerPresent ? 'true' : 'false'}
                     >
@@ -4394,6 +4404,7 @@ function TeacherDashboardInner() {
                         <rect x="3" y="4" width="18" height="12" rx="2" />
                         <path d="M12 16v4M8 20h8" />
                       </svg>
+                      <span className="iboard-wing-caption">Present</span>
                     </button>
                   </HintWrap>
                   <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze board: stops student writing"} prefer="below">
@@ -4403,13 +4414,14 @@ function TeacherDashboardInner() {
                       onClick={toggleFreeze}
                       aria-pressed={frozen}
                       data-active={frozen ? "true" : "false"}
-                      className={`iboard-header-icon-button iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
+                      className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                       aria-label={frozen ? "Unfreeze board" : "Freeze board"}
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 2.5v19M3.8 7.25l16.4 9.5M3.8 16.75l16.4-9.5" />
                         <path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2" />
                       </svg>
+                      <span className="iboard-wing-caption">Freeze</span>
                     </button>
                   </HintWrap>
                   <HintWrap hint="Change how big the student cards are" prefer="below" suppressed={viewOpen}>
@@ -4419,10 +4431,11 @@ function TeacherDashboardInner() {
                       onClick={openViewDock}
                       aria-expanded={viewOpen}
                       data-active={viewOpen ? 'true' : 'false'}
-                      className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
                       aria-label="Card view"
                     >
                       <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
+                      <span className="iboard-wing-caption">Cards</span>
                     </button>
                   </HintWrap>
                 </div>
