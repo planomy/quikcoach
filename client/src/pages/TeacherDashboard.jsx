@@ -5049,7 +5049,6 @@ function TeacherDashboardInner() {
             const handUp = handQuestions.length > 0;
             const monitoring = monitoredIds.has(Number(s.id));
             const isAway = isAwayAlert(s);
-            const notStarted = isNotStartedAlert(s);
             const noTyping = isNoTyping(s);
             const inboxWaiting = studentHasInboxWait(s, pendingHandByStudentId, noteReceiptByStudentId);
             const cardEmpty = !displayText && !s.image_url;
@@ -5077,9 +5076,7 @@ function TeacherDashboardInner() {
                     : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-slate-900'} ${
                         monitoring
                           ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : notStarted
-                          ? 'border border-[#d4d4dc] dark:border-slate-600'
-                          : 'border border-[#dedee6] dark:border-slate-700/80'
+                          : 'border border-[#b7b7c0] dark:border-slate-600'
                       }`
                 }`}
               >
