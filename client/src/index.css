@@ -1208,6 +1208,11 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   box-shadow: none;
 }
 
+.iboard-command-bar__side .iboard-attention-home,
+.iboard-command-bar__side .iboard-manage-tools {
+  transform: translateY(0.22rem);
+}
+
 /* One purple wing. Only the gauge face stays white. */
 .iboard-command-frame {
   position: absolute;
@@ -1217,7 +1222,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   z-index: -1;
   box-sizing: border-box;
   height: 2.34rem;
-  border: 1px solid #cfc8f2;
+  border: 1px solid #d9d4f8;
   border-radius: 999px;
   background: #d9d4f8;
   filter: drop-shadow(0 3px 8px rgba(60, 63, 143, 0.08));
@@ -1245,7 +1250,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 }
 
 html.dark .iboard-command-frame {
-  border-color: #3a3470;
+  border-color: #241f45;
   background: #241f45;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
 }
@@ -1271,6 +1276,7 @@ html.dark .iboard-command-frame__line {
 
 .iboard-command-bar__side .iboard-command-bar__title {
   letter-spacing: 0.36em;
+  transform: translateY(0.28rem);
 }
 
 .iboard-rail-title {
