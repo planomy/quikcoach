@@ -4146,8 +4146,8 @@ function TeacherDashboardInner() {
             <div className="iboard-command-bar">
               <div className="iboard-command-frame" aria-hidden="true">
                 <svg viewBox="-70 -52 140 104">
-                  <path className="iboard-command-frame__fill" d="M67.78 -18.72 A56 56 0 0 1 31.97 -38.44 A50 50 0 0 0 -31.97 -38.44 A56 56 0 0 1 -67.78 -18.72 L-67.78 18.72 A56 56 0 0 1 -31.97 38.44 A50 50 0 0 0 31.97 38.44 A56 56 0 0 1 67.78 18.72 Z" />
-                  <path className="iboard-command-frame__line" d="M67.78 -18.72 A56 56 0 0 1 31.97 -38.44 A50 50 0 0 0 -31.97 -38.44 A56 56 0 0 1 -67.78 -18.72 M-67.78 18.72 A56 56 0 0 1 -31.97 38.44 A50 50 0 0 0 31.97 38.44 A56 56 0 0 1 67.78 18.72" />
+                  <path className="iboard-command-frame__fill" d="M67.78 -20.72 A56 56 0 0 1 31.97 -38.44 A50 50 0 0 0 -31.97 -38.44 A56 56 0 0 1 -67.78 -20.72 L-67.78 20.72 A56 56 0 0 1 -31.97 38.44 A50 50 0 0 0 31.97 38.44 A56 56 0 0 1 67.78 20.72 Z" />
+                  <path className="iboard-command-frame__line" d="M67.78 -20.72 A56 56 0 0 1 31.97 -38.44 A50 50 0 0 0 -31.97 -38.44 A56 56 0 0 1 -67.78 -20.72 M-67.78 20.72 A56 56 0 0 1 -31.97 38.44 A50 50 0 0 0 31.97 38.44 A56 56 0 0 1 67.78 20.72" />
                 </svg>
               </div>
               <div className="iboard-command-bar__side iboard-command-bar__side--monitor">
