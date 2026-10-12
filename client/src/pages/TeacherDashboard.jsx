@@ -4258,7 +4258,7 @@ function TeacherDashboardInner() {
                       onClick={() => toggleHeaderTool('timer')}
                       aria-expanded={headerTool === 'timer'}
                       data-active={headerTool === 'timer' || timerIsCounting(room?.timer) ? 'true' : 'false'}
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
                       aria-label="Timer"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -4285,7 +4285,7 @@ function TeacherDashboardInner() {
                       onClick={() => toggleHeaderTool('words')}
                       aria-expanded={headerTool === 'words'}
                       data-active={headerTool === 'words' || (wt > 0 && enforceWords) ? 'true' : 'false'}
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
                       aria-label="Word limit"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -4312,7 +4312,7 @@ function TeacherDashboardInner() {
                       onClick={() => toggleHeaderTool('breakouts')}
                       aria-expanded={breakoutsMenuOpen}
                       data-active={breakoutsActive || room?.class_wall_active || breakoutsMenuOpen ? 'true' : 'false'}
-                      className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
+                      className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
                       aria-label="Breakout rooms and class wall"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -4352,7 +4352,7 @@ function TeacherDashboardInner() {
                         onClick={() => setSessionMenuOpen((open) => !open)}
                         aria-expanded={sessionMenuOpen}
                         data-active={sessionMenuOpen ? 'true' : 'false'}
-                        className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${helpFlash === 'session' ? ' is-help-flash' : ''}`}
+                        className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'session' ? ' is-help-flash' : ''}`}
                         aria-label="Save or open a lesson"
                       >
                         <span className={`iboard-header-icon iboard-header-icon--save${joined && saveStatus === 'saved' ? ' is-saved' : ''}`} aria-hidden="true" />
@@ -4414,7 +4414,7 @@ function TeacherDashboardInner() {
                     <button
                       type="button"
                       onClick={() => setAnswerPresent(true)}
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
                       aria-label="Present answers"
                       data-active={answerPresent ? 'true' : 'false'}
                     >
@@ -4432,7 +4432,7 @@ function TeacherDashboardInner() {
                       onClick={toggleFreeze}
                       aria-pressed={frozen}
                       data-active={frozen ? "true" : "false"}
-                      className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
+                      className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                       aria-label={frozen ? "Unfreeze board" : "Freeze board"}
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -4449,7 +4449,7 @@ function TeacherDashboardInner() {
                       onClick={openViewDock}
                       aria-expanded={viewOpen}
                       data-active={viewOpen ? 'true' : 'false'}
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
                       aria-label="Card view"
                     >
                       <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
