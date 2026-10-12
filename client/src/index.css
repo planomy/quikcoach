@@ -1137,7 +1137,7 @@ html.dark .iboard-alert-chip.is-on {
   gap: 0.16rem;
   padding: 0 0.12rem;
   background: transparent;
-  color: #4a4570;
+  color: #2e2a68;
 }
 
 .iboard-command-bar .iboard-alert-chip.has-count,
@@ -1207,7 +1207,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 }
 
 .iboard-alert-chip__name {
-  font-size: 0.58rem;
+  font-size: calc(0.58rem + 1px);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
@@ -1215,7 +1215,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 }
 
 .iboard-wing-caption {
-  font-size: 0.58rem;
+  font-size: calc(0.58rem + 1px);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
@@ -1230,7 +1230,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
   justify-items: stretch;
   row-gap: 0.6rem;
   width: 100%;
-  min-width: 18.75rem;
+  min-width: 25rem;
   container-type: inline-size;
 }
 
@@ -1469,7 +1469,7 @@ html.dark .iboard-command-bar__divider {
 
 html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools .iboard-header-icon-button:not([data-active='true']) {
   background: transparent;
-  color: #4a4570;
+  color: #2e2a68;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
@@ -1819,6 +1819,14 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   height: 0.36rem;
   border-radius: 999px;
   background: #10b981;
+}
+
+.iboard-class-gauge__live.is-idle {
+  background: #b7b7c0;
+}
+
+html.dark .iboard-class-gauge__live.is-idle {
+  background: #64748b;
 }
 
 .iboard-class-gauge__row {

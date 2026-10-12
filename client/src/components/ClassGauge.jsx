@@ -46,10 +46,10 @@ export default function ClassGauge({ title, caption, done, total, online, segmen
       >
         <span className="iboard-class-gauge__ring" style={{ background: ringGradient(segments, total) }}>
           <span className="iboard-class-gauge__face">
-            <span className="iboard-class-gauge__count tabular-nums">{total ? `${done}/${total}` : '—'}</span>
+            <span className="iboard-class-gauge__count tabular-nums">{total ? `${done}/${total}` : '0'}</span>
             <span className="iboard-class-gauge__caption">{caption}</span>
             <span className="iboard-class-gauge__online">
-              <span className="iboard-class-gauge__live" aria-hidden="true" />
+              <span className={`iboard-class-gauge__live${Number(online) > 0 ? '' : ' is-idle'}`} aria-hidden="true" />
               <b className="tabular-nums">{online}</b> online
             </span>
             {notice ? (
