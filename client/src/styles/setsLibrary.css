@@ -70,12 +70,22 @@
   display: none;
 }
 
-/* Sets and Ask run from the header to the bottom of the screen. */
-.iboard-header-dock--fill {
+/* Resources, Question sets, and Ask are one square column: flush under the header, flush to the screen bottom. */
+html #tuit-overlay-root .iboard-header-dock.iboard-header-dock--fill {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-bottom-right-radius: 0;
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid #e2e8ef;
+  box-shadow: none;
+  background: #ffffff;
+}
+
+/* AI feedback, reports, and Settings keep their top, but the corners are square and the panel meets the screen bottom. */
+html #tuit-overlay-root .iboard-header-dock.iboard-library-dock,
+html #tuit-overlay-root .iboard-header-dock.iboard-room-settings {
+  border-radius: 0;
 }
 
 .iboard-header-dock--fill > section {
