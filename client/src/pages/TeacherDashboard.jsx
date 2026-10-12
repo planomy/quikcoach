@@ -3741,19 +3741,26 @@ function TeacherDashboardInner() {
   const teacherWritingPaneClass = 'max-h-52 overflow-y-auto overflow-x-visible';
 
   const monitoredCount = monitoredIds.size;
+  const quietMinutes = Number(alertPrefs.noTypingMin) || 0;
+  const quietFor = `${quietMinutes} minute${quietMinutes === 1 ? '' : 's'}`;
+  const studentsPhrase = (count, one, many) => (
+    Number(count) === 1 ? `1 student ${one}` : `${Number(count) || 0} students ${many}`
+  );
   const attentionPills = [
-    { id: 'notStarted', name: 'Not started', label: `${attentionCounts.notStarted} not started` },
-    { id: 'noTyping', name: 'No typing', label: `${attentionCounts.noTyping} no typing` },
-    { id: 'away', name: 'Away', label: `${attentionCounts.away} away` },
-    { id: 'pasted', name: 'Pasted', label: `${attentionCounts.pasted} pasted` },
+    { id: 'notStarted', name: 'Not started', label: studentsPhrase(attentionCounts.notStarted, 'has not started writing', 'have not started writing') },
+    { id: 'noTyping', name: 'No typing', label: studentsPhrase(attentionCounts.noTyping, `hasn't typed for ${quietFor}`, `haven't typed for ${quietFor}`) },
+    { id: 'away', name: 'Away', label: studentsPhrase(attentionCounts.away, 'is away from TUIT', 'are away from TUIT') },
+    { id: 'pasted', name: 'Pasted', label: studentsPhrase(attentionCounts.pasted, 'has pasted writing', 'have pasted writing') },
   ].filter((pill) => alertPrefs[pill.id] !== false);
   const messageWaitCount = orderedStudents.reduce(
     (n, student) => n + (studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId) ? 1 : 0),
     0
   );
-  const inboxSummary = messageWaitCount > 0
-    ? `${messageWaitCount} message${messageWaitCount === 1 ? '' : 's'} waiting`
-    : '';
+  const inboxSummary = messageWaitCount === 1
+    ? 'You have 1 chat message waiting'
+    : messageWaitCount > 0
+      ? `You have ${messageWaitCount} chat messages waiting`
+      : '';
   const inboxNames = messageWaitCount > 0
     ? orderedStudents
       .filter((student) => studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId))
@@ -3761,9 +3768,9 @@ function TeacherDashboardInner() {
     : [];
   const attentionHint = (names, on, title = '') => (
     <span className="block min-w-[9rem]">
-      <span className="block whitespace-nowrap bg-[#3c3f8f] px-2.5 py-1 text-[9px] font-semibold text-white dark:bg-[#5a5fc3]">
-        {title ? <b className="mr-1 font-extrabold">{title} ·</b> : null}
-        {on ? 'Click to show all cards' : 'Click to bring to the top'}
+      <span className="block bg-[#3c3f8f] px-2.5 py-1 text-[9px] font-semibold leading-snug text-white dark:bg-[#5a5fc3]">
+        {title ? <span className="block font-extrabold">{title}</span> : null}
+        <span className="block">{on ? 'Click to show all cards' : 'Click to bring to the top'}</span>
       </span>
       <span className="block px-2.5 py-1.5 text-[#5a5fc3] dark:text-indigo-200">
         {names.slice(0, 8).map((name, n) => (
@@ -4197,7 +4204,7 @@ function TeacherDashboardInner() {
                     })}
                   <span className="iboard-command-bar__divider" aria-hidden="true" />
                   <HintWrap
-                    hint={messageWaitCount ? attentionHint(inboxNames, inboxFocus, inboxSummary) : 'No messages waiting'}
+                    hint={messageWaitCount ? attentionHint(inboxNames, inboxFocus, inboxSummary) : 'No chat messages waiting'}
                     prefer="below"
                     tone={messageWaitCount ? 'card' : 'brand'}
                   >
@@ -4220,7 +4227,7 @@ function TeacherDashboardInner() {
                         title=""
                         aria-disabled={!messageWaitCount}
                         aria-pressed={inboxFocus}
-                        aria-label={inboxSummary || 'No messages waiting'}
+                        aria-label={inboxSummary || 'No chat messages waiting'}
                       >
                         <span className="iboard-alert-chip__mark">
                           <AlertIcon id="messages" />
@@ -4249,7 +4256,7 @@ function TeacherDashboardInner() {
                 <span className="iboard-command-bar__title">Manage class</span>
                 <div className="iboard-manage-tools" role="group" aria-label="Manage class">
                   <div className="relative" data-header-tool="timer">
-                  <HintWrap hint={room?.timer?.active ? 'Timer running. Open to pause, add time or end' : 'Class timer'} prefer="below" suppressed={headerTool === 'timer'}>
+                  <HintWrap hint={room?.timer?.active ? 'Timer running. Open to pause, add time or end' : 'Set a timer'} prefer="below" suppressed={headerTool === 'timer'}>
                     <button
                       type="button"
                       onClick={() => toggleHeaderTool('timer')}
@@ -4276,7 +4283,7 @@ function TeacherDashboardInner() {
                   ) : null}
                   </div>
                   <div className="relative" data-header-tool="words">
-                  <HintWrap hint={wt ? `Word limit: ${wt}${enforceWords ? ', enforced' : ''}` : 'Word limit'} prefer="below" suppressed={headerTool === 'words'}>
+                  <HintWrap hint="Set a word limit for student cards" prefer="below" suppressed={headerTool === 'words'}>
                     <button
                       type="button"
                       onClick={() => toggleHeaderTool('words')}
@@ -4303,7 +4310,7 @@ function TeacherDashboardInner() {
                   ) : null}
                   </div>
                   <div className="relative" data-header-tool="breakouts">
-                  <HintWrap hint={breakoutsActive ? 'Breakouts are running. Open to shuffle or close rooms' : room?.class_wall_active ? 'Class wall is on. Open to close it' : 'Breakout rooms and class wall'} prefer="below" suppressed={breakoutsMenuOpen}>
+                  <HintWrap hint={breakoutsActive ? 'Breakouts are running. Open to shuffle or close rooms' : room?.class_wall_active ? 'Class wall is on. Open to close it' : 'Create breakout rooms or a full-class wall'} prefer="below" suppressed={breakoutsMenuOpen}>
                     <button
                       type="button"
                       onClick={() => toggleHeaderTool('breakouts')}
@@ -4342,7 +4349,7 @@ function TeacherDashboardInner() {
                   ) : null}
                   </div>
                   <div ref={sessionMenuRef} className="relative">
-                    <HintWrap hint="Save or load a lesson" prefer="below" suppressed={sessionMenuOpen}>
+                    <HintWrap hint="Save or load a session" prefer="below" suppressed={sessionMenuOpen}>
                     <button
                       type="button"
                         data-help-target="session"
@@ -4407,7 +4414,7 @@ function TeacherDashboardInner() {
               </div>
             )}
                   </div>
-                  <HintWrap hint="Show student answers full screen" prefer="below">
+                  <HintWrap hint="Present student responses fullscreen" prefer="below">
                     <button
                       type="button"
                       onClick={() => setAnswerPresent(true)}
@@ -4422,7 +4429,7 @@ function TeacherDashboardInner() {
                       <span className="iboard-wing-caption">Present</span>
                     </button>
                   </HintWrap>
-                  <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze board: stops student writing"} prefer="below">
+                  <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze the class and stop any further writing"} prefer="below">
                     <button
                       type="button"
                       data-help-target="freeze"
@@ -4439,7 +4446,7 @@ function TeacherDashboardInner() {
                       <span className="iboard-wing-caption">Freeze</span>
                     </button>
                   </HintWrap>
-                  <HintWrap hint="Change how big the student cards are" prefer="below" suppressed={viewOpen}>
+                  <HintWrap hint="Select the view for student cards" prefer="below" suppressed={viewOpen}>
                     <button
                       ref={viewButtonRef}
                       type="button"
