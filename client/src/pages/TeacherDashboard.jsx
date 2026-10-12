@@ -4450,10 +4450,10 @@ function TeacherDashboardInner() {
                       aria-expanded={viewOpen}
                       data-active={viewOpen ? 'true' : 'false'}
                       className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
-                      aria-label="Card view"
+                      aria-label="View"
                     >
                       <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
-                      <span className="iboard-wing-caption">Cards</span>
+                      <span className="iboard-wing-caption">View</span>
                     </button>
                   </HintWrap>
                 </div>
