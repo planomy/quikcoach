@@ -1297,9 +1297,9 @@ html.dark .iboard-command-frame__line {
 
 .iboard-command-bar__title {
   padding: 0 0.3rem;
-  font-size: 0.65rem;
+  font-size: calc(0.65rem - 1pt);
   font-weight: 800;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.18em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
@@ -1309,8 +1309,8 @@ html.dark .iboard-command-frame__line {
 .iboard-command-bar__side .iboard-command-bar__title {
   width: 100%;
   text-align: center;
-  /* Tracking opens with the wing and stops short of the rounded ends. */
-  letter-spacing: clamp(0.28em, calc((96cqi - 9.6em) / 12), 2.6em);
+  /* Tracking opens with the wing, a step tighter than the full spread. */
+  letter-spacing: clamp(0.18em, calc((82cqi - 8em) / 12), 2.2em);
   transform: translateY(0.28rem);
 }
 
