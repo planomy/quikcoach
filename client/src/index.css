@@ -1296,8 +1296,9 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   left: 80%;
   z-index: 1;
   width: 1px;
-  height: auto;
+  height: 100%;
   margin: 0;
+  align-self: stretch;
   transform: translateX(-50%);
 }
 
@@ -1309,7 +1310,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   column-gap: 0;
 }
 
-.iboard-command-bar__side .iboard-attention-home > *,
+.iboard-command-bar__side .iboard-attention-home > *:not(.iboard-command-bar__divider),
 .iboard-command-bar__side .iboard-manage-tools > * {
   display: flex;
   width: 100%;
