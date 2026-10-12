@@ -595,43 +595,47 @@ html.dark .iboard-breakout-peers__body {
   color: #cbd5e1;
 }
 
-/* Class wall: equal Padlet-style cards. Columns follow the writing column, not class size. */
+/* Class wall: equal Padlet-style cards. Columns follow the writing column, not class size.
+   The student's own card can grow taller; the row follows it and the others stay put. */
 .iboard-student-writing-col {
   container-type: inline-size;
   container-name: class-wall;
 }
 
 .iboard-class-wall {
+  --wall-card-h: 230px;
   display: grid;
   gap: 0.75rem;
   align-content: start;
+  align-items: start;
   grid-template-columns: 1fr;
-  grid-auto-rows: 230px;
+  grid-auto-rows: auto;
 }
 
 @container class-wall (min-width: 480px) {
   .iboard-class-wall {
+    --wall-card-h: 260px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 260px;
   }
 }
 
 @container class-wall (min-width: 780px) {
   .iboard-class-wall {
+    --wall-card-h: 240px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-auto-rows: 240px;
   }
 }
 
 @container class-wall (min-width: 1040px) {
   .iboard-class-wall {
+    --wall-card-h: 220px;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-auto-rows: 220px;
   }
 }
 
 .iboard-class-wall__card {
   display: flex;
+  height: var(--wall-card-h);
   min-width: 0;
   min-height: 0;
   flex-direction: column;
@@ -646,7 +650,53 @@ html.dark .iboard-breakout-peers__body {
    and an outer one gets clipped by the wall's scroll container. */
 .iboard-class-wall__card.is-you {
   position: relative;
+  min-height: 9rem;
+  max-height: min(75vh, 40rem);
+  overflow: hidden;
   border-color: #5a5fc3;
+}
+
+.iboard-class-wall__grip {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 3;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #5c5c6e;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.iboard-class-wall__grip svg {
+  overflow: visible;
+}
+
+.iboard-class-wall__grip path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.iboard-class-wall__grip:hover,
+.iboard-class-wall__grip:focus-visible {
+  color: #5a5fc3;
+  outline: none;
+}
+
+html.dark .iboard-class-wall__grip {
+  color: #b4b4c8;
+}
+
+html.dark .iboard-class-wall__grip:hover,
+html.dark .iboard-class-wall__grip:focus-visible {
+  color: #c7c9ff;
 }
 
 .iboard-class-wall__card.is-you::after {
@@ -696,6 +746,10 @@ html.iboard-student-workspace.iboard-student-class-wall main > .iboard-student-w
 
 .iboard-class-wall__card.is-you .iboard-class-wall__name {
   color: #5a5fc3;
+}
+
+.iboard-class-wall__card.is-you .iboard-class-wall__body {
+  padding-bottom: 0.85rem;
 }
 
 .iboard-class-wall__body {
