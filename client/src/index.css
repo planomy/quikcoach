@@ -1245,7 +1245,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(-0.375rem - 3px);
+  bottom: calc(-0.375rem - 1px);
   width: auto;
   height: calc(2.34rem + 4px);
   margin: 0;
@@ -1351,7 +1351,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   position: absolute;
   left: -0.4rem;
   right: -0.4rem;
-  bottom: calc(-0.375rem - 3px);
+  bottom: calc(-0.375rem - 1px);
   z-index: -1;
   box-sizing: border-box;
   height: calc(2.34rem + 4px);
@@ -1721,7 +1721,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   bottom: 0.945rem;
   left: 50%;
   z-index: 6;
-  transform: translate(-50%, calc(50% + 0.22rem));
+  transform: translate(-50%, calc(50% + 0.22rem - 2px));
 }
 
 /* On :root because the gauge's hover card (a portal on body) uses the same swatches. */
