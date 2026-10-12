@@ -132,4 +132,58 @@ test('live trail survives a server restart mid-recording and marks the gap', () 
   clearTrail('5500');
   assert.equal(fs.existsSync(path.join(dir, '5500.json')), false);
   fs.rmSync(dir, { recursive: true, force: true });
+  configureTrailPersistence(fs.mkdtempSync(path.join(os.tmpdir(), 'trail-keep-')));
+});
+test('unchanged saves and a missing token do not pile up checkpoints', () => {
+  const row = { id: 4, name: 'Chip', text: 'Hi' };
+  const { token } = setTrailRecording('8800', true, [row], 1000);
+  recordTrailText('8800', row, 'Hi there', { token }, 2000);
+  trailTick(12000);
+  const before = readTrail('8800', 4).events.length;
+  for (let i = 0; i < 40; i++) {
+    recordTrailText('8800', row, 'Hi there', { token: '' }, 13000 + i * 1000);
+    disconnectTrail('8800', 4);
+    recordTrailText('8800', row, 'Hi there', { token }, 13000 + i * 1000 + 10);
+  }
+  assert.equal(readTrail('8800', 4).events.length, before);
+  clearTrail('8800');
+});
+test('a dropped connection stores one snapshot then small edits', () => {
+  const row = { id: 5, name: 'Ned', text: 'Start' };
+  const { token } = setTrailRecording('8810', true, [row], 1000);
+  let text = 'Start';
+  for (let i = 0; i < 25; i++) {
+    disconnectTrail('8810', 5);
+    text += '!';
+    recordTrailText('8810', row, text, { token: '' }, 2000 + i * 1000);
+  }
+  const trail = readTrail('8810', 5);
+  const gaps = trail.events.filter((event) => event.type === 'gap');
+  assert.equal(gaps.length, 1);
+  let folded = '';
+  for (const event of trail.events) {
+    if (event.type === 'baseline' || event.type === 'gap' || event.type === 'resume') folded = event.text ?? folded;
+    if (event.type === 'change' || event.type === 'paste') {
+      folded = folded.slice(0, event.start) + event.inserted + folded.slice(event.start + event.removed);
+    }
+  }
+  assert.equal(folded, text);
+  assert.ok(trail.events.filter((event) => event.type === 'change').every((event) => event.inserted.length <= 2));
+  clearTrail('8810');
+});
+test('one full student trail leaves the rest of the class recording', () => {
+  const full = { id: 1, name: 'Full', text: '' };
+  const other = { id: 2, name: 'Other', text: '' };
+  const { token } = setTrailRecording('8820', true, [full, other], 1000);
+  for (let i = 0; i < 2999; i++) {
+    recordTrailText('8820', full, String(i), { token }, 1000 + (i + 1) * 30000);
+  }
+  assert.equal(readTrail('8820', 1).events.length, 3000);
+  recordTrailText('8820', full, 'still going', { token }, 1000 + 3000 * 30000);
+  assert.equal(readTrail('8820', 1).events.length, 3000);
+  recordTrailText('8820', other, 'Class continues', { token }, 1000 + 3001 * 30000);
+  assert.equal(trailStatus('8820').active, true);
+  assert.equal(trailStatus('8820').reason, '');
+  assert.ok(readTrail('8820', 2).events.some((event) => event.type === 'change'));
+  clearTrail('8820');
 });

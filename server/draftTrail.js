@@ -7,6 +7,8 @@ import path from 'node:path';
 // Live trails are mirrored to disk so a server crash mid-lesson cannot erase them.
 const MAX_ROOM_BYTES = 8 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 64 * 1024 * 1024;
+const MAX_STUDENT_EVENTS = 3000;
+const GAP_REPEAT_MS = 60 * 1000;
 const QUIET_MS = 3 * 60 * 1000;
 const LARGE_PASTE = 120;
 const LARGE_JUMP = 250;
@@ -199,18 +201,21 @@ export function trailStatus(code) {
   };
 }
 function append(room, student, event) {
+  // One full card stops that student only. A byte cap still pauses the room.
+  if (student.events.length >= MAX_STUDENT_EVENTS) return false;
   const bytes = Buffer.byteLength(JSON.stringify(event));
-  markDirty(room.code);
-  if (room.bytes + bytes > MAX_ROOM_BYTES || totalBytes + bytes > MAX_TOTAL_BYTES || student.events.length >= 3000) {
+  if (room.bytes + bytes > MAX_ROOM_BYTES || totalBytes + bytes > MAX_TOTAL_BYTES) {
     room.active = false;
     room.reason = 'Learning trail storage limit reached. Save this session before resetting the class board.';
     room.changed = Date.now();
+    markDirty(room.code);
     return false;
   }
   student.events.push(event);
   room.bytes += bytes;
   totalBytes += bytes;
   room.changed = Date.now();
+  markDirty(room.code);
   return true;
 }
 function ensureStudent(room, row, type = 'baseline', at = Date.now()) {
@@ -271,19 +276,32 @@ export function recordTrailText(code, beforeRow, text, metadata = {}, at = Date.
   if (!room?.active) return;
   const student = ensureStudent(room, beforeRow, 'baseline', at);
   if (!room.active || !student) return;
+  if (student.events.length >= MAX_STUDENT_EVENTS) return;
   const accepted = String(text).slice(0, 50000);
   if (metadata.paste === true) {
     flush(room, student, at);
-    const delta = textDelta(student.text, accepted);
-    if (append(room, student, { type: 'paste', at, ...delta })) student.text = accepted;
     student.gap = false;
+    const delta = textDelta(student.text, accepted);
+    if (!delta.removed && !delta.inserted) return;
+    if (append(room, student, { type: 'paste', at, ...delta })) student.text = accepted;
     return;
   }
-  if (metadata.token !== room.token || student.gap) {
-    flush(room, student, at);
-    if (append(room, student, { type: 'gap', at, text: accepted })) student.text = accepted;
+  // A dropped connection stores one full draft, then later edits stay small.
+  // The same text, a missing token, or a reconnect that changed nothing adds no checkpoint.
+  if (student.gap) {
+    const current = student.pending?.text ?? student.text;
     student.gap = false;
-    return;
+    if (accepted !== current) {
+      const repeat = student.lastGapAt && at - student.lastGapAt < GAP_REPEAT_MS;
+      if (!repeat) {
+        student.pending = null;
+        if (append(room, student, { type: 'gap', at, text: accepted })) {
+          student.text = accepted;
+          student.lastGapAt = at;
+        }
+        return;
+      }
+    }
   }
   if (accepted === (student.pending?.text ?? student.text)) return;
   student.pending = { text: accepted, receivedAt: at };
