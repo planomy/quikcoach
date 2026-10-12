@@ -1283,7 +1283,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 }
 
 /* Icons share the wing in equal columns. The monitor divider sits on the
-   line between Pasted and Messages, so it does not steal a column. */
+   line between Pasted and Inbox, so it does not steal a column. */
 .iboard-command-bar__side .iboard-attention-home {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

@@ -4275,7 +4275,7 @@ function TeacherDashboardInner() {
                           <AlertIcon id="messages" />
                           <span className="tabular-nums">{messageWaitCount}</span>
                         </span>
-                        <span className="iboard-alert-chip__name">Messages</span>
+                        <span className="iboard-alert-chip__name">Inbox</span>
                       </button>
                   </HintWrap>
                 </div>
