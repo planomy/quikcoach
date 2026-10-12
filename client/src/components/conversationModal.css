@@ -62,6 +62,47 @@ html.dark .iboard-chat-pane__head h2 {
   background: #fff;
 }
 
+.iboard-teacher-inbox__toolbar {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.45rem 0.7rem 0.45rem 0.55rem;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.iboard-teacher-inbox__toolbar .iboard-teacher-inbox__check {
+  padding-top: 0;
+}
+
+.iboard-teacher-inbox__select-all {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #5a5fc3;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.iboard-teacher-inbox__select-all:hover {
+  color: #3c3f8f;
+}
+
+html.dark .iboard-teacher-inbox__toolbar {
+  border-bottom-color: #1e293b;
+}
+
+html.dark .iboard-teacher-inbox__select-all {
+  color: #a5b4fc;
+}
+
+html.dark .iboard-teacher-inbox__select-all:hover {
+  color: #c7d2fe;
+}
+
 .iboard-teacher-inbox__scroll {
   min-height: 0;
   flex: 1 1 auto;

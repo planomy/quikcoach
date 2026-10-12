@@ -212,9 +212,35 @@ export default function TeacherInboxPanel({
     });
   }
 
+  const allIds = rows.map((row) => Number(row.studentId)).filter((id) => id > 0);
+  const allChecked = allIds.length > 0 && allIds.every((id) => checkedIds.has(id));
+  const someChecked = allIds.some((id) => checkedIds.has(id));
+
+  function toggleAll() {
+    setCheckedIds(allChecked ? new Set() : new Set(allIds));
+  }
+
   return (
     <div className="iboard-teacher-inbox">
       <aside className="iboard-teacher-inbox__list" aria-label="Inbox conversations">
+        {rows.length ? (
+          <div className="iboard-teacher-inbox__toolbar">
+            <label className="iboard-teacher-inbox__check">
+              <input
+                type="checkbox"
+                checked={allChecked}
+                ref={(node) => {
+                  if (node) node.indeterminate = someChecked && !allChecked;
+                }}
+                onChange={toggleAll}
+                aria-label="Select all students"
+              />
+            </label>
+            <button type="button" className="iboard-teacher-inbox__select-all" onClick={toggleAll}>
+              {allChecked ? 'Clear' : 'Select all'}
+            </button>
+          </div>
+        ) : null}
         <div className="iboard-teacher-inbox__scroll">
           {rows.length ? rows.map((row) => {
             const on = Number(row.studentId) === Number(selectedId);
