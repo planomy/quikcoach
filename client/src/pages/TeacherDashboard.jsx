@@ -739,6 +739,27 @@ function TeacherDashboardInner() {
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [headerTool]);
+
+  useLayoutEffect(() => {
+    if (!headerTool && !sessionMenuOpen) return undefined;
+    const pop = document.querySelector('.iboard-tool-popover, .iboard-wing-pop');
+    if (!pop) return undefined;
+    const margin = 8;
+    pop.style.bottom = '';
+    pop.style.top = '';
+    pop.style.transform = 'translateX(-50%)';
+    let box = pop.getBoundingClientRect();
+    if (box.top < margin) {
+      pop.style.bottom = 'auto';
+      pop.style.top = 'calc(100% + 0.4rem)';
+      box = pop.getBoundingClientRect();
+    }
+    let shift = 0;
+    if (box.left < margin) shift = margin - box.left;
+    else if (box.right > window.innerWidth - margin) shift = window.innerWidth - margin - box.right;
+    if (shift) pop.style.transform = `translateX(calc(-50% + ${Math.round(shift)}px))`;
+    return undefined;
+  }, [headerTool, sessionMenuOpen, breakoutsMenuOpen]);
   const saveStatusClearRef = useRef(null);
 
   const markSaved = useCallback(() => {
@@ -2410,9 +2431,16 @@ function TeacherDashboardInner() {
       const offsetTop = visual?.offsetTop ?? 0;
       const margin = 10;
       if (viewOpen) {
-        const headerBottom = button?.closest('.iboard-teacher-header-bar')?.getBoundingClientRect().bottom;
-        const nextTop = Math.round(headerBottom ?? (button?.getBoundingClientRect().bottom ?? 0) + margin);
-        setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
+        const box = button?.getBoundingClientRect();
+        const width = panel?.offsetWidth || 0;
+        const height = panel?.offsetHeight || 0;
+        if (box && width && height) {
+          const rawLeft = box.left + box.width / 2 - width / 2;
+          const left = Math.round(Math.max(8, Math.min(rawLeft, window.innerWidth - width - 8)));
+          const top = Math.round(box.bottom + 6);
+          setViewDockRight((prev) => (Math.abs(prev - left) < 2 ? prev : left));
+          setTeacherToolsTop((prev) => (Math.abs(prev - top) < 2 ? prev : top));
+        }
         setTeacherToolsDockHeight(null);
         return;
       }
@@ -4368,7 +4396,7 @@ function TeacherDashboardInner() {
                       Saved
                     </span>
                     {sessionMenuOpen && (
-                      <div className="absolute left-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                      <div className="iboard-wing-pop z-50 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
                         <HintWrap hint="Downloads this lesson so you can open it again later" prefer="side" className="w-full">
                 <button
                   type="button"
@@ -6248,7 +6276,7 @@ function TeacherDashboardInner() {
         <div
           ref={viewPanelRef}
           className="iboard-header-dock iboard-header-dock--view fixed z-[60] w-auto max-w-[min(22rem,calc(100vw-1.5rem))]"
-          style={{ top: teacherToolsTop, right: viewDockRight }}
+          style={{ top: teacherToolsTop, left: viewDockRight }}
           role="dialog"
           aria-modal="false"
           aria-labelledby="card-view-title"
