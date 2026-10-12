@@ -8,6 +8,173 @@
   background: rgb(15 23 42 / 0.42);
 }
 
+.iboard-chat-phone--panel {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.iboard-teacher-inbox {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.iboard-teacher-inbox__list {
+  display: flex;
+  width: 15.75rem;
+  min-width: 13rem;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid #e2e4ec;
+  background: #fff;
+}
+
+.iboard-teacher-inbox__scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.iboard-teacher-inbox__row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  border: 0;
+  border-bottom: 1px solid #eef0f4;
+  background: transparent;
+  text-align: left;
+}
+
+.iboard-teacher-inbox__row:hover {
+  background: #f4f3fa;
+}
+
+.iboard-teacher-inbox__row.is-on {
+  background: #ebeaf8;
+}
+
+.iboard-teacher-inbox__row.is-unread .iboard-teacher-inbox__name,
+.iboard-teacher-inbox__row.is-unread .iboard-teacher-inbox__preview {
+  font-weight: 800;
+}
+
+.iboard-teacher-inbox__name {
+  overflow: hidden;
+  color: #1f1f24;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iboard-teacher-inbox__preview {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #6b6b76;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.iboard-teacher-inbox__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.iboard-teacher-inbox__time {
+  color: #8a8a96;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.iboard-teacher-inbox__dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: #5a5fc3;
+}
+
+.iboard-teacher-inbox__thread {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  background: #eef0f6;
+}
+
+.iboard-teacher-inbox__empty {
+  margin: auto;
+  padding: 1.5rem;
+  color: #8a8a96;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.iboard-teacher-inbox__hand {
+  flex-shrink: 0;
+  padding: 0.7rem 0.8rem 0.2rem;
+  border-bottom: 1px solid #f1d5d8;
+  background: #fff7f7;
+}
+
+.iboard-teacher-inbox__hand p {
+  margin: 0 0 0.45rem;
+  color: #4c1d1d;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+html.dark .iboard-teacher-inbox__list {
+  border-right-color: #243044;
+  background: #0f172a;
+}
+
+html.dark .iboard-teacher-inbox__row {
+  border-bottom-color: #1e293b;
+}
+
+html.dark .iboard-teacher-inbox__row:hover,
+html.dark .iboard-teacher-inbox__row.is-on {
+  background: rgba(90, 95, 195, 0.18);
+}
+
+html.dark .iboard-teacher-inbox__name {
+  color: #e2e8f0;
+}
+
+html.dark .iboard-teacher-inbox__preview,
+html.dark .iboard-teacher-inbox__time,
+html.dark .iboard-teacher-inbox__empty {
+  color: #94a3b8;
+}
+
+html.dark .iboard-teacher-inbox__thread {
+  background: #121826;
+}
+
+html.dark .iboard-teacher-inbox__hand {
+  border-bottom-color: #7f1d1d;
+  background: rgba(127, 29, 29, 0.22);
+}
+
+html.dark .iboard-teacher-inbox__hand p {
+  color: #fecaca;
+}
+
 .iboard-chat-phone {
   display: flex;
   flex-direction: column;

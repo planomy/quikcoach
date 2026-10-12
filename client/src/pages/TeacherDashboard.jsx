@@ -60,6 +60,7 @@ import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
 import TeacherHelpPanel from '../components/TeacherHelpPanel.jsx';
 import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import ConversationModal, { ChatIcon } from '../components/ConversationModal.jsx';
+import TeacherInboxPanel from '../components/TeacherInboxPanel.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
 import { lastTeacherRoomCode, rememberTeacherRoomCode } from '../lib/teacherRoom.js';
 import {
@@ -561,6 +562,8 @@ function TeacherDashboardInner() {
   const [pasteDetail, setPasteDetail] = useState(null); // { studentId, loading, pastes }
   /** Pin students who asked a question or replied to a teacher message to the top. */
   const [inboxFocus, setInboxFocus] = useState(false);
+  const [inboxOpen, setInboxOpen] = useState(false);
+  const [inboxStudentId, setInboxStudentId] = useState(0);
   const [studentActionMenuId, setStudentActionMenuId] = useState(null);
   const [studentActionMenuAnchor, setStudentActionMenuAnchor] = useState(null);
   const studentActionMenuBtnRefs = useRef(new Map());
@@ -2545,6 +2548,21 @@ function TeacherDashboardInner() {
     });
   }, [pendingHandByStudentId, handQuestionTarget?.student?.id]);
 
+  useLayoutEffect(() => {
+    if (!inboxOpen) return;
+    const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
+    if (headerBottom) setTeacherToolsTop(Math.round(headerBottom));
+  }, [inboxOpen]);
+
+  useEffect(() => {
+    if (!inboxOpen) return undefined;
+    function onKey(event) {
+      if (event.key === 'Escape') closeInbox();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [inboxOpen]);
+
   useEffect(() => {
     if (!inboxFocus) return;
     const waiting = orderedStudents.some((student) => (
@@ -2592,7 +2610,7 @@ function TeacherDashboardInner() {
     return '';
   }, [pasteBox, aiPasteParsed, visibleStudents.length, distributeReady]);
 
-  const bottomAnchoredDock = libraryPanel || settingsOpen;
+  const bottomAnchoredDock = libraryPanel || settingsOpen || inboxOpen;
   const headerDockStyle = useMemo(
     () => (
       bottomAnchoredDock
@@ -2679,6 +2697,11 @@ function TeacherDashboardInner() {
   function openNoteForStudent(student, event) {
     event?.stopPropagation?.();
     const studentId = Number(student.id);
+    if (inboxOpen) {
+      setInboxStudentId(studentId);
+      markInboxThreadSeen(studentId);
+      return;
+    }
     setNoteTarget({ id: studentId, name: String(student.name || 'Student') });
     if (studentId && (noteReplyByStudentId[studentId] || noteReceiptByStudentId[studentId] === 'replied')) {
       socket.emit('teacher:note-reply-seen', { studentId });
@@ -2781,6 +2804,7 @@ function TeacherDashboardInner() {
       return;
     }
     closeLibraryHub();
+    setInboxOpen(false);
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
@@ -3675,6 +3699,7 @@ function TeacherDashboardInner() {
       return;
     }
     closeLibraryHub();
+    setInboxOpen(false);
     setGaugePanelOpen(false);
     setAnswerPresent(false);
     closeSettings();
@@ -3703,6 +3728,7 @@ function TeacherDashboardInner() {
 
   function openLibrary(panel, evidenceTab = 'lessons') {
     closeSettings();
+    setInboxOpen(false);
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
     setAddCardOpen(false);
@@ -3723,6 +3749,37 @@ function TeacherDashboardInner() {
   function closeLibraryHub() {
     setLibraryPanel(null);
     setLibraryView('home');
+  }
+
+  function closeInbox() {
+    setInboxOpen(false);
+    setInboxStudentId(0);
+  }
+
+  function markInboxThreadSeen(studentId) {
+    const sid = Number(studentId);
+    if (!sid) return;
+    if (noteReplyByStudentId[sid] || noteReceiptByStudentId[sid] === 'replied') {
+      socket.emit('teacher:note-reply-seen', { studentId: sid });
+      setNoteReceiptByStudentId((current) => {
+        if (!(sid in current)) return current;
+        const next = { ...current };
+        delete next[sid];
+        return next;
+      });
+    }
+  }
+
+  function openInbox() {
+    closeSettings();
+    setToolsPanelOpen(false);
+    setToolsHighlightStudentId(null);
+    setAddCardOpen(false);
+    setViewOpen(false);
+    setHelpOpen(false);
+    setLibraryPanel(null);
+    setNoteTarget(null);
+    setInboxOpen(true);
   }
 
   function goLibraryHome() {
@@ -4145,7 +4202,7 @@ function TeacherDashboardInner() {
   );
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
   const askClassOpen = toolsPanelOpen && toolsTab !== 'sets';
-  const boardDimOpen = askClassOpen || settingsOpen || !!libraryPanel;
+  const boardDimOpen = askClassOpen || settingsOpen || !!libraryPanel || inboxOpen;
   const settingsTitle = settingsSection === 'records' ? 'Reports' : 'Settings';
   const aiFeedbackOpen = !!libraryPanel && libraryView === 'feedback';
   const reportsOpen = !!libraryPanel && libraryView !== 'feedback';
@@ -4246,30 +4303,17 @@ function TeacherDashboardInner() {
                     })}
                   <span className="iboard-command-bar__divider" aria-hidden="true" />
                   <HintWrap
-                    hint={messageWaitCount ? attentionHint(inboxNames, inboxFocus, inboxSummary) : 'No chat messages waiting'}
+                    hint={inboxOpen ? 'Close the class inbox' : (inboxSummary || 'Open the class inbox to read and reply')}
                     prefer="below"
-                    tone={messageWaitCount ? 'card' : 'brand'}
+                    tone={messageWaitCount && !inboxOpen ? 'card' : 'brand'}
                   >
                       <button
                         type="button"
-                        onClick={() => {
-                          if (!messageWaitCount) return;
-                          setInboxFocus((on) => {
-                            const next = !on;
-                            if (next) {
-                              window.requestAnimationFrame(() => {
-                                document.querySelector('[data-inbox-waiting="true"]')
-                                  ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                              });
-                            }
-                            return next;
-                          });
-                        }}
-                        className={`iboard-alert-chip${messageWaitCount ? ' has-count' : ''}${inboxFocus ? ' is-on' : ''}`}
+                        onClick={() => (inboxOpen ? closeInbox() : openInbox())}
+                        className={`iboard-alert-chip${messageWaitCount ? ' has-count' : ''}${inboxOpen ? ' is-on' : ''}`}
                         title=""
-                        aria-disabled={!messageWaitCount}
-                        aria-pressed={inboxFocus}
-                        aria-label={inboxSummary || 'No chat messages waiting'}
+                        aria-pressed={inboxOpen}
+                        aria-label={inboxSummary || 'Open the class inbox'}
                       >
                         <span className="iboard-alert-chip__mark">
                           <AlertIcon id="messages" />
@@ -5608,6 +5652,49 @@ function TeacherDashboardInner() {
       {boardDimOpen ? (
         <div className="iboard-library-scrim fixed bottom-0 right-0 top-0 z-50 bg-slate-900/50" aria-hidden="true" />
       ) : null}
+
+      {inboxOpen && createPortal(
+        <div
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 w-[min(46rem,calc(100vw-4.75rem))] flex-col overflow-hidden"
+          style={headerDockStyle}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="teacher-inbox-title"
+        >
+          <div className="iboard-room-settings__chrome">
+            <h2 id="teacher-inbox-title">Inbox</h2>
+            <div className="iboard-room-settings__chrome-close">
+              <CloseButton onClick={closeInbox} aria-label="Close inbox" />
+            </div>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col">
+          <TeacherInboxPanel
+            socket={socket}
+            students={orderedStudents}
+            pendingHandByStudentId={pendingHandByStudentId}
+            focusStudentId={inboxStudentId}
+            onOpenThread={(row) => {
+              const sid = Number(row?.studentId || row?.id);
+              setInboxStudentId(sid);
+              markInboxThreadSeen(sid);
+            }}
+            onTeacherSent={handleTeacherChatSent}
+            onHandReplySent={(row) => {
+              for (const question of row.hands || []) {
+                socket.emit('teacher:qna-status', { questionId: question.id, action: 'answer' });
+              }
+              handleTeacherChatSent({ studentId: row.studentId, urgent: true, name: row.studentName });
+            }}
+            onHandDismiss={(row) => {
+              for (const question of row.hands || []) {
+                socket.emit('teacher:qna-status', { questionId: question.id, action: 'dismiss' });
+              }
+            }}
+          />
+          </div>
+        </div>,
+        getOverlayRoot()
+      )}
 
       {libraryPanel && createPortal(
         <div

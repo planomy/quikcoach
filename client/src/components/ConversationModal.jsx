@@ -98,6 +98,7 @@ export default function ConversationModal({
   subtitle = 'Private',
   allowUrgent = false,
   onTeacherSent,
+  variant = 'modal',
 }) {
   const threadRef = useRef(null);
   const inputRef = useRef(null);
@@ -159,6 +160,9 @@ export default function ConversationModal({
   useEffect(() => {
     if (!open) return undefined;
     const timer = window.setTimeout(() => inputRef.current?.focus(), 40);
+    if (variant === 'panel') {
+      return () => window.clearTimeout(timer);
+    }
     function onKey(event) {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -174,7 +178,7 @@ export default function ConversationModal({
       window.clearTimeout(timer);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open, sending, draft, reactOpen]);
+  }, [open, sending, draft, reactOpen, variant]);
 
   async function requestClose() {
     if (sending) return;
@@ -292,14 +296,13 @@ export default function ConversationModal({
 
   if (!open || typeof document === 'undefined') return null;
 
-  return createPortal(
-    <div className="iboard-chat-scrim" onClick={requestClose} role="presentation">
+  const phone = (
       <div
-        className="iboard-chat-phone"
-        role="dialog"
-        aria-modal="true"
+        className={`iboard-chat-phone${variant === 'panel' ? ' iboard-chat-phone--panel' : ''}`}
+        role={variant === 'panel' ? 'region' : 'dialog'}
+        aria-modal={variant === 'panel' ? undefined : 'true'}
         aria-label={`Chat with ${title || 'teacher'}`}
-        onClick={(event) => event.stopPropagation()}
+        onClick={variant === 'panel' ? undefined : (event) => event.stopPropagation()}
       >
         <div className="iboard-chat-head">
           <span className="iboard-chat-avatar" aria-hidden="true">
@@ -309,7 +312,7 @@ export default function ConversationModal({
             <h2>{title || (role === 'teacher' ? 'Student' : 'Teacher')}</h2>
             <p>{subtitle}</p>
           </div>
-          <CloseButton onClick={requestClose} aria-label="Close chat" />
+          {variant === 'panel' ? null : <CloseButton onClick={requestClose} aria-label="Close chat" />}
         </div>
         <div ref={threadRef} className="iboard-chat-thread" onPointerDown={() => setReactOpen(false)}>
           {rows.length === 0 ? (
@@ -418,6 +421,13 @@ export default function ConversationModal({
           </form>
         </div>
       </div>
+  );
+
+  if (variant === 'panel') return phone;
+
+  return createPortal(
+    <div className="iboard-chat-scrim" onClick={requestClose} role="presentation">
+      {phone}
     </div>,
     document.body
   );

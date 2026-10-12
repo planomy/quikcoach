@@ -321,6 +321,27 @@ function conversationForStudent(roomCode, studentId) {
   );
 }
 
+function listChatInbox(roomCode) {
+  const code = normaliseRoomCode(roomCode);
+  const unreadIds = new Set(listUnreadNoteReplies(code).map((item) => Number(item.studentId)));
+  const students = feedbackDb
+    .prepare(`SELECT id, name FROM students WHERE room_code = ? ORDER BY id ASC`)
+    .all(code);
+  return students.map((row) => {
+    const items = conversationForStudent(code, row.id);
+    const last = items[items.length - 1] || null;
+    return {
+      studentId: Number(row.id),
+      studentName: String(row.name || '').trim().slice(0, 80),
+      lastText: last ? String(last.text || '').replace(/\s+/g, ' ').trim().slice(0, 160) : '',
+      lastAt: last ? Number(last.at) || 0 : 0,
+      lastFrom: last?.from || '',
+      unread: unreadIds.has(Number(row.id)),
+      messageCount: items.length,
+    };
+  });
+}
+
 function emitChat(io, roomCode, studentId, message) {
   if (!message) return;
   const payload = { studentId: Number(studentId) || Number(message.studentId) || 0, message };
@@ -736,6 +757,19 @@ Server.prototype.on = function patchedFeedbackServerOn(eventName, listener) {
       } catch (error) {
         console.error('Could not load AI feedback log', error);
         cb?.({ ok: false, error: 'Could not load sent feedback' });
+      }
+    });
+    socket.on('teacher:chat-inbox', (_payload, cb) => {
+      const roomCode = normaliseRoomCode(socket.data.roomCode);
+      if (socket.data.role !== 'teacher' || roomCode.length !== 4) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      try {
+        cb?.({ ok: true, threads: listChatInbox(roomCode) });
+      } catch (error) {
+        console.error('Could not load teacher inbox', error);
+        cb?.({ ok: false, error: 'Could not load inbox' });
       }
     });
     socket.on('teacher:chat-sync', (payload, cb) => {
