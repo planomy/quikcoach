@@ -2417,10 +2417,10 @@ function TeacherDashboardInner() {
         return;
       }
       const buttonBox = button?.getBoundingClientRect();
-      const setsOpen = Boolean(panel?.querySelector('#sets-subject-filter'));
       const maxHeight = Math.max(220, viewport - margin * 2);
-      if (setsOpen) {
-        const nextTop = Math.round(Math.max(offsetTop + margin, buttonBox?.top ?? offsetTop + margin));
+      if (toolsPanelOpen && !settingsOpen && !libraryPanel) {
+        const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
+        const nextTop = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
         setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
         setTeacherToolsDockHeight(null);
         return;
@@ -2548,7 +2548,7 @@ function TeacherDashboardInner() {
     return '';
   }, [pasteBox, aiPasteParsed, visibleStudents.length, distributeReady]);
 
-  const bottomAnchoredDock = libraryPanel || settingsOpen || (toolsPanelOpen && toolsTab !== 'sets');
+  const bottomAnchoredDock = libraryPanel || settingsOpen;
   const headerDockStyle = useMemo(
     () => (
       bottomAnchoredDock
@@ -4563,8 +4563,8 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && createPortal(
         <div
           ref={teacherToolsPanelRef}
-          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail z-[60] ${toolsTab === 'sets' ? 'w-[min(27rem,calc(100vw-4.75rem))]' : 'w-[min(29rem,calc(100vw-4.75rem))]'}`}
-          style={headerDockStyle}
+          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-header-dock--fill z-[60] ${toolsTab === 'sets' ? 'w-[min(27rem,calc(100vw-4.75rem))]' : 'w-[min(29rem,calc(100vw-4.75rem))]'}`}
+          style={{ top: teacherToolsTop, bottom: 0, height: 'auto' }}
           role="dialog"
           aria-label={toolsTab === 'sets' ? 'Question sets panel' : 'Ask the class panel'}
         >

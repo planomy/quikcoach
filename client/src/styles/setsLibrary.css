@@ -70,9 +70,23 @@
   display: none;
 }
 
-/* Sets: keep the same dock top as Ask; stretch down to the viewport floor and scroll. */
+/* Sets and Ask run from the header to the bottom of the screen. */
+.iboard-header-dock--fill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-bottom-right-radius: 0;
+}
+
+.iboard-header-dock--fill > section {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+}
+
 .iboard-header-dock--rail:has(#sets-subject-filter) {
-  bottom: 0.5rem;
+  bottom: 0;
   height: auto !important;
   max-height: none !important;
   overflow: hidden;
