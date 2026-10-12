@@ -1228,7 +1228,8 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 .iboard-nudge-strip {
   position: absolute;
   top: calc(100% + 0.45rem);
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 80;
   display: flex;
   flex-direction: column;
@@ -1473,6 +1474,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   min-height: 0;
 }
 
+.iboard-command-bar__side .iboard-attention-pill > span,
 .iboard-command-bar__side .iboard-manage-tools > .relative > span {
   display: flex;
   flex: 1 1 auto;
