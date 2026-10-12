@@ -6631,6 +6631,24 @@ function TeacherDashboardInner() {
                   </button>
                 </HintWrap>
               </div>
+              <div className="iboard-room-settings__row">
+                <HintWrap hint="Shows the Draw button on student boards. Leave this off unless they need to sketch." className="min-w-0 flex-1" multiline>
+                  <button
+                    type="button"
+                    role="switch"
+                    onClick={() => {
+                      const next = !room?.student_drawing;
+                      setRoom((current) => (current ? { ...current, student_drawing: next } : current));
+                      pushSettings({ student_drawing: next });
+                    }}
+                    aria-checked={!!room?.student_drawing}
+                    className="iboard-room-settings__secondary w-full justify-between gap-3"
+                  >
+                    <span>Student draw mode</span>
+                    <span className="iboard-switch" data-on={room?.student_drawing ? 'true' : 'false'} aria-hidden="true" />
+                  </button>
+                </HintWrap>
+              </div>
               <p className="iboard-room-settings__alerts-title">Alerts</p>
               {[
                 { key: 'notStarted', label: 'Not started', hint: 'Flags an empty card a few minutes after the student joins', minutesKey: 'notStartedMin', minutesLabel: 'after joining' },

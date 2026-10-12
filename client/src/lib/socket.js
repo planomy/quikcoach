@@ -209,6 +209,7 @@ export function createSocket() {
     baseOn('room:state', (payload) => {
       if (!payload?.room) return;
       window.__iboardStudentFormattingEnabled = payload.room.student_formatting !== false;
+      window.__iboardStudentDrawingEnabled = payload.room.student_drawing === true;
       dispatchWindowEvent('iboard:room-state', payload.room);
     });
 

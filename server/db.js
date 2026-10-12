@@ -97,6 +97,11 @@ export function migrate(db) {
     /* column already exists */
   }
   try {
+    db.exec(`ALTER TABLE rooms ADD COLUMN student_drawing INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    /* column already exists */
+  }
+  try {
     db.exec(`ALTER TABLE students ADD COLUMN breakout_room_id TEXT NOT NULL DEFAULT ''`);
   } catch {
     /* column already exists */
@@ -455,6 +460,10 @@ export const queries = {
     if (settings.class_wall_hide_names !== undefined) {
       fields.push('class_wall_hide_names = ?');
       values.push(settings.class_wall_hide_names ? 1 : 0);
+    }
+    if (settings.student_drawing !== undefined) {
+      fields.push('student_drawing = ?');
+      values.push(settings.student_drawing ? 1 : 0);
     }
     if (settings.genre !== undefined) {
       fields.push('genre = ?');
@@ -1473,6 +1482,7 @@ export const queries = {
       breakout_count: Math.max(0, Math.min(40, Number(row.breakout_count) || 0)),
       class_wall_active: !!row.class_wall_active,
       class_wall_hide_names: !!row.class_wall_hide_names,
+      student_drawing: !!row.student_drawing,
       genre: normalizeFeedbackMode(row.genre),
       feedback_toggles,
     };

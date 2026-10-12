@@ -25,6 +25,11 @@ function initialFormattingEnabled() {
   return window.__iboardStudentFormattingEnabled !== false;
 }
 
+function initialDrawingEnabled() {
+  if (typeof window === 'undefined') return false;
+  return window.__iboardStudentDrawingEnabled === true;
+}
+
 function insertPlainTextAtSelection(text) {
   if (document.execCommand?.('insertText', false, text)) return;
   const selection = window.getSelection?.();
@@ -109,6 +114,7 @@ export default function RichTextEditor({
   const [focused, setFocused] = useState(false);
   const [empty, setEmpty] = useState(!String(text || '').trim());
   const [formattingEnabled, setFormattingEnabled] = useState(initialFormattingEnabled);
+  const [drawingEnabled, setDrawingEnabled] = useState(initialDrawingEnabled);
   const [drawMode, setDrawMode] = useState(false);
   const [toolbarHint, setToolbarHint] = useState('');
   const [formatMenuOpen, setFormatMenuOpen] = useState(false);
@@ -122,6 +128,7 @@ export default function RichTextEditor({
     const onRoomState = (event) => {
       const enabled = event.detail?.student_formatting !== false;
       setFormattingEnabled(enabled);
+      setDrawingEnabled(event.detail?.student_drawing === true);
     };
     window.addEventListener('iboard:room-state', onRoomState);
     return () => window.removeEventListener('iboard:room-state', onRoomState);
@@ -147,6 +154,10 @@ export default function RichTextEditor({
     // Only run when the teacher changes the room capability.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formattingEnabled]);
+
+  useEffect(() => {
+    if (!drawingEnabled) setDrawMode(false);
+  }, [drawingEnabled]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -447,12 +458,14 @@ export default function RichTextEditor({
           >
             {wordCountLabel}
           </span>
-          <ToolbarButton
-            disabled={disabled}
-            label="✏ Draw"
-            title="Draw or show your working"
-            onClick={() => setDrawMode(true)}
-          />
+          {drawingEnabled ? (
+            <ToolbarButton
+              disabled={disabled}
+              label="✏ Draw"
+              title="Draw or show your working"
+              onClick={() => setDrawMode(true)}
+            />
+          ) : null}
           {headerEndActions}
           {toolbarHint && (
             <span
