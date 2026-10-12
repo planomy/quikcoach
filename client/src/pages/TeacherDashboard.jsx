@@ -1791,7 +1791,7 @@ function TeacherDashboardInner() {
   }, [attentionFocus, attentionCounts]);
 
   const classGauge = useMemo(() => {
-    if (livePulse.activity) {
+    if (livePulse.activity && !livePulse.activity.closed) {
       const asked = (livePulse.students || []).filter(
         (student) => !student.promptExcluded && (student.connected || student.hasResponded)
       );
@@ -4275,7 +4275,7 @@ function TeacherDashboardInner() {
                   segments={classGauge.segments}
                   onClick={() => (gaugePanelOpen ? setGaugePanelOpen(false) : openGaugePanel())}
                   expanded={gaugePanelOpen}
-                  opens={livePulse.activity ? 'responses' : 'class writing'}
+                  opens={livePulse.activity && !livePulse.activity.closed ? 'responses' : 'class writing'}
                 />
               </div>
               <div className="iboard-command-bar__side iboard-command-bar__side--manage">
