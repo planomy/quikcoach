@@ -3193,6 +3193,7 @@ function TeacherDashboardInner() {
       const r = await fetch(`/api/rooms/${codeInput}/snapshots/${id}`);
       if (!r.ok) return;
       const data = await r.json();
+      closeLibraryHub();
       setSnapshotViewer(data);
     } catch {
       setError('Could not load snapshot');
@@ -6938,8 +6939,8 @@ function TeacherDashboardInner() {
         </div>
       )}
 
-      {snapshotViewer && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
+      {snapshotViewer && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
             className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl"
             role="dialog"
@@ -6972,7 +6973,8 @@ function TeacherDashboardInner() {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        getOverlayRoot()
       )}
 
       {modalOpen && (
