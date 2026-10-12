@@ -578,6 +578,7 @@ function TeacherDashboardInner() {
   const [nudgeCompose, setNudgeCompose] = useState(false);
   const [nudgeDraft, setNudgeDraft] = useState('');
   const [nudgeBusy, setNudgeBusy] = useState(false);
+  const [nudgePanelHidden, setNudgePanelHidden] = useState(false);
   /** Pastes this lesson by student id, pushed live by the server whether REC is on or off. */
   const [pasteCounts, setPasteCounts] = useState({});
   const [pasteMenu, setPasteMenu] = useState(null); // { studentId, left, top }
@@ -1818,6 +1819,7 @@ function TeacherDashboardInner() {
   useEffect(() => {
     setNudgeCompose(false);
     setNudgeDraft('');
+    setNudgePanelHidden(false);
   }, [attentionFocus]);
 
   const classGauge = useMemo(() => {
@@ -4365,9 +4367,16 @@ function TeacherDashboardInner() {
                             <span className="iboard-alert-chip__name">{pill.name}</span>
                           </button>
                         </HintWrap>
-                        {on && count > 0 ? (
+                        {on && count > 0 && !nudgePanelHidden ? (
                           <div className="iboard-nudge-strip" data-iboard-popout role="dialog" aria-label="Nudge these students">
-                            <h2 className="iboard-nudge-strip__label" data-popout-handle>Nudge</h2>
+                            <div className="iboard-nudge-strip__chrome" data-popout-handle>
+                              <h2 className="iboard-nudge-strip__label">Nudge</h2>
+                              <CloseButton
+                                aria-label="Hide nudge and keep monitoring"
+                                title="Keep these cards at the top"
+                                onClick={() => setNudgePanelHidden(true)}
+                              />
+                            </div>
                             {nudgeCompose ? (
                               <form
                                 className="iboard-nudge-strip__compose"
