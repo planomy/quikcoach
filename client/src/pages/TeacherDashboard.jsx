@@ -4366,8 +4366,8 @@ function TeacherDashboardInner() {
                           </button>
                         </HintWrap>
                         {on && count > 0 ? (
-                          <div className="iboard-nudge-strip" role="region" aria-label="Nudge these students">
-                            <span className="iboard-nudge-strip__label">Nudge</span>
+                          <div className="iboard-nudge-strip" data-iboard-popout role="dialog" aria-label="Nudge these students">
+                            <h2 className="iboard-nudge-strip__label" data-popout-handle>Nudge</h2>
                             {nudgeCompose ? (
                               <form
                                 className="iboard-nudge-strip__compose"

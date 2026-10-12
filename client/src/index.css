@@ -1247,12 +1247,16 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 }
 
 .iboard-nudge-strip__label {
-  padding: 0 0.2rem 0.05rem;
+  display: block;
+  margin: 0;
+  padding: 0.12rem 0.25rem 0.28rem;
   color: #5a5fc3;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.02em;
+  line-height: 1.2;
   text-transform: uppercase;
+  cursor: grab;
 }
 
 .iboard-nudge-strip__chip {
