@@ -310,7 +310,9 @@ function snapshotRowTitle(snapshot) {
   const suffix = datedRoom?.[2] || '';
   const suffixIsDate = /\d{4}|\d{1,2}:\d{2}|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)/i.test(suffix);
   if (datedRoom && suffixIsDate) return `${datedRoom[1]} · ${when}`;
-  return label;
+  const hasStamp = /\d{4}|\d{1,2}:\d{2}|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)/i.test(label);
+  if (hasStamp) return label;
+  return `${label} · ${when}`;
 }
 
 function initialOverviewColumns() {
@@ -482,6 +484,8 @@ function TeacherDashboardInner() {
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [evidenceLabel, setEvidenceLabel] = useState('');
   const [evidenceBusy, setEvidenceBusy] = useState(false);
+  const [snapshotPromptOpen, setSnapshotPromptOpen] = useState(false);
+  const [snapshotName, setSnapshotName] = useState('');
   const [toolsPanelOpen, setToolsPanelOpen] = useState(false);
   const [toolsTab, setToolsTab] = useState('ask');
   const [toolsHighlightStudentId, setToolsHighlightStudentId] = useState(null);
@@ -3130,30 +3134,40 @@ function TeacherDashboardInner() {
     });
   }
 
-  function quickSnapshotWriting() {
+  function quickSnapshotWriting(name) {
     const packStudents = visibleStudents.length ? visibleStudents : orderedStudents;
     if (!packStudents.length) {
       setError('No student work to snapshot yet.');
       return;
     }
     if (evidenceBusy) return;
+    const clean = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 200);
     const now = new Date();
-    const label = `Room ${codeInput} · ${now.toLocaleString(undefined, {
+    const label = clean || `Room ${codeInput} · ${now.toLocaleString(undefined, {
       dateStyle: 'medium',
       timeStyle: 'short',
     })}`;
     setEvidenceBusy(true);
     setError('');
-    socket.emit('teacher:snapshot-save', { label }, (ack) => {
-      setEvidenceBusy(false);
-      if (!ack?.ok) {
-        setError(ack?.error || 'Could not save snapshot.');
-        return;
-      }
-      setSnapshots(ack.snapshots || []);
-      setCopyToast('Snapshot saved — find it in Reports');
-      setTimeout(() => setCopyToast(''), 3000);
-    });
+    const finish = () => {
+      socket.emit('teacher:snapshot-save', { label }, (ack) => {
+        setEvidenceBusy(false);
+        if (!ack?.ok) {
+          setError(ack?.error || 'Could not save snapshot.');
+          return;
+        }
+        setSnapshots(ack.snapshots || []);
+        setCopyToast('Snapshot saved — find it in Reports');
+        setTimeout(() => setCopyToast(''), 3000);
+      });
+    };
+    if (!clean) {
+      finish();
+      return;
+    }
+    rememberObjective(clean);
+    setRoom((current) => (current ? { ...current, lesson_objective: clean } : current));
+    socket.emit('teacher:settings', { lesson_objective: clean }, () => finish());
   }
 
   async function copyStudentText(student) {
@@ -4376,13 +4390,14 @@ function TeacherDashboardInner() {
                             {sessionBusy ? 'Opening…' : 'Open a saved lesson'}
                 </button>
                         </HintWrap>
-                        <HintWrap hint="Keeps a copy of every student’s writing right now. Find it later in Reports." prefer="side" className="w-full" multiline>
+                        <HintWrap hint="Keeps a copy of every student’s writing right now. You can name it before it is saved." prefer="side" className="w-full" multiline>
                           <button
                             type="button"
                             disabled={evidenceBusy || !(visibleStudents.length ? visibleStudents : orderedStudents).length}
                             onClick={() => {
                               setSessionMenuOpen(false);
-                              quickSnapshotWriting();
+                              setSnapshotName(String(room?.lesson_objective || '').replace(/\s+/g, ' ').trim());
+                              setSnapshotPromptOpen(true);
                             }}
                             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                           >
@@ -5636,7 +5651,7 @@ function TeacherDashboardInner() {
                         <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                           <span className="text-slate-800 dark:text-slate-200">
                             <span className="font-medium">{snapshotRowTitle(sn)}</span>
-                            {sn.lesson_objective ? (
+                            {sn.lesson_objective && sn.lesson_objective !== String(sn.label || '').trim() ? (
                               <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Today: {sn.lesson_objective}</span>
                             ) : null}
                           </span>
@@ -6808,6 +6823,65 @@ function TeacherDashboardInner() {
         onTeacherSent={handleTeacherChatSent}
       />
 
+      {snapshotPromptOpen && (
+        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
+          <form
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="snapshot-name-title"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setSnapshotPromptOpen(false);
+              quickSnapshotWriting(snapshotName);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                setSnapshotPromptOpen(false);
+              }
+            }}
+          >
+            <div className="px-5 py-4">
+              <h2 id="snapshot-name-title" className="font-display text-lg font-bold text-[#2c2c34] dark:text-slate-100">
+                Save snapshot
+              </h2>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                This name is stored with the writing. Students see it as today’s objective.
+              </p>
+              <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Snapshot name
+                <input
+                  value={snapshotName}
+                  onChange={(event) => setSnapshotName(event.target.value.slice(0, 200))}
+                  className="mt-1.5 w-full rounded-xl border border-[#e2e2e8] bg-white px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-[#2c2c34] outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  placeholder="e.g. write a strong opening sentence"
+                  autoFocus
+                  maxLength={200}
+                />
+              </label>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Leave it blank to save with the date.</p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 dark:border-slate-700 dark:bg-slate-950">
+              <button
+                type="button"
+                onClick={() => setSnapshotPromptOpen(false)}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={evidenceBusy}
+                className="rounded-xl bg-[#5a5fc3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-60"
+              >
+                {evidenceBusy ? 'Saving…' : 'Save snapshot'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {evidenceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
           <div
@@ -6877,7 +6951,8 @@ function TeacherDashboardInner() {
             </div>
             <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5 text-sm scrollbar-thin">
               <p className="text-xs text-slate-500 dark:text-slate-400">{formatSqlUtc(snapshotViewer.created_at)}</p>
-              {snapshotViewer.payload?.lesson_objective ? (
+              {snapshotViewer.payload?.lesson_objective
+                && snapshotViewer.payload.lesson_objective !== String(snapshotViewer.label || '').trim() ? (
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Today’s objective: {snapshotViewer.payload.lesson_objective}
                 </p>
