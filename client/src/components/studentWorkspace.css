@@ -886,7 +886,21 @@ html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-
   min-height: 0;
 }
 
-/* Class wall: inbox folds to a slim tab so classmates' cards get the width. */
+/* Class wall: inbox folds to a slim tab so classmates' cards get the width.
+   + Answer stays above that tab. */
+.iboard-inbox-collapsed-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.iboard-inbox-collapsed-stack > section {
+  width: min(18rem, calc(100vw - 3rem));
+  flex-basis: auto;
+}
+
 .iboard-inbox-collapsed {
   display: flex;
   flex-direction: column;
@@ -946,7 +960,16 @@ html.dark .iboard-inbox-head__collapse {
 
 @media (min-width: 768px) {
   html.iboard-student-workspace main > .iboard-student-workspace-grid.is-inbox-collapsed {
-    grid-template-columns: minmax(0, 1fr) 0.75rem 2.75rem !important;
+    grid-template-columns: minmax(0, 1fr) 0.75rem max-content !important;
+  }
+
+  html.iboard-student-workspace main > .iboard-student-workspace-grid.is-inbox-collapsed > aside {
+    overflow: visible;
+    align-items: flex-end;
+  }
+
+  .iboard-inbox-collapsed-stack .iboard-inbox-collapsed {
+    width: 2.75rem;
   }
 }
 
@@ -954,6 +977,15 @@ html.dark .iboard-inbox-head__collapse {
   .iboard-student-workspace main > .iboard-student-workspace-grid.is-inbox-collapsed > aside {
     flex: 0 0 auto;
     min-height: 0;
+    overflow: visible;
+  }
+
+  .iboard-inbox-collapsed-stack {
+    align-items: stretch;
+  }
+
+  .iboard-inbox-collapsed-stack > section {
+    width: auto;
   }
 
   .iboard-inbox-collapsed {

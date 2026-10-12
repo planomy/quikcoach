@@ -1764,16 +1764,19 @@ export default function StudentView() {
             className="order-1 flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden"
           >
             {inboxCollapsed ? (
-              <button
-                type="button"
-                className="iboard-inbox-collapsed"
-                onClick={() => setInboxCollapsed(false)}
-                aria-label={inboxTabCount ? `Open inbox, ${inboxTabCount} unread` : 'Open inbox'}
-              >
-                <span className="iboard-inbox-head__mark" aria-hidden="true" />
-                <span className="iboard-inbox-collapsed__label">Inbox</span>
-                {inboxTabCount ? <span className="iboard-inbox-head__count">{inboxTabCount}</span> : null}
-              </button>
+              <div className="iboard-inbox-collapsed-stack">
+                <StudentVerbalRespond socket={socket} variant="chip" />
+                <button
+                  type="button"
+                  className="iboard-inbox-collapsed"
+                  onClick={() => setInboxCollapsed(false)}
+                  aria-label={inboxTabCount ? `Open inbox, ${inboxTabCount} unread` : 'Open inbox'}
+                >
+                  <span className="iboard-inbox-head__mark" aria-hidden="true" />
+                  <span className="iboard-inbox-collapsed__label">Inbox</span>
+                  {inboxTabCount ? <span className="iboard-inbox-head__count">{inboxTabCount}</span> : null}
+                </button>
+              </div>
             ) : (
             <>
             <div className={`iboard-inbox-head ${liveInboxAlert ? 'iboard-inbox-head--live-alert' : ''}`}>
