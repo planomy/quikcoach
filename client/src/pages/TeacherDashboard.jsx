@@ -2457,11 +2457,27 @@ function TeacherDashboardInner() {
       let desired = askOpen ? maxHeight : libraryPanel ? 360 : settingsOpen ? 560 : 480;
       const measureRoot = askOpen ? null : libraryPanel ? panel : null;
       if (measureRoot) {
+        // A flexed body grows to fill the dock. Its box height is the stretch, not the content.
+        const naturalHeight = (node) => {
+          const style = window.getComputedStyle(node);
+          if (style.position === 'absolute') return 0;
+          const grows = Number.parseFloat(style.flexGrow) > 0;
+          if (!grows) return Math.max(node.scrollHeight, node.offsetHeight);
+          let inner = 0;
+          let counted = 0;
+          for (const child of node.children) {
+            const next = naturalHeight(child);
+            if (!next) continue;
+            inner += next;
+            counted += 1;
+          }
+          const pad = (Number.parseFloat(style.paddingTop) || 0) + (Number.parseFloat(style.paddingBottom) || 0);
+          const gap = Number.parseFloat(style.rowGap);
+          const gaps = counted > 1 && Number.isFinite(gap) ? (counted - 1) * gap : 0;
+          return inner + pad + gaps;
+        };
         let content = 0;
-        for (const child of measureRoot.children) {
-          if (window.getComputedStyle(child).position === 'absolute') continue;
-          content += Math.max(child.scrollHeight, child.offsetHeight);
-        }
+        for (const child of measureRoot.children) content += naturalHeight(child);
         if (content > 160) desired = content + 12;
       }
       const dockHeight = Math.min(desired, maxHeight);
