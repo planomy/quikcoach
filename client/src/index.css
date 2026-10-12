@@ -1309,8 +1309,8 @@ html.dark .iboard-command-frame__line {
 .iboard-command-bar__side .iboard-command-bar__title {
   width: 100%;
   text-align: center;
-  /* Tracking opens with the wing, a step tighter than the full spread. */
-  letter-spacing: clamp(0.18em, calc((82cqi - 8em) / 12), 2.2em);
+  /* Tracking opens with the wing, held in from the wider spread. */
+  letter-spacing: clamp(0.16em, calc((64cqi - 7em) / 12), 1.6em);
   transform: translateY(0.28rem);
 }
 
