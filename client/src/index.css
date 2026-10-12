@@ -1569,7 +1569,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   bottom: 0.945rem;
   left: 50%;
   z-index: 6;
-  transform: translate(-50%, 50%);
+  transform: translate(-50%, calc(50% + 0.22rem));
 }
 
 /* On :root because the gauge's hover card (a portal on body) uses the same swatches. */
