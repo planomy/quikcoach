@@ -2798,21 +2798,31 @@ function TeacherDashboardInner() {
     });
   }
 
-  function handleTeacherChatSent({ studentId, urgent, name }) {
-    setNoteReceiptByStudentId((current) => ({ ...current, [studentId]: 'waiting' }));
+  function handleTeacherChatSent({ studentId, studentIds, urgent, name }) {
+    const ids = (Array.isArray(studentIds) ? studentIds : [studentId]).map(Number).filter((id) => id > 0);
+    setNoteReceiptByStudentId((current) => {
+      const next = { ...current };
+      for (const id of ids) next[id] = 'waiting';
+      return next;
+    });
+    for (const id of ids) {
       window.dispatchEvent(
         new CustomEvent('iboard:note-send-status', {
-        detail: { studentId, status: 'waiting' },
+          detail: { studentId: id, status: 'waiting' },
         })
       );
-      setNoteReplyByStudentId((current) => {
-      if (!current[studentId]) return current;
-        const next = { ...current };
-      delete next[studentId];
-        return next;
-      });
+    }
+    setNoteReplyByStudentId((current) => {
+      let next = current;
+      for (const id of ids) {
+        if (!next[id]) continue;
+        if (next === current) next = { ...current };
+        delete next[id];
+      }
+      return next;
+    });
     setCopyToast(urgent ? `Urgent message sent to ${name}` : `Message sent to ${name}`);
-      setTimeout(() => setCopyToast(''), 2500);
+    setTimeout(() => setCopyToast(''), 2500);
   }
 
   function shareStudentWriting(student, recipientIds = null) {

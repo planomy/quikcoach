@@ -8,13 +8,42 @@
   background: rgb(15 23 42 / 0.42);
 }
 
-.iboard-chat-phone--panel {
+.iboard-chat-pane {
+  display: flex;
   width: 100%;
-  height: auto;
   min-height: 0;
   flex: 1 1 auto;
-  border-radius: 0;
-  box-shadow: none;
+  flex-direction: column;
+  background: transparent;
+}
+
+.iboard-chat-pane__head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #e2e4ec;
+  background: #fff;
+}
+
+.iboard-chat-pane__head h2 {
+  margin: 0;
+  overflow: hidden;
+  color: #1f1f24;
+  font-size: 0.95rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.dark .iboard-chat-pane__head {
+  border-bottom-color: #243044;
+  background: #0f172a;
+}
+
+html.dark .iboard-chat-pane__head h2 {
+  color: #f1f5f9;
 }
 
 .iboard-teacher-inbox {
@@ -43,21 +72,56 @@
 .iboard-teacher-inbox__row {
   display: grid;
   width: 100%;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  gap: 0.55rem;
-  padding: 0.7rem 0.8rem;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: start;
+  padding: 0.7rem 0.7rem 0.7rem 0.55rem;
   border: 0;
   border-bottom: 1px solid #eef0f4;
   background: transparent;
   text-align: left;
 }
 
-.iboard-teacher-inbox__row:hover {
+.iboard-teacher-inbox__row:hover,
+.iboard-teacher-inbox__row.is-checked {
   background: #f4f3fa;
 }
 
 .iboard-teacher-inbox__row.is-on {
   background: #ebeaf8;
+}
+
+.iboard-teacher-inbox__check {
+  display: grid;
+  place-items: center;
+  padding-top: 0.55rem;
+  cursor: pointer;
+}
+
+.iboard-teacher-inbox__check input {
+  width: 0.88rem;
+  height: 0.88rem;
+  margin: 0;
+  accent-color: #5a5fc3;
+  cursor: pointer;
+}
+
+.iboard-teacher-inbox__open {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.55rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.iboard-teacher-inbox__open .iboard-chat-avatar {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.72rem;
 }
 
 .iboard-teacher-inbox__row.is-unread .iboard-teacher-inbox__name,
@@ -148,7 +212,8 @@ html.dark .iboard-teacher-inbox__row {
 }
 
 html.dark .iboard-teacher-inbox__row:hover,
-html.dark .iboard-teacher-inbox__row.is-on {
+html.dark .iboard-teacher-inbox__row.is-on,
+html.dark .iboard-teacher-inbox__row.is-checked {
   background: rgba(90, 95, 195, 0.18);
 }
 

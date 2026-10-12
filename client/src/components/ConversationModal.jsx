@@ -72,6 +72,156 @@ const CHAT_QUICK = [
   { id: 'get-it', label: 'Mmm, now I get it', text: 'Mmm, now I get it', glyph: '💡' },
 ];
 
+export function ChatCompose({
+  allowUrgent = false,
+  draft,
+  onDraftChange,
+  urgent = false,
+  onUrgentChange,
+  sending = false,
+  role = 'teacher',
+  inputRef,
+  onSend,
+  placeholder = 'Message',
+}) {
+  const localInputRef = useRef(null);
+  const fieldRef = inputRef || localInputRef;
+  const reactHoverRef = useRef(false);
+  const reactCloseTimerRef = useRef(null);
+  const [reactOpen, setReactOpen] = useState(false);
+
+  useEffect(() => () => {
+    if (reactCloseTimerRef.current != null) window.clearTimeout(reactCloseTimerRef.current);
+  }, []);
+
+  function keepReactOpen() {
+    reactHoverRef.current = true;
+    if (reactCloseTimerRef.current != null) {
+      window.clearTimeout(reactCloseTimerRef.current);
+      reactCloseTimerRef.current = null;
+    }
+    setReactOpen(true);
+  }
+
+  function scheduleReactClose() {
+    reactHoverRef.current = false;
+    if (reactCloseTimerRef.current != null) window.clearTimeout(reactCloseTimerRef.current);
+    reactCloseTimerRef.current = window.setTimeout(() => {
+      reactCloseTimerRef.current = null;
+      if (!reactHoverRef.current) setReactOpen(false);
+    }, 160);
+  }
+
+  function insertQuick(text) {
+    const chunk = String(text || '');
+    if (!chunk || sending) return;
+    const node = fieldRef.current;
+    const start = node?.selectionStart ?? draft.length;
+    const end = node?.selectionEnd ?? draft.length;
+    const max = role === 'teacher' ? 5000 : 2000;
+    const next = `${String(draft).slice(0, start)}${chunk}${String(draft).slice(end)}`.slice(0, max);
+    const caret = Math.min(max, start + chunk.length);
+    onDraftChange?.(next);
+    requestAnimationFrame(() => {
+      node?.focus();
+      try {
+        node?.setSelectionRange(caret, caret);
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+
+  return (
+    <div className="iboard-chat-dock">
+      {reactOpen ? (
+        <div
+          className="iboard-chat-react"
+          role="listbox"
+          aria-label="Quick replies"
+          onMouseEnter={keepReactOpen}
+          onMouseLeave={scheduleReactClose}
+        >
+          {CHAT_QUICK.map((chip) => (
+            <HintWrap key={chip.id} hint={chip.label} prefer="above" className="w-full">
+              <button
+                type="button"
+                role="option"
+                className="iboard-chat-react__chip"
+                disabled={sending}
+                aria-label={chip.label}
+                onClick={() => insertQuick(chip.text)}
+              >
+                {chip.glyph || chip.text}
+              </button>
+            </HintWrap>
+          ))}
+        </div>
+      ) : null}
+      <form
+        className="iboard-chat-compose"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setReactOpen(false);
+          onSend?.();
+        }}
+      >
+        {allowUrgent ? (
+          <HintWrap hint={urgent ? 'Urgent on — alerts them with a popup' : 'Mark urgent — alerts them with a popup'} prefer="above">
+            <button
+              type="button"
+              className="iboard-chat-urgent-toggle"
+              aria-pressed={urgent}
+              title=""
+              aria-label={urgent ? 'Urgent on' : 'Mark urgent'}
+              onClick={() => onUrgentChange?.(!urgent)}
+            >
+              !
+            </button>
+          </HintWrap>
+        ) : null}
+        <HintWrap hint="Quick replies" prefer="above" suppressed={reactOpen}>
+          <button
+            type="button"
+            className="iboard-chat-react-toggle"
+            aria-expanded={reactOpen}
+            aria-label={reactOpen ? 'Hide quick replies' : 'Quick replies'}
+            onMouseEnter={keepReactOpen}
+            onMouseLeave={scheduleReactClose}
+            onClick={() => setReactOpen((current) => !current)}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M8.4 14.2c1.1 1.2 2.3 1.8 3.6 1.8s2.5-.6 3.6-1.8" />
+              <path d="M9 10.1h.01M15 10.1h.01" />
+            </svg>
+          </button>
+        </HintWrap>
+        <textarea
+          ref={fieldRef}
+          rows={1}
+          maxLength={role === 'teacher' ? 5000 : 2000}
+          value={draft}
+          placeholder={placeholder}
+          onChange={(event) => onDraftChange?.(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              setReactOpen(false);
+              onSend?.();
+            }
+          }}
+        />
+        <button type="submit" className="iboard-chat-send" disabled={sending || !String(draft || '').trim()} aria-label="Send">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+            <path d="M3.4 20.6 21 12 3.4 3.4 3 10.2l11.2 1.8L3 13.8z" />
+          </svg>
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function messageFromChatEvent(payload) {
   const message = payload?.message;
   if (!message?.id || !String(message.text || '').trim()) return null;
@@ -102,14 +252,11 @@ export default function ConversationModal({
 }) {
   const threadRef = useRef(null);
   const inputRef = useRef(null);
-  const reactHoverRef = useRef(false);
-  const reactCloseTimerRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [urgent, setUrgent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [reactOpen, setReactOpen] = useState(false);
   const mine = role === 'teacher' ? 'teacher' : 'student';
   const sid = Number(studentId) || 0;
 
@@ -147,7 +294,6 @@ export default function ConversationModal({
       setMessages([]);
       setError('');
       setSending(false);
-      setReactOpen(false);
     }
   }, [open]);
 
@@ -166,10 +312,6 @@ export default function ConversationModal({
     function onKey(event) {
       if (event.key === 'Escape') {
         event.preventDefault();
-        if (reactOpen) {
-          setReactOpen(false);
-          return;
-        }
         requestClose();
       }
     }
@@ -178,7 +320,7 @@ export default function ConversationModal({
       window.clearTimeout(timer);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open, sending, draft, reactOpen, variant]);
+  }, [open, sending, draft, variant]);
 
   async function requestClose() {
     if (sending) return;
@@ -199,7 +341,6 @@ export default function ConversationModal({
     if (!text || sending || !socket) return;
     setSending(true);
     setError('');
-    setReactOpen(false);
     if (!preserveDraft) setDraft('');
     if (role === 'teacher') {
       if (typeof window !== 'undefined') window.__iboardPendingNoteStudentId = sid;
@@ -250,180 +391,84 @@ export default function ConversationModal({
     sendMessage(draft, { asUrgent: urgent });
   }
 
-  function keepReactOpen() {
-    reactHoverRef.current = true;
-    if (reactCloseTimerRef.current != null) {
-      window.clearTimeout(reactCloseTimerRef.current);
-      reactCloseTimerRef.current = null;
-    }
-    setReactOpen(true);
-  }
-
-  function scheduleReactClose() {
-    reactHoverRef.current = false;
-    if (reactCloseTimerRef.current != null) window.clearTimeout(reactCloseTimerRef.current);
-    reactCloseTimerRef.current = window.setTimeout(() => {
-      reactCloseTimerRef.current = null;
-      if (!reactHoverRef.current) setReactOpen(false);
-    }, 160);
-  }
-
-  function insertQuick(text) {
-    const chunk = String(text || '');
-    if (!chunk || sending) return;
-    const node = inputRef.current;
-    const start = node?.selectionStart ?? draft.length;
-    const end = node?.selectionEnd ?? draft.length;
-    const max = role === 'teacher' ? 5000 : 2000;
-    const next = `${draft.slice(0, start)}${chunk}${draft.slice(end)}`.slice(0, max);
-    const caret = Math.min(max, start + chunk.length);
-    setDraft(next);
-    requestAnimationFrame(() => {
-      node?.focus();
-      try {
-        node?.setSelectionRange(caret, caret);
-      } catch {
-        /* ignore */
-      }
-    });
-  }
-
-  useEffect(() => () => {
-    if (reactCloseTimerRef.current != null) window.clearTimeout(reactCloseTimerRef.current);
-  }, []);
-
   const rows = useMemo(() => messages, [messages]);
 
   if (!open || typeof document === 'undefined') return null;
 
-  const phone = (
-      <div
-        className={`iboard-chat-phone${variant === 'panel' ? ' iboard-chat-phone--panel' : ''}`}
-        role={variant === 'panel' ? 'region' : 'dialog'}
-        aria-modal={variant === 'panel' ? undefined : 'true'}
-        aria-label={`Chat with ${title || 'teacher'}`}
-        onClick={variant === 'panel' ? undefined : (event) => event.stopPropagation()}
-      >
-        <div className="iboard-chat-head">
-          <span className="iboard-chat-avatar" aria-hidden="true">
-            {initialFor(title)}
-          </span>
-          <div className="iboard-chat-head-copy">
-            <h2>{title || (role === 'teacher' ? 'Student' : 'Teacher')}</h2>
-            <p>{subtitle}</p>
-          </div>
-          {variant === 'panel' ? null : <CloseButton onClick={requestClose} aria-label="Close chat" />}
-        </div>
-        <div ref={threadRef} className="iboard-chat-thread" onPointerDown={() => setReactOpen(false)}>
-          {rows.length === 0 ? (
-            <p className="iboard-chat-empty">No messages yet. This stays between you and {role === 'teacher' ? title || 'this student' : 'your teacher'}.</p>
-          ) : (
-            rows.map((item, index) => {
-              const mineBubble = item.from === mine;
-              const time = shouldShowTime(rows[index - 1], item) ? formatChatTime(item.at) : '';
-              return (
-                <div key={item.id}>
-                  {time ? <p className="iboard-chat-time">{time}</p> : null}
-                  <div className={`iboard-chat-row ${mineBubble ? 'iboard-chat-row--mine' : 'iboard-chat-row--theirs'}`}>
-                    <div className={`iboard-chat-bubble ${mineBubble ? 'iboard-chat-bubble--mine' : 'iboard-chat-bubble--theirs'}${isEmojiOnly(item.text) ? ' iboard-chat-bubble--emoji' : ''}`}>
-                      {item.urgent ? <span className="iboard-chat-urgent">Urgent</span> : null}
-                      {item.text}
-                    </div>
+  const thread = (
+    <>
+      <div ref={threadRef} className="iboard-chat-thread">
+        {rows.length === 0 ? (
+          <p className="iboard-chat-empty">
+            {variant === 'panel'
+              ? 'No messages yet.'
+              : `No messages yet. This stays between you and ${role === 'teacher' ? title || 'this student' : 'your teacher'}.`}
+          </p>
+        ) : (
+          rows.map((item, index) => {
+            const mineBubble = item.from === mine;
+            const time = shouldShowTime(rows[index - 1], item) ? formatChatTime(item.at) : '';
+            return (
+              <div key={item.id}>
+                {time ? <p className="iboard-chat-time">{time}</p> : null}
+                <div className={`iboard-chat-row ${mineBubble ? 'iboard-chat-row--mine' : 'iboard-chat-row--theirs'}`}>
+                  <div className={`iboard-chat-bubble ${mineBubble ? 'iboard-chat-bubble--mine' : 'iboard-chat-bubble--theirs'}${isEmojiOnly(item.text) ? ' iboard-chat-bubble--emoji' : ''}`}>
+                    {item.urgent ? <span className="iboard-chat-urgent">Urgent</span> : null}
+                    {item.text}
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
-        {error ? <p className="iboard-chat-error">{error}</p> : null}
-        <div className="iboard-chat-dock">
-          {reactOpen ? (
-            <div
-              className="iboard-chat-react"
-              role="listbox"
-              aria-label="Quick replies"
-              onMouseEnter={keepReactOpen}
-              onMouseLeave={scheduleReactClose}
-            >
-              {CHAT_QUICK.map((chip) => (
-                <HintWrap key={chip.id} hint={chip.label} prefer="above" className="w-full">
-                  <button
-                    type="button"
-                    role="option"
-                    className="iboard-chat-react__chip"
-                    disabled={sending}
-                    aria-label={chip.label}
-                    onClick={() => insertQuick(chip.text)}
-                  >
-                    {chip.glyph || chip.text}
-                  </button>
-                </HintWrap>
-              ))}
-            </div>
-          ) : null}
-          <form
-            className="iboard-chat-compose"
-            onSubmit={(event) => {
-              event.preventDefault();
-              send();
-            }}
-          >
-            {allowUrgent ? (
-              <HintWrap hint={urgent ? 'Urgent on — alerts them with a popup' : 'Mark urgent — alerts them with a popup'} prefer="above">
-                <button
-                  type="button"
-                  className="iboard-chat-urgent-toggle"
-                  aria-pressed={urgent}
-                  title=""
-                  aria-label={urgent ? 'Urgent on' : 'Mark urgent'}
-                  onClick={() => setUrgent((current) => !current)}
-                >
-                  !
-                </button>
-              </HintWrap>
-            ) : null}
-            <HintWrap hint="Quick replies" prefer="above" suppressed={reactOpen}>
-              <button
-                type="button"
-                className="iboard-chat-react-toggle"
-                aria-expanded={reactOpen}
-                aria-label={reactOpen ? 'Hide quick replies' : 'Quick replies'}
-                onMouseEnter={keepReactOpen}
-                onMouseLeave={scheduleReactClose}
-                onClick={() => setReactOpen((current) => !current)}
-              >
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M8.4 14.2c1.1 1.2 2.3 1.8 3.6 1.8s2.5-.6 3.6-1.8" />
-                  <path d="M9 10.1h.01M15 10.1h.01" />
-                </svg>
-              </button>
-            </HintWrap>
-            <textarea
-              ref={inputRef}
-              rows={1}
-              maxLength={role === 'teacher' ? 5000 : 2000}
-              value={draft}
-              placeholder="Message"
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  send();
-                }
-              }}
-            />
-            <button type="submit" className="iboard-chat-send" disabled={sending || !draft.trim()} aria-label="Send">
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                <path d="M3.4 20.6 21 12 3.4 3.4 3 10.2l11.2 1.8L3 13.8z" />
-              </svg>
-            </button>
-          </form>
-        </div>
+              </div>
+            );
+          })
+        )}
       </div>
+      {error ? <p className="iboard-chat-error">{error}</p> : null}
+      <ChatCompose
+        allowUrgent={allowUrgent}
+        draft={draft}
+        onDraftChange={setDraft}
+        urgent={urgent}
+        onUrgentChange={setUrgent}
+        sending={sending}
+        role={role}
+        inputRef={inputRef}
+        onSend={send}
+      />
+    </>
   );
 
-  if (variant === 'panel') return phone;
+  if (variant === 'panel') {
+    return (
+      <div className="iboard-chat-pane" role="region" aria-label={`Chat with ${title || 'teacher'}`}>
+        <div className="iboard-chat-pane__head">
+          <h2>{title || (role === 'teacher' ? 'Student' : 'Teacher')}</h2>
+        </div>
+        {thread}
+      </div>
+    );
+  }
+
+  const phone = (
+    <div
+      className="iboard-chat-phone"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Chat with ${title || 'teacher'}`}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="iboard-chat-head">
+        <span className="iboard-chat-avatar" aria-hidden="true">
+          {initialFor(title)}
+        </span>
+        <div className="iboard-chat-head-copy">
+          <h2>{title || (role === 'teacher' ? 'Student' : 'Teacher')}</h2>
+          <p>{subtitle}</p>
+        </div>
+        <CloseButton onClick={requestClose} aria-label="Close chat" />
+      </div>
+      {thread}
+    </div>
+  );
 
   return createPortal(
     <div className="iboard-chat-scrim" onClick={requestClose} role="presentation">

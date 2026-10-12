@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import ConversationModal from './ConversationModal.jsx';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import ConversationModal, { ChatCompose } from './ConversationModal.jsx';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
 
 function initialFor(name) {
@@ -27,6 +27,80 @@ function previewFor(thread, hands) {
   return thread.lastText || 'No messages yet';
 }
 
+function recipientLabel(list) {
+  const names = list.map((row) => row.studentName).filter(Boolean);
+  if (names.length <= 1) return names[0] || 'these students';
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  if (names.length === 3) return `${names[0]}, ${names[1]}, and ${names[2]}`;
+  return `${names[0]}, ${names[1]}, and ${names.length - 2} others`;
+}
+
+function InboxFanoutCompose({ recipients, socket, onSent }) {
+  const inputRef = useRef(null);
+  const [draft, setDraft] = useState('');
+  const [urgent, setUrgent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 40);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  function send() {
+    const text = String(draft || '').trim();
+    const items = recipients
+      .map((row) => ({
+        studentId: Number(row.studentId),
+        text,
+        urgent: !!urgent,
+        kind: 'chat',
+      }))
+      .filter((item) => item.studentId > 0 && item.text);
+    if (!items.length || sending || !socket) return;
+    setSending(true);
+    setError('');
+    setDraft('');
+    socket.emit('teacher:distribute', { items }, (ack) => {
+      setSending(false);
+      if (!ack?.ok) {
+        setDraft(text);
+        setError(ack?.error || 'Could not send.');
+        return;
+      }
+      setUrgent(false);
+      onSent?.({
+        studentIds: items.map((item) => item.studentId),
+        urgent: !!urgent,
+        name: recipientLabel(recipients),
+      });
+    });
+  }
+
+  return (
+    <div className="iboard-chat-pane" role="region" aria-label={`Private message to ${recipientLabel(recipients)}`}>
+      <div className="iboard-chat-pane__head">
+        <h2>Private message to {recipientLabel(recipients)}</h2>
+      </div>
+      <div className="iboard-chat-thread">
+        <p className="iboard-chat-empty">Each student gets a private copy.</p>
+      </div>
+      {error ? <p className="iboard-chat-error">{error}</p> : null}
+      <ChatCompose
+        allowUrgent
+        draft={draft}
+        onDraftChange={setDraft}
+        urgent={urgent}
+        onUrgentChange={setUrgent}
+        sending={sending}
+        role="teacher"
+        inputRef={inputRef}
+        onSend={send}
+      />
+    </div>
+  );
+}
+
 export default function TeacherInboxPanel({
   socket,
   students = [],
@@ -39,6 +113,7 @@ export default function TeacherInboxPanel({
 }) {
   const [threads, setThreads] = useState([]);
   const [selectedId, setSelectedId] = useState(0);
+  const [checkedIds, setCheckedIds] = useState(() => new Set());
 
   function loadThreads(preferId) {
     if (!socket) return;
@@ -107,12 +182,34 @@ export default function TeacherInboxPanel({
     setSelectedId(Number(waiting?.studentId || rows[0].studentId));
   }, [rows, selectedId]);
 
+  useEffect(() => {
+    const live = new Set(rows.map((row) => Number(row.studentId)));
+    setCheckedIds((current) => {
+      const next = new Set([...current].filter((id) => live.has(id)));
+      if (next.size === current.size && [...next].every((id) => current.has(id))) return current;
+      return next;
+    });
+  }, [rows]);
+
   const selected = rows.find((row) => Number(row.studentId) === Number(selectedId)) || null;
+  const checkedRows = rows.filter((row) => checkedIds.has(Number(row.studentId)));
+  const fanout = checkedRows.length >= 2;
 
   function selectThread(row) {
     const id = Number(row.studentId);
     setSelectedId(id);
     onOpenThread?.(row);
+  }
+
+  function toggleChecked(row, on) {
+    const id = Number(row.studentId);
+    if (!id) return;
+    setCheckedIds((current) => {
+      const next = new Set(current);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   }
 
   return (
@@ -121,32 +218,56 @@ export default function TeacherInboxPanel({
         <div className="iboard-teacher-inbox__scroll">
           {rows.length ? rows.map((row) => {
             const on = Number(row.studentId) === Number(selectedId);
+            const checked = checkedIds.has(Number(row.studentId));
             return (
-              <button
+              <div
                 key={row.studentId}
-                type="button"
-                className={`iboard-teacher-inbox__row${on ? ' is-on' : ''}${row.waiting ? ' is-unread' : ''}`}
-                aria-current={on ? 'true' : undefined}
-                onClick={() => selectThread(row)}
+                className={`iboard-teacher-inbox__row${on ? ' is-on' : ''}${checked ? ' is-checked' : ''}${row.waiting ? ' is-unread' : ''}`}
               >
-                <span className="iboard-chat-avatar" aria-hidden="true">{initialFor(row.studentName)}</span>
-                <span>
-                  <span className="iboard-teacher-inbox__name">{row.studentName}</span>
-                  <span className="iboard-teacher-inbox__preview">{previewFor(row, row.hands)}</span>
-                  <span className="iboard-teacher-inbox__meta">
-                    {row.waiting ? <span className="iboard-teacher-inbox__dot" aria-hidden="true" /> : null}
-                    <span className="iboard-teacher-inbox__time">{formatInboxTime(row.lastAt)}</span>
+                <label className="iboard-teacher-inbox__check">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => toggleChecked(row, event.target.checked)}
+                    aria-label={`Select ${row.studentName}`}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="iboard-teacher-inbox__open"
+                  aria-current={on ? 'true' : undefined}
+                  onClick={() => selectThread(row)}
+                >
+                  <span className="iboard-chat-avatar" aria-hidden="true">{initialFor(row.studentName)}</span>
+                  <span>
+                    <span className="iboard-teacher-inbox__name">{row.studentName}</span>
+                    <span className="iboard-teacher-inbox__preview">{previewFor(row, row.hands)}</span>
+                    <span className="iboard-teacher-inbox__meta">
+                      {row.waiting ? <span className="iboard-teacher-inbox__dot" aria-hidden="true" /> : null}
+                      <span className="iboard-teacher-inbox__time">{formatInboxTime(row.lastAt)}</span>
+                    </span>
                   </span>
-                </span>
-              </button>
+                </button>
+              </div>
             );
           }) : (
             <p className="iboard-teacher-inbox__empty">No students in the room yet.</p>
           )}
         </div>
       </aside>
-      <section className="iboard-teacher-inbox__thread" aria-label="Conversation">
-        {selected ? (
+      <section className="iboard-teacher-inbox__thread" aria-label={fanout ? 'Message several students' : 'Conversation'}>
+        {fanout ? (
+          <InboxFanoutCompose
+            key={[...checkedIds].sort((a, b) => a - b).join('-')}
+            recipients={checkedRows}
+            socket={socket}
+            onSent={(payload) => {
+              onTeacherSent?.(payload);
+              setCheckedIds(new Set());
+              loadThreads(selectedId);
+            }}
+          />
+        ) : selected ? (
           <>
             {selected.hands.length ? (
               <div className="iboard-teacher-inbox__hand">
@@ -182,7 +303,6 @@ export default function TeacherInboxPanel({
               role="teacher"
               studentId={selected.studentId}
               title={selected.studentName}
-              subtitle="Private"
               allowUrgent
               onTeacherSent={(payload) => {
                 onTeacherSent?.(payload);
