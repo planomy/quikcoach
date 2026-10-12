@@ -4340,10 +4340,10 @@ function TeacherDashboardInner() {
                       const on = attentionFocus === pill.id;
                       const count = attentionCounts[pill.id] || 0;
                       return (
+                        <div key={pill.id} className="iboard-attention-pill">
                         <HintWrap
-                          key={pill.id}
                           hint={count ? attentionHint(attentionNames[pill.id], on, pill.label) : pill.label}
-                          prefer="below"
+                          prefer="above"
                           tone={count ? 'card' : 'brand'}
                         >
                           <button
@@ -4365,6 +4365,55 @@ function TeacherDashboardInner() {
                             <span className="iboard-alert-chip__name">{pill.name}</span>
                           </button>
                         </HintWrap>
+                        {on && count > 0 ? (
+                          <div className="iboard-nudge-strip" role="region" aria-label="Nudge these students">
+                            <span className="iboard-nudge-strip__label">Nudge</span>
+                            {nudgeCompose ? (
+                              <form
+                                className="iboard-nudge-strip__compose"
+                                onSubmit={(event) => {
+                                  event.preventDefault();
+                                  sendAttentionNudge(nudgeDraft);
+                                }}
+                              >
+                                <input
+                                  type="text"
+                                  value={nudgeDraft}
+                                  maxLength={500}
+                                  autoFocus
+                                  placeholder="Write a private message"
+                                  aria-label="Write a private message for these students"
+                                  onChange={(event) => setNudgeDraft(event.target.value)}
+                                />
+                                <button type="submit" disabled={nudgeBusy || !nudgeDraft.trim()}>Send</button>
+                                <button type="button" onClick={() => { setNudgeCompose(false); setNudgeDraft(''); }}>Cancel</button>
+                              </form>
+                            ) : (
+                              <>
+                                {(ATTENTION_NUDGES[pill.id] || []).map((line) => (
+                                  <button
+                                    key={line}
+                                    type="button"
+                                    disabled={nudgeBusy}
+                                    className="iboard-nudge-strip__chip"
+                                    onClick={() => sendAttentionNudge(line)}
+                                  >
+                                    {line}
+                                  </button>
+                                ))}
+                                <button
+                                  type="button"
+                                  className="iboard-nudge-strip__chip is-write"
+                                  disabled={nudgeBusy}
+                                  onClick={() => setNudgeCompose(true)}
+                                >
+                                  Write…
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        ) : null}
+                        </div>
                       );
                     })}
                   <span className="iboard-command-bar__divider" aria-hidden="true" />
@@ -4388,54 +4437,6 @@ function TeacherDashboardInner() {
                         <span className="iboard-alert-chip__name">Inbox</span>
                       </button>
                   </HintWrap>
-                {attentionFocus && (attentionCounts[attentionFocus] || 0) > 0 ? (
-                  <div className="iboard-nudge-strip" role="region" aria-label="Nudge these students">
-                    <span className="iboard-nudge-strip__label">Nudge</span>
-                    {nudgeCompose ? (
-                      <form
-                        className="iboard-nudge-strip__compose"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          sendAttentionNudge(nudgeDraft);
-                        }}
-                      >
-                        <input
-                          type="text"
-                          value={nudgeDraft}
-                          maxLength={500}
-                          autoFocus
-                          placeholder="Write a private message"
-                          aria-label="Write a private message for these students"
-                          onChange={(event) => setNudgeDraft(event.target.value)}
-                        />
-                        <button type="submit" disabled={nudgeBusy || !nudgeDraft.trim()}>Send</button>
-                        <button type="button" onClick={() => { setNudgeCompose(false); setNudgeDraft(''); }}>Cancel</button>
-                      </form>
-                    ) : (
-                      <>
-                        {(ATTENTION_NUDGES[attentionFocus] || []).map((line) => (
-                          <button
-                            key={line}
-                            type="button"
-                            disabled={nudgeBusy}
-                            className="iboard-nudge-strip__chip"
-                            onClick={() => sendAttentionNudge(line)}
-                          >
-                            {line}
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          className="iboard-nudge-strip__chip is-write"
-                          disabled={nudgeBusy}
-                          onClick={() => setNudgeCompose(true)}
-                        >
-                          Write…
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ) : null}
                 </div>
               </div>
               <div ref={gaugeSlotRef} className="iboard-command-bar__gauge">

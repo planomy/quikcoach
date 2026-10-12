@@ -1221,18 +1221,21 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
   overflow: visible;
 }
 
+.iboard-attention-pill {
+  position: relative;
+}
+
 .iboard-nudge-strip {
   position: absolute;
-  top: calc(100% + 0.4rem);
+  top: calc(100% + 0.45rem);
   left: 0;
   z-index: 80;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 0.35rem;
-  width: max-content;
-  max-width: min(34rem, calc(100vw - 6rem));
-  padding: 0.38rem 0.5rem;
+  width: 15.5rem;
+  padding: 0.45rem 0.45rem 0.5rem;
   border: 1px solid #d5d4e4;
   border-radius: 0.9rem;
   background: #ffffff;
@@ -1240,11 +1243,11 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 }
 
 .iboard-nudge-strip:has(.iboard-nudge-strip__compose) {
-  width: min(28rem, calc(100vw - 6rem));
+  width: 16.5rem;
 }
 
 .iboard-nudge-strip__label {
-  margin-right: 0.15rem;
+  padding: 0 0.2rem 0.05rem;
   color: #5a5fc3;
   font-size: 0.68rem;
   font-weight: 800;
@@ -1253,18 +1256,17 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 }
 
 .iboard-nudge-strip__chip {
-  max-width: 22rem;
-  padding: 0.32rem 0.65rem;
-  overflow: hidden;
+  width: 100%;
+  padding: 0.42rem 0.65rem;
   border: 1px solid #d8d6ea;
-  border-radius: 999px;
+  border-radius: 0.7rem;
   background: #ffffff;
   color: #3c3f8f;
   font-size: 0.72rem;
   font-weight: 700;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
 }
 
 .iboard-nudge-strip__chip:hover:not(:disabled) {
@@ -1281,16 +1283,16 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 }
 
 .iboard-nudge-strip__compose {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   min-width: 0;
-  flex: 1 1 16rem;
   align-items: center;
   gap: 0.35rem;
 }
 
 .iboard-nudge-strip__compose input {
+  grid-column: 1 / -1;
   min-width: 0;
-  flex: 1 1 auto;
   height: 1.7rem;
   padding: 0 0.65rem;
   border: 1px solid #cfcce8;
