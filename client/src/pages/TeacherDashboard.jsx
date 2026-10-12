@@ -2576,24 +2576,10 @@ function TeacherDashboardInner() {
   }, [pendingHandByStudentId, handQuestionTarget?.student?.id]);
 
   useLayoutEffect(() => {
-    if (!inboxOpen) return undefined;
-    const place = () => {
-      const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
-      if (headerBottom) setTeacherToolsTop((prev) => {
-        const next = Math.round(headerBottom);
-        return Math.abs(prev - next) < 2 ? prev : next;
-      });
-    };
-    place();
-    const header = teacherHeaderRef.current;
-    const observer = header && typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null;
-    observer?.observe(header);
-    window.addEventListener('resize', place);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', place);
-    };
-  }, [inboxOpen, attentionFocus, nudgeCompose]);
+    if (!inboxOpen) return;
+    const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
+    if (headerBottom) setTeacherToolsTop(Math.round(headerBottom));
+  }, [inboxOpen]);
 
   useEffect(() => {
     if (!inboxOpen) return undefined;
@@ -4402,6 +4388,54 @@ function TeacherDashboardInner() {
                         <span className="iboard-alert-chip__name">Inbox</span>
                       </button>
                   </HintWrap>
+                {attentionFocus && (attentionCounts[attentionFocus] || 0) > 0 ? (
+                  <div className="iboard-nudge-strip" role="region" aria-label="Nudge these students">
+                    <span className="iboard-nudge-strip__label">Nudge</span>
+                    {nudgeCompose ? (
+                      <form
+                        className="iboard-nudge-strip__compose"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          sendAttentionNudge(nudgeDraft);
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={nudgeDraft}
+                          maxLength={500}
+                          autoFocus
+                          placeholder="Write a private message"
+                          aria-label="Write a private message for these students"
+                          onChange={(event) => setNudgeDraft(event.target.value)}
+                        />
+                        <button type="submit" disabled={nudgeBusy || !nudgeDraft.trim()}>Send</button>
+                        <button type="button" onClick={() => { setNudgeCompose(false); setNudgeDraft(''); }}>Cancel</button>
+                      </form>
+                    ) : (
+                      <>
+                        {(ATTENTION_NUDGES[attentionFocus] || []).map((line) => (
+                          <button
+                            key={line}
+                            type="button"
+                            disabled={nudgeBusy}
+                            className="iboard-nudge-strip__chip"
+                            onClick={() => sendAttentionNudge(line)}
+                          >
+                            {line}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className="iboard-nudge-strip__chip is-write"
+                          disabled={nudgeBusy}
+                          onClick={() => setNudgeCompose(true)}
+                        >
+                          Write…
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : null}
                 </div>
               </div>
               <div ref={gaugeSlotRef} className="iboard-command-bar__gauge">
@@ -4690,54 +4724,6 @@ function TeacherDashboardInner() {
           </div>
 
         </div>
-      {attentionFocus && (attentionCounts[attentionFocus] || 0) > 0 ? (
-        <div className="iboard-nudge-strip" role="region" aria-label="Nudge these students">
-          <span className="iboard-nudge-strip__label">Nudge</span>
-          {nudgeCompose ? (
-            <form
-              className="iboard-nudge-strip__compose"
-              onSubmit={(event) => {
-                event.preventDefault();
-                sendAttentionNudge(nudgeDraft);
-              }}
-            >
-              <input
-                type="text"
-                value={nudgeDraft}
-                maxLength={500}
-                autoFocus
-                placeholder="Write a private message"
-                aria-label="Write a private message for these students"
-                onChange={(event) => setNudgeDraft(event.target.value)}
-              />
-              <button type="submit" disabled={nudgeBusy || !nudgeDraft.trim()}>Send</button>
-              <button type="button" onClick={() => { setNudgeCompose(false); setNudgeDraft(''); }}>Cancel</button>
-            </form>
-          ) : (
-            <>
-              {(ATTENTION_NUDGES[attentionFocus] || []).map((line) => (
-                <button
-                  key={line}
-                  type="button"
-                  disabled={nudgeBusy}
-                  className="iboard-nudge-strip__chip"
-                  onClick={() => sendAttentionNudge(line)}
-                >
-                  {line}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="iboard-nudge-strip__chip is-write"
-                disabled={nudgeBusy}
-                onClick={() => setNudgeCompose(true)}
-              >
-                Write…
-              </button>
-            </>
-          )}
-        </div>
-      ) : null}
       </header>
       <TeacherHelpPanel
         open={helpOpen}

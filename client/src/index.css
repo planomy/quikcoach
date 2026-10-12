@@ -1216,16 +1216,31 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
   white-space: nowrap;
 }
 
+.iboard-command-bar,
+.iboard-command-bar__side--monitor {
+  overflow: visible;
+}
+
 .iboard-nudge-strip {
-  position: relative;
-  z-index: 1;
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 80;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.85rem 0.5rem calc(4.75rem + 0.55rem);
-  border-top: 1px solid #d5d4e4;
-  background: #f7f6fb;
+  gap: 0.35rem;
+  width: max-content;
+  max-width: min(34rem, calc(100vw - 6rem));
+  padding: 0.38rem 0.5rem;
+  border: 1px solid #d5d4e4;
+  border-radius: 0.9rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(60, 63, 143, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.iboard-nudge-strip:has(.iboard-nudge-strip__compose) {
+  width: min(28rem, calc(100vw - 6rem));
 }
 
 .iboard-nudge-strip__label {
@@ -1312,8 +1327,9 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 }
 
 html.dark .iboard-nudge-strip {
-  border-top-color: #243044;
-  background: #111827;
+  border-color: #334155;
+  background: #0f172a;
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.45);
 }
 
 html.dark .iboard-nudge-strip__chip {
