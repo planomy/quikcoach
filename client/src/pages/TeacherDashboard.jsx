@@ -29,7 +29,6 @@ import AppFooter from '../components/AppFooter.jsx';
 import IBoardWordmark from '../components/IBoardWordmark.jsx';
 import { gradeShortLabel } from '../components/StudentGradeSelect.jsx';
 import TeacherPinGate from '../components/TeacherPinGate.jsx';
-import ThemeToggle from '../components/ThemeToggle.jsx';
 import LiveResponseTeacher from '../components/LiveResponseTeacher.jsx';
 import TeacherAnswerRail from '../components/TeacherAnswerRail.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
@@ -3512,9 +3511,6 @@ function TeacherDashboardInner() {
     }
     return (
       <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
-        <div className="absolute right-4 top-4 z-10">
-          <ThemeToggle />
-        </div>
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
           <div className="iboard-join-stack text-center">
             <div className="flex justify-center">
@@ -4742,6 +4738,7 @@ function TeacherDashboardInner() {
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
                   </svg>
+                  <span className="iboard-arr-label">Settings</span>
                 </button>
               </HintWrap>
             </div>

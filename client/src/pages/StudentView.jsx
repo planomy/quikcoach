@@ -1343,9 +1343,6 @@ export default function StudentView() {
   if (!joined) {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
-        <div className="absolute right-4 top-4 z-10">
-          <ThemeToggle />
-        </div>
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
           <div className="iboard-join-stack text-center">
             <div className="flex justify-center">
