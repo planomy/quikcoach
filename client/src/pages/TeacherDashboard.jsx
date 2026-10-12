@@ -6846,10 +6846,7 @@ function TeacherDashboardInner() {
               <h2 id="snapshot-name-title" className="font-display text-lg font-bold text-[#2c2c34] dark:text-slate-100">
                 Save snapshot
               </h2>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                This name is stored with the writing. Students see it as today’s objective.
-              </p>
-              <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <label className="mt-3 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 Snapshot name
                 <input
                   value={snapshotName}
