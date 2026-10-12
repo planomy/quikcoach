@@ -396,7 +396,7 @@ export default function RichTextEditor({
         />
       )}
 
-      <div className={`${drawMode ? 'hidden' : ''} iboard-student-writing-card relative min-h-0 overflow-hidden rounded-2xl border border-[#e8e8ef] bg-white dark:border-slate-600 dark:bg-slate-900`}>
+      <div className={`${drawMode ? 'hidden' : ''} iboard-student-writing-card relative min-h-0 overflow-hidden rounded-2xl border border-[#b7b7c0] bg-white dark:border-slate-600 dark:bg-slate-900`}>
         <div className="iboard-student-writing-tools relative flex flex-wrap items-center gap-1.5 border-b border-[#ececf2] bg-[#fafafa] px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
           {formattingEnabled ? (
             <div ref={formatMenuRef} className="relative">
@@ -465,7 +465,7 @@ export default function RichTextEditor({
         </div>
         <div className="relative">
           {empty && !focused && (
-            <div className="iboard-student-writing-placeholder pointer-events-none absolute text-slate-400 dark:text-slate-500">
+            <div className="iboard-student-writing-placeholder pointer-events-none absolute">
               {disabled ? 'Class is frozen by your teacher.' : placeholder}
             </div>
           )}
@@ -484,7 +484,7 @@ export default function RichTextEditor({
               setFocused(false);
               commitFromDom({ normaliseDom: true });
             }}
-            className={`iboard-student-writing-page min-h-[280px] whitespace-pre-wrap leading-relaxed text-slate-800 outline-none [&_div+div]:mt-2 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:px-0.5 [&_mark]:text-slate-900 dark:text-slate-100 ${
+            className={`iboard-student-writing-page min-h-[280px] whitespace-pre-wrap leading-relaxed outline-none [&_div+div]:mt-2 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_mark]:rounded-sm [&_mark]:bg-yellow-200 [&_mark]:px-0.5 [&_mark]:text-slate-900 ${
               disabled ? 'cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''
             }`}
           />

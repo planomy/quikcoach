@@ -527,10 +527,10 @@ html.iboard-student-splitting iframe {
   display: flex;
   flex-direction: column;
   border-radius: 0.65rem;
-  border: 1px solid #e4e4ea;
+  border: 1px solid #b7b7c0;
   background: #ffffff;
   padding: 0.6rem 0.7rem;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  box-shadow: none;
 }
 
 .iboard-breakout-peers__name {
@@ -540,8 +540,9 @@ html.iboard-student-splitting iframe {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.75rem;
-  font-weight: 650;
-  color: #3c3c45;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: #2c2c34;
 }
 
 .iboard-breakout-peers__image {
@@ -564,7 +565,8 @@ html.iboard-student-splitting iframe {
   -webkit-overflow-scrolling: touch;
   font-size: 0.75rem;
   line-height: 1.35;
-  color: #475569;
+  color: #3a3a42;
+  font-weight: 400;
   /* Hidden scrollbar chrome — wheel/trackpad/touch still scroll. */
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -578,17 +580,22 @@ html.iboard-student-splitting iframe {
 
 .iboard-breakout-peers__empty-copy {
   font-style: italic;
-  color: #94a3b8;
+  color: #2c2c34;
 }
 
-html.dark .iboard-breakout-peers__head h3,
-html.dark .iboard-breakout-peers__name {
+html.dark .iboard-breakout-peers__head h3 {
   color: #e2e8f0;
 }
 
+html.dark .iboard-breakout-peers__name,
+html.dark .iboard-breakout-peers__empty-copy {
+  color: #e4e4ea;
+}
+
 html.dark .iboard-breakout-peers__slot {
-  border-color: #334155;
+  border-color: #475569;
   background: #0f172a;
+  box-shadow: none;
 }
 
 html.dark .iboard-breakout-peers__body {
@@ -640,10 +647,10 @@ html.dark .iboard-breakout-peers__body {
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #e8e8ef;
+  border: 1px solid #b7b7c0;
   border-radius: 1rem;
   background: #fff;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  box-shadow: none;
 }
 
 /* Ring is an overlay inside the card: an inset shadow gets painted over by the writing card,
@@ -736,16 +743,17 @@ html.iboard-student-workspace.iboard-student-class-wall main > .iboard-student-w
 .iboard-class-wall__name {
   margin: 0;
   overflow: hidden;
-  color: #3c3c45;
+  color: #2c2c34;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 400;
+  letter-spacing: 0.01em;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .iboard-class-wall__card.is-you .iboard-class-wall__name {
-  color: #5a5fc3;
+  color: #2c2c34;
 }
 
 .iboard-class-wall__card.is-you .iboard-class-wall__body {
@@ -806,25 +814,30 @@ html.iboard-student-workspace.iboard-student-class-wall main > .iboard-student-w
   padding: 0.35rem 0.65rem 0.5rem;
   font-size: 0.88rem;
   line-height: 1.4;
-  color: #3c3c45;
+  color: #3a3a42;
+  font-weight: 400;
 }
 
 .iboard-class-wall__empty {
   font-style: italic;
-  color: #94a3b8;
+  color: #2c2c34;
 }
 
 html.dark .iboard-class-wall__card {
-  border-color: #334155;
+  border-color: #475569;
   background: #0f172a;
+  box-shadow: none;
 }
 
-html.dark .iboard-class-wall__name {
-  color: #e2e8f0;
+html.dark .iboard-class-wall__card.is-you,
+html.dark .iboard-class-wall__card.is-you::after {
+  border-color: #818cf8;
 }
 
-html.dark .iboard-class-wall__card.is-you .iboard-class-wall__name {
-  color: #a5b4fc;
+html.dark .iboard-class-wall__name,
+html.dark .iboard-class-wall__card.is-you .iboard-class-wall__name,
+html.dark .iboard-class-wall__empty {
+  color: #e4e4ea;
 }
 
 html.dark .iboard-class-wall__body .iboard-rich-text {

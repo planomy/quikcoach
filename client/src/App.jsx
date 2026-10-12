@@ -12,6 +12,7 @@ import UiInteractionController from './components/UiInteractionController.jsx';
 import ConnectionStatusController from './components/ConnectionStatusController.jsx';
 import ClassResetController from './components/ClassResetController.jsx';
 import ConfirmDialogHost from './components/ConfirmDialogHost.jsx';
+import PopoutDrag from './components/PopoutDrag.jsx';
 import './styles/teacherCleanUi.css';
 import './styles/studentCleanUi.css';
 import './styles/studentLiveResponsePolish.css';
@@ -54,6 +55,7 @@ export default function App() {
   return (
     <>
       <ConfirmDialogHost />
+      <PopoutDrag />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/teacher" element={<TeacherConsole />} />
