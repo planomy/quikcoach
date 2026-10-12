@@ -602,8 +602,8 @@ html.dark .iboard-breakout-peers__body {
   color: #cbd5e1;
 }
 
-/* Class wall: equal Padlet-style cards. Columns follow the writing column, not class size.
-   The student's own card can grow taller; the row follows it and the others stay put. */
+/* Class wall: equal cards. The student's own card can grow wider and taller;
+   the others are placed in the cells left around it. */
 .iboard-student-writing-col {
   container-type: inline-size;
   container-name: class-wall;
@@ -655,10 +655,28 @@ html.dark .iboard-breakout-peers__body {
 
 /* Ring is an overlay inside the card: an inset shadow gets painted over by the writing card,
    and an outer one gets clipped by the wall's scroll container. */
+.iboard-class-wall.is-packed {
+  display: block;
+  position: relative;
+}
+
+.iboard-class-wall.is-packed .iboard-class-wall__card {
+  position: absolute;
+  box-sizing: border-box;
+  height: auto;
+  max-height: none;
+}
+
+.iboard-class-wall.is-packed .iboard-class-wall__card.is-you {
+  position: absolute;
+}
+
+.iboard-class-wall.is-packed .iboard-class-wall__card:not(.is-you) {
+  transition: left 140ms ease, top 140ms ease;
+}
+
 .iboard-class-wall__card.is-you {
   position: relative;
-  min-height: 9rem;
-  max-height: min(75vh, 40rem);
   overflow: hidden;
   border-color: #5a5fc3;
 }
@@ -676,7 +694,7 @@ html.dark .iboard-breakout-peers__body {
   border: 0;
   background: transparent;
   color: #5c5c6e;
-  cursor: ns-resize;
+  cursor: nwse-resize;
   touch-action: none;
 }
 
