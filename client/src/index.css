@@ -1083,6 +1083,12 @@ html.dark .iboard-brand-word {
   width: 0.9rem;
   height: 0.9rem;
   flex: 0 0 auto;
+  transform-origin: center;
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.iboard-alert-chip:hover svg {
+  transform: scale(1.14);
 }
 
 .iboard-alert-chip.has-count {
@@ -1224,9 +1230,13 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   box-shadow: none;
 }
 
+/* Offset the icon rows without a transform on the row. A transform here
+   turns the whole row into one layer, so hovering one icon shifts the rest. */
 .iboard-command-bar__side .iboard-attention-home,
 .iboard-command-bar__side .iboard-manage-tools {
-  transform: translateY(0.22rem);
+  position: relative;
+  top: 0.22rem;
+  transform: none;
 }
 
 /* Icons share the wing in equal columns. The monitor divider sits on the
@@ -1400,6 +1410,11 @@ html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools .iboard-header-icon-
 .iboard-manage-tools .iboard-header-icon {
   width: 1.05rem;
   height: 1.05rem;
+  transform-origin: center;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools .iboard-header-icon-button:active {
+  transform: none;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools__freeze.is-frozen {
@@ -2600,7 +2615,7 @@ html.dark .iboard-tour__close:hover {
 .iboard-arr-btn:hover:not([data-active='true']) img,
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph,
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__icon {
-  transform: scale(1.12);
+  transform: scale(1.14);
 }
 
 .iboard-arr-btn:active:not(:disabled) {
