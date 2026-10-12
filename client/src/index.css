@@ -1216,6 +1216,123 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
   white-space: nowrap;
 }
 
+.iboard-nudge-strip {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem 0.5rem calc(4.75rem + 0.55rem);
+  border-top: 1px solid #d5d4e4;
+  background: #f7f6fb;
+}
+
+.iboard-nudge-strip__label {
+  margin-right: 0.15rem;
+  color: #5a5fc3;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.iboard-nudge-strip__chip {
+  max-width: 22rem;
+  padding: 0.32rem 0.65rem;
+  overflow: hidden;
+  border: 1px solid #d8d6ea;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #3c3f8f;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iboard-nudge-strip__chip:hover:not(:disabled) {
+  border-color: #5a5fc3;
+  background: #ebeaf8;
+}
+
+.iboard-nudge-strip__chip.is-write {
+  border-style: dashed;
+}
+
+.iboard-nudge-strip__chip:disabled {
+  opacity: 0.45;
+}
+
+.iboard-nudge-strip__compose {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 16rem;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.iboard-nudge-strip__compose input {
+  min-width: 0;
+  flex: 1 1 auto;
+  height: 1.7rem;
+  padding: 0 0.65rem;
+  border: 1px solid #cfcce8;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1f1f24;
+  font-size: 0.75rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.iboard-nudge-strip__compose input:focus {
+  border-color: #5a5fc3;
+}
+
+.iboard-nudge-strip__compose button {
+  height: 1.7rem;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: #5a5fc3;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.iboard-nudge-strip__compose button[type='button'] {
+  background: transparent;
+  color: #6b6b76;
+}
+
+.iboard-nudge-strip__compose button:disabled {
+  opacity: 0.4;
+}
+
+html.dark .iboard-nudge-strip {
+  border-top-color: #243044;
+  background: #111827;
+}
+
+html.dark .iboard-nudge-strip__chip {
+  border-color: #334155;
+  background: #0f172a;
+  color: #c7d2fe;
+}
+
+html.dark .iboard-nudge-strip__chip:hover:not(:disabled) {
+  border-color: #818cf8;
+  background: rgba(90, 95, 195, 0.22);
+}
+
+html.dark .iboard-nudge-strip__compose input {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
 .iboard-wing-caption {
   font-size: calc(0.58rem + 1px);
   font-weight: 700;

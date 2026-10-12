@@ -255,6 +255,25 @@ function CardViewIcon({ id, className = 'h-5 w-5' }) {
   );
 }
 
+const ATTENTION_NUDGES = {
+  notStarted: [
+    'Time to start writing.',
+    'Write the first sentence now.',
+  ],
+  noTyping: [
+    'Keep going — add the next sentence.',
+    'Add one more sentence.',
+  ],
+  away: [
+    'Come back to TUIT when you can.',
+    'Jump back into your writing.',
+  ],
+  pasted: [
+    'Tell me in your own words what you just added.',
+    'Keep the paste, then explain it.',
+  ],
+};
+
 function studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId) {
   const id = Number(student?.id);
   if (!id) return false;
@@ -555,7 +574,10 @@ function TeacherDashboardInner() {
   /** studentId → away (tab/app background). Synced from student:presence + live:teacher. */
   const [awayByStudentId, setAwayByStudentId] = useState(() => new Map());
   /** Pin attention cards (away / not started) to the top when true. */
-  const [attentionFocus, setAttentionFocus] = useState(null); // null | 'away' | 'notStarted' | 'pasted'
+  const [attentionFocus, setAttentionFocus] = useState(null); // null | 'away' | 'notStarted' | 'noTyping' | 'pasted'
+  const [nudgeCompose, setNudgeCompose] = useState(false);
+  const [nudgeDraft, setNudgeDraft] = useState('');
+  const [nudgeBusy, setNudgeBusy] = useState(false);
   /** Pastes this lesson by student id, pushed live by the server whether REC is on or off. */
   const [pasteCounts, setPasteCounts] = useState({});
   const [pasteMenu, setPasteMenu] = useState(null); // { studentId, left, top }
@@ -1793,6 +1815,11 @@ function TeacherDashboardInner() {
     if (attentionFocus && !attentionCounts[attentionFocus]) setAttentionFocus(null);
   }, [attentionFocus, attentionCounts]);
 
+  useEffect(() => {
+    setNudgeCompose(false);
+    setNudgeDraft('');
+  }, [attentionFocus]);
+
   const classGauge = useMemo(() => {
     if (livePulse.activity && !livePulse.activity.closed) {
       const asked = (livePulse.students || []).filter(
@@ -2549,10 +2576,24 @@ function TeacherDashboardInner() {
   }, [pendingHandByStudentId, handQuestionTarget?.student?.id]);
 
   useLayoutEffect(() => {
-    if (!inboxOpen) return;
-    const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
-    if (headerBottom) setTeacherToolsTop(Math.round(headerBottom));
-  }, [inboxOpen]);
+    if (!inboxOpen) return undefined;
+    const place = () => {
+      const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
+      if (headerBottom) setTeacherToolsTop((prev) => {
+        const next = Math.round(headerBottom);
+        return Math.abs(prev - next) < 2 ? prev : next;
+      });
+    };
+    place();
+    const header = teacherHeaderRef.current;
+    const observer = header && typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null;
+    observer?.observe(header);
+    window.addEventListener('resize', place);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', place);
+    };
+  }, [inboxOpen, attentionFocus, nudgeCompose]);
 
   useEffect(() => {
     if (!inboxOpen) return undefined;
@@ -2731,6 +2772,42 @@ function TeacherDashboardInner() {
       });
     }
     setNoteTarget(null);
+  }
+
+  function sendAttentionNudge(text) {
+    const body = String(text || '').trim().slice(0, 5000);
+    if (!body || !attentionFocus || nudgeBusy || !socket) return;
+    const targets = orderedStudents.filter((student) => matchesAttention(student, attentionFocus));
+    if (!targets.length) return;
+    const items = targets.map((student) => ({
+      studentId: Number(student.id),
+      text: body,
+      urgent: false,
+      kind: 'chat',
+    }));
+    setNudgeBusy(true);
+    socket.emit('teacher:distribute', { items }, (ack) => {
+      setNudgeBusy(false);
+      if (!ack?.ok) {
+        setError(ack?.error || 'Could not send that nudge');
+        return;
+      }
+      setNoteReceiptByStudentId((current) => {
+        const next = { ...current };
+        for (const student of targets) next[Number(student.id)] = 'waiting';
+        return next;
+      });
+      for (const student of targets) {
+        window.dispatchEvent(new CustomEvent('iboard:note-send-status', {
+          detail: { studentId: Number(student.id), status: 'waiting' },
+        }));
+      }
+      const count = targets.length;
+      setCopyToast(count === 1 ? `Nudge sent to ${targets[0].name || '1 student'}` : `Nudge sent to ${count} students`);
+      setTimeout(() => setCopyToast(''), 2500);
+      setNudgeCompose(false);
+      setNudgeDraft('');
+    });
   }
 
   function handleTeacherChatSent({ studentId, urgent, name }) {
@@ -4285,7 +4362,10 @@ function TeacherDashboardInner() {
                         >
                           <button
                             type="button"
-                            onClick={() => { if (count) setAttentionFocus(on ? null : pill.id); }}
+                            onClick={() => {
+                              if (!count) return;
+                              setAttentionFocus(on ? null : pill.id);
+                            }}
                             className={`iboard-alert-chip${count ? ' has-count' : ''}${on ? ' is-on' : ''}`}
                             title=""
                             aria-disabled={!count}
@@ -4610,6 +4690,54 @@ function TeacherDashboardInner() {
           </div>
 
         </div>
+      {attentionFocus && (attentionCounts[attentionFocus] || 0) > 0 ? (
+        <div className="iboard-nudge-strip" role="region" aria-label="Nudge these students">
+          <span className="iboard-nudge-strip__label">Nudge</span>
+          {nudgeCompose ? (
+            <form
+              className="iboard-nudge-strip__compose"
+              onSubmit={(event) => {
+                event.preventDefault();
+                sendAttentionNudge(nudgeDraft);
+              }}
+            >
+              <input
+                type="text"
+                value={nudgeDraft}
+                maxLength={500}
+                autoFocus
+                placeholder="Write a private message"
+                aria-label="Write a private message for these students"
+                onChange={(event) => setNudgeDraft(event.target.value)}
+              />
+              <button type="submit" disabled={nudgeBusy || !nudgeDraft.trim()}>Send</button>
+              <button type="button" onClick={() => { setNudgeCompose(false); setNudgeDraft(''); }}>Cancel</button>
+            </form>
+          ) : (
+            <>
+              {(ATTENTION_NUDGES[attentionFocus] || []).map((line) => (
+                <button
+                  key={line}
+                  type="button"
+                  disabled={nudgeBusy}
+                  className="iboard-nudge-strip__chip"
+                  onClick={() => sendAttentionNudge(line)}
+                >
+                  {line}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="iboard-nudge-strip__chip is-write"
+                disabled={nudgeBusy}
+                onClick={() => setNudgeCompose(true)}
+              >
+                Write…
+              </button>
+            </>
+          )}
+        </div>
+      ) : null}
       </header>
       <TeacherHelpPanel
         open={helpOpen}
