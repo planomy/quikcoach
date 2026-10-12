@@ -1297,6 +1297,19 @@ html .iboard-nudge-strip__chrome button.iboard-icon-action {
   border-style: dashed;
 }
 
+.iboard-nudge-strip__chip.is-clear {
+  border-color: transparent;
+  background: transparent;
+  color: #6b6b76;
+  text-align: center;
+}
+
+.iboard-nudge-strip__chip.is-clear:hover:not(:disabled) {
+  border-color: transparent;
+  background: #f4f3fa;
+  color: #3c3f8f;
+}
+
 .iboard-nudge-strip__chip:disabled {
   opacity: 0.45;
 }
@@ -1362,6 +1375,16 @@ html.dark .iboard-nudge-strip__chip {
 html.dark .iboard-nudge-strip__chip:hover:not(:disabled) {
   border-color: #818cf8;
   background: rgba(90, 95, 195, 0.22);
+}
+
+html.dark .iboard-nudge-strip__chip.is-clear {
+  color: #94a3b8;
+}
+
+html.dark .iboard-nudge-strip__chip.is-clear:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
 }
 
 html.dark .iboard-nudge-strip__compose input {

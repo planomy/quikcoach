@@ -579,6 +579,11 @@ function TeacherDashboardInner() {
   const [nudgeDraft, setNudgeDraft] = useState('');
   const [nudgeBusy, setNudgeBusy] = useState(false);
   const [nudgePanelHidden, setNudgePanelHidden] = useState(false);
+  const [attentionAck, setAttentionAck] = useState({
+    away: new Set(),
+    notStarted: new Set(),
+    noTyping: new Set(),
+  });
   /** Pastes this lesson by student id, pushed live by the server whether REC is on or off. */
   const [pasteCounts, setPasteCounts] = useState({});
   const [pasteMenu, setPasteMenu] = useState(null); // { studentId, left, top }
@@ -1786,14 +1791,36 @@ function TeacherDashboardInner() {
 
   const matchesAttention = useCallback(
     (student, filter) => {
-      if (filter === 'away') return isAwayAlert(student);
-      if (filter === 'notStarted') return isNotStartedAlert(student);
-      if (filter === 'noTyping') return isNoTyping(student);
+      const id = Number(student.id);
+      if (filter === 'away') return isAwayAlert(student) && !attentionAck.away.has(id);
+      if (filter === 'notStarted') return isNotStartedAlert(student) && !attentionAck.notStarted.has(id);
+      if (filter === 'noTyping') return isNoTyping(student) && !attentionAck.noTyping.has(id);
       if (filter === 'pasted') return alertPrefs.pasted && !!pasteCounts[student.id];
       return false;
     },
-    [isAwayAlert, isNotStartedAlert, isNoTyping, alertPrefs.pasted, pasteCounts]
+    [isAwayAlert, isNotStartedAlert, isNoTyping, alertPrefs.pasted, pasteCounts, attentionAck]
   );
+
+  useEffect(() => {
+    setAttentionAck((current) => {
+      let changed = false;
+      const next = { away: new Set(), notStarted: new Set(), noTyping: new Set() };
+      const stillHot = {
+        away: isAwayAlert,
+        notStarted: isNotStartedAlert,
+        noTyping: isNoTyping,
+      };
+      for (const filter of Object.keys(next)) {
+        for (const id of current[filter]) {
+          const student = orderedStudents.find((row) => Number(row.id) === id);
+          if (student && stillHot[filter](student)) next[filter].add(id);
+          else changed = true;
+        }
+        if (next[filter].size !== current[filter].size) changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [orderedStudents, isAwayAlert, isNotStartedAlert, isNoTyping]);
 
   const attentionNames = useMemo(() => {
     const names = { away: [], notStarted: [], noTyping: [], pasted: [] };
@@ -2795,6 +2822,28 @@ function TeacherDashboardInner() {
       setTimeout(() => setCopyToast(''), 2500);
       setNudgeCompose(false);
       setNudgeDraft('');
+    });
+  }
+
+  function clearAttentionAlerts(filter) {
+    const targets = orderedStudents.filter((student) => matchesAttention(student, filter));
+    if (!targets.length) return;
+    if (filter === 'pasted') {
+      setPasteCounts((prev) => {
+        const next = { ...prev };
+        for (const student of targets) delete next[student.id];
+        return next;
+      });
+      setPasteMenu(null);
+      setPasteDetail(null);
+      for (const student of targets) socket.emit('teacher:paste-ack', { studentId: Number(student.id) });
+      return;
+    }
+    if (filter !== 'away' && filter !== 'notStarted' && filter !== 'noTyping') return;
+    setAttentionAck((current) => {
+      const next = new Set(current[filter]);
+      for (const student of targets) next.add(Number(student.id));
+      return { ...current, [filter]: next };
     });
   }
 
@@ -4427,6 +4476,13 @@ function TeacherDashboardInner() {
                                   onClick={() => setNudgeCompose(true)}
                                 >
                                   Write…
+                                </button>
+                                <button
+                                  type="button"
+                                  className="iboard-nudge-strip__chip is-clear"
+                                  onClick={() => clearAttentionAlerts(pill.id)}
+                                >
+                                  Clear alerts
                                 </button>
                               </>
                             )}
