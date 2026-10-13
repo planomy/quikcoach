@@ -4400,7 +4400,7 @@ function TeacherDashboardInner() {
         <div className="iboard-teacher-header-bar relative">
           <div className="iboard-teacher-header-rail">
             <div className="iboard-brand iboard-brand--stacked shrink-0" aria-label="TUIT">
-              <img src="/brand/tuit-corner.png?v=1" alt="" className="iboard-brand-corner" />
+              <img src="/brand/tuit-corner.png?v=4" alt="" className="iboard-brand-corner" />
             </div>
           </div>
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
@@ -5030,7 +5030,7 @@ function TeacherDashboardInner() {
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
             <div className="iboard-arr-rail__foot">
-              <HintWrap hint="This lesson and each student's saved work" prefer="right" suppressed={reportsOpen}>
+              <HintWrap hint="Today, student folders, and class insights" prefer="right" suppressed={reportsOpen}>
                 <button
                   ref={recordsButtonRef}
                   type="button"
@@ -6745,7 +6745,7 @@ function TeacherDashboardInner() {
             {settingsSection === 'records' && (
             <section className="iboard-room-settings__section">
               <div className="iboard-room-settings__card iboard-room-settings__list">
-                <HintWrap hint="Today, each students folders, and class insights" className="w-full">
+                <HintWrap hint="Today, student folders, and class insights" className="w-full">
                   <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
                     <span>Reports</span>
                     {snapshots.length > 0 ? (
