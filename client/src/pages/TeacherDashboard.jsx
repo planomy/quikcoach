@@ -5841,13 +5841,13 @@ function TeacherDashboardInner() {
                 </p>
               ) : (
                 pasteDetail.pastes.map((paste, index) => (
-                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-[#f1f0f8] px-2.5 py-2 dark:bg-slate-800">
-                    <p className="text-[10px] font-bold text-[#5a5fc3] dark:text-indigo-300">
+                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-red-50 px-2.5 py-2 dark:bg-red-950/40">
+                    <p className="text-[10px] font-bold text-red-700 dark:text-red-300">
                       {paste.at ? new Date(paste.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''}
                       {' · '}
                       {paste.text.trim().split(/\s+/).filter(Boolean).length} words
                     </p>
-                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-slate-700 dark:text-slate-200">{paste.text}</p>
+                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-red-800 dark:text-red-200">{paste.text}</p>
                   </div>
                 ))
               )}
