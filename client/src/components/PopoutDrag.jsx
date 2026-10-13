@@ -18,7 +18,7 @@ const HANDLE_SELECTOR = [
   '[data-popout-handle]',
 ].join(',');
 
-const INTERACTIVE_SELECTOR = 'button, a, input, textarea, select, option, label, summary, [contenteditable="true"], [role="menuitem"], [role="slider"]';
+const INTERACTIVE_SELECTOR = 'button, a, input, textarea, select, option, label, summary, [contenteditable="true"], [role="menuitem"], [role="slider"], [role="separator"], [data-dock-resize]';
 
 function findPopout(target) {
   if (!(target instanceof Element)) return null;

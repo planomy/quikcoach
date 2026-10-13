@@ -4320,7 +4320,46 @@ html.dark .iboard-feedback-settings__cancel:hover {
 }
 
 .iboard-library-dock {
+  position: relative;
   overflow: hidden;
+}
+
+.iboard-library-dock__resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 5;
+  width: 0.7rem;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.iboard-library-dock__resize::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2px;
+  background: #cfc8f2;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.iboard-library-dock__resize:hover::after,
+html.iboard-reports-resizing .iboard-library-dock__resize::after {
+  opacity: 1;
+}
+
+html.iboard-reports-resizing,
+html.iboard-reports-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+html.dark .iboard-library-dock__resize::after {
+  background: #4c4588;
 }
 
 .iboard-library-dock__chrome--back {

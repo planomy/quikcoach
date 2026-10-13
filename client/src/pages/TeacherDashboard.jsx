@@ -84,7 +84,25 @@ const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden-v2';
 const LESSON_BEGUN_KEY = 'iboard-lesson-begun';
 const LESSON_BEGUN_MAX_MS = 4 * 60 * 60 * 1000;
 const ALERT_PREFS_KEY = 'tuit-alert-prefs';
+const REPORTS_DOCK_WIDTH_KEY = 'iboard-reports-dock-width';
+const REPORTS_DOCK_MIN = 320;
+const REPORTS_DOCK_DEFAULT = 464;
 const DEFAULT_ALERT_PREFS = { away: true, notStarted: true, notStartedMin: 4, noTyping: true, noTypingMin: 3, pasted: true };
+
+function clampReportsDockWidth(px, viewport = typeof window === 'undefined' ? 1200 : window.innerWidth) {
+  const max = Math.max(REPORTS_DOCK_MIN, viewport - 4.75 * 16 - 16);
+  const n = Number(px);
+  if (!Number.isFinite(n)) return Math.min(REPORTS_DOCK_DEFAULT, max);
+  return Math.round(Math.min(max, Math.max(REPORTS_DOCK_MIN, n)));
+}
+
+function readReportsDockWidth() {
+  try {
+    return clampReportsDockWidth(localStorage.getItem(REPORTS_DOCK_WIDTH_KEY));
+  } catch {
+    return REPORTS_DOCK_DEFAULT;
+  }
+}
 const INBOX_NOTE_MAX = 20_000;
 
 function sharedFileLabel(file) {
@@ -551,6 +569,8 @@ function TeacherDashboardInner() {
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
   const [libraryPanel, setLibraryPanel] = useState(null); // null | 'evidence' (Lesson records hub shell)
   const [libraryView, setLibraryView] = useState('home'); // home | feedback | feedback-sent | drafting | participation | pdf | portfolios
+  const [reportsDockWidth, setReportsDockWidth] = useState(readReportsDockWidth);
+  const reportsDockWidthRef = useRef(reportsDockWidth);
   const [aiFeedbackLog, setAiFeedbackLog] = useState(null);
   const [aiSummaries, setAiSummaries] = useState([]);
   const [aiTask, setAiTask] = useState('feedback');
@@ -2667,9 +2687,10 @@ function TeacherDashboardInner() {
   }, [pasteBox, aiPasteParsed, visibleStudents.length, distributeReady]);
 
   const bottomAnchoredDock = libraryPanel || settingsOpen || inboxOpen;
+  const reportsDockOpen = !!libraryPanel && libraryView !== 'feedback';
   const headerDockStyle = useMemo(
-    () => (
-      bottomAnchoredDock
+    () => {
+      const base = bottomAnchoredDock
         ? {
             top: teacherToolsTop,
             bottom: 0,
@@ -2679,10 +2700,56 @@ function TeacherDashboardInner() {
         : {
             top: teacherToolsTop,
             ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
-          }
-    ),
-    [bottomAnchoredDock, teacherToolsTop, teacherToolsDockHeight]
+          };
+      if (reportsDockOpen) return { ...base, width: reportsDockWidth };
+      return base;
+    },
+    [bottomAnchoredDock, teacherToolsTop, teacherToolsDockHeight, reportsDockOpen, reportsDockWidth]
   );
+
+  useEffect(() => {
+    reportsDockWidthRef.current = reportsDockWidth;
+  }, [reportsDockWidth]);
+
+  useEffect(() => {
+    if (!reportsDockOpen) return undefined;
+    function clampToViewport() {
+      setReportsDockWidth((current) => {
+        const next = clampReportsDockWidth(current);
+        return next === current ? current : next;
+      });
+    }
+    window.addEventListener('resize', clampToViewport);
+    return () => window.removeEventListener('resize', clampToViewport);
+  }, [reportsDockOpen]);
+
+  function startReportsDockResize(event) {
+    if (event.button != null && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const originX = event.clientX;
+    const originW = reportsDockWidthRef.current;
+    document.documentElement.classList.add('iboard-reports-resizing');
+    function move(nextEvent) {
+      const next = clampReportsDockWidth(originW + (nextEvent.clientX - originX));
+      reportsDockWidthRef.current = next;
+      setReportsDockWidth(next);
+    }
+    function up() {
+      document.documentElement.classList.remove('iboard-reports-resizing');
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      try {
+        localStorage.setItem(REPORTS_DOCK_WIDTH_KEY, String(reportsDockWidthRef.current));
+      } catch {
+        /* ignore */
+      }
+    }
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }
 
   function saveClassSummary() {
     const text = summaryBox.trim();
@@ -5877,15 +5944,27 @@ function TeacherDashboardInner() {
       {libraryPanel && createPortal(
         <div
           ref={libraryDockRef}
-          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 w-[min(29rem,calc(100vw-4.75rem))] flex-col${
-            helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''
-          }${helpFlash === 'ai' && libraryView === 'feedback' ? ' is-help-flash' : ''}`}
+          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 flex-col${
+            libraryView === 'feedback' ? ' w-[min(29rem,calc(100vw-4.75rem))]' : ''
+          }${helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''}${
+            helpFlash === 'ai' && libraryView === 'feedback' ? ' is-help-flash' : ''
+          }`}
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
           aria-labelledby="library-panel-title"
           data-help-target={libraryView === 'feedback' ? 'ai' : 'records'}
         >
+            {libraryView !== 'feedback' ? (
+              <div
+                className="iboard-library-dock__resize"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize reports"
+                data-dock-resize=""
+                onPointerDown={startReportsDockResize}
+              />
+            ) : null}
             <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' ? ' iboard-library-dock__chrome--back' : ''}`}>
                 {libraryView !== 'home' && libraryView !== 'feedback' ? (
                   <button
