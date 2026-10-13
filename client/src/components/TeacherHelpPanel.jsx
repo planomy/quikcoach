@@ -51,7 +51,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'records',
     title: 'Reports',
-    body: 'Open View reports for Today (this lesson) and the Student folder (saved writing across the term). Snapshot at the end of a lesson from the save icon. Class insights is in Settings if you or your HOD need the longer view.',
+    body: 'Open View reports for three tabs: Today (this lesson), Student folder (saved writing across the term), and Class insights (you or your HOD). Snapshot at the end of a lesson from the save icon.',
     action: 'records',
   },
   {

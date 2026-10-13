@@ -5950,8 +5950,8 @@ function TeacherDashboardInner() {
                 onPointerDown={startReportsDockResize}
               />
             ) : null}
-            <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' ? ' iboard-library-dock__chrome--back' : ''}`}>
-                {libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' ? (
+            <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'insights' ? ' iboard-library-dock__chrome--back' : ''}`}>
+                {libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'insights' ? (
                   <button
                     type="button"
                     onClick={goLibraryHome}
@@ -5982,34 +5982,28 @@ function TeacherDashboardInner() {
               </div>
             </div>
             <div className="iboard-room-settings__body scrollbar-thin">
-        {(libraryView === 'home' || libraryView === 'portfolios') && (
-          <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Reports">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={libraryView === 'home'}
-              onClick={goLibraryHome}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
-                libraryView === 'home'
-                  ? 'bg-[#5a5fc3] text-white'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={libraryView === 'portfolios'}
-              onClick={() => setLibraryView('portfolios')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
-                libraryView === 'portfolios'
-                  ? 'bg-[#5a5fc3] text-white'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-              }`}
-            >
-              Student folder
-            </button>
+        {(libraryView === 'home' || libraryView === 'portfolios' || libraryView === 'insights') && (
+          <div className="mb-4 flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800" role="tablist" aria-label="Reports">
+            {[
+              { id: 'home', label: 'Today', onClick: goLibraryHome },
+              { id: 'portfolios', label: 'Student folder', onClick: () => setLibraryView('portfolios') },
+              { id: 'insights', label: 'Class insights', onClick: () => setLibraryView('insights') },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={libraryView === tab.id}
+                onClick={tab.onClick}
+                className={`min-w-0 flex-1 rounded-md px-2 py-1.5 text-center text-xs font-bold ${
+                  libraryView === tab.id
+                    ? 'bg-white text-ink-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         )}
 
@@ -6022,15 +6016,12 @@ function TeacherDashboardInner() {
             awayByStudentId={awayByStudentId}
             activityNow={activityNow}
             frozen={frozen}
-            snapshotsCount={snapshots.length}
             onOpenTrail={(id) => setLearningTrailId(id)}
             onOpenDrafts={(id) => {
               setLibraryTrailStudentId(id);
               setLibraryView('drafting');
             }}
-            onOpenFolder={() => setLibraryView('portfolios')}
             onOpenPdf={() => setLibraryView('pdf')}
-            onOpenInsights={() => setLibraryView('insights')}
           />
         )}
 

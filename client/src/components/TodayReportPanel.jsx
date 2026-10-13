@@ -45,12 +45,9 @@ export default function TodayReportPanel({
   awayByStudentId,
   activityNow,
   frozen,
-  snapshotsCount = 0,
   onOpenTrail,
   onOpenDrafts,
-  onOpenFolder,
   onOpenPdf,
-  onOpenInsights,
 }) {
   const [pulse, setPulse] = useState(null);
   const [trailById, setTrailById] = useState(new Map());
@@ -200,13 +197,6 @@ export default function TodayReportPanel({
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={onOpenFolder}
-          className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0]"
-        >
-          Student folder{snapshotsCount ? ` · ${snapshotsCount} saved` : ''}
-        </button>
-        <button
-          type="button"
           onClick={onOpenPdf}
           className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
         >
@@ -299,14 +289,6 @@ export default function TodayReportPanel({
           </ul>
         </div>
       ) : null}
-
-      <button
-        type="button"
-        onClick={onOpenInsights}
-        className="text-left text-xs font-semibold text-slate-500 underline-offset-2 hover:text-[#3c3f8f] hover:underline dark:text-slate-400 dark:hover:text-indigo-300"
-      >
-        Class insights — for you or your HOD
-      </button>
     </section>
   );
 }
