@@ -1915,8 +1915,10 @@ function TeacherDashboardInner() {
     };
   }, [livePulse.activity, livePulse.students, orderedStudents, connectedIdSet, awayByStudentId, activityNow]);
 
+  const liveQuestionOpen = !!(livePulse.activity && !livePulse.activity.closed);
+
   const writingPulseStudents = useMemo(() => {
-    if (!gaugePanelOpen || livePulse.activity) return [];
+    if (!gaugePanelOpen || liveQuestionOpen) return [];
     return orderedStudents.map((student) => {
       const id = Number(student.id);
       let state = 'offline';
@@ -1934,7 +1936,7 @@ function TeacherDashboardInner() {
         inbox: studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId),
       };
     });
-  }, [gaugePanelOpen, livePulse.activity, orderedStudents, connectedIdSet, awayByStudentId, activityNow, alertPrefs.pasted, pasteCounts, pendingHandByStudentId, noteReceiptByStudentId]);
+  }, [gaugePanelOpen, liveQuestionOpen, orderedStudents, connectedIdSet, awayByStudentId, activityNow, alertPrefs.pasted, pasteCounts, pendingHandByStudentId, noteReceiptByStudentId]);
 
   const visibleStudents = useMemo(
     () =>
@@ -4583,7 +4585,7 @@ function TeacherDashboardInner() {
                   segments={classGauge.segments}
                   onClick={() => (gaugePanelOpen ? setGaugePanelOpen(false) : openGaugePanel())}
                   expanded={gaugePanelOpen}
-                  opens={livePulse.activity && !livePulse.activity.closed ? 'responses' : 'class writing'}
+                  opens={liveQuestionOpen ? 'responses' : 'class writing'}
                 />
               </div>
               <div className="iboard-command-bar__side iboard-command-bar__side--manage">
@@ -4924,16 +4926,16 @@ function TeacherDashboardInner() {
       {gaugePanelOpen && gaugeBox && createPortal(
         <div
           ref={gaugePanelRef}
-          className={`iboard-gauge-panel z-[60]${livePulse.activity ? ' is-responses' : ''}`}
+          className={`iboard-gauge-panel z-[60]${liveQuestionOpen ? ' is-responses' : ''}`}
           style={{
             top: gaugeBox.top,
             left: gaugeBox.centre,
             maxHeight: `calc(100dvh - ${gaugeBox.top + 16}px)`,
-            ...(livePulse.activity ? { height: `min(42rem, calc(100dvh - ${gaugeBox.top + 16}px))` } : {}),
+            ...(liveQuestionOpen ? { height: `min(42rem, calc(100dvh - ${gaugeBox.top + 16}px))` } : {}),
           }}
-          aria-label={livePulse.activity ? 'Responses' : 'Class writing'}
+          aria-label={liveQuestionOpen ? 'Responses' : 'Class writing'}
         >
-          {livePulse.activity ? (
+          {liveQuestionOpen ? (
             <LiveResponseTeacher
               socket={socket}
               overlay
