@@ -1524,6 +1524,14 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   border-radius: 0 999px 999px 0;
 }
 
+html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip:hover:not(.is-on) {
+  box-shadow: 0 0 0 1px #cfc8f2;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
+  box-shadow: 0 0 0 1px #cfc8f2;
+}
+
 /* One purple wing. Only the gauge face stays white. */
 .iboard-command-frame {
   position: absolute;
