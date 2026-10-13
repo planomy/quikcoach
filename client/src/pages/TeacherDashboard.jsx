@@ -568,7 +568,7 @@ function TeacherDashboardInner() {
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
   const [libraryPanel, setLibraryPanel] = useState(null); // null | 'evidence' (Lesson records hub shell)
-  const [libraryView, setLibraryView] = useState('home'); // home (Today) | portfolios | drafting | pdf | insights | feedback
+  const [libraryView, setLibraryView] = useState('home'); // home (Today) | portfolios | snapshots | drafting | pdf | insights | feedback
   const [libraryTrailStudentId, setLibraryTrailStudentId] = useState(null);
   const [reportsDockWidth, setReportsDockWidth] = useState(readReportsDockWidth);
   const reportsDockWidthRef = useRef(reportsDockWidth);
@@ -5030,7 +5030,7 @@ function TeacherDashboardInner() {
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
             <div className="iboard-arr-rail__foot">
-              <HintWrap hint="Today, student folders, and class insights" prefer="right" suppressed={reportsOpen}>
+              <HintWrap hint="Today, student folders, class snapshots, and class insights" prefer="right" suppressed={reportsOpen}>
                 <button
                   ref={recordsButtonRef}
                   type="button"
@@ -5950,8 +5950,8 @@ function TeacherDashboardInner() {
                 onPointerDown={startReportsDockResize}
               />
             ) : null}
-            <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'insights' ? ' iboard-library-dock__chrome--back' : ''}`}>
-                {libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'insights' ? (
+            <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'snapshots' && libraryView !== 'insights' ? ' iboard-library-dock__chrome--back' : ''}`}>
+                {libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'snapshots' && libraryView !== 'insights' ? (
                   <button
                     type="button"
                     onClick={goLibraryHome}
@@ -5973,20 +5973,23 @@ function TeacherDashboardInner() {
                             ? 'Evidence of learning PDF'
                             : libraryView === 'portfolios'
                               ? 'Student folders'
-                                : libraryView === 'insights'
-                                  ? 'Class insights'
-                                  : 'Today'}
+                                : libraryView === 'snapshots'
+                                  ? 'Class snapshots'
+                                  : libraryView === 'insights'
+                                    ? 'Class insights'
+                                    : 'Today'}
               </h2>
               <div className="iboard-room-settings__chrome-close">
               <CloseButton onClick={closeLibraryHub} aria-label={libraryView === 'feedback' ? 'Close AI feedback' : 'Close Reports'} />
               </div>
             </div>
             <div className="iboard-room-settings__body scrollbar-thin">
-        {(libraryView === 'home' || libraryView === 'portfolios' || libraryView === 'insights') && (
+        {(libraryView === 'home' || libraryView === 'portfolios' || libraryView === 'snapshots' || libraryView === 'insights') && (
           <div className="iboard-reports-tabs mb-4" role="tablist" aria-label="Reports">
             {[
               { id: 'home', label: 'Today', onClick: goLibraryHome },
               { id: 'portfolios', label: 'Student folders', onClick: () => setLibraryView('portfolios') },
+              { id: 'snapshots', label: 'Class snapshots', onClick: () => setLibraryView('snapshots') },
               { id: 'insights', label: 'Class insights', onClick: () => setLibraryView('insights') },
             ].map((tab) => (
               <button
@@ -6188,13 +6191,49 @@ function TeacherDashboardInner() {
                     <div>
                       <p className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Choose a student</p>
                       <p className="mx-auto mt-1 max-w-xs text-sm text-slate-500 dark:text-slate-400">
-                        Their saved pieces from this class open here. Class-wide saves stay on each piece.
+                        Their saved pieces from this class open here.
                       </p>
                     </div>
                   </div>
                 )}
               </div>
             </div>
+          </section>
+        )}
+
+        {libraryView === 'snapshots' && (
+          <section className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div className="border-b border-[#eceaf4] px-4 py-3 dark:border-slate-800">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Whole-class packs from the save icon. View the board as it was, or download the HTML again.
+              </p>
+            </div>
+            {snapshots.length ? (
+              <ul className="divide-y divide-slate-100 overflow-y-auto scrollbar-thin dark:divide-slate-800">
+                {snapshots.map((sn) => (
+                  <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-ink-900 dark:text-slate-100">{snapshotRowTitle(sn)}</span>
+                      {sn.lesson_objective && sn.lesson_objective !== String(sn.label || '').trim() ? (
+                        <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{sn.lesson_objective}</span>
+                      ) : null}
+                    </span>
+                    <span className="flex shrink-0 gap-2">
+                      <button type="button" onClick={() => loadSnapshotForView(sn.id)} className="text-xs font-bold text-[#5a5fc3] hover:text-[#3c3f8f] dark:text-indigo-300">
+                        View
+                      </button>
+                      <button type="button" onClick={() => redownloadEvidence(sn.id)} className="text-xs font-bold text-[#5a5fc3] hover:text-[#3c3f8f] dark:text-indigo-300">
+                        Download HTML
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                No snapshots yet. Use the save icon at the end of a lesson, or before they wipe for a second piece.
+              </p>
+            )}
           </section>
         )}
 
@@ -6674,7 +6713,7 @@ function TeacherDashboardInner() {
             {settingsSection === 'records' && (
             <section className="iboard-room-settings__section">
               <div className="iboard-room-settings__card iboard-room-settings__list">
-                <HintWrap hint="Today, student folders, and class insights" className="w-full">
+                <HintWrap hint="Today, student folders, class snapshots, and class insights" className="w-full">
                   <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
                     <span>Reports</span>
                     {snapshots.length > 0 ? (
