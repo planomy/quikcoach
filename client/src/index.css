@@ -4338,7 +4338,8 @@ html.dark .iboard-feedback-settings__cancel:hover {
 .iboard-header-dock.iboard-room-settings {
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
+  max-height: 100dvh;
   border-top: 0;
   background: #f4f4f6;
 }

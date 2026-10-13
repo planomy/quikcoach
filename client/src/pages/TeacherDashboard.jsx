@@ -2531,7 +2531,11 @@ function TeacherDashboardInner() {
       }
       const buttonBox = button?.getBoundingClientRect();
       const maxHeight = Math.max(220, viewport - margin * 2);
-      if ((toolsPanelOpen && !settingsOpen && !libraryPanel) || (libraryPanel && libraryView !== 'feedback')) {
+      if (
+        settingsOpen
+        || (toolsPanelOpen && !libraryPanel)
+        || (libraryPanel && libraryView !== 'feedback')
+      ) {
         const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
         const nextTop = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
         setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
@@ -2696,11 +2700,13 @@ function TeacherDashboardInner() {
   const reportsDockOpen = !!libraryPanel && libraryView !== 'feedback';
   const headerDockStyle = useMemo(
     () => {
+      const remaining = `calc(100dvh - ${teacherToolsTop}px)`;
       const base = bottomAnchoredDock
         ? {
             top: teacherToolsTop,
             bottom: 0,
-            height: 'auto',
+            height: remaining,
+            maxHeight: remaining,
             borderRadius: 0,
           }
         : {
