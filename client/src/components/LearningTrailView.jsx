@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CloseButton } from './PanelActions.jsx';
+import HintWrap from './HintWrap.jsx';
 import { THINKING_CATEGORIES } from '../lib/thinkingPrompts.js';
 import { independentWindowsFor } from '../lib/independentWriting.js';
 
@@ -39,6 +40,51 @@ function words(text) {
 function clock(ms) {
   if (!ms) return '';
   return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+const CELL_LABEL = { w: 'Adding', r: 'Revising', a: 'Away' };
+const MARK_LABEL = { paste: 'Pasted', support: 'Support' };
+const CELL_CLASS = {
+  w: 'bg-emerald-400',
+  r: 'bg-sky-400',
+  a: 'iboard-learning-trail__away',
+};
+
+function bucketKind(bucket) {
+  if (bucket?.revising) return 'r';
+  if (bucket?.writing) return 'w';
+  if (bucket?.away) return 'a';
+  return '-';
+}
+
+function bucketRuns(buckets) {
+  const runs = [];
+  const list = Array.isArray(buckets) ? buckets : [];
+  for (let i = 0; i < list.length; ) {
+    const kind = bucketKind(list[i]);
+    let j = i + 1;
+    while (j < list.length && bucketKind(list[j]) === kind) j += 1;
+    runs.push({ kind, len: j - i, i, j });
+    i = j;
+  }
+  return runs;
+}
+
+function runHint(run, start, end, count) {
+  const label = CELL_LABEL[run.kind];
+  if (!label || !start || !end || !count) return '';
+  const span = Math.max(1, end - start);
+  const from = clock(start + (run.i / count) * span);
+  const to = clock(start + (run.j / count) * span);
+  if (!from) return label;
+  return from === to ? `${label} · ${from}` : `${label} · ${from}–${to}`;
+}
+
+function markHint(kind, at) {
+  const label = MARK_LABEL[kind];
+  if (!label) return '';
+  const when = clock(at);
+  return when ? `${label} · ${when}` : label;
 }
 
 function snippet(text, max = 140) {
@@ -269,7 +315,7 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
         ? independent.map((w) => {
             const left = Math.max(0, ((w.start - activity.start) / span) * 100);
             const right = Math.min(100, (((w.end || now) - activity.start) / span) * 100);
-            return { left, width: Math.max(0.8, right - left) };
+            return { left, width: Math.max(0.8, right - left), start: w.start, end: w.end || now };
           })
         : [],
       timeline: buildTimeline(events, { ...data, independentRows: independent }),
@@ -316,31 +362,50 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                   {view.activity.markers.map((marker, n) => (
                     <span
                       key={`${marker.kind}-${n}`}
-                      className={`absolute top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full ${marker.kind === 'paste' ? 'bg-red-500' : 'bg-[#5a5fc3]'}`}
+                      className="absolute top-0 z-[1] flex h-3 w-3 -translate-x-1/2 items-start justify-center"
                       style={{ left: `${Math.min(100, Math.max(0, marker.left))}%` }}
-                      aria-hidden="true"
-                    />
+                    >
+                      <HintWrap hint={markHint(marker.kind, marker.at)} className="h-3 w-3 items-start justify-center">
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${marker.kind === 'paste' ? 'bg-red-500' : 'bg-[#5a5fc3]'}`}
+                        />
+                      </HintWrap>
+                    </span>
                   ))}
                 </div>
                 <div className="flex h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                  {view.activity.buckets.map((bucket, n) => (
-                    <span
-                      key={n}
-                      className={`h-full flex-1 ${
-                        bucket.revising ? 'bg-sky-400' : bucket.writing ? 'bg-emerald-400' : bucket.away ? 'iboard-learning-trail__away' : ''
-                      }`}
-                    />
+                  {bucketRuns(view.activity.buckets).map((run, n) => (
+                    <span key={n} className="h-full min-w-0" style={{ flexGrow: run.len }}>
+                      {run.kind === '-' ? null : (
+                        <HintWrap
+                          hint={runHint(run, view.activity.start, view.activity.end, view.activity.buckets.length)}
+                          className="h-full w-full"
+                        >
+                          <span className={`block h-full w-full hover:brightness-90 ${CELL_CLASS[run.kind] || ''}`} />
+                        </HintWrap>
+                      )}
+                    </span>
                   ))}
                 </div>
                 {view.bands.length ? (
-                  <div className="relative mt-0.5 h-1">
+                  <div className="relative mt-0.5 h-2">
                     {view.bands.map((band, n) => (
                       <span
                         key={n}
-                        className="absolute top-0 h-1 rounded-full bg-[#3c3f8f] dark:bg-[#818cf8]"
+                        className="absolute top-0 z-[1] h-2"
                         style={{ left: `${band.left}%`, width: `${band.width}%` }}
-                        aria-hidden="true"
-                      />
+                      >
+                        <HintWrap
+                          hint={
+                            clock(band.start) && clock(band.end)
+                              ? `Independent writing · ${clock(band.start)}–${clock(band.end)}`
+                              : 'Independent writing'
+                          }
+                          className="h-full w-full"
+                        >
+                          <span className="block h-1 rounded-full bg-[#3c3f8f] hover:brightness-90 dark:bg-[#818cf8]" />
+                        </HintWrap>
+                      </span>
                     ))}
                   </div>
                 ) : null}
