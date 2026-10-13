@@ -10,7 +10,7 @@ export default function IBoardWordmark({
 }) {
   const hero = size === 'hero' || /\b(text-3xl|iboard-brand--hero)\b/.test(className);
   const tall = !hero && (size === 'lg' || /\btext-2xl\b/.test(className));
-  const src = variant === 'full' ? '/brand/tuit-logo-full.png?v=4' : '/brand/tuit-logo.png?v=4';
+  const src = variant === 'full' ? '/brand/tuit-logo-full.png?v=5' : '/brand/tuit-logo.png?v=5';
   const alt = variant === 'full' ? 'TUIT — Focused, Teaching & Learning' : 'TUIT';
   return (
     <div className={`iboard-brand shrink-0 ${className}`.trim()} aria-label="TUIT">
