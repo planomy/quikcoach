@@ -4320,6 +4320,8 @@ html.dark .iboard-feedback-settings__cancel:hover {
 }
 
 .iboard-library-dock {
+  display: flex;
+  flex-direction: column;
   position: relative;
   overflow: hidden;
 }

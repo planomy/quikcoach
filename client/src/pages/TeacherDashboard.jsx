@@ -5929,7 +5929,7 @@ function TeacherDashboardInner() {
       {libraryPanel && createPortal(
         <div
           ref={libraryDockRef}
-          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 flex-col${
+          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 flex-col overflow-hidden${
             libraryView === 'feedback' ? ' w-[min(29rem,calc(100vw-4.75rem))]' : ''
           }${helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''}${
             helpFlash === 'ai' && libraryView === 'feedback' ? ' is-help-flash' : ''
@@ -5972,7 +5972,7 @@ function TeacherDashboardInner() {
                         : libraryView === 'pdf'
                             ? 'Evidence of learning PDF'
                             : libraryView === 'portfolios'
-                              ? 'Student folder'
+                              ? 'Student folders'
                                 : libraryView === 'insights'
                                   ? 'Class insights'
                                   : 'Today'}
@@ -5986,7 +5986,7 @@ function TeacherDashboardInner() {
           <div className="mb-4 flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800" role="tablist" aria-label="Reports">
             {[
               { id: 'home', label: 'Today', onClick: goLibraryHome },
-              { id: 'portfolios', label: 'Student folder', onClick: () => setLibraryView('portfolios') },
+              { id: 'portfolios', label: 'Student folders', onClick: () => setLibraryView('portfolios') },
               { id: 'insights', label: 'Class insights', onClick: () => setLibraryView('insights') },
             ].map((tab) => (
               <button
@@ -6026,11 +6026,11 @@ function TeacherDashboardInner() {
         )}
 
         {libraryView === 'portfolios' && (
-                <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
-                  <div className="flex flex-wrap items-start justify-between gap-3 p-4">
+                <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white dark:border-indigo-800 dark:bg-slate-900">
+                  <div className="flex shrink-0 flex-wrap items-start justify-between gap-3 p-4">
                     <div>
-                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Student folder</h3>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Saved writing across this class. Snapshot at the end of a lesson, or before they wipe for a second piece.</p>
+                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Student folders</h3>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">One folder per student. Snapshot at the end of a lesson, or before they wipe for a second piece.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -6062,6 +6062,7 @@ function TeacherDashboardInner() {
                     </div>
                   </div>
 
+                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
                   <div className="flex flex-col border-t border-indigo-100 dark:border-slate-700">
                     <aside className="flex min-h-0 flex-col border-b border-indigo-100 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-950/40 md:border-b-0 md:border-r">
                       <div className="border-b border-slate-200 p-3 dark:border-slate-700">
@@ -6264,6 +6265,7 @@ function TeacherDashboardInner() {
                       No snapshots yet. Use the save icon at the end of the lesson.
                     </p>
                   )}
+                  </div>
           </section>
         )}
 
@@ -6743,7 +6745,7 @@ function TeacherDashboardInner() {
             {settingsSection === 'records' && (
             <section className="iboard-room-settings__section">
               <div className="iboard-room-settings__card iboard-room-settings__list">
-                <HintWrap hint="This lesson and each student's saved work" className="w-full">
+                <HintWrap hint="Today, each students folders, and class insights" className="w-full">
                   <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
                     <span>Reports</span>
                     {snapshots.length > 0 ? (
