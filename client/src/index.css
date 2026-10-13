@@ -1484,7 +1484,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 
 .iboard-command-bar__side .iboard-manage-tools {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: stretch;
   justify-items: stretch;
   column-gap: 0;
@@ -2544,7 +2544,7 @@ html.dark .iboard-board-empty__code {
   align-items: center;
   gap: 0.2rem;
   width: 100%;
-  margin-bottom: 0.7rem;
+  margin-bottom: 1.2rem;
   padding-top: 0.25rem;
 }
 

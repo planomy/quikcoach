@@ -4531,33 +4531,6 @@ function TeacherDashboardInner() {
               <div className="iboard-command-bar__side iboard-command-bar__side--manage">
                 <span className="iboard-command-bar__title">Manage class</span>
                 <div className="iboard-manage-tools" role="group" aria-label="Manage class">
-                  <div className="relative" data-header-tool="timer">
-                  <HintWrap hint={room?.timer?.active ? 'Timer running. Open to pause, add time or end' : 'Set a timer'} prefer="below" suppressed={headerTool === 'timer'}>
-                    <button
-                      type="button"
-                      onClick={() => toggleHeaderTool('timer')}
-                      aria-expanded={headerTool === 'timer'}
-                      data-active={headerTool === 'timer' || timerIsCounting(room?.timer) ? 'true' : 'false'}
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
-                      aria-label="Timer"
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="13.5" r="7.5" />
-                        <path d="M12 9.5v4l2.5 2M9.5 2.5h5M12 2.5V6" />
-                      </svg>
-                      <span className="iboard-wing-caption">Timer</span>
-                    </button>
-                  </HintWrap>
-                  {headerTool === 'timer' ? (
-                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Timer">
-                      <div className="iboard-tool-popover__head">
-                        <h2>Timer</h2>
-                        <span>Shows on the teacher and student boards</span>
-                      </div>
-                      <div className="iboard-tool-popover__body">{timerControls}</div>
-                    </div>
-                  ) : null}
-                  </div>
                   <div className="relative" data-header-tool="words">
                   <HintWrap hint="Set a word limit for student cards" prefer="below" suppressed={headerTool === 'words'}>
                     <button
@@ -4585,6 +4558,38 @@ function TeacherDashboardInner() {
                     </div>
                   ) : null}
                   </div>
+                  <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze the class and stop any further writing"} prefer="below">
+                    <button
+                      type="button"
+                      data-help-target="freeze"
+                      onClick={toggleFreeze}
+                      aria-pressed={frozen}
+                      data-active={frozen ? "true" : "false"}
+                      className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
+                      aria-label={frozen ? "Unfreeze board" : "Freeze board"}
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2.5v19M3.8 7.25l16.4 9.5M3.8 16.75l16.4-9.5" />
+                        <path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2" />
+                      </svg>
+                      <span className="iboard-wing-caption">Freeze</span>
+                    </button>
+                  </HintWrap>
+                  <HintWrap hint="Present student responses fullscreen" prefer="below">
+                    <button
+                      type="button"
+                      onClick={() => setAnswerPresent(true)}
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
+                      aria-label="Present answers"
+                      data-active={answerPresent ? 'true' : 'false'}
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="12" rx="2" />
+                        <path d="M12 16v4M8 20h8" />
+                      </svg>
+                      <span className="iboard-wing-caption">Present</span>
+                    </button>
+                  </HintWrap>
                   <div className="relative" data-header-tool="breakouts">
                   <HintWrap hint={breakoutsActive ? 'Breakouts are running. Open to shuffle or close rooms' : room?.class_wall_active ? 'Class wall is on. Open to close it' : 'Create breakout rooms or a full-class wall'} prefer="below" suppressed={breakoutsMenuOpen}>
                     <button
@@ -4690,38 +4695,6 @@ function TeacherDashboardInner() {
               </div>
             )}
                   </div>
-                  <HintWrap hint="Present student responses fullscreen" prefer="below">
-                    <button
-                      type="button"
-                      onClick={() => setAnswerPresent(true)}
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
-                      aria-label="Present answers"
-                      data-active={answerPresent ? 'true' : 'false'}
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="12" rx="2" />
-                        <path d="M12 16v4M8 20h8" />
-                      </svg>
-                      <span className="iboard-wing-caption">Present</span>
-                    </button>
-                  </HintWrap>
-                  <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze the class and stop any further writing"} prefer="below">
-                    <button
-                      type="button"
-                      data-help-target="freeze"
-                      onClick={toggleFreeze}
-                      aria-pressed={frozen}
-                      data-active={frozen ? "true" : "false"}
-                      className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
-                      aria-label={frozen ? "Unfreeze board" : "Freeze board"}
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2.5v19M3.8 7.25l16.4 9.5M3.8 16.75l16.4-9.5" />
-                        <path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2" />
-                      </svg>
-                      <span className="iboard-wing-caption">Freeze</span>
-                    </button>
-                  </HintWrap>
                   <HintWrap hint="Select the view for student cards" prefer="below" suppressed={viewOpen}>
                     <button
                       ref={viewButtonRef}
@@ -4742,11 +4715,22 @@ function TeacherDashboardInner() {
 
             <div className="iboard-header-actions flex shrink-0 items-center justify-end gap-1.5">
             {joined && saveStatus === 'error' ? <SaveStatusChip status="error" plain /> : null}
+            <div className="relative" data-header-tool="timer">
             <RoomTimerPill
               timer={room?.timer}
               onClick={openTimerDock}
               onFinishedClick={() => controlRoomTimer('end')}
             />
+            {headerTool === 'timer' ? (
+              <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Timer">
+                <div className="iboard-tool-popover__head">
+                  <h2>Timer</h2>
+                  <span>Shows on the teacher and student boards</span>
+                </div>
+                <div className="iboard-tool-popover__body">{timerControls}</div>
+              </div>
+            ) : null}
+            </div>
             {independentSince ? (
               <HintWrap hint="Feedback asks before sending while this is on. Click to end." prefer="below" multiline>
                 <button

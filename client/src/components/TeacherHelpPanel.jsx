@@ -34,7 +34,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'freeze',
     title: 'Freeze the board',
-    body: 'The snowflake under Manage class in the header stops all student writing. The timer and word limit sit beside it.',
+    body: 'The snowflake under Manage class in the header stops all student writing. The word limit sits beside it.',
     action: 'freeze',
   },
   {
