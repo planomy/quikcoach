@@ -486,8 +486,7 @@ export default function StudentDrawPad({
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2 text-xs dark:border-slate-700">
-        <span className="text-slate-500 dark:text-slate-400">Teacher sees updates live · your preview appears when you tap Done</span>
+      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-3 py-2 text-xs dark:border-slate-700">
         <span className={`font-semibold ${saveFailed ? 'text-red-600' : 'text-indigo-600 dark:text-indigo-300'}`} aria-live="polite">
           {disabled ? 'Class is frozen' : status}
         </span>
