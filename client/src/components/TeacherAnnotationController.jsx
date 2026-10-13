@@ -149,10 +149,13 @@ function contentRootForPane(textPane) {
   return writingRootForPane(textPane);
 }
 
-function primaryRangeClientRect(range) {
+function primaryRangeClientRect(range, paneRect) {
   if (!range) return null;
-  const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 || rect.height > 0);
-  if (rects.length) return rects[rects.length - 1];
+  const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0.5 && rect.height > 0.5);
+  const paneWidth = paneRect?.width || 0;
+  const inline = paneWidth ? rects.find((rect) => rect.width < paneWidth * 0.82) : null;
+  const chosen = inline || rects[0];
+  if (chosen) return chosen;
   const fallback = range.getBoundingClientRect();
   return fallback.width || fallback.height ? fallback : null;
 }
@@ -217,12 +220,12 @@ function gutterInset(compact) {
 function markerPosition(range, card) {
   if (typeof window === 'undefined' || !card?.textPane) return null;
 
-  const rangeRect = primaryRangeClientRect(range);
-  if (!rangeRect) return null;
-
   const pane = card.textPane;
   const paneRect = pane.getBoundingClientRect();
   if (!paneRect.width || !paneRect.height) return null;
+
+  const rangeRect = primaryRangeClientRect(range, paneRect);
+  if (!rangeRect) return null;
   if (!isRangeVisibleInPane(rangeRect, paneRect)) return null;
 
   // Position relative to the writing pane (portal target), not the text root —
@@ -238,7 +241,9 @@ function markerPosition(range, card) {
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
   const local = rectRelativeToScrollElement(pane, rangeRect);
-  const left = Math.max(minLeft, Math.min(maxLeft, local.left + local.width - size * 0.45));
+  // Sit on the first word of the quote. Trailing-edge placement parked wrap-ending
+  // words in the old right-hand gutter, so the teacher lost the issue location.
+  const left = Math.max(minLeft, Math.min(maxLeft, local.left));
   const top = Math.max(minTop, Math.min(maxTop, local.top - size * 0.55));
   return {
     top,
@@ -438,6 +443,26 @@ export default function TeacherAnnotationController() {
         const tone = commentTone(annotation, resolved.detached);
         const lane = commentGutterLane(tone);
         if (!range) {
+          const pin = rangeForPlainOffsets(
+            writingRoot,
+            resolved.start,
+            Math.max((Number(resolved.start) || 0) + 1, Number(resolved.end) || 0)
+          );
+          const pinned = pin ? markerPosition(pin, card) : null;
+          if (pinned) {
+            nextMarkers.push({
+              studentId,
+              annotation,
+              detached: true,
+              lane,
+              top: pinned.top,
+              left: pinned.left,
+              layout: pinned.layout || 'inline',
+              width: pinned.width,
+              position: pinned.position,
+            });
+            continue;
+          }
           if (paneIsOnScreen(paneRect)) {
             const position = detachedMarkerPosition(card.textPane, detachedCount, compact);
             if (position) {
