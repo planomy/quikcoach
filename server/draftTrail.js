@@ -366,7 +366,7 @@ export function readTrail(code, id) {
   return { id: student.id, name: student.name, events: student.events };
 }
 
-/** Paste snippets for the teacher popup: typed paste events, plus gap snapshots that were actually pastes. */
+/** Paste snippets for the teacher popup: only events the student client marked as paste. */
 export function pastesFromTrail(trail) {
   const out = [];
   let text = '';
@@ -388,10 +388,7 @@ export function pastesFromTrail(trail) {
       continue;
     }
     if (event.type === 'gap' && event.text != null) {
-      const next = String(event.text);
-      const inserted = String(textDelta(text, next).inserted || '').trim();
-      if (inserted) out.push({ at: Number(event.at) || 0, text: inserted.slice(0, 5000) });
-      text = next;
+      text = String(event.text);
     }
   }
   return out;

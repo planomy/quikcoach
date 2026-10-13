@@ -70,6 +70,17 @@ test('paste after a drop still stores the pasted words, not a silent gap', () =>
   assert.deepEqual(pastesFromTrail(trail).map((item) => item.text), ['Pasted paragraph from notes']);
   clearTrail('6600');
 });
+test('reconnect gaps of typed words are not listed as pastes', () => {
+  const row = { id: 4, name: 'Nia', text: 'Start' };
+  const { token } = setTrailRecording('6700', true, [row], 1000);
+  recordTrailText('6700', row, 'Start evertyly', { token }, 2000);
+  disconnectTrail('6700', 4);
+  recordTrailText('6700', row, 'Start evertyly Ac', { token: 'stale' }, 3000);
+  recordTrailText('6700', row, 'Start evertyly Ac Neutrality here is not an option', { token, paste: true }, 4000);
+  const trail = readTrail('6700', 4);
+  assert.deepEqual(pastesFromTrail(trail).map((item) => item.text), ['Neutrality here is not an option']);
+  clearTrail('6700');
+});
 test('attention flags large paste and clears for quiet typing', () => {
   const row = { id: 7, name: 'Alex', text: 'Start' };
   const { token } = setTrailRecording('4400', true, [row], 1000);

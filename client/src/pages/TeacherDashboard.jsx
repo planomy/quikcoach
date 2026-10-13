@@ -1490,9 +1490,15 @@ function TeacherDashboardInner() {
 
   function openPasteDetail(studentId, menu) {
     socket.timeout(5000).emit('teacher:paste-detail', { studentId }, (err, ack) => {
-      setPasteDetail({ studentId, loading: false, pastes: !err && ack?.ok && Array.isArray(ack.pastes) ? ack.pastes : [] });
+      const pastes = !err && ack?.ok && Array.isArray(ack.pastes) ? ack.pastes : [];
+      setPasteDetail({ studentId, loading: false, pastes });
       setPasteMenu(menu);
     });
+  }
+
+  function pasteSnippetCount(studentId) {
+    if (pasteDetail?.studentId === studentId && !pasteDetail.loading) return pasteDetail.pastes.length;
+    return Number(pasteCounts[studentId]) || 0;
   }
 
   function clearPasteAlert(studentId) {
@@ -5550,11 +5556,11 @@ function TeacherDashboardInner() {
                         </HintWrap>
                   ) : null}
                       {alertPrefs.pasted && pasteCounts[s.id] ? (
-                        <HintWrap hint={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'} this lesson`} prefer="above">
+                        <HintWrap hint={`Pasted ${pasteSnippetCount(s.id)} ${pasteSnippetCount(s.id) === 1 ? 'time' : 'times'} this lesson`} prefer="above">
                       <button
                         type="button"
                           title=""
-                          aria-label={`Pasted ${pasteCounts[s.id]} ${pasteCounts[s.id] === 1 ? 'time' : 'times'}. Options for ${s.name}`}
+                          aria-label={`Pasted ${pasteSnippetCount(s.id)} ${pasteSnippetCount(s.id) === 1 ? 'time' : 'times'}. Options for ${s.name}`}
                           aria-haspopup="menu"
                           aria-expanded={pasteMenu?.studentId === s.id}
                           data-paste-menu
@@ -5570,7 +5576,7 @@ function TeacherDashboardInner() {
                           }}
                           className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50"
                         >
-                          Pasted{pasteCounts[s.id] > 1 ? ` ×${pasteCounts[s.id]}` : ''}
+                          Pasted{pasteSnippetCount(s.id) > 1 ? ` ×${pasteSnippetCount(s.id)}` : ''}
                       </button>
                     </HintWrap>
                   ) : null}
@@ -5830,7 +5836,7 @@ function TeacherDashboardInner() {
           className="fixed z-[80] w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-xl dark:border-slate-700 dark:bg-slate-900"
         >
           <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            Pasted {pasteCounts[pasteMenu.studentId]} {pasteCounts[pasteMenu.studentId] === 1 ? 'time' : 'times'} this lesson
+            Pasted {pasteSnippetCount(pasteMenu.studentId)} {pasteSnippetCount(pasteMenu.studentId) === 1 ? 'time' : 'times'} this lesson
           </p>
             <div className="max-h-72 space-y-1.5 overflow-y-auto px-2 pb-1.5">
               {!pasteDetail || pasteDetail.studentId !== pasteMenu.studentId || pasteDetail.loading ? (
@@ -5841,13 +5847,13 @@ function TeacherDashboardInner() {
                 </p>
               ) : (
                 pasteDetail.pastes.map((paste, index) => (
-                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-red-50 px-2.5 py-2 dark:bg-red-950/40">
-                    <p className="text-[10px] font-bold text-red-700 dark:text-red-300">
+                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-slate-800/80">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                       {paste.at ? new Date(paste.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''}
                       {' · '}
                       {paste.text.trim().split(/\s+/).filter(Boolean).length} words
                     </p>
-                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-red-800 dark:text-red-200">{paste.text}</p>
+                    <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-slate-800 dark:text-slate-200">{paste.text}</p>
                   </div>
                 ))
               )}
