@@ -5847,7 +5847,7 @@ function TeacherDashboardInner() {
                 </p>
               ) : (
                 pasteDetail.pastes.map((paste, index) => (
-                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-slate-800/80">
+                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-[#dfe2f3] px-2.5 py-2 dark:bg-[rgba(90,95,195,0.28)]">
                     <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                       {paste.at ? new Date(paste.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''}
                       {' · '}
