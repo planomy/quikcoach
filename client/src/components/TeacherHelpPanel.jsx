@@ -63,7 +63,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'breakouts',
     title: 'Breakout rooms',
-    body: 'Open Breakouts under Manage class in the header to start auto or manual rooms, or the class wall.',
+    body: 'Open Collaboration under Manage class in the header to start auto or manual rooms, or the class wall.',
     action: 'breakouts',
   },
   {

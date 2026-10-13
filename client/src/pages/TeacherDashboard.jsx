@@ -4598,7 +4598,7 @@ function TeacherDashboardInner() {
                       aria-expanded={breakoutsMenuOpen}
                       data-active={breakoutsActive || room?.class_wall_active || breakoutsMenuOpen ? 'true' : 'false'}
                       className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
-                      aria-label="Breakout rooms and class wall"
+                      aria-label="Collaboration"
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="5.5" y="2.5" width="13" height="10" rx="3" />
@@ -4606,13 +4606,17 @@ function TeacherDashboardInner() {
                         <rect x="9.25" y="15.5" width="5.5" height="5.5" rx="1.8" />
                         <rect x="16" y="15.5" width="5.5" height="5.5" rx="1.8" />
                       </svg>
-                      <span className="iboard-wing-caption">Breakouts</span>
+                      <span className="iboard-wing-caption">Collaboration</span>
                     </button>
                   </HintWrap>
                   {breakoutsMenuOpen ? (
-                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Breakout rooms and class wall">
+                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Collaboration">
                       <div className="iboard-tool-popover__head">
-                        <h2>Breakouts</h2>
+                        <h2>Collaboration</h2>
+                        <span>{breakoutsActive ? 'Breakouts running' : room?.class_wall_active ? 'Class wall is on' : 'Breakout rooms or a class wall'}</span>
+                      </div>
+                      <div className="iboard-tool-popover__section">
+                        <h3>Breakouts</h3>
                         <span>{breakoutsActive ? 'Running' : 'Student writing cards appear on group members’ screens'}</span>
                       </div>
                       <div className="iboard-tool-popover__body" data-help-target="breakouts">{breakoutControls}</div>
