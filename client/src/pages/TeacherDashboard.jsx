@@ -10,6 +10,7 @@ import DraftTrailPanel from '../components/DraftTrailPanel.jsx';
 import LearningTrailView from '../components/LearningTrailView.jsx';
 import SessionPdfExport from '../components/SessionPdfExport.jsx';
 import ClassInsightsPanel from '../components/ClassInsightsPanel.jsx';
+import TodayReportPanel from '../components/TodayReportPanel.jsx';
 import { activityStatus, isDraftEmpty, isNotStarted, parseServerDateMs, wordCount } from '../lib/text.js';
 import useActivityClock from '../hooks/useActivityClock.js';
 import {
@@ -58,7 +59,6 @@ import { JoinScreen, ObjectiveScreen, rememberObjective } from '../components/Le
 import { fitGrid } from '../lib/fitGrid.js';
 import TeacherBoardTour from '../components/TeacherBoardTour.jsx';
 import TeacherHelpPanel from '../components/TeacherHelpPanel.jsx';
-import LessonReportPanel from '../components/LessonReportPanel.jsx';
 import ConversationModal, { ChatIcon } from '../components/ConversationModal.jsx';
 import TeacherInboxPanel from '../components/TeacherInboxPanel.jsx';
 import { downloadLessonReportHtml } from '../lib/lessonReport.js';
@@ -568,15 +568,13 @@ function TeacherDashboardInner() {
   const [removeStudentTarget, setRemoveStudentTarget] = useState(null);
   const [removeStudentBusy, setRemoveStudentBusy] = useState(false);
   const [libraryPanel, setLibraryPanel] = useState(null); // null | 'evidence' (Lesson records hub shell)
-  const [libraryView, setLibraryView] = useState('home'); // home | feedback | feedback-sent | drafting | participation | pdf | portfolios
+  const [libraryView, setLibraryView] = useState('home'); // home (Today) | portfolios | drafting | pdf | insights | feedback
+  const [libraryTrailStudentId, setLibraryTrailStudentId] = useState(null);
   const [reportsDockWidth, setReportsDockWidth] = useState(readReportsDockWidth);
   const reportsDockWidthRef = useRef(reportsDockWidth);
-  const [aiFeedbackLog, setAiFeedbackLog] = useState(null);
-  const [aiSummaries, setAiSummaries] = useState([]);
   const [aiTask, setAiTask] = useState('feedback');
   const [summaryBox, setSummaryBox] = useState('');
   const [summarySaving, setSummarySaving] = useState(false);
-  const [aiFeedbackLogError, setAiFeedbackLogError] = useState('');
   const [fixedCommentCount, setFixedCommentCount] = useState(0);
   const [clearFixedBusy, setClearFixedBusy] = useState(false);
   const [clearFixedArmed, setClearFixedArmed] = useState(false);
@@ -2765,7 +2763,7 @@ function TeacherDashboardInner() {
           return;
         }
         setSummaryBox('');
-        setCopyToast('Summary saved — find it in Reports → AI feedback & summaries');
+        setCopyToast('Summary saved — only you see this');
         setTimeout(() => setCopyToast(''), 3500);
       }
     );
@@ -3910,7 +3908,7 @@ function TeacherDashboardInner() {
   function openLessonReport() {
     closeSettings();
     setLibraryPanel('evidence');
-    setLibraryView('participation');
+    setLibraryView('home');
   }
 
   function openAiFeedback() {
@@ -3974,21 +3972,8 @@ function TeacherDashboardInner() {
   }
 
   function goLibraryHome() {
+    setLibraryTrailStudentId(null);
     setLibraryView('home');
-  }
-
-  function openFeedbackSent() {
-    setLibraryView('feedback-sent');
-    setAiFeedbackLog(null);
-    setAiFeedbackLogError('');
-    socket.emit('teacher:ai-feedback-log', {}, (ack) => {
-      setAiSummaries(ack?.ok && Array.isArray(ack.summaries) ? ack.summaries : []);
-      if (ack?.ok && Array.isArray(ack.items)) setAiFeedbackLog(ack.items);
-      else {
-        setAiFeedbackLog([]);
-        setAiFeedbackLogError(ack?.error || 'Could not load sent feedback');
-      }
-    });
   }
 
   async function downloadLessonReportQuick() {
@@ -5045,7 +5030,7 @@ function TeacherDashboardInner() {
           </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
             <div className="iboard-arr-rail__foot">
-              <HintWrap hint="Snapshots, portfolios, participation and class insights" prefer="right" suppressed={reportsOpen}>
+              <HintWrap hint="This lesson and each student's saved work" prefer="right" suppressed={reportsOpen}>
                 <button
                   ref={recordsButtonRef}
                   type="button"
@@ -5965,13 +5950,13 @@ function TeacherDashboardInner() {
                 onPointerDown={startReportsDockResize}
               />
             ) : null}
-            <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' ? ' iboard-library-dock__chrome--back' : ''}`}>
-                {libraryView !== 'home' && libraryView !== 'feedback' ? (
+            <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' ? ' iboard-library-dock__chrome--back' : ''}`}>
+                {libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' ? (
                   <button
                     type="button"
                     onClick={goLibraryHome}
                     className="iboard-library-dock__back"
-                    aria-label="Back to reports"
+                    aria-label="Back to Today"
                   >
                     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M15 18l-6-6 6-6" />
@@ -5984,186 +5969,77 @@ function TeacherDashboardInner() {
                       ? 'AI feedback'
                       : libraryView === 'drafting'
                         ? 'Learning trail'
-                        : libraryView === 'participation'
-                          ? 'Participation'
-                          : libraryView === 'pdf'
+                        : libraryView === 'pdf'
                             ? 'Evidence of learning PDF'
                             : libraryView === 'portfolios'
-                              ? 'Student portfolios'
-                              : libraryView === 'feedback-sent'
-                                ? 'AI feedback & summaries'
+                              ? 'Student folder'
                                 : libraryView === 'insights'
                                   ? 'Class insights'
-                                  : 'Reports'}
+                                  : 'Today'}
               </h2>
               <div className="iboard-room-settings__chrome-close">
               <CloseButton onClick={closeLibraryHub} aria-label={libraryView === 'feedback' ? 'Close AI feedback' : 'Close Reports'} />
               </div>
             </div>
             <div className="iboard-room-settings__body scrollbar-thin">
+        {(libraryView === 'home' || libraryView === 'portfolios') && (
+          <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Reports">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={libraryView === 'home'}
+              onClick={goLibraryHome}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                libraryView === 'home'
+                  ? 'bg-[#5a5fc3] text-white'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+              }`}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={libraryView === 'portfolios'}
+              onClick={() => setLibraryView('portfolios')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                libraryView === 'portfolios'
+                  ? 'bg-[#5a5fc3] text-white'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+              }`}
+            >
+              Student folder
+            </button>
+          </div>
+        )}
+
         {libraryView === 'home' && (
-          <section className="space-y-4">
-              <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-              Everything from your lessons in one place. To capture today’s writing, use the save icon in the header and save a snapshot.
-            </p>
-            <div className="flex flex-wrap gap-2" role="navigation" aria-label="Report sections">
-              {[
-                { label: 'Learning trail', hint: 'How each student’s writing grew, the support you gave, and anything pasted. Download the Evidence of learning PDF here too.', onClick: () => setLibraryView('drafting') },
-                { label: 'Participation', hint: 'Who answered your Ask class questions, and how often. Download the participant list here too.', onClick: () => setLibraryView('participation') },
-                { label: 'Student portfolios', hint: 'Download each student’s saved work as a PDF', onClick: () => setLibraryView('portfolios') },
-                { label: 'AI feedback & summaries', hint: 'Class summaries you saved, plus every piece of AI feedback you sent and who opened it', onClick: openFeedbackSent },
-                { label: 'Class insights', hint: 'Trends across your lessons and classes, with no student names', onClick: () => setLibraryView('insights') },
-              ].map((item) => (
-                <HintWrap key={item.label} hint={item.hint}>
-                  <button
-                    type="button"
-                    disabled={!!item.disabled}
-                    onClick={item.onClick}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
-                  >
-                    {item.label}
-                  </button>
-                </HintWrap>
-              ))}
-            </div>
-
-            {snapshots.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
-                <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">No snapshots yet</h3>
-                <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-                  Snapshot everyone’s writing from the save icon in the header to unlock class packs and student portfolios.
-                </p>
-                    </div>
-            ) : (
-                  <div className="overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Class snapshots</h3>
-                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Whole-class packs from each snapshot. View or download HTML again.</p>
-                    </div>
-                    <ul className="divide-y divide-slate-100 px-4 dark:divide-slate-800">
-                      {snapshots.map((sn) => (
-                        <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
-                          <span className="text-slate-800 dark:text-slate-200">
-                            <span className="font-medium">{snapshotRowTitle(sn)}</span>
-                            {sn.lesson_objective && sn.lesson_objective !== String(sn.label || '').trim() ? (
-                              <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Today: {sn.lesson_objective}</span>
-                            ) : null}
-                          </span>
-                          <span className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => loadSnapshotForView(sn.id)}
-                              className="rounded-lg text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300 dark:hover:text-indigo-200"
-                            >
-                              View
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => redownloadEvidence(sn.id)}
-                              className="rounded-lg text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300 dark:hover:text-indigo-200"
-                            >
-                              Download HTML
-                            </button>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-            )}
-          </section>
-                )}
-
-        {libraryView === 'feedback-sent' && (
-          <section className="space-y-4">
-            <p className="max-w-xl text-sm text-slate-500 dark:text-slate-400">
-              Class summaries you saved, then every piece of AI feedback you’ve sent from this room. Newest first.
-            </p>
-            {aiSummaries.length ? (
-              <div className="space-y-3">
-                <h3 className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Class summaries · only you see these</h3>
-                {aiSummaries.map((summary, index) => (
-                  <details key={summary.id} open={index === 0} className="group overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                    <summary className="flex cursor-pointer list-none items-baseline justify-between gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
-                      <span className="font-display text-base font-semibold text-ink-900 dark:text-slate-100">{formatSqlUtc(summary.createdAt)}</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">{summary.roster.length} students</span>
-                    </summary>
-                    <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-800">
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-200">{summary.text}</p>
-                      {summary.roster.length ? (
-                        <details className="mt-3">
-                          <summary className="cursor-pointer text-xs font-bold text-[#5a5fc3] dark:text-indigo-300">Who is Student 1, 2, 3…?</summary>
-                          <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                            {summary.roster.map((name, i) => `${i + 1}. ${name || 'Unnamed'}`).join(' · ')}
-                          </p>
-                        </details>
-                      ) : null}
-                    </div>
-                  </details>
-                ))}
-                {aiFeedbackLog?.length ? (
-                  <h3 className="pt-2 text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Feedback sent to students</h3>
-                ) : null}
-              </div>
-            ) : null}
-            {aiFeedbackLog === null ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">Loading…</p>
-            ) : aiFeedbackLogError ? (
-              <p className="text-sm font-semibold text-rose-600 dark:text-rose-300">{aiFeedbackLogError}</p>
-            ) : aiFeedbackLog.length === 0 ? (
-              aiSummaries.length ? null : (
-              <div className="rounded-2xl border border-dashed border-[#cfcce8] bg-white p-8 text-center shadow-sm dark:border-indigo-800 dark:bg-slate-900">
-                <h3 className="font-display text-xl font-bold text-ink-900 dark:text-slate-100">Nothing here yet</h3>
-                <p className="mx-auto mt-2 max-w-lg text-sm text-slate-500 dark:text-slate-400">
-                  Feedback you distribute and class summaries you save from the AI feedback button on the rail will appear here.
-                </p>
-              </div>
-              )
-            ) : (
-              Object.entries(
-                aiFeedbackLog.reduce((groups, item) => {
-                  const key = String(item.createdAt || '').slice(0, 16);
-                  (groups[key] ||= []).push(item);
-                  return groups;
-                }, {})
-              ).map(([key, items]) => (
-                <div key={key} className="overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                  <div className="flex items-baseline justify-between gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-                    <h3 className="font-display text-base font-semibold text-ink-900 dark:text-slate-100">{formatSqlUtc(items[0].createdAt)}</h3>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {items.length === 1 ? '1 student' : `${items.length} students`}
-                    </span>
-                  </div>
-                  <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {[...items]
-                      .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''))
-                      .map((item) => (
-                        <li key={item.id}>
-                          <details className="group px-4 py-2.5">
-                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm [&::-webkit-details-marker]:hidden">
-                              <span className="font-semibold text-slate-800 dark:text-slate-100">{item.studentName || 'Student who left'}</span>
-                              <span className={`text-xs font-semibold ${item.seen ? 'text-[#5a5fc3] dark:text-indigo-300' : 'text-slate-400 dark:text-slate-500'}`}>
-                                {item.seen ? 'Opened' : 'Not opened yet'}
-                              </span>
-                            </summary>
-                            <p className="mt-2 whitespace-pre-wrap rounded-xl bg-[#f1f0f8] px-3 py-2 text-sm leading-relaxed text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                              {item.text}
-                            </p>
-                          </details>
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              ))
-            )}
-          </section>
+          <TodayReportPanel
+            socket={socket}
+            roomCode={codeInput}
+            students={orderedStudents}
+            connectedIdSet={connectedIdSet}
+            awayByStudentId={awayByStudentId}
+            activityNow={activityNow}
+            frozen={frozen}
+            snapshotsCount={snapshots.length}
+            onOpenTrail={(id) => setLearningTrailId(id)}
+            onOpenDrafts={(id) => {
+              setLibraryTrailStudentId(id);
+              setLibraryView('drafting');
+            }}
+            onOpenFolder={() => setLibraryView('portfolios')}
+            onOpenPdf={() => setLibraryView('pdf')}
+            onOpenInsights={() => setLibraryView('insights')}
+          />
         )}
 
         {libraryView === 'portfolios' && (
                 <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900">
                   <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                     <div>
-                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Student portfolios</h3>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose a name for one PDF, or download the class as a zip of separate files.</p>
+                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Student folder</h3>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Saved writing across this class. Snapshot at the end of a lesson, or before they wipe for a second piece.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -6375,6 +6251,28 @@ function TeacherDashboardInner() {
                   <p className="border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
                     TUIT still matches capital letters and extra spaces automatically. Other name variations are combined only when you approve them.
                   </p>
+                  {snapshots.length ? (
+                    <div className="border-t border-slate-200 px-4 py-3 dark:border-slate-700">
+                      <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Class snapshots</h4>
+                      <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
+                        {snapshots.map((sn) => (
+                          <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                            <span className="text-slate-800 dark:text-slate-200">
+                              <span className="font-medium">{snapshotRowTitle(sn)}</span>
+                            </span>
+                            <span className="flex gap-2">
+                              <button type="button" onClick={() => loadSnapshotForView(sn.id)} className="text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300">View</button>
+                              <button type="button" onClick={() => redownloadEvidence(sn.id)} className="text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300">Download HTML</button>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                      No snapshots yet. Use the save icon at the end of the lesson.
+                    </p>
+                  )}
           </section>
         )}
 
@@ -6500,32 +6398,12 @@ function TeacherDashboardInner() {
               </button>
             </div>
             <DraftTrailPanel
-              key="library-drafting"
+              key={`library-drafting-${libraryTrailStudentId || 'all'}`}
               embedded
               socket={socket}
+              initialStudentId={libraryTrailStudentId}
               onClose={goLibraryHome}
               onOpenSummary={(id) => setLearningTrailId(id)}
-            />
-          </>
-        )}
-
-        {libraryView === 'participation' && (
-          <>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#ebeaf8] px-3 py-2 dark:bg-[rgba(90,95,195,0.22)]">
-              <p className="text-xs text-[#3c3f8f] dark:text-indigo-100">Names, year levels and word counts for everyone who joined.</p>
-              <button
-                type="button"
-                onClick={downloadParticipantList}
-                className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0]"
-              >
-                Download participant list
-              </button>
-            </div>
-            <LessonReportPanel
-              key="library-participation"
-              embedded
-              roomCode={codeInput}
-              onClose={goLibraryHome}
             />
           </>
         )}
@@ -6874,15 +6752,15 @@ function TeacherDashboardInner() {
             {settingsSection === 'records' && (
             <section className="iboard-room-settings__section">
               <div className="iboard-room-settings__card iboard-room-settings__list">
-                <HintWrap hint="Snapshots of student writing from past lessons" className="w-full">
+                <HintWrap hint="This lesson and each student's saved work" className="w-full">
                   <button type="button" onClick={() => openLibrary('evidence', 'lessons')}>
-                    <span>Lesson records</span>
+                    <span>Reports</span>
                     {snapshots.length > 0 ? (
                       <span className="iboard-room-settings__badge">{snapshots.length}</span>
                     ) : null}
             </button>
                 </HintWrap>
-                <HintWrap hint="Participation and engagement across the class" className="w-full">
+                <HintWrap hint="For you or your HOD. Names off unless you show them." className="w-full">
                   <button type="button" onClick={() => { closeSettings(); setInsightsOpen(true); }}>
                     Class insights
                   </button>

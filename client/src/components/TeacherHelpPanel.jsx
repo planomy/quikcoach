@@ -40,7 +40,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'rec',
     title: 'Learning trail',
-    body: 'TUIT records how each draft grows and the support you give, automatically. Click a red Pasted tag to see what was pasted, or open Reports → Learning trail.',
+    body: 'TUIT records how each draft grows and the support you give, automatically. Click a red Pasted tag to see what was pasted, or open Reports → Today.',
   },
   {
     id: 'session',
@@ -51,7 +51,7 @@ export const TEACHER_HELP_ITEMS = [
   {
     id: 'records',
     title: 'Reports',
-    body: 'Click the save icon at the top right, then Save a snapshot of everyone’s writing. Open View reports on the left to browse snapshots, portfolios, participation and class insights.',
+    body: 'Open View reports for Today (this lesson) and the Student folder (saved writing across the term). Snapshot at the end of a lesson from the save icon. Class insights is in Settings if you or your HOD need the longer view.',
     action: 'records',
   },
   {

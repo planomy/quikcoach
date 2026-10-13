@@ -354,6 +354,7 @@ export function trailStudents(code) {
     name: s.name,
     checkpoints: s.events.filter(e => !['feedback', 'stop', 'away', 'back'].includes(e.type)).length,
     pasteEvents: s.events.filter(e => e.type === 'paste').length,
+    awayEvents: s.events.filter(e => e.type === 'away').length,
     attention: studentTrailAttention(s),
   }));
 }
