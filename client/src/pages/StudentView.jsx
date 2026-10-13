@@ -1451,6 +1451,8 @@ export default function StudentView() {
       disabled={frozen}
       maxWords={enforce && wt > 0 ? wt : 0}
       placeholder="Write here… or paste an image"
+      hasDrawing={!!student?.image_url}
+      onRemoveDrawing={clearMyImage}
       headerEndActions={
         student?.id ? (
           <StudentChatButton
@@ -1863,7 +1865,7 @@ export default function StudentView() {
             {student?.image_url && !classWallActive && (
               <div
                 data-student-image-preview
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900"
+                className="shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900"
               >
                 {student.teacher_markup_url && (
                   <p className="mb-2 inline-flex rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-black text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
@@ -1880,9 +1882,9 @@ export default function StudentView() {
                   type="button"
                   disabled={frozen || imageBusy}
                   onClick={clearMyImage}
-                  className="mt-2 text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
+                  className="mt-2 min-h-10 text-sm font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
                 >
-                  Remove image
+                  Remove drawing
                 </button>
               </div>
             )}

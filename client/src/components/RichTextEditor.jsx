@@ -106,6 +106,8 @@ export default function RichTextEditor({
   placeholder = 'Write here…',
   headerActions = null,
   headerEndActions = null,
+  hasDrawing = false,
+  onRemoveDrawing = null,
 }) {
   const editorRef = useRef(null);
   const lastAcceptedHtmlRef = useRef('');
@@ -401,6 +403,7 @@ export default function RichTextEditor({
       {drawMode && (
         <StudentDrawPad
           disabled={disabled}
+          hasBoardDrawing={hasDrawing}
           onSave={saveDrawing}
           onClear={clearDrawing}
           onDone={() => setDrawMode(false)}
@@ -459,12 +462,23 @@ export default function RichTextEditor({
             {wordCountLabel}
           </span>
           {drawingEnabled ? (
-            <ToolbarButton
-              disabled={disabled}
-              label="✏ Draw"
-              title="Draw or show your working"
-              onClick={() => setDrawMode(true)}
-            />
+            <>
+              <ToolbarButton
+                disabled={disabled}
+                label="✏ Draw"
+                title="Draw or show your working"
+                onClick={() => setDrawMode(true)}
+              />
+              {hasDrawing ? (
+                <ToolbarButton
+                  disabled={disabled}
+                  label="Remove drawing"
+                  title="Take the drawing off your board"
+                  className="text-red-600 dark:text-red-300"
+                  onClick={() => onRemoveDrawing?.()}
+                />
+              ) : null}
+            </>
           ) : null}
           {headerEndActions}
           {toolbarHint && (

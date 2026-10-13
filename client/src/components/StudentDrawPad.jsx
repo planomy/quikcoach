@@ -74,7 +74,7 @@ function ToolButton({ active = false, disabled = false, children, onClick, title
   );
 }
 
-export default function StudentDrawPad({ disabled = false, onSave, onClear, onDone }) {
+export default function StudentDrawPad({ disabled = false, hasBoardDrawing = false, onSave, onClear, onDone }) {
   const canvasRef = useRef(null);
   const strokesRef = useRef([]);
   const currentStrokeRef = useRef(null);
@@ -236,6 +236,30 @@ export default function StudentDrawPad({ disabled = false, onSave, onClear, onDo
     else setFinishing(false);
   }
 
+  function cancelDrawing() {
+    if (finishing) return;
+    clearTimers();
+    onDone?.();
+  }
+
+  async function removeDrawing() {
+    if (finishing || disabled) return;
+    strokesRef.current = [];
+    currentStrokeRef.current = null;
+    setStrokeCount(0);
+    redraw();
+    dirtyRef.current = false;
+    clearTimers();
+    setFinishing(true);
+    try {
+      await Promise.resolve(onClear?.());
+      onDone?.();
+    } catch (error) {
+      setStatus(error?.message || 'Could not remove drawing');
+      setFinishing(false);
+    }
+  }
+
   const saveFailed = status.toLowerCase().includes('could not') || status.toLowerCase().includes('failed');
 
   return (
@@ -253,14 +277,34 @@ export default function StudentDrawPad({ disabled = false, onSave, onClear, onDo
         <ToolButton disabled={disabled || finishing || strokeCount === 0} onClick={clearDrawing} title="Clear the drawing">
           Clear
         </ToolButton>
-        <button
-          type="button"
-          disabled={finishing}
-          onClick={done}
-          className="ml-auto min-h-10 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
-        >
-          {finishing ? 'Saving…' : '✓ Done'}
-        </button>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            disabled={finishing}
+            onClick={cancelDrawing}
+            className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          >
+            Cancel
+          </button>
+          {hasBoardDrawing || strokeCount > 0 ? (
+            <button
+              type="button"
+              disabled={disabled || finishing}
+              onClick={removeDrawing}
+              className="min-h-10 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:bg-slate-900 dark:text-red-300 dark:hover:bg-red-950/40"
+            >
+              Remove drawing
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={finishing}
+            onClick={done}
+            className="min-h-10 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60"
+          >
+            {finishing ? 'Saving…' : '✓ Done'}
+          </button>
+        </div>
       </div>
 
       <div className="bg-slate-100 p-2 sm:p-3 dark:bg-slate-950">
