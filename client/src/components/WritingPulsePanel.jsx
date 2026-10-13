@@ -22,6 +22,39 @@ function clock(ms) {
   return ms ? new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
 }
 
+const CELL_LABEL = { w: 'Adding', r: 'Revising', a: 'Away' };
+const MARK_LABEL = { paste: 'Pasted', support: 'Support' };
+
+function stripRuns(cells) {
+  const runs = [];
+  const source = String(cells || '');
+  for (let i = 0; i < source.length; ) {
+    const kind = source[i];
+    let j = i + 1;
+    while (j < source.length && source[j] === kind) j += 1;
+    runs.push({ kind, len: j - i, i, j });
+    i = j;
+  }
+  return runs;
+}
+
+function runHint(run, start, end, count) {
+  const label = CELL_LABEL[run.kind];
+  if (!label || !start || !end || !count) return '';
+  const span = Math.max(1, end - start);
+  const from = clock(start + (run.i / count) * span);
+  const to = clock(start + (run.j / count) * span);
+  if (!from) return label;
+  return from === to ? `${label} · ${from}` : `${label} · ${from}–${to}`;
+}
+
+function markHint(mark) {
+  const label = MARK_LABEL[mark?.k];
+  if (!label) return '';
+  const when = clock(mark.at);
+  return when ? `${label} · ${when}` : label;
+}
+
 function median(values) {
   if (!values.length) return 0;
   const sorted = [...values].sort((a, b) => a - b);
@@ -109,39 +142,64 @@ export default function WritingPulsePanel({ socket, students, trailActive, onOpe
             {ordered.map((student) => {
               const strip = strips?.byId.get(Number(student.id));
               const cells = strip?.cells || '';
+              const runs = stripRuns(cells);
+              const started = clock(strip?.started);
+              const stateLabel = STATE_LABELS[student.state];
               return (
-                <HintWrap key={student.id} hint={`${student.name} · ${STATE_LABELS[student.state]}. Click to open the learning trail`} prefer="above" className="block">
-                  <button
-                    type="button"
-                    className="iboard-writing-chit"
-                    data-state={student.state}
-                    onClick={() => onOpenTrail(student.id)}
-                    title=""
-                    aria-label={`${student.name}: ${STATE_LABELS[student.state]}, ${student.words} words. Open learning trail`}
-                  >
-                    <span className="iboard-writing-chit__top">
-                      <span className="iboard-writing-chit__dot" aria-hidden="true" />
+                <button
+                  key={student.id}
+                  type="button"
+                  className="iboard-writing-chit"
+                  data-state={student.state}
+                  onClick={() => onOpenTrail(student.id)}
+                  title=""
+                  aria-label={`${student.name}: ${stateLabel}, ${student.words} words${started ? `, started ${started}` : ''}. Open learning trail`}
+                >
+                  <span className="iboard-writing-chit__top">
+                    <span className="iboard-writing-chit__dot" aria-hidden="true" />
+                    <span className="iboard-writing-chit__who">
                       <span className="iboard-writing-chit__name">{firstName(student.name)}</span>
-                      <span className="iboard-writing-chit__words tabular-nums">{student.words}w</span>
+                      {started ? <span className="iboard-writing-chit__started">started {started}</span> : null}
                     </span>
-                    <span className="iboard-writing-chit__strip" aria-hidden="true">
-                      <span className="iboard-writing-chit__marks">
-                        {(strip?.marks || []).map((mark, n) => (
-                          <span key={n} className={`is-${mark.k}`} style={{ left: `${Math.min(100, Math.max(0, mark.p))}%` }} />
-                        ))}
-                      </span>
-                      <span className="iboard-writing-chit__cells">
-                        {cells ? [...cells].map((cell, n) => <span key={n} className={`is-${cell === '-' ? 'none' : cell}`} />) : null}
-                      </span>
+                    <span className="iboard-writing-chit__words tabular-nums">{student.words}w</span>
+                  </span>
+                  <span className="iboard-writing-chit__strip">
+                    <span className="iboard-writing-chit__marks">
+                      {(strip?.marks || []).map((mark, n) => (
+                        <span
+                          key={n}
+                          className="iboard-writing-chit__mark-slot"
+                          style={{ left: `${Math.min(100, Math.max(0, mark.p))}%` }}
+                        >
+                          <HintWrap hint={markHint(mark)} className={`iboard-writing-chit__mark is-${mark.k}`}>
+                            <span />
+                          </HintWrap>
+                        </span>
+                      ))}
                     </span>
-                    {student.pasted || student.inbox ? (
-                      <span className="iboard-writing-chit__badges" aria-hidden="true">
-                        {student.pasted ? <span className="is-paste"><AlertIcon id="pasted" /></span> : null}
-                        {student.inbox ? <span className="is-inbox"><AlertIcon id="messages" /></span> : null}
-                      </span>
-                    ) : null}
-                  </button>
-                </HintWrap>
+                    <span className="iboard-writing-chit__cells">
+                      {runs.map((run, n) => (
+                        <span
+                          key={n}
+                          className={`iboard-writing-chit__cell${run.kind === '-' ? ' is-none' : ''}`}
+                          style={{ flexGrow: run.len }}
+                        >
+                          {run.kind === '-' ? null : (
+                            <HintWrap hint={runHint(run, strips?.start, strips?.end, cells.length)} className="iboard-writing-chit__run">
+                              <span className={`is-${run.kind}`} />
+                            </HintWrap>
+                          )}
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                  {student.pasted || student.inbox ? (
+                    <span className="iboard-writing-chit__badges" aria-hidden="true">
+                      {student.pasted ? <span className="is-paste"><AlertIcon id="pasted" /></span> : null}
+                      {student.inbox ? <span className="is-inbox"><AlertIcon id="messages" /></span> : null}
+                    </span>
+                  ) : null}
+                </button>
               );
             })}
           </div>

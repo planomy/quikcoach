@@ -532,14 +532,23 @@ export function trailStrips(code, at = Date.now(), { count = 30, windowMs = 3600
       if (e.type === 'change') cells[index(t)] |= flags[n] ? 2 : 1;
       if (e.type === 'paste') {
         cells[index(t)] |= 1;
-        marks.push({ p: position(t), k: 'paste' });
+        marks.push({ p: position(t), k: 'paste', at: t });
       }
-      if (e.type === 'feedback') marks.push({ p: position(t), k: 'support' });
+      if (e.type === 'feedback') marks.push({ p: position(t), k: 'support', at: t });
     });
     if (awaySince != null) fillAway(awaySince, at);
     if (s.pending && s.pending.receivedAt >= start) cells[index(s.pending.receivedAt)] |= 1;
+    let started = 0;
+    for (const event of s.events) {
+      if (event.type === 'change' || event.type === 'paste') {
+        started = Number(event.at) || 0;
+        break;
+      }
+    }
+    if (!started && s.pending) started = Number(s.pending.receivedAt) || 0;
     return {
       id: s.id,
+      started,
       cells: cells.map((c) => (c & 2 ? 'r' : c & 1 ? 'w' : c & 4 ? 'a' : '-')).join(''),
       marks: marks.slice(-40),
     };

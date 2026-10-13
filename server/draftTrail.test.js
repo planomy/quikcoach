@@ -18,7 +18,9 @@ test('trail strips mark adding, revising, away and paste in time order', () => {
   recordTrailText('3399', row, 'Uno two pasted', { token, paste: true }, t0 + 270000);
   const strips = trailStrips('3399', t0 + 300000, { count: 5 });
   assert.equal(strips.students[0].cells, '-wraw');
+  assert.equal(strips.students[0].started, t0 + 60000);
   assert.deepEqual(strips.students[0].marks.map((m) => m.k), ['paste']);
+  assert.equal(strips.students[0].marks[0].at, t0 + 270000);
   clearTrail('3399');
 });
 

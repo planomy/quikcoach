@@ -2217,7 +2217,7 @@ html.dark .iboard-gauge-panel {
 
 .iboard-writing-chit__top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.35rem;
   min-width: 0;
 }
@@ -2226,6 +2226,7 @@ html.dark .iboard-gauge-panel {
   width: 0.5rem;
   height: 0.5rem;
   flex: 0 0 auto;
+  margin-top: 0.18rem;
   border-radius: 999px;
   background: #cbd5e1;
 }
@@ -2235,9 +2236,16 @@ html.dark .iboard-gauge-panel {
 .iboard-writing-chit[data-state='empty'] .iboard-writing-chit__dot { background: transparent; box-shadow: inset 0 0 0 1.5px #9d9dab; }
 .iboard-writing-chit[data-state='away'] .iboard-writing-chit__dot { background: #f59e0b; }
 
-.iboard-writing-chit__name {
+.iboard-writing-chit__who {
   min-width: 0;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.02rem;
+}
+
+.iboard-writing-chit__name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2246,8 +2254,16 @@ html.dark .iboard-gauge-panel {
   color: #1f1f29;
 }
 
+.iboard-writing-chit__started {
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: #8b8b96;
+}
+
 .iboard-writing-chit__words {
   flex: 0 0 auto;
+  padding-top: 0.1rem;
   font-size: 0.65rem;
   font-weight: 700;
   color: #5a5fc3;
@@ -2256,26 +2272,46 @@ html.dark .iboard-gauge-panel {
 .iboard-writing-chit__strip {
   position: relative;
   display: block;
-  padding-top: 0.4rem;
+  padding-top: 0.45rem;
 }
 
 .iboard-writing-chit__marks {
   position: absolute;
   inset: 0 0 auto;
-  height: 0.3rem;
+  height: 0.7rem;
 }
 
-.iboard-writing-chit__marks > span {
+.iboard-writing-chit__mark-slot {
   position: absolute;
   top: 0;
-  width: 0.3rem;
-  height: 0.3rem;
-  border-radius: 999px;
+  z-index: 1;
+  width: 0.7rem;
+  height: 0.7rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   transform: translateX(-50%);
 }
 
-.iboard-writing-chit__marks .is-support { background: #5a5fc3; }
-.iboard-writing-chit__marks .is-paste { background: #ef4444; }
+.iboard-writing-chit__mark {
+  display: flex !important;
+  width: 0.7rem;
+  min-width: 0.7rem;
+  height: 0.7rem;
+  align-items: flex-start;
+  justify-content: center;
+  background: transparent;
+}
+
+.iboard-writing-chit__mark > span {
+  display: block;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 999px;
+}
+
+.iboard-writing-chit__mark.is-support > span { background: #5a5fc3; }
+.iboard-writing-chit__mark.is-paste > span { background: #ef4444; }
 
 .iboard-writing-chit__cells {
   display: flex;
@@ -2285,8 +2321,26 @@ html.dark .iboard-gauge-panel {
   background: #eeedf5;
 }
 
-.iboard-writing-chit__cells > span {
+.iboard-writing-chit__cell {
   flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+}
+
+.iboard-writing-chit__run {
+  display: block !important;
+  width: 100%;
+  height: 100%;
+}
+
+.iboard-writing-chit__run > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.iboard-writing-chit__run:hover > span {
+  filter: brightness(0.9);
 }
 
 .iboard-writing-chit__cells .is-w,
@@ -2371,6 +2425,10 @@ html.dark .iboard-writing-pulse__head {
 }
 
 html.dark .iboard-writing-pulse__head h2,
+html.dark .iboard-writing-chit__started {
+  color: #94a3b8;
+}
+
 html.dark .iboard-writing-chit__name {
   color: #e2e8f0;
 }
