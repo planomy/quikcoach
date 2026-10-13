@@ -1338,7 +1338,7 @@ function TeacherDashboardInner() {
   }
 
   function openTimerDock() {
-    toggleHeaderTool('timer');
+    toggleSettings('settings');
   }
 
   function openViewDock() {
@@ -4779,22 +4779,11 @@ function TeacherDashboardInner() {
 
             <div className="iboard-header-actions flex shrink-0 items-center justify-end gap-1.5">
             {joined && saveStatus === 'error' ? <SaveStatusChip status="error" plain /> : null}
-            <div className="relative" data-header-tool="timer">
             <RoomTimerPill
               timer={room?.timer}
               onClick={openTimerDock}
               onFinishedClick={() => controlRoomTimer('end')}
             />
-            {headerTool === 'timer' ? (
-              <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Timer">
-                <div className="iboard-tool-popover__head">
-                  <h2>Timer</h2>
-                  <span>Shows on the teacher and student boards</span>
-                </div>
-                <div className="iboard-tool-popover__body">{timerControls}</div>
-              </div>
-            ) : null}
-            </div>
             {independentSince ? (
               <HintWrap hint="Feedback asks before sending while this is on. Click to end." prefer="below" multiline>
                 <button
@@ -6638,6 +6627,13 @@ function TeacherDashboardInner() {
                     <span className="iboard-switch" data-on={room?.student_drawing ? 'true' : 'false'} aria-hidden="true" />
                   </button>
                 </HintWrap>
+              </div>
+              <div className="iboard-room-settings__row">
+                <div className="min-w-0 flex-1">
+                  <p className="iboard-room-settings__alerts-title">Timer</p>
+                  <p className="mb-2 text-[11px] font-medium leading-snug text-[#8b8b96]">Shows on the teacher and student boards</p>
+                  {timerControls}
+                </div>
               </div>
               <p className="iboard-room-settings__alerts-title">Alerts</p>
               {[
