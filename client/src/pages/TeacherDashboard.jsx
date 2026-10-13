@@ -2505,7 +2505,7 @@ function TeacherDashboardInner() {
       }
       const buttonBox = button?.getBoundingClientRect();
       const maxHeight = Math.max(220, viewport - margin * 2);
-      if (toolsPanelOpen && !settingsOpen && !libraryPanel) {
+      if ((toolsPanelOpen && !settingsOpen && !libraryPanel) || (libraryPanel && libraryView !== 'feedback')) {
         const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
         const nextTop = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
         setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
@@ -5873,7 +5873,7 @@ function TeacherDashboardInner() {
       {libraryPanel && createPortal(
         <div
           ref={libraryDockRef}
-          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex w-[min(29rem,calc(100vw-4.75rem))] flex-col${
+          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 w-[min(29rem,calc(100vw-4.75rem))] flex-col${
             helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''
           }${helpFlash === 'ai' && libraryView === 'feedback' ? ' is-help-flash' : ''}`}
           style={headerDockStyle}
