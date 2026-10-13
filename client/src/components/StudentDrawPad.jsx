@@ -3,10 +3,29 @@ import HintWrap from './HintWrap.jsx';
 
 const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 720;
+const MAX_CANVAS_HEIGHT = 1800;
+const HEIGHT_STORAGE_KEY = 'iboard-draw-pad-height';
 const PEN_WIDTH = 5;
 const ERASER_WIDTH = 30;
 const IDLE_SAVE_MS = 2000;
 const MAX_LIVE_SAVE_MS = 5000;
+const PEN_COLOURS = [
+  { id: 'black', value: '#111827', label: 'Black' },
+  { id: 'red', value: '#dc2626', label: 'Red' },
+  { id: 'blue', value: '#2563eb', label: 'Blue' },
+  { id: 'green', value: '#16a34a', label: 'Green' },
+];
+
+function readStoredHeight() {
+  if (typeof sessionStorage === 'undefined') return CANVAS_HEIGHT;
+  const raw = Number(sessionStorage.getItem(HEIGHT_STORAGE_KEY));
+  if (!Number.isFinite(raw)) return CANVAS_HEIGHT;
+  return Math.min(MAX_CANVAS_HEIGHT, Math.max(CANVAS_HEIGHT, Math.round(raw)));
+}
+
+function clampCanvasHeight(value) {
+  return Math.min(MAX_CANVAS_HEIGHT, Math.max(CANVAS_HEIGHT, Math.round(value)));
+}
 
 function pointFromEvent(canvas, event) {
   const rect = canvas.getBoundingClientRect();
@@ -18,18 +37,19 @@ function pointFromEvent(canvas, event) {
   };
 }
 
-function fillWhite(ctx) {
+function fillWhite(ctx, width, height) {
   ctx.save();
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.fillRect(0, 0, width, height);
   ctx.restore();
 }
 
-function strokeStyle(ctx, tool) {
+function strokeStyle(ctx, tool, colour = '#111827') {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : '#111827';
-  ctx.fillStyle = tool === 'eraser' ? '#ffffff' : '#111827';
+  const ink = tool === 'eraser' ? '#ffffff' : colour;
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
   ctx.lineWidth = tool === 'eraser' ? ERASER_WIDTH : PEN_WIDTH;
 }
 
@@ -37,7 +57,7 @@ function drawStroke(ctx, stroke) {
   const points = stroke?.points || [];
   if (!points.length) return;
   ctx.save();
-  strokeStyle(ctx, stroke.tool);
+  strokeStyle(ctx, stroke.tool, stroke.colour);
   if (points.length === 1) {
     ctx.beginPath();
     ctx.arc(points[0].x, points[0].y, ctx.lineWidth / 2, 0, Math.PI * 2);
@@ -84,15 +104,19 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
   const maxTimerRef = useRef(null);
   const savePromiseRef = useRef(null);
   const [tool, setTool] = useState('pen');
+  const [colour, setColour] = useState('#111827');
+  const [canvasHeight, setCanvasHeight] = useState(readStoredHeight);
   const [strokeCount, setStrokeCount] = useState(0);
   const [status, setStatus] = useState('Draw with your mouse, finger or stylus');
   const [finishing, setFinishing] = useState(false);
+  const canvasHeightRef = useRef(canvasHeight);
+  const resizeDragRef = useRef(null);
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (!ctx) return;
-    fillWhite(ctx);
+    if (!ctx || !canvas) return;
+    fillWhite(ctx, canvas.width, canvas.height);
     for (const stroke of strokesRef.current) drawStroke(ctx, stroke);
   }, []);
 
@@ -157,8 +181,19 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
   }, [saveNow]);
 
   useEffect(() => {
+    canvasHeightRef.current = canvasHeight;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(HEIGHT_STORAGE_KEY, String(canvasHeight));
+    }
     redraw();
-    return () => clearTimers();
+  }, [canvasHeight, redraw]);
+
+  useEffect(() => {
+    redraw();
+    return () => {
+      clearTimers();
+      document.documentElement.classList.remove('iboard-draw-resizing');
+    };
   }, [clearTimers, redraw]);
 
   function beginStroke(event) {
@@ -169,7 +204,7 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     activePointerRef.current = event.pointerId;
     canvas.setPointerCapture?.(event.pointerId);
     const point = pointFromEvent(canvas, event);
-    const stroke = { tool, points: [point] };
+    const stroke = { tool, colour, points: [point] };
     currentStrokeRef.current = stroke;
     const ctx = canvas.getContext('2d');
     if (ctx) drawStroke(ctx, stroke);
@@ -187,7 +222,7 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     const previous = points[points.length - 1];
     points.push(point);
     ctx.save();
-    strokeStyle(ctx, currentStrokeRef.current.tool);
+    strokeStyle(ctx, currentStrokeRef.current.tool, currentStrokeRef.current.colour);
     ctx.beginPath();
     ctx.moveTo(previous.x, previous.y);
     ctx.lineTo(point.x, point.y);
@@ -260,14 +295,83 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     }
   }
 
+  function applyCanvasHeight(nextHeight) {
+    const next = clampCanvasHeight(nextHeight);
+    if (next === canvasHeightRef.current) return false;
+    canvasHeightRef.current = next;
+    setCanvasHeight(next);
+    return true;
+  }
+
+  function startResize(event) {
+    if (disabled || finishing) return;
+    event.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    resizeDragRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeight: canvasHeightRef.current,
+      scale: canvas.width / Math.max(1, rect.width),
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    document.documentElement.classList.add('iboard-draw-resizing');
+  }
+
+  function moveResize(event) {
+    const drag = resizeDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    applyCanvasHeight(drag.startHeight + (event.clientY - drag.startY) * drag.scale);
+  }
+
+  function endResize(event) {
+    const drag = resizeDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    try { event.currentTarget.releasePointerCapture?.(event.pointerId); } catch { /* ignore */ }
+    resizeDragRef.current = null;
+    document.documentElement.classList.remove('iboard-draw-resizing');
+    if (canvasHeightRef.current !== drag.startHeight && strokesRef.current.length) markDirty();
+  }
+
+  function bumpHeight(delta) {
+    if (disabled || finishing) return;
+    if (applyCanvasHeight(canvasHeightRef.current + delta) && strokesRef.current.length) markDirty();
+  }
+
+  function pickColour(nextColour) {
+    setColour(nextColour);
+    setTool('pen');
+  }
+
   const saveFailed = status.toLowerCase().includes('could not') || status.toLowerCase().includes('failed');
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+    <div className="iboard-draw-pad overflow-hidden rounded-2xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900">
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
         <ToolButton active={tool === 'pen'} disabled={disabled || finishing} onClick={() => setTool('pen')} title="Draw with a pen">
           ✏ Pen
         </ToolButton>
+        <div className="iboard-draw-pad__colours" role="group" aria-label="Pen colour">
+          {PEN_COLOURS.map((item) => {
+            const active = tool === 'pen' && colour === item.value;
+            return (
+              <HintWrap key={item.id} hint={`${item.label} pen`} prefer="above">
+                <button
+                  type="button"
+                  disabled={disabled || finishing}
+                  onClick={() => pickColour(item.value)}
+                  aria-label={`${item.label} pen`}
+                  aria-pressed={active}
+                  title=""
+                  className={`iboard-draw-pad__swatch${active ? ' is-active' : ''}`}
+                  style={{ background: item.value }}
+                />
+              </HintWrap>
+            );
+          })}
+        </div>
         <ToolButton active={tool === 'eraser'} disabled={disabled || finishing} onClick={() => setTool('eraser')} title="Erase part of the drawing">
           Eraser
         </ToolButton>
@@ -307,19 +411,41 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
         </div>
       </div>
 
-      <div className="bg-slate-100 p-2 sm:p-3 dark:bg-slate-950">
+      <div className="iboard-draw-pad__stage bg-slate-100 p-2 sm:p-3 dark:bg-slate-950">
         <canvas
           ref={canvasRef}
           width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
+          height={canvasHeight}
           onPointerDown={beginStroke}
           onPointerMove={continueStroke}
           onPointerUp={finishStroke}
           onPointerCancel={finishStroke}
           aria-label="Drawing canvas for showing your working"
           className={`block w-full rounded-xl border border-slate-300 bg-white ${disabled ? 'cursor-not-allowed opacity-70' : tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'}`}
-          style={{ aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}`, touchAction: 'none' }}
+          style={{ aspectRatio: `${CANVAS_WIDTH} / ${canvasHeight}`, touchAction: 'none' }}
         />
+        <button
+          type="button"
+          className="iboard-draw-pad__resize"
+          aria-label="Drag to make the drawing box taller"
+          aria-orientation="horizontal"
+          disabled={disabled || finishing}
+          onPointerDown={startResize}
+          onPointerMove={moveResize}
+          onPointerUp={endResize}
+          onPointerCancel={endResize}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              bumpHeight(80);
+            } else if (event.key === 'ArrowUp') {
+              event.preventDefault();
+              bumpHeight(-80);
+            }
+          }}
+        >
+          <span className="iboard-draw-pad__resize-bar" aria-hidden="true" />
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2 text-xs dark:border-slate-700">

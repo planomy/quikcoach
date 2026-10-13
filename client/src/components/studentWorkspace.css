@@ -36,6 +36,103 @@ html.iboard-student-workspace.iboard-student-draw-mode [data-student-image-previ
   display: none !important;
 }
 
+/* A taller drawing box should grow the page, not clip inside the writing pane. */
+html.iboard-student-workspace.iboard-student-draw-mode main > .iboard-student-workspace-grid > .iboard-student-writing-col,
+html.iboard-student-workspace.iboard-student-draw-mode .iboard-student-writing-pane,
+html.iboard-student-workspace.iboard-student-draw-mode .iboard-student-writing-pane > div {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+html.iboard-student-workspace.iboard-student-draw-mode.iboard-student-breakouts main > .iboard-student-workspace-grid > .iboard-student-writing-col {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.iboard-draw-pad__colours {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.iboard-draw-pad__swatch {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px #c9c9d4;
+  cursor: pointer;
+}
+
+.iboard-draw-pad__swatch:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.iboard-draw-pad__swatch.is-active {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #5a5fc3;
+}
+
+html.dark .iboard-draw-pad__swatch {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 1px #475569;
+}
+
+html.dark .iboard-draw-pad__swatch.is-active {
+  box-shadow: 0 0 0 2px #0f172a, 0 0 0 4px #818cf8;
+}
+
+.iboard-draw-pad__resize {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.15rem;
+  margin-top: 0.2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.iboard-draw-pad__resize:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.iboard-draw-pad__resize-bar {
+  display: block;
+  width: 2.75rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: #cfcce8;
+  box-shadow: 0 0 0 1px rgba(90, 95, 195, 0.12);
+}
+
+.iboard-draw-pad__resize:hover .iboard-draw-pad__resize-bar,
+.iboard-draw-pad__resize:focus-visible .iboard-draw-pad__resize-bar,
+html.iboard-draw-resizing .iboard-draw-pad__resize-bar {
+  background: #5a5fc3;
+}
+
+html.dark .iboard-draw-pad__resize-bar {
+  background: #475569;
+}
+
+html.dark .iboard-draw-pad__resize:hover .iboard-draw-pad__resize-bar,
+html.dark .iboard-draw-pad__resize:focus-visible .iboard-draw-pad__resize-bar,
+html.dark.iboard-draw-resizing .iboard-draw-pad__resize-bar {
+  background: #818cf8;
+}
+
+html.iboard-draw-resizing,
+html.iboard-draw-resizing * {
+  cursor: ns-resize !important;
+  user-select: none !important;
+}
+
 /* Prefer the Inbox badge — never show the full-screen arrival splash. */
 html.iboard-student-workspace .iboard-question-arrival,
 html.iboard-student-workspace .iboard-featured-splash {
