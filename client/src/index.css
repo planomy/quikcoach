@@ -16,18 +16,22 @@
 
 .iboard-conn-dots {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
+  flex-shrink: 0;
   gap: 0.22rem;
-  height: 0.55rem;
+  height: 0.7rem;
+  overflow: visible;
 }
 
 .iboard-conn-dots > span {
   display: block;
   width: 0.28rem;
   height: 0.28rem;
+  flex-shrink: 0;
   border-radius: 999px;
   background: currentColor;
   opacity: 0.35;
+  transform-origin: center bottom;
   animation: iboard-conn-dot 1.05s ease-in-out infinite;
 }
 
@@ -1963,8 +1967,8 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   gap: 0.28rem;
   max-width: 11rem;
   transform: translateX(-50%);
-  padding: 0.04rem 0.4rem;
-  overflow: hidden;
+  padding: 0.16rem 0.4rem 0.1rem;
+  overflow: visible;
   border: 1px solid #2c2c34;
   border-radius: 999px;
   background: #2c2c34;
@@ -1972,7 +1976,6 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   font-size: 0.58rem;
   font-weight: 650;
   line-height: 1.15;
-  text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
 }
