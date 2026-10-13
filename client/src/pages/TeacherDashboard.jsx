@@ -5983,7 +5983,7 @@ function TeacherDashboardInner() {
             </div>
             <div className="iboard-room-settings__body scrollbar-thin">
         {(libraryView === 'home' || libraryView === 'portfolios' || libraryView === 'insights') && (
-          <div className="mb-4 flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800" role="tablist" aria-label="Reports">
+          <div className="iboard-reports-tabs mb-4" role="tablist" aria-label="Reports">
             {[
               { id: 'home', label: 'Today', onClick: goLibraryHome },
               { id: 'portfolios', label: 'Student folders', onClick: () => setLibraryView('portfolios') },
@@ -5995,11 +5995,7 @@ function TeacherDashboardInner() {
                 role="tab"
                 aria-selected={libraryView === tab.id}
                 onClick={tab.onClick}
-                className={`min-w-0 flex-1 rounded-md px-2 py-1.5 text-center text-xs font-bold ${
-                  libraryView === tab.id
-                    ? 'bg-white text-ink-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                }`}
+                className="iboard-reports-tabs__tab"
               >
                 {tab.label}
               </button>
