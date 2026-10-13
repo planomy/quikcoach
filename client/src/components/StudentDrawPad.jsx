@@ -15,6 +15,17 @@ const PEN_COLOURS = [
   { id: 'blue', value: '#2563eb', label: 'Blue' },
   { id: 'green', value: '#16a34a', label: 'Green' },
 ];
+const SHAPE_TOOLS = [
+  { id: 'line', label: 'Line' },
+  { id: 'rect', label: 'Box' },
+  { id: 'circle', label: 'Circle' },
+  { id: 'triangle', label: 'Triangle' },
+];
+const SHAPE_TOOL_IDS = new Set(SHAPE_TOOLS.map((item) => item.id));
+
+function isShapeTool(tool) {
+  return SHAPE_TOOL_IDS.has(tool);
+}
 
 function readStoredHeight() {
   if (typeof sessionStorage === 'undefined') return CANVAS_HEIGHT;
@@ -53,12 +64,46 @@ function strokeStyle(ctx, tool, colour = '#111827') {
   ctx.lineWidth = tool === 'eraser' ? ERASER_WIDTH : PEN_WIDTH;
 }
 
+function drawShape(ctx, stroke) {
+  const start = stroke.points[0];
+  const end = stroke.points[stroke.points.length - 1] || start;
+  const left = Math.min(start.x, end.x);
+  const top = Math.min(start.y, end.y);
+  const width = Math.abs(end.x - start.x);
+  const height = Math.abs(end.y - start.y);
+  ctx.beginPath();
+  if (stroke.tool === 'line') {
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+  } else if (stroke.tool === 'rect') {
+    ctx.rect(left, top, width, height);
+  } else if (stroke.tool === 'circle') {
+    ctx.ellipse(
+      left + width / 2,
+      top + height / 2,
+      Math.max(width / 2, 0.5),
+      Math.max(height / 2, 0.5),
+      0,
+      0,
+      Math.PI * 2
+    );
+  } else if (stroke.tool === 'triangle') {
+    ctx.moveTo(left + width / 2, top);
+    ctx.lineTo(left + width, top + height);
+    ctx.lineTo(left, top + height);
+    ctx.closePath();
+  }
+  ctx.stroke();
+}
+
 function drawStroke(ctx, stroke) {
   const points = stroke?.points || [];
   if (!points.length) return;
   ctx.save();
-  strokeStyle(ctx, stroke.tool, stroke.colour);
-  if (points.length === 1) {
+  strokeStyle(ctx, stroke.tool === 'eraser' ? 'eraser' : 'pen', stroke.colour);
+  if (isShapeTool(stroke.tool)) {
+    drawShape(ctx, stroke);
+  } else if (points.length === 1) {
     ctx.beginPath();
     ctx.arc(points[0].x, points[0].y, ctx.lineWidth / 2, 0, Math.PI * 2);
     ctx.fill();
@@ -71,6 +116,17 @@ function drawStroke(ctx, stroke) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+function ShapeIcon({ kind }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {kind === 'line' ? <path d="M5 19 19 5" /> : null}
+      {kind === 'rect' ? <rect x="5" y="6" width="14" height="12" rx="1" /> : null}
+      {kind === 'circle' ? <circle cx="12" cy="12" r="7" /> : null}
+      {kind === 'triangle' ? <path d="m12 5 8 14H4Z" /> : null}
+    </svg>
+  );
 }
 
 function ToolButton({ active = false, disabled = false, children, onClick, title }) {
@@ -118,6 +174,7 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     if (!ctx || !canvas) return;
     fillWhite(ctx, canvas.width, canvas.height);
     for (const stroke of strokesRef.current) drawStroke(ctx, stroke);
+    if (currentStrokeRef.current) drawStroke(ctx, currentStrokeRef.current);
   }, []);
 
   const clearTimers = useCallback(() => {
@@ -196,6 +253,14 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     };
   }, [clearTimers, redraw]);
 
+  function paintCurrent() {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    const stroke = currentStrokeRef.current;
+    if (!ctx || !stroke) return;
+    drawStroke(ctx, stroke);
+  }
+
   function beginStroke(event) {
     if (disabled || finishing) return;
     const canvas = canvasRef.current;
@@ -206,8 +271,7 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     const point = pointFromEvent(canvas, event);
     const stroke = { tool, colour, points: [point] };
     currentStrokeRef.current = stroke;
-    const ctx = canvas.getContext('2d');
-    if (ctx) drawStroke(ctx, stroke);
+    if (!isShapeTool(tool)) paintCurrent();
     markDirty();
   }
 
@@ -218,16 +282,21 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     if (!canvas || !ctx) return;
     event.preventDefault();
     const point = pointFromEvent(canvas, event);
-    const points = currentStrokeRef.current.points;
-    const previous = points[points.length - 1];
-    points.push(point);
-    ctx.save();
-    strokeStyle(ctx, currentStrokeRef.current.tool, currentStrokeRef.current.colour);
-    ctx.beginPath();
-    ctx.moveTo(previous.x, previous.y);
-    ctx.lineTo(point.x, point.y);
-    ctx.stroke();
-    ctx.restore();
+    const stroke = currentStrokeRef.current;
+    if (isShapeTool(stroke.tool)) {
+      stroke.points = [stroke.points[0], point];
+      redraw();
+    } else {
+      const previous = stroke.points[stroke.points.length - 1];
+      stroke.points.push(point);
+      ctx.save();
+      strokeStyle(ctx, stroke.tool, stroke.colour);
+      ctx.beginPath();
+      ctx.moveTo(previous.x, previous.y);
+      ctx.lineTo(point.x, point.y);
+      ctx.stroke();
+      ctx.restore();
+    }
     markDirty();
   }
 
@@ -235,10 +304,17 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     if (activePointerRef.current !== event.pointerId || !currentStrokeRef.current) return;
     const canvas = canvasRef.current;
     try { canvas?.releasePointerCapture?.(event.pointerId); } catch { /* ignore */ }
-    strokesRef.current = [...strokesRef.current, currentStrokeRef.current];
+    const stroke = currentStrokeRef.current;
+    const start = stroke.points[0];
+    const end = stroke.points[stroke.points.length - 1] || start;
+    const tooSmall = isShapeTool(stroke.tool) && Math.hypot(end.x - start.x, end.y - start.y) < 4;
+    if (!tooSmall) {
+      strokesRef.current = [...strokesRef.current, stroke];
+      setStrokeCount(strokesRef.current.length);
+    }
     currentStrokeRef.current = null;
     activePointerRef.current = null;
-    setStrokeCount(strokesRef.current.length);
+    if (tooSmall) redraw();
     markDirty();
   }
 
@@ -342,7 +418,7 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
 
   function pickColour(nextColour) {
     setColour(nextColour);
-    setTool('pen');
+    if (tool === 'eraser') setTool('pen');
   }
 
   const saveFailed = status.toLowerCase().includes('could not') || status.toLowerCase().includes('failed');
@@ -355,7 +431,7 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
         </ToolButton>
         <div className="iboard-draw-pad__colours" role="group" aria-label="Pen colour">
           {PEN_COLOURS.map((item) => {
-            const active = tool === 'pen' && colour === item.value;
+            const active = tool !== 'eraser' && colour === item.value;
             return (
               <HintWrap key={item.id} hint={`${item.label} pen`} prefer="above">
                 <button
@@ -371,6 +447,19 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
               </HintWrap>
             );
           })}
+        </div>
+        <div className="iboard-draw-pad__shapes" role="group" aria-label="Lines and shapes">
+          {SHAPE_TOOLS.map((item) => (
+            <ToolButton
+              key={item.id}
+              active={tool === item.id}
+              disabled={disabled || finishing}
+              onClick={() => setTool(item.id)}
+              title={`Draw a ${item.label.toLowerCase()}`}
+            >
+              <ShapeIcon kind={item.id} />
+            </ToolButton>
+          ))}
         </div>
         <ToolButton active={tool === 'eraser'} disabled={disabled || finishing} onClick={() => setTool('eraser')} title="Erase part of the drawing">
           Eraser

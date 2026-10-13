@@ -83,6 +83,21 @@ html.dark .iboard-draw-pad__swatch.is-active {
   box-shadow: 0 0 0 2px #0f172a, 0 0 0 4px #818cf8;
 }
 
+.iboard-draw-pad__shapes {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.iboard-draw-pad__shapes button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding-left: 0.55rem;
+  padding-right: 0.55rem;
+}
+
 .iboard-draw-pad__resize {
   display: flex;
   align-items: center;
