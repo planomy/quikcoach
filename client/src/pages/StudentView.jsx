@@ -18,6 +18,7 @@ import RichTextEditor from '../components/RichTextEditor.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
+import DrawBoxResizeHandle, { readDrawBoxHeight } from '../components/DrawBoxResizeHandle.jsx';
 import StudentWorkspaceSplit from '../components/StudentWorkspaceSplit.jsx';
 import ClassWall from '../components/ClassWall.jsx';
 import HintWrap from '../components/HintWrap.jsx';
@@ -180,6 +181,7 @@ export default function StudentView() {
   const feedbackSeenAckRef = useRef(new Set());
   const baseDocumentTitleRef = useRef('');
   const [imageBusy, setImageBusy] = useState(false);
+  const [drawBoxHeight, setDrawBoxHeight] = useState(readDrawBoxHeight);
   const [imageHint, setImageHint] = useState('');
   const [yearInput, setYearInput] = useState('');
   const [recentDismissedCode, setRecentDismissedCode] = useState('');
@@ -1453,6 +1455,8 @@ export default function StudentView() {
       placeholder="Write here… or paste an image"
       hasDrawing={!!student?.image_url}
       onRemoveDrawing={clearMyImage}
+      drawBoxHeight={drawBoxHeight}
+      onDrawBoxHeight={setDrawBoxHeight}
       headerEndActions={
         student?.id ? (
           <StudentChatButton
@@ -1865,27 +1869,23 @@ export default function StudentView() {
             {student?.image_url && !classWallActive && (
               <div
                 data-student-image-preview
-                className="shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-card dark:border-slate-700 dark:bg-slate-900"
+                className="iboard-draw-preview"
               >
                 {student.teacher_markup_url && (
                   <p className="mb-2 inline-flex rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-black text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
                     Teacher correction
                   </p>
                 )}
-                <AnnotatedStudentImage
-                  imageUrl={student.image_url}
-                  markupUrl={student.teacher_markup_url}
-                  alt="Your uploaded image"
-                  imageClassName="max-h-56 w-full object-contain"
-                />
-                <button
-                  type="button"
-                  disabled={frozen || imageBusy}
-                  onClick={clearMyImage}
-                  className="mt-2 min-h-10 text-sm font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
-                >
-                  Remove drawing
-                </button>
+                <div className="iboard-draw-box" style={{ height: drawBoxHeight }}>
+                  <AnnotatedStudentImage
+                    imageUrl={student.image_url}
+                    markupUrl={student.teacher_markup_url}
+                    alt="Your uploaded image"
+                    className="h-full w-full"
+                    imageClassName="h-full w-full object-contain"
+                  />
+                </div>
+                <DrawBoxResizeHandle height={drawBoxHeight} onHeight={setDrawBoxHeight} />
               </div>
             )}
             {(imageBusy || imageHint) && (

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import HintWrap from './HintWrap.jsx';
+import DrawBoxResizeHandle, { readDrawBoxHeight } from './DrawBoxResizeHandle.jsx';
 
 const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 720;
 const MAX_CANVAS_HEIGHT = 1800;
-const HEIGHT_STORAGE_KEY = 'iboard-draw-pad-height';
 const PEN_WIDTH = 5;
 const ERASER_WIDTH = 30;
 const IDLE_SAVE_MS = 2000;
@@ -25,13 +25,6 @@ const SHAPE_TOOL_IDS = new Set(SHAPE_TOOLS.map((item) => item.id));
 
 function isShapeTool(tool) {
   return SHAPE_TOOL_IDS.has(tool);
-}
-
-function readStoredHeight() {
-  if (typeof sessionStorage === 'undefined') return CANVAS_HEIGHT;
-  const raw = Number(sessionStorage.getItem(HEIGHT_STORAGE_KEY));
-  if (!Number.isFinite(raw)) return CANVAS_HEIGHT;
-  return Math.min(MAX_CANVAS_HEIGHT, Math.max(CANVAS_HEIGHT, Math.round(raw)));
 }
 
 function clampCanvasHeight(value) {
@@ -150,7 +143,15 @@ function ToolButton({ active = false, disabled = false, children, onClick, title
   );
 }
 
-export default function StudentDrawPad({ disabled = false, hasBoardDrawing = false, onSave, onClear, onDone }) {
+export default function StudentDrawPad({
+  disabled = false,
+  hasBoardDrawing = false,
+  boxHeight: boxHeightProp = null,
+  onBoxHeight = null,
+  onSave,
+  onClear,
+  onDone,
+}) {
   const canvasRef = useRef(null);
   const strokesRef = useRef([]);
   const currentStrokeRef = useRef(null);
@@ -161,12 +162,14 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
   const savePromiseRef = useRef(null);
   const [tool, setTool] = useState('pen');
   const [colour, setColour] = useState('#111827');
-  const [canvasHeight, setCanvasHeight] = useState(readStoredHeight);
+  const [boxHeightState, setBoxHeightState] = useState(readDrawBoxHeight);
+  const boxHeight = boxHeightProp ?? boxHeightState;
+  const setBoxHeight = onBoxHeight || setBoxHeightState;
+  const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
   const [strokeCount, setStrokeCount] = useState(0);
   const [status, setStatus] = useState('Draw with your mouse, finger or stylus');
   const [finishing, setFinishing] = useState(false);
-  const canvasHeightRef = useRef(canvasHeight);
-  const resizeDragRef = useRef(null);
+  const canvasHeightRef = useRef(CANVAS_HEIGHT);
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -237,11 +240,14 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     }
   }, [saveNow]);
 
+  useLayoutEffect(() => {
+    const displayW = canvasRef.current?.getBoundingClientRect().width || CANVAS_WIDTH;
+    const next = clampCanvasHeight(boxHeight * (CANVAS_WIDTH / Math.max(1, displayW)));
+    canvasHeightRef.current = next;
+    setCanvasHeight((current) => (current === next ? current : next));
+  }, [boxHeight]);
+
   useEffect(() => {
-    canvasHeightRef.current = canvasHeight;
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(HEIGHT_STORAGE_KEY, String(canvasHeight));
-    }
     redraw();
   }, [canvasHeight, redraw]);
 
@@ -371,51 +377,6 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
     }
   }
 
-  function applyCanvasHeight(nextHeight) {
-    const next = clampCanvasHeight(nextHeight);
-    if (next === canvasHeightRef.current) return false;
-    canvasHeightRef.current = next;
-    setCanvasHeight(next);
-    return true;
-  }
-
-  function startResize(event) {
-    if (disabled || finishing) return;
-    event.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    resizeDragRef.current = {
-      pointerId: event.pointerId,
-      startY: event.clientY,
-      startHeight: canvasHeightRef.current,
-      scale: canvas.width / Math.max(1, rect.width),
-    };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    document.documentElement.classList.add('iboard-draw-resizing');
-  }
-
-  function moveResize(event) {
-    const drag = resizeDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    event.preventDefault();
-    applyCanvasHeight(drag.startHeight + (event.clientY - drag.startY) * drag.scale);
-  }
-
-  function endResize(event) {
-    const drag = resizeDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    try { event.currentTarget.releasePointerCapture?.(event.pointerId); } catch { /* ignore */ }
-    resizeDragRef.current = null;
-    document.documentElement.classList.remove('iboard-draw-resizing');
-    if (canvasHeightRef.current !== drag.startHeight && strokesRef.current.length) markDirty();
-  }
-
-  function bumpHeight(delta) {
-    if (disabled || finishing) return;
-    if (applyCanvasHeight(canvasHeightRef.current + delta) && strokesRef.current.length) markDirty();
-  }
-
   function pickColour(nextColour) {
     setColour(nextColour);
     if (tool === 'eraser') setTool('pen');
@@ -501,40 +462,28 @@ export default function StudentDrawPad({ disabled = false, hasBoardDrawing = fal
       </div>
 
       <div className="iboard-draw-pad__stage bg-slate-100 p-2 sm:p-3 dark:bg-slate-950">
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={canvasHeight}
-          onPointerDown={beginStroke}
-          onPointerMove={continueStroke}
-          onPointerUp={finishStroke}
-          onPointerCancel={finishStroke}
-          aria-label="Drawing canvas for showing your working"
-          className={`block w-full rounded-xl border border-slate-300 bg-white ${disabled ? 'cursor-not-allowed opacity-70' : tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'}`}
-          style={{ aspectRatio: `${CANVAS_WIDTH} / ${canvasHeight}`, touchAction: 'none' }}
-        />
-        <button
-          type="button"
-          className="iboard-draw-pad__resize"
-          aria-label="Drag to make the drawing box taller"
-          aria-orientation="horizontal"
+        <div className="iboard-draw-box" style={{ height: boxHeight }}>
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_WIDTH}
+            height={canvasHeight}
+            onPointerDown={beginStroke}
+            onPointerMove={continueStroke}
+            onPointerUp={finishStroke}
+            onPointerCancel={finishStroke}
+            aria-label="Drawing canvas for showing your working"
+            className={`block h-full w-full rounded-xl border border-slate-300 bg-white ${disabled ? 'cursor-not-allowed opacity-70' : tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'}`}
+            style={{ touchAction: 'none' }}
+          />
+        </div>
+        <DrawBoxResizeHandle
+          height={boxHeight}
           disabled={disabled || finishing}
-          onPointerDown={startResize}
-          onPointerMove={moveResize}
-          onPointerUp={endResize}
-          onPointerCancel={endResize}
-          onKeyDown={(event) => {
-            if (event.key === 'ArrowDown') {
-              event.preventDefault();
-              bumpHeight(80);
-            } else if (event.key === 'ArrowUp') {
-              event.preventDefault();
-              bumpHeight(-80);
-            }
+          onHeight={setBoxHeight}
+          onResizeEnd={() => {
+            if (strokesRef.current.length) markDirty();
           }}
-        >
-          <span className="iboard-draw-pad__resize-bar" aria-hidden="true" />
-        </button>
+        />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2 text-xs dark:border-slate-700">

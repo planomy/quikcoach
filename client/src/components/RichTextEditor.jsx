@@ -108,6 +108,8 @@ export default function RichTextEditor({
   headerEndActions = null,
   hasDrawing = false,
   onRemoveDrawing = null,
+  drawBoxHeight = null,
+  onDrawBoxHeight = null,
 }) {
   const editorRef = useRef(null);
   const lastAcceptedHtmlRef = useRef('');
@@ -404,6 +406,8 @@ export default function RichTextEditor({
         <StudentDrawPad
           disabled={disabled}
           hasBoardDrawing={hasDrawing}
+          boxHeight={drawBoxHeight}
+          onBoxHeight={onDrawBoxHeight}
           onSave={saveDrawing}
           onClear={clearDrawing}
           onDone={() => setDrawMode(false)}
