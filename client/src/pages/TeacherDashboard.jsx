@@ -6022,246 +6022,179 @@ function TeacherDashboardInner() {
         )}
 
         {libraryView === 'portfolios' && (
-                <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white dark:border-indigo-800 dark:bg-slate-900">
-                  <div className="flex shrink-0 flex-wrap items-start justify-between gap-3 p-4">
-                    <div>
-                      <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Student folders</h3>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">One folder per student. Snapshot at the end of a lesson, or before they wipe for a second piece.</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
+          <section className="iboard-student-folders">
+            <div className="iboard-student-folders__toolbar">
+              <label htmlFor="report-student-search" className="sr-only">Search students</label>
+              <input
+                id="report-student-search"
+                value={reportSearch}
+                onChange={(event) => setReportSearch(event.target.value)}
+                placeholder="Search names…"
+                className="iboard-student-folders__search"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (reportMergeMode) cancelReportMerge();
+                  else {
+                    setReportMergeMode(true);
+                    setReportMergeKeys([]);
+                    setReportMergeCanonicalKey('');
+                  }
+                }}
+                className="rounded-lg border border-[#d5d4e4] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+              >
+                {reportMergeMode ? 'Cancel combine' : 'Combine names'}
+              </button>
+              <button
+                type="button"
+                disabled={!!portfolioDownloadKind || !evidenceStudents.length}
+                onClick={downloadAllPortfolioPdfs}
+                className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+              >
+                {portfolioDownloadKind === 'all' ? 'Preparing…' : 'Download all'}
+              </button>
+            </div>
+            {reportMergeMode ? (
+              <p className="shrink-0 px-3 pb-0 text-[11px] font-semibold text-[#3c3f8f] dark:text-indigo-300">
+                Tick every name that is the same student. Capitals and spaces are already matched.
+              </p>
+            ) : null}
+            <div className="iboard-student-folders__split">
+              <aside className="iboard-student-folders__names">
+                <div className="iboard-student-folders__names-list scrollbar-thin">
+                  {evidenceStudentsError ? <p className="p-3 text-sm font-semibold text-red-600">{evidenceStudentsError}</p> : null}
+                  {evidenceStudentsBusy ? <p className="p-3 text-sm text-slate-500">Loading…</p> : null}
+                  {!evidenceStudentsBusy && filteredEvidenceStudents.map((profile) => (
+                    reportMergeMode ? (
+                      <label key={profile.key} className="iboard-student-folders__name" style={{ cursor: 'pointer' }}>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={reportMergeKeys.includes(profile.key)}
+                            onChange={() => toggleReportMergeProfile(profile.key)}
+                            className="h-4 w-4 shrink-0 accent-[#5a5fc3]"
+                          />
+                          <span className="iboard-student-folders__name-label">{profile.name}</span>
+                        </span>
+                        <span className="iboard-student-folders__name-count">{profile.entries.length}</span>
+                      </label>
+                    ) : (
                       <button
+                        key={profile.key}
                         type="button"
-                        disabled={!!portfolioDownloadKind || !evidenceStudents.length}
-                        onClick={downloadAllPortfolioPdfs}
-                        className="rounded-xl bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                        onClick={() => setSelectedEvidenceStudentKey(profile.key)}
+                        aria-pressed={selectedEvidenceStudentKey === profile.key}
+                        className="iboard-student-folders__name"
                       >
-                        {portfolioDownloadKind === 'all' ? 'Preparing PDFs…' : 'Download all PDFs (zip)'}
+                        <span className="iboard-student-folders__name-label">{profile.name}</span>
+                        <span className="iboard-student-folders__name-count">{profile.entries.length}</span>
                       </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (reportMergeMode) cancelReportMerge();
-                        else {
-                          setReportMergeMode(true);
-                          setReportMergeKeys([]);
-                          setReportMergeCanonicalKey('');
-                        }
-                      }}
-                      className={`rounded-xl px-3 py-2 text-xs font-black transition ${
-                        reportMergeMode
-                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200'
-                          : 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200'
-                      }`}
-                    >
-                      {reportMergeMode ? 'Cancel combining' : 'Combine names'}
-                    </button>
-                    </div>
-                  </div>
-
-                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin">
-                  <div className="flex flex-col border-t border-indigo-100 dark:border-slate-700">
-                    <aside className="flex min-h-0 flex-col border-b border-indigo-100 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-950/40 md:border-b-0 md:border-r">
-                      <div className="border-b border-slate-200 p-3 dark:border-slate-700">
-                        <label htmlFor="report-student-search" className="sr-only">Search students</label>
-                        <input
-                          id="report-student-search"
-                          value={reportSearch}
-                          onChange={(event) => setReportSearch(event.target.value)}
-                          placeholder="Search students…"
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                        />
-                        {reportMergeMode && (
-                          <p className="mt-2 text-[11px] font-semibold leading-relaxed text-indigo-700 dark:text-indigo-300">
-                            Tick every name used by the same student.
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="max-h-52 overflow-y-auto p-2 scrollbar-thin">
-                        {evidenceStudentsError ? (
-                          <p className="p-3 text-sm font-semibold text-red-600">{evidenceStudentsError}</p>
-                        ) : null}
-                        {evidenceStudentsBusy && (
-                          <p className="p-3 text-sm text-slate-500 dark:text-slate-400">Loading students…</p>
-                        )}
-                        {!evidenceStudentsBusy && filteredEvidenceStudents.map((profile) => (
-                          reportMergeMode ? (
-                            <label
-                              key={profile.key}
-                              className={`mb-1 flex cursor-pointer items-start gap-2 rounded-xl border px-3 py-2.5 transition ${
-                                reportMergeKeys.includes(profile.key)
-                                  ? 'border-indigo-300 bg-indigo-50 dark:border-indigo-700 dark:bg-indigo-950/50'
-                                  : 'border-transparent bg-white hover:border-indigo-200 dark:bg-slate-900 dark:hover:border-indigo-800'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={reportMergeKeys.includes(profile.key)}
-                                onChange={() => toggleReportMergeProfile(profile.key)}
-                                className="mt-0.5 h-4 w-4 shrink-0 accent-indigo-600"
-                              />
-                              <span className="min-w-0">
-                                <span className="block truncate text-sm font-black text-slate-900 dark:text-white">{profile.name}</span>
-                                <span className="block text-[11px] text-slate-500 dark:text-slate-400">
-                                  {profile.entries.length} {profile.entries.length === 1 ? 'submission' : 'submissions'}
-                                  {profile.combined ? ' · combined' : ''}
-                                </span>
-                              </span>
-                            </label>
-                          ) : (
-                            <button
-                              key={profile.key}
-                              type="button"
-                              onClick={() => setSelectedEvidenceStudentKey(profile.key)}
-                              aria-pressed={selectedEvidenceStudentKey === profile.key}
-                              className={`mb-1 flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
-                                selectedEvidenceStudentKey === profile.key
-                                  ? 'border-indigo-300 bg-indigo-600 text-white shadow-sm dark:border-indigo-500'
-                                  : 'border-transparent bg-white text-slate-900 hover:border-indigo-200 hover:bg-indigo-50 dark:bg-slate-900 dark:text-white dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40'
-                              }`}
-                            >
-                              <span className="min-w-0">
-                                <span className="block truncate text-sm font-black">{profile.name}</span>
-                                {profile.combined && (
-                                  <span className={`block truncate text-[10px] font-semibold ${selectedEvidenceStudentKey === profile.key ? 'text-indigo-100' : 'text-indigo-600 dark:text-indigo-300'}`}>
-                                    Combined profile
-                                  </span>
-                                )}
-                              </span>
-                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${
-                                selectedEvidenceStudentKey === profile.key
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200'
-                              }`}>
-                                {profile.entries.length}
-                              </span>
-                            </button>
-                          )
-                        ))}
-                        {!evidenceStudentsBusy && !filteredEvidenceStudents.length && (
-                          <p className="p-3 text-sm text-slate-500 dark:text-slate-400">
-                            {evidenceStudents.length ? 'No students match that search.' : 'No written submissions were found in these saves.'}
-                          </p>
-                        )}
-                      </div>
-
-                      {reportMergeMode && (
-                        <div className="border-t border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
-                          <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                            {reportMergeKeys.length} selected
-                          </p>
-                          {reportMergeKeys.length >= 2 && (
-                            <>
-                              <label htmlFor="report-canonical-name" className="mt-2 block text-[11px] font-bold text-slate-600 dark:text-slate-300">Name to keep</label>
-                              <select
-                                id="report-canonical-name"
-                                value={reportMergeCanonicalKey}
-                                onChange={(event) => setReportMergeCanonicalKey(event.target.value)}
-                                className="mt-1 w-full rounded-lg border border-indigo-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-900 dark:border-indigo-800 dark:bg-slate-950 dark:text-white"
-                              >
-                                {reportMergeProfiles.map((profile) => (
-                                  <option key={profile.key} value={profile.key}>{profile.name}</option>
-                                ))}
-                              </select>
-                              <button
-                                type="button"
-                                disabled={reportMergeBusy || !reportMergeCanonicalKey}
-                                onClick={combineReportProfiles}
-                                className="mt-2 w-full rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700 disabled:opacity-50"
-                              >
-                                {reportMergeBusy ? 'Combining…' : 'Combine selected names'}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </aside>
-
-                    <div className="min-w-0 p-4">
-                      {selectedEvidenceStudent ? (
-                        <>
-                          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
-                            <div className="min-w-0">
-                              <p className="truncate font-display text-xl font-black text-slate-900 dark:text-white">{selectedEvidenceStudent.name}</p>
-                              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                {selectedEvidenceStudent.entries.length} {selectedEvidenceStudent.entries.length === 1 ? 'submission' : 'submissions'} · {selectedEvidenceStudent.entries.reduce((total, entry) => total + wordCount(entry.text), 0)} words
-                              </p>
-                              {(selectedEvidenceStudent.aliases || []).length > 1 && (
-                                <p className="mt-1 text-[11px] text-indigo-700 dark:text-indigo-300">
-                                  Joined as: {selectedEvidenceStudent.aliases.join(', ')}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedEvidenceStudent.combined && (
-                                <button
-                                  type="button"
-                                  disabled={reportMergeBusy}
-                                  onClick={separateReportProfile}
-                                  className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
-                                >
-                                  Separate names
-                                </button>
-                              )}
-                              <button type="button" onClick={copyStudentPortfolio} className="rounded-lg bg-indigo-100 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-950 dark:text-indigo-200">Copy all</button>
-                              <button type="button" disabled={!!portfolioDownloadKind} onClick={downloadStudentPortfolio} className="rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-black text-white hover:bg-[#4b50b0] disabled:opacity-50">{portfolioDownloadKind === 'one' ? 'Preparing PDF…' : 'Download PDF'}</button>
-                            </div>
-                          </div>
-                          <div className="mt-3 space-y-3">
-                            {selectedEvidenceStudent.entries.map((entry) => (
-                              <article key={`${entry.snapshotId}-${entry.studentId}-${entry.updatedAt}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950">
-                                <div className="flex flex-wrap items-start justify-between gap-2">
-                                  <div>
-                                    <p className="font-bold text-slate-900 dark:text-white">{entry.label}</p>
-                                    <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                      {formatSqlUtc(entry.createdAt)} · {wordCount(entry.text)} words
-                                      {(selectedEvidenceStudent.aliases || []).length > 1 && entry.sourceName ? ` · as ${entry.sourceName}` : ''}
-                                      {entry.lessonObjective ? ` · Today: ${entry.lessonObjective}` : ''}
-                                    </p>
-                                  </div>
-                                  <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-300">Open class snapshot</button>
-                                </div>
-                                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">{entry.text}</p>
-                              </article>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="grid place-items-center py-8 text-center">
-                          <div>
-                            <p className="font-display text-lg font-black text-slate-700 dark:text-slate-200">Choose a student</p>
-                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Their saved work will appear here.</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <p className="border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                    TUIT still matches capital letters and extra spaces automatically. Other name variations are combined only when you approve them.
-                  </p>
-                  {snapshots.length ? (
-                    <div className="border-t border-slate-200 px-4 py-3 dark:border-slate-700">
-                      <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Class snapshots</h4>
-                      <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
-                        {snapshots.map((sn) => (
-                          <li key={sn.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                            <span className="text-slate-800 dark:text-slate-200">
-                              <span className="font-medium">{snapshotRowTitle(sn)}</span>
-                            </span>
-                            <span className="flex gap-2">
-                              <button type="button" onClick={() => loadSnapshotForView(sn.id)} className="text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300">View</button>
-                              <button type="button" onClick={() => redownloadEvidence(sn.id)} className="text-xs font-semibold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300">Download HTML</button>
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <p className="border-t border-slate-200 px-4 py-3 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                      No snapshots yet. Use the save icon at the end of the lesson.
+                    )
+                  ))}
+                  {!evidenceStudentsBusy && !filteredEvidenceStudents.length ? (
+                    <p className="p-3 text-sm text-slate-500">
+                      {evidenceStudents.length ? 'No names match that search.' : 'No saved writing yet. Snapshot at the end of a lesson.'}
                     </p>
-                  )}
+                  ) : null}
+                </div>
+                {reportMergeMode ? (
+                  <div className="iboard-student-folders__merge">
+                    <p className="text-[11px] font-bold text-slate-500">{reportMergeKeys.length} selected</p>
+                    {reportMergeKeys.length >= 2 ? (
+                      <>
+                        <label htmlFor="report-canonical-name" className="mt-2 block text-[11px] font-bold text-slate-600 dark:text-slate-300">Name to keep</label>
+                        <select
+                          id="report-canonical-name"
+                          value={reportMergeCanonicalKey}
+                          onChange={(event) => setReportMergeCanonicalKey(event.target.value)}
+                          className="mt-1 w-full rounded-lg border border-[#d5d4e4] bg-white px-2.5 py-2 text-xs font-bold text-slate-900 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+                        >
+                          {reportMergeProfiles.map((profile) => (
+                            <option key={profile.key} value={profile.key}>{profile.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={reportMergeBusy || !reportMergeCanonicalKey}
+                          onClick={combineReportProfiles}
+                          className="mt-2 w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                        >
+                          {reportMergeBusy ? 'Combining…' : 'Combine'}
+                        </button>
+                      </>
+                    ) : null}
                   </div>
+                ) : null}
+              </aside>
+              <div className="iboard-student-folders__pane scrollbar-thin">
+                {selectedEvidenceStudent ? (
+                  <>
+                    <div className="iboard-student-folders__pane-head">
+                      <div className="min-w-0">
+                        <p className="truncate font-display text-xl font-semibold text-ink-900 dark:text-slate-100">{selectedEvidenceStudent.name}</p>
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                          {selectedEvidenceStudent.entries.length} {selectedEvidenceStudent.entries.length === 1 ? 'piece' : 'pieces'}
+                          {' · '}
+                          {selectedEvidenceStudent.entries.reduce((total, entry) => total + wordCount(entry.text), 0)} words
+                        </p>
+                        {(selectedEvidenceStudent.aliases || []).filter((alias) => alias !== selectedEvidenceStudent.name).length ? (
+                          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            Also wrote as {(selectedEvidenceStudent.aliases || []).filter((alias) => alias !== selectedEvidenceStudent.name).slice(0, 2).join(', ')}
+                            {(selectedEvidenceStudent.aliases || []).filter((alias) => alias !== selectedEvidenceStudent.name).length > 2
+                              ? ` +${(selectedEvidenceStudent.aliases || []).filter((alias) => alias !== selectedEvidenceStudent.name).length - 2} more`
+                              : ''}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedEvidenceStudent.combined ? (
+                          <button
+                            type="button"
+                            disabled={reportMergeBusy}
+                            onClick={separateReportProfile}
+                            className="rounded-lg border border-[#d5d4e4] px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] disabled:opacity-50 dark:border-slate-600 dark:text-slate-200"
+                          >
+                            Separate names
+                          </button>
+                        ) : null}
+                        <button type="button" onClick={copyStudentPortfolio} className="rounded-lg border border-[#d5d4e4] px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-600 dark:text-slate-200">Copy</button>
+                        <button type="button" disabled={!!portfolioDownloadKind} onClick={downloadStudentPortfolio} className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50">{portfolioDownloadKind === 'one' ? 'Preparing…' : 'Download PDF'}</button>
+                      </div>
+                    </div>
+                    <div className="iboard-student-folders__pane-body">
+                      {selectedEvidenceStudent.entries.map((entry) => (
+                        <article key={`${entry.snapshotId}-${entry.studentId}-${entry.updatedAt}`} className="iboard-student-folders__piece">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-bold text-ink-900 dark:text-slate-100">{formatSqlUtc(entry.createdAt)}</p>
+                              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                {wordCount(entry.text)} words
+                                {entry.sourceName && entry.sourceName !== selectedEvidenceStudent.name ? ` · as ${entry.sourceName}` : ''}
+                                {entry.lessonObjective ? ` · ${entry.lessonObjective}` : ''}
+                              </p>
+                            </div>
+                            <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-[11px] font-bold text-[#5a5fc3] hover:text-[#3c3f8f] dark:text-indigo-300">
+                              Whole class from this save
+                            </button>
+                          </div>
+                          <p className="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300">{entry.text}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="iboard-student-folders__empty">
+                    <div>
+                      <p className="font-display text-lg font-semibold text-ink-900 dark:text-slate-100">Choose a student</p>
+                      <p className="mx-auto mt-1 max-w-xs text-sm text-slate-500 dark:text-slate-400">
+                        Their saved pieces from this class open here. Class-wide saves stay on each piece.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </section>
         )}
 
