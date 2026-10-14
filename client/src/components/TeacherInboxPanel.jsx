@@ -105,6 +105,7 @@ export default function TeacherInboxPanel({
   socket,
   students = [],
   pendingHandByStudentId,
+  noteReceiptByStudentId = {},
   onOpenThread,
   onTeacherSent,
   onHandReplySent,
@@ -114,11 +115,15 @@ export default function TeacherInboxPanel({
   const [threads, setThreads] = useState([]);
   const [selectedId, setSelectedId] = useState(0);
   const [checkedIds, setCheckedIds] = useState(() => new Set());
+  const markedReadRef = useRef(new Set());
 
   function loadThreads(preferId) {
     if (!socket) return;
     socket.emit('teacher:chat-inbox', {}, (ack) => {
       if (!ack?.ok || !Array.isArray(ack.threads)) return;
+      for (const thread of ack.threads) {
+        if (thread.unread) markedReadRef.current.delete(Number(thread.studentId));
+      }
       setThreads(ack.threads);
       setSelectedId((current) => {
         const next = Number(preferId) || current;
@@ -161,19 +166,22 @@ export default function TeacherInboxPanel({
         messageCount: 0,
       };
       const hands = pendingHandByStudentId?.get(id) || [];
+      const unreadChat = !!thread.unread || noteReceiptByStudentId[id] === 'replied';
       return {
         ...thread,
         studentName: student.name || thread.studentName || 'Student',
-        waiting: !!thread.unread || hands.length > 0,
+        unread: unreadChat,
+        waiting: unreadChat || hands.length > 0,
         hands,
       };
     });
     list.sort((left, right) => {
-      if (left.waiting !== right.waiting) return left.waiting ? -1 : 1;
+      if (left.unread !== right.unread) return left.unread ? -1 : 1;
+      if (!!left.hands.length !== !!right.hands.length) return left.hands.length ? -1 : 1;
       return (right.lastAt || 0) - (left.lastAt || 0) || String(left.studentName).localeCompare(String(right.studentName), undefined, { sensitivity: 'base' });
     });
     return list;
-  }, [students, threads, pendingHandByStudentId]);
+  }, [students, threads, pendingHandByStudentId, noteReceiptByStudentId]);
 
   useEffect(() => {
     if (!rows.length) return;
@@ -195,10 +203,33 @@ export default function TeacherInboxPanel({
   const checkedRows = rows.filter((row) => checkedIds.has(Number(row.studentId)));
   const fanout = checkedRows.length >= 2;
 
+  function markRowRead(row) {
+    const id = Number(row?.studentId);
+    if (!id) return;
+    setThreads((current) => {
+      let changed = false;
+      const next = current.map((thread) => {
+        if (Number(thread.studentId) !== id || !thread.unread) return thread;
+        changed = true;
+        return { ...thread, unread: false };
+      });
+      return changed ? next : current;
+    });
+    if (markedReadRef.current.has(id)) return;
+    markedReadRef.current.add(id);
+    onOpenThread?.(row);
+  }
+
+  useEffect(() => {
+    const row = rows.find((item) => Number(item.studentId) === Number(selectedId));
+    if (!row?.unread) return;
+    markRowRead(row);
+  }, [selectedId, rows]);
+
   function selectThread(row) {
     const id = Number(row.studentId);
     setSelectedId(id);
-    onOpenThread?.(row);
+    markRowRead(row);
   }
 
   function toggleChecked(row, on) {

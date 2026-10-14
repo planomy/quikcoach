@@ -504,6 +504,7 @@ function TeacherDashboardInner() {
   const [noteReplyByStudentId, setNoteReplyByStudentId] = useState({});
   const noteReplyByStudentIdRef = useRef({});
   const noteTargetIdRef = useRef(0);
+  const inboxStudentIdRef = useRef(0);
   const [shareTarget, setShareTarget] = useState(null);
   const [actionMenuShareStep, setActionMenuShareStep] = useState(false);
   const [snapshots, setSnapshots] = useState([]);
@@ -1521,6 +1522,10 @@ function TeacherDashboardInner() {
   }, [noteTarget]);
 
   useEffect(() => {
+    inboxStudentIdRef.current = inboxOpen ? Number(inboxStudentId) || 0 : 0;
+  }, [inboxOpen, inboxStudentId]);
+
+  useEffect(() => {
     const onFeedbackSeen = (payload = {}) => {
       const studentId = Number(payload.studentId);
       if (!studentId) return;
@@ -1549,7 +1554,7 @@ function TeacherDashboardInner() {
       const text = String(item?.text || '').trim();
       if (!studentId || !text) return;
       // Chat already open with this student: they're reading it now, so it isn't waiting.
-      if (noteTargetIdRef.current === studentId) {
+      if (noteTargetIdRef.current === studentId || inboxStudentIdRef.current === studentId) {
         socket.emit('teacher:note-reply-seen', { studentId });
         return;
       }
@@ -3962,15 +3967,19 @@ function TeacherDashboardInner() {
   function markInboxThreadSeen(studentId) {
     const sid = Number(studentId);
     if (!sid) return;
-    if (noteReplyByStudentId[sid] || noteReceiptByStudentId[sid] === 'replied') {
-      socket.emit('teacher:note-reply-seen', { studentId: sid });
-      setNoteReceiptByStudentId((current) => {
-        if (!(sid in current)) return current;
-        const next = { ...current };
-        delete next[sid];
-        return next;
-      });
-    }
+    socket.emit('teacher:note-reply-seen', { studentId: sid });
+    setNoteReplyByStudentId((current) => {
+      if (!current[sid]) return current;
+      const next = { ...current };
+      delete next[sid];
+      return next;
+    });
+    setNoteReceiptByStudentId((current) => {
+      if (current[sid] !== 'replied') return current;
+      const next = { ...current };
+      delete next[sid];
+      return next;
+    });
   }
 
   function openInbox() {
@@ -4042,7 +4051,7 @@ function TeacherDashboardInner() {
     { id: 'pasted', name: 'Pasted', label: studentsPhrase(attentionCounts.pasted, 'has pasted writing', 'have pasted writing') },
   ].filter((pill) => alertPrefs[pill.id] !== false);
   const messageWaitCount = orderedStudents.reduce(
-    (n, student) => n + (studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId) ? 1 : 0),
+    (n, student) => n + (noteReceiptByStudentId[Number(student.id)] === 'replied' ? 1 : 0),
     0
   );
   const inboxSummary = messageWaitCount === 1
@@ -4052,7 +4061,7 @@ function TeacherDashboardInner() {
       : '';
   const inboxNames = messageWaitCount > 0
     ? orderedStudents
-      .filter((student) => studentHasInboxWait(student, pendingHandByStudentId, noteReceiptByStudentId))
+      .filter((student) => noteReceiptByStudentId[Number(student.id)] === 'replied')
       .map((student) => student.name || 'Unnamed')
     : [];
   const attentionHint = (names, on, title = '') => (
@@ -5903,6 +5912,7 @@ function TeacherDashboardInner() {
             socket={socket}
             students={orderedStudents}
             pendingHandByStudentId={pendingHandByStudentId}
+            noteReceiptByStudentId={noteReceiptByStudentId}
             focusStudentId={inboxStudentId}
             onOpenThread={(row) => {
               const sid = Number(row?.studentId || row?.id);
