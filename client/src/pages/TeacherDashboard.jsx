@@ -2559,7 +2559,7 @@ function TeacherDashboardInner() {
       if (settingsOpen) {
         const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
         const ceiling = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
-        const floor = Math.round(Math.min(buttonBox?.bottom ?? offsetTop + viewport, offsetTop + viewport));
+        const floor = Math.round(offsetTop + viewport);
         const available = Math.max(180, floor - ceiling);
         let content = 0;
         if (panel) {
@@ -2735,14 +2735,21 @@ function TeacherDashboardInner() {
             maxHeight: remaining,
             borderRadius: 0,
           }
-        : {
-            top: teacherToolsTop,
-            ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
-          };
+        : settingsOpen
+          ? {
+              top: teacherToolsTop,
+              bottom: 0,
+              height: 'auto',
+              borderRadius: 0,
+            }
+          : {
+              top: teacherToolsTop,
+              ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
+            };
       if (reportsDockOpen) return { ...base, width: reportsDockWidth };
       return base;
     },
-    [bottomAnchoredDock, teacherToolsTop, teacherToolsDockHeight, reportsDockOpen, reportsDockWidth]
+    [bottomAnchoredDock, settingsOpen, teacherToolsTop, teacherToolsDockHeight, reportsDockOpen, reportsDockWidth]
   );
 
   useEffect(() => {
