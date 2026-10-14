@@ -303,7 +303,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           // Only Check again comments whose quote no longer appears → purple.
           if (draftChanged) markDetachedReopenFixed(io, roomCode, studentId, savedText);
           if (draftChanged) {
-            insightTextChanged(roomCode, studentId, Date.now(), beforeText);
+            insightTextChanged(roomCode, studentId, Date.now(), beforeText, savedText);
             if (payload?.draftTrail?.paste === true) {
               insightPaste(roomCode, studentId, insertedLength(beforeText, savedText));
               emitPasteAlerts(io.to(`teacher:${roomCode}`), roomCode);

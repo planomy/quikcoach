@@ -22,6 +22,15 @@ const lesson = (over) => ({
   avgWords: 180,
   writingPct: 70,
   writingSamples: 8,
+  roomWritingPct: 55,
+  awayPct: 20,
+  awaySamples: 8,
+  atDraftPct: 25,
+  avgAwayReviseMinutes: 1,
+  awayReviseCount: 25,
+  addedWords: 80,
+  revisedWords: 20,
+  revisingPct: 20,
   ...over,
 });
 
@@ -47,6 +56,9 @@ test('export is class-level, anonymised and suppresses small groups', () => {
   assert.equal(rows[1].students, '<5');
   assert.equal(rows[1].actedOn, '—', 'rates need at least 5 comments behind them');
   assert.equal(rows[1].avgWords, '—', 'averages hidden for groups under 5');
+  assert.equal(rows[0].away, '20%');
+  assert.equal(rows[1].away, '—', 'away is hidden for groups under 5');
+  assert.equal(rows[0].awayWhileRevising, '1 min');
 
   const csv = insightsCsv(lessons);
   assert.ok(!csv.includes('4101') && !csv.includes('4102'), 'room codes are not exported');
@@ -62,4 +74,7 @@ test('headline totals weight averages by what sits behind them', () => {
   assert.equal(totals.actedOnPct, 80);
   assert.equal(totals.avgConfirmMinutes, 17.5);
   assert.equal(totals.pastesPerLesson, 1);
+  assert.equal(totals.awayPct, 20);
+  assert.equal(totals.revisingPct, 20);
+  assert.equal(totals.avgAwayReviseMinutes, 1);
 });

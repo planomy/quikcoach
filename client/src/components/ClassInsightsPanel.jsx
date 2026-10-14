@@ -61,6 +61,23 @@ function pctText(value) {
   return value == null ? '—' : `${value}%`;
 }
 
+function ShareBar({ label, parts }) {
+  const caption = parts.map((part) => `${part.label} ${part.pct}%`).join(' · ');
+  return (
+    <div>
+      <div className="mb-1 flex items-baseline justify-between gap-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+        <span>{label}</span>
+        <span className="text-right tabular-nums">{caption}</span>
+      </div>
+      <div className="flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800" role="img" aria-label={`${label}: ${caption}`}>
+        {parts.filter((part) => part.pct > 0).map((part) => (
+          <div key={part.label} className={part.className} style={{ width: `${part.pct}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ClassInsightsPanel({ socket, onClose, embedded = false }) {
   const [scope, setScope] = useState('room');
   const [lessonId, setLessonId] = useState(null);
@@ -147,27 +164,63 @@ export default function ClassInsightsPanel({ socket, onClose, embedded = false }
 
           {lessons.length ? (
             <>
-              <section className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Across recorded lessons">
-                <Tile label="Comments given" value={totals.commentsGiven} />
-                <Tile label="Acted on" value={pctText(totals.actedOnPct)} />
-                <Tile label="Check again" value={pctText(totals.checkAgainPct)} />
-                <Tile label="Time to revise" value={formatMinutes(totals.avgReviseMinutes)} />
-                <Tile label="Time to confirm" value={formatMinutes(totals.avgConfirmMinutes)} />
-                <Tile label="Pastes / lesson" value={totals.pastesPerLesson ?? '—'} />
-                <Tile label="Words written / student" value={totals.avgWords ?? '—'} />
-                <Tile label="Actively writing" value={pctText(totals.writingPct)} />
+              <section aria-label="Feedback loop">
+                <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Feedback loop</h3>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <Tile label="Comments given" value={totals.commentsGiven} />
+                  <Tile label="Acted on" value={pctText(totals.actedOnPct)} />
+                  <Tile label="Check again" value={pctText(totals.checkAgainPct)} />
+                  <Tile label="Time to revise" value={formatMinutes(totals.avgReviseMinutes)} />
+                  <Tile label="Away while revising" value={formatMinutes(totals.avgAwayReviseMinutes)} />
+                  <Tile label="Time to confirm" value={formatMinutes(totals.avgConfirmMinutes)} />
+                </div>
+              </section>
+
+              <section aria-label="Writing">
+                <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Writing</h3>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <Tile label="Words written / student" value={totals.avgWords ?? '—'} />
+                  <Tile label="Actively writing" value={pctText(totals.writingPct)} />
+                  <Tile label="Away" value={pctText(totals.awayPct)} />
+                  <Tile label="Pastes / lesson" value={totals.pastesPerLesson ?? '—'} />
+                </div>
+                {totals.awayPct != null && totals.roomWritingPct != null && totals.atDraftPct != null ? (
+                  <div className="mt-3">
+                    <ShareBar
+                      label="In the room"
+                      parts={[
+                        { label: 'Writing', pct: totals.roomWritingPct, className: 'bg-emerald-500' },
+                        { label: 'Away', pct: totals.awayPct, className: 'bg-slate-400' },
+                        { label: 'At the draft', pct: totals.atDraftPct, className: 'bg-indigo-400' },
+                      ]}
+                    />
+                  </div>
+                ) : null}
+                {totals.revisingPct != null ? (
+                  <div className="mt-3">
+                    <ShareBar
+                      label="Words written"
+                      parts={[
+                        { label: 'Adding', pct: 100 - totals.revisingPct, className: 'bg-slate-300 dark:bg-slate-500' },
+                        { label: 'Revising', pct: totals.revisingPct, className: 'bg-sky-400' },
+                      ]}
+                    />
+                  </div>
+                ) : null}
               </section>
 
               <section className="grid gap-2 sm:grid-cols-2">
                 <Trend
-                  label="Comments acted on"
+                  label="Actively writing"
                   suffix="%"
                   max={100}
-                  points={trendPoints.map((l) => ({ id: l.id, startedAt: l.startedAt, value: l.actedOnPct }))}
+                  points={trendPoints.map((l) => ({ id: l.id, startedAt: l.startedAt, value: l.writingPct }))}
                 />
                 <Trend
-                  label="Pastes per lesson"
-                  points={trendPoints.map((l) => ({ id: l.id, startedAt: l.startedAt, value: l.pastes }))}
+                  label="Away"
+                  suffix="%"
+                  max={100}
+                  points={trendPoints.map((l) => ({ id: l.id, startedAt: l.startedAt, value: l.awayPct }))}
                 />
               </section>
 
@@ -184,10 +237,12 @@ export default function ClassInsightsPanel({ socket, onClose, embedded = false }
                         <th className="px-3 py-2">Acted on</th>
                         <th className="px-3 py-2">Check again</th>
                         <th className="px-3 py-2">Revise</th>
+                        <th className="px-3 py-2">Away while revising</th>
                         <th className="px-3 py-2">Confirm</th>
                         <th className="px-3 py-2">Pastes</th>
                         <th className="px-3 py-2">Words written</th>
                         <th className="px-3 py-2">Writing</th>
+                        <th className="px-3 py-2">Away</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -212,6 +267,7 @@ export default function ClassInsightsPanel({ socket, onClose, embedded = false }
                             <td className="px-3 py-2">{pctText(lesson.actedOnPct)}</td>
                             <td className="px-3 py-2">{pctText(lesson.checkAgainPct)}</td>
                             <td className="px-3 py-2">{formatMinutes(lesson.avgReviseMinutes)}</td>
+                            <td className="px-3 py-2">{formatMinutes(lesson.avgAwayReviseMinutes)}</td>
                             <td className="px-3 py-2">{formatMinutes(lesson.avgConfirmMinutes)}</td>
                             <td className="px-3 py-2">
                               {lesson.pastes}
@@ -221,6 +277,7 @@ export default function ClassInsightsPanel({ socket, onClose, embedded = false }
                             </td>
                             <td className="px-3 py-2">{lesson.avgWords ?? '—'}</td>
                             <td className="px-3 py-2">{pctText(lesson.writingPct)}</td>
+                            <td className="px-3 py-2">{pctText(lesson.awayPct)}</td>
                           </tr>
                         );
                       })}
@@ -274,7 +331,7 @@ export default function ClassInsightsPanel({ socket, onClose, embedded = false }
 
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
                 <p className="text-[11px] text-slate-400">
-                  Acted on = the student revised the passage. Writing = students in the room who changed their draft in each 5 minutes.
+                  Acted on = the student revised the passage. Writing = on the tab, and the draft changed in each 5 minutes. Away = TUIT tab in the background.
                 </p>
                 <div className="flex gap-2">
                   <button type="button" className={chipBtn} onClick={() => downloadInsightsCsv(lessons)}>

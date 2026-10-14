@@ -45,10 +45,12 @@ export function downloadInsightsPdf(lessons = [], filename = 'class-insights-ano
     ['Acted on', pct(totals.actedOnPct, totals.commentsGiven)],
     ['Needed Check again', pct(totals.checkAgainPct, totals.commentsGiven)],
     ['Avg time to revise', plain(formatMinutes(totals.avgReviseMinutes))],
+    ['Away while revising', plain(formatMinutes(totals.avgAwayReviseMinutes))],
     ['Avg time to confirm', plain(formatMinutes(totals.avgConfirmMinutes))],
     ['Pastes / lesson', totals.pastesPerLesson == null ? '-' : String(totals.pastesPerLesson)],
     ['Words written / student', totals.avgWords == null ? '-' : String(totals.avgWords)],
     ['Actively writing', totals.writingPct == null ? '-' : `${totals.writingPct}%`],
+    ['Away', totals.awayPct == null ? '-' : `${totals.awayPct}%`],
   ];
   const tileW = width / 4;
   tiles.forEach(([label, value], index) => {
@@ -65,7 +67,7 @@ export function downloadInsightsPdf(lessons = [], filename = 'class-insights-ano
     pdf.setTextColor(...MUTED);
     pdf.text(label, x, ty + 10);
   });
-  y += 36;
+  y += Math.ceil(tiles.length / 4) * 16 + 4;
 
   const chartLessons = ordered.slice(-MAX_TABLE_ROWS);
   const chartH = 26;
@@ -116,7 +118,7 @@ export function downloadInsightsPdf(lessons = [], filename = 'class-insights-ano
   const notes = [
     'Class-level only: no names and no student writing. Counts from 1 to 4 are shown as <5, and rates are hidden when fewer than 5 comments or students sit behind them.',
     '"Acted on" means the student revised the passage a comment pointed to - it is a sign of engagement with feedback, not proof the writing improved.',
-    'Pastes count every paste into a draft, including a student moving their own text. "Actively writing" is the share of students in the room who changed their draft in each 5-minute window. Trends are observations, not causes.',
+    'Pastes count every paste into a draft, including a student moving their own text. "Actively writing" is the share of students on the tab whose draft changed in each 5-minute window. "Away" is the share with the TUIT tab in the background. Trends are observations, not causes.',
   ];
   pdf.setFontSize(7.5);
   pdf.setTextColor(...MUTED);

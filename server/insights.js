@@ -98,6 +98,25 @@ export function insertedLength(before, after) {
   return Math.max(0, endB - start);
 }
 
+/** Inserted words at the end of the draft count as adding. An edit inside existing text counts as revising. */
+export function writingSplit(before, after) {
+  const a = String(before ?? '');
+  const b = String(after ?? '');
+  let start = 0;
+  const max = Math.min(a.length, b.length);
+  while (start < max && a[start] === b[start]) start += 1;
+  let endA = a.length;
+  let endB = b.length;
+  while (endA > start && endB > start && a[endA - 1] === b[endB - 1]) {
+    endA -= 1;
+    endB -= 1;
+  }
+  const words = countWords(b.slice(start, endB));
+  if (!words) return { added: 0, revised: 0 };
+  const revising = endA > start || start < a.trimEnd().length;
+  return revising ? { added: 0, revised: words } : { added: words, revised: 0 };
+}
+
 function recordWordsForLesson(lesson, roomCode, at) {
   for (const row of roomStudentsStmt.all(roomCode)) {
     const key = studentKey(roomCode, row.name);
@@ -108,6 +127,7 @@ function recordWordsForLesson(lesson, roomCode, at) {
 }
 
 function closeLesson(lesson, roomCode, at) {
+  flushWriteSplit(roomCode, at, lesson.id);
   recordWordsForLesson(lesson, roomCode, at);
   endLessonStmt.run(at, lesson.id);
 }
@@ -198,6 +218,11 @@ export const insightPasteAck = safely((roomCode, studentId, at) =>
   record(roomCode, 'paste_ack', { studentId, at })
 );
 
+/** Tab hidden or visible again. Offline is not away: a disconnect records a return. */
+export const insightPresence = safely((roomCode, studentId, away, at = Date.now()) =>
+  record(roomCode, away ? 'away' : 'back', { studentId, at })
+);
+
 /** Unacknowledged pastes per current student id in the running lesson, for the live header pill. */
 export function livePasteCounts(roomCode, at = Date.now()) {
   const code = normaliseRoomCode(roomCode);
@@ -226,6 +251,20 @@ export function livePasteCounts(roomCode, at = Date.now()) {
 // Writing activity: who changed their draft recently. Sampled into the lesson every few minutes
 // while the class is writing, so "% actively writing" is based on the whole class, not just typists.
 const activity = new Map();
+
+function flushWriteSplit(code, at, lessonId = null) {
+  const room = activity.get(normaliseRoomCode(code));
+  if (!room || !(room.addedWords || room.revisedWords)) return;
+  const added = room.addedWords;
+  const revised = room.revisedWords;
+  room.addedWords = 0;
+  room.revisedWords = 0;
+  if (lessonId) {
+    insertEventStmt.run(lessonId, 'write_split', null, null, added, revised, at);
+    return;
+  }
+  record(code, 'write_split', { value: added, value2: revised, at });
+}
 const baselined = new Set();
 const baselineExistsStmt = db.prepare(
   `SELECT 1 FROM insight_events WHERE lesson_id = ? AND type = 'words_start' AND student_key = ? LIMIT 1`
@@ -246,22 +285,32 @@ function recordWordBaseline(code, studentId, beforeText, at) {
   record(code, 'words_start', { studentId, value: countWords(beforeText), at });
 }
 
-export const insightTextChanged = safely((roomCode, studentId, at = Date.now(), beforeText = null) => {
+export const insightTextChanged = safely((roomCode, studentId, at = Date.now(), beforeText = null, afterText = null) => {
   const code = normaliseRoomCode(roomCode);
   let room = activity.get(code);
   if (!room) {
-    room = { lastSampleAt: at, students: new Map() };
+    room = { lastSampleAt: at, students: new Map(), addedWords: 0, revisedWords: 0 };
     activity.set(code, room);
     ensureLesson(code, at);
   }
   room.students.set(Number(studentId), at);
   if (beforeText != null) recordWordBaseline(code, studentId, beforeText, at);
+  if (beforeText != null && afterText != null) {
+    const split = writingSplit(beforeText, afterText);
+    room.addedWords += split.added;
+    room.revisedWords += split.revised;
+  }
 });
 
 let isStudentConnected = () => true;
+let isStudentAway = () => false;
 
 export function setPresenceCheck(fn) {
   isStudentConnected = typeof fn === 'function' ? fn : () => true;
+}
+
+export function setAwayCheck(fn) {
+  isStudentAway = typeof fn === 'function' ? fn : () => false;
 }
 
 export function sampleActivity(at = Date.now()) {
@@ -270,17 +319,24 @@ export function sampleActivity(at = Date.now()) {
       let latest = 0;
       for (const changedAt of room.students.values()) latest = Math.max(latest, changedAt);
       if (at - latest > LIVE_WINDOW_MS) {
+        const lesson = openLessonStmt.get(code);
+        if (lesson && at - Number(lesson.last_at) <= LESSON_IDLE_SPLIT_MS) flushWriteSplit(code, latest, lesson.id);
         activity.delete(code);
         continue;
       }
       if (at - room.lastSampleAt < SAMPLE_EVERY_MS) continue;
       room.lastSampleAt = at;
+      flushWriteSplit(code, at);
       // Only students in the room right now count, so absent students and ghost cards
-      // don't read as "not writing".
+      // don't read as "not writing". Away students are not also counted as writing.
       const present = roomStudentsStmt.all(code).filter((row) => isStudentConnected(row.id));
       if (!present.length) continue;
-      const active = present.filter((row) => at - (room.students.get(Number(row.id)) || 0) <= ACTIVE_WINDOW_MS).length;
-      record(code, 'active_sample', { value: active, value2: present.length, at });
+      const away = present.filter((row) => isStudentAway(row.id)).length;
+      const writing = present.filter(
+        (row) => !isStudentAway(row.id) && at - (room.students.get(Number(row.id)) || 0) <= ACTIVE_WINDOW_MS
+      ).length;
+      record(code, 'active_sample', { value: writing, value2: present.length, at });
+      record(code, 'away_sample', { value: away, value2: present.length, at });
     } catch (error) {
       console.error('Class insights could not sample activity', error);
     }
@@ -396,13 +452,118 @@ function wordsByStudent(lesson, events) {
   return written;
 }
 
+function overlapMs(start, end, intervals) {
+  let ms = 0;
+  for (const [from, to] of intervals) {
+    const lo = Math.max(start, from);
+    const hi = Math.min(end, to);
+    if (hi > lo) ms += hi - lo;
+  }
+  return ms;
+}
+
+function awayIntervals(events, endCap) {
+  const open = new Map();
+  const intervals = new Map();
+  for (const event of events) {
+    if ((event.type !== 'away' && event.type !== 'back') || !event.student_key) continue;
+    if (event.type === 'away') {
+      if (!open.has(event.student_key)) open.set(event.student_key, Number(event.at));
+    } else if (open.has(event.student_key)) {
+      const list = intervals.get(event.student_key) || [];
+      list.push([open.get(event.student_key), Number(event.at)]);
+      intervals.set(event.student_key, list);
+      open.delete(event.student_key);
+    }
+  }
+  for (const [key, start] of open) {
+    const list = intervals.get(key) || [];
+    list.push([start, endCap]);
+    intervals.set(key, list);
+  }
+  return intervals;
+}
+
+/** Class average of how long the tab was hidden between a comment and the first revision. */
+function awayWhileRevising(events, endCap) {
+  const tracked = events.some((event) => event.type === 'away' || event.type === 'back' || event.type === 'away_sample');
+  if (!tracked) return { avgAwayReviseMinutes: null, awayReviseCount: 0 };
+  const intervals = awayIntervals(events, endCap);
+  const added = new Map();
+  const fixed = new Set();
+  const minutes = [];
+  for (const event of events) {
+    const id = Number(event.annotation_id);
+    if (!id) continue;
+    if (event.type === 'comment_added') added.set(id, event);
+    else if (!added.has(id)) continue;
+    else if (event.type === 'comment_fixed' && !fixed.has(id)) {
+      fixed.add(id);
+      const start = Number(added.get(id).at);
+      const key = added.get(id).student_key;
+      minutes.push(overlapMs(start, Number(event.at), intervals.get(key) || []) / 60000);
+    } else if (event.type === 'comment_fixed') fixed.add(id);
+  }
+  const avg = average(minutes);
+  return {
+    avgAwayReviseMinutes: avg == null ? null : Math.round(avg * 10) / 10,
+    awayReviseCount: minutes.length,
+  };
+}
+
+function wordSplitStats(events) {
+  let added = 0;
+  let revised = 0;
+  for (const event of events) {
+    if (event.type !== 'write_split') continue;
+    added += Number(event.value) || 0;
+    revised += Number(event.value2) || 0;
+  }
+  const total = added + revised;
+  return {
+    addedWords: added,
+    revisedWords: revised,
+    revisingPct: total ? Math.round((revised / total) * 100) : null,
+  };
+}
+
+/** Writing, away and at-the-draft are one partition of the students in the room. */
+function roomRates(events) {
+  const writingEvents = events.filter((event) => event.type === 'active_sample' && Number(event.value2) > 0);
+  const awayByAt = new Map(
+    events.filter((event) => event.type === 'away_sample').map((event) => [Number(event.at), event])
+  );
+  const writing = average(writingEvents.map((event) => Number(event.value) / Number(event.value2)));
+  const paired = writingEvents.filter((event) => awayByAt.has(Number(event.at)));
+  const ratios = paired.map((event) => {
+    const present = Number(event.value2);
+    const writingN = Number(event.value);
+    const awayN = Number(awayByAt.get(Number(event.at)).value) || 0;
+    return {
+      writing: writingN / present,
+      away: awayN / present,
+      draft: Math.max(0, present - writingN - awayN) / present,
+    };
+  });
+  const roomWriting = average(ratios.map((ratio) => ratio.writing));
+  const away = average(ratios.map((ratio) => ratio.away));
+  const draft = average(ratios.map((ratio) => ratio.draft));
+  return {
+    writingPct: writing == null ? null : Math.round(writing * 100),
+    writingSamples: writingEvents.length,
+    roomWritingPct: roomWriting == null ? null : Math.round(roomWriting * 100),
+    awayPct: away == null ? null : Math.round(away * 100),
+    awaySamples: paired.length,
+    atDraftPct: draft == null ? null : Math.round(draft * 100),
+  };
+}
+
 function lessonSummary(lesson, events, studentRows) {
   const words = wordsByStudent(lesson, events);
   const keys = new Set(studentRows.map((row) => row.student_key));
   for (const key of words.keys()) keys.add(key);
-  const samples = events.filter((event) => event.type === 'active_sample' && Number(event.value2) > 0);
-  const writing = average(samples.map((event) => Number(event.value) / Number(event.value2)));
   const avgWords = average([...words.values()]);
+  const endCap = lesson.ended_at == null ? Date.now() : Number(lesson.ended_at);
   return {
     id: Number(lesson.id),
     roomCode: lesson.room_code,
@@ -411,9 +572,10 @@ function lessonSummary(lesson, events, studentRows) {
     students: keys.size,
     ...commentStats(events),
     ...pasteStats(events),
+    ...roomRates(events),
+    ...wordSplitStats(events),
+    ...awayWhileRevising(events, endCap),
     avgWords: avgWords == null ? null : Math.round(avgWords),
-    writingPct: writing == null ? null : Math.round(writing * 100),
-    writingSamples: samples.length,
   };
 }
 
@@ -444,7 +606,7 @@ function studentBreakdown(lessons, events, studentRows) {
   }
   for (const event of events) {
     const key = event.student_key || addedBy.get(Number(event.annotation_id));
-    if (!key || ['words', 'words_start', 'active_sample', 'paste_ack'].includes(event.type)) continue;
+    if (!key || ['words', 'words_start', 'active_sample', 'paste_ack', 'away', 'back', 'away_sample', 'write_split'].includes(event.type)) continue;
     ensure(key).events.push(event);
   }
   for (const lesson of lessons) {

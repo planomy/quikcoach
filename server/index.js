@@ -23,6 +23,7 @@ import {
   scopeStudentsForViewer,
 } from './breakouts.js';
 import { normalizeRecipientIds, isTargetedMaterial, materialVisibleTo, materialHistoryForStudent } from './materialRecipients.js';
+import { insightPresence, setAwayCheck } from './insights.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3001;
@@ -581,6 +582,8 @@ function setStudentAway(studentId, away) {
 function isStudentAway(studentId) {
   return studentAwayFlags.get(Number(studentId)) === true;
 }
+
+setAwayCheck(isStudentAway);
 
 function emitStudentPresence(code, studentId) {
   const sid = Number(studentId);
@@ -1761,6 +1764,7 @@ io.on('connection', (socket) => {
       if (wasAway !== away) {
         const row = queries.getStudent(db, sid);
         if (row) recordTrailPresence(code, row, away);
+        insightPresence(code, sid, away);
         emitStudentPresence(code, sid);
         io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));
       }
@@ -3009,6 +3013,7 @@ io.on('connection', (socket) => {
     const code = socket.data.roomCode;
     const wasAway = sid ? isStudentAway(sid) : false;
     if (sid) removeStudentPresence(sid, socket.id);
+    if (sid && code && wasAway && !isStudentConnected(sid)) insightPresence(code, sid, false);
     if (sid && code) disconnectTrail(code, sid);
     if (code) {
       if (sid && (wasAway || !isStudentConnected(sid))) emitStudentPresence(code, sid);

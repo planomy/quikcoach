@@ -150,6 +150,44 @@ test('live paste counts follow the current roster and clear on a new class', () 
   assert.deepEqual(insights.livePasteCounts(code, now + 5000), {});
 });
 
+test('away, revising and the room split stay class-level', () => {
+  const code = '4105';
+  const [mia, leo, cy] = classOf(code, ['Mia', 'Leo', 'Cy', 'Di']);
+  const t0 = Date.UTC(2026, 8, 4, 9, 0);
+
+  assert.deepEqual(insights.writingSplit('hello', 'hello world'), { added: 1, revised: 0 });
+  assert.deepEqual(insights.writingSplit('hello world', 'hello brave world'), { added: 0, revised: 1 });
+
+  insights.insightCommentAdded(code, mia.id, 70, t0);
+  insights.insightPresence(code, mia.id, true, t0 + MIN);
+  insights.insightPresence(code, mia.id, false, t0 + 4 * MIN);
+  insights.insightCommentFixed(code, mia.id, 70, t0 + 6 * MIN);
+
+  insights.insightTextChanged(code, leo.id, t0, 'hello', 'hello world');
+  insights.insightTextChanged(code, mia.id, t0 + MIN, 'hello world', 'hello brave world');
+  insights.insightTextChanged(code, cy.id, t0 + 2 * MIN);
+  insights.setPresenceCheck(() => true);
+  insights.setAwayCheck((id) => id === cy.id);
+  insights.sampleActivity(t0 + 5 * MIN);
+  insights.setPresenceCheck(null);
+  insights.setAwayCheck(null);
+
+  const result = insights.getInsights({ roomCode: code });
+  const [lesson] = result.lessons;
+  assert.equal(lesson.avgAwayReviseMinutes, 3);
+  assert.equal(lesson.awayReviseCount, 1);
+  assert.equal(lesson.addedWords, 1);
+  assert.equal(lesson.revisedWords, 1);
+  assert.equal(lesson.revisingPct, 50);
+  assert.equal(lesson.writingPct, 50, 'Mia and Leo wrote on the tab; Cy is away');
+  assert.equal(lesson.awayPct, 25);
+  assert.equal(lesson.atDraftPct, 25);
+
+  const miaRow = result.students.find((row) => row.name === 'Mia');
+  assert.equal(miaRow.commentsGiven, 1);
+  assert.equal(miaRow.awayPct, undefined, 'away stays off the named rows');
+});
+
 test('recording failures never throw into the lesson', () => {
   assert.doesNotThrow(() => insights.insightCommentAdded(null, 'nope', undefined));
   assert.doesNotThrow(() => insights.insightPaste('9999', 123456, 'x'));

@@ -21,6 +21,7 @@ function round1(value) {
 export function formatMinutes(minutes) {
   if (minutes == null || !Number.isFinite(Number(minutes))) return '—';
   const m = Number(minutes);
+  if (m === 0) return '0 min';
   if (m < 1) return '<1 min';
   if (m < 90) return `${Math.round(m)} min`;
   return `${round1(m / 60)} h`;
@@ -52,6 +53,11 @@ export function headlineTotals(lessons = []) {
   const confirm = weightedAverage(lessons.map((l) => [l.avgConfirmMinutes, l.confirmed]));
   const words = weightedAverage(lessons.map((l) => [l.avgWords, l.students]));
   const writing = weightedAverage(lessons.map((l) => [l.writingPct, l.writingSamples]));
+  const roomWriting = weightedAverage(lessons.map((l) => [l.roomWritingPct, l.awaySamples]));
+  const away = weightedAverage(lessons.map((l) => [l.awayPct, l.awaySamples]));
+  const draft = weightedAverage(lessons.map((l) => [l.atDraftPct, l.awaySamples]));
+  const awayRevise = weightedAverage(lessons.map((l) => [l.avgAwayReviseMinutes, l.awayReviseCount]));
+  const revising = weightedAverage(lessons.map((l) => [l.revisingPct, (l.addedWords || 0) + (l.revisedWords || 0)]));
   return {
     lessons: lessons.length,
     commentsGiven,
@@ -60,11 +66,16 @@ export function headlineTotals(lessons = []) {
     checkAgain,
     checkAgainPct: commentsGiven ? Math.round((checkAgain / commentsGiven) * 100) : null,
     avgReviseMinutes: revise == null ? null : round1(revise),
+    avgAwayReviseMinutes: awayRevise == null ? null : round1(awayRevise),
     avgConfirmMinutes: confirm == null ? null : round1(confirm),
     pastes,
     pastesPerLesson: lessons.length ? round1(pastes / lessons.length) : null,
     avgWords: words == null ? null : Math.round(words),
     writingPct: writing == null ? null : Math.round(writing),
+    roomWritingPct: roomWriting == null ? null : Math.round(roomWriting),
+    awayPct: away == null ? null : Math.round(away),
+    atDraftPct: draft == null ? null : Math.round(draft),
+    revisingPct: revising == null ? null : Math.round(revising),
   };
 }
 
@@ -87,11 +98,18 @@ export function anonymisedRows(lessons = []) {
       actedOn: suppressPct(lesson.actedOn, lesson.commentsGiven),
       checkAgain: suppressPct(lesson.checkAgain, lesson.commentsGiven),
       timeToRevise: lesson.revised >= SMALL_COUNT ? formatMinutes(lesson.avgReviseMinutes) : '—',
+      awayWhileRevising:
+        lesson.revised >= SMALL_COUNT && lesson.avgAwayReviseMinutes != null
+          ? formatMinutes(lesson.avgAwayReviseMinutes)
+          : '—',
       timeToConfirm: lesson.confirmed >= SMALL_COUNT ? formatMinutes(lesson.avgConfirmMinutes) : '—',
       pastes: suppressCount(lesson.pastes),
       studentsPasted: suppressCount(lesson.studentsPasted),
       avgWords: smallClass || lesson.avgWords == null ? '—' : String(lesson.avgWords),
       writing: smallClass || lesson.writingPct == null ? '—' : `${lesson.writingPct}%`,
+      away: smallClass || lesson.awayPct == null ? '—' : `${lesson.awayPct}%`,
+      atTheDraft: smallClass || lesson.atDraftPct == null ? '—' : `${lesson.atDraftPct}%`,
+      revising: smallClass || lesson.revisingPct == null ? '—' : `${lesson.revisingPct}%`,
     };
   });
 }
@@ -105,11 +123,15 @@ export const EXPORT_COLUMNS = [
   ['actedOn', 'Acted on'],
   ['checkAgain', 'Needed Check again'],
   ['timeToRevise', 'Avg time to revise'],
+  ['awayWhileRevising', 'Away while revising'],
   ['timeToConfirm', 'Avg time to confirm'],
   ['pastes', 'Pastes'],
   ['studentsPasted', 'Students who pasted'],
   ['avgWords', 'Avg words written per student'],
   ['writing', 'Actively writing'],
+  ['away', 'Away'],
+  ['atTheDraft', 'At the draft'],
+  ['revising', 'Revising'],
 ];
 
 export function exportColumns(rows) {
