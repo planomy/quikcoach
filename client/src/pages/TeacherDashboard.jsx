@@ -2558,13 +2558,15 @@ function TeacherDashboardInner() {
       };
       if (settingsOpen) {
         const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
-        const nextTop = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
-        const available = Math.max(180, Math.round(offsetTop + viewport - nextTop - margin));
+        const ceiling = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
+        const floor = Math.round(Math.min(buttonBox?.bottom ?? offsetTop + viewport, offsetTop + viewport));
+        const available = Math.max(180, floor - ceiling);
         let content = 0;
         if (panel) {
           for (const child of panel.children) content += naturalHeight(child);
         }
         const dockHeight = Math.min(content > 40 ? Math.ceil(content) : available, available);
+        const nextTop = floor - dockHeight;
         setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
         setTeacherToolsDockHeight((prev) => (Math.abs((prev || 0) - dockHeight) < 2 ? prev : dockHeight));
         return;
