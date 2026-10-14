@@ -4334,7 +4334,7 @@ html.dark .iboard-feedback-settings__cancel:hover {
   background: #4338ca;
 }
 
-/* Room settings — JS sets height. Only the body is a scrollport. */
+/* Room settings — JS sets the height to the content, capped to the screen. Only the body scrolls. */
 .iboard-header-dock.iboard-room-settings {
   display: flex;
   flex-direction: column;

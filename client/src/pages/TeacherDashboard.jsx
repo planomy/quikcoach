@@ -2536,9 +2536,41 @@ function TeacherDashboardInner() {
       }
       const buttonBox = button?.getBoundingClientRect();
       const maxHeight = Math.max(220, viewport - margin * 2);
+      // A flexed body grows to fill the dock. Its box height is the stretch, not the content.
+      const naturalHeight = (node) => {
+        if (!node) return 0;
+        const style = window.getComputedStyle(node);
+        if (style.position === 'absolute') return 0;
+        const grows = Number.parseFloat(style.flexGrow) > 0;
+        if (!grows) return Math.max(node.scrollHeight, node.offsetHeight);
+        let inner = 0;
+        let counted = 0;
+        for (const child of node.children) {
+          const next = naturalHeight(child);
+          if (!next) continue;
+          inner += next;
+          counted += 1;
+        }
+        const pad = (Number.parseFloat(style.paddingTop) || 0) + (Number.parseFloat(style.paddingBottom) || 0);
+        const gap = Number.parseFloat(style.rowGap);
+        const gaps = counted > 1 && Number.isFinite(gap) ? (counted - 1) * gap : 0;
+        return inner + pad + gaps;
+      };
+      if (settingsOpen) {
+        const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
+        const nextTop = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
+        const available = Math.max(180, Math.round(offsetTop + viewport - nextTop - margin));
+        let content = 0;
+        if (panel) {
+          for (const child of panel.children) content += naturalHeight(child);
+        }
+        const dockHeight = Math.min(content > 40 ? Math.ceil(content) : available, available);
+        setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
+        setTeacherToolsDockHeight((prev) => (Math.abs((prev || 0) - dockHeight) < 2 ? prev : dockHeight));
+        return;
+      }
       if (
-        settingsOpen
-        || (toolsPanelOpen && !libraryPanel)
+        (toolsPanelOpen && !libraryPanel)
         || (libraryPanel && libraryView !== 'feedback')
       ) {
         const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
@@ -2548,34 +2580,15 @@ function TeacherDashboardInner() {
         return;
       }
       const askOpen = toolsPanelOpen && toolsTab === 'ask';
-      let desired = askOpen ? maxHeight : libraryPanel ? 360 : settingsOpen ? 560 : 480;
+      let desired = askOpen ? maxHeight : libraryPanel ? 360 : 480;
       const measureRoot = askOpen ? null : libraryPanel ? panel : null;
       if (measureRoot) {
-        // A flexed body grows to fill the dock. Its box height is the stretch, not the content.
-        const naturalHeight = (node) => {
-          const style = window.getComputedStyle(node);
-          if (style.position === 'absolute') return 0;
-          const grows = Number.parseFloat(style.flexGrow) > 0;
-          if (!grows) return Math.max(node.scrollHeight, node.offsetHeight);
-          let inner = 0;
-          let counted = 0;
-          for (const child of node.children) {
-            const next = naturalHeight(child);
-            if (!next) continue;
-            inner += next;
-            counted += 1;
-          }
-          const pad = (Number.parseFloat(style.paddingTop) || 0) + (Number.parseFloat(style.paddingBottom) || 0);
-          const gap = Number.parseFloat(style.rowGap);
-          const gaps = counted > 1 && Number.isFinite(gap) ? (counted - 1) * gap : 0;
-          return inner + pad + gaps;
-        };
         let content = 0;
         for (const child of measureRoot.children) content += naturalHeight(child);
         if (content > 160) desired = content + 12;
       }
       const dockHeight = Math.min(desired, maxHeight);
-      const preferredTop = settingsOpen || libraryPanel
+      const preferredTop = libraryPanel
         ? (buttonBox?.top ?? offsetTop + margin)
         : toolsPanelOpen && toolsTab === 'ask'
           ? offsetTop + (viewport - dockHeight) / 2
@@ -2613,6 +2626,12 @@ function TeacherDashboardInner() {
       : null;
     const button = currentDockAnchor();
     if (button) resizeObserver?.observe(button);
+    if (settingsOpen) {
+      const body = currentDockPanel()?.querySelector('.iboard-room-settings__body');
+      if (body) {
+        for (const child of body.children) resizeObserver?.observe(child);
+      }
+    }
     window.addEventListener('resize', alignDockToRailButton);
     window.visualViewport?.addEventListener('resize', alignDockToRailButton);
     window.visualViewport?.addEventListener('scroll', alignDockToRailButton);
@@ -2701,7 +2720,7 @@ function TeacherDashboardInner() {
     return '';
   }, [pasteBox, aiPasteParsed, visibleStudents.length, distributeReady]);
 
-  const bottomAnchoredDock = libraryPanel || settingsOpen || inboxOpen;
+  const bottomAnchoredDock = libraryPanel || inboxOpen;
   const reportsDockOpen = !!libraryPanel && libraryView !== 'feedback';
   const headerDockStyle = useMemo(
     () => {

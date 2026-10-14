@@ -82,7 +82,7 @@ html #tuit-overlay-root .iboard-header-dock.iboard-header-dock--fill {
   background: #ffffff;
 }
 
-/* AI feedback, reports, and Settings keep their top, but the corners are square and the panel meets the screen bottom. */
+/* AI feedback and reports keep their top, but the corners are square and the panel meets the screen bottom. */
 html #tuit-overlay-root .iboard-header-dock.iboard-library-dock,
 html #tuit-overlay-root .iboard-header-dock.iboard-room-settings {
   border-radius: 0;
