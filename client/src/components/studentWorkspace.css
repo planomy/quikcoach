@@ -36,6 +36,14 @@ html.iboard-student-workspace.iboard-student-draw-mode [data-student-image-previ
   display: none !important;
 }
 
+/* Writing-pane rules use display:flex on the card and beat Tailwind hidden.
+   Hide the writing card and its comment bubbles until the student comes back. */
+html.iboard-student-workspace.iboard-student-draw-mode .iboard-student-writing-card,
+html.iboard-student-workspace.iboard-student-draw-mode .iboard-student-note,
+html.iboard-student-workspace.iboard-student-draw-mode .iboard-ann-idle-underline {
+  display: none !important;
+}
+
 /* A taller drawing box should grow the page, not clip inside the writing pane. */
 html.iboard-student-workspace.iboard-student-draw-mode main > .iboard-student-workspace-grid > .iboard-student-writing-col,
 html.iboard-student-workspace.iboard-student-draw-mode .iboard-student-writing-pane,

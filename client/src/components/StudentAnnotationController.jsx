@@ -98,6 +98,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
 
   const refreshHighlights = useCallback(() => {
     if (typeof document === 'undefined') return;
+    if (document.documentElement.classList.contains('iboard-student-draw-mode')) return;
     const editor = editorElement();
     if (!editor) {
       clearNamedHighlights([
