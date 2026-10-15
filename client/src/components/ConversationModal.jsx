@@ -366,6 +366,7 @@ export default function ConversationModal({
         );
         if (!preserveDraft) setUrgent(false);
         onTeacherSent?.({ studentId: sid, urgent: !!asUrgent, name: title });
+        closeAfterSend();
       });
       return;
     }
@@ -384,7 +385,13 @@ export default function ConversationModal({
         studentId: sid,
       };
       setMessages((current) => mergeMessages(current, [item]));
+      closeAfterSend();
     });
+  }
+
+  function closeAfterSend() {
+    if (variant === 'panel') return;
+    onClose?.();
   }
 
   function send() {
