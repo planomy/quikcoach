@@ -25,11 +25,20 @@ test('a double class on a small screen falls back to the minimum size and scroll
   assert.equal(layout.columns, 6);
 });
 
-test('a handful of students get big cards, capped in height', () => {
+test('a handful of students fill the board', () => {
   const layout = fitGrid({ count: 2, width: 1190, height: 700 });
   assert.equal(layout.fits, true);
   assert.equal(layout.columns, 2);
-  assert.equal(layout.rowHeight, 360);
+  assert.equal(layout.rowHeight, 700);
+});
+
+test('four students on a large screen fill the height', () => {
+  const height = 1100;
+  const layout = fitGrid({ count: 4, width: 3000, height, gap: 12 });
+  const rows = Math.ceil(4 / layout.columns);
+  const used = rows * layout.rowHeight + (rows - 1) * 12;
+  assert.equal(layout.fits, true);
+  assert.ok(height - used < 2, `used ${used} of ${height}`);
 });
 
 test('no students or no space returns a safe default', () => {

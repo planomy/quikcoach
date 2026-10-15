@@ -1,8 +1,8 @@
 /**
  * Pick a column count so `count` cards fill a `width` × `height` area as large as possible.
- * Cards prefer a slightly wide shape (`aspect` = width / height). When even the smallest
- * allowed card can't fit every student on one screen, the grid keeps the minimum size and
- * the board scrolls.
+ * Cards prefer a slightly wide shape (`aspect` = width / height) and grow to fill the
+ * board. When even the smallest allowed card can't fit every student on one screen,
+ * the grid keeps the minimum size and the board scrolls.
  */
 export function fitGrid({
   count,
@@ -11,7 +11,7 @@ export function fitGrid({
   gap = 12,
   minWidth = 132,
   minHeight = 96,
-  maxHeight = 360,
+  maxHeight = Infinity,
   aspect = 1.2,
 }) {
   const n = Math.max(0, Math.floor(Number(count) || 0));
