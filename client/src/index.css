@@ -6654,6 +6654,13 @@ html.dark .iboard-workspace-scrim {
   background: radial-gradient(120% 90% at 20% 0%, #4b4fa8 0%, #2e2f6b 45%, #191a3c 100%);
 }
 
+/* Browsers paint their own “press Esc to exit” bar over the top of the page.
+   Drop the lockup clear of it for as long as fullscreen is on. */
+html:fullscreen .iboard-start-screen,
+html:-webkit-full-screen .iboard-start-screen {
+  padding-top: 5.25rem;
+}
+
 .iboard-start-screen__body {
   flex: 1 1 auto;
   display: flex;
