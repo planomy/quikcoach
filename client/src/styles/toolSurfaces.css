@@ -99,6 +99,10 @@ html.dark :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"
 html:not(.dark) :is(.iboard-writing-surface, [data-student-writing-pane], [contenteditable="true"]) {
   background-color: var(--iboard-paper);
 }
+/* Teacher cards: the writing well sits a step under the card, as in dark mode. */
+html:not(.dark) .iboard-teacher-canvas .iboard-student-card .iboard-writing-surface {
+  background-color: #eeedf6;
+}
 html.dark .iboard-app-header :is(.iboard-header-tab, .iboard-header-icon-button)[data-active="true"] {
   background: #5a5fc3;
   color: #fff;
