@@ -99,10 +99,10 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
             ) : null}
           </div>
           <p className="iboard-join-screen__count" aria-live="polite">{joinedLabel(joinedCount, rosterCount)}</p>
-          <button ref={closeRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
-            {primaryLabel}
-          </button>
         </div>
+        <button ref={closeRef} type="button" onClick={onClose} className="iboard-start-screen__primary">
+          {primaryLabel}
+        </button>
       </div>
     </div>,
     getOverlayRoot()
@@ -238,6 +238,7 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, entrance 
           />
           <p className="iboard-objective-screen__hint">Students see this at the top of their screen.</p>
         </label>
+        </div>
         <div className="iboard-start-screen__actions">
           <button type="button" onClick={onClose} className="iboard-start-screen__secondary">{entrance ? 'Back' : 'Cancel'}</button>
           {initialObjective && !entrance ? (
@@ -246,7 +247,6 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, entrance 
             </button>
           ) : null}
           <button type="submit" disabled={busy} className="iboard-start-screen__primary">{entrance ? 'Enter' : 'Save'}</button>
-        </div>
         </div>
       </form>
     </StartShell>
