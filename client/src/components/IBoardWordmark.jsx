@@ -11,7 +11,7 @@ export default function IBoardWordmark({
   const login = size === 'login';
   const hero = !login && (size === 'hero' || /\b(text-3xl|iboard-brand--hero)\b/.test(className));
   const tall = !login && !hero && (size === 'lg' || /\btext-2xl\b/.test(className));
-  const src = variant === 'full' ? '/brand/tuit-logo-full.png?v=6' : '/brand/tuit-logo.png?v=5';
+  const src = variant === 'full' ? '/brand/tuit-logo-full.png?v=6' : '/brand/tuit-logo.png?v=6';
   const alt = variant === 'full' ? 'TUIT — Focused Teaching & Learning' : 'TUIT';
   return (
     <div className={`iboard-brand shrink-0 ${login ? 'iboard-brand--login' : ''} ${className}`.trim()} aria-label="TUIT">

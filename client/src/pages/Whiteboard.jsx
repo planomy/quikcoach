@@ -723,7 +723,7 @@ function WhiteboardInner() {
     if (initialCode.length === 4 && !error) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-slate-100">
-          <IBoardWordmark className="text-3xl text-white" iClassName="italic text-indigo-400" />
+          <IBoardWordmark size="login" variant="full" className="mx-auto max-w-sm" />
           <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-slate-400">
             Opening room {initialCode}…
           </p>
@@ -732,7 +732,7 @@ function WhiteboardInner() {
     }
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-slate-100">
-        <IBoardWordmark className="text-3xl text-white" iClassName="italic text-indigo-400" />
+        <IBoardWordmark size="login" variant="full" className="mx-auto max-w-sm" />
         <p className="mt-3 text-sm font-semibold uppercase tracking-widest text-slate-400">FULL SCREEN</p>
         <p className="mt-2 max-w-sm text-center text-sm text-slate-400">
           Live student cards for the projector — up to 7 across, with class broadcast.

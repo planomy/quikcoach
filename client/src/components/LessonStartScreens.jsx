@@ -82,9 +82,7 @@ export function JoinScreen({ code, joinUrl, joinedCount = 0, rosterCount = 0, pr
     >
       <div className="iboard-join-screen" aria-hidden={phase === 'settling' ? true : undefined}>
         <div className="iboard-join-screen__brand" role="img" aria-label="TUIT, Focused Teaching and Learning">
-          <img src="/brand/tuit-mark.png?v=5" alt="" className="iboard-join-screen__mark" />
-          <p className="iboard-join-screen__word" aria-hidden="true">TUIT</p>
-          <p className="iboard-join-screen__tag" aria-hidden="true">Focused Teaching & Learning</p>
+          <img src="/brand/tuit-logo-full.png?v=6" alt="" className="iboard-join-screen__logo" />
         </div>
 
         <div className="iboard-join-screen__details">
@@ -217,9 +215,7 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, entrance 
     <StartShell labelledBy="objective-screen-title" onKeyDown={handleKeyDown}>
       <form className="iboard-objective-screen" onSubmit={submit}>
         <div className="iboard-join-screen__brand" role="img" aria-label="TUIT, Focused Teaching and Learning">
-          <img src="/brand/tuit-mark.png?v=5" alt="" className="iboard-join-screen__mark" />
-          <p className="iboard-join-screen__word" aria-hidden="true">TUIT</p>
-          <p className="iboard-join-screen__tag" aria-hidden="true">Focused Teaching & Learning</p>
+          <img src="/brand/tuit-logo-full.png?v=6" alt="" className="iboard-join-screen__logo" />
         </div>
         <div className="iboard-objective-screen__body">
         <h2 id="objective-screen-title" className="iboard-objective-screen__title">Today’s objective</h2>

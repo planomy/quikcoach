@@ -1593,7 +1593,7 @@ export default function StudentView() {
       <header className="iboard-app-header border-b backdrop-blur">
         <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
-            <img src="/brand/tuit-corner.png?v=5" alt="TUIT" className="iboard-brand-corner" />
+            <img src="/brand/tuit-corner.png?v=6" alt="TUIT" className="iboard-brand-corner" />
             <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
               {activeRoomCode ? (
                 <span className="iboard-header-room">
