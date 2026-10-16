@@ -31,7 +31,7 @@ export default function StudentChatButton({ socket, studentId, unread = false, o
         className={`relative ml-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md transition ${
           unread
             ? 'text-amber-500 hover:bg-slate-100 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-slate-800'
-            : 'border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+            : 'text-slate-500 hover:bg-slate-100 hover:text-indigo-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-300'
         }`}
         aria-label={unread ? 'Private chat — new message' : 'Private chat'}
         title=""

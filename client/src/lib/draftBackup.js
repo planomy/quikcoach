@@ -1,5 +1,5 @@
 const KEY_PREFIX = 'iboard-draft-backup-';
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 
 function keyFor(code, studentId) {
   const c = String(code || '').replace(/\D/g, '').slice(0, 4);
@@ -24,8 +24,9 @@ export function saveDraftBackup({ code, studentId, name, text, richHtml }) {
         savedAt: Date.now(),
       })
     );
+    return true;
   } catch {
-    /* storage full or blocked */
+    return false;
   }
 }
 

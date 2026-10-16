@@ -189,7 +189,6 @@ export default function StudentView() {
   const [exportBusy, setExportBusy] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
-  const [deviceSavedKey, setDeviceSavedKey] = useState(null);
   const saveMenuRef = useRef(null);
   useEffect(() => {
     if (!saveMenuOpen) return undefined;
@@ -964,17 +963,41 @@ export default function StudentView() {
     if (!joined || !student?.id) return undefined;
     const code = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
     if (code.length !== 4) return undefined;
-    const t = setTimeout(() => {
+    const stored = saveDraftBackup({
+      code,
+      studentId: student.id,
+      name: student.name,
+      text: draft,
+      richHtml: draftHtml,
+    });
+    if (!stored && !socket.connected) setDraftSaveState('error');
+  }, [joined, student?.id, student?.name, room?.code, codeInput, draft, draftHtml, socket]);
+
+  useEffect(() => {
+    if (!joined || !student?.id) return undefined;
+    const code = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
+    if (code.length !== 4) return undefined;
+    function flushDraft() {
+      const payload = pendingRef.current || { text: draft, richTextHtml: draftHtml };
       saveDraftBackup({
         code,
         studentId: student.id,
         name: student.name,
-        text: draft,
-        richHtml: draftHtml,
+        text: payload.text,
+        richHtml: payload.richTextHtml,
       });
-    }, 800);
-    return () => clearTimeout(t);
-  }, [joined, student?.id, student?.name, room?.code, codeInput, draft, draftHtml]);
+      if (socket.connected) socket.emit('student:text', payload);
+    }
+    function flushWhenHidden() {
+      if (document.visibilityState === 'hidden') flushDraft();
+    }
+    window.addEventListener('pagehide', flushDraft);
+    document.addEventListener('visibilitychange', flushWhenHidden);
+    return () => {
+      window.removeEventListener('pagehide', flushDraft);
+      document.removeEventListener('visibilitychange', flushWhenHidden);
+    };
+  }, [joined, student?.id, student?.name, room?.code, codeInput, draft, draftHtml, socket]);
 
   useEffect(() => {
     if (!joined || !room) return;
@@ -1212,7 +1235,6 @@ export default function StudentView() {
       const filename = `TUIT-${safeFilePart(student.name)}-room${activeRoomCode}-${stampForFilename()}.${format}`;
       const method = await saveStudentFile(filename, format === 'docx' ? WORD_MIME : 'text/plain',
         () => format === 'docx' ? buildStudentWord(draftHtml, draft) : new Blob([draft], { type: 'text/plain;charset=utf-8' }));
-      if (method !== 'cancelled') setDeviceSavedKey(`${draft}\n${draftHtml}`);
       if (method !== 'cancelled') setImageHint(method === 'saved' ? 'Writing saved' : 'Writing downloaded — check your downloads');
     } catch {
       setImageHint('Could not save the file — please try again. Your writing is still here.');
@@ -1474,7 +1496,7 @@ export default function StudentView() {
       headerActions={
         <>
           {draftSaveState === 'offline' || draftSaveState === 'error' ? (
-            <HintWrap hint="Your teacher can’t see new changes yet. TUIT keeps trying in the background." prefer="above" multiline>
+            <HintWrap hint="Your teacher can’t see new changes yet. This browser still has a copy, and TUIT keeps trying." prefer="above" multiline>
               <span
                 role="status"
                 title=""
@@ -1484,24 +1506,7 @@ export default function StudentView() {
                 {draftSaveState === 'error' ? 'Not sent to teacher' : 'Offline'}
               </span>
             </HintWrap>
-          ) : (
-            <HintWrap
-              hint={deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim()
-                ? 'A copy is saved on this device. Save again after more changes.'
-                : 'Only backed up in this browser — not safe. Press to save a copy.'}
-              prefer="above"
-              multiline
-            >
-              <button
-                type="button"
-                title=""
-                onClick={() => setSaveMenuOpen(true)}
-                className={`inline-flex items-center gap-1 rounded-md px-1 text-xs font-medium transition hover:text-[#3c3f8f] dark:hover:text-indigo-200 ${deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim() ? 'text-[#5a5fc3] dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}
-              >
-                {deviceSavedKey === `${draft}\n${draftHtml}` && draft.trim() ? '✓ Saved to device' : 'Not saved'}
-              </button>
-            </HintWrap>
-          )}
+          ) : null}
         </>
       }
     />

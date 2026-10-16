@@ -427,7 +427,7 @@ export default function RichTextEditor({
                   aria-expanded={formatMenuOpen}
                   aria-label="Formatting tools"
                   title=""
-                  className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-[#e8e8ef] bg-white px-2 text-sm font-semibold text-[#6b6b78] transition hover:border-[#cfcce8] hover:bg-[#ebeaf8] hover:text-[#5a5fc3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-600 dark:hover:bg-indigo-950/60"
+                  className="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-semibold text-[#6b6b78] transition hover:bg-[#ebeaf8] hover:text-[#5a5fc3] disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-200 dark:hover:bg-indigo-950/60"
                 >
                   Aa
                 </button>
