@@ -1539,7 +1539,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   z-index: -1;
   box-sizing: border-box;
   height: calc(2.34rem + 4px);
-  border: 1px solid #4b50b0;
+  border: 1px solid #5a5fc3;
   border-radius: 999px;
   background: #5a5fc3;
   filter: none;
@@ -1567,7 +1567,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
 }
 
 html.dark .iboard-command-frame {
-  border-color: #4b50b0;
+  border-color: #5a5fc3;
   background: #5a5fc3;
   filter: none;
 }

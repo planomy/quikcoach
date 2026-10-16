@@ -4492,7 +4492,7 @@ function TeacherDashboardInner() {
               <div className="iboard-command-frame" aria-hidden="true">
                 <svg viewBox="-70 -52 140 104">
                   <path className="iboard-command-frame__fill" d="M73.14 -20.72 A56 56 0 0 1 34.50 -36.19 A50 50 0 0 0 -34.50 -36.19 A56 56 0 0 1 -73.14 -20.72 L-73.14 20.72 A56 56 0 0 1 -34.50 36.19 A50 50 0 0 0 34.50 36.19 A56 56 0 0 1 73.14 20.72 Z" />
-                  <path className="iboard-command-frame__line" d="M73.14 -20.72 A56 56 0 0 1 34.50 -36.19 A50 50 0 0 0 -34.50 -36.19 A56 56 0 0 1 -73.14 -20.72 M-73.14 20.72 A56 56 0 0 1 -34.50 36.19 A50 50 0 0 0 34.50 36.19 A56 56 0 0 1 73.14 20.72" />
+                  <path className="iboard-command-frame__line" d="M34.50 -36.19 A50 50 0 0 0 -34.50 -36.19 M-34.50 36.19 A50 50 0 0 0 34.50 36.19" />
                 </svg>
               </div>
               <div className="iboard-command-bar__side iboard-command-bar__side--monitor">
