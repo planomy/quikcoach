@@ -1878,6 +1878,25 @@ function TeacherDashboardInner() {
     setNudgePanelHidden(false);
   }, [attentionFocus]);
 
+  useEffect(() => {
+    if (!attentionFocus || nudgePanelHidden) return undefined;
+    function hideNudgeIfOutside(event) {
+      const target = event.target;
+      if (target?.closest?.('.iboard-nudge-strip')) return;
+      if (target?.closest?.('.iboard-attention-pill')) return;
+      setNudgePanelHidden(true);
+    }
+    function hideNudgeOnEscape(event) {
+      if (event.key === 'Escape') setNudgePanelHidden(true);
+    }
+    document.addEventListener('pointerdown', hideNudgeIfOutside);
+    document.addEventListener('keydown', hideNudgeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', hideNudgeIfOutside);
+      document.removeEventListener('keydown', hideNudgeOnEscape);
+    };
+  }, [attentionFocus, nudgePanelHidden]);
+
   const classGauge = useMemo(() => {
     if (livePulse.activity && !livePulse.activity.closed) {
       const asked = (livePulse.students || []).filter(
@@ -5453,7 +5472,7 @@ function TeacherDashboardInner() {
                     : `${cardEmpty && cardView !== 'all' ? '' : 'bg-[#f4f3f8] dark:bg-slate-900'} ${
                         monitoring
                           ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : 'border border-[#b7b7c0] dark:border-slate-600'
+                          : 'border border-[#c8c7d2] dark:border-slate-600'
                       }`
                 }`}
               >
