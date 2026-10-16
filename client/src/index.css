@@ -1059,8 +1059,8 @@ html.dark .iboard-brand-word {
   align-items: end;
   column-gap: 0;
   width: 100%;
-  /* Collar shoulder (SVG x 67.78) sits outside the gauge slot. Keep wing columns there. */
-  --command-collar-inset: calc(8.75rem * 67.78 / 140 - 7.2rem / 2 + 1px);
+  /* Collar shoulder (SVG x 73.14) sits outside the gauge slot. Keep wing columns there. */
+  --command-collar-inset: calc(8.75rem * 73.14 / 140 - 7.2rem / 2 + 1px);
 }
 
 /* Alerts read as icon + number; colour only appears when a count is above zero. */
