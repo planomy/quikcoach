@@ -13,7 +13,7 @@ export default function TeacherPinGate({ children, title = 'Teacher access' }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-card dark:border-slate-700 dark:bg-slate-900">
-        <IBoardWordmark className="text-2xl" variant="full" />
+        <IBoardWordmark size="login" variant="full" />
         <h1 className="font-display mt-6 text-xl font-bold text-ink-900 dark:text-slate-100">{title}</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Enter the teacher PIN to continue.</p>
         <input

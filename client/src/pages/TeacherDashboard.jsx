@@ -3827,7 +3827,7 @@ function TeacherDashboardInner() {
     if (codeFromLink.length === 4 && !error) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
-          <IBoardWordmark size="hero" variant="full" className="mx-auto" />
+          <IBoardWordmark size="login" variant="full" className="mx-auto max-w-sm" />
           <p className="mt-6 text-sm font-semibold text-slate-600 dark:text-slate-400">
             Opening room {codeFromLink}…
           </p>
@@ -3837,11 +3837,9 @@ function TeacherDashboardInner() {
     return (
       <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-          <div className="iboard-join-stack text-center">
-            <div className="flex justify-center">
-              <IBoardWordmark size="hero" variant="full" />
-            </div>
-            <div className="mt-10 flex items-center gap-2">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-card dark:border-slate-700 dark:bg-slate-900">
+            <IBoardWordmark size="login" variant="full" />
+            <div className="mt-8 flex items-center gap-2">
               <input
                 value={codeInput}
                 onFocus={() => {
@@ -3860,7 +3858,7 @@ function TeacherDashboardInner() {
                 placeholder="0000"
                 inputMode="numeric"
                 aria-label="Room code"
-                className="min-w-0 flex-1 rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-center font-mono text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
                 maxLength={4}
               />
               <button
@@ -3870,7 +3868,7 @@ function TeacherDashboardInner() {
                   setCodeInput(randomRoomCode());
                 }}
                 aria-label="Generate new room code"
-                className="shrink-0 rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 New
               </button>
@@ -3880,7 +3878,7 @@ function TeacherDashboardInner() {
               type="button"
               onClick={() => createOrJoin(undefined, { showJoinScreen: true })}
               disabled={codeInput.length !== 4}
-              className="mt-5 w-full rounded-2xl bg-indigo-600 py-4 text-base font-bold text-white shadow-lift hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-4 w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Open room
             </button>

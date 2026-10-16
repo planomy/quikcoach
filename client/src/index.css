@@ -525,6 +525,19 @@ html:not(.dark) .iboard-teacher-canvas .iboard-brand-logo {
   max-width: min(22rem, 88vw);
 }
 
+/* Login lockup: wide enough that the tagline can be read, and no wider. */
+.iboard-brand--login {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.iboard-brand-logo--full.iboard-brand-logo--login {
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+}
+
 /* Teacher + student join screens share one control column width. */
 /* Student Inbox rail header + inline Answer chip */
 .iboard-inbox-head {
@@ -742,7 +755,7 @@ html.dark .iboard-grade-menu__option.is-active:not(.is-selected) {
   background: rgba(90, 95, 195, 0.22);
 }
 
-.iboard-brand-logo--full:not(.iboard-brand-logo--hero):not(.iboard-brand-logo--lg) {
+.iboard-brand-logo--full:not(.iboard-brand-logo--hero):not(.iboard-brand-logo--lg):not(.iboard-brand-logo--login) {
   height: 1.55rem;
   max-width: min(7.5rem, 36vw);
 }

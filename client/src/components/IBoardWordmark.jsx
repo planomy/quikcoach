@@ -8,16 +8,17 @@ export default function IBoardWordmark({
   size = '',
   variant = 'mark',
 }) {
-  const hero = size === 'hero' || /\b(text-3xl|iboard-brand--hero)\b/.test(className);
-  const tall = !hero && (size === 'lg' || /\btext-2xl\b/.test(className));
-  const src = variant === 'full' ? '/brand/tuit-logo-full.png?v=5' : '/brand/tuit-logo.png?v=5';
-  const alt = variant === 'full' ? 'TUIT — Focused, Teaching & Learning' : 'TUIT';
+  const login = size === 'login';
+  const hero = !login && (size === 'hero' || /\b(text-3xl|iboard-brand--hero)\b/.test(className));
+  const tall = !login && !hero && (size === 'lg' || /\btext-2xl\b/.test(className));
+  const src = variant === 'full' ? '/brand/tuit-logo-full.png?v=6' : '/brand/tuit-logo.png?v=5';
+  const alt = variant === 'full' ? 'TUIT — Focused Teaching & Learning' : 'TUIT';
   return (
-    <div className={`iboard-brand shrink-0 ${className}`.trim()} aria-label="TUIT">
+    <div className={`iboard-brand shrink-0 ${login ? 'iboard-brand--login' : ''} ${className}`.trim()} aria-label="TUIT">
       <img
         src={src}
         alt={alt}
-        className={`iboard-brand-logo ${hero ? 'iboard-brand-logo--hero' : tall ? 'iboard-brand-logo--lg' : ''} ${variant === 'full' ? 'iboard-brand-logo--full' : ''}`.trim()}
+        className={`iboard-brand-logo ${login ? 'iboard-brand-logo--login' : hero ? 'iboard-brand-logo--hero' : tall ? 'iboard-brand-logo--lg' : ''} ${variant === 'full' ? 'iboard-brand-logo--full' : ''}`.trim()}
       />
     </div>
   );
