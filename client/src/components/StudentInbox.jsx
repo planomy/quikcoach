@@ -425,7 +425,7 @@ export default function StudentInbox({
           <section
             key={item.id}
             data-inbox-item={item.id}
-            className={`relative overflow-hidden rounded-2xl border shadow-sm transition-colors ${
+            className={`relative overflow-hidden rounded-xl border transition-colors ${
               open && item.unread
                 ? 'border-indigo-400 bg-white ring-2 ring-indigo-300/70 dark:border-indigo-500 dark:bg-slate-900 dark:ring-indigo-500/40'
                 : item.unread

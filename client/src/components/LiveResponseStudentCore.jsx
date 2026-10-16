@@ -475,7 +475,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
             if (nudge) return;
             onExpand?.();
           }}
-          className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? `${colour} shadow-sm` : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(!quietAlerts && (pulse || nudge)) ? 'iboard-question-pulse' : ''}`}
+          className={`flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition ${quietAlerts ? colour : `bg-gradient-to-r hover:brightness-110 ${colour}`} ${(!quietAlerts && (pulse || nudge)) ? 'iboard-question-pulse' : ''}`}
           data-iboard-student-question
           aria-label={nudge ? `${label}. ${detail}.` : `${label}. ${detail}. Open Pulse panel.`}
           aria-live={(needsAnswer || nudge) ? 'assertive' : 'polite'}
@@ -572,7 +572,7 @@ export default function LiveResponseStudent({ socket, standalone = false, compac
           data-iboard-student-question
           className={
             quietAlerts
-              ? `scroll-mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 ${compact ? 'mt-2 p-3' : 'p-4'}`
+              ? `scroll-mt-4 rounded-xl border border-[#b7b7c0] bg-white dark:border-slate-600 dark:bg-slate-900 ${compact ? 'mt-2 p-3' : 'p-4'}`
               : `scroll-mt-4 border-2 bg-white shadow-xl ring-4 dark:bg-slate-900 ${compact ? 'mt-2 rounded-2xl p-2.5 ring-2' : 'rounded-3xl p-4 sm:p-6'} ${theme.panel} ${pulse ? 'iboard-question-pulse' : ''}`
           }
           aria-live="polite"

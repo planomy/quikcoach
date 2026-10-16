@@ -756,11 +756,9 @@ html:not(.dark) .iboard-student-canvas {
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header {
   background: #ffffff;
-  border-bottom-color: #e2e8ef;
-  box-shadow:
-    0 1px 0 rgba(15, 23, 42, 0.06),
-    0 1px 3px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(8px);
+  border-bottom-color: #b7b7c0;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header h1 {

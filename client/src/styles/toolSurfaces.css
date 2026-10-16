@@ -54,18 +54,11 @@ html :is(.iboard-teacher-canvas, .iboard-student-canvas) {
   /* Beat Tailwind body utilities (bg-slate-50) so the canvas tint is edge-to-edge. */
   background-color: var(--iboard-canvas) !important;
 }
-/* Teacher header is a flat white edge. Student header keeps a whisper of shadow. */
-html:not(.dark) .iboard-teacher-canvas .iboard-app-header {
+/* Teacher and student headers are a flat white edge. */
+html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header {
   background: #ffffff !important;
   border-bottom-color: #b7b7c0 !important;
   box-shadow: none !important;
-}
-html:not(.dark) .iboard-student-canvas .iboard-app-header {
-  background: #ffffff !important;
-  border-bottom-color: #e2e8ef !important;
-  box-shadow:
-    0 1px 0 rgba(15, 23, 42, 0.06),
-    0 1px 3px rgba(15, 23, 42, 0.08) !important;
 }
 html.dark .iboard-app-header {
   background: #20262d !important;
@@ -73,7 +66,7 @@ html.dark .iboard-app-header {
   border-bottom-color: #444e5b;
   box-shadow: 0 2px 8px #0003;
 }
-html.dark .iboard-teacher-canvas .iboard-app-header {
+html.dark :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header {
   box-shadow: none !important;
 }
 html.dark :is(.dark\:bg-slate-950, .dark\:bg-slate-900, .dark\:bg-slate-800) {

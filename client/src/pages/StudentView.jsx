@@ -1574,7 +1574,7 @@ export default function StudentView() {
       {connBanner === 'lost' && (
         <div
           role="status"
-          className="sticky top-0 z-40 border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-sm font-semibold text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+          className="sticky top-0 z-40 border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-sm font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
         >
           Connection lost — reconnecting…
         </div>
@@ -1582,7 +1582,7 @@ export default function StudentView() {
       {connBanner === 'online' && (
         <div
           role="status"
-          className="sticky top-0 z-40 border-b border-[#cfcce8] bg-[#ebeaf8] px-4 py-2.5 text-center text-sm font-semibold text-[#5a5fc3] shadow-sm dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200"
+          className="sticky top-0 z-40 border-b border-[#cfcce8] bg-[#ebeaf8] px-4 py-2.5 text-center text-sm font-semibold text-[#5a5fc3] dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200"
         >
           Back online
         </div>
