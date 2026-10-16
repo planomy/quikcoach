@@ -101,7 +101,7 @@ html:not(.dark) :is(.iboard-writing-surface, [data-student-writing-pane], [conte
 }
 /* Teacher cards: the writing well sits a step under the card, as in dark mode. */
 html:not(.dark) .iboard-teacher-canvas .iboard-student-card .iboard-writing-surface {
-  background-color: #eeedf6;
+  background-color: #f8f7fc;
 }
 html.dark .iboard-app-header :is(.iboard-header-tab, .iboard-header-icon-button)[data-active="true"] {
   background: #5a5fc3;
