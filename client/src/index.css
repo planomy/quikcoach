@@ -3241,7 +3241,7 @@ html.dark .iboard-teacher-panel-reveal:hover {
 }
 
 .iboard-student-card--empty:not(.iboard-student-card--fit) {
-  background: #ffffff;
+  background: #f4f3f8;
 }
 
 .iboard-student-card__head {

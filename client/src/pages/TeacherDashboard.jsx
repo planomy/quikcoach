@@ -5450,10 +5450,10 @@ function TeacherDashboardInner() {
                 } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${
                   handUp
                     ? 'cursor-pointer border border-[#5a5fc3] bg-[#ebeaf8] shadow-[inset_4px_0_0_0_#5a5fc3] dark:border-indigo-400 dark:bg-indigo-950/70 dark:shadow-[inset_4px_0_0_0_#818cf8] dark:ring-1 dark:ring-indigo-500/40'
-                    : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-slate-900'} ${
+                    : `${cardEmpty && cardView !== 'all' ? '' : 'bg-[#f4f3f8] dark:bg-slate-900'} ${
                         monitoring
                           ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : 'border border-[#6b6b78] dark:border-slate-600'
+                          : 'border border-[#b7b7c0] dark:border-slate-600'
                       }`
                 }`}
               >
