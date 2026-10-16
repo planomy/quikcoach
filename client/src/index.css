@@ -1114,6 +1114,10 @@ html.dark .iboard-brand-word {
   outline-offset: 2px;
 }
 
+.iboard-command-bar .iboard-alert-chip:focus-visible {
+  outline-color: #ffffff;
+}
+
 html.dark .iboard-alert-chip {
   color: #64748b;
 }
@@ -1135,25 +1139,23 @@ html.dark .iboard-alert-chip.is-on {
   gap: 0.16rem;
   padding: 0 0.12rem;
   background: transparent;
-  color: #2e2a68;
+  color: #ffffff;
 }
 
 .iboard-command-bar .iboard-alert-chip.has-count,
-.iboard-command-bar .iboard-alert-chip.has-count:hover,
-.iboard-command-bar .iboard-alert-chip.is-on,
-.iboard-command-bar .iboard-alert-chip.is-on:hover {
-  color: #2e2a68;
+.iboard-command-bar .iboard-alert-chip.has-count:hover {
+  color: #ffffff;
 }
 
 .iboard-command-bar .iboard-alert-chip:hover:not(.is-on) {
-  background: #ffffff;
-  color: #5a5fc3;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
 }
 
 .iboard-command-bar .iboard-alert-chip.is-on,
 .iboard-command-bar .iboard-alert-chip.is-on:hover {
-  background: #5a5fc3;
-  color: #ffffff;
+  background: #ffffff;
+  color: #5a5fc3;
 }
 
 .iboard-alert-chip__mark {
@@ -1167,41 +1169,41 @@ html.dark .iboard-alert-chip.is-on {
 }
 
 .iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark {
-  background: #5a5fc3;
-  color: #ffffff;
+  background: #ffffff;
+  color: #5a5fc3;
 }
 
 .iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__mark,
 .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__mark {
-  background: #ffffff;
-  color: #5a5fc3;
-}
-
-html.dark .iboard-command-bar .iboard-alert-chip,
-html.dark .iboard-command-bar .iboard-alert-chip.has-count {
-  color: #ddd8f8;
-}
-
-html.dark .iboard-command-bar .iboard-alert-chip:hover:not(.is-on) {
-  background: rgba(165, 180, 252, 0.18);
-  color: #e0e7ff;
-}
-
-html.dark .iboard-command-bar .iboard-alert-chip.is-on,
-html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover {
   background: #5a5fc3;
   color: #ffffff;
 }
 
+html.dark .iboard-command-bar .iboard-alert-chip,
+html.dark .iboard-command-bar .iboard-alert-chip.has-count {
+  color: #ffffff;
+}
+
+html.dark .iboard-command-bar .iboard-alert-chip:hover:not(.is-on) {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+html.dark .iboard-command-bar .iboard-alert-chip.is-on,
+html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover {
+  background: #ffffff;
+  color: #5a5fc3;
+}
+
 html.dark .iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark {
-  background: #818cf8;
-  color: #1e1b4b;
+  background: #ffffff;
+  color: #5a5fc3;
 }
 
 html.dark .iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__mark,
 html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__mark {
-  background: #ffffff;
-  color: #5a5fc3;
+  background: #5a5fc3;
+  color: #ffffff;
 }
 
 .iboard-alert-chip__name {
@@ -1521,11 +1523,11 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip:hover:not(.is-on) {
-  box-shadow: 0 0 0 1px #cfc8f2;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
-  box-shadow: 0 0 0 1px #cfc8f2;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
 /* One purple wing. Only the gauge face stays white. */
@@ -1537,9 +1539,9 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   z-index: -1;
   box-sizing: border-box;
   height: calc(2.34rem + 4px);
-  border: 1px solid #d9d4f8;
+  border: 1px solid #4b50b0;
   border-radius: 999px;
-  background: #d9d4f8;
+  background: #5a5fc3;
   filter: none;
   pointer-events: none;
 }
@@ -1555,27 +1557,27 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
 }
 
 .iboard-command-frame__fill {
-  fill: #d9d4f8;
+  fill: #5a5fc3;
 }
 
 .iboard-command-frame__line {
   fill: none;
-  stroke: #cfc8f2;
-  stroke-width: 1;
+  stroke: rgba(255, 255, 255, 0.78);
+  stroke-width: 1.25;
 }
 
 html.dark .iboard-command-frame {
-  border-color: #241f45;
-  background: #241f45;
+  border-color: #4b50b0;
+  background: #5a5fc3;
   filter: none;
 }
 
 html.dark .iboard-command-frame__fill {
-  fill: #241f45;
+  fill: #5a5fc3;
 }
 
 html.dark .iboard-command-frame__line {
-  stroke: #3a3470;
+  stroke: rgba(255, 255, 255, 0.78);
 }
 
 .iboard-command-bar__title {
@@ -1586,7 +1588,7 @@ html.dark .iboard-command-frame__line {
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #2e2a68;
+  color: #5a5fc3;
 }
 
 .iboard-command-bar__side .iboard-command-bar__title {
@@ -1619,12 +1621,12 @@ html.dark .iboard-command-frame__line {
   width: 1px;
   height: 1.35rem;
   margin: 0 0.1rem;
-  background: #bdb6ea;
+  background: rgba(255, 255, 255, 0.55);
   align-self: center;
 }
 
 html.dark .iboard-command-bar__divider {
-  background: #334155;
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .iboard-manage-tools .iboard-header-icon-button {
@@ -1657,18 +1659,22 @@ html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools .iboard-header-icon-
   color: #2e2a68;
 }
 
+html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button:not([data-active='true']) {
+  color: #ffffff;
+}
+
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
   border-color: transparent;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
   box-shadow: none;
-  color: #5a5fc3;
+  color: #ffffff;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button[data-active='true'] {
   border-color: transparent;
-  background: #5a5fc3;
+  background: #ffffff;
   box-shadow: none;
-  color: #ffffff;
+  color: #5a5fc3;
 }
 
 .iboard-manage-tools .iboard-header-icon-button > svg,
@@ -1690,19 +1696,19 @@ html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools__freeze.is-frozen:ho
 }
 
 html.dark .iboard-command-bar .iboard-wing-tool {
-  color: #cbd5e1;
+  color: #ffffff;
 }
 
 html.dark .iboard-command-bar .iboard-wing-tool:hover:not([data-active='true']) {
-  background: rgba(165, 180, 252, 0.18);
+  background: rgba(255, 255, 255, 0.16);
   box-shadow: none;
-  color: #e0e7ff;
+  color: #ffffff;
 }
 
 html.dark .iboard-command-bar .iboard-wing-tool[data-active='true'] {
-  background: #5a5fc3;
+  background: #ffffff;
   box-shadow: none;
-  color: #ffffff;
+  color: #5a5fc3;
 }
 
 html.dark .iboard-manage-tools {
@@ -2062,7 +2068,7 @@ html.dark .iboard-class-gauge__online {
 }
 
 html.dark .iboard-command-bar__title {
-  color: #a5b4fc;
+  color: #ffffff;
 }
 
 button.iboard-class-gauge {
@@ -2072,7 +2078,15 @@ button.iboard-class-gauge {
 
 button.iboard-class-gauge:hover .iboard-class-gauge__ring,
 button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
-  box-shadow: 0 0 0 3px rgba(90, 95, 195, 0.16);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.72);
+}
+
+/* The collar is the brand purple, so the arc stays lighter than that purple. */
+.iboard-command-bar .iboard-class-gauge {
+  --class-gauge-done: #ffffff;
+  --class-gauge-mid: #d9d4f8;
+  --class-gauge-rest: rgba(255, 255, 255, 0.42);
+  --class-gauge-track: rgba(255, 255, 255, 0.2);
 }
 
 button.iboard-class-gauge:focus-visible {
@@ -2080,9 +2094,13 @@ button.iboard-class-gauge:focus-visible {
   outline-offset: 4px;
 }
 
+.iboard-command-bar button.iboard-class-gauge:focus-visible {
+  outline-color: #ffffff;
+}
+
 html.dark button.iboard-class-gauge:hover .iboard-class-gauge__ring,
 html.dark button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
-  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.28);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.72);
 }
 
 /* Opens from the gauge: Responses while a question is live, Class writing otherwise. */
