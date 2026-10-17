@@ -1821,6 +1821,15 @@ export default function StudentView() {
 
             <div className="iboard-student-support-scroll flex min-h-0 flex-1 flex-col gap-3">
             <LiveResponseStudent socket={socket} unifiedInbox hideQuickAnswer />
+            {inboxItems.length === 0 && !liveInboxAlert ? (
+              <div className="iboard-inbox-empty">
+                <svg className="iboard-inbox-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M7 3.5h7.2L19 8.2V20.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z" />
+                  <path d="M14 3.5V8.5h5" />
+                </svg>
+                <p>Your teacher&apos;s shared resources will appear here.</p>
+              </div>
+            ) : inboxItems.length > 0 ? (
             <div>
               <StudentInbox
                 socket={socket}
@@ -1847,6 +1856,7 @@ export default function StudentView() {
                 onDismiss={dismissInboxItem}
               />
             </div>
+            ) : null}
             </div>
             </>
             )}

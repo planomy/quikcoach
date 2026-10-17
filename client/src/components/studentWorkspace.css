@@ -475,6 +475,10 @@ html.iboard-student-splitting iframe {
     padding-bottom: 0.25rem;
   }
 
+  .iboard-student-workspace main > .iboard-student-workspace-grid > aside:has(.iboard-inbox-empty) {
+    align-self: stretch;
+  }
+
   .iboard-student-workspace nav[aria-label='Student tools'] {
     overflow: visible;
     flex-shrink: 0;
