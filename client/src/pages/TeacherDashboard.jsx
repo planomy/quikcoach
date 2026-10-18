@@ -4108,9 +4108,10 @@ function TeacherDashboardInner() {
   const draftRoster = boardSections.flatMap((section) => section.students);
   const focusedDraftIndex = draftRoster.findIndex((student) => student.id === focusedStudent?.id);
   const previousDraftStudent = focusedDraftIndex > 0 ? draftRoster[focusedDraftIndex - 1] : null;
-  const nextDraftStudent = focusedDraftIndex >= 0 && focusedDraftIndex < draftRoster.length - 1
-    ? draftRoster[focusedDraftIndex + 1]
-    : null;
+  const nextDraftStudent = focusedDraftIndex < 0 || draftRoster.length < 2
+    ? null
+    : draftRoster[(focusedDraftIndex + 1) % draftRoster.length];
+  const nextDraftWraps = focusedDraftIndex >= 0 && focusedDraftIndex === draftRoster.length - 1 && !!nextDraftStudent;
   const focusedPost = posts.find((post) => Number(post.id) === Number(focusedPostId)) || null;
   // Overview: fixed column density (6/5/4/3). Reading / Full: wider reading columns.
   const fitLayout = cardView === 'all'
@@ -6995,13 +6996,13 @@ function TeacherDashboardInner() {
                   <h2 id="focused-student-title" title={`ID #${focusedStudent.id}`} className="truncate font-display text-xl font-bold text-ink-900 dark:text-slate-100">
                     {focusedStudent.name}
                   </h2>
-                  <HintWrap hint={nextDraftStudent ? `Next student, ${nextDraftStudent.name}` : 'No next student'}>
+                  <HintWrap hint={nextDraftStudent ? (nextDraftWraps ? `Back to the first student, ${nextDraftStudent.name}` : `Next student, ${nextDraftStudent.name}`) : 'No next student'}>
                     <button
                       type="button"
                       onClick={() => nextDraftStudent && setFocusedStudentId(nextDraftStudent.id)}
                       disabled={!nextDraftStudent}
                       className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                      aria-label={nextDraftStudent ? `Next student, ${nextDraftStudent.name}` : 'No next student'}
+                      aria-label={nextDraftStudent ? (nextDraftWraps ? `Back to the first student, ${nextDraftStudent.name}` : `Next student, ${nextDraftStudent.name}`) : 'No next student'}
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M9.5 6 15.5 12l-6 6" />
