@@ -231,7 +231,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 
 /* Teacher shell (light): cool ice-blue field — indigo accents stay brand */
 html:not(.dark) .iboard-teacher-canvas {
-  background: #f4f5f7;
+  background: #fbfbfe;
   background-image: none;
   color: #3c3c45;
 }
