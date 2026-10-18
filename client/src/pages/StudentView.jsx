@@ -23,6 +23,7 @@ import DrawBoxResizeHandle, { readDrawBoxHeight } from '../components/DrawBoxRes
 import StudentWorkspaceSplit from '../components/StudentWorkspaceSplit.jsx';
 import ClassWall from '../components/ClassWall.jsx';
 import HintWrap from '../components/HintWrap.jsx';
+import { RemoveButton } from '../components/PanelActions.jsx';
 import { persistInboxShare, readInboxShare } from '../lib/studentSplit.js';
 import '../components/studentWorkspace.css';
 import { plainTextToRichHtml } from '../lib/richText.js';
@@ -1890,13 +1891,20 @@ export default function StudentView() {
                     Teacher correction
                   </p>
                 )}
-                <div className="iboard-draw-box" style={{ height: drawBoxHeight }}>
+                <div className="iboard-draw-box relative" style={{ height: drawBoxHeight }}>
                   <AnnotatedStudentImage
                     imageUrl={student.image_url}
                     markupUrl={student.teacher_markup_url}
                     alt="Your uploaded image"
                     className="h-full w-full"
                     imageClassName="h-full w-full object-contain"
+                  />
+                  <RemoveButton
+                    onClick={clearMyImage}
+                    disabled={frozen}
+                    aria-label="Remove image"
+                    title={frozen ? 'Class is frozen by your teacher.' : 'Remove image'}
+                    className="iboard-draw-preview__remove"
                   />
                 </div>
                 <DrawBoxResizeHandle height={drawBoxHeight} onHeight={setDrawBoxHeight} />
@@ -1925,7 +1933,16 @@ export default function StudentView() {
                 youCard={(
                   <div className="iboard-student-writing-pane min-h-0 flex-1">
                     {student?.image_url ? (
-                      <img src={student.image_url} alt="" className="iboard-class-wall__image" />
+                      <div className="iboard-class-wall__image-wrap">
+                        <img src={student.image_url} alt="" className="iboard-class-wall__image" />
+                        <RemoveButton
+                          onClick={clearMyImage}
+                          disabled={frozen}
+                          aria-label="Remove image"
+                          title={frozen ? 'Class is frozen by your teacher.' : 'Remove image'}
+                          className="iboard-draw-preview__remove"
+                        />
+                      </div>
                     ) : null}
                     {writingEditor}
                   </div>

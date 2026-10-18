@@ -137,6 +137,20 @@ html.dark .iboard-draw-preview {
   overflow: hidden;
 }
 
+.iboard-draw-preview__remove {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 2;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+}
+
+html.dark .iboard-draw-preview__remove {
+  background: rgba(15, 23, 42, 0.9);
+}
+
 .iboard-draw-pad__frame,
 .iboard-draw-box canvas,
 .iboard-draw-box img {
@@ -994,6 +1008,29 @@ html.iboard-student-workspace.iboard-student-class-wall main > .iboard-student-w
   width: auto;
   margin: 0 0.5rem 0.3rem;
   object-fit: contain;
+}
+
+.iboard-class-wall__image-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 0.5rem 0.3rem;
+}
+
+.iboard-class-wall__image-wrap .iboard-class-wall__image {
+  margin: 0;
+}
+
+.iboard-class-wall__image-wrap .iboard-draw-preview__remove {
+  top: 0.1rem;
+  right: 0.1rem;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.iboard-class-wall__image-wrap .iboard-draw-preview__remove svg {
+  width: 12px;
+  height: 12px;
 }
 
 .iboard-class-wall__body .iboard-rich-text,
