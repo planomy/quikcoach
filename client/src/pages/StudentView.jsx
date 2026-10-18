@@ -1891,20 +1891,26 @@ export default function StudentView() {
                     Teacher correction
                   </p>
                 )}
-                <div className="iboard-draw-box relative" style={{ height: drawBoxHeight }}>
+                <button
+                  type="button"
+                  onClick={clearMyImage}
+                  disabled={frozen}
+                  className="iboard-draw-preview__remove"
+                  aria-label="Remove image"
+                  title={frozen ? 'Class is frozen by your teacher.' : 'Remove this image'}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
+                  </svg>
+                  Remove
+                </button>
+                <div className="iboard-draw-box" style={{ height: drawBoxHeight }}>
                   <AnnotatedStudentImage
                     imageUrl={student.image_url}
                     markupUrl={student.teacher_markup_url}
                     alt="Your uploaded image"
                     className="h-full w-full"
                     imageClassName="h-full w-full object-contain"
-                  />
-                  <RemoveButton
-                    onClick={clearMyImage}
-                    disabled={frozen}
-                    aria-label="Remove image"
-                    title={frozen ? 'Class is frozen by your teacher.' : 'Remove image'}
-                    className="iboard-draw-preview__remove"
                   />
                 </div>
                 <DrawBoxResizeHandle height={drawBoxHeight} onHeight={setDrawBoxHeight} />
