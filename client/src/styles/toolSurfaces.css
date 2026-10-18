@@ -55,7 +55,7 @@ html :is(.iboard-teacher-canvas, .iboard-student-canvas) {
   background-color: var(--iboard-canvas) !important;
 }
 html:not(.dark) .iboard-teacher-canvas {
-  background-color: #e8e7f0 !important;
+  background-color: #eeedf5 !important;
 }
 /* Teacher and student headers are a flat white edge. */
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header {
