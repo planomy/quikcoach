@@ -1589,9 +1589,9 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   z-index: -1;
   box-sizing: border-box;
   height: calc(2.34rem + 4px);
-  border: 1px solid #5c1a9c;
+  border: 1px solid #4f12b4;
   border-radius: 999px;
-  background: #5c1a9c;
+  background: #4f12b4;
   filter: none;
   pointer-events: none;
 }
@@ -1607,7 +1607,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
 }
 
 .iboard-command-frame__fill {
-  fill: #5c1a9c;
+  fill: #4f12b4;
 }
 
 .iboard-command-frame__line {
@@ -1617,13 +1617,13 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
 }
 
 html.dark .iboard-command-frame {
-  border-color: #5c1a9c;
-  background: #5c1a9c;
+  border-color: #4f12b4;
+  background: #4f12b4;
   filter: none;
 }
 
 html.dark .iboard-command-frame__fill {
-  fill: #5c1a9c;
+  fill: #4f12b4;
 }
 
 html.dark .iboard-command-frame__line {
@@ -1978,7 +1978,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 /* On :root because the gauge's hover card (a portal on body) uses the same swatches. */
 :root {
-  --class-gauge-done: #4800c4;
+  --class-gauge-done: #4f12b4;
   --class-gauge-mid: #b496e7;
   --class-gauge-rest: #dedded;
   --class-gauge-track: #e6e5f6;
@@ -2148,7 +2148,7 @@ button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
 /* The collar is the brand purple, so the arc stays lighter than that purple. */
 .iboard-command-bar .iboard-class-gauge {
   --class-gauge-done: #ffffff;
-  --class-gauge-mid: #d8c4ea;
+  --class-gauge-mid: #d2c4f0;
   --class-gauge-rest: rgba(255, 255, 255, 0.42);
   --class-gauge-track: rgba(255, 255, 255, 0.2);
 }
