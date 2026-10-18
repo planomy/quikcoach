@@ -1734,6 +1734,18 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
   transform-origin: center;
 }
 
+.iboard-board-font-mark {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.iboard-board-font-mark[data-step='2'],
+.iboard-board-font-mark[data-step='3'] {
+  font-size: 0.72rem;
+}
+
 html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools .iboard-header-icon-button:active {
   transform: none;
 }

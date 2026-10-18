@@ -157,6 +157,15 @@ const LEGACY_WATCH_STORAGE_KEY = 'iboard-teacher-watch';
 /** Per-card writing size steps (applied as rem so rich HTML inherits). */
 const CARD_FONT_REMS = [0.75, 0.875, 1, 1.125, 1.25];
 const CARD_FONT_DEFAULT = 2; /* index of 1rem */
+/** Whole-board steps: normal, then three sizes up, then back to normal. */
+const BOARD_FONT_SCALES = [1, 1.15, 1.32, 1.5];
+const BOARD_FONT_STORAGE_KEY = 'iboard-teacher-board-font';
+const BOARD_FONT_HINTS = [
+  'Larger text on every card',
+  'Larger again on every card',
+  'Largest text on every card',
+  'Biggest text. Click to return to normal',
+];
 const FIT_CARD_FONT_BASE = 0.72; /* Fit all cards are small; A−/A+ scale from this */
 const CARD_VIEWS = [
   { id: 'all', label: 'Fit all', hint: 'Every student on one screen' },
@@ -228,6 +237,16 @@ function cardFontIndex(map, studentId) {
 
 function cardFontRem(map, studentId) {
   return CARD_FONT_REMS[cardFontIndex(map, studentId)];
+}
+
+function readBoardFontStep() {
+  try {
+    const step = Number(localStorage.getItem(BOARD_FONT_STORAGE_KEY));
+    if (!Number.isFinite(step)) return 0;
+    return Math.max(0, Math.min(BOARD_FONT_SCALES.length - 1, Math.round(step)));
+  } catch {
+    return 0;
+  }
 }
 
 function CardViewIcon({ id, className = 'h-5 w-5' }) {
@@ -585,6 +604,7 @@ function TeacherDashboardInner() {
   const boardScrollRef = useRef(null);
   const [boardBox, setBoardBox] = useState({ width: 0, height: 0 });
   const [cardFontById, setCardFontById] = useState(readCardFontMap);
+  const [boardFontStep, setBoardFontStep] = useState(readBoardFontStep);
   const [focusedStudentId, setFocusedStudentId] = useState(null);
   const [focusedPostId, setFocusedPostId] = useState(null);
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
@@ -1221,6 +1241,26 @@ function TeacherDashboardInner() {
       return { ...prev, [id]: next };
     });
   }
+
+  function cycleBoardFont() {
+    setBoardFontStep((step) => (step + 1) % BOARD_FONT_SCALES.length);
+  }
+
+  function writingFontSize(studentId, fit = false) {
+    const scale = BOARD_FONT_SCALES[boardFontStep] || 1;
+    const size = (fit ? FIT_CARD_FONT_BASE : 1) * cardFontRem(cardFontById, studentId) * scale;
+    return `${size}rem`;
+  }
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(BOARD_FONT_STORAGE_KEY, String(boardFontStep));
+    } catch {
+      /* Font preference is optional. */
+    }
+    const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
+    return () => cancelAnimationFrame(frame);
+  }, [boardFontStep]);
 
   const hydrateFeedbackStateFromRoom = useCallback((r) => {
     if (!r?.feedback_toggles) return;
@@ -4693,19 +4733,16 @@ function TeacherDashboardInner() {
                       <span className="iboard-wing-caption">Freeze</span>
                     </button>
                   </HintWrap>
-                  <HintWrap hint="Present student responses fullscreen" prefer="below">
+                  <HintWrap hint={BOARD_FONT_HINTS[boardFontStep]} prefer="below">
                     <button
                       type="button"
-                      onClick={() => setAnswerPresent(true)}
+                      onClick={cycleBoardFont}
                       className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
-                      aria-label="Present answers"
-                      data-active={answerPresent ? 'true' : 'false'}
+                      aria-label={boardFontStep === 0 ? 'Text size, normal. Larger text on every card' : boardFontStep === BOARD_FONT_SCALES.length - 1 ? 'Text size, largest. Click to return to normal' : `Text size, step ${boardFontStep} of ${BOARD_FONT_SCALES.length - 1}`}
+                      data-active={boardFontStep > 0 ? 'true' : 'false'}
                     >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="12" rx="2" />
-                        <path d="M12 16v4M8 20h8" />
-                      </svg>
-                      <span className="iboard-wing-caption">Present</span>
+                      <span className="iboard-board-font-mark" data-step={boardFontStep} aria-hidden="true">A{'+'.repeat(boardFontStep)}</span>
+                      <span className="iboard-wing-caption">Text</span>
                     </button>
                   </HintWrap>
                   <div className="relative" data-header-tool="breakouts">
@@ -4950,6 +4987,7 @@ function TeacherDashboardInner() {
             onPanelTabChange={(tab) => (tab === 'responses' ? openGaugePanel() : setToolsTab(tab))}
             onClose={closeTeacherTools}
             onQuestionLaunched={showLaunchedAnswers}
+            onLaunchAndPresent={() => setAnswerPresent(true)}
             hideResponsesTab
             highlightStudentId={toolsHighlightStudentId}
             onClearHighlight={() => setToolsHighlightStudentId(null)}
@@ -5790,7 +5828,7 @@ function TeacherDashboardInner() {
                 <div
                   data-student-writing-pane
                   data-card-font="true"
-                  style={{ fontSize: `${(cardView === 'all' ? FIT_CARD_FONT_BASE : 1) * cardFontRem(cardFontById, s.id)}rem` }}
+                  style={{ fontSize: writingFontSize(s.id, cardView === 'all') }}
                   className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
                 >
                   {s.image_url && (
@@ -7019,7 +7057,7 @@ function TeacherDashboardInner() {
               data-student-writing-pane
               data-full-draft-pane="true"
               data-card-font="true"
-              style={{ fontSize: `${cardFontRem(cardFontById, focusedStudent.id)}rem` }}
+              style={{ fontSize: writingFontSize(focusedStudent.id) }}
               className="iboard-writing-surface relative min-h-0 flex-1 overflow-x-visible overflow-y-auto whitespace-pre-wrap px-6 py-5 leading-7 text-slate-800 scrollbar-thin dark:text-slate-200"
             >
               {focusedStudent.image_url && (

@@ -190,6 +190,7 @@ export default function LiveResponseTeacher({
   responsesOnly = false,
   presentAnswers = false,
   onExitPresent,
+  onLaunchAndPresent,
 }) {
   const [internalPanelTab, setInternalPanelTab] = useState('ask');
   const effectivePanelTab = panelTab ?? (panelTabs ? internalPanelTab : null);
@@ -390,7 +391,8 @@ export default function LiveResponseTeacher({
     return { type, prompt: prompt.trim(), options: options.map((value) => value.trim()).filter(Boolean), correctAnswer, anonymous, optional, imageUrl, timerSeconds };
   }
 
-  function launch(question = currentDraft(), queueId = '', successMessage = 'Question is live.') {
+  function launch(question = currentDraft(), queueId = '', successMessage = 'Question is live.', options = {}) {
+    const present = options?.present === true;
     socket.emit('teacher:live-launch', question, (ack) => {
       setMessage(ack?.ok ? successMessage : ack?.error || 'Could not launch');
       if (ack?.ok) {
@@ -400,6 +402,7 @@ export default function LiveResponseTeacher({
         } else {
           setActiveView('live');
         }
+        if (present) onLaunchAndPresent?.();
         if (queueId) setQueue((items) => items.filter((item) => item.id !== queueId));
         const targets = Array.isArray(question?.targetStudentIds) ? question.targetStudentIds : [];
         if (targets.length) onClearStudentSelection?.();
@@ -1181,9 +1184,14 @@ export default function LiveResponseTeacher({
               <HintWrap hint="Line it up to ask later in the lesson">
                 <button type="button" onClick={addToQueue} className="rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 py-2 text-xs font-semibold text-[#5a5fc3] hover:bg-[#e0dff2]">Add to queue</button>
               </HintWrap>
-              <HintWrap hint="Ask the class this question now" className="ml-auto">
-                <button type="button" onClick={() => launch()} className="rounded-xl bg-[#5a5fc3] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4b50b0]">Launch</button>
-              </HintWrap>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                <HintWrap hint="Ask the class and show the answers on the screen">
+                  <button type="button" onClick={() => launch(currentDraft(), '', 'Question is live.', { present: true })} className="rounded-xl border border-[#cfcce8] bg-white px-3.5 py-2.5 text-sm font-semibold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-600 dark:bg-transparent dark:text-indigo-200 dark:hover:bg-slate-800">Launch & present</button>
+                </HintWrap>
+                <HintWrap hint="Ask the class this question now">
+                  <button type="button" onClick={() => launch()} className="rounded-xl bg-[#5a5fc3] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4b50b0]">Launch</button>
+                </HintWrap>
+              </div>
             </div>
             <SavedSetsPanel
               panel="queue"
