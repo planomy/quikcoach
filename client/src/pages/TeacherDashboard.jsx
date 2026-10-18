@@ -5518,10 +5518,10 @@ function TeacherDashboardInner() {
                 } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${
                   handUp
                     ? 'cursor-pointer border border-[#5a5fc3] bg-[#ebeaf8] shadow-[inset_4px_0_0_0_#5a5fc3] dark:border-indigo-400 dark:bg-indigo-950/70 dark:shadow-[inset_4px_0_0_0_#818cf8] dark:ring-1 dark:ring-indigo-500/40'
-                    : `${cardEmpty && cardView !== 'all' ? '' : 'bg-[#e0dfe9] dark:bg-[#14181e]'} ${
+                    : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-[#14181e]'} ${
                         monitoring
                           ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : 'border border-[#c8c7d2] dark:border-slate-600'
+                          : 'border border-[#e5e5ea] dark:border-slate-600'
                       }`
                 }`}
               >
@@ -5837,6 +5837,7 @@ function TeacherDashboardInner() {
                     </div>
                     </div>
                   </div>
+                  <span className="iboard-student-card__rule" aria-hidden="true" />
                 </div>
                 <div
                   data-student-writing-pane
