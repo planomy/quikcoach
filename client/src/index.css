@@ -1579,7 +1579,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
-/* One flat purple rail. The gauge sits on top of the middle. */
+/* One flat purple rail. A white circle, clipped to the rail, cuts a curve on each side of the dial. */
 .iboard-command-frame {
   position: absolute;
   left: -0.4rem;
@@ -1588,11 +1588,24 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   z-index: -1;
   box-sizing: border-box;
   height: calc(2.34rem + 4px);
+  overflow: hidden;
   border: 1px solid #433bbd;
   border-radius: 999px;
   background: #433bbd;
   filter: none;
   pointer-events: none;
+}
+
+.iboard-command-frame::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(5.15rem + 10px);
+  height: calc(5.15rem + 10px);
+  border-radius: 999px;
+  background: #ffffff;
+  transform: translate(-50%, -50%);
 }
 
 html.dark .iboard-command-frame {
