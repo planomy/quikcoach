@@ -571,6 +571,7 @@ function TeacherDashboardInner() {
   );
   const teacherToolsPanelRef = useRef(null);
   const addCardPanelRef = useRef(null);
+  const fullDraftPaneRef = useRef(null);
   const settingsButtonRef = useRef(null);
   const recordsButtonRef = useRef(null);
   const aiButtonRef = useRef(null);
@@ -2543,6 +2544,10 @@ function TeacherDashboardInner() {
   }, [focusedStudentId]);
 
   useEffect(() => {
+    fullDraftPaneRef.current?.scrollTo?.(0, 0);
+  }, [focusedStudentId]);
+
+  useEffect(() => {
     if (!addCardOpen) return;
     const titleField = addCardPanelRef.current?.querySelector('input[aria-label="Card title"]');
     titleField?.focus();
@@ -4100,6 +4105,12 @@ function TeacherDashboardInner() {
   }
 
   const focusedStudent = orderedStudents.find((student) => student.id === focusedStudentId) || null;
+  const draftRoster = boardSections.flatMap((section) => section.students);
+  const focusedDraftIndex = draftRoster.findIndex((student) => student.id === focusedStudent?.id);
+  const previousDraftStudent = focusedDraftIndex > 0 ? draftRoster[focusedDraftIndex - 1] : null;
+  const nextDraftStudent = focusedDraftIndex >= 0 && focusedDraftIndex < draftRoster.length - 1
+    ? draftRoster[focusedDraftIndex + 1]
+    : null;
   const focusedPost = posts.find((post) => Number(post.id) === Number(focusedPostId)) || null;
   // Overview: fixed column density (6/5/4/3). Reading / Full: wider reading columns.
   const fitLayout = cardView === 'all'
@@ -6967,9 +6978,37 @@ function TeacherDashboardInner() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Full draft</p>
-                <h2 id="focused-student-title" title={`ID #${focusedStudent.id}`} className="truncate font-display text-xl font-bold text-ink-900 dark:text-slate-100">
-                  {focusedStudent.name}
-                </h2>
+                <div className="flex items-center gap-1.5">
+                  <HintWrap hint={previousDraftStudent ? `Previous student, ${previousDraftStudent.name}` : 'No previous student'}>
+                    <button
+                      type="button"
+                      onClick={() => previousDraftStudent && setFocusedStudentId(previousDraftStudent.id)}
+                      disabled={!previousDraftStudent}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      aria-label={previousDraftStudent ? `Previous student, ${previousDraftStudent.name}` : 'No previous student'}
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14.5 6 8.5 12l6 6" />
+                      </svg>
+                    </button>
+                  </HintWrap>
+                  <h2 id="focused-student-title" title={`ID #${focusedStudent.id}`} className="truncate font-display text-xl font-bold text-ink-900 dark:text-slate-100">
+                    {focusedStudent.name}
+                  </h2>
+                  <HintWrap hint={nextDraftStudent ? `Next student, ${nextDraftStudent.name}` : 'No next student'}>
+                    <button
+                      type="button"
+                      onClick={() => nextDraftStudent && setFocusedStudentId(nextDraftStudent.id)}
+                      disabled={!nextDraftStudent}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      aria-label={nextDraftStudent ? `Next student, ${nextDraftStudent.name}` : 'No next student'}
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9.5 6 15.5 12l-6 6" />
+                      </svg>
+                    </button>
+                  </HintWrap>
+                </div>
                 {Array.isArray(room?.draftTrail?.attentionIds) && room.draftTrail.attentionIds.map(Number).includes(Number(focusedStudent.id)) ? (
                   <HintWrap hint="Open learning trail" prefer="below">
                   <button
@@ -6984,13 +7023,18 @@ function TeacherDashboardInner() {
                 <p className="text-xs text-slate-500 dark:text-slate-400">{wordCount(focusedStudent.text)} words · select text to add an inline comment</p>
               </div>
               <div className="flex items-center gap-2">
-                <HintWrap hint="How this draft grew and the support you gave">
+                <HintWrap hint="Learning trail">
                   <button
                     type="button"
                     onClick={() => setLearningTrailId(focusedStudent.id)}
-                    className="h-9 shrink-0 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-600 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-700 dark:text-slate-300 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
+                    className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    aria-label={`Open ${focusedStudent.name}'s learning trail`}
                   >
-                    Learning trail
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="6" cy="19" r="2.5" />
+                      <circle cx="18" cy="5" r="2.5" />
+                      <path d="M8.5 19H17a3.5 3.5 0 0 0 0-7H7a3.5 3.5 0 0 1 0-7h8.5" />
+                    </svg>
                   </button>
                 </HintWrap>
                 <HintWrap hint="Smaller text">
@@ -7055,6 +7099,7 @@ function TeacherDashboardInner() {
               </div>
             </div>
             <div
+              ref={fullDraftPaneRef}
               data-student-writing-pane
               data-full-draft-pane="true"
               data-card-font="true"
