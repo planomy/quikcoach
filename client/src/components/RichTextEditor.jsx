@@ -102,6 +102,7 @@ export default function RichTextEditor({
   onChange,
   onPaste,
   disabled = false,
+  disabledMessage = 'Class is frozen by your teacher.',
   maxWords = 0,
   placeholder = 'Write here…',
   headerActions = null,
@@ -487,7 +488,7 @@ export default function RichTextEditor({
         <div className="relative">
           {empty && !focused && (
             <div className="iboard-student-writing-placeholder pointer-events-none absolute">
-              {disabled ? 'Class is frozen by your teacher.' : placeholder}
+              {disabled ? disabledMessage : placeholder}
             </div>
           )}
           <div

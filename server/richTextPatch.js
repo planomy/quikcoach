@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { openDatabase, queries } from './db.js';
+import { writingOpen } from './writingGate.js';
 import { recordTrailFeedback } from './draftTrail.js';
 import {
   insertedLength,
@@ -298,6 +299,9 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           const current = selectStudent.get(studentId);
           if (!current || normaliseRoomCode(current.room_code) !== roomCode) return;
 
+          const roomRow = queries.ensureRoom(richDb, roomCode);
+          if (Number(roomRow?.freeze_class) || !writingOpen(io, roomCode)) return;
+
           const savedText = String(current.text || '');
           const draftChanged = beforeText != null && beforeText !== savedText;
           // Only Check again comments whose quote no longer appears → purple.
@@ -318,7 +322,6 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           saveRichText.run(safeRich, studentId);
           const updated = selectStudent.get(studentId);
           const student = queries.rowToStudent(updated);
-          const roomRow = queries.ensureRoom(richDb, roomCode);
           if (Number(roomRow?.breakouts_active)) {
             io.to(`teacher:${roomCode}`).emit('student:live', { student });
             const roomId = String(student.breakout_room_id || '').trim();

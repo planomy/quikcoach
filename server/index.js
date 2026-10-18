@@ -24,6 +24,7 @@ import {
 } from './breakouts.js';
 import { normalizeRecipientIds, isTargetedMaterial, materialVisibleTo, materialHistoryForStudent } from './materialRecipients.js';
 import { insightPresence, setAwayCheck } from './insights.js';
+import { noteTeacherArrived, noteTeacherLeft, writingOpen } from './writingGate.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3001;
@@ -474,7 +475,12 @@ function buildRoomPayload(code) {
   const posts = queries.listBoardPosts(db, c);
   const active = isBreakoutsActive(row);
   return {
-    room: { ...queries.rowToRoom(row), draftTrail: trailStatus(c), timer: timerStateForRoom(c) },
+    room: {
+      ...queries.rowToRoom(row),
+      draftTrail: trailStatus(c),
+      timer: timerStateForRoom(c),
+      writing_open: writingOpen(io, c),
+    },
     students,
     posts: posts.map(queries.rowToBoardPost),
     breakouts: buildBreakoutsMeta(students, active, row.breakout_count),
@@ -1079,10 +1085,17 @@ io.on('connection', (socket) => {
         return;
       }
       queries.ensureRoom(db, c);
+      const previous = socket.data.role === 'teacher' ? normalizeRoomCode(socket.data.roomCode || '') : '';
+      if (previous && previous !== c) {
+        socket.leave(roomSocketName(previous));
+        socket.leave(teacherSocketName(previous));
+        noteTeacherLeft(io, previous, { immediate: true, onLock: broadcastRoom });
+      }
       socket.join(roomSocketName(c));
       socket.join(teacherSocketName(c));
       socket.data.role = 'teacher';
       socket.data.roomCode = c;
+      noteTeacherArrived(c);
       broadcastRoom(c);
       try {
         socket.emit('live:teacher', buildTeacherLivePayload(c));
@@ -1938,8 +1951,9 @@ io.on('connection', (socket) => {
         cb?.({ ok: false, error: 'removed', code: 'removed' });
         return;
       }
-      if (roomRow.freeze_class) {
-        cb?.({ ok: false, error: 'frozen', code: 'frozen' });
+      if (roomRow.freeze_class || !writingOpen(io, code)) {
+        const locked = !roomRow.freeze_class;
+        cb?.({ ok: false, error: locked ? 'locked' : 'frozen', code: locked ? 'locked' : 'frozen' });
         return;
       }
       let t = String(text ?? '');
@@ -1973,8 +1987,8 @@ io.on('connection', (socket) => {
       }
       const code = normalizeRoomCode(codeRaw);
       const roomRow = queries.ensureRoom(db, code);
-      if (roomRow.freeze_class) {
-        cb?.({ ok: false, error: 'Class is frozen' });
+      if (roomRow.freeze_class || !writingOpen(io, code)) {
+        cb?.({ ok: false, error: roomRow.freeze_class ? 'Class is frozen' : 'Writing is locked until your teacher is in this room', code: roomRow.freeze_class ? 'frozen' : 'locked' });
         return;
       }
       const decoded = decodeImageBase64(imageBase64, mimeType);
@@ -2013,6 +2027,11 @@ io.on('connection', (socket) => {
       const existing = queries.getStudent(db, sid);
       if (!existing || normalizeRoomCode(existing.room_code) !== code) {
         cb?.({ ok: false });
+        return;
+      }
+      const roomRow = queries.ensureRoom(db, code);
+      if (roomRow.freeze_class || !writingOpen(io, code)) {
+        cb?.({ ok: false, error: roomRow.freeze_class ? 'Class is frozen' : 'Writing is locked until your teacher is in this room', code: roomRow.freeze_class ? 'frozen' : 'locked' });
         return;
       }
       if (existing.teacher_markup_filename) unlinkRoomMedia(code, existing.teacher_markup_filename);
@@ -3015,6 +3034,9 @@ io.on('connection', (socket) => {
     if (sid) removeStudentPresence(sid, socket.id);
     if (sid && code && wasAway && !isStudentConnected(sid)) insightPresence(code, sid, false);
     if (sid && code) disconnectTrail(code, sid);
+    if (socket.data.role === 'teacher' && code) {
+      noteTeacherLeft(io, code, { immediate: false, onLock: broadcastRoom });
+    }
     if (code) {
       if (sid && (wasAway || !isStudentConnected(sid))) emitStudentPresence(code, sid);
       io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));

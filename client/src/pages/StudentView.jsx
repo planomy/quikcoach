@@ -29,7 +29,7 @@ import '../components/studentWorkspace.css';
 import { plainTextToRichHtml } from '../lib/richText.js';
 import { safeFilePart, stampForFilename } from '../lib/exportRoom.js';
 import { buildStudentWord, saveStudentFile, WORD_MIME } from '../lib/studentDownload.js';
-import { readDraftBackup, saveDraftBackup } from '../lib/draftBackup.js';
+import { clearDraftBackup, readDraftBackup, saveDraftBackup } from '../lib/draftBackup.js';
 import {
   clearStudentSession,
   forgetRecentStudentSession,
@@ -91,38 +91,33 @@ function parseServerUpdatedAt(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function draftFromJoin({ raw, richHtml, serverUpdatedAt, code, studentId, limit }) {
+function roomWritingLocked(room) {
+  return !!room?.freeze_class || (!!room && room.writing_open === false);
+}
+
+function draftFromJoin({ raw, richHtml, serverUpdatedAt, code, studentId, limit, locked }) {
   const next = limit > 0 ? truncateToWordLimit(raw, limit) : raw;
+  const serverHtml = next === raw && richHtml ? richHtml : plainTextToRichHtml(next);
+  if (locked) {
+    clearDraftBackup(code, studentId);
+    return { text: next, html: serverHtml };
+  }
   const backup = readDraftBackup(code, studentId);
   if (backup?.text != null) {
     const localText = limit > 0 ? truncateToWordLimit(backup.text, limit) : String(backup.text || '');
     const localHtml = String(backup.richHtml || '') || plainTextToRichHtml(localText);
-    const serverHtml = next === raw && richHtml ? richHtml : plainTextToRichHtml(next);
     const localIsDifferent = localText !== next || localHtml !== serverHtml;
     const localIsNewer = localIsDifferent && Number(backup.savedAt) > parseServerUpdatedAt(serverUpdatedAt) + 1000;
-    if (localIsNewer) {
+    const serverEmpty = !next.trim() && !!localText.trim();
+    if (localIsNewer || serverEmpty) {
       return {
-        text: localText,
-        html: localHtml,
-        conflict: {
-          serverText: next,
-          serverHtml,
-          localSavedAt: Number(backup.savedAt) || 0,
-        },
+        text: next,
+        html: serverHtml,
+        conflict: { localText, localHtml },
       };
     }
   }
-  if (!next.trim() && backup?.text?.trim()) {
-    const text = limit > 0 ? truncateToWordLimit(backup.text, limit) : backup.text;
-    return {
-      text,
-      html: backup.richHtml || plainTextToRichHtml(text),
-    };
-  }
-  return {
-    text: next,
-    html: next === raw && richHtml ? richHtml : plainTextToRichHtml(next),
-  };
+  return { text: next, html: serverHtml };
 }
 
 function applyPeerScope(payload, sid, { setBreakoutsActive, setClassWallActive, setBreakoutPeers, setWallStudents }) {
@@ -216,6 +211,8 @@ export default function StudentView() {
   const draftTrailTokenRef = useRef('');
   const pendingRef = useRef({ text: '', richTextHtml: '' });
   const lastSentRef = useRef('');
+  const writingLockedRef = useRef(false);
+  const wasWritingLockedRef = useRef(false);
   const saveBootstrappedRef = useRef(false);
   const saveTimerRef = useRef(null);
   const studentRef = useRef(null);
@@ -497,10 +494,10 @@ export default function StudentView() {
     }
   }
 
-  function keepServerDraft() {
-    if (!draftConflict) return;
-    setDraft(draftConflict.serverText);
-    setDraftHtml(draftConflict.serverHtml);
+  function restoreDeviceDraft() {
+    if (!draftConflict || writingLockedRef.current) return;
+    setDraft(draftConflict.localText);
+    setDraftHtml(draftConflict.localHtml);
     setDraftConflict(null);
     setDraftSaveState('saving');
   }
@@ -644,6 +641,7 @@ export default function StudentView() {
               code,
               studentId: ack.student.id ?? sidNum,
               limit: lim,
+              locked: roomWritingLocked(ack.room),
             }));
           }
           setJoined(true);
@@ -671,7 +669,7 @@ export default function StudentView() {
       const lim =
         r?.enforce_word_count && (r?.word_target ?? 0) > 0 ? Number(r.word_target) : 0;
       const raw = me.text || '';
-      if (!typing) {
+      if (!typing || roomWritingLocked(r)) {
         applyJoinedDraft(draftFromJoin({
           raw,
           richHtml: me.rich_text_html,
@@ -679,6 +677,7 @@ export default function StudentView() {
           code: r?.code || codeInput,
           studentId: sid,
           limit: lim,
+          locked: roomWritingLocked(r),
         }));
       }
     };
@@ -891,11 +890,13 @@ export default function StudentView() {
       lastSentRef.current = fingerprint;
       return undefined;
     }
+    if (writingLockedRef.current) return undefined;
     if (fingerprint === lastSentRef.current) return undefined;
 
     setDraftSaveState(socket.connected ? 'saving' : 'offline');
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
+      if (writingLockedRef.current) return;
       if (!socket.connected) {
         setDraftSaveState('offline');
         return;
@@ -909,6 +910,7 @@ export default function StudentView() {
           applyTeacherRemoval({ code: String(room?.code || codeInput || '') });
           return;
         }
+        if (ack?.code === 'frozen' || ack?.code === 'locked') return;
         if (ack && ack.ok === false) {
           setDraftSaveState('error');
           return;
@@ -929,6 +931,7 @@ export default function StudentView() {
     const timer = setInterval(() => {
       if (removedRef.current) return;
       if (!saveBootstrappedRef.current) return;
+      if (writingLockedRef.current) return;
       if (!socket.connected) {
         setDraftSaveState('offline');
         return;
@@ -944,6 +947,7 @@ export default function StudentView() {
           applyTeacherRemoval({ code: String(room?.code || codeInput || '') });
           return;
         }
+        if (ack?.code === 'frozen' || ack?.code === 'locked') return;
         if (ack?.ok) {
           lastSentRef.current = fingerprint;
           setDraftSaveState('saved');
@@ -965,6 +969,7 @@ export default function StudentView() {
     if (!joined || !student?.id) return undefined;
     const code = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
     if (code.length !== 4) return undefined;
+    if (writingLockedRef.current) return undefined;
     const stored = saveDraftBackup({
       code,
       studentId: student.id,
@@ -980,6 +985,7 @@ export default function StudentView() {
     const code = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
     if (code.length !== 4) return undefined;
     function flushDraft() {
+      if (writingLockedRef.current) return;
       const payload = pendingRef.current || { text: draft, richTextHtml: draftHtml };
       saveDraftBackup({
         code,
@@ -1062,6 +1068,7 @@ export default function StudentView() {
           code,
           studentId: ack.student?.id ?? sidNum,
           limit: lim,
+          locked: roomWritingLocked(ack.room),
         });
         applyJoinedDraft(joinedDraft);
         setJoined(true);
@@ -1125,6 +1132,7 @@ export default function StudentView() {
         code: saved.code,
         studentId: ack.student.id,
         limit,
+        locked: roomWritingLocked(ack.room),
       });
       applyJoinedDraft(joinedDraft);
       const savedYear = String(ack.student.year_level || '').trim().toLowerCase();
@@ -1163,6 +1171,7 @@ export default function StudentView() {
         code: c,
         studentId: ack.student.id,
         limit: lim,
+        locked: roomWritingLocked(ack.room),
       });
       applyJoinedDraft(joinedDraft);
       setJoined(true);
@@ -1180,7 +1189,7 @@ export default function StudentView() {
   }
 
   async function onDraftPaste(e) {
-    if (frozen) return;
+    if (writingLockedRef.current) return;
     const items = e.clipboardData?.items;
     if (!items) return;
     for (const item of items) {
@@ -1260,7 +1269,7 @@ export default function StudentView() {
   }
 
   function clearMyImage() {
-    if (frozen) return;
+    if (writingLockedRef.current) return;
     socket.emit('student:image-clear', {}, (ack) => {
       if (!ack?.ok) {
         setError('Could not remove image');
@@ -1276,6 +1285,8 @@ export default function StudentView() {
   const wt = room?.word_target ?? 0;
   const enforce = !!room?.enforce_word_count;
   const frozen = !!room?.freeze_class;
+  const writingLocked = frozen || (!!room && room.writing_open === false);
+  writingLockedRef.current = writingLocked;
   const inboxItems = useMemo(() => {
     const notes = feedbackInbox
       .filter((item) => item.type !== 'chat')
@@ -1312,6 +1323,26 @@ export default function StudentView() {
     if (inboxTabCount > lastInboxTabCountRef.current) setInboxCollapsed(false);
     lastInboxTabCountRef.current = inboxTabCount;
   }, [inboxTabCount]);
+
+  useEffect(() => {
+    const locked = writingLocked;
+    const wasLocked = wasWritingLockedRef.current;
+    wasWritingLockedRef.current = locked;
+    if (!joined || !student?.id || !room) return;
+    if (!locked && !wasLocked) return;
+    const text = String(student.text || '');
+    const html = String(student.rich_text_html || '') || plainTextToRichHtml(text);
+    setDraft(text);
+    setDraftHtml(html);
+    setDraftConflict(null);
+    const fingerprint = `${text}\n${html}`;
+    lastSentRef.current = fingerprint;
+    pendingRef.current = { text, richTextHtml: html, draftTrail: { token: draftTrailTokenRef.current } };
+    if (locked) {
+      const code = String(room.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
+      if (code.length === 4) clearDraftBackup(code, student.id);
+    }
+  }, [writingLocked, joined, student?.id, student?.text, student?.rich_text_html, room, codeInput]);
 
   if (removedByTeacher) {
     const roomLabel = String(removedByTeacher.code || '').replace(/\D/g, '').slice(0, 4);
@@ -1464,6 +1495,7 @@ export default function StudentView() {
       text={draft}
       html={draftHtml}
       onChange={({ text, html, paste }) => {
+        if (writingLockedRef.current) return;
         draftTrailTokenRef.current = socket.connected ? room?.draftTrail?.token || '' : '';
         if (paste && socket.connected) {
           socket.emit('student:text', { text, richTextHtml: html, draftTrail: { token: draftTrailTokenRef.current, paste: true } });
@@ -1472,7 +1504,8 @@ export default function StudentView() {
         setDraftHtml(html);
       }}
       onPaste={onDraftPaste}
-      disabled={frozen}
+      disabled={writingLocked}
+      disabledMessage={frozen ? 'Class is frozen by your teacher.' : 'Writing is locked until your teacher is in this room.'}
       maxWords={enforce && wt > 0 ? wt : 0}
       placeholder="Write here… or paste an image"
       hasDrawing={!!student?.image_url}
@@ -1893,10 +1926,10 @@ export default function StudentView() {
                 <button
                   type="button"
                   onClick={clearMyImage}
-                  disabled={frozen}
+                  disabled={writingLocked}
                   className="iboard-draw-preview__remove"
                   aria-label="Remove image"
-                  title={frozen ? 'Class is frozen by your teacher.' : 'Remove this image'}
+                  title={frozen ? 'Class is frozen by your teacher.' : writingLocked ? 'Writing is locked until your teacher is in this room.' : 'Remove this image'}
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
@@ -1921,11 +1954,11 @@ export default function StudentView() {
               </p>
             )}
             {error && joined && <p className="text-sm text-red-600">{error}</p>}
-            {draftConflict && (
+            {draftConflict && !writingLocked && (
               <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100">
-                <p>A newer copy of this draft was recovered from this device while offline.</p>
-                <button type="button" onClick={keepServerDraft} className="mt-1.5 font-black underline decoration-amber-400 underline-offset-2 hover:text-amber-700 dark:hover:text-amber-200">
-                  Keep the teacher-board copy instead
+                <p>A copy of your writing is saved on this device and has not reached the teacher yet.</p>
+                <button type="button" onClick={restoreDeviceDraft} className="mt-1.5 font-black underline decoration-amber-400 underline-offset-2 hover:text-amber-700 dark:hover:text-amber-200">
+                  Use that copy
                 </button>
               </div>
             )}
@@ -1942,9 +1975,9 @@ export default function StudentView() {
                         <img src={student.image_url} alt="" className="iboard-class-wall__image" />
                         <RemoveButton
                           onClick={clearMyImage}
-                          disabled={frozen}
+                          disabled={writingLocked}
                           aria-label="Remove image"
-                          title={frozen ? 'Class is frozen by your teacher.' : 'Remove image'}
+                          title={frozen ? 'Class is frozen by your teacher.' : writingLocked ? 'Writing is locked until your teacher is in this room.' : 'Remove image'}
                           className="iboard-draw-preview__remove"
                         />
                       </div>
