@@ -1589,9 +1589,9 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   z-index: -1;
   box-sizing: border-box;
   height: calc(2.34rem + 4px);
-  border: 1px solid #4800c4;
+  border: 1px solid #5c1a9c;
   border-radius: 999px;
-  background: #4800c4;
+  background: #5c1a9c;
   filter: none;
   pointer-events: none;
 }
@@ -1607,7 +1607,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
 }
 
 .iboard-command-frame__fill {
-  fill: #4800c4;
+  fill: #5c1a9c;
 }
 
 .iboard-command-frame__line {
@@ -1617,13 +1617,13 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
 }
 
 html.dark .iboard-command-frame {
-  border-color: #4800c4;
-  background: #4800c4;
+  border-color: #5c1a9c;
+  background: #5c1a9c;
   filter: none;
 }
 
 html.dark .iboard-command-frame__fill {
-  fill: #4800c4;
+  fill: #5c1a9c;
 }
 
 html.dark .iboard-command-frame__line {
@@ -2148,7 +2148,7 @@ button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
 /* The collar is the brand purple, so the arc stays lighter than that purple. */
 .iboard-command-bar .iboard-class-gauge {
   --class-gauge-done: #ffffff;
-  --class-gauge-mid: #d4c2f4;
+  --class-gauge-mid: #d8c4ea;
   --class-gauge-rest: rgba(255, 255, 255, 0.42);
   --class-gauge-track: rgba(255, 255, 255, 0.2);
 }
