@@ -107,7 +107,6 @@ export default function RichTextEditor({
   headerActions = null,
   headerEndActions = null,
   hasDrawing = false,
-  onRemoveDrawing = null,
   drawBoxHeight = null,
   onDrawBoxHeight = null,
 }) {
@@ -473,15 +472,6 @@ export default function RichTextEditor({
                 title="Draw or show your working"
                 onClick={() => setDrawMode(true)}
               />
-              {hasDrawing ? (
-                <ToolbarButton
-                  disabled={disabled}
-                  label="Remove drawing"
-                  title="Take the drawing off your board"
-                  className="text-red-600 dark:text-red-300"
-                  onClick={() => onRemoveDrawing?.()}
-                />
-              ) : null}
             </>
           ) : null}
           {headerEndActions}

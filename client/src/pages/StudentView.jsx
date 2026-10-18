@@ -1476,7 +1476,6 @@ export default function StudentView() {
       maxWords={enforce && wt > 0 ? wt : 0}
       placeholder="Write here… or paste an image"
       hasDrawing={!!student?.image_url}
-      onRemoveDrawing={clearMyImage}
       drawBoxHeight={drawBoxHeight}
       onDrawBoxHeight={setDrawBoxHeight}
       headerEndActions={
