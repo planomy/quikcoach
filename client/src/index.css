@@ -1825,7 +1825,8 @@ html.dark .iboard-manage-tools__freeze.is-frozen:hover {
   color: #3c3f8f;
 }
 
-.iboard-more-menu .iboard-header-icon {
+.iboard-more-menu .iboard-header-icon,
+.iboard-more-menu .iboard-header-glyph {
   width: 1.05rem;
   height: 1.05rem;
   color: #5a5fc3;
@@ -3791,23 +3792,24 @@ html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-head
   }
 }
 
-.iboard-header-icon--fullscreen {
-  --iboard-header-icon: url('/brand/header-fullscreen.png');
-}
-
 .iboard-header-icon--camera {
   --iboard-header-icon: url('/brand/header-camera.png');
 }
 
-.iboard-header-icon--save {
-  --iboard-header-icon: url('/brand/header-save.png');
-  transition:
-    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    background-color 400ms ease;
+.iboard-header-glyph {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
 }
 
-.iboard-header-icon--save.is-saved {
-  background-color: #10b981;
+.iboard-header-icon-button > .iboard-save-icon {
+  transition:
+    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 400ms ease;
+}
+
+.iboard-save-icon.is-saved {
+  color: #10b981;
 }
 
 .iboard-header-saved-label {

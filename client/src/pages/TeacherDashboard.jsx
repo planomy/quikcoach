@@ -36,6 +36,7 @@ import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import AnnotatedStudentImage from '../components/AnnotatedStudentImage.jsx';
 import TeacherDrawingMarkup from '../components/TeacherDrawingMarkup.jsx';
 import SaveStatusChip from '../components/SaveStatusChip.jsx';
+import { FullscreenIcon, SaveIcon } from '../components/HeaderIcons.jsx';
 import RoomTimerPill from '../components/RoomTimerPill.jsx';
 import AlertIcon from '../components/AlertIcon.jsx';
 import WritingPulsePanel from '../components/WritingPulsePanel.jsx';
@@ -4799,7 +4800,7 @@ function TeacherDashboardInner() {
                         className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'session' ? ' is-help-flash' : ''}`}
                         aria-label="Save or open a lesson"
                       >
-                        <span className={`iboard-header-icon iboard-header-icon--save${joined && saveStatus === 'saved' ? ' is-saved' : ''}`} aria-hidden="true" />
+                        <SaveIcon saved={joined && saveStatus === 'saved'} />
                         <span className="iboard-wing-caption">{joined && saveStatus === 'saved' ? 'Saved' : 'Save'}</span>
                     </button>
                   </HintWrap>
@@ -4918,7 +4919,7 @@ function TeacherDashboardInner() {
             {moreMenuOpen ? (
               <div className="iboard-more-menu" role="menu">
                 <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); void toggleBrowserFullscreen(); }}>
-                  <span className="iboard-header-icon iboard-header-icon--fullscreen" aria-hidden="true" />
+                  <FullscreenIcon active={browserFullscreen} />
                   {browserFullscreen ? 'Exit full screen' : 'Full screen'}
                 </button>
                 <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); openHelpDock(); }}>

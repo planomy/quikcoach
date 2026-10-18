@@ -14,6 +14,7 @@ import StudentChatButton from '../components/StudentChatButton.jsx';
 import StudentInbox from '../components/StudentInbox.jsx';
 import StudentVerbalRespond from '../components/StudentVerbalRespond.jsx';
 import RoomTimerPill from '../components/RoomTimerPill.jsx';
+import { FullscreenIcon, SaveIcon } from '../components/HeaderIcons.jsx';
 import RichTextEditor from '../components/RichTextEditor.jsx';
 import RichTextDisplay from '../components/RichTextDisplay.jsx';
 import StudentAnnotationController from '../components/StudentAnnotationController.jsx';
@@ -1624,7 +1625,7 @@ export default function StudentView() {
                   aria-label="Save my writing"
                   title=""
                 >
-                  <span className="iboard-header-icon iboard-header-icon--save" aria-hidden="true" />
+                  <SaveIcon />
                 </button>
               </HintWrap>
               {saveMenuOpen && (
@@ -1684,7 +1685,7 @@ export default function StudentView() {
               aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               title=""
             >
-              <span className="iboard-header-icon iboard-header-icon--fullscreen" aria-hidden="true" />
+              <FullscreenIcon active={browserFullscreen} />
             </button>
             </HintWrap>
             <HintWrap hint="Settings" suppressed={settingsMenuOpen}>
