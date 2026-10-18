@@ -2621,8 +2621,8 @@ html.dark .iboard-board-empty__code {
   align-items: center;
   justify-content: stretch;
   gap: 0;
-  background: #ffffff;
-  border-right: 1px solid #e2e8ef;
+  background: #f3f3fd;
+  border-right: 1px solid #e4e4f4;
   padding: 0.45rem 0 0.45rem;
   min-height: 0;
 }
