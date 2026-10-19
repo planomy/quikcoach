@@ -3194,11 +3194,13 @@ function TeacherDashboardInner() {
         return;
       }
       setAddCardPickerOpen(false);
-      setAddCardOpen(false);
       setAddCardTitle('');
       setAddCardText('');
       setAddCardImage('');
       setAddCardFile(null);
+      requestAnimationFrame(() => {
+        addCardPanelRef.current?.querySelector('textarea[aria-label="Add text"]')?.focus();
+      });
       const toastMessage = chosenIds && ack.item && !Array.isArray(ack.item.studentIds)
         ? 'Sent to every student — restart the TUIT server to send files to chosen students only'
         : message;
