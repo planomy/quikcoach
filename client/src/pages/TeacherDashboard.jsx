@@ -837,8 +837,6 @@ function TeacherDashboardInner() {
       const collar = 12;
       const wing = Math.max(icon * 2, Math.min(Math.max(monitorContent, manageContent) + collar, room));
       bar.style.setProperty('--command-wing', `${Math.round(wing)}px`);
-      const inboxW = monitorWidths[monitorWidths.length - 1] || 48;
-      bar.querySelector('.iboard-attention-home')?.style.setProperty('--inbox-col', `${inboxW}px`);
       const pin = (button, edge) => {
         if (!button) return;
         const rect = button.getBoundingClientRect();
@@ -4290,6 +4288,7 @@ function TeacherDashboardInner() {
   const manageKeep = Math.min(commandFit.manageKeep, manageCommands.length);
   const monitorCols = monitorKeep + (monitorKeep < monitorCommands.length ? 1 : 0);
   const manageCols = manageKeep + (manageKeep < manageCommands.length ? 1 : 0);
+  const monitorDivider = monitorCols > 1 ? `${((monitorCols - 1) / monitorCols) * 100}%` : '100%';
   function pressCommandItem(id) {
     setCommandMore(null);
     commandBarRef.current?.querySelector(`[data-command-id="${id}"]`)?.click();
@@ -4707,7 +4706,7 @@ function TeacherDashboardInner() {
                   className="iboard-attention-home"
                   role="group"
                   aria-label="Needs a look"
-                  style={{ gridTemplateColumns: `repeat(${Math.max(1, monitorCols)}, max-content)` }}
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, monitorCols)}, minmax(max-content, 1fr))` }}
                 >
                     {monitorKeep < monitorCommands.length ? (
                       <div className="iboard-command-more-slot iboard-command-more-slot--start">
@@ -4839,6 +4838,7 @@ function TeacherDashboardInner() {
                     })}
                   <span
                     className="iboard-command-bar__divider"
+                    style={{ left: monitorDivider }}
                     hidden={monitorKeep < 2}
                     aria-hidden="true"
                   />
