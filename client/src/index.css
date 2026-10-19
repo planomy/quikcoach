@@ -1992,8 +1992,8 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: calc(100% - 10px);
-  height: calc(100% - 10px);
+  width: calc(100% - 13px);
+  height: calc(100% - 13px);
   border-radius: 999px;
   background: #ffffff;
   line-height: 1;
