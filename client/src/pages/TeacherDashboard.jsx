@@ -81,7 +81,6 @@ const MODE_LABELS = {
 const CARD_VIEW_STORAGE_KEY = 'iboard-teacher-card-view-v2';
 const OVERVIEW_COLUMNS_STORAGE_KEY = 'iboard-overview-columns';
 const CARD_FONT_STORAGE_KEY = 'iboard-teacher-card-fonts';
-const TEACHER_PANEL_HIDDEN_KEY = 'iboard-teacher-panel-hidden-v2';
 const LESSON_BEGUN_KEY = 'iboard-lesson-begun';
 const LESSON_BEGUN_MAX_MS = 4 * 60 * 60 * 1000;
 const ALERT_PREFS_KEY = 'tuit-alert-prefs';
@@ -551,7 +550,7 @@ function TeacherDashboardInner() {
   const teacherToolsNavRef = useRef(null);
   const tourShareRef = useRef(null);
   const shareRailBtnRef = useRef(null);
-  const resourcesRevealRef = useRef(null);
+  const resourcesDockRef = useRef(null);
   const tourEngageRef = useRef(null);
   const tourBoardRef = useRef(null);
   const tourRecRef = useRef(null);
@@ -646,15 +645,6 @@ function TeacherDashboardInner() {
   const [tourKey, setTourKey] = useState(0);
   const [helpDockBox, setHelpDockBox] = useState(null);
   const [helpFlash, setHelpFlash] = useState(null);
-  const [teacherPanelHidden, setTeacherPanelHidden] = useState(() => {
-    try {
-      return localStorage.getItem(TEACHER_PANEL_HIDDEN_KEY) !== '0';
-    } catch {
-      return true;
-    }
-  });
-  const teacherRevealLockRef = useRef(false);
-  const teacherRevealTimerRef = useRef(null);
   const [draftTrailOpen, setDraftTrailOpen] = useState(false);
   const [sessionPdfOpen, setSessionPdfOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
@@ -1146,80 +1136,16 @@ function TeacherDashboardInner() {
   }
 
   useEffect(() => {
-    try {
-      localStorage.setItem(TEACHER_PANEL_HIDDEN_KEY, teacherPanelHidden ? '1' : '0');
-    } catch {
-      /* ignore */
-    }
-    const frame = requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
-    return () => cancelAnimationFrame(frame);
-  }, [teacherPanelHidden]);
-
-  useLayoutEffect(() => {
-    const share = shareRailBtnRef.current;
-    const reveal = resourcesRevealRef.current;
-    if (!share || !reveal) return undefined;
-    const place = () => {
-      const button = shareRailBtnRef.current;
-      const arrow = resourcesRevealRef.current;
-      const wrap = arrow?.offsetParent;
-      if (!button || !arrow || !wrap) return;
-      const shareBox = button.getBoundingClientRect();
-      const wrapBox = wrap.getBoundingClientRect();
-      const top = shareBox.top - wrapBox.top + (shareBox.height - arrow.offsetHeight) / 2;
-      arrow.style.top = `${Math.max(0, Math.round(top))}px`;
-    };
-    place();
-    const observer = new ResizeObserver(place);
-    observer.observe(share);
-    const rail = share.closest('.iboard-arr-rail');
-    if (rail) observer.observe(rail);
-    window.addEventListener('resize', place);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', place);
-    };
-  }, [teacherPanelHidden, joined]);
-
-  useEffect(() => {
     const frame = requestAnimationFrame(() => {
       requestAnimationFrame(() => window.dispatchEvent(new Event('iboard:teacher-layout')));
     });
     return () => cancelAnimationFrame(frame);
   }, [focusedStudentId]);
 
-  useEffect(() => () => {
-    if (teacherRevealTimerRef.current) window.clearTimeout(teacherRevealTimerRef.current);
-  }, []);
-
-  function revealTeacherPanel(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (teacherRevealTimerRef.current) window.clearTimeout(teacherRevealTimerRef.current);
-    teacherRevealLockRef.current = true;
-    setTeacherPanelHidden(false);
-    teacherRevealTimerRef.current = window.setTimeout(() => {
-      teacherRevealLockRef.current = false;
-      teacherRevealTimerRef.current = null;
-    }, 350);
-  }
-
-  function toggleResourcesPanel(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (teacherPanelHidden) {
-      revealTeacherPanel(event);
-      return;
-    }
-    setTeacherPanelHidden(true);
-    if (!addCardBusy) {
-      setAddCardPickerOpen(false);
-      setAddCardOpen(false);
-    }
-  }
-
   function openFocusedTeacherPost(postId) {
-    if (teacherRevealLockRef.current) return;
+    if (addCardBusy) return;
+    setAddCardPickerOpen(false);
+    setAddCardOpen(false);
     setFocusedPostId(postId);
   }
 
@@ -2457,7 +2383,7 @@ function TeacherDashboardInner() {
   }, [helpOpen]);
 
   useEffect(() => {
-    if (!toolsPanelOpen && !settingsOpen && !viewOpen && !helpOpen) return undefined;
+    if (!toolsPanelOpen && !settingsOpen && !viewOpen && !helpOpen && !addCardOpen) return undefined;
 
     function closeHeaderPanelsIfOutside(event) {
       const target = event.target;
@@ -2469,6 +2395,11 @@ function TeacherDashboardInner() {
         // outside-click handler closes the dock on pointerdown before its buttons'
         // click handlers get a chance to run.
         if (target?.closest?.('[data-iboard-sets-preview="true"]')) return;
+      }
+      if (addCardOpen) {
+        if (teacherToolsNavRef.current?.contains(target)) return;
+        if (resourcesDockRef.current?.contains(target)) return;
+        if (target?.closest?.('[data-iboard-dialog], [data-iboard-sets-preview="true"]')) return;
       }
       if (settingsOpen) {
         if (settingsButtonRef.current?.contains(target)) return;
@@ -2493,6 +2424,7 @@ function TeacherDashboardInner() {
         setToolsPanelOpen(false);
         setToolsHighlightStudentId(null);
       }
+      if (addCardOpen && !addCardBusy) closeAddCard();
       if (settingsOpen) closeSettings();
       if (viewOpen) {
         setViewOpen(false);
@@ -2507,6 +2439,7 @@ function TeacherDashboardInner() {
         setToolsPanelOpen(false);
         setToolsHighlightStudentId(null);
       }
+      if (addCardOpen && !addCardBusy) closeAddCard();
       if (settingsOpen) closeSettings();
       if (viewOpen) {
         setViewOpen(false);
@@ -2521,16 +2454,7 @@ function TeacherDashboardInner() {
       document.removeEventListener('pointerdown', closeHeaderPanelsIfOutside);
       document.removeEventListener('keydown', closeHeaderPanelsOnEscape);
     };
-  }, [toolsPanelOpen, settingsOpen, viewOpen, helpOpen]);
-
-  useEffect(() => {
-    if (!addCardOpen) return undefined;
-    function rollUpComposerOnEscape(event) {
-      if (event.key === 'Escape' && !addCardBusy) setAddCardOpen(false);
-    }
-    document.addEventListener('keydown', rollUpComposerOnEscape);
-    return () => document.removeEventListener('keydown', rollUpComposerOnEscape);
-  }, [addCardOpen, addCardBusy]);
+  }, [toolsPanelOpen, settingsOpen, viewOpen, helpOpen, addCardOpen, addCardBusy]);
 
   useEffect(() => {
     if (!focusedStudentId) return undefined;
@@ -2554,7 +2478,7 @@ function TeacherDashboardInner() {
   }, [addCardOpen]);
 
   useLayoutEffect(() => {
-    if (!toolsPanelOpen && !settingsOpen && !viewOpen && !libraryPanel) return undefined;
+    if (!toolsPanelOpen && !settingsOpen && !viewOpen && !libraryPanel && !addCardOpen) return undefined;
 
     function currentDockAnchor() {
       if (libraryPanel) return libraryView === 'feedback' ? aiButtonRef.current : recordsButtonRef.current;
@@ -2563,6 +2487,7 @@ function TeacherDashboardInner() {
         if (settingsSection === 'records') return recordsButtonRef.current;
         return settingsButtonRef.current;
       }
+      if (addCardOpen) return shareRailBtnRef.current;
       if (toolsPanelOpen) {
         const group = toolsTab === 'sets' ? '.iboard-arr-rail__add' : '.iboard-arr-rail__tools';
         return teacherToolsNavRef.current?.querySelector(`${group} [data-active="true"]`);
@@ -2574,6 +2499,7 @@ function TeacherDashboardInner() {
       if (libraryPanel) return libraryDockRef.current;
       if (viewOpen) return viewPanelRef.current;
       if (settingsOpen) return settingsPanelRef.current;
+      if (addCardOpen) return resourcesDockRef.current;
       if (toolsPanelOpen) return teacherToolsPanelRef.current;
       return null;
     }
@@ -2638,6 +2564,7 @@ function TeacherDashboardInner() {
       }
       if (
         (toolsPanelOpen && !libraryPanel)
+        || addCardOpen
         || (libraryPanel && libraryView !== 'feedback')
       ) {
         const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
@@ -2709,7 +2636,7 @@ function TeacherDashboardInner() {
       window.visualViewport?.removeEventListener('resize', alignDockToRailButton);
       window.visualViewport?.removeEventListener('scroll', alignDockToRailButton);
     };
-  }, [toolsPanelOpen, settingsOpen, settingsSection, viewOpen, toolsTab, libraryPanel, libraryView]);
+  }, [toolsPanelOpen, settingsOpen, settingsSection, viewOpen, toolsTab, libraryPanel, libraryView, addCardOpen]);
 
   useEffect(() => {
     if (!handQuestionTarget) return;
@@ -3132,15 +3059,16 @@ function TeacherDashboardInner() {
   function openAddCard({ forceOpen = false } = {}) {
     closeLibraryHub();
     closeSettings();
+    setInboxOpen(false);
+    setGaugePanelOpen(false);
     setViewOpen(false);
     setHelpOpen(false);
     setToolsPanelOpen(false);
     setToolsHighlightStudentId(null);
-    if (!forceOpen && addCardOpen && !teacherPanelHidden) {
+    if (!forceOpen && addCardOpen) {
       closeAddCard();
       return;
     }
-    setTeacherPanelHidden(false);
     setAddCardDragOver(false);
     setAddCardTitle('');
     setAddCardText('');
@@ -4497,7 +4425,7 @@ function TeacherDashboardInner() {
   );
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
   const askClassOpen = toolsPanelOpen && toolsTab !== 'sets';
-  const boardDimOpen = askClassOpen || settingsOpen || !!libraryPanel || inboxOpen;
+  const boardDimOpen = askClassOpen || settingsOpen || !!libraryPanel || inboxOpen || addCardOpen;
   const settingsTitle = settingsSection === 'records' ? 'Reports' : 'Settings';
   const aiFeedbackOpen = !!libraryPanel && libraryView === 'feedback';
   const reportsOpen = !!libraryPanel && libraryView !== 'feedback';
@@ -4514,7 +4442,7 @@ function TeacherDashboardInner() {
       <div className="shrink-0">
       <header
         ref={teacherHeaderRef}
-        className={`iboard-app-header relative z-[70] shrink-0 border-b backdrop-blur${teacherPanelHidden ? ' is-teacher-hidden' : ''}`}
+        className="iboard-app-header relative z-[70] shrink-0 border-b backdrop-blur"
       >
         <div className="iboard-teacher-header-bar relative">
           <div className="iboard-teacher-header-rail">
@@ -5070,18 +4998,18 @@ function TeacherDashboardInner() {
       {headerDockOpen && !boardDimOpen ? (
         <div className="iboard-workspace-scrim pointer-events-none absolute inset-0 z-[55]" aria-hidden="true" />
       ) : null}
-      <div className={`iboard-teacher-shell relative z-[1] min-h-0 flex-1 ${teacherPanelHidden ? 'is-teacher-hidden' : ''}`}>
+      <div className="iboard-teacher-shell relative z-[1] min-h-0 flex-1">
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Share with class">
             <span className="iboard-command-bar__title iboard-rail-title">Teach class</span>
-            <HintWrap hint="Send resources to students" prefer="right" suppressed={(addCardOpen && !teacherPanelHidden) || (toolsPanelOpen && toolsTab === 'sets')}>
+            <HintWrap hint="Send resources to students" prefer="right" suppressed={addCardOpen || (toolsPanelOpen && toolsTab === 'sets')}>
               <button
                 type="button"
                 data-iboard-add-card-trigger="true"
                 data-help-target="share"
                 onClick={() => openAddCard()}
-                aria-expanded={addCardOpen && !teacherPanelHidden}
-                data-active={(addCardOpen && !teacherPanelHidden) || (toolsPanelOpen && toolsTab === 'sets') ? 'true' : 'false'}
+                aria-expanded={addCardOpen}
+                data-active={addCardOpen || (toolsPanelOpen && toolsTab === 'sets') ? 'true' : 'false'}
                 ref={shareRailBtnRef}
                 className={`iboard-arr-btn${helpFlash === 'share' ? ' is-help-flash' : ''}`}
                 aria-label="Share an image, PDF or text"
@@ -5169,51 +5097,36 @@ function TeacherDashboardInner() {
 
         {tourKey > 0 ? <TeacherBoardTour key={tourKey} anchors={tourAnchors} /> : null}
 
-        <div className="iboard-teacher-panel-wrap">
-          <HintWrap hint={teacherPanelHidden ? 'Show resources' : 'Hide resources'} prefer="right" className="static">
-            <button
-              type="button"
-              ref={resourcesRevealRef}
-              className="iboard-teacher-panel-reveal"
-              onPointerDown={toggleResourcesPanel}
-              onClick={(event) => event.preventDefault()}
-              aria-label={teacherPanelHidden ? 'Show resources' : 'Hide resources'}
-              title=""
-            >
-              <span aria-hidden="true">{teacherPanelHidden ? '>' : '<'}</span>
-            </button>
-          </HintWrap>
-          <aside
-            className="iboard-teacher-panel"
-            aria-label="Resources"
-            aria-hidden={teacherPanelHidden}
+        {addCardOpen && createPortal(
+          <div
+            ref={resourcesDockRef}
+            className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-header-dock--fill iboard-resources-dock z-[60] flex min-h-0 w-[min(27rem,calc(100vw-4.75rem))] flex-col overflow-hidden"
+            style={{ top: teacherToolsTop, bottom: 0, height: 'auto', borderRadius: 0 }}
+            role="dialog"
+            aria-label="Share resources"
           >
-            <div className="iboard-teacher-panel-head">
+            <div className="iboard-room-settings__chrome">
               <h2>Resources</h2>
+              <div className="iboard-room-settings__chrome-close">
+                <CloseButton onClick={closeAddCard} disabled={addCardBusy} label="Close" />
+              </div>
             </div>
+            <aside className="iboard-teacher-panel" aria-label="Share resources">
             <div
               ref={addCardPanelRef}
-              className={`iboard-teacher-composer${addCardOpen ? ' is-open' : ''}`}
+              className="iboard-teacher-composer is-open"
               data-iboard-add-card-panel="true"
-              inert={!addCardOpen ? '' : undefined}
-              aria-hidden={!addCardOpen ? 'true' : undefined}
             >
               <div className="iboard-teacher-composer__inner">
                 <form
-                  className="iboard-teacher-composer__form relative"
+                  className="iboard-teacher-composer__form"
                   onPaste={handleAddCardPaste}
                   onSubmit={(event) => {
                     event.preventDefault();
                     submitTeacherCard();
                   }}
                 >
-                  <CloseButton
-                    onClick={closeAddCard}
-                    disabled={addCardBusy}
-                    label="Close"
-                    className="absolute right-1.5 top-1.5"
-                  />
-                  <h2 id="add-teacher-card-title" className="whitespace-nowrap pr-7 text-[13px] font-semibold leading-6 text-[#3c3c45] dark:text-white">
+                  <h2 id="add-teacher-card-title" className="whitespace-nowrap text-[13px] font-semibold leading-6 text-[#3c3c45] dark:text-white">
                     Add a file or send text
                   </h2>
                   {addCardFile ? (
@@ -5341,11 +5254,11 @@ function TeacherDashboardInner() {
               </div>
             </div>
             <div className="iboard-teacher-panel-list">
-              {posts.length === 0 && !addCardOpen && (
+              {posts.length === 0 ? (
                 <p className="px-1 py-6 text-center text-xs font-semibold text-slate-400">
-                  No resources yet — press + to send an image, PDF or text
+                  Nothing sent yet
                 </p>
-              )}
+              ) : null}
               {posts.map((post) => (
             <article
               key={`post-${post.id}`}
@@ -5358,7 +5271,7 @@ function TeacherDashboardInner() {
                 }
               }}
               role="button"
-              tabIndex={teacherPanelHidden ? -1 : 0}
+              tabIndex={0}
               aria-label={`Open larger view of ${post.title || 'teacher card'}`}
             >
               <div className="iboard-teacher-card__head flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
@@ -5424,8 +5337,10 @@ function TeacherDashboardInner() {
             </article>
           ))}
             </div>
-          </aside>
-        </div>
+            </aside>
+          </div>,
+          getOverlayRoot()
+        )}
 
       <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto`}>
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
