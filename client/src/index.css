@@ -1478,7 +1478,6 @@ html.dark .iboard-nudge-strip__compose input {
   width: 100%;
   min-width: 0;
   padding-bottom: calc(2.34rem + 4px);
-  container-type: inline-size;
 }
 
 /* A control that no longer fits is parked on its More button so its menu

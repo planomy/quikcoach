@@ -773,9 +773,15 @@ function TeacherDashboardInner() {
     if (!bar || !slot) return undefined;
     let frame = 0;
     let cancelled = false;
+    let lastPlan = '';
     const measure = () => {
       if (cancelled) return;
       try {
+        const view = Math.round(window.visualViewport?.width || window.innerWidth);
+        const canvas = bar.closest('.iboard-teacher-canvas');
+        if (canvas && Math.round(canvas.getBoundingClientRect().width) !== view) {
+          canvas.style.width = `${view}px`;
+        }
         const meta = slot.querySelector('.iboard-header-meta');
         const actions = slot.querySelector('.iboard-header-actions');
         const gaps = 32;
@@ -830,11 +836,15 @@ function TeacherDashboardInner() {
           monitorKeep: labels ? monitorPlan.keep : iconKeep(monitorWidths.length),
           manageKeep: labels ? managePlan.keep : iconKeep(manageWidths.length),
         };
+        const planKey = `${next.labels}:${next.monitorKeep}:${next.manageKeep}`;
+        const planChanged = planKey !== lastPlan;
+        lastPlan = planKey;
         setCommandFit((current) => (
           current.labels === next.labels && current.monitorKeep === next.monitorKeep && current.manageKeep === next.manageKeep
             ? current
             : next
         ));
+        if (planChanged) requestAnimationFrame(measure);
         const monitorContent = labels
           ? sumKept(monitorWidths, next.monitorKeep, true, next.monitorKeep < monitorWidths.length)
           : (next.monitorKeep + (next.monitorKeep < monitorWidths.length ? 1 : 0)) * icon;
@@ -877,7 +887,9 @@ function TeacherDashboardInner() {
     measure();
     const observer = new ResizeObserver(schedule);
     observer.observe(slot);
+    observer.observe(document.documentElement);
     window.addEventListener('resize', schedule);
+    window.visualViewport?.addEventListener('resize', schedule);
     document.fonts?.ready?.then(() => {
       if (!cancelled) measure();
     });
@@ -886,8 +898,9 @@ function TeacherDashboardInner() {
       cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('resize', schedule);
+      window.visualViewport?.removeEventListener('resize', schedule);
     };
-  });
+  }, [joined]);
   useEffect(() => {
     if (!commandMore) return undefined;
     const onPointerDown = (event) => {
