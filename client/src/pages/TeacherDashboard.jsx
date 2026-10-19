@@ -740,6 +740,11 @@ function TeacherDashboardInner() {
     };
   }, [sessionMenuOpen]);
   const gaugeSlotRef = useRef(null);
+  const commandBarRef = useRef(null);
+  const monitorMoreRef = useRef(null);
+  const manageMoreRef = useRef(null);
+  const [commandFit, setCommandFit] = useState({ labels: true, monitorKeep: 5, manageKeep: 6 });
+  const [commandMore, setCommandMore] = useState(null);
   const gaugePanelRef = useRef(null);
   const [gaugePanelOpen, setGaugePanelOpen] = useState(false);
   const [answerPresent, setAnswerPresent] = useState(false);
@@ -758,6 +763,60 @@ function TeacherDashboardInner() {
       window.removeEventListener('iboard:teacher-layout', place);
     };
   }, [gaugePanelOpen]);
+  useLayoutEffect(() => {
+    const bar = commandBarRef.current;
+    if (!bar || bar.clientWidth < 8) return undefined;
+    const measure = () => {
+      if (bar.clientWidth < 8) return;
+      const gauge = gaugeSlotRef.current?.offsetWidth || 156;
+      const side = Math.max(0, (bar.clientWidth - gauge) / 2);
+      const icon = 46;
+      const monitorCount = bar.querySelectorAll('.iboard-command-bar__side--monitor [data-command-id]').length || 5;
+      const manageCount = bar.querySelectorAll('.iboard-command-bar__side--manage [data-command-id]').length || 6;
+      const labels = side >= 400;
+      const fitCount = (count) => {
+        if (labels || side >= count * icon) return count;
+        return Math.max(0, Math.min(count, Math.floor((side - icon) / icon)));
+      };
+      const next = { labels, monitorKeep: fitCount(monitorCount), manageKeep: fitCount(manageCount) };
+      setCommandFit((current) => (
+        current.labels === next.labels && current.monitorKeep === next.monitorKeep && current.manageKeep === next.manageKeep
+          ? current
+          : next
+      ));
+      const pin = (button, edge) => {
+        if (!button) return;
+        const rect = button.getBoundingClientRect();
+        const sideEl = button.closest('.iboard-command-bar__side');
+        if (!sideEl) return;
+        sideEl.style.setProperty('--command-more-x', `${Math.round(rect.left + rect.width / 2)}px`);
+        sideEl.style.setProperty('--command-more-y', `${Math.round(edge === 'top' ? rect.top : rect.bottom)}px`);
+      };
+      pin(monitorMoreRef.current, 'bottom');
+      pin(manageMoreRef.current, 'top');
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  });
+  useEffect(() => {
+    if (!commandMore) return undefined;
+    const onPointerDown = (event) => {
+      const target = event.target;
+      if (target?.closest?.('.iboard-command-more, .iboard-command-more__menu, .iboard-tool-popover, .iboard-wing-pop, .iboard-nudge-strip')) return;
+      setCommandMore(null);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setCommandMore(null);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [commandMore]);
   useEffect(() => {
     if (!gaugePanelOpen) return undefined;
     // Learning trails, presenting and pickers open on top; the panel waits underneath.
@@ -4103,6 +4162,27 @@ function TeacherDashboardInner() {
     : messageWaitCount > 0
       ? `You have ${messageWaitCount} chat messages waiting`
       : '';
+  const monitorCommands = [
+    ...attentionPills.map((pill) => ({ id: pill.id, name: pill.name, count: attentionCounts[pill.id] || 0 })),
+    { id: 'inbox', name: 'Inbox', count: messageWaitCount },
+  ];
+  const manageCommands = [
+    { id: 'words', name: 'Word limit' },
+    { id: 'freeze', name: frozen ? 'Unfreeze' : 'Freeze' },
+    { id: 'text', name: 'Text' },
+    { id: 'collaboration', name: 'Collaboration' },
+    { id: 'save', name: joined && saveStatus === 'saved' ? 'Saved' : 'Save' },
+    { id: 'view', name: 'View' },
+  ];
+  const monitorKeep = Math.min(commandFit.monitorKeep, monitorCommands.length);
+  const manageKeep = Math.min(commandFit.manageKeep, manageCommands.length);
+  const monitorCols = monitorKeep + (monitorKeep < monitorCommands.length ? 1 : 0);
+  const manageCols = manageKeep + (manageKeep < manageCommands.length ? 1 : 0);
+  const monitorDivider = monitorCols > 1 ? `${((monitorCols - 1) / monitorCols) * 100}%` : '100%';
+  function pressCommandItem(id) {
+    setCommandMore(null);
+    commandBarRef.current?.querySelector(`[data-command-id="${id}"]`)?.click();
+  }
   const inboxNames = messageWaitCount > 0
     ? orderedStudents
       .filter((student) => noteReceiptByStudentId[Number(student.id)] === 'replied')
@@ -4504,16 +4584,57 @@ function TeacherDashboardInner() {
               ) : null}
             </div>
 
-            <div className="iboard-command-bar">
+            <div
+              ref={commandBarRef}
+              className="iboard-command-bar"
+              data-labels={commandFit.labels ? 'on' : 'off'}
+            >
               <div className="iboard-command-frame" aria-hidden="true" />
               <div className="iboard-command-bar__side iboard-command-bar__side--monitor">
                 <span className="iboard-command-bar__title">Monitor class</span>
-                <div className="iboard-attention-home" role="group" aria-label="Needs a look">
-                    {attentionPills.map((pill) => {
+                <div
+                  className="iboard-attention-home"
+                  role="group"
+                  aria-label="Needs a look"
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, monitorCols)}, minmax(0, 1fr))` }}
+                >
+                    {monitorKeep < monitorCommands.length ? (
+                      <div className="iboard-command-more-slot iboard-command-more-slot--start">
+                      <button
+                        ref={monitorMoreRef}
+                        type="button"
+                        className="iboard-command-more iboard-command-more--start"
+                        aria-expanded={commandMore === 'monitor'}
+                        aria-haspopup="menu"
+                        aria-label="More monitor tools"
+                        onClick={() => setCommandMore((open) => (open === 'monitor' ? null : 'monitor'))}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                        <span className="iboard-wing-caption">More</span>
+                      </button>
+                        {commandMore === 'monitor' ? (
+                          <span className="iboard-command-more__menu" role="menu">
+                            {monitorCommands.slice(0, monitorCommands.length - monitorKeep).map((item) => (
+                              <button key={item.id} type="button" role="menuitem" onClick={() => pressCommandItem(item.id)}>
+                                <span>{item.name}</span>
+                                <span className="tabular-nums">{item.count}</span>
+                              </button>
+                            ))}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {attentionPills.map((pill, index) => {
                       const on = attentionFocus === pill.id;
                       const count = attentionCounts[pill.id] || 0;
                       return (
-                        <div key={pill.id} className="iboard-attention-pill">
+                        <div
+                          key={pill.id}
+                          className="iboard-attention-pill iboard-command-item"
+                          data-overflow={index < monitorCommands.length - monitorKeep ? 'true' : 'false'}
+                        >
                         <HintWrap
                           hint={count ? attentionHint(attentionNames[pill.id], on, pill.label) : pill.label}
                           prefer="above"
@@ -4528,6 +4649,7 @@ function TeacherDashboardInner() {
                             }}
                             className={`iboard-alert-chip${count ? ' has-count' : ''}${on ? ' is-on' : ''}`}
                             title=""
+                            data-command-id={pill.id}
                             aria-disabled={!count}
                             aria-pressed={on}
                             aria-label={pill.label}
@@ -4604,7 +4726,16 @@ function TeacherDashboardInner() {
                         </div>
                       );
                     })}
-                  <span className="iboard-command-bar__divider" aria-hidden="true" />
+                  <span
+                    className="iboard-command-bar__divider"
+                    style={{ left: monitorDivider }}
+                    hidden={monitorKeep < 2}
+                    aria-hidden="true"
+                  />
+                  <div
+                    className="iboard-attention-pill iboard-command-item"
+                    data-overflow={monitorKeep < 1 ? 'true' : 'false'}
+                  >
                   <HintWrap
                     hint={inboxOpen ? 'Close the class inbox' : (inboxSummary || 'Open the class inbox to read and reply')}
                     prefer="below"
@@ -4615,6 +4746,7 @@ function TeacherDashboardInner() {
                         onClick={() => (inboxOpen ? closeInbox() : openInbox())}
                         className={`iboard-alert-chip${messageWaitCount ? ' has-count' : ''}${inboxOpen ? ' is-on' : ''}`}
                         title=""
+                        data-command-id="inbox"
                         aria-pressed={inboxOpen}
                         aria-label={inboxSummary || 'Open the class inbox'}
                       >
@@ -4625,6 +4757,7 @@ function TeacherDashboardInner() {
                         <span className="iboard-alert-chip__name">Inbox</span>
                       </button>
                   </HintWrap>
+                  </div>
                 </div>
               </div>
               <div ref={gaugeSlotRef} className="iboard-command-bar__gauge">
@@ -4643,14 +4776,20 @@ function TeacherDashboardInner() {
               </div>
               <div className="iboard-command-bar__side iboard-command-bar__side--manage">
                 <span className="iboard-command-bar__title">Manage class</span>
-                <div className="iboard-manage-tools" role="group" aria-label="Manage class">
-                  <div className="relative" data-header-tool="words">
+                <div
+                  className="iboard-manage-tools"
+                  role="group"
+                  aria-label="Manage class"
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, manageCols)}, minmax(0, 1fr))` }}
+                >
+                  <div className="relative iboard-command-item" data-header-tool="words" data-overflow={0 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint="Set a word limit for student cards" prefer="below" suppressed={headerTool === 'words'}>
                     <button
                       type="button"
                       onClick={() => toggleHeaderTool('words')}
                       aria-expanded={headerTool === 'words'}
                       data-active={headerTool === 'words' || (wt > 0 && enforceWords) ? 'true' : 'false'}
+                      data-command-id="words"
                       className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
                       aria-label="Word limit"
                     >
@@ -4671,10 +4810,12 @@ function TeacherDashboardInner() {
                     </div>
                   ) : null}
                   </div>
+                  <div className="iboard-command-item" data-overflow={1 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze the class and stop any further writing"} prefer="below">
                     <button
                       type="button"
                       data-help-target="freeze"
+                      data-command-id="freeze"
                       onClick={toggleFreeze}
                       aria-pressed={frozen}
                       data-active={frozen ? "true" : "false"}
@@ -4688,9 +4829,12 @@ function TeacherDashboardInner() {
                       <span className="iboard-wing-caption">Freeze</span>
                     </button>
                   </HintWrap>
+                  </div>
+                  <div className="iboard-command-item" data-overflow={2 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint={BOARD_FONT_HINTS[boardFontStep]} prefer="below">
                     <button
                       type="button"
+                      data-command-id="text"
                       onClick={cycleBoardFont}
                       className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
                       aria-label={boardFontStep === 0 ? 'Text size, normal. Larger text on every card' : boardFontStep === BOARD_FONT_SCALES.length - 1 ? 'Text size, largest. Click to return to normal' : `Text size, step ${boardFontStep} of ${BOARD_FONT_SCALES.length - 1}`}
@@ -4700,13 +4844,15 @@ function TeacherDashboardInner() {
                       <span className="iboard-wing-caption">Text</span>
                     </button>
                   </HintWrap>
-                  <div className="relative" data-header-tool="breakouts">
+                  </div>
+                  <div className="relative iboard-command-item" data-header-tool="breakouts" data-overflow={3 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint={breakoutsActive ? 'Breakouts are running. Open to shuffle or close rooms' : room?.class_wall_active ? 'Class wall is on. Open to close it' : 'Create breakout rooms or a full-class wall'} prefer="below" suppressed={breakoutsMenuOpen}>
                     <button
                       type="button"
                       onClick={() => toggleHeaderTool('breakouts')}
                       aria-expanded={breakoutsMenuOpen}
                       data-active={breakoutsActive || room?.class_wall_active || breakoutsMenuOpen ? 'true' : 'false'}
+                      data-command-id="collaboration"
                       className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
                       aria-label="Collaboration"
                     >
@@ -4743,7 +4889,7 @@ function TeacherDashboardInner() {
                     </div>
                   ) : null}
                   </div>
-                  <div ref={sessionMenuRef} className="relative">
+                  <div ref={sessionMenuRef} className="relative iboard-command-item" data-overflow={4 >= manageKeep ? 'true' : 'false'}>
                     <HintWrap hint="Save or load a session" prefer="below" suppressed={sessionMenuOpen}>
                     <button
                       type="button"
@@ -4751,6 +4897,7 @@ function TeacherDashboardInner() {
                         onClick={() => setSessionMenuOpen((open) => !open)}
                         aria-expanded={sessionMenuOpen}
                         data-active={sessionMenuOpen ? 'true' : 'false'}
+                        data-command-id="save"
                         className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'session' ? ' is-help-flash' : ''}`}
                         aria-label="Save or open a lesson"
                       >
@@ -4809,10 +4956,12 @@ function TeacherDashboardInner() {
               </div>
             )}
                   </div>
+                  <div className="iboard-command-item" data-overflow={5 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint="Select the view for student cards" prefer="below" suppressed={viewOpen}>
                     <button
                       ref={viewButtonRef}
                       type="button"
+                      data-command-id="view"
                       onClick={openViewDock}
                       aria-expanded={viewOpen}
                       data-active={viewOpen ? 'true' : 'false'}
@@ -4823,6 +4972,34 @@ function TeacherDashboardInner() {
                       <span className="iboard-wing-caption">View</span>
                     </button>
                   </HintWrap>
+                  </div>
+                  {manageKeep < manageCommands.length ? (
+                    <div className="iboard-command-more-slot iboard-command-more-slot--end">
+                    <button
+                      ref={manageMoreRef}
+                      type="button"
+                      className="iboard-command-more iboard-command-more--end"
+                      aria-expanded={commandMore === 'manage'}
+                      aria-haspopup="menu"
+                      aria-label="More class tools"
+                      onClick={() => setCommandMore((open) => (open === 'manage' ? null : 'manage'))}
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                      <span className="iboard-wing-caption">More</span>
+                    </button>
+                      {commandMore === 'manage' ? (
+                        <span className="iboard-command-more__menu" role="menu">
+                          {manageCommands.slice(manageKeep).map((item) => (
+                            <button key={item.id} type="button" role="menuitem" onClick={() => pressCommandItem(item.id)}>
+                              {item.name}
+                            </button>
+                          ))}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
