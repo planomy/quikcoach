@@ -744,6 +744,7 @@ function TeacherDashboardInner() {
   }, [sessionMenuOpen]);
   const gaugeSlotRef = useRef(null);
   const commandBarRef = useRef(null);
+  const commandWidthRef = useRef(new Map());
   const monitorMoreRef = useRef(null);
   const manageMoreRef = useRef(null);
   const [commandFit, setCommandFit] = useState({ labels: true, monitorKeep: 5, manageKeep: 6 });
@@ -783,18 +784,22 @@ function TeacherDashboardInner() {
           slot.clientWidth - (meta?.offsetWidth || 0) - (actions?.offsetWidth || 0) - gaps,
         );
         if (available < 8) return;
-        const gauge = gaugeSlotRef.current?.offsetWidth || 156;
+        const ring = gaugeSlotRef.current?.querySelector('.iboard-class-gauge__ring');
+        const gauge = ring?.offsetWidth || gaugeSlotRef.current?.offsetWidth || 82;
         const side = Math.max(0, (available - gauge) / 2);
         // The tool row hangs 0.4rem past the outer end of each wing.
         const room = side + 6;
         const icon = 46;
         const moreW = 52;
         const labelWidths = (selector) => [...bar.querySelectorAll(selector)].map((item) => {
+          const id = item.getAttribute('data-command-id') || item.dataset.commandId || '';
+          const parked = item.closest('[data-overflow="true"]');
           const chip = item.matches('.iboard-alert-chip, .iboard-wing-tool')
             ? item
             : item.querySelector('.iboard-alert-chip, .iboard-wing-tool');
-          if (!chip) return 40;
-          return Math.max(36, Math.ceil(chip.getBoundingClientRect().width));
+          const live = chip && !parked ? Math.ceil(chip.getBoundingClientRect().width) : 0;
+          if (id && live > 20) commandWidthRef.current.set(id, live);
+          return Math.max(36, (id && commandWidthRef.current.get(id)) || live || 48);
         });
         const sumKept = (widths, keep, fromEnd, withMore) => {
           const slice = fromEnd ? widths.slice(widths.length - keep) : widths.slice(0, keep);
@@ -836,8 +841,9 @@ function TeacherDashboardInner() {
         const manageContent = labels
           ? sumKept(manageWidths, next.manageKeep, false, next.manageKeep < manageWidths.length)
           : (next.manageKeep + (next.manageKeep < manageWidths.length ? 1 : 0)) * icon;
-        const collar = 12;
-        const wing = Math.max(icon * 2, Math.min(Math.max(monitorContent, manageContent) + collar, room));
+        const collar = 8;
+        const wanted = Math.max(monitorContent, manageContent) + collar;
+        const wing = Math.max(icon, Math.min(wanted, room));
         bar.style.setProperty('--command-wing', `${Math.round(wing)}px`);
         const inboxW = monitorWidths[monitorWidths.length - 1] || 48;
         bar.querySelector('.iboard-attention-home')?.style.setProperty('--inbox-col', `${inboxW}px`);

@@ -1498,6 +1498,7 @@ html.dark .iboard-nudge-strip__compose input {
 .iboard-command-bar [data-overflow='true'] .iboard-wing-tool {
   position: absolute;
   width: 1px;
+  min-width: 0;
   height: 1px;
   margin: 0;
   padding: 0;
@@ -2115,11 +2116,12 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   border-top-color: #334155;
 }
 
-/* The white gauge is centred on the flat rail and covers the middle of it. */
+/* The column is the dial itself. A wider slot leaves a purple gap the wings
+   can never close, so the bar stays too wide and runs off a narrow window. */
 .iboard-command-bar__gauge {
   position: relative;
   align-self: stretch;
-  width: 9.75rem;
+  width: 5.15rem;
 }
 
 .iboard-command-bar .iboard-command-bar__gauge > * {
