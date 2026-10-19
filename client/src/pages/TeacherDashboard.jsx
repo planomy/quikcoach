@@ -845,6 +845,15 @@ function TeacherDashboardInner() {
         const wanted = Math.max(monitorContent, manageContent) + collar;
         const wing = Math.max(icon, Math.min(wanted, room));
         bar.style.setProperty('--command-wing', `${Math.round(wing)}px`);
+        const frameEl = bar.querySelector('.iboard-command-frame');
+        const ringEl = ring || gaugeSlotRef.current?.querySelector('.iboard-class-gauge__ring');
+        if (frameEl && ringEl) {
+          const frameRect = frameEl.getBoundingClientRect();
+          const ringRect = ringEl.getBoundingClientRect();
+          const cutX = ringRect.left + ringRect.width / 2 - frameRect.left;
+          frameEl.style.setProperty('--command-cut-x', `${cutX}px`);
+          frameEl.style.setProperty('--command-cut-r', `${ringRect.width / 2}px`);
+        }
         const inboxW = monitorWidths[monitorWidths.length - 1] || 48;
         bar.querySelector('.iboard-attention-home')?.style.setProperty('--inbox-col', `${inboxW}px`);
         const pin = (button, edge) => {

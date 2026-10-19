@@ -1758,15 +1758,17 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   background: #433bbd;
   filter: none;
   pointer-events: none;
+  --command-cut-x: 50%;
+  --command-cut-r: 2.575rem;
   -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent calc((5.15rem + 5px) / 2),
-    #000 calc((5.15rem + 5px) / 2 + 0.5px)
+    circle at var(--command-cut-x) 50%,
+    transparent calc(var(--command-cut-r) - 1px),
+    #000 var(--command-cut-r)
   );
   mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent calc((5.15rem + 5px) / 2),
-    #000 calc((5.15rem + 5px) / 2 + 0.5px)
+    circle at var(--command-cut-x) 50%,
+    transparent calc(var(--command-cut-r) - 1px),
+    #000 var(--command-cut-r)
   );
 }
 
