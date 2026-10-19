@@ -4572,6 +4572,7 @@ function TeacherDashboardInner() {
                           hint={count ? attentionHint(attentionNames[pill.id], on, pill.label) : pill.label}
                           prefer="above"
                           tone={count ? 'card' : 'brand'}
+                          keep={count > 0}
                         >
                           <button
                             type="button"

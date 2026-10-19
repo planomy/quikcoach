@@ -31,9 +31,9 @@ function measureAndPlace(wrapEl, tipEl, hint, pointerX) {
 }
 
 /** Fast hover/focus hint chip — brand accent, flips below when there isn’t room above. */
-export default function HintWrap({ hint, children, className = '', prefer: _prefer, multiline = false, tone = 'brand', suppressed: suppressedProp = false }) {
+export default function HintWrap({ hint, children, className = '', prefer: _prefer, multiline = false, tone = 'brand', suppressed: suppressedProp = false, keep = false }) {
   const hintsOff = useHintsOff();
-  const suppressed = suppressedProp || hintsOff;
+  const suppressed = suppressedProp || (!keep && hintsOff);
   const wrapRef = useRef(null);
   const tipRef = useRef(null);
   const hoverTimerRef = useRef(null);
