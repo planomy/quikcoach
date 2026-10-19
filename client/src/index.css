@@ -248,7 +248,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header h1 {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-code {
-  color: #4800c4;
+  color: #433bbd;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta {
@@ -291,7 +291,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b 
   font-size: 0.55rem;
   line-height: 1;
   letter-spacing: 0.2em;
-  color: #4800c4;
+  color: #433bbd;
 }
 
 .iboard-header-room--stacked .iboard-header-code {
@@ -1637,7 +1637,7 @@ html.dark .iboard-command-frame {
   white-space: normal;
   text-align: center;
   line-height: 1.25;
-  color: #4800c4;
+  color: #433bbd;
 }
 
 .iboard-manage-tools {
