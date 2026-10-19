@@ -1664,13 +1664,13 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   transform: none;
 }
 
-/* Monitor shares the wing in equal columns so the chips are not bunched
-   against the gauge. Manage still hugs its captions. */
+/* Monitor spreads leftover width evenly between chips so the outer and
+   inner ends match the manage wing. Manage still hugs its captions. */
 .iboard-command-bar__side .iboard-attention-home {
   display: grid;
-  grid-template-columns: repeat(5, minmax(max-content, 1fr));
+  grid-template-columns: repeat(5, max-content);
   align-items: stretch;
-  justify-content: stretch;
+  justify-content: space-between;
   justify-items: stretch;
   column-gap: 0;
 }
@@ -1679,14 +1679,14 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 80%;
-  right: auto;
+  left: auto;
+  right: var(--inbox-col, 0px);
   z-index: 1;
   width: 1px;
   height: 100%;
   margin: 0;
   align-self: stretch;
-  transform: translateX(-50%);
+  transform: translateX(50%);
 }
 
 .iboard-command-bar__side .iboard-manage-tools {
@@ -1704,18 +1704,6 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   min-width: max-content;
   min-height: 0;
   width: auto;
-}
-
-.iboard-command-bar__side--monitor .iboard-attention-home > *:not(.iboard-command-bar__divider) {
-  justify-content: center;
-}
-
-.iboard-command-bar__side--monitor .iboard-attention-home > :first-child {
-  justify-content: start;
-}
-
-.iboard-command-bar__side--monitor .iboard-attention-home > :last-child {
-  justify-content: end;
 }
 
 .iboard-command-bar__side .iboard-attention-pill > span,
@@ -1754,7 +1742,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
-/* One flat purple rail. A white circle, clipped to the rail, cuts a curve on each side of the dial. */
+/* One flat purple rail. A hole in the mask cuts a curve on each side of the dial. */
 .iboard-command-frame {
   position: absolute;
   left: -0.4rem;
@@ -1769,18 +1757,20 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   background: #433bbd;
   filter: none;
   pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent calc((5.15rem + 5px) / 2),
+    #000 calc((5.15rem + 5px) / 2 + 0.5px)
+  );
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent calc((5.15rem + 5px) / 2),
+    #000 calc((5.15rem + 5px) / 2 + 0.5px)
+  );
 }
 
 .iboard-command-frame::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: calc(5.15rem + 5px);
-  height: calc(5.15rem + 5px);
-  border-radius: 999px;
-  background: #ffffff;
-  transform: translate(-50%, -50%);
+  content: none;
 }
 
 html.dark .iboard-command-frame {
