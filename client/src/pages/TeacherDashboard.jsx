@@ -583,6 +583,7 @@ function TeacherDashboardInner() {
   const breakoutAssignPanelRef = useRef(null);
   const [settingsChromeHeight, setSettingsChromeHeight] = useState(44);
   const [teacherToolsTop, setTeacherToolsTop] = useState(0);
+  const [boardModalTop, setBoardModalTop] = useState(0);
   const [teacherToolsDockHeight, setTeacherToolsDockHeight] = useState(() => (
     typeof window === 'undefined' ? 560 : Math.min(560, Math.max(220, window.innerHeight - 20))
   ));
@@ -2381,6 +2382,21 @@ function TeacherDashboardInner() {
     window.addEventListener('resize', place);
     return () => window.removeEventListener('resize', place);
   }, [helpOpen]);
+
+  useLayoutEffect(() => {
+    if (!focusedPostId) return undefined;
+    function place() {
+      const next = Math.round(teacherHeaderRef.current?.getBoundingClientRect().bottom || 0);
+      setBoardModalTop((prev) => (Math.abs(prev - next) < 1 ? prev : next));
+    }
+    place();
+    window.addEventListener('resize', place);
+    window.visualViewport?.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.visualViewport?.removeEventListener('resize', place);
+    };
+  }, [focusedPostId]);
 
   useEffect(() => {
     if (!toolsPanelOpen && !settingsOpen && !viewOpen && !helpOpen && !addCardOpen) return undefined;
@@ -7042,11 +7058,12 @@ function TeacherDashboardInner() {
 
       {focusedPost && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center"
+          className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center bg-slate-900/55 px-4 pb-4 pt-2 sm:items-center"
+          style={{ top: boardModalTop || teacherHeaderRef.current?.getBoundingClientRect().bottom || 0 }}
           onClick={() => setFocusedPostId(null)}
         >
           <article
-            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
           role="dialog"
             aria-modal="true"
             aria-labelledby="focused-teacher-card-title"
