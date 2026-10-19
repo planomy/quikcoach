@@ -220,17 +220,17 @@ export function ObjectiveScreen({ initialObjective = '', busy = false, entrance 
         <div className="iboard-objective-screen__body">
         <h2 id="objective-screen-title" className="iboard-objective-screen__title">Today’s objective</h2>
         <label className="iboard-objective-screen__field">
-          <span>Today we are learning to…</span>
           <textarea
             ref={inputRef}
             value={text}
             rows={2}
             maxLength={OBJECTIVE_MAX}
+            aria-label="Today’s objective"
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) submit(event);
             }}
-            placeholder="e.g. write a strong opening sentence"
+            placeholder="Today we are learning to…"
           />
           <p className="iboard-objective-screen__hint">Students see this at the top of their screen.</p>
         </label>
