@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, createPortal } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import { FULLSCREEN_UNAVAILABLE_MESSAGE, canFullscreen, isFullscreen, subscribeFullscreenChange, toggleFullscreen } from '../lib/fullscreen.js';
