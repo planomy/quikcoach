@@ -659,6 +659,9 @@ function TeacherDashboardInner() {
   const [addCardBusy, setAddCardBusy] = useState(false);
   const [addCardError, setAddCardError] = useState('');
   const [addCardPickerOpen, setAddCardPickerOpen] = useState(false);
+  const [resendPost, setResendPost] = useState(null);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendError, setResendError] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
   const [sessionBusy, setSessionBusy] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState('5');
@@ -3361,6 +3364,56 @@ function TeacherDashboardInner() {
     });
   }
 
+  function resendTeacherCard(post, recipientIds) {
+    if (!post) return;
+    const chosenIds = (Array.isArray(recipientIds) ? recipientIds : []).map(Number).filter((id) => id > 0);
+    if (!chosenIds.length) {
+      setResendError('Tick at least one student first');
+      return;
+    }
+    const sentMessage = chosenIds.length === 1
+      ? 'Sent again to 1 student’s inbox'
+      : `Sent again to ${chosenIds.length} students’ inboxes`;
+    const finish = (ack) => {
+      setResendBusy(false);
+      if (!ack?.ok) {
+        setResendError(ack?.error || 'Could not send that resource again');
+        return;
+      }
+      setResendPost(null);
+      setResendError('');
+      setCopyToast(sentMessage);
+      setTimeout(() => setCopyToast(''), 2500);
+    };
+
+    if (post.kind === 'text') {
+      const text = String(post.text || '').trim();
+      if (!text) {
+        setResendError('This card has no text to send again');
+        return;
+      }
+      const recipients = orderedStudents
+        .filter((student) => chosenIds.includes(Number(student.id)))
+        .map((student) => ({
+          studentId: student.id,
+          text: text.slice(0, INBOX_NOTE_MAX),
+          type: 'resource',
+        }));
+      if (!recipients.length) {
+        setResendError('Those students are no longer in this room');
+        return;
+      }
+      setResendBusy(true);
+      setResendError('');
+      socket.emit('teacher:distribute', { items: recipients }, finish);
+      return;
+    }
+
+    setResendBusy(true);
+    setResendError('');
+    socket.emit('teacher:resource-resend', { postId: post.id, studentIds: chosenIds }, finish);
+  }
+
   function openEvidenceModal() {
     const now = new Date();
     const defaultLabel = `Room ${codeInput} · ${now.toLocaleString(undefined, {
@@ -5471,6 +5524,24 @@ function TeacherDashboardInner() {
             >
               <div className="iboard-teacher-card__head flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
                 <div className="iboard-teacher-card__actions ml-auto flex shrink-0 items-center gap-0.5">
+                <HintWrap hint="Send this to inboxes again">
+                  <button
+                    type="button"
+                    disabled={resendBusy && resendPost?.id === post.id}
+                    onClick={() => {
+                      setResendError('');
+                      setResendPost(post);
+                    }}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-40 dark:text-indigo-300 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-100"
+                    aria-label={`Send ${post.title || 'teacher card'} again`}
+                    title=""
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 12a9 9 0 1 0 3-6.7" />
+                      <path d="M3 4v5h5" />
+                    </svg>
+                  </button>
+                </HintWrap>
                 <HintWrap hint="Edit card">
                   <button
                     type="button"
@@ -6600,6 +6671,24 @@ function TeacherDashboardInner() {
         getOverlayRoot()
       )}
 
+      <StudentPickerDialog
+        open={!!resendPost}
+        title="Send again"
+        subtitle={String(resendPost?.title || '').trim() || String(resendPost?.text || '').trim().split('\n')[0].slice(0, 80) || 'Resource'}
+        students={orderedStudents.map((student) => ({
+          ...student,
+          connected: livePulse.students?.length ? connectedStudents.some((item) => item.id === student.id) : undefined,
+        }))}
+        initialIds={[]}
+        busy={resendBusy}
+        error={resendError}
+        onCancel={() => {
+          if (resendBusy) return;
+          setResendPost(null);
+          setResendError('');
+        }}
+        onConfirm={(ids) => resendTeacherCard(resendPost, ids)}
+      />
       <StudentPickerDialog
         open={!!shareTarget}
         title="Who should see this writing?"

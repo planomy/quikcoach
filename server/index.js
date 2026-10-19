@@ -2571,6 +2571,66 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('teacher:resource-resend', ({ postId, studentIds }, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const row = queries.getBoardPost(db, Number(postId));
+      if (!row || normalizeRoomCode(row.room_code) !== code) {
+        cb?.({ ok: false, error: 'That resource is no longer in Resources' });
+        return;
+      }
+      if (row.kind !== 'file' && row.kind !== 'image') {
+        cb?.({ ok: false, error: 'That resource has no file to send again' });
+        return;
+      }
+      const filename = String(row.image_filename || '');
+      if (!filename || /[\\/]/.test(filename) || filename.includes('..')) {
+        cb?.({ ok: false, error: 'The file for this resource is missing' });
+        return;
+      }
+      const filePath = path.join(boardMediaDir(code), filename);
+      if (!fs.existsSync(filePath)) {
+        cb?.({ ok: false, error: 'The file for this resource is missing' });
+        return;
+      }
+      const recipientIds = normalizeRecipientIds(studentIds, queries.listStudents(db, code).map((student) => student.id));
+      if (!recipientIds || !recipientIds.length) {
+        cb?.({ ok: false, error: 'Choose at least one student in this room' });
+        return;
+      }
+      const post = queries.rowToBoardPost(row);
+      const handoutTitle = String(post.title || '').trim().slice(0, 80) || String(post.text || '').trim().slice(0, 80) || 'Handout';
+      const item = {
+        id: `material-${Date.now()}-${randomUUID().slice(0, 6)}`,
+        type: 'material',
+        title: handoutTitle,
+        originalName: String(post.text || filename).slice(0, 120),
+        filename,
+        mimeType: post.mime_type || mimeFromExt(extFromName(filename)),
+        size: fs.statSync(filePath).size,
+        url: post.file_url || post.image_url,
+        at: Date.now(),
+        studentIds: recipientIds,
+      };
+      emitMaterialToRoom(code, item);
+      const recipients = new Set(recipientIds.map(Number));
+      for (const student of queries.listStudents(db, code)) {
+        if (recipients.has(Number(student.id))) {
+          recordTrailFeedback(code, student, `Resource: ${handoutTitle}`, Date.now(), 'resource');
+        }
+      }
+      cb?.({ ok: true, item });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not send that resource again' });
+    }
+  });
+
   socket.on('teacher:broadcast', async ({ studentIds, postIds, recipientIds }, cb) => {
     try {
       const codeRaw = socket.data.roomCode;
