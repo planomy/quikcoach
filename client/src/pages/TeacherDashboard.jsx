@@ -773,15 +773,54 @@ function TeacherDashboardInner() {
       if (bar.clientWidth < 8) return;
       const gauge = gaugeSlotRef.current?.offsetWidth || 156;
       const side = Math.max(0, (bar.clientWidth - gauge) / 2);
+      // The tool row hangs 0.4rem past the outer end of each wing.
+      const room = side + 6;
       const icon = 46;
-      const monitorCount = bar.querySelectorAll('.iboard-command-bar__side--monitor [data-command-id]').length || 5;
-      const manageCount = bar.querySelectorAll('.iboard-command-bar__side--manage [data-command-id]').length || 6;
-      const labels = side >= 400;
-      const fitCount = (count) => {
-        if (labels || side >= count * icon) return count;
-        return Math.max(0, Math.min(count, Math.floor((side - icon) / icon)));
+      const labelWidths = (selector) => {
+        const probe = document.createElement('span');
+        probe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;white-space:nowrap;pointer-events:none;';
+        document.body.appendChild(probe);
+        const widths = [...bar.querySelectorAll(selector)].map((item) => {
+          const label = item.querySelector('.iboard-wing-caption, .iboard-alert-chip__name');
+          if (!label) return 32;
+          const cs = getComputedStyle(label);
+          probe.style.font = cs.font;
+          probe.style.letterSpacing = cs.letterSpacing;
+          probe.textContent = (label.textContent || '').trim();
+          return Math.max(32, Math.ceil(probe.getBoundingClientRect().width) + 6);
+        });
+        probe.remove();
+        return widths;
       };
-      const next = { labels, monitorKeep: fitCount(monitorCount), manageKeep: fitCount(manageCount) };
+      const widest = (widths, keep, fromEnd) => {
+        const slice = fromEnd ? widths.slice(widths.length - keep) : widths.slice(0, keep);
+        return Math.max(32, ...slice);
+      };
+      // Keep captions on, and move the outer controls into More until the words fit.
+      // Icon-only is reserved for a wing that cannot hold two labelled controls.
+      const labeledPlan = (widths, fromEnd) => {
+        const count = widths.length;
+        const fits = (keep, withMore) => widest(widths, keep, fromEnd) * (keep + (withMore ? 1 : 0)) <= room + 1;
+        if (fits(count, false)) return { labels: true, keep: count };
+        for (let keep = count - 1; keep >= 2; keep -= 1) {
+          if (fits(keep, true)) return { labels: true, keep };
+        }
+        return { labels: false, keep: 0 };
+      };
+      const iconKeep = (count) => (
+        count * icon <= room + 1 ? count : Math.max(0, Math.min(count, Math.floor((room - icon) / icon)))
+      );
+      const monitorWidths = labelWidths('.iboard-command-bar__side--monitor [data-command-id]');
+      const manageWidths = labelWidths('.iboard-command-bar__side--manage [data-command-id]');
+      if (!monitorWidths.length || !manageWidths.length) return;
+      const monitorPlan = labeledPlan(monitorWidths, true);
+      const managePlan = labeledPlan(manageWidths, false);
+      const labels = monitorPlan.labels && managePlan.labels;
+      const next = {
+        labels,
+        monitorKeep: labels ? monitorPlan.keep : iconKeep(monitorWidths.length),
+        manageKeep: labels ? managePlan.keep : iconKeep(manageWidths.length),
+      };
       setCommandFit((current) => (
         current.labels === next.labels && current.monitorKeep === next.monitorKeep && current.manageKeep === next.manageKeep
           ? current
@@ -801,7 +840,14 @@ function TeacherDashboardInner() {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(bar);
-    return () => observer.disconnect();
+    let cancelled = false;
+    document.fonts?.ready?.then(() => {
+      if (!cancelled) measure();
+    });
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
   });
   useEffect(() => {
     if (!commandMore) return undefined;
