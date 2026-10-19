@@ -1198,10 +1198,11 @@ html.dark .iboard-alert-chip.is-on {
 
 .iboard-command-bar .iboard-alert-chip {
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   height: auto;
   gap: 0.16rem;
-  padding: 0 0.12rem;
+  padding: 0 0.38rem;
   background: transparent;
   color: #ffffff;
 }
@@ -1225,9 +1226,11 @@ html.dark .iboard-alert-chip.is-on {
 
 .iboard-alert-chip__mark {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   gap: 0.16rem;
+  width: max-content;
   min-height: 1.15rem;
   padding: 0.1rem 0.32rem;
   border-radius: 999px;
@@ -1697,7 +1700,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 .iboard-command-bar__side .iboard-attention-home > *:not(.iboard-command-bar__divider),
 .iboard-command-bar__side .iboard-manage-tools > * {
   display: flex;
-  min-width: 0;
+  min-width: max-content;
   min-height: 0;
   width: auto;
 }
@@ -1708,15 +1711,16 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   flex: 0 0 auto;
   width: auto;
   height: 100%;
-  min-width: 0;
+  min-width: max-content;
 }
 
 .iboard-command-bar__side .iboard-alert-chip,
 .iboard-command-bar__side .iboard-wing-tool {
   flex: 0 0 auto;
+  align-items: center;
   width: auto;
   height: 100%;
-  min-width: 2.4rem;
+  min-width: 2.9rem;
   border-radius: 0;
   justify-content: center;
 }
@@ -1870,9 +1874,15 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
 
 .iboard-manage-tools .iboard-header-icon-button > svg,
 .iboard-manage-tools .iboard-header-icon {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
   transform-origin: center;
+}
+
+.iboard-command-bar .iboard-header-icon--view {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .iboard-board-font-mark {

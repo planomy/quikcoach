@@ -792,10 +792,6 @@ function TeacherDashboardInner() {
         if (!chip) return 40;
         return Math.max(36, Math.ceil(chip.getBoundingClientRect().width));
       });
-      const widest = (widths, keep, fromEnd) => {
-        const slice = fromEnd ? widths.slice(widths.length - keep) : widths.slice(0, keep);
-        return Math.max(32, ...slice);
-      };
       const sumKept = (widths, keep, fromEnd, withMore) => {
         const slice = fromEnd ? widths.slice(widths.length - keep) : widths.slice(0, keep);
         return slice.reduce((total, width) => total + width, 0) + (withMore ? moreW : 0);
@@ -804,7 +800,7 @@ function TeacherDashboardInner() {
       // Icon-only is reserved for a wing that cannot hold two labelled controls.
       const labeledPlan = (widths, fromEnd) => {
         const count = widths.length;
-        const fits = (keep, withMore) => widest(widths, keep, fromEnd) * (keep + (withMore ? 1 : 0)) <= room + 1;
+        const fits = (keep, withMore) => sumKept(widths, keep, fromEnd, withMore) <= room + 1;
         if (fits(count, false)) return { labels: true, keep: count };
         for (let keep = count - 1; keep >= 2; keep -= 1) {
           if (fits(keep, true)) return { labels: true, keep };
@@ -838,7 +834,8 @@ function TeacherDashboardInner() {
       const manageContent = labels
         ? sumKept(manageWidths, next.manageKeep, false, next.manageKeep < manageWidths.length)
         : (next.manageKeep + (next.manageKeep < manageWidths.length ? 1 : 0)) * icon;
-      const wing = Math.max(icon * 2, Math.min(Math.max(monitorContent, manageContent), room));
+      const collar = 12;
+      const wing = Math.max(icon * 2, Math.min(Math.max(monitorContent, manageContent) + collar, room));
       bar.style.setProperty('--command-wing', `${Math.round(wing)}px`);
       const inboxW = monitorWidths[monitorWidths.length - 1] || 48;
       bar.querySelector('.iboard-attention-home')?.style.setProperty('--inbox-col', `${inboxW}px`);
