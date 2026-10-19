@@ -1108,6 +1108,7 @@ html.dark .iboard-brand-word {
   column-gap: 0;
   width: 100%;
   --command-collar-inset: 0px;
+  --command-end-radius: calc((2.34rem + 4px) / 4);
 }
 
 /* Alerts read as icon + number; colour only appears when a count is above zero. */
@@ -1564,11 +1565,11 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 }
 
 .iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip {
-  border-radius: 999px 0 0 999px;
+  border-radius: var(--command-end-radius) 0 0 var(--command-end-radius);
 }
 
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-wing-tool {
-  border-radius: 0 999px 999px 0;
+  border-radius: 0 var(--command-end-radius) var(--command-end-radius) 0;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip:hover:not(.is-on) {
@@ -1590,7 +1591,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   height: calc(2.34rem + 4px);
   overflow: hidden;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--command-end-radius);
   background: #433bbd;
   filter: none;
   pointer-events: none;
