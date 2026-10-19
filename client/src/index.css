@@ -1601,8 +1601,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard
   position: absolute;
   left: 50%;
   top: 50%;
-  width: calc(5.15rem + 10px);
-  height: calc(5.15rem + 10px);
+  width: calc(5.15rem + 5px);
+  height: calc(5.15rem + 5px);
   border-radius: 999px;
   background: #ffffff;
   transform: translate(-50%, -50%);
