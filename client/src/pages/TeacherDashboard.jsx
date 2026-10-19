@@ -768,33 +768,37 @@ function TeacherDashboardInner() {
   }, [gaugePanelOpen]);
   useLayoutEffect(() => {
     const bar = commandBarRef.current;
-    if (!bar || bar.clientWidth < 8) return undefined;
+    const slot = bar?.parentElement;
+    if (!bar || !slot) return undefined;
     const measure = () => {
-      if (bar.clientWidth < 8) return;
+      const meta = slot.querySelector('.iboard-header-meta');
+      const actions = slot.querySelector('.iboard-header-actions');
+      const gaps = 32;
+      const available = Math.max(
+        0,
+        slot.clientWidth - (meta?.offsetWidth || 0) - (actions?.offsetWidth || 0) - gaps,
+      );
+      if (available < 8) return;
       const gauge = gaugeSlotRef.current?.offsetWidth || 156;
-      const side = Math.max(0, (bar.clientWidth - gauge) / 2);
+      const side = Math.max(0, (available - gauge) / 2);
       // The tool row hangs 0.4rem past the outer end of each wing.
       const room = side + 6;
       const icon = 46;
-      const labelWidths = (selector) => {
-        const probe = document.createElement('span');
-        probe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;white-space:nowrap;pointer-events:none;';
-        document.body.appendChild(probe);
-        const widths = [...bar.querySelectorAll(selector)].map((item) => {
-          const label = item.querySelector('.iboard-wing-caption, .iboard-alert-chip__name');
-          if (!label) return 32;
-          const cs = getComputedStyle(label);
-          probe.style.font = cs.font;
-          probe.style.letterSpacing = cs.letterSpacing;
-          probe.textContent = (label.textContent || '').trim();
-          return Math.max(32, Math.ceil(probe.getBoundingClientRect().width) + 6);
-        });
-        probe.remove();
-        return widths;
-      };
+      const moreW = 52;
+      const labelWidths = (selector) => [...bar.querySelectorAll(selector)].map((item) => {
+        const chip = item.matches('.iboard-alert-chip, .iboard-wing-tool')
+          ? item
+          : item.querySelector('.iboard-alert-chip, .iboard-wing-tool');
+        if (!chip) return 40;
+        return Math.max(36, Math.ceil(chip.getBoundingClientRect().width));
+      });
       const widest = (widths, keep, fromEnd) => {
         const slice = fromEnd ? widths.slice(widths.length - keep) : widths.slice(0, keep);
         return Math.max(32, ...slice);
+      };
+      const sumKept = (widths, keep, fromEnd, withMore) => {
+        const slice = fromEnd ? widths.slice(widths.length - keep) : widths.slice(0, keep);
+        return slice.reduce((total, width) => total + width, 0) + (withMore ? moreW : 0);
       };
       // Keep captions on, and move the outer controls into More until the words fit.
       // Icon-only is reserved for a wing that cannot hold two labelled controls.
@@ -810,6 +814,8 @@ function TeacherDashboardInner() {
       const iconKeep = (count) => (
         count * icon <= room + 1 ? count : Math.max(0, Math.min(count, Math.floor((room - icon) / icon)))
       );
+      // Lay chips out at their natural width before hugging the wings to that sum.
+      bar.style.setProperty('--command-wing', `${Math.round(room)}px`);
       const monitorWidths = labelWidths('.iboard-command-bar__side--monitor [data-command-id]');
       const manageWidths = labelWidths('.iboard-command-bar__side--manage [data-command-id]');
       if (!monitorWidths.length || !manageWidths.length) return;
@@ -826,6 +832,16 @@ function TeacherDashboardInner() {
           ? current
           : next
       ));
+      const monitorContent = labels
+        ? sumKept(monitorWidths, next.monitorKeep, true, next.monitorKeep < monitorWidths.length)
+        : (next.monitorKeep + (next.monitorKeep < monitorWidths.length ? 1 : 0)) * icon;
+      const manageContent = labels
+        ? sumKept(manageWidths, next.manageKeep, false, next.manageKeep < manageWidths.length)
+        : (next.manageKeep + (next.manageKeep < manageWidths.length ? 1 : 0)) * icon;
+      const wing = Math.max(icon * 2, Math.min(Math.max(monitorContent, manageContent), room));
+      bar.style.setProperty('--command-wing', `${Math.round(wing)}px`);
+      const inboxW = monitorWidths[monitorWidths.length - 1] || 48;
+      bar.querySelector('.iboard-attention-home')?.style.setProperty('--inbox-col', `${inboxW}px`);
       const pin = (button, edge) => {
         if (!button) return;
         const rect = button.getBoundingClientRect();
@@ -839,7 +855,7 @@ function TeacherDashboardInner() {
     };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(bar);
+    observer.observe(slot);
     let cancelled = false;
     document.fonts?.ready?.then(() => {
       if (!cancelled) measure();
@@ -4277,7 +4293,6 @@ function TeacherDashboardInner() {
   const manageKeep = Math.min(commandFit.manageKeep, manageCommands.length);
   const monitorCols = monitorKeep + (monitorKeep < monitorCommands.length ? 1 : 0);
   const manageCols = manageKeep + (manageKeep < manageCommands.length ? 1 : 0);
-  const monitorDivider = monitorCols > 1 ? `${((monitorCols - 1) / monitorCols) * 100}%` : '100%';
   function pressCommandItem(id) {
     setCommandMore(null);
     commandBarRef.current?.querySelector(`[data-command-id="${id}"]`)?.click();
@@ -4695,7 +4710,7 @@ function TeacherDashboardInner() {
                   className="iboard-attention-home"
                   role="group"
                   aria-label="Needs a look"
-                  style={{ gridTemplateColumns: `repeat(${Math.max(1, monitorCols)}, minmax(0, 1fr))` }}
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, monitorCols)}, max-content)` }}
                 >
                     {monitorKeep < monitorCommands.length ? (
                       <div className="iboard-command-more-slot iboard-command-more-slot--start">
@@ -4827,7 +4842,6 @@ function TeacherDashboardInner() {
                     })}
                   <span
                     className="iboard-command-bar__divider"
-                    style={{ left: monitorDivider }}
                     hidden={monitorKeep < 2}
                     aria-hidden="true"
                   />
@@ -4879,7 +4893,7 @@ function TeacherDashboardInner() {
                   className="iboard-manage-tools"
                   role="group"
                   aria-label="Manage class"
-                  style={{ gridTemplateColumns: `repeat(${Math.max(1, manageCols)}, minmax(0, 1fr))` }}
+                  style={{ gridTemplateColumns: `repeat(${Math.max(1, manageCols)}, max-content)` }}
                 >
                   <div className="relative iboard-command-item" data-header-tool="words" data-overflow={0 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint="Set a word limit for student cards" prefer="below" suppressed={headerTool === 'words'}>

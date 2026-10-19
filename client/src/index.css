@@ -1029,8 +1029,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   padding: 0.4rem 1.15rem 0.4rem 0.9rem;
 }
 
-/* Room and the menu stay their own width. The wings take whatever is left, so the
-   captions fit on a laptop and the gauge stays centred between the wings. */
+/* Room and the menu stay their own width. The command bar hugs its controls in
+   the leftover slot so a laptop does not stretch empty purple across the header. */
 .iboard-teacher-header-main--command {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr) max-content;
@@ -1110,11 +1110,13 @@ html.dark .iboard-brand-word {
 .iboard-command-bar {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: var(--command-wing, 16rem) auto var(--command-wing, 16rem);
   align-items: end;
   column-gap: 0;
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
   min-width: 0;
+  justify-self: center;
   --command-collar-inset: 0px;
   --command-end-radius: calc((2.34rem + 4px) / 3);
 }
@@ -1565,8 +1567,8 @@ html.dark .iboard-nudge-strip__compose input {
 
 .iboard-command-bar__side .iboard-command-item > span {
   display: flex;
-  flex: 1 1 auto;
-  width: 100%;
+  flex: 0 0 auto;
+  width: auto;
   height: 100%;
   min-width: 0;
 }
@@ -1614,8 +1616,8 @@ html.dark .iboard-command-more__menu button:hover {
   background: rgba(90, 95, 195, 0.22);
 }
 
-/* Both capsules fill equal columns so the gauge sits dead centre between them,
-   stopping short of the ring so the white frame shows evenly on both sides. */
+/* Both capsules share the same wing width so the gauge stays centred. Extra
+   room, if any, sits on the outer end of the shorter side. */
 .iboard-command-bar__side .iboard-attention-home,
 .iboard-command-bar__side .iboard-manage-tools {
   box-sizing: border-box;
@@ -1659,12 +1661,12 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   transform: none;
 }
 
-/* Icons share the wing in equal columns. The monitor divider sits on the
-   line between Pasted and Inbox, so it does not steal a column. */
+/* Columns hug their captions. Monitor packs toward the gauge, manage too. */
 .iboard-command-bar__side .iboard-attention-home {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, max-content);
   align-items: stretch;
+  justify-content: end;
   justify-items: stretch;
   column-gap: 0;
 }
@@ -1673,19 +1675,21 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 80%;
+  left: auto;
+  right: var(--inbox-col, 0px);
   z-index: 1;
   width: 1px;
   height: 100%;
   margin: 0;
   align-self: stretch;
-  transform: translateX(-50%);
+  transform: translateX(50%);
 }
 
 .iboard-command-bar__side .iboard-manage-tools {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(6, max-content);
   align-items: stretch;
+  justify-content: start;
   justify-items: stretch;
   column-gap: 0;
 }
@@ -1695,23 +1699,24 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   display: flex;
   min-width: 0;
   min-height: 0;
+  width: auto;
 }
 
 .iboard-command-bar__side .iboard-attention-pill > span,
 .iboard-command-bar__side .iboard-manage-tools > .relative > span {
   display: flex;
-  flex: 1 1 auto;
-  width: 100%;
+  flex: 0 0 auto;
+  width: auto;
   height: 100%;
   min-width: 0;
 }
 
 .iboard-command-bar__side .iboard-alert-chip,
 .iboard-command-bar__side .iboard-wing-tool {
-  flex: 1 1 auto;
-  width: 100%;
+  flex: 0 0 auto;
+  width: auto;
   height: 100%;
-  min-width: 0;
+  min-width: 2.4rem;
   border-radius: 0;
   justify-content: center;
 }
@@ -1828,11 +1833,11 @@ html.dark .iboard-command-bar__divider {
 }
 
 .iboard-manage-tools .iboard-wing-tool {
-  width: 100%;
+  width: auto;
   height: 100%;
   flex-direction: column;
   gap: 0.16rem;
-  padding: 0 0.12rem;
+  padding: 0 0.45rem;
   border-radius: 0;
 }
 
