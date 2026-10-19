@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, createPortal } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createSocket } from '../lib/socket.js';
 import { FULLSCREEN_UNAVAILABLE_MESSAGE, canFullscreen, isFullscreen, subscribeFullscreenChange, toggleFullscreen } from '../lib/fullscreen.js';
@@ -23,7 +23,6 @@ import DrawBoxResizeHandle, { readDrawBoxHeight } from '../components/DrawBoxRes
 import StudentWorkspaceSplit from '../components/StudentWorkspaceSplit.jsx';
 import ClassWall from '../components/ClassWall.jsx';
 import HintWrap from '../components/HintWrap.jsx';
-import { RemoveButton } from '../components/PanelActions.jsx';
 import { persistInboxShare, readInboxShare } from '../lib/studentSplit.js';
 import '../components/studentWorkspace.css';
 import { plainTextToRichHtml } from '../lib/richText.js';
@@ -206,6 +205,15 @@ export default function StudentView() {
   const [draftConflict, setDraftConflict] = useState(null);
   const [removedByTeacher, setRemovedByTeacher] = useState(null);
   const [browserFullscreen, setBrowserFullscreen] = useState(false);
+  const [editorMount] = useState(() => {
+    if (typeof document === 'undefined') return null;
+    const node = document.createElement('div');
+    node.className = 'iboard-editor-mount';
+    return node;
+  });
+  const editorHomeRef = useRef(null);
+  const wallEditorSlotRef = useRef(null);
+  const [wallHeld, setWallHeld] = useState(false);
 
   const socket = useMemo(() => createSocket(), []);
   const draftTrailTokenRef = useRef('');
@@ -286,6 +294,20 @@ export default function StudentView() {
       window.removeEventListener('scroll', place, true);
     };
   }, [helpSeenToast]);
+
+  useLayoutEffect(() => {
+    const mount = editorMount;
+    const home = editorHomeRef.current;
+    const slot = wallEditorSlotRef.current;
+    if (!mount) return;
+    if (classWallActive && slot) {
+      if (mount.parentElement !== slot) slot.appendChild(mount);
+      if (!wallHeld) setWallHeld(true);
+      return;
+    }
+    if (home && mount.parentElement !== home) home.appendChild(mount);
+    if (!classWallActive && wallHeld) setWallHeld(false);
+  });
 
   // Shared / Ask live questions land in the Inbox rail (Respond tab was removed).
   useEffect(() => {
@@ -1544,6 +1566,30 @@ export default function StudentView() {
     />
   );
 
+  const showClassWall = classWallActive || wallHeld;
+  const imageRemoveTitle = frozen
+    ? 'Class is frozen by your teacher.'
+    : writingLocked
+      ? 'Writing is locked until your teacher is in this room.'
+      : 'Remove this image';
+  function renderImageRemoveButton() {
+    return (
+      <button
+        type="button"
+        onClick={clearMyImage}
+        disabled={writingLocked}
+        className="iboard-draw-preview__remove"
+        aria-label="Remove image"
+        title={imageRemoveTitle}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
+        </svg>
+        Remove
+      </button>
+    );
+  }
+
   return (
     <div className="iboard-student-canvas flex min-h-screen w-full min-w-0 flex-col dark:bg-slate-950">
       {timesUp && (
@@ -1907,13 +1953,13 @@ export default function StudentView() {
             />
           )}
 
-          <section className={`iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4${classWallActive ? ' overflow-y-auto' : ''}`}>
-            {classWallActive ? null : (
+          <section className={`iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4${showClassWall ? ' overflow-y-auto' : ''}`}>
+            {showClassWall ? null : (
             <p className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
               Tip: paste a screenshot into the box to add an image to your board card.
             </p>
             )}
-            {student?.image_url && !classWallActive && (
+            {student?.image_url && !showClassWall && (
               <div
                 data-student-image-preview
                 className="iboard-draw-preview"
@@ -1923,19 +1969,7 @@ export default function StudentView() {
                     Teacher correction
                   </p>
                 )}
-                <button
-                  type="button"
-                  onClick={clearMyImage}
-                  disabled={writingLocked}
-                  className="iboard-draw-preview__remove"
-                  aria-label="Remove image"
-                  title={frozen ? 'Class is frozen by your teacher.' : writingLocked ? 'Writing is locked until your teacher is in this room.' : 'Remove this image'}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
-                  </svg>
-                  Remove
-                </button>
+                {renderImageRemoveButton()}
                 <div className="iboard-draw-box" style={{ height: drawBoxHeight }}>
                   <AnnotatedStudentImage
                     imageUrl={student.image_url}
@@ -1963,7 +1997,7 @@ export default function StudentView() {
               </div>
             )}
             <StudentAnnotationController socket={socket} studentId={student?.id} />
-            {classWallActive ? (
+            {showClassWall ? (
               <ClassWall
                 students={wallStudents.length ? wallStudents : (student ? [student] : [])}
                 selfId={student?.id}
@@ -1971,26 +2005,21 @@ export default function StudentView() {
                 youCard={(
                   <div className="iboard-student-writing-pane min-h-0 flex-1">
                     {student?.image_url ? (
-                      <div className="iboard-class-wall__image-wrap">
+                      <div key="wall-image" className="iboard-class-wall__image-wrap">
                         <img src={student.image_url} alt="" className="iboard-class-wall__image" />
-                        <RemoveButton
-                          onClick={clearMyImage}
-                          disabled={writingLocked}
-                          aria-label="Remove image"
-                          title={frozen ? 'Class is frozen by your teacher.' : writingLocked ? 'Writing is locked until your teacher is in this room.' : 'Remove image'}
-                          className="iboard-draw-preview__remove"
-                        />
+                        {renderImageRemoveButton()}
                       </div>
                     ) : null}
-                    {writingEditor}
+                    <div key="wall-editor" ref={wallEditorSlotRef} className="iboard-wall-editor-slot" />
                   </div>
                 )}
               />
-            ) : (
-              <div className="iboard-student-writing-pane min-h-0 flex-1">
-                {writingEditor}
-              </div>
-            )}
+            ) : null}
+            <div
+              ref={editorHomeRef}
+              className={`iboard-student-writing-pane min-h-0 flex-1${showClassWall ? ' is-parked' : ''}`}
+            />
+            {editorMount ? createPortal(writingEditor, editorMount) : writingEditor}
           </section>
         </div>
         {breakoutsActive ? (

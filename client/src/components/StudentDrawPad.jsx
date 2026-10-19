@@ -31,13 +31,30 @@ function clampCanvasHeight(value) {
   return Math.min(MAX_CANVAS_HEIGHT, Math.max(CANVAS_HEIGHT, Math.round(value)));
 }
 
-function pointFromEvent(canvas, event) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / Math.max(1, rect.width);
-  const scaleY = canvas.height / Math.max(1, rect.height);
+function paintedRect(canvas) {
+  const box = canvas.getBoundingClientRect();
+  const bitmapW = canvas.width || 1;
+  const bitmapH = canvas.height || 1;
+  const scale = Math.min(box.width / bitmapW, box.height / bitmapH);
+  const width = bitmapW * scale;
+  const height = bitmapH * scale;
   return {
-    x: (event.clientX - rect.left) * scaleX,
-    y: (event.clientY - rect.top) * scaleY,
+    left: box.left + (box.width - width) / 2,
+    top: box.top + (box.height - height) / 2,
+    width,
+    height,
+  };
+}
+
+function pointFromEvent(canvas, event) {
+  const painted = paintedRect(canvas);
+  const scale = canvas.width / Math.max(1, painted.width);
+  const x = (event.clientX - painted.left) * scale;
+  const y = (event.clientY - painted.top) * scale;
+  return {
+    x: Math.min(canvas.width, Math.max(0, x)),
+    y: Math.min(canvas.height, Math.max(0, y)),
+    inside: x >= -2 && y >= -2 && x <= canvas.width + 2 && y <= canvas.height + 2,
   };
 }
 
@@ -153,6 +170,11 @@ export default function StudentDrawPad({
   onDone,
 }) {
   const canvasRef = useRef(null);
+  const canvasNodeRef = useRef(null);
+  const onSaveRef = useRef(onSave);
+  const onClearRef = useRef(onClear);
+  onSaveRef.current = onSave;
+  onClearRef.current = onClear;
   const strokesRef = useRef([]);
   const currentStrokeRef = useRef(null);
   const activePointerRef = useRef(null);
@@ -166,6 +188,7 @@ export default function StudentDrawPad({
   const boxHeight = boxHeightProp ?? boxHeightState;
   const setBoxHeight = onBoxHeight || setBoxHeightState;
   const [canvasHeight, setCanvasHeight] = useState(CANVAS_HEIGHT);
+  const [displaySize, setDisplaySize] = useState(null);
   const [strokeCount, setStrokeCount] = useState(0);
   const [status, setStatus] = useState('Draw with your mouse, finger or stylus');
   const [finishing, setFinishing] = useState(false);
@@ -241,11 +264,56 @@ export default function StudentDrawPad({
   }, [saveNow]);
 
   useLayoutEffect(() => {
-    const displayW = canvasRef.current?.getBoundingClientRect().width || CANVAS_WIDTH;
+    const box = canvasRef.current?.parentElement?.getBoundingClientRect();
+    const displayW = box?.width || CANVAS_WIDTH;
     const next = clampCanvasHeight(boxHeight * (CANVAS_WIDTH / Math.max(1, displayW)));
     canvasHeightRef.current = next;
     setCanvasHeight((current) => (current === next ? current : next));
   }, [boxHeight]);
+
+  useLayoutEffect(() => {
+    const box = canvasRef.current?.parentElement;
+    if (!box) return undefined;
+    const apply = () => {
+      const rect = box.getBoundingClientRect();
+      const bitmapH = canvasHeightRef.current || CANVAS_HEIGHT;
+      const boxW = rect.width || CANVAS_WIDTH;
+      const boxH = rect.height || boxHeight;
+      const scale = Math.min(boxW / CANVAS_WIDTH, boxH / bitmapH);
+      const width = Math.max(1, Math.floor(CANVAS_WIDTH * scale));
+      const height = Math.max(1, Math.floor(bitmapH * scale));
+      setDisplaySize((current) => (
+        current && current.width === width && current.height === height ? current : { width, height }
+      ));
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [boxHeight, canvasHeight]);
+
+  useLayoutEffect(() => {
+    canvasNodeRef.current = canvasRef.current;
+  });
+
+  useLayoutEffect(() => () => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
+    idleTimerRef.current = null;
+    maxTimerRef.current = null;
+    const canvas = canvasNodeRef.current;
+    if (!dirtyRef.current || !canvas) return;
+    dirtyRef.current = false;
+    const hasDrawing =
+      strokesRef.current.length > 0 ||
+      (currentStrokeRef.current?.points?.length || 0) > 0;
+    try {
+      if (hasDrawing) void onSaveRef.current?.(canvas.toDataURL('image/jpeg', 0.82));
+      else void onClearRef.current?.();
+    } catch {
+      /* the live pad is already gone */
+    }
+  }, []);
 
   useEffect(() => {
     redraw();
@@ -271,10 +339,11 @@ export default function StudentDrawPad({
     if (disabled || finishing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const point = pointFromEvent(canvas, event);
+    if (!point.inside) return;
     event.preventDefault();
     activePointerRef.current = event.pointerId;
     canvas.setPointerCapture?.(event.pointerId);
-    const point = pointFromEvent(canvas, event);
     const stroke = { tool, colour, points: [point] };
     currentStrokeRef.current = stroke;
     if (!isShapeTool(tool)) paintCurrent();
@@ -356,6 +425,7 @@ export default function StudentDrawPad({
   function cancelDrawing() {
     if (finishing) return;
     clearTimers();
+    dirtyRef.current = false;
     onDone?.();
   }
 
@@ -472,8 +542,14 @@ export default function StudentDrawPad({
             onPointerUp={finishStroke}
             onPointerCancel={finishStroke}
             aria-label="Drawing canvas for showing your working"
-            className={`block h-full w-full rounded-xl border border-slate-300 bg-white ${disabled ? 'cursor-not-allowed opacity-70' : tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'}`}
-            style={{ touchAction: 'none' }}
+            className={`block max-h-full max-w-full rounded-xl border border-slate-300 bg-white ${disabled ? 'cursor-not-allowed opacity-70' : tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'}`}
+            style={{
+              touchAction: 'none',
+              width: displaySize ? `${displaySize.width}px` : '100%',
+              height: displaySize ? `${displaySize.height}px` : '100%',
+              objectFit: 'contain',
+              objectPosition: 'center',
+            }}
           />
         </div>
         <DrawBoxResizeHandle
