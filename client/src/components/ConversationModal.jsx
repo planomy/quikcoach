@@ -5,15 +5,15 @@ import { confirmDialog } from './ConfirmDialogHost.jsx';
 import HintWrap from './HintWrap.jsx';
 import './conversationModal.css';
 
-export function ChatIcon({ className = 'h-4 w-4' }) {
+export function ChatIcon({ className = 'h-4 w-4', filled = false }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
       className={className}
-      fill="none"
+      fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth={filled ? '1.25' : '2'}
       strokeLinecap="round"
       strokeLinejoin="round"
     >

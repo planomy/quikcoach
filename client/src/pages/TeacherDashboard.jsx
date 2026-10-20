@@ -5998,7 +5998,7 @@ function TeacherDashboardInner() {
                               : `Chat with ${s.name}`
                       }
                     >
-                      <ChatIcon className="h-4 w-4" />
+                      <ChatIcon className="h-4 w-4" filled={noteStatus === 'replied'} />
                       {noteReceiptByStudentId[s.id] === 'replied' ? (
                         <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
                       ) : null}
@@ -7377,7 +7377,7 @@ function TeacherDashboardInner() {
                     }`}
                     aria-label={`Chat with ${focusedStudent.name}`}
                   >
-                    <ChatIcon className="h-4 w-4" />
+                    <ChatIcon className="h-4 w-4" filled={noteReceiptByStudentId[focusedStudent.id] === 'replied'} />
                     {noteReceiptByStudentId[focusedStudent.id] === 'replied' ? (
                       <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
                     ) : null}
