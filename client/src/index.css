@@ -5062,7 +5062,82 @@ html.dark .iboard-library-dock__resize::after {
 .iboard-room-settings__hero {
   display: flex;
   flex-direction: column;
+  gap: 1.15rem;
+}
+
+.iboard-settings-group__title {
+  margin: 0 0 0.4rem;
+  padding: 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: -0.011em;
+  color: #6b6b78;
+}
+
+.iboard-settings-group__card {
+  overflow: hidden;
+  border: 1px solid #e4e4ee;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
+.iboard-settings-group__card > * + * {
+  border-top: 1px solid #ececf2;
+}
+
+.iboard-settings-group__card .iboard-room-settings__secondary {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  min-height: 2.65rem;
+}
+
+.iboard-settings-group__card .iboard-room-settings__secondary:hover {
+  border-color: transparent;
+  background: #f6f6fa;
+  color: #3c3c45;
+}
+
+.iboard-settings-group__card .iboard-room-settings__alert-minutes {
+  padding: 0 0.85rem 0.7rem;
+}
+
+.iboard-settings-group__card .iboard-room-settings__alert-minutes.is-idle {
+  opacity: 0.4;
+}
+
+.iboard-settings-group__card .iboard-room-settings__alert-minutes.is-idle input {
+  pointer-events: none;
+}
+
+.iboard-settings-actions {
+  display: flex;
+  flex-direction: column;
   gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+
+html.dark .iboard-settings-group__title {
+  color: #94a3b8;
+}
+
+html.dark .iboard-settings-group__card {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+html.dark .iboard-settings-group__card > * + * {
+  border-top-color: #1e293b;
+}
+
+html.dark .iboard-settings-group__card .iboard-room-settings__secondary {
+  color: #e2e8f0;
+}
+
+html.dark .iboard-settings-group__card .iboard-room-settings__secondary:hover {
+  background: rgba(148, 163, 184, 0.08);
+  color: #e2e8f0;
 }
 
 .iboard-room-settings__primary {

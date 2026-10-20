@@ -6999,6 +6999,9 @@ function TeacherDashboardInner() {
           <div className="iboard-room-settings__body scrollbar-thin">
             {settingsSection === 'settings' && (
             <div className="iboard-room-settings__hero">
+              <section className="iboard-settings-group" aria-label="This lesson">
+                <h3 className="iboard-settings-group__title">This lesson</h3>
+                <div className="iboard-settings-group__card">
               <div className="iboard-room-settings__alert">
                 <HintWrap hint="Stop students typing past this number" className="w-full">
                   <button
@@ -7012,23 +7015,21 @@ function TeacherDashboardInner() {
                     <span className="iboard-switch" data-on={enforceWords ? 'true' : 'false'} aria-hidden="true" />
                   </button>
                 </HintWrap>
-                {enforceWords ? (
-                  <label className="iboard-room-settings__alert-minutes">
-                    <input
-                      type="range"
-                      min={0}
-                      max={500}
-                      step={10}
-                      value={wt}
-                      onChange={(event) => commitWordTarget(event.target.value)}
-                      onPointerUp={(event) => commitWordTarget(event.currentTarget.value, { immediate: true })}
-                      onBlur={(event) => commitWordTarget(event.currentTarget.value, { immediate: true })}
-                      className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
-                      aria-label="Word limit"
-                    />
-                    <span>{wt} words</span>
-                  </label>
-                ) : null}
+                <label className={`iboard-room-settings__alert-minutes${enforceWords ? '' : ' is-idle'}`}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={500}
+                    step={10}
+                    value={wt}
+                    onChange={(event) => commitWordTarget(event.target.value)}
+                    onPointerUp={(event) => commitWordTarget(event.currentTarget.value, { immediate: true })}
+                    onBlur={(event) => commitWordTarget(event.currentTarget.value, { immediate: true })}
+                    className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
+                    aria-label="Word limit"
+                  />
+                  <span>{wt} words</span>
+                </label>
               </div>
               <div className="iboard-room-settings__row">
                 <HintWrap hint="Stamps the start and end on the Learning trail. Feedback asks before sending. Students see a calm banner." className="min-w-0 flex-1" multiline>
@@ -7065,6 +7066,11 @@ function TeacherDashboardInner() {
               <div className="iboard-room-settings__row">
                 {timerControls}
               </div>
+                </div>
+              </section>
+              <section className="iboard-settings-group" aria-label="Your screen">
+                <h3 className="iboard-settings-group__title">Your screen</h3>
+                <div className="iboard-settings-group__card">
               <div className="iboard-room-settings__row">
                 <HintWrap hint="Change the colours of your screen only" className="min-w-0 flex-1">
                   <button
@@ -7093,7 +7099,11 @@ function TeacherDashboardInner() {
                   </button>
                 </HintWrap>
               </div>
-              <p className="iboard-room-settings__alerts-title">Alerts</p>
+                </div>
+              </section>
+              <section className="iboard-settings-group" aria-label="Alerts">
+                <h3 className="iboard-settings-group__title">Alerts</h3>
+                <div className="iboard-settings-group__card">
               {[
                 { key: 'notStarted', label: 'Not started', hint: 'Flags an empty card a few minutes after the student joins', minutesKey: 'notStartedMin', minutesLabel: 'after joining' },
                 { key: 'noTyping', label: 'No typing', hint: 'Flags a student whose writing hasn’t changed for a while', minutesKey: 'noTypingMin', minutesLabel: 'without changes' },
@@ -7113,15 +7123,18 @@ function TeacherDashboardInner() {
                       <span className="iboard-switch" data-on={alertPrefs[alert.key] ? 'true' : 'false'} aria-hidden="true" />
                     </button>
                   </HintWrap>
-                  {alert.minutesKey && alertPrefs[alert.key] ? (
-                    <label className="iboard-room-settings__alert-minutes">
+                  {alert.minutesKey ? (
+                    <label className={`iboard-room-settings__alert-minutes${alertPrefs[alert.key] ? '' : ' is-idle'}`}>
                       <input
                         type="range"
                         min={2}
                         max={10}
                         step={1}
                         value={alertPrefs[alert.minutesKey]}
-                        onChange={(event) => updateAlertPrefs({ [alert.minutesKey]: Number(event.target.value) })}
+                        onChange={(event) => {
+                          if (!alertPrefs[alert.key]) return;
+                          updateAlertPrefs({ [alert.minutesKey]: Number(event.target.value) });
+                        }}
                         className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
                         aria-label={`${alert.label}: minutes ${alert.minutesLabel}`}
                       />
@@ -7130,6 +7143,9 @@ function TeacherDashboardInner() {
                   ) : null}
                 </div>
               ))}
+                </div>
+              </section>
+              <div className="iboard-settings-actions">
               {fixedCommentCount > 0 && (
                 <div className="iboard-room-settings__cleanup">
                   {!clearFixedArmed ? (
@@ -7169,6 +7185,16 @@ function TeacherDashboardInner() {
                 )}
               </div>
             )}
+            <HintWrap hint="Clear every student and card to start a new class (asks first)" className="w-full">
+              <button
+                type="button"
+                onClick={() => { closeSettings(); openNewClassConfirmation(); }}
+                className="iboard-room-settings__danger"
+              >
+                Reset class board
+              </button>
+            </HintWrap>
+              </div>
             </div>
             )}
 
@@ -7197,17 +7223,6 @@ function TeacherDashboardInner() {
             </section>
             )}
 
-            {settingsSection === 'settings' && (
-            <HintWrap hint="Clear every student and card to start a new class (asks first)" className="w-full">
-              <button
-                type="button"
-                onClick={() => { closeSettings(); openNewClassConfirmation(); }}
-                className="iboard-room-settings__danger"
-              >
-                Reset class board
-            </button>
-            </HintWrap>
-            )}
           </div>
         </div>,
         getOverlayRoot()
