@@ -20,12 +20,24 @@ function formatInboxTime(at) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function previewFor(thread, hands) {
-  if (hands.length) {
-    const text = String(hands[0]?.text || '').replace(/\s+/g, ' ').trim();
+function previewFor(row) {
+  if (row.queued) return row.lastText || 'Asked a question';
+  if (row.hands?.length) {
+    const text = String(row.hands[0]?.text || '').replace(/\s+/g, ' ').trim();
     return text ? `Question: ${text}` : 'Asked a question';
   }
-  return thread.lastText || 'No messages yet';
+  return row.lastText || 'No messages yet';
+}
+
+function queueItemsFor(row) {
+  const chat = Array.isArray(row.questions) ? row.questions : [];
+  const hands = (row.hands || []).map((hand) => ({
+    id: `hand-${hand.id}`,
+    text: String(hand.text || '').replace(/\s+/g, ' ').trim(),
+    at: parseInboxAt(hand),
+    unseen: true,
+  }));
+  return [...chat, ...hands].filter((item) => item.text);
 }
 
 function askedAtFor(row) {
@@ -192,12 +204,33 @@ export default function TeacherInboxPanel({
         asked: askedAt > 0 || hands.length > 0,
       };
     });
-    list.sort((left, right) => {
+    const queue = [];
+    const rest = [];
+    for (const row of list) {
+      const items = queueItemsFor(row);
+      if (!items.length) {
+        rest.push(row);
+        continue;
+      }
+      for (const item of items) {
+        queue.push({
+          ...row,
+          rowKey: `${row.studentId}:${item.id}`,
+          lastText: item.text,
+          lastAt: item.at || row.lastAt,
+          askedAt: item.at || row.askedAt || 0,
+          asked: true,
+          waiting: item.unseen !== false,
+          queued: true,
+        });
+      }
+    }
+    queue.sort((left, right) => left.askedAt - right.askedAt || String(left.rowKey).localeCompare(String(right.rowKey)));
+    rest.sort((left, right) => {
       if (left.asked !== right.asked) return left.asked ? -1 : 1;
-      if (left.asked && right.asked && left.askedAt !== right.askedAt) return left.askedAt - right.askedAt;
       return String(left.studentName).localeCompare(String(right.studentName), undefined, { sensitivity: 'base' });
     });
-    return list;
+    return [...queue, ...rest];
   }, [students, threads, pendingHandByStudentId, noteReceiptByStudentId]);
 
   useEffect(() => {
@@ -217,7 +250,14 @@ export default function TeacherInboxPanel({
   }, [rows]);
 
   const selected = rows.find((row) => Number(row.studentId) === Number(selectedId)) || null;
-  const checkedRows = rows.filter((row) => checkedIds.has(Number(row.studentId)));
+  const checkedRows = [];
+  const seenChecked = new Set();
+  for (const row of rows) {
+    const id = Number(row.studentId);
+    if (!checkedIds.has(id) || seenChecked.has(id)) continue;
+    seenChecked.add(id);
+    checkedRows.push(row);
+  }
   const fanout = checkedRows.length >= 2;
 
   function markRowRead(row) {
@@ -226,9 +266,13 @@ export default function TeacherInboxPanel({
     setThreads((current) => {
       let changed = false;
       const next = current.map((thread) => {
-        if (Number(thread.studentId) !== id || !thread.unread) return thread;
+        if (Number(thread.studentId) !== id) return thread;
+        const questions = Array.isArray(thread.questions)
+          ? thread.questions.map((item) => ({ ...item, unseen: false }))
+          : thread.questions;
+        if (!thread.unread && questions === thread.questions) return thread;
         changed = true;
-        return { ...thread, unread: false };
+        return { ...thread, unread: false, questions };
       });
       return changed ? next : current;
     });
@@ -260,7 +304,7 @@ export default function TeacherInboxPanel({
     });
   }
 
-  const allIds = rows.map((row) => Number(row.studentId)).filter((id) => id > 0);
+  const allIds = [...new Set(rows.map((row) => Number(row.studentId)).filter((id) => id > 0))];
   const allChecked = allIds.length > 0 && allIds.every((id) => checkedIds.has(id));
   const someChecked = allIds.some((id) => checkedIds.has(id));
 
@@ -295,7 +339,7 @@ export default function TeacherInboxPanel({
             const checked = checkedIds.has(Number(row.studentId));
             return (
               <div
-                key={row.studentId}
+                key={row.rowKey || row.studentId}
                 className={`iboard-teacher-inbox__row${on ? ' is-on' : ''}${checked ? ' is-checked' : ''}${row.waiting ? ' is-unread' : ''}${row.asked ? '' : ' is-quiet'}`}
               >
                 <label className="iboard-teacher-inbox__check">
@@ -315,7 +359,7 @@ export default function TeacherInboxPanel({
                   <span className="iboard-chat-avatar" aria-hidden="true">{initialFor(row.studentName)}</span>
                   <span>
                     <span className="iboard-teacher-inbox__name">{row.studentName}</span>
-                    <span className="iboard-teacher-inbox__preview">{previewFor(row, row.hands)}</span>
+                    <span className="iboard-teacher-inbox__preview">{previewFor(row)}</span>
                     {row.waiting || formatInboxTime(row.lastAt) ? (
                       <span className="iboard-teacher-inbox__meta">
                         {row.waiting ? <span className="iboard-teacher-inbox__dot" aria-hidden="true" /> : null}

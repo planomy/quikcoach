@@ -266,6 +266,7 @@ function chatMessageFromStudentReply(item) {
     studentId: item.studentId,
     replyId: item.replyId || undefined,
     outboundId: item.outboundId || undefined,
+    teacherSeenAt: item.teacherSeenAt || null,
   };
 }
 
@@ -314,6 +315,7 @@ function conversationForStudent(roomCode, studentId) {
       createdAt: row.created_at,
       studentId: Number(row.student_id),
       outboundId: Number(row.id),
+      teacherSeenAt: row.teacher_seen_at || null,
     }));
 
   return [...notes, ...replies, ...outbound].sort(
@@ -331,6 +333,19 @@ function listChatInbox(roomCode) {
     const items = conversationForStudent(code, row.id);
     const last = items[items.length - 1] || null;
     const firstStudent = items.find((item) => item.from === 'student') || null;
+    let lastTeacherIndex = -1;
+    items.forEach((item, index) => {
+      if (item.from === 'teacher') lastTeacherIndex = index;
+    });
+    const questions = items
+      .slice(lastTeacherIndex + 1)
+      .filter((item) => item.from === 'student' && String(item.text || '').trim())
+      .map((item) => ({
+        id: item.id,
+        text: String(item.text || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+        at: Number(item.at) || 0,
+        unseen: !item.teacherSeenAt,
+      }));
     return {
       studentId: Number(row.id),
       studentName: String(row.name || '').trim().slice(0, 80),
@@ -338,6 +353,7 @@ function listChatInbox(roomCode) {
       lastAt: last ? Number(last.at) || 0 : 0,
       lastFrom: last?.from || '',
       askedAt: firstStudent ? Number(firstStudent.at) || 0 : 0,
+      questions,
       unread: unreadIds.has(Number(row.id)),
       messageCount: items.length,
     };
