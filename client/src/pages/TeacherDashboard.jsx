@@ -6262,7 +6262,7 @@ function TeacherDashboardInner() {
 
       {inboxOpen && createPortal(
         <div
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 w-[min(46rem,calc(100vw-4.75rem))] flex-col overflow-hidden"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 w-[min(36rem,calc(100vw-4.75rem))] flex-col overflow-hidden"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
