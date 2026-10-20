@@ -4686,40 +4686,10 @@ function TeacherDashboardInner() {
       </label>
     </div>
   );
-  const wordLimitControls = (
-    <div className="iboard-word-target-row">
-      <div className="iboard-word-target-bar flex items-center gap-2">
-        <span className="w-8 shrink-0 text-right font-mono text-[0.72rem] font-bold tabular-nums text-[#5a5fc3] dark:text-indigo-300">{wt}</span>
-        <input
-          type="range"
-          min={0}
-          max={500}
-          step={10}
-          value={wt}
-          onChange={(e) => commitWordTarget(e.target.value)}
-          onPointerUp={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
-          onBlur={(e) => commitWordTarget(e.currentTarget.value, { immediate: true })}
-          className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
-          aria-label="Word limit"
-        />
-        <HintWrap hint="Students cannot type past the word limit" className="shrink-0">
-          <label className="iboard-word-target-enforce flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-            <span>Enforce</span>
-            <input
-              type="checkbox"
-              checked={enforceWords}
-              onChange={(e) => {
-                const v = e.target.checked;
-                setRoom((r) => (r ? { ...r, enforce_word_count: v } : r));
-                pushSettings({ enforce_word_count: v });
-              }}
-              className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600"
-            />
-          </label>
-        </HintWrap>
-      </div>
-    </div>
-  );
+  function setWordLimitEnforced(next) {
+    setRoom((current) => (current ? { ...current, enforce_word_count: next } : current));
+    pushSettings({ enforce_word_count: next });
+  }
   const headerDockOpen = toolsPanelOpen || settingsOpen || viewOpen || helpOpen;
   const askClassOpen = toolsPanelOpen && toolsTab !== 'sets';
   const boardDimOpen = askClassOpen || settingsOpen || !!libraryPanel || inboxOpen || addCardOpen;
@@ -7029,9 +6999,36 @@ function TeacherDashboardInner() {
           <div className="iboard-room-settings__body scrollbar-thin">
             {settingsSection === 'settings' && (
             <div className="iboard-room-settings__hero">
-              <div className="iboard-room-settings__row">
-                <p className="iboard-room-settings__alerts-title">Word limit</p>
-                {wordLimitControls}
+              <div className="iboard-room-settings__alert">
+                <HintWrap hint="Stop students typing past this number" className="w-full">
+                  <button
+                    type="button"
+                    role="switch"
+                    onClick={() => setWordLimitEnforced(!enforceWords)}
+                    aria-checked={enforceWords}
+                    className="iboard-room-settings__secondary w-full justify-between gap-3"
+                  >
+                    <span>Word limit</span>
+                    <span className="iboard-switch" data-on={enforceWords ? 'true' : 'false'} aria-hidden="true" />
+                  </button>
+                </HintWrap>
+                {enforceWords ? (
+                  <label className="iboard-room-settings__alert-minutes">
+                    <input
+                      type="range"
+                      min={0}
+                      max={500}
+                      step={10}
+                      value={wt}
+                      onChange={(event) => commitWordTarget(event.target.value)}
+                      onPointerUp={(event) => commitWordTarget(event.currentTarget.value, { immediate: true })}
+                      onBlur={(event) => commitWordTarget(event.currentTarget.value, { immediate: true })}
+                      className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
+                      aria-label="Word limit"
+                    />
+                    <span>{wt} words</span>
+                  </label>
+                ) : null}
               </div>
               <div className="iboard-room-settings__row">
                 <HintWrap hint="Stamps the start and end on the Learning trail. Feedback asks before sending. Students see a calm banner." className="min-w-0 flex-1" multiline>
