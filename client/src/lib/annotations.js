@@ -52,7 +52,7 @@ function enoughNeighbour(stored, matchedLen) {
 /** Ignore wrapping punctuation so Delete on -birds- still matches birds. */
 function softenContext(value) {
   return String(value || '')
-    .replace(/[^\p{L}\p{N}\s’']+/gu, '')
+    .replace(/[^\p{L}\p{N}\s’']+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -63,14 +63,16 @@ function quoteContextAgrees(source, index, needle, prefix, suffix) {
   const after = source.slice(index + needle.length, index + needle.length + 48);
   const prefixOk = enoughNeighbour(prefix, matchingPrefixLength(prefix, before));
   const suffixOk = enoughNeighbour(suffix, matchingSuffixLength(suffix, after));
-  if (prefix && suffix ? prefixOk || suffixOk : prefixOk && suffixOk) return true;
+  // Both neighbours were stored, so one shared word is not enough. New text
+  // written in front must not steal the bubble.
+  if (prefixOk && suffixOk) return true;
   const softPrefix = softenContext(prefix);
   const softSuffix = softenContext(suffix);
   const softBefore = softenContext(before);
   const softAfter = softenContext(after);
   const softPrefixOk = enoughNeighbour(softPrefix, matchingPrefixLength(softPrefix, softBefore));
   const softSuffixOk = enoughNeighbour(softSuffix, matchingSuffixLength(softSuffix, softAfter));
-  if (softPrefix && softSuffix) return softPrefixOk || softSuffixOk;
+  if (softPrefix && softSuffix) return softPrefixOk && softSuffixOk;
   return softPrefixOk && softSuffixOk;
 }
 
@@ -163,7 +165,16 @@ export function resolveAnnotation(annotation, rawText) {
       replacement,
     };
   }
-  return { ...annotation, detached: true, start: expectedStart, end: expectedEnd };
+  return { ...annotation, detached: true, start: expectedStart, end: expectedEnd, missing: true };
+}
+
+/** The marked sentence is gone. A replaced or deleted word inside a sentence that is still there stays. */
+export function annotationShouldDrop(annotation, rawText) {
+  const resolved = resolveAnnotation(annotation, rawText);
+  if (!resolved.detached) return false;
+  if (resolved.replacement?.removed) return false;
+  if (String(resolved.replacement?.after || '').trim()) return false;
+  return true;
 }
 
 /** Highlight the original quote, or the tight replacement once that quote is gone. */
@@ -277,22 +288,34 @@ function tightReplacementEnd(text, start, quote) {
   return tokenCount(quote) <= 1 ? tokenEnd(text, start) : spanTokens(text, start, tokens);
 }
 
-function findPrefixEnd(text, prefix, expectedStart) {
-  let best = -1;
-  let bestDist = Infinity;
+function findPrefixEnd(text, prefix, expectedStart, suffix = '') {
+  const hits = [];
   let cursor = 0;
   while (cursor <= text.length - prefix.length) {
     const index = text.indexOf(prefix, cursor);
     if (index === -1) break;
-    const afterPrefix = index + prefix.length;
-    const dist = Math.abs(afterPrefix - expectedStart);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = afterPrefix;
-    }
+    hits.push(index + prefix.length);
     cursor = index + 1;
   }
-  return best;
+  if (!hits.length) return -1;
+  if (suffix) {
+    let best = -1;
+    let bestGap = Infinity;
+    for (const start of hits) {
+      const suffixAt = text.indexOf(suffix, Math.max(0, start - 4));
+      if (suffixAt < 0) continue;
+      const gap = suffixAt - start;
+      if (gap < 0 || gap > 80) continue;
+      if (gap < bestGap || (gap === bestGap && Math.abs(start - expectedStart) < Math.abs(best - expectedStart))) {
+        bestGap = gap;
+        best = start;
+      }
+    }
+    if (best >= 0) return best;
+  }
+  // A repeated lead-in with no matching ending is new text, not the marked sentence.
+  if (hits.length === 1) return hits[0];
+  return -1;
 }
 
 function tokenStartBefore(text, end, count) {
@@ -319,7 +342,7 @@ export function inferDeletedPassage(annotation, rawText) {
   const expectedStart = Math.max(0, Number(annotation?.start_offset) || 0);
   if (!quote || !prefix || !suffix) return null;
   if (locateQuote(text, quote, expectedStart, prefix, suffix) != null) return null;
-  const start = findPrefixEnd(text, prefix, expectedStart);
+  const start = findPrefixEnd(text, prefix, expectedStart, suffix);
   if (start < 0) return null;
   const suffixAt = text.indexOf(suffix, Math.max(0, start - 4));
   if (suffixAt < 0) return null;
@@ -340,7 +363,7 @@ export function inferReplacementPassage(annotation, rawText) {
 
   let start = -1;
   if (prefix) {
-    start = findPrefixEnd(text, prefix, expectedStart);
+    start = findPrefixEnd(text, prefix, expectedStart, suffix);
     if (start < 0) return null;
   } else if (suffix) {
     const suffixAt = text.indexOf(suffix);

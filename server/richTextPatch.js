@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { openDatabase, queries } from './db.js';
 import { writingOpen } from './writingGate.js';
+import { annotationShouldDrop, resolveAnnotation as resolveAnnotationPassage } from '../client/src/lib/annotations.js';
 import { recordTrailFeedback } from './draftTrail.js';
 import {
   insertedLength,
@@ -191,6 +192,11 @@ const reopenAnnotationStmt = richDb.prepare(
    WHERE id = ?`
 );
 const deleteAnnotationStmt = richDb.prepare(`DELETE FROM teacher_annotations WHERE id = ?`);
+const updateAnnotationOffsetsStmt = richDb.prepare(
+  `UPDATE teacher_annotations
+   SET start_offset = ?, end_offset = ?, updated_at = datetime('now')
+   WHERE id = ?`
+);
 const bulkResolveFixedForRoomStmt = richDb.prepare(
   `DELETE FROM teacher_annotations
    WHERE room_code = ? AND status = 'resolved'`
@@ -223,18 +229,36 @@ function emitAnnotationUpdate(io, roomCode, studentId) {
   return payload;
 }
 
-/** Check again (red) → purple only for comments whose quoted passage is gone from the draft. */
-function markDetachedReopenFixed(io, roomCode, studentId, text) {
+/**
+ * Keep each bubble on the sentence it was written against.
+ * Text added in front moves the stored offsets with that sentence.
+ * Deleting the sentence deletes the bubble. A replaced or removed word
+ * inside a sentence that is still there stays, and a Check again on a
+ * gone quote turns purple.
+ */
+function syncAnnotationAnchors(io, roomCode, studentId, text) {
   const sid = Number(studentId);
   if (!sid) return false;
   const draft = String(text || '').replace(/\r\n?/g, '\n');
   let changed = 0;
   for (const annotation of listAnnotationsForStudent(sid)) {
-    if (annotation.status !== 'reopen') continue;
-    const quote = String(annotation.quote || '').replace(/\r\n?/g, '\n');
-    if (quote && nearestQuoteStart(draft, quote, Number(annotation.start_offset) || 0) !== -1) {
+    if (annotationShouldDrop(annotation, draft)) {
+      deleteAnnotationStmt.run(annotation.id);
+      insightCommentDeleted(roomCode, sid, annotation.id);
+      changed += 1;
       continue;
     }
+    const resolved = resolveAnnotationPassage(annotation, draft);
+    if (
+      !resolved.detached &&
+      (Number(resolved.start) !== Number(annotation.start_offset) ||
+        Number(resolved.end) !== Number(annotation.end_offset))
+    ) {
+      updateAnnotationOffsetsStmt.run(Number(resolved.start) || 0, Number(resolved.end) || 0, annotation.id);
+      changed += 1;
+      continue;
+    }
+    if (annotation.status !== 'reopen' || !resolved.detached) continue;
     markAnnotationFixedStmt.run(annotation.id);
     insightCommentFixed(roomCode, sid, annotation.id);
     changed += 1;
@@ -305,7 +329,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           const savedText = String(current.text || '');
           const draftChanged = beforeText != null && beforeText !== savedText;
           // Only Check again comments whose quote no longer appears → purple.
-          if (draftChanged) markDetachedReopenFixed(io, roomCode, studentId, savedText);
+          if (draftChanged) syncAnnotationAnchors(io, roomCode, studentId, savedText);
           if (draftChanged) {
             insightTextChanged(roomCode, studentId, Date.now(), beforeText, savedText);
             if (payload?.draftTrail?.paste === true) {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { annotationMarkersMatch, commentGutterLane, commentTone, documentAnnotationChange, inferDeletedPassage, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
+import { annotationMarkersMatch, annotationShouldDrop, commentGutterLane, commentTone, documentAnnotationChange, inferDeletedPassage, inferReplacementPassage, locateQuote, resolveAnnotation, stackGutterMarkers } from './annotations.js';
 
 const spelling = {
   quote: 'recieve',
@@ -86,6 +86,42 @@ test('wholesale paste does not steal the highlight or invent a replacement', () 
   const resolved = resolveAnnotation(spelling, text);
   assert.equal(resolved.detached, true);
   assert.equal(resolved.replacement, undefined);
+});
+
+test('text written in front keeps the bubble on the original words', () => {
+  const original = 'Please recieve this word in the first draft.';
+  const rewritten = `I rewrote the opening and typed recieve again.\n${original}`;
+  const resolved = resolveAnnotation(spelling, rewritten);
+  assert.equal(resolved.detached, false);
+  assert.equal(resolved.start, rewritten.lastIndexOf('recieve'));
+  assert.equal(rewritten.slice(resolved.start, resolved.end), 'recieve');
+  assert.equal(annotationShouldDrop(spelling, rewritten), false);
+});
+
+test('a repeated lead-in in new text does not pull the bubble onto that sentence', () => {
+  const text = 'Please start the rewrite here. Another Please begins a different line.';
+  assert.equal(inferReplacementPassage(spelling, text), null);
+  const resolved = resolveAnnotation(spelling, text);
+  assert.equal(resolved.missing, true);
+  assert.equal(annotationShouldDrop(spelling, text), true);
+});
+
+test('deleting the sentence that holds the bubble drops it', () => {
+  const text = 'I rewrote the opening and the marked sentence is gone.';
+  const resolved = resolveAnnotation(spelling, text);
+  assert.equal(resolved.missing, true);
+  assert.equal(resolved.replacement, undefined);
+  assert.equal(annotationShouldDrop(spelling, text), true);
+});
+
+test('deleting only the marked word inside a sentence that remains keeps the bubble', () => {
+  const annotation = {
+    quote: 'really',
+    start_offset: 2,
+    prefix_context: 'a ',
+    suffix_context: ' big war',
+  };
+  assert.equal(annotationShouldDrop(annotation, 'a big war'), false);
 });
 
 test('a full rewrite with no leftover quote detaches', () => {

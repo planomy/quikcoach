@@ -129,6 +129,7 @@ export default function StudentAnnotationController({ socket, studentId: supplie
       const { resolved, range } = locateAnnotationRange(editor, annotation, text);
       const tone = commentTone(annotation, resolved.detached);
       if (!range) {
+        if (resolved.missing || !resolved.replacement) continue;
         if (editorVisible) {
           const pos = detachedMarkerPosition(editorRect, detachedCount);
           nextMarkers.push({

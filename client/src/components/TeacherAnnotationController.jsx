@@ -443,6 +443,8 @@ export default function TeacherAnnotationController() {
         const tone = commentTone(annotation, resolved.detached);
         const lane = commentGutterLane(tone);
         if (!range) {
+          // No quote and no in-sentence edit: the bubble must not sit on text the student wrote in front.
+          if (resolved.missing || !resolved.replacement) continue;
           const pin = rangeForPlainOffsets(
             writingRoot,
             resolved.start,
