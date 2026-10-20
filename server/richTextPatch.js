@@ -300,7 +300,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
           if (!current || normaliseRoomCode(current.room_code) !== roomCode) return;
 
           const roomRow = queries.ensureRoom(richDb, roomCode);
-          if (Number(roomRow?.freeze_class) || !writingOpen(io, roomCode)) return;
+          if (Number(roomRow?.modelling_active) || Number(roomRow?.freeze_class) || !writingOpen(io, roomCode)) return;
 
           const savedText = String(current.text || '');
           const draftChanged = beforeText != null && beforeText !== savedText;

@@ -666,6 +666,10 @@ function TeacherDashboardInner() {
   const [sessionBusy, setSessionBusy] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState('5');
   const [timerBusy, setTimerBusy] = useState(false);
+  const [modelDraft, setModelDraft] = useState('');
+  const modelDraftTimerRef = useRef(null);
+  const modelSeededRef = useRef(false);
+  const modelInputRef = useRef(null);
 
   const socket = useMemo(() => createSocket(), []);
   const independentSince = Number(room?.draftTrail?.independentSince) || 0;
@@ -1036,7 +1040,22 @@ function TeacherDashboardInner() {
 
   useEffect(() => () => {
     if (wordTargetPushRef.current) clearTimeout(wordTargetPushRef.current);
+    if (modelDraftTimerRef.current) clearTimeout(modelDraftTimerRef.current);
   }, []);
+  useEffect(() => {
+    if (!room?.modelling_active) {
+      modelSeededRef.current = false;
+      return;
+    }
+    if (modelSeededRef.current) return;
+    modelSeededRef.current = true;
+    setModelDraft(String(room.modelling_text || ''));
+  }, [room?.modelling_active, room?.modelling_text]);
+  useEffect(() => {
+    if (!room?.modelling_active) return undefined;
+    const focusTimer = window.setTimeout(() => modelInputRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [room?.modelling_active]);
 
   useEffect(() => {
     const onStatus = (event) => {
@@ -2197,7 +2216,7 @@ function TeacherDashboardInner() {
   ]);
 
   function startBreakoutsAuto() {
-    if (!socket || breakoutBusy || room?.class_wall_active) return;
+    if (!socket || breakoutBusy || room?.class_wall_active || room?.modelling_active) return;
     setBreakoutBusy(true);
     socket.emit('teacher:breakouts-start', { mode: 'auto' }, (ack) => {
       setBreakoutBusy(false);
@@ -2206,7 +2225,7 @@ function TeacherDashboardInner() {
   }
 
   function startBreakoutsManual() {
-    if (!socket || breakoutBusy || room?.class_wall_active) return;
+    if (!socket || breakoutBusy || room?.class_wall_active || room?.modelling_active) return;
     const roomCount = Math.max(1, Math.min(40, Math.floor(Number(breakoutRoomCountDraft) || 1)));
     const assignments = orderedStudents.map((student) => ({
       studentId: Number(student.id),
@@ -4126,9 +4145,36 @@ function TeacherDashboardInner() {
   const frozen = !!room?.freeze_class;
 
   function toggleFreeze() {
+    if (room?.modelling_active) return;
     const next = !frozen;
     setRoom((r) => (r ? { ...r, freeze_class: next } : r));
     pushSettings({ freeze_class: next });
+  }
+
+  function publishModelDraft(value) {
+    if (modelDraftTimerRef.current) clearTimeout(modelDraftTimerRef.current);
+    modelDraftTimerRef.current = setTimeout(() => {
+      socket.emit('teacher:modelling-text', { text: value });
+    }, 80);
+  }
+
+  function toggleModelling() {
+    if (!socket) return;
+    if (room?.modelling_active) {
+      if (modelDraftTimerRef.current) clearTimeout(modelDraftTimerRef.current);
+      setModelDraft('');
+      socket.emit('teacher:modelling', { active: false }, (ack) => {
+        if (!ack?.ok) setError(ack?.error || 'Could not stop modelling');
+      });
+      return;
+    }
+    if (breakoutsActive || room?.class_wall_active) {
+      setError('Close collaboration first');
+      return;
+    }
+    socket.emit('teacher:modelling', { active: true }, (ack) => {
+      if (!ack?.ok) setError(ack?.error || 'Could not start modelling');
+    });
   }
 
   function openGaugePanel() {
@@ -4318,7 +4364,7 @@ function TeacherDashboardInner() {
     { id: 'inbox', name: 'Inbox', count: messageWaitCount },
   ];
   const manageCommands = [
-    { id: 'words', name: 'Word limit' },
+    { id: 'modelling', name: 'Modelling' },
     { id: 'freeze', name: frozen ? 'Unfreeze' : 'Freeze' },
     { id: 'text', name: 'Text' },
     { id: 'collaboration', name: 'Collaboration' },
@@ -4394,10 +4440,10 @@ function TeacherDashboardInner() {
               </button>
             </div>
                     {breakoutSetupMode === 'auto' ? (
-                      <HintWrap hint={room?.class_wall_active ? 'Close class wall first' : "Student writing cards appear on group members' screens"} className="w-full">
+                      <HintWrap hint={room?.modelling_active ? 'Stop modelling first' : room?.class_wall_active ? 'Close class wall first' : "Student writing cards appear on group members' screens"} className="w-full">
             <button
               type="button"
-                          disabled={breakoutBusy || !students.length || !!room?.class_wall_active}
+                          disabled={breakoutBusy || !students.length || !!room?.class_wall_active || !!room?.modelling_active}
                           onClick={startBreakoutsAuto}
                           className="iboard-room-settings__primary w-full"
                         >
@@ -4455,6 +4501,7 @@ function TeacherDashboardInner() {
               disabled={
                 breakoutBusy ||
                 !!room?.class_wall_active ||
+                !!room?.modelling_active ||
                 !orderedStudents.length ||
                 !Object.values(breakoutDraftAssign).some(Boolean)
               }
@@ -4608,10 +4655,10 @@ function TeacherDashboardInner() {
           Close class wall
         </button>
       ) : (
-        <HintWrap hint={breakoutsActive ? 'Close breakouts first' : 'Students see each other’s writing as equal cards'} className="w-full">
+        <HintWrap hint={room?.modelling_active ? 'Stop modelling first' : breakoutsActive ? 'Close breakouts first' : 'Students see each other’s writing as equal cards'} className="w-full">
           <button
             type="button"
-            disabled={breakoutsActive}
+            disabled={breakoutsActive || !!room?.modelling_active}
             onClick={() => {
               setRoom((r) => (r ? { ...r, class_wall_active: true } : r));
               pushSettings({ class_wall_active: true });
@@ -4931,44 +4978,38 @@ function TeacherDashboardInner() {
                   aria-label="Manage class"
                   style={{ gridTemplateColumns: `repeat(${Math.max(1, manageCols)}, max-content)` }}
                 >
-                  <div className="relative iboard-command-item" data-header-tool="words" data-overflow={0 >= manageKeep ? 'true' : 'false'}>
-                  <HintWrap hint="Set a word limit for student cards" prefer="below" suppressed={headerTool === 'words'}>
+                  <div className="iboard-command-item" data-overflow={0 >= manageKeep ? 'true' : 'false'}>
+                  <HintWrap hint={room?.modelling_active ? 'Stop modelling and hand writing back' : breakoutsActive || room?.class_wall_active ? 'Close collaboration first' : 'Freeze the class and write an example on their pages'} prefer="below">
                     <button
                       type="button"
-                      onClick={() => toggleHeaderTool('words')}
-                      aria-expanded={headerTool === 'words'}
-                      data-active={headerTool === 'words' || (wt > 0 && enforceWords) ? 'true' : 'false'}
-                      data-command-id="words"
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
-                      aria-label="Word limit"
+                      data-command-id="modelling"
+                      onClick={toggleModelling}
+                      aria-pressed={!!room?.modelling_active}
+                      data-active={room?.modelling_active ? 'true' : 'false'}
+                      disabled={(breakoutsActive || !!room?.class_wall_active) && !room?.modelling_active}
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:opacity-40"
+                      aria-label={room?.modelling_active ? 'Stop teacher modelling' : 'Start teacher modelling'}
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 6h16M4 11h16M4 16h9" />
-                        <path d="M17 14v6M15 18l2 2 2-2" />
+                        <path d="M4 20h8" />
+                        <path d="M14.5 4.5 19 9" />
+                        <path d="M13 6 4.5 14.5 4 20l5.5-.5L18 11" />
                       </svg>
-                      <span className="iboard-wing-caption">Word limit</span>
+                      <span className="iboard-wing-caption">Modelling</span>
                     </button>
                   </HintWrap>
-                  {headerTool === 'words' ? (
-                    <div className="iboard-room-settings iboard-tool-popover" role="dialog" aria-label="Word limit">
-                      <div className="iboard-tool-popover__head">
-                        <h2>Word limit</h2>
-                        <span>Tick Enforce to stop students typing past it</span>
-                      </div>
-                      <div className="iboard-tool-popover__body">{wordLimitControls}</div>
-                    </div>
-                  ) : null}
                   </div>
                   <div className="iboard-command-item" data-overflow={1 >= manageKeep ? 'true' : 'false'}>
-                  <HintWrap hint={frozen ? "Board is frozen. Click to let students write again" : "Freeze the class and stop any further writing"} prefer="below">
+                  <HintWrap hint={room?.modelling_active ? 'Stop modelling to let students write again' : frozen ? "Board is frozen. Click to let students write again" : "Freeze the class and stop any further writing"} prefer="below">
                     <button
                       type="button"
                       data-help-target="freeze"
                       data-command-id="freeze"
                       onClick={toggleFreeze}
+                      disabled={!!room?.modelling_active}
                       aria-pressed={frozen}
                       data-active={frozen ? "true" : "false"}
-                      className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
+                      className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:opacity-40${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                       aria-label={frozen ? "Unfreeze board" : "Freeze board"}
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -5705,6 +5746,25 @@ function TeacherDashboardInner() {
         )}
 
       <main className={`iboard-student-board relative flex min-h-0 flex-col overflow-y-auto`}>
+          {room?.modelling_active ? (
+            <section className="iboard-model-composer" aria-label="Teacher modelling">
+              <div className="iboard-model-composer__head">
+                <h2>Teacher modelling</h2>
+                <button type="button" onClick={toggleModelling}>Stop</button>
+              </div>
+              <textarea
+                ref={modelInputRef}
+                value={modelDraft}
+                onChange={(event) => {
+                  const value = event.target.value.slice(0, 20_000);
+                  setModelDraft(value);
+                  publishModelDraft(value);
+                }}
+                placeholder="Write the example. It appears on every student’s writing page."
+                aria-label="Example for the class"
+              />
+            </section>
+          ) : null}
           {error && <p className="mb-2 shrink-0 text-sm text-red-600">{error}</p>}
           {!lessonBegun && entranceStep === 'join' && (
             <JoinScreen
@@ -7026,6 +7086,11 @@ function TeacherDashboardInner() {
                     <span className="iboard-switch" data-on={room?.student_drawing ? 'true' : 'false'} aria-hidden="true" />
                   </button>
                 </HintWrap>
+              </div>
+              <div className="iboard-room-settings__row">
+                <p className="iboard-room-settings__alerts-title">Word limit</p>
+                <p className="mb-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">Tick Enforce to stop students typing past it.</p>
+                {wordLimitControls}
               </div>
               <div className="iboard-room-settings__row">
                 {timerControls}

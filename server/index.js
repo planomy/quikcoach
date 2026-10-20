@@ -43,6 +43,11 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '48mb' }));
 
 const db = openDatabase();
+try {
+  db.prepare(`UPDATE rooms SET modelling_active = 0, modelling_text = '' WHERE modelling_active != 0`).run();
+} catch (error) {
+  console.error('Could not clear a modelling session left from the last run', error);
+}
 const boardMediaRoot = path.join(dataDir, 'board-media');
 if (!fs.existsSync(boardMediaRoot)) {
   fs.mkdirSync(boardMediaRoot, { recursive: true });
@@ -516,6 +521,37 @@ function broadcastRoom(code) {
     });
   }
   return full;
+}
+
+const modellingHeldFreeze = new Set();
+
+function endModelling(code) {
+  const c = normalizeRoomCode(code);
+  if (c.length !== 4) return false;
+  const roomRow = queries.ensureRoom(db, c);
+  const active = Number(roomRow?.modelling_active) === 1;
+  const held = modellingHeldFreeze.has(c);
+  if (!active && !held) return false;
+  const patch = { modelling_active: false, modelling_text: '' };
+  if (held) {
+    modellingHeldFreeze.delete(c);
+    patch.freeze_class = false;
+  }
+  queries.updateRoomSettings(db, c, patch);
+  return true;
+}
+
+function studentWriteBlock(roomRow, code) {
+  if (Number(roomRow?.modelling_active) === 1) {
+    return { ok: false, error: 'Teacher is modelling', code: 'modelling' };
+  }
+  if (roomRow?.freeze_class) {
+    return { ok: false, error: 'Class is frozen', code: 'frozen' };
+  }
+  if (!writingOpen(io, code)) {
+    return { ok: false, error: 'Writing is locked until your teacher is in this room', code: 'locked' };
+  }
+  return null;
 }
 
 /** Live draft patches — wall and breakouts decide who else sees the typing. */
@@ -1951,9 +1987,9 @@ io.on('connection', (socket) => {
         cb?.({ ok: false, error: 'removed', code: 'removed' });
         return;
       }
-      if (roomRow.freeze_class || !writingOpen(io, code)) {
-        const locked = !roomRow.freeze_class;
-        cb?.({ ok: false, error: locked ? 'locked' : 'frozen', code: locked ? 'locked' : 'frozen' });
+      const writeBlock = studentWriteBlock(roomRow, code);
+      if (writeBlock) {
+        cb?.(writeBlock);
         return;
       }
       let t = String(text ?? '');
@@ -1987,8 +2023,9 @@ io.on('connection', (socket) => {
       }
       const code = normalizeRoomCode(codeRaw);
       const roomRow = queries.ensureRoom(db, code);
-      if (roomRow.freeze_class || !writingOpen(io, code)) {
-        cb?.({ ok: false, error: roomRow.freeze_class ? 'Class is frozen' : 'Writing is locked until your teacher is in this room', code: roomRow.freeze_class ? 'frozen' : 'locked' });
+      const writeBlock = studentWriteBlock(roomRow, code);
+      if (writeBlock) {
+        cb?.(writeBlock);
         return;
       }
       const decoded = decodeImageBase64(imageBase64, mimeType);
@@ -2030,8 +2067,9 @@ io.on('connection', (socket) => {
         return;
       }
       const roomRow = queries.ensureRoom(db, code);
-      if (roomRow.freeze_class || !writingOpen(io, code)) {
-        cb?.({ ok: false, error: roomRow.freeze_class ? 'Class is frozen' : 'Writing is locked until your teacher is in this room', code: roomRow.freeze_class ? 'frozen' : 'locked' });
+      const writeBlock = studentWriteBlock(roomRow, code);
+      if (writeBlock) {
+        cb?.(writeBlock);
         return;
       }
       if (existing.teacher_markup_filename) unlinkRoomMedia(code, existing.teacher_markup_filename);
@@ -2145,9 +2183,13 @@ io.on('connection', (socket) => {
         };
         delete payload.teacherYearLevel;
       }
-      if (payload?.class_wall_active) {
+      if (payload?.class_wall_active || payload?.freeze_class === false) {
         const roomRow = queries.ensureRoom(db, code);
-        if (isBreakoutsActive(roomRow)) {
+        if (Number(roomRow?.modelling_active) === 1) {
+          cb?.({ ok: false, error: 'Stop modelling first' });
+          return;
+        }
+        if (payload?.class_wall_active && isBreakoutsActive(roomRow)) {
           cb?.({ ok: false, error: 'Close breakouts first' });
           return;
         }
@@ -2204,6 +2246,66 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('teacher:modelling', ({ active } = {}, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      if (!active) {
+        endModelling(code);
+        broadcastRoom(code);
+        cb?.({ ok: true });
+        return;
+      }
+      const roomRow = queries.ensureRoom(db, code);
+      if (isBreakoutsActive(roomRow)) {
+        cb?.({ ok: false, error: 'Close breakouts first' });
+        return;
+      }
+      if (isClassWallActive(roomRow)) {
+        cb?.({ ok: false, error: 'Close the class wall first' });
+        return;
+      }
+      if (!roomRow.freeze_class) modellingHeldFreeze.add(code);
+      else modellingHeldFreeze.delete(code);
+      queries.updateRoomSettings(db, code, {
+        modelling_active: true,
+        ...(roomRow.freeze_class ? {} : { freeze_class: true }),
+      });
+      broadcastRoom(code);
+      cb?.({ ok: true });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not start modelling' });
+    }
+  });
+
+  socket.on('teacher:modelling-text', ({ text } = {}, cb) => {
+    try {
+      const codeRaw = socket.data.roomCode;
+      if (socket.data.role !== 'teacher' || !codeRaw) {
+        cb?.({ ok: false, error: 'Open the room as teacher first' });
+        return;
+      }
+      const code = normalizeRoomCode(codeRaw);
+      const roomRow = queries.ensureRoom(db, code);
+      if (Number(roomRow?.modelling_active) !== 1) {
+        cb?.({ ok: false, error: 'Modelling is off' });
+        return;
+      }
+      const clean = String(text ?? '').slice(0, 20_000);
+      queries.updateRoomSettings(db, code, { modelling_text: clean });
+      io.to(roomSocketName(code)).emit('modelling:text', { text: clean });
+      cb?.({ ok: true });
+    } catch (e) {
+      console.error(e);
+      cb?.({ ok: false, error: 'Could not send the example' });
+    }
+  });
+
   socket.on('teacher:breakouts-start', (payload = {}, cb) => {
     try {
       const codeRaw = socket.data.roomCode;
@@ -2218,6 +2320,10 @@ io.on('connection', (socket) => {
         return;
       }
       const roomRow = queries.ensureRoom(db, code);
+      if (Number(roomRow?.modelling_active) === 1) {
+        cb?.({ ok: false, error: 'Stop modelling first' });
+        return;
+      }
       if (isClassWallActive(roomRow)) {
         cb?.({ ok: false, error: 'Close class wall first' });
         return;
@@ -3095,7 +3201,13 @@ io.on('connection', (socket) => {
     if (sid && code && wasAway && !isStudentConnected(sid)) insightPresence(code, sid, false);
     if (sid && code) disconnectTrail(code, sid);
     if (socket.data.role === 'teacher' && code) {
-      noteTeacherLeft(io, code, { immediate: false, onLock: broadcastRoom });
+      noteTeacherLeft(io, code, {
+        immediate: false,
+        onLock: (leftCode) => {
+          endModelling(leftCode);
+          broadcastRoom(leftCode);
+        },
+      });
     }
     if (code) {
       if (sid && (wasAway || !isStudentConnected(sid))) emitStudentPresence(code, sid);

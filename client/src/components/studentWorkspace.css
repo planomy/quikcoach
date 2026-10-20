@@ -821,6 +821,53 @@ html.dark .iboard-breakout-peers__body {
   color: #cbd5e1;
 }
 
+.iboard-model-page {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #ffffff;
+  color: #1e1b2e;
+}
+
+.iboard-model-page__label {
+  margin: 0;
+  padding: 0.9rem 1.1rem 0.35rem;
+  color: #433bbd;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.iboard-model-page__text {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.35rem 1.1rem 1.1rem;
+  font-size: 1.35rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.iboard-model-page__wait {
+  color: #8b8b96;
+  font-style: italic;
+}
+
+html.dark .iboard-model-page {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+html.dark .iboard-model-page__label {
+  color: #c7c5f5;
+}
+
 /* Class wall: equal cards. The student's own card can grow wider and taller;
    the others are placed in the cells left around it. */
 .iboard-student-writing-col {

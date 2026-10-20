@@ -2731,6 +2731,79 @@ html.dark .iboard-writing-pulse__foot {
   padding-top: 1.5rem;
 }
 
+.iboard-model-composer {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  max-height: min(42vh, 22rem);
+  margin-bottom: 0.85rem;
+  overflow: hidden;
+  border: 1px solid #d5d4e4;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.iboard-model-composer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem 0.35rem;
+}
+
+.iboard-model-composer__head h2 {
+  margin: 0;
+  color: #433bbd;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.iboard-model-composer__head button {
+  border: 0;
+  border-radius: 999px;
+  background: #433bbd;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.35rem 0.75rem;
+}
+
+.iboard-model-composer__head button:hover {
+  background: #37329f;
+}
+
+.iboard-model-composer textarea {
+  flex: 1 1 auto;
+  min-height: 9rem;
+  width: 100%;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: #1e1b2e;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1.55;
+  padding: 0.35rem 0.9rem 0.9rem;
+  outline: none;
+}
+
+html.dark .iboard-model-composer {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+html.dark .iboard-model-composer__head h2 {
+  color: #c7c5f5;
+}
+
+html.dark .iboard-model-composer textarea {
+  color: #e2e8f0;
+}
+
 .iboard-board-empty {
   display: flex;
   flex-direction: column;

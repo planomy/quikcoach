@@ -92,7 +92,7 @@ function parseServerUpdatedAt(value) {
 }
 
 function roomWritingLocked(room) {
-  return !!room?.freeze_class || (!!room && room.writing_open === false);
+  return !!room?.freeze_class || !!room?.modelling_active || (!!room && room.writing_open === false);
 }
 
 function draftFromJoin({ raw, richHtml, serverUpdatedAt, code, studentId, limit, locked }) {
@@ -143,6 +143,7 @@ export default function StudentView() {
   const [breakoutPeers, setBreakoutPeers] = useState([]);
   const [breakoutsActive, setBreakoutsActive] = useState(false);
   const [classWallActive, setClassWallActive] = useState(false);
+  const [modelLive, setModelLive] = useState('');
   const [wallStudents, setWallStudents] = useState([]);
   const [draft, setDraft] = useState('');
   const [draftHtml, setDraftHtml] = useState('');
@@ -680,6 +681,7 @@ export default function StudentView() {
   useEffect(() => {
     const onState = (payload) => {
       setRoom(payload.room || null);
+      setModelLive(payload.room?.modelling_active ? String(payload.room.modelling_text || '') : '');
       const sid = studentRef.current?.id ?? hydrateStudentIdRef.current;
       applyPeerScope(payload, sid, { setBreakoutsActive, setClassWallActive, setBreakoutPeers, setWallStudents });
       if (!sid || !payload.students) return;
@@ -860,6 +862,9 @@ export default function StudentView() {
     const onTimerState = (payload) => {
       setRoom((current) => current ? { ...current, timer: payload?.timer || null } : current);
     };
+    const onModellingText = (payload) => {
+      setModelLive(String(payload?.text || ''));
+    };
     socket.on('room:state', onState);
     socket.on('student:live', onLive);
     socket.on('feedback:batch', onBatch);
@@ -869,6 +874,7 @@ export default function StudentView() {
     socket.on('timer:times-up', onTimesUp);
     socket.on('timer:times-up-clear', onTimesUpClear);
     socket.on('timer:state', onTimerState);
+    socket.on('modelling:text', onModellingText);
     return () => {
       socket.off('room:state', onState);
       socket.off('student:live', onLive);
@@ -879,6 +885,7 @@ export default function StudentView() {
       socket.off('timer:times-up', onTimesUp);
       socket.off('timer:times-up-clear', onTimesUpClear);
       socket.off('timer:state', onTimerState);
+      socket.off('modelling:text', onModellingText);
       if (helpSeenTimerRef.current) clearTimeout(helpSeenTimerRef.current);
       if (timesUpTimerRef.current) clearTimeout(timesUpTimerRef.current);
     };
@@ -933,7 +940,7 @@ export default function StudentView() {
           applyTeacherRemoval({ code: String(room?.code || codeInput || '') });
           return;
         }
-        if (ack?.code === 'frozen' || ack?.code === 'locked') return;
+        if (ack?.code === 'frozen' || ack?.code === 'locked' || ack?.code === 'modelling') return;
         if (ack && ack.ok === false) {
           setDraftSaveState('error');
           return;
@@ -970,7 +977,7 @@ export default function StudentView() {
           applyTeacherRemoval({ code: String(room?.code || codeInput || '') });
           return;
         }
-        if (ack?.code === 'frozen' || ack?.code === 'locked') return;
+        if (ack?.code === 'frozen' || ack?.code === 'locked' || ack?.code === 'modelling') return;
         if (ack?.ok) {
           lastSentRef.current = fingerprint;
           setDraftSaveState('saved');
@@ -1308,7 +1315,8 @@ export default function StudentView() {
   const wt = room?.word_target ?? 0;
   const enforce = !!room?.enforce_word_count;
   const frozen = !!room?.freeze_class;
-  const writingLocked = frozen || (!!room && room.writing_open === false);
+  const modelling = !!room?.modelling_active;
+  const writingLocked = frozen || modelling || (!!room && room.writing_open === false);
   writingLockedRef.current = writingLocked;
   const inboxItems = useMemo(() => {
     const notes = feedbackInbox
@@ -1528,7 +1536,7 @@ export default function StudentView() {
       }}
       onPaste={onDraftPaste}
       disabled={writingLocked}
-      disabledMessage={frozen ? 'Class is frozen by your teacher.' : 'Writing is locked until your teacher is in this room.'}
+      disabledMessage={room?.modelling_active ? 'Teacher modelling.' : frozen ? 'Class is frozen by your teacher.' : 'Writing is locked until your teacher is in this room.'}
       maxWords={enforce && wt > 0 ? wt : 0}
       placeholder="Write here… or paste an image"
       hasDrawing={!!student?.image_url}
@@ -1955,12 +1963,20 @@ export default function StudentView() {
           )}
 
           <section className={`iboard-student-writing-col order-2 flex min-h-0 min-w-0 flex-col gap-4${showClassWall ? ' overflow-y-auto' : ''}`}>
-            {showClassWall ? null : (
+            {modelling && !showClassWall ? (
+              <div className="iboard-model-page" role="region" aria-label="Teacher modelling">
+                <p className="iboard-model-page__label">Teacher modelling</p>
+                <div className="iboard-model-page__text">
+                  {modelLive.trim() ? modelLive : <span className="iboard-model-page__wait">The teacher is about to write…</span>}
+                </div>
+              </div>
+            ) : null}
+            {showClassWall || modelling ? null : (
             <p className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
               Tip: paste a screenshot into the box to add an image to your board card.
             </p>
             )}
-            {student?.image_url && !showClassWall && (
+            {student?.image_url && !showClassWall && !modelling && (
               <div
                 data-student-image-preview
                 className="iboard-draw-preview"
@@ -2018,7 +2034,7 @@ export default function StudentView() {
             ) : null}
             <div
               ref={editorHomeRef}
-              className={`iboard-student-writing-pane min-h-0 flex-1${showClassWall ? ' is-parked' : ''}`}
+              className={`iboard-student-writing-pane min-h-0 flex-1${showClassWall || modelling ? ' is-parked' : ''}`}
             />
             {editorMount ? createPortal(writingEditor, editorMount) : writingEditor}
           </section>

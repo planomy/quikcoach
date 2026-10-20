@@ -381,6 +381,8 @@ export function importSessionPack(db, roomCode, pack, media) {
     word_target: settings.word_target,
     enforce_word_count: settings.enforce_word_count,
     freeze_class: settings.freeze_class,
+    modelling_active: false,
+    modelling_text: '',
     lesson_objective: settings.lesson_objective ?? '',
     genre: settings.genre,
     feedback_toggles: settings.feedback_toggles,
