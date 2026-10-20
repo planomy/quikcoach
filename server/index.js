@@ -44,7 +44,7 @@ app.use(express.json({ limit: '48mb' }));
 
 const db = openDatabase();
 try {
-  db.prepare(`UPDATE rooms SET modelling_active = 0, modelling_text = '' WHERE modelling_active != 0`).run();
+  db.prepare(`UPDATE rooms SET modelling_active = 0 WHERE modelling_active != 0`).run();
 } catch (error) {
   console.error('Could not clear a modelling session left from the last run', error);
 }
@@ -532,7 +532,7 @@ function endModelling(code) {
   const active = Number(roomRow?.modelling_active) === 1;
   const held = modellingHeldFreeze.has(c);
   if (!active && !held) return false;
-  const patch = { modelling_active: false, modelling_text: '' };
+  const patch = { modelling_active: false };
   if (held) {
     modellingHeldFreeze.delete(c);
     patch.freeze_class = false;

@@ -2735,7 +2735,7 @@ html.dark .iboard-writing-pulse__foot {
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  max-height: min(42vh, 22rem);
+  max-height: min(84vh, 44rem);
   margin-bottom: 0.85rem;
   overflow: hidden;
   border: 1px solid #d5d4e4;
@@ -2777,10 +2777,12 @@ html.dark .iboard-writing-pulse__foot {
 }
 
 .iboard-model-composer textarea {
-  flex: 1 1 auto;
-  min-height: 9rem;
+  flex: 0 0 auto;
+  height: 18rem;
+  min-height: 18rem;
   width: 100%;
   resize: none;
+  overflow: auto;
   border: 0;
   background: transparent;
   color: #1e1b2e;

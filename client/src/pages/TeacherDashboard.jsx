@@ -4162,9 +4162,11 @@ function TeacherDashboardInner() {
     if (!socket) return;
     if (room?.modelling_active) {
       if (modelDraftTimerRef.current) clearTimeout(modelDraftTimerRef.current);
-      setModelDraft('');
-      socket.emit('teacher:modelling', { active: false }, (ack) => {
-        if (!ack?.ok) setError(ack?.error || 'Could not stop modelling');
+      const text = modelDraft;
+      socket.emit('teacher:modelling-text', { text }, () => {
+        socket.emit('teacher:modelling', { active: false }, (ack) => {
+          if (!ack?.ok) setError(ack?.error || 'Could not stop modelling');
+        });
       });
       return;
     }
