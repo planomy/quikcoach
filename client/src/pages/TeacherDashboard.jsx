@@ -7089,7 +7089,6 @@ function TeacherDashboardInner() {
               </div>
               <div className="iboard-room-settings__row">
                 <p className="iboard-room-settings__alerts-title">Word limit</p>
-                <p className="mb-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">Tick Enforce to stop students typing past it.</p>
                 {wordLimitControls}
               </div>
               <div className="iboard-room-settings__row">
