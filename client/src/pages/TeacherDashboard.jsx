@@ -7030,6 +7030,10 @@ function TeacherDashboardInner() {
             {settingsSection === 'settings' && (
             <div className="iboard-room-settings__hero">
               <div className="iboard-room-settings__row">
+                <p className="iboard-room-settings__alerts-title">Word limit</p>
+                {wordLimitControls}
+              </div>
+              <div className="iboard-room-settings__row">
                 <HintWrap hint="Stamps the start and end on the Learning trail. Feedback asks before sending. Students see a calm banner." className="min-w-0 flex-1" multiline>
                   <button
                     type="button"
@@ -7040,34 +7044,6 @@ function TeacherDashboardInner() {
                   >
                     <span>Independent writing</span>
                     <span className="iboard-switch" data-on={independentSince ? 'true' : 'false'} aria-hidden="true" />
-                  </button>
-                </HintWrap>
-              </div>
-              <div className="iboard-room-settings__row">
-                <HintWrap hint="Change the colours of your screen only" className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    role="switch"
-                onClick={toggleTheme}
-                    aria-checked={isDark}
-                    className="iboard-room-settings__secondary w-full justify-between gap-3"
-              >
-                    <span>Dark mode</span>
-                    <span className="iboard-switch" data-on={isDark ? 'true' : 'false'} aria-hidden="true" />
-              </button>
-                </HintWrap>
-            </div>
-              <div className="iboard-room-settings__row">
-                <HintWrap hint="Show a short tip when you hover a button" className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    role="switch"
-                    onClick={() => setHintsOff(!hintsOff)}
-                    aria-checked={!hintsOff}
-                    className="iboard-room-settings__secondary w-full justify-between gap-3"
-                  >
-                    <span>Tooltips</span>
-                    <span className="iboard-switch" data-on={hintsOff ? 'false' : 'true'} aria-hidden="true" />
                   </button>
                 </HintWrap>
               </div>
@@ -7090,11 +7066,35 @@ function TeacherDashboardInner() {
                 </HintWrap>
               </div>
               <div className="iboard-room-settings__row">
-                <p className="iboard-room-settings__alerts-title">Word limit</p>
-                {wordLimitControls}
+                {timerControls}
               </div>
               <div className="iboard-room-settings__row">
-                {timerControls}
+                <HintWrap hint="Change the colours of your screen only" className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    role="switch"
+                    onClick={toggleTheme}
+                    aria-checked={isDark}
+                    className="iboard-room-settings__secondary w-full justify-between gap-3"
+                  >
+                    <span>Dark mode</span>
+                    <span className="iboard-switch" data-on={isDark ? 'true' : 'false'} aria-hidden="true" />
+                  </button>
+                </HintWrap>
+              </div>
+              <div className="iboard-room-settings__row">
+                <HintWrap hint="Show a short tip when you hover a button" className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    role="switch"
+                    onClick={() => setHintsOff(!hintsOff)}
+                    aria-checked={!hintsOff}
+                    className="iboard-room-settings__secondary w-full justify-between gap-3"
+                  >
+                    <span>Tooltips</span>
+                    <span className="iboard-switch" data-on={hintsOff ? 'false' : 'true'} aria-hidden="true" />
+                  </button>
+                </HintWrap>
               </div>
               <p className="iboard-room-settings__alerts-title">Alerts</p>
               {[
