@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ConversationModal, { ChatCompose } from './ConversationModal.jsx';
 import QuestionInboxReply from './QuestionInboxReply.jsx';
+import { parseInboxAt } from '../lib/inboxTime.js';
 
 function initialFor(name) {
   const text = String(name || '').trim();
@@ -25,6 +26,19 @@ function previewFor(thread, hands) {
     return text ? `Question: ${text}` : 'Asked a question';
   }
   return thread.lastText || 'No messages yet';
+}
+
+function askedAtFor(row) {
+  const fromServer = Number(row?.askedAt) || 0;
+  const fromLast = row?.lastFrom === 'student' ? Number(row?.lastAt) || 0 : 0;
+  let handAt = 0;
+  for (const hand of row?.hands || []) {
+    const at = parseInboxAt(hand);
+    if (at > 0 && (!handAt || at < handAt)) handAt = at;
+  }
+  const chatAt = fromServer || fromLast;
+  if (chatAt && handAt) return Math.min(chatAt, handAt);
+  return chatAt || handAt || 0;
 }
 
 function recipientLabel(list) {
@@ -167,18 +181,21 @@ export default function TeacherInboxPanel({
       };
       const hands = pendingHandByStudentId?.get(id) || [];
       const unreadChat = !!thread.unread || noteReceiptByStudentId[id] === 'replied';
+      const askedAt = askedAtFor({ ...thread, hands });
       return {
         ...thread,
         studentName: student.name || thread.studentName || 'Student',
         unread: unreadChat,
         waiting: unreadChat || hands.length > 0,
         hands,
+        askedAt,
+        asked: askedAt > 0 || hands.length > 0,
       };
     });
     list.sort((left, right) => {
-      if (left.unread !== right.unread) return left.unread ? -1 : 1;
-      if (!!left.hands.length !== !!right.hands.length) return left.hands.length ? -1 : 1;
-      return (right.lastAt || 0) - (left.lastAt || 0) || String(left.studentName).localeCompare(String(right.studentName), undefined, { sensitivity: 'base' });
+      if (left.asked !== right.asked) return left.asked ? -1 : 1;
+      if (left.asked && right.asked && left.askedAt !== right.askedAt) return left.askedAt - right.askedAt;
+      return String(left.studentName).localeCompare(String(right.studentName), undefined, { sensitivity: 'base' });
     });
     return list;
   }, [students, threads, pendingHandByStudentId, noteReceiptByStudentId]);
@@ -279,7 +296,7 @@ export default function TeacherInboxPanel({
             return (
               <div
                 key={row.studentId}
-                className={`iboard-teacher-inbox__row${on ? ' is-on' : ''}${checked ? ' is-checked' : ''}${row.waiting ? ' is-unread' : ''}`}
+                className={`iboard-teacher-inbox__row${on ? ' is-on' : ''}${checked ? ' is-checked' : ''}${row.waiting ? ' is-unread' : ''}${row.asked ? '' : ' is-quiet'}`}
               >
                 <label className="iboard-teacher-inbox__check">
                   <input
@@ -299,10 +316,12 @@ export default function TeacherInboxPanel({
                   <span>
                     <span className="iboard-teacher-inbox__name">{row.studentName}</span>
                     <span className="iboard-teacher-inbox__preview">{previewFor(row, row.hands)}</span>
-                    <span className="iboard-teacher-inbox__meta">
-                      {row.waiting ? <span className="iboard-teacher-inbox__dot" aria-hidden="true" /> : null}
-                      <span className="iboard-teacher-inbox__time">{formatInboxTime(row.lastAt)}</span>
-                    </span>
+                    {row.waiting || formatInboxTime(row.lastAt) ? (
+                      <span className="iboard-teacher-inbox__meta">
+                        {row.waiting ? <span className="iboard-teacher-inbox__dot" aria-hidden="true" /> : null}
+                        <span className="iboard-teacher-inbox__time">{formatInboxTime(row.lastAt)}</span>
+                      </span>
+                    ) : null}
                   </span>
                 </button>
               </div>

@@ -330,12 +330,14 @@ function listChatInbox(roomCode) {
   return students.map((row) => {
     const items = conversationForStudent(code, row.id);
     const last = items[items.length - 1] || null;
+    const firstStudent = items.find((item) => item.from === 'student') || null;
     return {
       studentId: Number(row.id),
       studentName: String(row.name || '').trim().slice(0, 80),
       lastText: last ? String(last.text || '').replace(/\s+/g, ' ').trim().slice(0, 160) : '',
       lastAt: last ? Number(last.at) || 0 : 0,
       lastFrom: last?.from || '',
+      askedAt: firstStudent ? Number(firstStudent.at) || 0 : 0,
       unread: unreadIds.has(Number(row.id)),
       messageCount: items.length,
     };
