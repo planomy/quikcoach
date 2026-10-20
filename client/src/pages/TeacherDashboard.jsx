@@ -5554,8 +5554,17 @@ function TeacherDashboardInner() {
                     </svg>
                   </button>
                   </HintWrap>
-                  <div className="flex flex-col gap-1.5 pt-1">
-                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Choose which students get it' : 'Add text or choose a file first'} className="w-full">
+                  <div className="flex gap-1.5 pt-1">
+                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Send it to every student’s inbox' : 'Add text or choose a file first'} className="min-w-0 flex-1">
+                      <button
+                        type="submit"
+                        disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
+                        className="w-full whitespace-nowrap rounded-md bg-[#5a5fc3] px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                      >
+                        {addCardBusy && !addCardPickerOpen ? 'Sending…' : 'Send to inbox'}
+                      </button>
+                    </HintWrap>
+                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Choose which students get it' : 'Add text or choose a file first'} className="min-w-0 flex-1">
                       <button
                         type="button"
                         disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
@@ -5566,15 +5575,6 @@ function TeacherDashboardInner() {
                         className="w-full whitespace-nowrap rounded-md border border-[#cfcce8] bg-white px-2 py-1.5 text-[11px] font-semibold text-[#5a5fc3] hover:border-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
                       >
                         Select students…
-                      </button>
-                    </HintWrap>
-                    <HintWrap hint={addCardFile || addCardImage || addCardText.trim() ? 'Send it to every student’s inbox' : 'Add text or choose a file first'} className="w-full">
-                      <button
-                        type="submit"
-                        disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                        className="w-full whitespace-nowrap rounded-md bg-[#5a5fc3] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
-                      >
-                        {addCardBusy && !addCardPickerOpen ? 'Sending…' : 'Send to inbox'}
                       </button>
                     </HintWrap>
                   </div>
