@@ -22,6 +22,9 @@ COPY server/package.json server/package-lock.json ./server/
 RUN npm ci --omit=dev --prefix server && npm cache clean --force
 
 COPY server/ ./server/
+# Fail the image build if server code reaches outside server/. The runtime
+# image does not contain client/src, and a missing import takes the class down.
+RUN node server/assertNoClientImports.js
 COPY --from=client-build /app/client/dist ./client/dist/
 
 # SQLite and student board media live outside the disposable app container.
