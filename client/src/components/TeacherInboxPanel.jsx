@@ -21,11 +21,7 @@ function formatInboxTime(at) {
 }
 
 function previewFor(row) {
-  if (row.queued) return row.lastText || 'Asked a question';
-  if (row.hands?.length) {
-    const text = String(row.hands[0]?.text || '').replace(/\s+/g, ' ').trim();
-    return text ? `Question: ${text}` : 'Asked a question';
-  }
+  if (row.previewText) return row.previewText;
   return row.lastText || 'No messages yet';
 }
 
@@ -204,33 +200,30 @@ export default function TeacherInboxPanel({
         asked: askedAt > 0 || hands.length > 0,
       };
     });
-    const queue = [];
-    const rest = [];
-    for (const row of list) {
-      const items = queueItemsFor(row);
-      if (!items.length) {
-        rest.push(row);
-        continue;
-      }
-      for (const item of items) {
-        queue.push({
-          ...row,
-          rowKey: `${row.studentId}:${item.id}`,
-          lastText: item.text,
-          lastAt: item.at || row.lastAt,
-          askedAt: item.at || row.askedAt || 0,
-          asked: true,
-          waiting: item.unseen !== false,
-          queued: true,
-        });
-      }
-    }
-    queue.sort((left, right) => left.askedAt - right.askedAt || String(left.rowKey).localeCompare(String(right.rowKey)));
-    rest.sort((left, right) => {
-      if (left.asked !== right.asked) return left.asked ? -1 : 1;
+    const rowsForList = list.map((row) => {
+      const items = queueItemsFor(row).sort(
+        (left, right) => (left.at || 0) - (right.at || 0) || String(left.id).localeCompare(String(right.id))
+      );
+      if (!items.length) return row;
+      const oldest = items[0];
+      return {
+        ...row,
+        previewText: oldest.text,
+        extra: items.length - 1,
+        lastAt: oldest.at || row.lastAt,
+        askedAt: oldest.at || row.askedAt || 0,
+        asked: true,
+        open: true,
+        waiting: items.some((item) => item.unseen !== false),
+      };
+    });
+    rowsForList.sort((left, right) => {
+      if (!!left.open !== !!right.open) return left.open ? -1 : 1;
+      if (left.open && right.open && left.askedAt !== right.askedAt) return left.askedAt - right.askedAt;
+      if (!left.open && left.asked !== right.asked) return left.asked ? -1 : 1;
       return String(left.studentName).localeCompare(String(right.studentName), undefined, { sensitivity: 'base' });
     });
-    return [...queue, ...rest];
+    return rowsForList;
   }, [students, threads, pendingHandByStudentId, noteReceiptByStudentId]);
 
   useEffect(() => {
@@ -339,7 +332,7 @@ export default function TeacherInboxPanel({
             const checked = checkedIds.has(Number(row.studentId));
             return (
               <div
-                key={row.rowKey || row.studentId}
+                key={row.studentId}
                 className={`iboard-teacher-inbox__row${on ? ' is-on' : ''}${checked ? ' is-checked' : ''}${row.waiting ? ' is-unread' : ''}${row.asked ? '' : ' is-quiet'}`}
               >
                 <label className="iboard-teacher-inbox__check">
@@ -359,7 +352,10 @@ export default function TeacherInboxPanel({
                   <span className="iboard-chat-avatar" aria-hidden="true">{initialFor(row.studentName)}</span>
                   <span>
                     <span className="iboard-teacher-inbox__name">{row.studentName}</span>
-                    <span className="iboard-teacher-inbox__preview">{previewFor(row)}</span>
+                    <span className="iboard-teacher-inbox__preview">
+                      {previewFor(row)}
+                      {row.extra > 0 ? <span className="iboard-teacher-inbox__more"> +{row.extra}</span> : null}
+                    </span>
                     {row.waiting || formatInboxTime(row.lastAt) ? (
                       <span className="iboard-teacher-inbox__meta">
                         {row.waiting ? <span className="iboard-teacher-inbox__dot" aria-hidden="true" /> : null}
