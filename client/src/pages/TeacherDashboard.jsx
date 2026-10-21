@@ -4963,8 +4963,9 @@ function TeacherDashboardInner() {
                       aria-label={room?.modelling_active ? 'Stop teacher modelling' : 'Start teacher modelling'}
                     >
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18.75 5.25 13.25 7.75 5.25 15.75l3 3 8-8L18.75 5.25z" />
-                        <path d="m13.7 8.2 2.5 2.5" />
+                        <path d="M9.2 3.4h5.6v8.8L12 17.6 9.2 12.2V3.4z" />
+                        <path d="M9.7 12.2h4.6" />
+                        <path d="M9.9 20.9h4.2" />
                       </svg>
                       <span className="iboard-wing-caption">Modelling</span>
                     </button>
