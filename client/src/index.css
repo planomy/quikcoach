@@ -1127,7 +1127,7 @@ html.dark .iboard-brand-word {
   display: none;
 }
 
-/* Alerts read as icon + number; colour only appears when a count is above zero. */
+/* Alerts are the same size as the manage icons. A count sits on the corner only when it is above zero. */
 .iboard-alert-chip {
   display: inline-flex;
   align-items: center;
@@ -1246,15 +1246,61 @@ html.dark .iboard-alert-chip.is-on {
   border-radius: 999px;
 }
 
-.iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark {
-  background: #ffffff;
-  color: #433bbd;
+.iboard-command-bar .iboard-alert-chip :is(svg, .iboard-gauge-icon) {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
+.iboard-command-bar .iboard-alert-chip:hover :is(svg, .iboard-gauge-icon) {
+  transform: none;
+}
+
+.iboard-command-bar .iboard-alert-chip__mark {
+  position: relative;
+  width: 1.15rem;
+  min-width: 1.15rem;
+  padding: 0;
+  gap: 0;
+  overflow: visible;
+  background: transparent;
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.iboard-command-bar .iboard-alert-chip:hover .iboard-alert-chip__mark {
+  transform: scale(1.14);
+}
+
+.iboard-alert-chip__count {
+  position: absolute;
+  top: -0.18rem;
+  right: -0.42rem;
+  z-index: 1;
+  min-width: 0.9rem;
+  height: 0.9rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #433bbd;
+  box-shadow: 0 0 0 2px #433bbd;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 0.9rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark,
 .iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__mark,
 .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__mark {
+  background: transparent;
+  color: inherit;
+}
+
+.iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__count,
+.iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__count {
   background: #433bbd;
   color: #ffffff;
+  box-shadow: 0 0 0 2px #ffffff;
 }
 
 html.dark .iboard-command-bar .iboard-alert-chip,
@@ -1274,15 +1320,11 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover {
   color: #433bbd;
 }
 
-html.dark .iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark {
-  background: #ffffff;
-  color: #433bbd;
-}
-
+html.dark .iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark,
 html.dark .iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__mark,
 html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__mark {
-  background: #433bbd;
-  color: #ffffff;
+  background: transparent;
+  color: inherit;
 }
 
 .iboard-alert-chip__name {

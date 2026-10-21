@@ -4836,7 +4836,7 @@ function TeacherDashboardInner() {
                           >
                             <span className="iboard-alert-chip__mark">
                               <AlertIcon id={pill.id} />
-                              <span className="tabular-nums">{count}</span>
+                              {count > 0 ? <span className="iboard-alert-chip__count tabular-nums" aria-hidden="true">{count}</span> : null}
                             </span>
                             <span className="iboard-alert-chip__name">{pill.name}</span>
                           </button>
@@ -4931,7 +4931,7 @@ function TeacherDashboardInner() {
                       >
                         <span className="iboard-alert-chip__mark">
                           <AlertIcon id="messages" />
-                          <span className="tabular-nums">{messageWaitCount}</span>
+                          {messageWaitCount > 0 ? <span className="iboard-alert-chip__count tabular-nums" aria-hidden="true">{messageWaitCount}</span> : null}
                         </span>
                         <span className="iboard-alert-chip__name">Inbox</span>
                       </button>
