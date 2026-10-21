@@ -7012,35 +7012,45 @@ function TeacherDashboardInner() {
               <section className="iboard-settings-group" aria-label="This lesson">
                 <h3 className="iboard-settings-group__title">This lesson</h3>
                 <div className="iboard-settings-group__card">
-              <div className="iboard-room-settings__alert">
-                <HintWrap hint="Stop students typing past this number" className="w-full">
+              <HintWrap hint="Stop students typing past this number" className="w-full">
+                <div className="iboard-settings-line">
+                  <span className="iboard-settings-line__name">Word limit</span>
+                  <label className={`iboard-settings-line__range${enforceWords ? '' : ' is-idle'}`}>
+                    <input
+                      type="range"
+                      min={0}
+                      max={500}
+                      step={10}
+                      value={wt}
+                      onChange={(event) => {
+                        if (!enforceWords) return;
+                        commitWordTarget(event.target.value);
+                      }}
+                      onPointerUp={(event) => {
+                        if (!enforceWords) return;
+                        commitWordTarget(event.currentTarget.value, { immediate: true });
+                      }}
+                      onBlur={(event) => {
+                        if (!enforceWords) return;
+                        commitWordTarget(event.currentTarget.value, { immediate: true });
+                      }}
+                      className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
+                      aria-label="Word limit"
+                    />
+                    <span>{wt}</span>
+                  </label>
                   <button
                     type="button"
                     role="switch"
                     onClick={() => setWordLimitEnforced(!enforceWords)}
                     aria-checked={enforceWords}
-                    className="iboard-room-settings__secondary w-full justify-between gap-3"
+                    aria-label="Word limit"
+                    className="iboard-settings-line__switch"
                   >
-                    <span>Word limit</span>
                     <span className="iboard-switch" data-on={enforceWords ? 'true' : 'false'} aria-hidden="true" />
                   </button>
-                </HintWrap>
-                <label className={`iboard-room-settings__alert-minutes${enforceWords ? '' : ' is-idle'}`}>
-                  <input
-                    type="range"
-                    min={0}
-                    max={500}
-                    step={10}
-                    value={wt}
-                    onChange={(event) => commitWordTarget(event.target.value)}
-                    onPointerUp={(event) => commitWordTarget(event.currentTarget.value, { immediate: true })}
-                    onBlur={(event) => commitWordTarget(event.currentTarget.value, { immediate: true })}
-                    className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
-                    aria-label="Word limit"
-                  />
-                  <span>{wt} words</span>
-                </label>
-              </div>
+                </div>
+              </HintWrap>
               <div className="iboard-room-settings__row">
                 <HintWrap hint="Stamps the start and end on the Learning trail. Feedback asks before sending. Students see a calm banner." className="min-w-0 flex-1" multiline>
                   <button
@@ -7120,38 +7130,39 @@ function TeacherDashboardInner() {
                 { key: 'away', label: 'Away', hint: 'Flags a student whose TUIT tab has been in the background for a minute' },
                 { key: 'pasted', label: 'Pasted', hint: 'Flags a student who pastes into their writing. Pastes are still recorded when this is off.' },
               ].map((alert) => (
-                <div key={alert.key} className="iboard-room-settings__alert">
-                  <HintWrap hint={alert.hint} className="w-full" multiline>
+                <HintWrap key={alert.key} hint={alert.hint} className="w-full" multiline>
+                  <div className="iboard-settings-line">
+                    <span className="iboard-settings-line__name">{alert.label}</span>
+                    {alert.minutesKey ? (
+                      <label className={`iboard-settings-line__range${alertPrefs[alert.key] ? '' : ' is-idle'}`}>
+                        <input
+                          type="range"
+                          min={2}
+                          max={10}
+                          step={1}
+                          value={alertPrefs[alert.minutesKey]}
+                          onChange={(event) => {
+                            if (!alertPrefs[alert.key]) return;
+                            updateAlertPrefs({ [alert.minutesKey]: Number(event.target.value) });
+                          }}
+                          className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
+                          aria-label={`${alert.label}: minutes ${alert.minutesLabel}`}
+                        />
+                        <span>{alertPrefs[alert.minutesKey]} min</span>
+                      </label>
+                    ) : <span className="iboard-settings-line__range" />}
                     <button
                       type="button"
                       role="switch"
                       onClick={() => updateAlertPrefs({ [alert.key]: !alertPrefs[alert.key] })}
                       aria-checked={!!alertPrefs[alert.key]}
-                      className="iboard-room-settings__secondary w-full justify-between gap-3"
+                      aria-label={alert.label}
+                      className="iboard-settings-line__switch"
                     >
-                      <span>{alert.label}</span>
                       <span className="iboard-switch" data-on={alertPrefs[alert.key] ? 'true' : 'false'} aria-hidden="true" />
                     </button>
-                  </HintWrap>
-                  {alert.minutesKey ? (
-                    <label className={`iboard-room-settings__alert-minutes${alertPrefs[alert.key] ? '' : ' is-idle'}`}>
-                      <input
-                        type="range"
-                        min={2}
-                        max={10}
-                        step={1}
-                        value={alertPrefs[alert.minutesKey]}
-                        onChange={(event) => {
-                          if (!alertPrefs[alert.key]) return;
-                          updateAlertPrefs({ [alert.minutesKey]: Number(event.target.value) });
-                        }}
-                        className="iboard-word-target-slider min-w-0 flex-1 cursor-pointer accent-indigo-600"
-                        aria-label={`${alert.label}: minutes ${alert.minutesLabel}`}
-                      />
-                      <span>{alertPrefs[alert.minutesKey]} min {alert.minutesLabel}</span>
-                    </label>
-                  ) : null}
-                </div>
+                  </div>
+                </HintWrap>
               ))}
                 </div>
               </section>
