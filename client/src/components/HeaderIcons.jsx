@@ -1,3 +1,5 @@
+import GaugeIcon from './GaugeIcon.jsx';
+
 const glyph = {
   viewBox: '0 0 24 24',
   fill: 'none',
@@ -10,13 +12,7 @@ const glyph = {
 
 /** Download arrow. The draft is already kept; this button hands over a copy. */
 export function SaveIcon({ saved = false }) {
-  return (
-    <svg className={`iboard-header-glyph iboard-save-icon${saved ? ' is-saved' : ''}`} {...glyph}>
-      <path d="M12 3.5v10" />
-      <path d="m7.5 10 4.5 4.5 4.5-4.5" />
-      <path d="M5 16.5v2A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-2" />
-    </svg>
-  );
+  return <GaugeIcon id="save" className={`iboard-header-glyph iboard-save-icon${saved ? ' is-saved' : ''}`} />;
 }
 
 /** Four corners. Arrows point out to enter fullscreen, and in to leave it. */

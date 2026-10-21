@@ -39,6 +39,7 @@ import SaveStatusChip from '../components/SaveStatusChip.jsx';
 import { FullscreenIcon, SaveIcon } from '../components/HeaderIcons.jsx';
 import RoomTimerPill from '../components/RoomTimerPill.jsx';
 import AlertIcon from '../components/AlertIcon.jsx';
+import GaugeIcon from '../components/GaugeIcon.jsx';
 import WritingPulsePanel from '../components/WritingPulsePanel.jsx';
 import ThinkingTrigger from '../components/ThinkingTrigger.jsx';
 import { confirmDialog } from '../components/ConfirmDialogHost.jsx';
@@ -4972,11 +4973,7 @@ function TeacherDashboardInner() {
                       className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:opacity-40"
                       aria-label={room?.modelling_active ? 'Stop teacher modelling' : 'Start teacher modelling'}
                     >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M9.2 3.4h5.6v8.8L12 17.6 9.2 12.2V3.4z" />
-                        <path d="M9.7 12.2h4.6" />
-                        <path d="M9.9 20.9h4.2" />
-                      </svg>
+                      <GaugeIcon id="modelling" />
                       <span className="iboard-wing-caption">Modelling</span>
                     </button>
                   </HintWrap>
@@ -4994,10 +4991,7 @@ function TeacherDashboardInner() {
                       className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:opacity-40${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                       aria-label={frozen ? "Unfreeze board" : "Freeze board"}
                     >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2.5v19M3.8 7.25l16.4 9.5M3.8 16.75l16.4-9.5" />
-                        <path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2" />
-                      </svg>
+                      <GaugeIcon id="freeze" />
                       <span className="iboard-wing-caption">Freeze</span>
                     </button>
                   </HintWrap>
@@ -5012,7 +5006,10 @@ function TeacherDashboardInner() {
                       aria-label={boardFontStep === 0 ? 'Text size, normal. Larger text on every card' : boardFontStep === BOARD_FONT_SCALES.length - 1 ? 'Text size, largest. Click to return to normal' : `Text size, step ${boardFontStep} of ${BOARD_FONT_SCALES.length - 1}`}
                       data-active={boardFontStep > 0 ? 'true' : 'false'}
                     >
-                      <span className="iboard-board-font-mark" data-step={boardFontStep} aria-hidden="true">A{'+'.repeat(boardFontStep)}</span>
+                      <span className="iboard-board-font-mark" data-step={boardFontStep} aria-hidden="true">
+                        <GaugeIcon id="text" />
+                        {boardFontStep > 0 ? <span className="iboard-board-font-plus">{'+'.repeat(boardFontStep)}</span> : null}
+                      </span>
                       <span className="iboard-wing-caption">Text</span>
                     </button>
                   </HintWrap>
@@ -5028,12 +5025,7 @@ function TeacherDashboardInner() {
                       className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
                       aria-label="Collaboration"
                     >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="5.5" y="2.5" width="13" height="10" rx="3" />
-                        <rect x="2.5" y="15.5" width="5.5" height="5.5" rx="1.8" />
-                        <rect x="9.25" y="15.5" width="5.5" height="5.5" rx="1.8" />
-                        <rect x="16" y="15.5" width="5.5" height="5.5" rx="1.8" />
-                      </svg>
+                      <GaugeIcon id="collaboration" />
                       <span className="iboard-wing-caption">Collaboration</span>
                     </button>
                   </HintWrap>

@@ -1145,7 +1145,17 @@ html.dark .iboard-brand-word {
   transition: background-color 160ms ease, color 160ms ease;
 }
 
-.iboard-alert-chip svg {
+.iboard-gauge-icon {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  -webkit-mask: var(--gauge-icon) center / contain no-repeat;
+  mask: var(--gauge-icon) center / contain no-repeat;
+}
+
+.iboard-alert-chip :is(svg, .iboard-gauge-icon) {
   width: 0.9rem;
   height: 0.9rem;
   flex: 0 0 auto;
@@ -1153,7 +1163,7 @@ html.dark .iboard-brand-word {
   transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.iboard-alert-chip:hover svg {
+.iboard-alert-chip:hover :is(svg, .iboard-gauge-icon) {
   transform: scale(1.14);
 }
 
@@ -1890,7 +1900,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
   color: #433bbd;
 }
 
-.iboard-manage-tools .iboard-header-icon-button > svg,
+.iboard-manage-tools .iboard-header-icon-button > :is(svg, .iboard-gauge-icon),
 .iboard-manage-tools .iboard-header-icon {
   width: 1.15rem;
   height: 1.15rem;
@@ -1904,12 +1914,23 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
 }
 
 .iboard-board-font-mark {
+  position: relative;
   display: grid;
   place-items: center;
   height: 1.15rem;
   min-width: 1.15rem;
   flex: 0 0 auto;
   font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.iboard-board-font-plus {
+  position: absolute;
+  right: -0.22rem;
+  bottom: -0.02rem;
+  font-size: 0.55rem;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -2637,7 +2658,7 @@ html.dark .iboard-gauge-panel {
   box-shadow: 0 0 0 2px #f7f6fb;
 }
 
-.iboard-writing-chit__badges svg {
+.iboard-writing-chit__badges :is(svg, .iboard-gauge-icon) {
   width: 0.65rem;
   height: 0.65rem;
 }
