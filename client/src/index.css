@@ -5245,7 +5245,48 @@ html.dark .iboard-settings-group__title {
 
 html.dark .iboard-settings-group + .iboard-settings-group,
 html.dark .iboard-settings-actions {
-  border-top-color: #334155;
+  border-top-color: var(--iboard-tool-border);
+}
+
+html.dark .iboard-settings-line__range input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  accent-color: var(--iboard-accent);
+  height: 1.05rem;
+  background: transparent;
+}
+
+html.dark .iboard-settings-line__range input[type='range']::-webkit-slider-runnable-track {
+  height: 0.28rem;
+  border: 0;
+  border-radius: 999px;
+  background: #3a4452;
+}
+
+html.dark .iboard-settings-line__range input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: -0.28rem;
+  border: 0;
+  border-radius: 999px;
+  background: #e8edf3;
+}
+
+html.dark .iboard-settings-line__range input[type='range']::-moz-range-track {
+  height: 0.28rem;
+  border: 0;
+  border-radius: 999px;
+  background: #3a4452;
+}
+
+html.dark .iboard-settings-line__range input[type='range']::-moz-range-thumb {
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: #e8edf3;
 }
 
 html.dark .iboard-settings-actions .iboard-room-settings__danger {
@@ -5259,6 +5300,8 @@ html.dark .iboard-settings-actions .iboard-room-settings__danger:hover {
 }
 
 html.dark .iboard-settings-group__card .iboard-room-settings__secondary {
+  background: transparent;
+  border-color: transparent;
   color: #e2e8f0;
 }
 
@@ -5833,14 +5876,27 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
 }
 
 html.dark .iboard-header-dock.iboard-room-settings,
+html.dark .iboard-header-dock.iboard-library-dock,
 html.dark .iboard-room-settings {
-  background: #1a1f26;
+  background: var(--iboard-tool-surface);
   color: #e8edf3;
+  border-color: var(--iboard-tool-border);
+  box-shadow: none;
+}
+
+html.dark .iboard-header-dock.iboard-room-settings,
+html.dark .iboard-header-dock.iboard-library-dock {
+  border-right: 1px solid var(--iboard-tool-border);
 }
 
 html.dark .iboard-room-settings__chrome {
-  background: rgba(30, 27, 75, 0.55);
-  border-bottom-color: #312e81;
+  background: var(--iboard-tool-strip);
+  border-bottom-color: var(--iboard-tool-border);
+}
+
+html.dark .iboard-header-dock--fill > section > div.shrink-0.border-b {
+  background-color: var(--iboard-tool-strip);
+  border-color: var(--iboard-tool-border);
 }
 
 html.dark .iboard-library-dock__back {
@@ -5888,8 +5944,8 @@ html.dark .iboard-room-settings__seg-btn[aria-pressed='true'] {
 
 html.dark .iboard-room-settings__field-row input[type='number'],
 html.dark .iboard-room-settings__mini-ghost {
-  background: #1e293b;
-  border-color: #475569;
+  background: var(--iboard-paper);
+  border-color: var(--iboard-tool-border);
   color: #e8edf3;
 }
 
@@ -6234,8 +6290,8 @@ html.dark .iboard-breakout-assign__chip[aria-pressed='true'] {
 }
 
 html.dark .iboard-header-dock {
-  border-top-color: #334155;
-  background: #0f172a;
+  border-top-color: var(--iboard-tool-border);
+  background: var(--iboard-tool-surface);
 }
 
 html.dark .iboard-header-dock--start {
@@ -6327,8 +6383,8 @@ html.dark .iboard-teacher-panel-action {
 }
 
 html.dark .iboard-teacher-composer__form {
-  border-color: #334155;
-  background: #0f172a;
+  border-color: var(--iboard-tool-border);
+  background: var(--iboard-paper);
 }
 
 html.dark .iboard-teacher-panel-action:hover {
