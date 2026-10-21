@@ -6315,6 +6315,12 @@ html.dark .iboard-student-card--empty:not(.iboard-student-card--fit) {
   background: #14181e;
 }
 
+/* The shared dark paper rule is as specific as a filtered input, so this has to outrank it. */
+html.dark article.iboard-student-card.iboard-student-card :is(.iboard-writing-surface[data-student-writing-pane], [data-iboard-writing-content]) {
+  background-color: transparent;
+  box-shadow: none;
+}
+
 html.dark .iboard-student-card__name,
 html.dark .iboard-student-card--empty .iboard-student-card__name {
   color: #e4e4ea;
