@@ -5194,17 +5194,25 @@ html.dark .iboard-library-dock__resize::after {
   height: 1.4rem;
 }
 
+.iboard-settings-actions > span {
+  display: flex;
+  justify-content: center;
+}
+
 .iboard-settings-actions .iboard-room-settings__danger {
+  width: auto;
   min-height: 1.7rem;
+  padding: 0 0.9rem;
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: 999px;
   background: transparent;
   font-size: 0.78rem;
 }
 
 .iboard-settings-actions .iboard-room-settings__danger:hover {
   border: 0;
-  background: #fef2f2;
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .iboard-settings-group__card .iboard-room-settings__secondary:hover {
@@ -5246,7 +5254,8 @@ html.dark .iboard-settings-actions .iboard-room-settings__danger {
 }
 
 html.dark .iboard-settings-actions .iboard-room-settings__danger:hover {
-  background: rgba(127, 29, 29, 0.35);
+  background: #dc2626;
+  color: #ffffff;
 }
 
 html.dark .iboard-settings-group__card .iboard-room-settings__secondary {
