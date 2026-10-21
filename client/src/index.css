@@ -1730,7 +1730,20 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   border-radius: var(--command-end-radius) 0 0 var(--command-end-radius);
 }
 
-.iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-wing-tool {
+.iboard-command-bar__side--manage .iboard-manage-tools > :last-child {
+  width: 100%;
+}
+
+.iboard-command-bar__side--manage .iboard-manage-tools > :last-child > span,
+.iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-wing-tool,
+.iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-command-more {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-wing-tool,
+.iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-command-more {
   border-radius: 0 var(--command-end-radius) var(--command-end-radius) 0;
 }
 

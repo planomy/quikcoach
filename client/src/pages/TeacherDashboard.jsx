@@ -807,7 +807,17 @@ function TeacherDashboardInner() {
           const chip = item.matches('.iboard-alert-chip, .iboard-wing-tool')
             ? item
             : item.querySelector('.iboard-alert-chip, .iboard-wing-tool');
-          const live = chip && !parked ? Math.ceil(chip.getBoundingClientRect().width) : 0;
+          let live = chip && !parked ? Math.ceil(chip.getBoundingClientRect().width) : 0;
+          // The last manage control paints across the leftover pill. Measure its
+          // label, not that stretch, or the wing keeps growing.
+          const fillsEnd = chip?.matches('.iboard-wing-tool') && chip.closest('.iboard-manage-tools > :last-child');
+          if (fillsEnd) {
+            const style = getComputedStyle(chip);
+            const pad = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+            const min = parseFloat(style.minWidth) || 0;
+            const content = [...chip.children].reduce((max, el) => Math.max(max, el.getBoundingClientRect().width), 0);
+            live = Math.ceil(Math.max(content + pad, min));
+          }
           if (id && live > 20) commandWidthRef.current.set(id, live);
           return Math.max(36, (id && commandWidthRef.current.get(id)) || live || 48);
         });
@@ -4948,7 +4958,7 @@ function TeacherDashboardInner() {
                   className="iboard-manage-tools"
                   role="group"
                   aria-label="Manage class"
-                  style={{ gridTemplateColumns: `repeat(${Math.max(1, manageCols)}, max-content)` }}
+                  style={{ gridTemplateColumns: manageCols <= 1 ? 'minmax(max-content, 1fr)' : `repeat(${manageCols - 1}, max-content) minmax(max-content, 1fr)` }}
                 >
                   <div className="iboard-command-item" data-overflow={0 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint={room?.modelling_active ? 'Stop modelling and hand writing back' : breakoutsActive || room?.class_wall_active ? 'Close collaboration first' : 'Freeze the class and write an example on their pages'} prefer="below">
