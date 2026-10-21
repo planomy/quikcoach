@@ -5080,7 +5080,14 @@ html.dark .iboard-library-dock__resize::after {
 .iboard-room-settings__hero {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0;
+}
+
+.iboard-settings-group + .iboard-settings-group,
+.iboard-settings-actions {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid #e4e4ee;
 }
 
 .iboard-settings-group__title {
@@ -5093,14 +5100,10 @@ html.dark .iboard-library-dock__resize::after {
 }
 
 .iboard-settings-group__card {
-  overflow: hidden;
-  border: 1px solid #e4e4ee;
-  border-radius: 0.9rem;
-  background: #ffffff;
-}
-
-.iboard-settings-group__card > * + * {
-  border-top: 1px solid #ececf2;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .iboard-settings-group__card .iboard-room-settings__secondary {
@@ -5192,9 +5195,16 @@ html.dark .iboard-library-dock__resize::after {
 }
 
 .iboard-settings-actions .iboard-room-settings__danger {
-  min-height: 1.85rem;
-  border-radius: 0.65rem;
+  min-height: 1.7rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
   font-size: 0.78rem;
+}
+
+.iboard-settings-actions .iboard-room-settings__danger:hover {
+  border: 0;
+  background: #fef2f2;
 }
 
 .iboard-settings-group__card .iboard-room-settings__secondary:hover {
@@ -5219,20 +5229,24 @@ html.dark .iboard-library-dock__resize::after {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  margin-top: 0.15rem;
 }
 
 html.dark .iboard-settings-group__title {
   color: #94a3b8;
 }
 
-html.dark .iboard-settings-group__card {
-  border-color: #334155;
-  background: #0f172a;
+html.dark .iboard-settings-group + .iboard-settings-group,
+html.dark .iboard-settings-actions {
+  border-top-color: #334155;
 }
 
-html.dark .iboard-settings-group__card > * + * {
-  border-top-color: #1e293b;
+html.dark .iboard-settings-actions .iboard-room-settings__danger {
+  border: 0;
+  background: transparent;
+}
+
+html.dark .iboard-settings-actions .iboard-room-settings__danger:hover {
+  background: rgba(127, 29, 29, 0.35);
 }
 
 html.dark .iboard-settings-group__card .iboard-room-settings__secondary {
