@@ -1257,7 +1257,7 @@ html.dark .iboard-alert-chip.is-on {
 
 .iboard-command-bar .iboard-alert-chip__mark {
   position: relative;
-  width: 1.15rem;
+  width: max-content;
   min-width: 1.15rem;
   padding: 0;
   gap: 0;
@@ -1916,9 +1916,19 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
   transform-origin: center;
 }
 
+/* Wide marks keep the shared height instead of shrinking inside the square. */
+.iboard-command-bar .iboard-alert-chip .iboard-gauge-icon,
+.iboard-command-bar .iboard-manage-tools .iboard-gauge-icon {
+  width: calc(1.15rem * var(--gauge-aspect, 1));
+  height: 1.15rem;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
 .iboard-command-bar .iboard-header-icon--view {
-  width: 1.25rem;
-  height: 1.25rem;
+  --iboard-header-icon: url('/brand/gauge/view.png');
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .iboard-board-font-mark {
