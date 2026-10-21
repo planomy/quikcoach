@@ -292,6 +292,7 @@ Server.prototype.on = function patchedServerOn(eventName, listener) {
 
       setImmediate(() => {
         try {
+          if (socket.data.blockStudentText) return;
           const studentId = Number(socket.data.studentId);
           const roomCode = normaliseRoomCode(socket.data.roomCode);
           if (socket.data.role !== 'student' || !studentId || roomCode.length !== 4) return;

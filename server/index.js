@@ -1981,6 +1981,10 @@ io.on('connection', (socket) => {
         cb?.({ ok: false });
         return;
       }
+      if (socket.data.blockStudentText) {
+        cb?.({ ok: false, code: 'reset' });
+        return;
+      }
       const roomRow = queries.ensureRoom(db, code);
       const beforeRow = queries.getStudent(db, sid);
       if (!beforeRow || normalizeRoomCode(beforeRow.room_code) !== code) {
@@ -2022,6 +2026,10 @@ io.on('connection', (socket) => {
         return;
       }
       const code = normalizeRoomCode(codeRaw);
+      if (socket.data.blockStudentText) {
+        cb?.({ ok: false, code: 'reset' });
+        return;
+      }
       const roomRow = queries.ensureRoom(db, code);
       const writeBlock = studentWriteBlock(roomRow, code);
       if (writeBlock) {
@@ -2061,6 +2069,10 @@ io.on('connection', (socket) => {
         return;
       }
       const code = normalizeRoomCode(codeRaw);
+      if (socket.data.blockStudentText) {
+        cb?.({ ok: false, code: 'reset' });
+        return;
+      }
       const existing = queries.getStudent(db, sid);
       if (!existing || normalizeRoomCode(existing.room_code) !== code) {
         cb?.({ ok: false });
@@ -3136,6 +3148,13 @@ io.on('connection', (socket) => {
         return;
       }
       const code = normalizeRoomCode(codeRaw);
+      // These sockets are about to be told to rejoin. A reload then flushes the old
+      // draft, and that flush would land on the fresh card. Hold their writes.
+      for (const client of io.sockets.sockets.values()) {
+        if (client.data?.role === 'student' && normalizeRoomCode(client.data?.roomCode) === code) {
+          client.data.blockStudentText = true;
+        }
+      }
       // Delete students entirely so reused room codes don't keep ghost cards
       clearTrail(code);
       queries.clearAudienceQuestions(db, code);

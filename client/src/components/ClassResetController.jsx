@@ -28,6 +28,7 @@ export default function ClassResetController({ role }) {
       socket = nextSocket;
       if (!socket) return;
       const onReset = (payload = {}) => {
+        window.__iboardClassResetting = true;
         const code = String(payload.code || window.__iboardStudentRoomCode || '')
           .replace(/\D/g, '')
           .slice(0, 4);

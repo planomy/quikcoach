@@ -926,6 +926,7 @@ export default function StudentView() {
     setDraftSaveState(socket.connected ? 'saving' : 'offline');
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
+      if (window.__iboardClassResetting) return;
       if (writingLockedRef.current) return;
       if (!socket.connected) {
         setDraftSaveState('offline');
@@ -959,6 +960,7 @@ export default function StudentView() {
   useEffect(() => {
     if (!joined || !student?.id) return undefined;
     const timer = setInterval(() => {
+      if (window.__iboardClassResetting) return;
       if (removedRef.current) return;
       if (!saveBootstrappedRef.current) return;
       if (writingLockedRef.current) return;
@@ -1015,6 +1017,7 @@ export default function StudentView() {
     const code = String(room?.code || codeInput || '').replace(/\D/g, '').slice(0, 4);
     if (code.length !== 4) return undefined;
     function flushDraft() {
+      if (window.__iboardClassResetting) return;
       if (writingLockedRef.current) return;
       const payload = pendingRef.current || { text: draft, richTextHtml: draftHtml };
       saveDraftBackup({
