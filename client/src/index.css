@@ -1904,6 +1904,11 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
 }
 
 .iboard-board-font-mark {
+  display: grid;
+  place-items: center;
+  height: 1.15rem;
+  min-width: 1.15rem;
+  flex: 0 0 auto;
   font-size: 0.95rem;
   font-weight: 800;
   line-height: 1;
