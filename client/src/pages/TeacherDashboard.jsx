@@ -879,8 +879,6 @@ function TeacherDashboardInner() {
           frameEl.style.setProperty('--command-cut-x', `${cutX}px`);
           frameEl.style.setProperty('--command-cut-r', `${ringRect.width / 2}px`);
         }
-        const inboxW = monitorWidths[monitorWidths.length - 1] || 48;
-        bar.querySelector('.iboard-attention-home')?.style.setProperty('--inbox-col', `${inboxW}px`);
         const pin = (button, edge) => {
           if (!button) return;
           const rect = button.getBoundingClientRect();
@@ -4906,11 +4904,6 @@ function TeacherDashboardInner() {
                         </div>
                       );
                     })}
-                  <span
-                    className="iboard-command-bar__divider"
-                    hidden={monitorKeep < 2}
-                    aria-hidden="true"
-                  />
                   <div
                     className="iboard-attention-pill iboard-command-item"
                     data-overflow={monitorKeep < 1 ? 'true' : 'false'}

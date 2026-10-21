@@ -1727,20 +1727,6 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   column-gap: 0;
 }
 
-.iboard-command-bar__side .iboard-command-bar__divider {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: auto;
-  right: var(--inbox-col, 0px);
-  z-index: 1;
-  width: 1px;
-  height: 100%;
-  margin: 0;
-  align-self: stretch;
-  transform: translateX(50%);
-}
-
 .iboard-command-bar__side .iboard-manage-tools {
   display: grid;
   grid-template-columns: repeat(6, max-content);
@@ -1750,7 +1736,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   column-gap: 0;
 }
 
-.iboard-command-bar__side .iboard-attention-home > *:not(.iboard-command-bar__divider),
+.iboard-command-bar__side .iboard-attention-home > *,
 .iboard-command-bar__side .iboard-manage-tools > * {
   display: flex;
   min-width: max-content;
@@ -1797,14 +1783,6 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-wing-tool,
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-command-more {
   border-radius: 0 var(--command-end-radius) var(--command-end-radius) 0;
-}
-
-html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip:hover:not(.is-on) {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
-}
-
-html:not(.dark) .iboard-teacher-canvas .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
 /* One flat purple rail. A hole in the mask cuts a curve on each side of the dial. */
@@ -1880,18 +1858,6 @@ html.dark .iboard-command-frame {
   border: 1px solid #c1c2e7;
   border-radius: 0.7rem;
   background: #e1defc;
-}
-
-.iboard-command-bar__divider {
-  width: 1px;
-  height: 1.35rem;
-  margin: 0 0.1rem;
-  background: rgba(255, 255, 255, 0.55);
-  align-self: center;
-}
-
-html.dark .iboard-command-bar__divider {
-  background: rgba(255, 255, 255, 0.55);
 }
 
 .iboard-manage-tools .iboard-header-icon-button {
