@@ -584,3 +584,39 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 .iboard-menu :is(p, label, span).uppercase {
   font-size: 11px;
 }
+
+/* Selected segments use the same solid blue as the other primary buttons, light and dark. */
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-reports-tabs__tab[aria-selected='true'],
+html:not(.dark) #tuit-overlay-root .iboard-inspector nav[aria-label='Ask options'] button[class*='bg-[#2f5fee]'],
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task.is-active,
+html.dark #tuit-overlay-root .iboard-inspector .iboard-reports-tabs__tab[aria-selected='true'],
+html.dark #tuit-overlay-root .iboard-inspector nav[aria-label='Ask options'] button[class*='bg-[#2f5fee]'],
+html.dark #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task.is-active {
+  background: #2f5fee;
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+html.dark #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__tasks {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 2px;
+  border-radius: 8px;
+  background: #1c2127;
+}
+
+html.dark #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task {
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  color: #9aa4b2;
+  font-size: 0.72rem;
+  font-weight: 590;
+  white-space: nowrap;
+}
+
+html.dark #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task:hover:not(.is-active) {
+  background: transparent;
+  color: #e8edf3;
+}
