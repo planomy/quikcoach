@@ -620,3 +620,9 @@ html.dark #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task:hover:n
   background: transparent;
   color: #e8edf3;
 }
+
+/* The Inbox has a list and a conversation side by side, so it needs a wider column. */
+html #tuit-overlay-root .iboard-header-dock.iboard-inspector:has(.iboard-teacher-inbox) {
+  width: min(42rem, calc(100vw - 4.75rem));
+  max-width: min(42rem, calc(100vw - 4.75rem));
+}
