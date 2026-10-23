@@ -1,28 +1,28 @@
 const SRC = {
-  away: '/brand/gauge/away.png',
-  'not-started': '/brand/gauge/not-started.png',
-  'no-typing': '/brand/gauge/no-typing.png',
+  away: '/brand/gauge/away.png?v=9',
+  'not-started': '/brand/gauge/not-started.png?v=11',
+  'no-typing': '/brand/gauge/no-typing.png?v=10',
   pasted: '/brand/gauge/pasted.png',
-  inbox: '/brand/gauge/inbox.png',
+  inbox: '/brand/gauge/inbox.png?v=9',
   modelling: '/brand/gauge/modelling.png',
-  freeze: '/brand/gauge/freeze.png',
-  text: '/brand/gauge/text.png',
-  save: '/brand/gauge/save.png',
-  collaboration: '/brand/gauge/collaboration.png',
+  freeze: '/brand/gauge/freeze.png?v=9',
+  text: '/brand/gauge/text.png?v=9',
+  save: '/brand/gauge/save.png?v=10',
+  collaboration: '/brand/gauge/collaboration.png?v=9',
 };
 
 // Width divided by height, so a wide mark can share the others' height.
 const ASPECT = {
-  away: 0.9648,
-  'not-started': 0.8359,
-  'no-typing': 1.4805,
+  away: 0.9883,
+  'not-started': 0.8594,
+  'no-typing': 1.9805,
   pasted: 0.8984,
-  inbox: 1.3594,
-  modelling: 1.0156,
-  freeze: 0.875,
-  text: 0.9141,
-  save: 0.9727,
-  collaboration: 1.2109,
+  inbox: 1.4062,
+  modelling: 1.0352,
+  freeze: 0.8984,
+  text: 1.0664,
+  save: 1.0234,
+  collaboration: 1.3047,
 };
 
 export default function GaugeIcon({ id, className = '' }) {

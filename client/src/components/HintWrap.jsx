@@ -7,6 +7,8 @@ import { useHintsOff } from '../lib/hintPrefs.js';
 const HINT_PAD = 8;
 const HINT_GAP = 6;
 const EST_HEIGHT = 22;
+const CURSOR_OFFSET_X = 10;
+const CURSOR_OFFSET_Y = 18;
 const FIRST_HOVER_DELAY = 350;
 const FOLLOW_ON_HOVER_DELAY = 75;
 const FOLLOW_ON_GRACE_PERIOD = 700;
@@ -15,22 +17,21 @@ const FOLLOW_ON_GRACE_PERIOD = 700;
 // feels quick after the user has deliberately opened one tooltip.
 let fastHoverUntil = 0;
 
-// One rule for every hint in the app: just above the hovered item, centred on where
-// the pointer entered it (item centre for keyboard focus), kept inside the viewport.
-// It only drops below the item when there is no room above.
-function measureAndPlace(wrapEl, tipEl, hint, pointerX) {
+// Hover hints sit just below and to the right of the pointer, like a native tooltip.
+// Keyboard focus has no pointer, so the hint goes under the item instead.
+// Either way the box is kept inside the viewport.
+function measureAndPlace(wrapEl, tipEl, hint, pointer) {
   const rect = wrapEl?.getBoundingClientRect();
   if (!rect) return null;
   const width = tipEl?.offsetWidth || Math.max(48, String(hint).length * 7 + 16);
   const height = tipEl?.offsetHeight || EST_HEIGHT;
-  const viewportTop = window.visualViewport?.offsetTop ?? 0;
-  const centreX = Number.isFinite(pointerX) ? pointerX : rect.left + rect.width / 2;
-  const aboveTop = rect.top - HINT_GAP - height;
-  const top = aboveTop >= viewportTop + HINT_PAD ? aboveTop : rect.bottom + HINT_GAP;
-  return clampFixedBox({ top, left: centreX - width / 2, width, height, padding: HINT_PAD });
+  const hasPointer = Number.isFinite(pointer?.x) && Number.isFinite(pointer?.y);
+  const left = hasPointer ? pointer.x + CURSOR_OFFSET_X : rect.left + rect.width / 2 - width / 2;
+  const top = hasPointer ? pointer.y + CURSOR_OFFSET_Y : rect.bottom + HINT_GAP;
+  return clampFixedBox({ top, left, width, height, padding: HINT_PAD });
 }
 
-/** Fast hover/focus hint chip — brand accent, flips below when there isn’t room above. */
+/** Fast hover/focus hint chip in Apple iron grey, placed below and right of the pointer. */
 export default function HintWrap({ hint, children, className = '', prefer: _prefer, multiline = false, tone = 'brand', suppressed: suppressedProp = false, keep = false }) {
   const hintsOff = useHintsOff();
   const suppressed = suppressedProp || (!keep && hintsOff);
@@ -41,7 +42,7 @@ export default function HintWrap({ hint, children, className = '', prefer: _pref
   // Pointer activation focuses the control after pointerdown; skip that focus so the
   // tip does not flash open for a frame before clickCapture hides it again.
   const ignoreFocusUntilRef = useRef(0);
-  const pointerXRef = useRef(null);
+  const pointerRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState(null);
 
@@ -61,7 +62,7 @@ export default function HintWrap({ hint, children, className = '', prefer: _pref
 
   const openFromHover = (event) => {
     if (suppressed) return;
-    pointerXRef.current = Number.isFinite(event?.clientX) ? event.clientX : null;
+    pointerRef.current = Number.isFinite(event?.clientX) ? { x: event.clientX, y: event.clientY } : null;
     clearHoverTimer();
     const delay = Date.now() < fastHoverUntil ? FOLLOW_ON_HOVER_DELAY : FIRST_HOVER_DELAY;
     hoverTimerRef.current = window.setTimeout(() => {
@@ -69,6 +70,11 @@ export default function HintWrap({ hint, children, className = '', prefer: _pref
       openedByHoverRef.current = true;
       setOpen(true);
     }, delay);
+  };
+
+  const trackPointer = (event) => {
+    if (open || !Number.isFinite(event?.clientX)) return;
+    pointerRef.current = { x: event.clientX, y: event.clientY };
   };
 
   const closeFromHover = () => {
@@ -79,7 +85,7 @@ export default function HintWrap({ hint, children, className = '', prefer: _pref
     if (suppressed) return;
     if (typeof performance !== 'undefined' && performance.now() < ignoreFocusUntilRef.current) return;
     clearHoverTimer();
-    pointerXRef.current = null;
+    pointerRef.current = null;
     openedByHoverRef.current = false;
     setOpen(true);
   };
@@ -102,7 +108,7 @@ export default function HintWrap({ hint, children, className = '', prefer: _pref
     }
 
     const place = () => {
-      setBox(measureAndPlace(wrapRef.current, tipRef.current, hint, pointerXRef.current));
+      setBox(measureAndPlace(wrapRef.current, tipRef.current, hint, pointerRef.current));
     };
 
     place();
@@ -123,6 +129,7 @@ export default function HintWrap({ hint, children, className = '', prefer: _pref
       ref={wrapRef}
       className={`${hasPositionClass ? '' : 'relative '}inline-flex ${className}`.trim()}
       onMouseEnter={openFromHover}
+      onMouseMove={trackPointer}
       onMouseLeave={closeFromHover}
       onPointerDownCapture={onPointerDownCapture}
       onClickCapture={hideNow}
@@ -138,10 +145,10 @@ export default function HintWrap({ hint, children, className = '', prefer: _pref
           role="tooltip"
           className={
             tone === 'card'
-              ? 'pointer-events-none fixed z-[200] max-w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-[#5a5fc3] bg-white text-left text-[10px] font-black leading-relaxed shadow-lg dark:border-[#818cf8] dark:bg-slate-900'
+              ? 'pointer-events-none fixed z-[200] max-w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-lg border border-[#2f5fee] bg-white text-left text-[10px] font-black leading-relaxed shadow-lg dark:border-[#818cf8] dark:bg-slate-900'
               : `pointer-events-none fixed z-[200] rounded-lg px-2 py-1 text-[10px] font-black text-white shadow-lg ring-1 ring-white/20 ${
                   multiline ? 'max-w-[min(22rem,calc(100vw-1rem))] whitespace-normal text-left leading-relaxed' : 'whitespace-nowrap leading-none'
-                } bg-[#5a5fc3] dark:bg-[var(--iboard-accent,#818cf8)] dark:text-slate-950 dark:ring-white/25`
+                } bg-[#5e5e5e] dark:ring-white/25`
           }
           style={{
             top: box ? box.top : -9999,

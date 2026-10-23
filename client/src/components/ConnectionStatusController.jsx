@@ -141,9 +141,9 @@ export default function ConnectionStatusController() {
       <div
         role="status"
         aria-live="polite"
-        className="iboard-conn-pill fixed left-1/2 top-3 z-[100] flex -translate-x-1/2 items-center gap-2 border-[#cfcce8] bg-white text-[#5a5fc3] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300"
+        className="iboard-conn-pill fixed left-1/2 top-3 z-[100] flex -translate-x-1/2 items-center gap-2 border-[#c9d6f2] bg-white text-[#2f5fee] dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300"
       >
-        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#5a5fc3]" />
+        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#2f5fee]" />
         <span>Back online</span>
       </div>
     );

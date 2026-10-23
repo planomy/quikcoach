@@ -335,7 +335,7 @@ export default function TeacherAnswerRail({
               <button
                 type="button"
                 onClick={onOpenAsk}
-                className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#4b50b0]"
+                className="rounded-lg bg-[#2f5fee] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#2450d6]"
               >
                 Ask a question
               </button>

@@ -80,7 +80,7 @@ html.dark .iboard-chat-pane__head h2 {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #5a5fc3;
+  color: #2f5fee;
   font-size: 0.72rem;
   font-weight: 800;
   text-align: left;
@@ -88,7 +88,7 @@ html.dark .iboard-chat-pane__head h2 {
 }
 
 .iboard-teacher-inbox__select-all:hover {
-  color: #3c3f8f;
+  color: #1f3d99;
 }
 
 html.dark .iboard-teacher-inbox__toolbar {
@@ -129,7 +129,7 @@ html.dark .iboard-teacher-inbox__select-all:hover {
 }
 
 .iboard-teacher-inbox__row.is-on {
-  background: #ebeaf8;
+  background: #e8eefc;
 }
 
 .iboard-teacher-inbox__check {
@@ -143,7 +143,7 @@ html.dark .iboard-teacher-inbox__select-all:hover {
   width: 0.88rem;
   height: 0.88rem;
   margin: 0;
-  accent-color: #5a5fc3;
+  accent-color: #2f5fee;
   cursor: pointer;
 }
 
@@ -201,7 +201,7 @@ html.dark .iboard-teacher-inbox__select-all:hover {
 }
 
 .iboard-teacher-inbox__more {
-  color: #5a5fc3;
+  color: #2f5fee;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -234,7 +234,7 @@ html.dark .iboard-teacher-inbox__select-all:hover {
   width: 0.42rem;
   height: 0.42rem;
   border-radius: 999px;
-  background: #5a5fc3;
+  background: #2f5fee;
 }
 
 .iboard-teacher-inbox__thread {
@@ -282,7 +282,7 @@ html.dark .iboard-teacher-inbox__row {
 html.dark .iboard-teacher-inbox__row:hover,
 html.dark .iboard-teacher-inbox__row.is-on,
 html.dark .iboard-teacher-inbox__row.is-checked {
-  background: rgba(90, 95, 195, 0.18);
+  background: rgba(47, 95, 238, 0.18);
 }
 
 html.dark .iboard-teacher-inbox__row.is-quiet .iboard-chat-avatar {
@@ -372,7 +372,7 @@ html.dark .iboard-chat-head {
   height: 2.15rem;
   place-items: center;
   border-radius: 999px;
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
   font-size: 0.78rem;
   font-weight: 800;
@@ -470,7 +470,7 @@ html.dark .iboard-chat-head-copy p {
 
 .iboard-chat-bubble--mine {
   border-radius: 1.15rem 1.15rem 0.32rem 1.15rem;
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
 }
 
@@ -569,13 +569,24 @@ html.dark .iboard-chat-compose {
   background: transparent;
 }
 
+.iboard-chat-compose {
+  flex-wrap: wrap;
+}
+
+.iboard-chat-compose .iboard-chat-send {
+  margin-left: auto;
+}
+
 .iboard-chat-compose textarea {
-  flex: 1 1 auto;
-  min-height: 2.4rem;
-  max-height: 7.5rem;
+  order: -1;
+  flex: 1 1 100%;
+  text-align: left;
+  height: calc(0.9rem * 1.35 * 5 + 1.1rem);
+  min-height: 0;
+  max-height: none;
   resize: none;
   border: 0;
-  border-radius: 1.15rem;
+  border-radius: 0.9rem;
   background: #f1f2f7;
   padding: 0.55rem 0.85rem;
   font: inherit;
@@ -600,7 +611,7 @@ html.dark .iboard-chat-compose textarea {
   place-items: center;
   border: 0;
   border-radius: 999px;
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
   cursor: pointer;
 }
@@ -623,7 +634,7 @@ html.dark .iboard-chat-compose textarea {
 }
 
 .iboard-chat-react-toggle[aria-expanded='true'] {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
 }
 
@@ -639,7 +650,7 @@ html.dark .iboard-chat-react-toggle {
 }
 
 html.dark .iboard-chat-react-toggle[aria-expanded='true'] {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
 }
 

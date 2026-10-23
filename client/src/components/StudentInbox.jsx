@@ -429,7 +429,7 @@ export default function StudentInbox({
               open && item.unread
                 ? 'border-indigo-400 bg-white ring-2 ring-indigo-300/70 dark:border-indigo-500 dark:bg-slate-900 dark:ring-indigo-500/40'
                 : item.unread
-                  ? 'border-[#5a5fc3] bg-[#ebeaf8] dark:border-indigo-400 dark:bg-indigo-950/60'
+                  ? 'border-[#2f5fee] bg-[#e8eefc] dark:border-indigo-400 dark:bg-indigo-950/60'
                   : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'
             }`}
           >

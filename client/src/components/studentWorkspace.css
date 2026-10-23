@@ -5,7 +5,7 @@
 html.iboard-student-workspace,
 html.iboard-student-workspace body,
 html.iboard-student-workspace #root {
-  background-color: var(--iboard-canvas, #f1f0f8) !important;
+  background-color: var(--iboard-canvas, #eef2f9) !important;
 }
 
 /* Breakouts: lock the student shell to one viewport so peers stay on-screen. */
@@ -79,7 +79,7 @@ html.iboard-student-workspace.iboard-student-draw-mode.iboard-student-breakouts 
 }
 
 .iboard-draw-pad__swatch.is-active {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #5a5fc3;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #2f5fee;
 }
 
 html.dark .iboard-draw-pad__swatch {
@@ -225,14 +225,14 @@ html.dark button.iboard-draw-preview__remove {
   width: 3.25rem;
   height: 0.34rem;
   border-radius: 999px;
-  background: #cfcce8;
-  box-shadow: 0 0 0 1px rgba(90, 95, 195, 0.12);
+  background: #c9d6f2;
+  box-shadow: 0 0 0 1px rgba(47, 95, 238, 0.12);
 }
 
 .iboard-draw-pad__resize:hover .iboard-draw-pad__resize-bar,
 .iboard-draw-pad__resize:focus-visible .iboard-draw-pad__resize-bar,
 html.iboard-draw-resizing .iboard-draw-pad__resize-bar {
-  background: #5a5fc3;
+  background: #2f5fee;
 }
 
 html.dark .iboard-draw-pad__resize-bar {
@@ -299,8 +299,8 @@ html.iboard-student-workspace .iboard-question-pulse {
   display: block;
   flex-shrink: 0;
   border-radius: 999px;
-  background: #cfcce8;
-  box-shadow: 0 0 0 1px rgba(90, 95, 195, 0.12);
+  background: #c7cad1;
+  box-shadow: none;
 }
 
 .iboard-student-split__arrow {
@@ -312,13 +312,13 @@ html.iboard-student-workspace .iboard-question-pulse {
 .iboard-student-split__hit:hover .iboard-student-split__bar,
 .iboard-student-split__hit:focus-visible .iboard-student-split__bar,
 html.iboard-student-splitting .iboard-student-split__bar {
-  background: #5a5fc3;
+  background: #9a9fa8;
 }
 
 .iboard-student-split__hit:hover .iboard-student-split__arrow,
 .iboard-student-split__hit:focus-visible .iboard-student-split__arrow,
 html.iboard-student-splitting .iboard-student-split__arrow {
-  color: #5a5fc3;
+  color: #6b7079;
 }
 
 html.dark .iboard-student-split__bar {
@@ -835,7 +835,7 @@ html.dark .iboard-breakout-peers__body {
 .iboard-model-page__label {
   margin: 0;
   padding: 0.9rem 1.1rem 0.35rem;
-  color: #433bbd;
+  color: #2450d6;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -944,7 +944,7 @@ html.dark .iboard-model-page__label {
 .iboard-class-wall__card.is-you {
   position: relative;
   overflow: hidden;
-  border-color: #5a5fc3;
+  border-color: #2f5fee;
 }
 
 .iboard-class-wall__grip {
@@ -977,7 +977,7 @@ html.dark .iboard-model-page__label {
 
 .iboard-class-wall__grip:hover,
 .iboard-class-wall__grip:focus-visible {
-  color: #5a5fc3;
+  color: #2f5fee;
   outline: none;
 }
 
@@ -995,7 +995,7 @@ html.dark .iboard-class-wall__grip:focus-visible {
   position: absolute;
   inset: 0;
   z-index: 2;
-  border: 1px solid #5a5fc3;
+  border: 1px solid #2f5fee;
   border-radius: calc(1rem - 1px);
   pointer-events: none;
 }
@@ -1203,7 +1203,7 @@ html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-
   align-items: stretch;
   width: 8.5rem;
   overflow: hidden;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 0.9rem;
   background: #ffffff;
 }
@@ -1240,7 +1240,7 @@ html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-
   border-top: 1px solid #ececf2;
   border-radius: 0;
   background: transparent;
-  color: #3c3f8f;
+  color: #1f3d99;
   cursor: pointer;
   box-shadow: none;
   transition: background-color 160ms ease;
@@ -1251,13 +1251,13 @@ html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-
 }
 
 .iboard-inbox-collapsed-stack:has(> section) .iboard-inbox-collapsed {
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 0.9rem;
   background: #ffffff;
 }
 
 .iboard-inbox-collapsed-stack:has(> section) .iboard-inbox-collapsed:hover {
-  border-color: #cfcce8;
+  border-color: #c9d6f2;
   background: #f4f3fb;
 }
 
@@ -1295,7 +1295,7 @@ html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-
   height: 0.85rem;
   margin: 0 auto;
   border-radius: 999px;
-  background: linear-gradient(180deg, #6b70d4 0%, #5a5fc3 100%);
+  background: linear-gradient(180deg, #6b70d4 0%, #2f5fee 100%);
 }
 
 .iboard-inbox-collapsed-stack .iboard-inbox-head__count {
@@ -1315,10 +1315,10 @@ html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-
   height: 1.6rem;
   place-items: center;
   margin-left: auto;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 0.5rem;
   background: #ffffff;
-  color: #5a5fc3;
+  color: #2f5fee;
   cursor: pointer;
 }
 
@@ -1328,7 +1328,7 @@ html.iboard-student-workspace.iboard-student-class-wall .iboard-student-writing-
 }
 
 .iboard-inbox-head__collapse:hover {
-  border-color: #5a5fc3;
+  border-color: #2f5fee;
 }
 
 html.dark .iboard-inbox-collapsed-stack {

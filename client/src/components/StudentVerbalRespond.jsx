@@ -90,7 +90,7 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
             className={`iboard-inbox-answer-chip inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-[11px] font-black tracking-wide transition disabled:pointer-events-none disabled:opacity-40 ${className}`}
             aria-label={blocked ? `Answer a question asked aloud. ${BLOCKED_MESSAGE}.` : 'Answer a question asked aloud'}
           >
-            <span className="grid h-5 w-5 place-items-center rounded-lg bg-[#5a5fc3] text-[14px] leading-none text-white" aria-hidden="true">
+            <span className="grid h-5 w-5 place-items-center rounded-lg bg-[#2f5fee] text-[14px] leading-none text-white" aria-hidden="true">
               +
             </span>
             <span>{message === 'Sent' ? 'Sent' : 'Answer'}</span>
@@ -124,10 +124,10 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
 
   return (
     <section
-      className={`${chip ? 'w-full basis-full' : ''} rounded-2xl border border-[#d5d4e4] bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900 ${compact || chip ? 'p-3' : 'p-4'} ${className}`}
+      className={`${chip ? 'w-full basis-full' : ''} rounded-2xl border border-[#d8dbe1] bg-white shadow-sm dark:border-indigo-800 dark:bg-slate-900 ${compact || chip ? 'p-3' : 'p-4'} ${className}`}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#5a5fc3] dark:text-indigo-300">Quick answer</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#2f5fee] dark:text-indigo-300">Quick answer</p>
         <CloseButton onClick={() => setOpen(false)} label="Close" />
       </div>
       <form onSubmit={submit} className="mt-2 space-y-2">
@@ -144,7 +144,7 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
             }
           }}
           placeholder="Type your answer…"
-          className="w-full resize-none rounded-xl border border-[#d5d4e4] bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+          className="w-full resize-none rounded-xl border border-[#d8dbe1] bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
         <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
           Enter sends · Shift+Enter new line
@@ -156,8 +156,8 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
               onClick={() => setConfidence((current) => (current === value ? '' : value))}
               className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${
                 confidence === value
-                  ? 'bg-[#5a5fc3] text-white'
-                  : 'bg-[#ebeaf8] text-[#52525c] hover:bg-[#e0dff5] dark:bg-slate-800 dark:text-slate-300'
+                  ? 'bg-[#2f5fee] text-white'
+                  : 'bg-[#e8eefc] text-[#52525c] hover:bg-[#e0dff5] dark:bg-slate-800 dark:text-slate-300'
               }`}
             >
               {label}
@@ -172,14 +172,14 @@ export default function StudentVerbalRespond({ socket, compact = false, classNam
             type="button"
             disabled={sending}
             onClick={() => setOpen(false)}
-            className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-[#ebeaf8] dark:hover:bg-slate-800"
+            className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-[#e8eefc] dark:hover:bg-slate-800"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={sending || blocked || !draft.trim()}
-            className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-black text-white hover:bg-[#4f54b0] disabled:opacity-40"
+            className="rounded-lg bg-[#2f5fee] px-3 py-1.5 text-xs font-black text-white hover:bg-[#4f54b0] disabled:opacity-40"
           >
             {sending ? 'Sending…' : 'Send'}
           </button>

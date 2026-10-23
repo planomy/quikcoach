@@ -198,7 +198,7 @@ export default function TodayReportPanel({
         <button
           type="button"
           onClick={onOpenPdf}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#2f5fee] hover:bg-[#e8eefc] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
         >
           Evidence PDF
         </button>
@@ -207,7 +207,7 @@ export default function TodayReportPanel({
       <div>
         <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Students</h3>
         {rows.length ? (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
+          <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-[#d8dbe1] bg-white dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
             {rows.map((row) => {
               const bits = [
                 STATE_LABELS[row.state],
@@ -234,7 +234,7 @@ export default function TodayReportPanel({
                     <button
                       type="button"
                       onClick={() => onOpenDrafts?.(row.id)}
-                      className="shrink-0 text-[11px] font-bold text-[#5a5fc3] hover:text-[#4b50b0] dark:text-indigo-300"
+                      className="shrink-0 text-[11px] font-bold text-[#2f5fee] hover:text-[#2450d6] dark:text-indigo-300"
                     >
                       Drafts
                     </button>

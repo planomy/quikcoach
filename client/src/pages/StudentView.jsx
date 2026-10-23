@@ -1384,7 +1384,7 @@ export default function StudentView() {
     return (
       <div className="iboard-student-canvas flex min-h-screen flex-col dark:bg-slate-950">
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-          <div className="w-full max-w-md rounded-2xl border border-[#d5d4e4] bg-white p-8 shadow-card dark:border-slate-700 dark:bg-slate-900">
+          <div className="w-full max-w-md rounded-2xl border border-[#d8dbe1] bg-white p-8 shadow-card dark:border-slate-700 dark:bg-slate-900">
             <IBoardWordmark className="text-2xl" variant="full" />
             <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               Your teacher removed this card from the room
@@ -1677,7 +1677,7 @@ export default function StudentView() {
       {connBanner === 'online' && (
         <div
           role="status"
-          className="sticky top-0 z-40 border-b border-[#cfcce8] bg-[#ebeaf8] px-4 py-2.5 text-center text-sm font-semibold text-[#5a5fc3] dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200"
+          className="sticky top-0 z-40 border-b border-[#c9d6f2] bg-[#e8eefc] px-4 py-2.5 text-center text-sm font-semibold text-[#2f5fee] dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200"
         >
           Back online
         </div>
@@ -1685,7 +1685,7 @@ export default function StudentView() {
       <header className="iboard-app-header border-b backdrop-blur">
         <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
-            <img src="/brand/tuit-corner.png?v=7" alt="TUIT" className="iboard-brand-corner" />
+            <img src="/brand/tuit-corner.png?v=8" alt="TUIT" className="iboard-brand-corner" />
             <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
               {activeRoomCode ? (
                 <span className="iboard-header-room">
@@ -1712,7 +1712,7 @@ export default function StudentView() {
                   onClick={() => setSaveMenuOpen((open) => !open)}
                   aria-expanded={saveMenuOpen}
                   data-active={saveMenuOpen ? 'true' : 'false'}
-                  className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                  className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#2f5fee] dark:hover:text-white"
                   aria-label="Save my writing"
                   title=""
                 >
@@ -1720,7 +1720,7 @@ export default function StudentView() {
                 </button>
               </HintWrap>
               {saveMenuOpen && (
-                <div className="absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                <div className="iboard-menu absolute right-0 top-full z-50 mt-1.5 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
                   <p className="px-1 pb-1 text-xs leading-snug text-slate-500 dark:text-slate-400">
                     Keep a copy of your writing on this device.
                   </p>
@@ -1732,7 +1732,7 @@ export default function StudentView() {
                         setSaveMenuOpen(false);
                         void saveDraftToDevice('docx');
                       }}
-                      className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                      className="w-full rounded-lg bg-[#2f5fee] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#2450d6] disabled:opacity-50"
                     >
                       {exportBusy ? 'Saving your writing…' : 'Save as a Word document'}
                     </button>
@@ -1745,7 +1745,7 @@ export default function StudentView() {
                         setSaveMenuOpen(false);
                         void saveDraftToDevice('txt');
                       }}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(47, 95, 238,0.22)]"
                     >
                       Save as a text file
                     </button>
@@ -1758,7 +1758,7 @@ export default function StudentView() {
                         setSaveMenuOpen(false);
                         void copyFormattedDraft();
                       }}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(47, 95, 238,0.22)]"
                     >
                       Copy my writing
                     </button>
@@ -1772,7 +1772,7 @@ export default function StudentView() {
               onClick={() => void toggleBrowserFullscreen()}
               aria-pressed={browserFullscreen}
               data-active={browserFullscreen ? 'true' : 'false'}
-              className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+              className="iboard-header-icon-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#2f5fee] dark:hover:text-white"
               aria-label={browserFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               title=""
             >
@@ -1791,7 +1791,7 @@ export default function StudentView() {
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
                 </svg>
               </summary>
-              <div className="absolute right-0 top-full z-50 mt-2 w-64 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="iboard-menu absolute right-0 top-full z-50 mt-2 w-64 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                 <HintWrap hint="Helps pitch feedback at your year level" className="w-full">
                 <div className="w-full">
                   <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-500">Year level</p>
@@ -1823,7 +1823,7 @@ export default function StudentView() {
                 <button
                   type="button"
                   onClick={changeRoom}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(90,95,195,0.22)]"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-[#818cf8] dark:hover:bg-[rgba(47, 95, 238,0.22)]"
                 >
                   Change room
                 </button>

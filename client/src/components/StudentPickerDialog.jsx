@@ -70,7 +70,7 @@ function PickerBody({ title, subtitle, students, initialIds, busy, error, onCanc
                 type="button"
                 disabled={busy || !choices.length || allPicked}
                 onClick={() => setPickedIds(choiceIds)}
-                className="rounded-md px-2 py-1 text-xs font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-40 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+                className="rounded-md px-2 py-1 text-xs font-bold text-[#2f5fee] hover:bg-[#e8eefc] disabled:opacity-40 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
               >
                 Select all
               </button>
@@ -100,14 +100,14 @@ function PickerBody({ title, subtitle, students, initialIds, busy, error, onCanc
                 return (
                   <label
                     key={id}
-                    className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-slate-800 hover:bg-[#ebeaf8] dark:text-slate-100 dark:hover:bg-slate-800 ${checked ? 'bg-[#ebeaf8]/70 dark:bg-indigo-950/40' : ''}`}
+                    className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-slate-800 hover:bg-[#e8eefc] dark:text-slate-100 dark:hover:bg-slate-800 ${checked ? 'bg-[#e8eefc]/70 dark:bg-indigo-950/40' : ''}`}
                   >
                     <input
                       type="checkbox"
                       disabled={busy}
                       checked={checked}
                       onChange={(event) => toggle(id, event.target.checked)}
-                      className="h-4 w-4 shrink-0 accent-[#5a5fc3]"
+                      className="h-4 w-4 shrink-0 accent-[#2f5fee]"
                     />
                     <span title={student.name} className="min-w-0 flex-1 truncate">{student.name}</span>
                     {student.connected === false && <span className="shrink-0 text-[10px] font-normal text-slate-400">Offline</span>}
@@ -138,7 +138,7 @@ function PickerBody({ title, subtitle, students, initialIds, busy, error, onCanc
               type="button"
               disabled={busy || !count}
               onClick={() => onConfirm?.(validIds)}
-              className="w-full rounded-xl bg-[#5a5fc3] px-5 py-2.5 text-sm font-black text-white hover:bg-[#4b50b0] disabled:opacity-40"
+              className="w-full rounded-xl bg-[#2f5fee] px-5 py-2.5 text-sm font-black text-white hover:bg-[#2450d6] disabled:opacity-40"
             >
               {sendLabel}
             </button>

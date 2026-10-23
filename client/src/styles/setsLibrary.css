@@ -70,6 +70,228 @@
   display: none;
 }
 
+/* One inspector column: the same width, flush under the header, flush to the screen bottom. */
+html:not(.dark) #tuit-overlay-root .iboard-header-dock.iboard-inspector {
+  width: min(22rem, calc(100vw - 4.75rem));
+  max-width: min(22rem, calc(100vw - 4.75rem));
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid #d8dbe1;
+  box-shadow: none;
+  background: #f5f5f7;
+}
+
+/* Switching tools swaps the content in place, so the column never animates. */
+#tuit-overlay-root .iboard-header-dock.iboard-inspector,
+#tuit-overlay-root .iboard-header-dock.iboard-inspector > * {
+  animation: none !important;
+  transition: none !important;
+}
+
+html.dark #tuit-overlay-root .iboard-header-dock.iboard-inspector {
+  width: min(22rem, calc(100vw - 4.75rem));
+  max-width: min(22rem, calc(100vw - 4.75rem));
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid var(--iboard-tool-border);
+  box-shadow: none;
+  background: var(--iboard-tool-surface);
+}
+
+/* The inspector look: flat grey, hairline controls, one blue action. */
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-room-settings__chrome {
+  background: transparent;
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+  min-height: 2.65rem;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-room-settings__chrome h2 {
+  font-size: 0.84rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: #1d1d1f;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .font-black,
+html:not(.dark) #tuit-overlay-root .iboard-inspector .font-bold {
+  font-weight: 600;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-teacher-composer__form {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.85rem 0.9rem 1.1rem;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector :is(input, textarea, select):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']) {
+  border-color: #d2d2d7;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector :is(input, textarea, select):focus {
+  border-color: #2f5fee;
+  box-shadow: 0 0 0 3px rgba(47, 95, 238, 0.16);
+  outline: none;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector input[type='range'] {
+  accent-color: #2f5fee;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-switch[data-on='true'] {
+  background: #2f5fee;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='bg-[#2f5fee]'],
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='bg-indigo-600'],
+html:not(.dark) #tuit-overlay-root .iboard-inspector span[class*='bg-[#2f5fee]'] {
+  background-color: #2f5fee;
+  border-color: transparent;
+  border-radius: 8px;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='bg-[#2f5fee]']:hover,
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='bg-indigo-600']:hover {
+  background-color: #244fda;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='border-[#c9d6f2]'],
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='border-[#d8dbe1]'] {
+  border-color: #d2d2d7;
+  border-radius: 8px;
+  background: #fff;
+  color: #1d1d1f;
+  box-shadow: none;
+  font-weight: 590;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='border-[#c9d6f2]']:hover,
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='border-[#d8dbe1]']:hover {
+  border-color: #c7c7cc;
+  background: #f7f7f8;
+  color: #1d1d1f;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector label[class*='border-dashed'] {
+  border-color: #d2d2d7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector label[class*='border-dashed'] span[class*='text-[#2f5fee]'] {
+  color: #6e6e73;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector button[class*='border-[#c9d6f2]'] span[class*='text-[#2f5fee]'] {
+  color: #1d1d1f;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-reports-tabs,
+html:not(.dark) #tuit-overlay-root .iboard-inspector nav[aria-label='Ask options'],
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__tasks {
+  display: flex;
+  gap: 0;
+  margin: 0.7rem 0.85rem 0;
+  padding: 2px;
+  border: 0;
+  border-radius: 8px;
+  background: #e4e4e8;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__tasks {
+  display: grid;
+  margin: 0;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-reports-tabs__tab,
+html:not(.dark) #tuit-overlay-root .iboard-inspector nav[aria-label='Ask options'] button,
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task {
+  flex: 1 1 auto;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: #3a3a3c;
+  font-size: 0.72rem;
+  font-weight: 590;
+  transform: none;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-reports-tabs__tab:hover,
+html:not(.dark) #tuit-overlay-root .iboard-inspector nav[aria-label='Ask options'] button:hover,
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task:hover {
+  transform: none;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #1d1d1f;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-reports-tabs__tab[aria-selected='true'],
+html:not(.dark) #tuit-overlay-root .iboard-inspector nav[aria-label='Ask options'] button[class*='bg-[#2f5fee]'],
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task.is-active {
+  background: #fff;
+  border-color: transparent;
+  color: #1d1d1f;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__copy {
+  border: 1px solid #d2d2d7;
+  border-radius: 8px;
+  background: #fff;
+  color: #1d1d1f;
+  font-weight: 600;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__copy:hover {
+  background: #f7f7f8;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__distribute.is-ready,
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__distribute.is-ready:hover {
+  background: #2f5fee;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__settings {
+  color: #2f5fee;
+  font-weight: 590;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__paste {
+  border-color: #d2d2d7;
+  border-radius: 8px;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__paste:focus {
+  border-color: #2f5fee;
+  box-shadow: 0 0 0 3px rgba(47, 95, 238, 0.16);
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-student-folders {
+  border-color: #d2d2d7;
+  border-radius: 10px;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-student-folders__name:hover:not([aria-pressed='true']) {
+  transform: none;
+  border-color: transparent;
+  background: rgba(0, 0, 0, 0.04);
+  color: #1d1d1f;
+}
+
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-student-folders__name[aria-pressed='true'] {
+  border-color: transparent;
+  background: #2f5fee;
+}
+
 /* Resources, Question sets, and Ask are one square column: flush under the header, flush to the screen bottom. */
 html #tuit-overlay-root .iboard-header-dock.iboard-header-dock--fill {
   display: flex;
@@ -296,4 +518,69 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 }
 @media (any-pointer: coarse) {
   .sets-recipient-row { height: 44px; }
+}
+
+/* Compact menu sizing, closer to Apple: short buttons, 13px labels, small headings. */
+:is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) :is(button, a)[class*='py-2'],
+:is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) :is(button, a)[class*='py-3'] {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+:is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) :is(button, a)[class*='py-2'][class*='rounded-'],
+:is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) :is(button, a)[class*='py-3'][class*='rounded-'] {
+  border-radius: 7px;
+}
+
+:is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) :is(h2, h3) {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+:is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) p {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.iboard-room-settings__primary,
+.iboard-room-settings__secondary {
+  min-height: 1.65rem;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.iboard-breakout-mode {
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.iboard-breakout-mode__btn {
+  min-height: 1.45rem;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.iboard-breakout-assign__start {
+  min-height: 1.6rem;
+  border-radius: 7px;
+}
+
+.iboard-menu {
+  border-radius: 12px;
+}
+
+.iboard-menu select {
+  min-height: 1.65rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+  border-radius: 7px;
+  font-size: 13px;
+}
+
+.iboard-menu :is(p, label, span).uppercase {
+  font-size: 11px;
 }

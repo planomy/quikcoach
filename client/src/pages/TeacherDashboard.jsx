@@ -790,16 +790,19 @@ function TeacherDashboardInner() {
         const meta = slot.querySelector('.iboard-header-meta');
         const actions = slot.querySelector('.iboard-header-actions');
         const gaps = 32;
+        const slotStyle = getComputedStyle(slot);
+        const pad = (parseFloat(slotStyle.paddingLeft) || 0) + (parseFloat(slotStyle.paddingRight) || 0);
         const available = Math.max(
           0,
-          slot.clientWidth - (meta?.offsetWidth || 0) - (actions?.offsetWidth || 0) - gaps,
+          slot.clientWidth - pad - (meta?.offsetWidth || 0) - (actions?.offsetWidth || 0) - gaps,
         );
-        if (available < 8) return;
         const ring = gaugeSlotRef.current?.querySelector('.iboard-class-gauge__ring');
         const gauge = ring?.offsetWidth || gaugeSlotRef.current?.offsetWidth || 82;
         const side = Math.max(0, (available - gauge) / 2);
-        // The tool row hangs 0.4rem past the outer end of each wing.
-        const room = side + 6;
+        // The frame extends --command-frame-outset past each wing. Keep that
+        // edge inside the header, so More stays on the pill when the window narrows.
+        const overhang = 18;
+        const room = Math.max(0, side - overhang);
         const icon = 46;
         const moreW = 52;
         const labelWidths = (selector) => [...bar.querySelectorAll(selector)].map((item) => {
@@ -868,7 +871,7 @@ function TeacherDashboardInner() {
           : (next.manageKeep + (next.manageKeep < manageWidths.length ? 1 : 0)) * icon;
         const collar = 8;
         const wanted = Math.max(monitorContent, manageContent) + collar;
-        const wing = Math.max(icon, Math.min(wanted, room));
+        const wing = Math.max(0, Math.min(wanted, room));
         bar.style.setProperty('--command-wing', `${Math.round(wing)}px`);
         const frameEl = bar.querySelector('.iboard-command-frame');
         const ringEl = ring || gaugeSlotRef.current?.querySelector('.iboard-class-gauge__ring');
@@ -876,7 +879,9 @@ function TeacherDashboardInner() {
           const frameRect = frameEl.getBoundingClientRect();
           const ringRect = ringEl.getBoundingClientRect();
           const cutX = ringRect.left + ringRect.width / 2 - frameRect.left;
+          const cutY = ringRect.top + ringRect.height / 2 - frameRect.top;
           frameEl.style.setProperty('--command-cut-x', `${cutX}px`);
+          frameEl.style.setProperty('--command-cut-y', `${cutY}px`);
           frameEl.style.setProperty('--command-cut-r', `${ringRect.width / 2}px`);
         }
         const pin = (button, edge) => {
@@ -901,6 +906,8 @@ function TeacherDashboardInner() {
     const observer = new ResizeObserver(schedule);
     observer.observe(slot);
     observer.observe(document.documentElement);
+    const frameNode = bar.querySelector('.iboard-command-frame');
+    if (frameNode) observer.observe(frameNode);
     window.addEventListener('resize', schedule);
     window.visualViewport?.addEventListener('resize', schedule);
     document.fonts?.ready?.then(() => {
@@ -2751,25 +2758,11 @@ function TeacherDashboardInner() {
         const gaps = counted > 1 && Number.isFinite(gap) ? (counted - 1) * gap : 0;
         return inner + pad + gaps;
       };
-      if (settingsOpen) {
-        const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
-        const ceiling = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
-        const floor = Math.round(offsetTop + viewport);
-        const available = Math.max(180, floor - ceiling);
-        let content = 0;
-        if (panel) {
-          for (const child of panel.children) content += naturalHeight(child);
-        }
-        const dockHeight = Math.min(content > 40 ? Math.ceil(content) : available, available);
-        const nextTop = floor - dockHeight;
-        setTeacherToolsTop((prev) => (Math.abs(prev - nextTop) < 2 ? prev : nextTop));
-        setTeacherToolsDockHeight((prev) => (Math.abs((prev || 0) - dockHeight) < 2 ? prev : dockHeight));
-        return;
-      }
       if (
-        (toolsPanelOpen && !libraryPanel)
+        settingsOpen
+        || (toolsPanelOpen && !libraryPanel)
         || addCardOpen
-        || (libraryPanel && libraryView !== 'feedback')
+        || libraryPanel
       ) {
         const headerBottom = teacherHeaderRef.current?.getBoundingClientRect().bottom;
         const nextTop = Math.round(Math.max(offsetTop, headerBottom || offsetTop));
@@ -2923,7 +2916,7 @@ function TeacherDashboardInner() {
   const headerDockStyle = useMemo(
     () => {
       const remaining = `calc(100dvh - ${teacherToolsTop}px)`;
-      const base = bottomAnchoredDock
+      const base = bottomAnchoredDock || settingsOpen
         ? {
             top: teacherToolsTop,
             bottom: 0,
@@ -2931,21 +2924,13 @@ function TeacherDashboardInner() {
             maxHeight: remaining,
             borderRadius: 0,
           }
-        : settingsOpen
-          ? {
-              top: teacherToolsTop,
-              bottom: 0,
-              height: 'auto',
-              borderRadius: 0,
-            }
-          : {
-              top: teacherToolsTop,
-              ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
-            };
-      if (reportsDockOpen) return { ...base, width: reportsDockWidth };
+        : {
+            top: teacherToolsTop,
+            ...(teacherToolsDockHeight != null ? { height: teacherToolsDockHeight } : {}),
+          };
       return base;
     },
-    [bottomAnchoredDock, settingsOpen, teacherToolsTop, teacherToolsDockHeight, reportsDockOpen, reportsDockWidth]
+    [bottomAnchoredDock, settingsOpen, teacherToolsTop, teacherToolsDockHeight]
   );
 
   useEffect(() => {
@@ -2963,34 +2948,6 @@ function TeacherDashboardInner() {
     window.addEventListener('resize', clampToViewport);
     return () => window.removeEventListener('resize', clampToViewport);
   }, [reportsDockOpen]);
-
-  function startReportsDockResize(event) {
-    if (event.button != null && event.button !== 0) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const originX = event.clientX;
-    const originW = reportsDockWidthRef.current;
-    document.documentElement.classList.add('iboard-reports-resizing');
-    function move(nextEvent) {
-      const next = clampReportsDockWidth(originW + (nextEvent.clientX - originX));
-      reportsDockWidthRef.current = next;
-      setReportsDockWidth(next);
-    }
-    function up() {
-      document.documentElement.classList.remove('iboard-reports-resizing');
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', up);
-      try {
-        localStorage.setItem(REPORTS_DOCK_WIDTH_KEY, String(reportsDockWidthRef.current));
-      } catch {
-        /* ignore */
-      }
-    }
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
-  }
 
   function saveClassSummary() {
     const text = summaryBox.trim();
@@ -4140,7 +4097,7 @@ function TeacherDashboardInner() {
               </button>
             </div>
             {copyToast && (
-              <p className="mt-3 text-sm font-medium text-[#5a5fc3] dark:text-indigo-300">{copyToast}</p>
+              <p className="mt-3 text-sm font-medium text-[#2f5fee] dark:text-indigo-300">{copyToast}</p>
             )}
           </div>
         </div>
@@ -4375,12 +4332,12 @@ function TeacherDashboardInner() {
     { id: 'inbox', name: 'Inbox', count: messageWaitCount },
   ];
   const manageCommands = [
+    { id: 'text', name: 'Text' },
     { id: 'modelling', name: 'Modelling' },
     { id: 'freeze', name: frozen ? 'Unfreeze' : 'Freeze' },
-    { id: 'text', name: 'Text' },
     { id: 'collaboration', name: 'Collaboration' },
-    { id: 'save', name: joined && saveStatus === 'saved' ? 'Saved' : 'Save' },
     { id: 'view', name: 'View' },
+    { id: 'save', name: joined && saveStatus === 'saved' ? 'Saved' : 'Save' },
   ];
   const monitorKeep = Math.min(commandFit.monitorKeep, monitorCommands.length);
   const manageKeep = Math.min(commandFit.manageKeep, manageCommands.length);
@@ -4397,11 +4354,11 @@ function TeacherDashboardInner() {
     : [];
   const attentionHint = (names, on, title = '') => (
     <span className="block min-w-[9rem]">
-      <span className="block bg-[#3c3f8f] px-2.5 py-1 text-[9px] font-semibold leading-snug text-white dark:bg-[#5a5fc3]">
+      <span className="block bg-[#1f3d99] px-2.5 py-1 text-[9px] font-semibold leading-snug text-white dark:bg-[#2f5fee]">
         {title ? <span className="block font-extrabold">{title}</span> : null}
         <span className="block">{on ? 'Click to show all cards' : 'Click to bring to the top'}</span>
       </span>
-      <span className="block px-2.5 py-1.5 text-[#5a5fc3] dark:text-indigo-200">
+      <span className="block px-2.5 py-1.5 text-[#2f5fee] dark:text-indigo-200">
         {names.slice(0, 8).map((name, n) => (
           <span key={`${name}-${n}`} className="block truncate">{name}</span>
         ))}
@@ -4723,7 +4680,7 @@ function TeacherDashboardInner() {
         <div className="iboard-teacher-header-bar relative">
           <div className="iboard-teacher-header-rail">
             <div className="iboard-brand iboard-brand--stacked shrink-0" aria-label="TUIT">
-              <img src="/brand/tuit-corner.png?v=7" alt="" className="iboard-brand-corner" />
+              <img src="/brand/tuit-corner.png?v=8" alt="" className="iboard-brand-corner" />
             </div>
           </div>
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
@@ -4741,7 +4698,7 @@ function TeacherDashboardInner() {
                 </button>
               </HintWrap>
               {socketConnected && monitoredCount > 0 ? (
-                <div className="inline-flex h-7 min-w-0 items-center gap-1.5 rounded-lg bg-[#5a5fc3] px-2 pl-2.5 text-white shadow-sm">
+                <div className="inline-flex h-7 min-w-0 items-center gap-1.5 rounded-lg bg-[#2f5fee] px-2 pl-2.5 text-white shadow-sm">
                   <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 opacity-90" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
                     <circle cx="12" cy="12" r="2.5" />
@@ -4952,9 +4909,27 @@ function TeacherDashboardInner() {
                   className="iboard-manage-tools"
                   role="group"
                   aria-label="Manage class"
-                  style={{ gridTemplateColumns: manageCols <= 1 ? 'minmax(max-content, 1fr)' : `repeat(${manageCols - 1}, max-content) minmax(max-content, 1fr)` }}
+                  style={{ gridTemplateColumns: manageCols <= 1 ? 'minmax(max-content, 1fr)' : `repeat(${manageCols}, max-content)` }}
                 >
                   <div className="iboard-command-item" data-overflow={0 >= manageKeep ? 'true' : 'false'}>
+                  <HintWrap hint={BOARD_FONT_HINTS[boardFontStep]} prefer="below">
+                    <button
+                      type="button"
+                      data-command-id="text"
+                      onClick={cycleBoardFont}
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
+                      aria-label={boardFontStep === 0 ? 'Text size, normal. Larger text on every card' : boardFontStep === BOARD_FONT_SCALES.length - 1 ? 'Text size, largest. Click to return to normal' : `Text size, step ${boardFontStep} of ${BOARD_FONT_SCALES.length - 1}`}
+                      data-active={boardFontStep > 0 ? 'true' : 'false'}
+                    >
+                      <span className="iboard-board-font-mark" data-step={boardFontStep} aria-hidden="true">
+                        <GaugeIcon id="text" />
+                        {boardFontStep > 0 ? <span className="iboard-board-font-plus">{'+'.repeat(boardFontStep)}</span> : null}
+                      </span>
+                      <span className="iboard-wing-caption">Text</span>
+                    </button>
+                  </HintWrap>
+                  </div>
+                  <div className="iboard-command-item" data-overflow={1 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint={room?.modelling_active ? 'Stop modelling and hand writing back' : breakoutsActive || room?.class_wall_active ? 'Close collaboration first' : 'Freeze the class and write an example on their pages'} prefer="below">
                     <button
                       type="button"
@@ -4971,7 +4946,7 @@ function TeacherDashboardInner() {
                     </button>
                   </HintWrap>
                   </div>
-                  <div className="iboard-command-item" data-overflow={1 >= manageKeep ? 'true' : 'false'}>
+                  <div className="iboard-command-item" data-overflow={2 >= manageKeep ? 'true' : 'false'}>
                   <HintWrap hint={room?.modelling_active ? 'Stop modelling to let students write again' : frozen ? "Board is frozen. Click to let students write again" : "Freeze the class and stop any further writing"} prefer="below">
                     <button
                       type="button"
@@ -4986,24 +4961,6 @@ function TeacherDashboardInner() {
                     >
                       <GaugeIcon id="freeze" />
                       <span className="iboard-wing-caption">Freeze</span>
-                    </button>
-                  </HintWrap>
-                  </div>
-                  <div className="iboard-command-item" data-overflow={2 >= manageKeep ? 'true' : 'false'}>
-                  <HintWrap hint={BOARD_FONT_HINTS[boardFontStep]} prefer="below">
-                    <button
-                      type="button"
-                      data-command-id="text"
-                      onClick={cycleBoardFont}
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
-                      aria-label={boardFontStep === 0 ? 'Text size, normal. Larger text on every card' : boardFontStep === BOARD_FONT_SCALES.length - 1 ? 'Text size, largest. Click to return to normal' : `Text size, step ${boardFontStep} of ${BOARD_FONT_SCALES.length - 1}`}
-                      data-active={boardFontStep > 0 ? 'true' : 'false'}
-                    >
-                      <span className="iboard-board-font-mark" data-step={boardFontStep} aria-hidden="true">
-                        <GaugeIcon id="text" />
-                        {boardFontStep > 0 ? <span className="iboard-board-font-plus">{'+'.repeat(boardFontStep)}</span> : null}
-                      </span>
-                      <span className="iboard-wing-caption">Text</span>
                     </button>
                   </HintWrap>
                   </div>
@@ -5046,7 +5003,24 @@ function TeacherDashboardInner() {
                     </div>
                   ) : null}
                   </div>
-                  <div ref={sessionMenuRef} className="relative iboard-command-item" data-overflow={4 >= manageKeep ? 'true' : 'false'}>
+                  <div className="iboard-command-item" data-overflow={4 >= manageKeep ? 'true' : 'false'}>
+                  <HintWrap hint="Select the view for student cards" prefer="below" suppressed={viewOpen}>
+                    <button
+                      ref={viewButtonRef}
+                      type="button"
+                      data-command-id="view"
+                      onClick={openViewDock}
+                      aria-expanded={viewOpen}
+                      data-active={viewOpen ? 'true' : 'false'}
+                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
+                      aria-label="View"
+                    >
+                      <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
+                      <span className="iboard-wing-caption">View</span>
+                    </button>
+                  </HintWrap>
+                  </div>
+                  <div ref={sessionMenuRef} className="relative iboard-command-item" data-overflow={5 >= manageKeep ? 'true' : 'false'}>
                     <HintWrap hint="Save or load a session" prefer="below" suppressed={sessionMenuOpen}>
                     <button
                       type="button"
@@ -5062,14 +5036,8 @@ function TeacherDashboardInner() {
                         <span className="iboard-wing-caption">{joined && saveStatus === 'saved' ? 'Saved' : 'Save'}</span>
                     </button>
                   </HintWrap>
-                    <span
-                      aria-hidden="true"
-                      className={`iboard-header-saved-label${joined && saveStatus === 'saved' ? ' is-on' : ''}`}
-                    >
-                      Saved
-                    </span>
                     {sessionMenuOpen && (
-                      <div className="iboard-wing-pop z-50 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                      <div className="iboard-menu iboard-wing-pop z-50 flex w-64 flex-col gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
                         <HintWrap hint="Downloads this lesson so you can open it again later" prefer="side" className="w-full">
                 <button
                   type="button"
@@ -5078,7 +5046,7 @@ function TeacherDashboardInner() {
                               setSessionMenuOpen(false);
                               void saveSessionFile();
                   }}
-                            className="w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                            className="w-full rounded-lg bg-[#2f5fee] px-3 py-2 text-left text-sm font-semibold text-white hover:bg-[#2450d6] disabled:opacity-50"
                 >
                             {sessionBusy ? 'Saving lesson…' : 'Save lesson to a file'}
                 </button>
@@ -5112,23 +5080,6 @@ function TeacherDashboardInner() {
                         </HintWrap>
               </div>
             )}
-                  </div>
-                  <div className="iboard-command-item" data-overflow={5 >= manageKeep ? 'true' : 'false'}>
-                  <HintWrap hint="Select the view for student cards" prefer="below" suppressed={viewOpen}>
-                    <button
-                      ref={viewButtonRef}
-                      type="button"
-                      data-command-id="view"
-                      onClick={openViewDock}
-                      aria-expanded={viewOpen}
-                      data-active={viewOpen ? 'true' : 'false'}
-                      className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
-                      aria-label="View"
-                    >
-                      <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
-                      <span className="iboard-wing-caption">View</span>
-                    </button>
-                  </HintWrap>
                   </div>
                   {manageKeep < manageCommands.length ? (
                     <div className="iboard-command-more-slot iboard-command-more-slot--end">
@@ -5173,7 +5124,7 @@ function TeacherDashboardInner() {
                 <button
                   type="button"
                   onClick={endIndependentWriting}
-                  className="rounded-full border border-[#5a5fc3]/30 bg-[#ebeaf8] px-2.5 py-0.5 text-[11px] font-semibold text-[#3c3f8f] transition hover:border-[#5a5fc3] dark:border-[#818cf8]/40 dark:bg-[rgba(90,95,195,0.22)] dark:text-[#c7d2fe]"
+                  className="rounded-full border border-[#2f5fee]/30 bg-[#e8eefc] px-2.5 py-0.5 text-[11px] font-semibold text-[#1f3d99] transition hover:border-[#2f5fee] dark:border-[#818cf8]/40 dark:bg-[rgba(47, 95, 238,0.22)] dark:text-[#c7d2fe]"
                   aria-label={`Independent writing since ${clockTime(independentSince)}. End it`}
                 >
                   Independent writing · {clockTime(independentSince)}
@@ -5196,7 +5147,7 @@ function TeacherDashboardInner() {
                 aria-expanded={moreMenuOpen}
                 aria-haspopup="menu"
                 data-active={moreMenuOpen || helpOpen ? 'true' : 'false'}
-                className="iboard-header-icon-button iboard-more-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#5a5fc3] dark:hover:text-white"
+                className="iboard-header-icon-button iboard-more-button flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition dark:text-slate-300 dark:hover:bg-[#2f5fee] dark:hover:text-white"
                 aria-label="More: full screen and help"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
@@ -5264,7 +5215,7 @@ function TeacherDashboardInner() {
       {toolsPanelOpen && createPortal(
         <div
           ref={teacherToolsPanelRef}
-          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-header-dock--fill z-[60] ${toolsTab === 'sets' ? 'w-[min(27rem,calc(100vw-4.75rem))]' : 'w-[min(29rem,calc(100vw-4.75rem))]'}`}
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-header-dock--fill iboard-inspector z-[60]"
           style={{ top: teacherToolsTop, bottom: 0, height: 'auto', borderRadius: 0 }}
           role="dialog"
           aria-label={toolsTab === 'sets' ? 'Question sets panel' : 'Ask the class panel'}
@@ -5352,6 +5303,7 @@ function TeacherDashboardInner() {
       ) : null}
       <div className="iboard-teacher-shell relative z-[1] min-h-0 flex-1">
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
+          <div className="iboard-arr-rail__teach">
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Share with class">
             <span className="iboard-command-bar__title iboard-rail-title">Teach class</span>
             <HintWrap hint="Send resources to students" prefer="right" suppressed={addCardOpen || (toolsPanelOpen && toolsTab === 'sets')}>
@@ -5410,6 +5362,7 @@ function TeacherDashboardInner() {
               </button>
             </HintWrap>
           </div>
+          </div>
           <div ref={tourBoardRef} className="iboard-arr-rail__lower">
             <div className="iboard-arr-rail__foot">
               <HintWrap hint="Today, student folders, class snapshots, and class insights" prefer="right" suppressed={reportsOpen}>
@@ -5452,7 +5405,7 @@ function TeacherDashboardInner() {
         {addCardOpen && createPortal(
           <div
             ref={resourcesDockRef}
-            className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-header-dock--fill iboard-resources-dock z-[60] flex min-h-0 w-[min(27rem,calc(100vw-4.75rem))] flex-col overflow-hidden"
+            className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-header-dock--fill iboard-inspector iboard-resources-dock z-[60] flex min-h-0 flex-col overflow-hidden"
             style={{ top: teacherToolsTop, bottom: 0, height: 'auto', borderRadius: 0 }}
             role="dialog"
             aria-label="Share resources"
@@ -5484,7 +5437,7 @@ function TeacherDashboardInner() {
                   {addCardFile ? (
                     <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-950/40">
                       <p className="min-w-0 truncate font-semibold text-slate-800 dark:text-slate-100">
-                        <span className="mr-1.5 rounded bg-[#ebeaf8] px-1 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-300">
+                        <span className="mr-1.5 rounded bg-[#e8eefc] px-1 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#2f5fee] dark:bg-indigo-950/60 dark:text-indigo-300">
                           {sharedFileLabel(addCardFile)}
                         </span>
                         {addCardFile.name}
@@ -5500,7 +5453,7 @@ function TeacherDashboardInner() {
                       <HintWrap hint="Pick an image, PDF, Word, PowerPoint, or Excel file. Office files download only — they are not shown in class." className="w-full" multiline>
                       <label
                         className={`flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed px-2.5 py-2 text-sm transition dark:border-indigo-800 dark:bg-indigo-950/30 ${
-                          addCardDragOver ? 'border-[#5a5fc3] bg-[#dcdaf5]' : 'border-[#cfcce8] bg-[#ebeaf8]/70'
+                          addCardDragOver ? 'border-[#2f5fee] bg-[#dcdaf5]' : 'border-[#c9d6f2] bg-[#e8eefc]/70'
                         }`}
                         onDragOver={(event) => {
                           event.preventDefault();
@@ -5509,10 +5462,10 @@ function TeacherDashboardInner() {
                         onDragLeave={() => setAddCardDragOver(false)}
                         onDrop={handleAddCardDrop}
                       >
-                        <span className="shrink-0 rounded-md bg-[#5a5fc3] px-2 py-1 text-[11px] font-bold text-white">
+                        <span className="shrink-0 rounded-md bg-[#2f5fee] px-2 py-1 text-[11px] font-bold text-white">
                           Choose file
                         </span>
-                        <span className="min-w-0 text-[11px] font-semibold leading-tight text-[#5a5fc3]/80 dark:text-indigo-300/80">
+                        <span className="min-w-0 text-[11px] font-semibold leading-tight text-[#2f5fee]/80 dark:text-indigo-300/80">
                           Image, PDF, Word, PowerPoint, or Excel — or drop it here
                         </span>
                         <input
@@ -5551,13 +5504,13 @@ function TeacherDashboardInner() {
                     type="button"
                     disabled={addCardBusy}
                     onClick={() => openTeacherTools('sets')}
-                    className="flex w-full items-center justify-between gap-2 rounded-lg border border-[#cfcce8] bg-white px-2.5 py-2 text-left hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-950 dark:hover:bg-indigo-950/40"
+                    className="flex w-full items-center justify-between gap-2 rounded-lg border border-[#c9d6f2] bg-white px-2.5 py-2 text-left hover:bg-[#e8eefc] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-950 dark:hover:bg-indigo-950/40"
                   >
                     <span className="min-w-0">
-                      <span className="block text-xs font-bold text-[#5a5fc3] dark:text-indigo-300">Question sets</span>
+                      <span className="block text-xs font-bold text-[#2f5fee] dark:text-indigo-300">Question sets</span>
                       <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">Curriculum questions to prompt thinking</span>
                     </span>
-                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[#5a5fc3]" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[#2f5fee]" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="m9 6 6 6-6 6" />
                     </svg>
                   </button>
@@ -5567,7 +5520,7 @@ function TeacherDashboardInner() {
                       <button
                         type="submit"
                         disabled={addCardBusy || (!addCardFile && !addCardImage && !addCardText.trim())}
-                        className="w-full whitespace-nowrap rounded-md bg-[#5a5fc3] px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                        className="w-full whitespace-nowrap rounded-md bg-[#2f5fee] px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-[#2450d6] disabled:opacity-50"
                       >
                         {addCardBusy && !addCardPickerOpen ? 'Sending…' : 'Send to inbox'}
                       </button>
@@ -5580,7 +5533,7 @@ function TeacherDashboardInner() {
                           setAddCardError('');
                           setAddCardPickerOpen(true);
                         }}
-                        className="w-full whitespace-nowrap rounded-md border border-[#cfcce8] bg-white px-2 py-1.5 text-[11px] font-semibold text-[#5a5fc3] hover:border-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
+                        className="w-full whitespace-nowrap rounded-md border border-[#c9d6f2] bg-white px-2 py-1.5 text-[11px] font-semibold text-[#2f5fee] hover:border-[#2f5fee] hover:bg-[#e8eefc] disabled:opacity-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-200 dark:hover:bg-indigo-950"
                       >
                         Select students…
                       </button>
@@ -5614,7 +5567,7 @@ function TeacherDashboardInner() {
               {posts.map((post) => (
             <article
               key={`post-${post.id}`}
-              className={`iboard-teacher-card flex cursor-pointer flex-col rounded-xl border border-slate-300 bg-slate-100/80 p-3 transition hover:border-[#cfcce8] dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-indigo-500`}
+              className={`iboard-teacher-card flex cursor-pointer flex-col rounded-xl border border-slate-300 bg-slate-100/80 p-3 transition hover:border-[#c9d6f2] dark:border-slate-600 dark:bg-slate-800/50 dark:hover:border-indigo-500`}
               onClick={() => openFocusedTeacherPost(post.id)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
@@ -5817,10 +5770,10 @@ function TeacherDashboardInner() {
                   cardView === 'overview' ? 'iboard-student-card--overview' : cardView === 'all' ? 'iboard-student-card--fit' : ''
                 } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${
                   handUp
-                    ? 'cursor-pointer border border-[#5a5fc3] bg-[#ebeaf8] shadow-[inset_4px_0_0_0_#5a5fc3] dark:border-indigo-400 dark:bg-indigo-950/70 dark:shadow-[inset_4px_0_0_0_#818cf8] dark:ring-1 dark:ring-indigo-500/40'
+                    ? 'cursor-pointer border border-[#2f5fee] bg-[#e8eefc] shadow-[inset_4px_0_0_0_#2f5fee] dark:border-indigo-400 dark:bg-indigo-950/70 dark:shadow-[inset_4px_0_0_0_#818cf8] dark:ring-1 dark:ring-indigo-500/40'
                     : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-[#14181e]'} ${
                         monitoring
-                          ? 'border border-[#5a5fc3] ring-2 ring-[#cfcce8] dark:border-indigo-400 dark:ring-indigo-900/50'
+                          ? 'border border-[#2f5fee] ring-2 ring-[#c9d6f2] dark:border-indigo-400 dark:ring-indigo-900/50'
                           : 'border border-[#e5e5ea] dark:border-slate-600'
                       }`
                 }`}
@@ -5833,7 +5786,7 @@ function TeacherDashboardInner() {
                         className={`iboard-student-card__name min-w-0 truncate ${
                           cardView === 'overview' || cardView === 'all' ? 'text-[13px]' : 'text-[14px]'
                         } ${
-                          handUp ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : 'cursor-pointer hover:text-[#5a5fc3] dark:hover:text-[#818cf8]'
+                          handUp ? 'cursor-pointer hover:text-indigo-700 dark:hover:text-indigo-300' : 'cursor-pointer hover:text-[#2f5fee] dark:hover:text-[#818cf8]'
                     }`}
                     aria-label={handUp ? `${s.name} has a question` : `Open ${s.name}’s learning trail`}
                         title=""
@@ -5876,7 +5829,7 @@ function TeacherDashboardInner() {
                           <select
                             value={String(s.breakout_room_id || '')}
                             onChange={(event) => moveStudentBreakout(s.id, event.target.value)}
-                            className="rounded-md border border-[#e2e2e8] bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[#3c3c45] outline-none focus:border-[#5a5fc3] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                            className="rounded-md border border-[#e2e2e8] bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[#3c3c45] outline-none focus:border-[#2f5fee] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
                           >
                             <option value="">—</option>
                             {breakoutRoomOptions.map((id) => (
@@ -5891,7 +5844,7 @@ function TeacherDashboardInner() {
                         <HintWrap hint="Tab or app in background" prefer="above">
                         <span
                           title=""
-                          className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
+                          className="shrink-0 rounded-md bg-[#e8eefc] px-1.5 py-0.5 text-[10px] font-bold text-[#2f5fee] dark:bg-indigo-950/60 dark:text-indigo-200"
                         >
                           Away
                         </span>
@@ -5901,7 +5854,7 @@ function TeacherDashboardInner() {
                         <HintWrap hint={`No changes to their writing for ${alertPrefs.noTypingMin} minutes or more`} prefer="above">
                         <span
                           title=""
-                          className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
+                          className="shrink-0 rounded-md bg-[#e8eefc] px-1.5 py-0.5 text-[10px] font-bold text-[#2f5fee] dark:bg-indigo-950/60 dark:text-indigo-200"
                         >
                           No typing
                         </span>
@@ -5909,7 +5862,7 @@ function TeacherDashboardInner() {
                       ) : null}
                       {engagementLabel ? (
                         <span
-                          className="shrink-0 rounded-md bg-[#ebeaf8] px-1.5 py-0.5 text-[10px] font-bold text-[#5a5fc3] dark:bg-indigo-950/60 dark:text-indigo-200"
+                          className="shrink-0 rounded-md bg-[#e8eefc] px-1.5 py-0.5 text-[10px] font-bold text-[#2f5fee] dark:bg-indigo-950/60 dark:text-indigo-200"
                         >
                           {engagementLabel}
                         </span>
@@ -5919,7 +5872,7 @@ function TeacherDashboardInner() {
                         <span
                           title=""
                           aria-label="Answered"
-                          className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#5a5fc3] dark:text-indigo-300"
+                          className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#2f5fee] dark:text-indigo-300"
                         >
                           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
                             <path d="m5 12 4.5 4.5L19 7" />
@@ -5930,7 +5883,7 @@ function TeacherDashboardInner() {
                       {monitoring ? (
                         <HintWrap hint="Monitoring" prefer="above">
                         <span
-                          className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#5a5fc3] dark:text-indigo-300"
+                          className="grid h-3.5 w-3.5 shrink-0 place-items-center text-[#2f5fee] dark:text-indigo-300"
                           title=""
                           aria-label="Monitoring"
                         >
@@ -6078,7 +6031,7 @@ function TeacherDashboardInner() {
                           aria-pressed={monitoredIds.has(Number(s.id))}
                           className={`grid h-7 w-7 shrink-0 place-items-center rounded-md ${
                             monitoredIds.has(Number(s.id))
-                              ? 'bg-[#ebeaf8] text-[#5a5fc3] hover:bg-[#e0dff5] dark:bg-[rgba(90,95,195,0.22)] dark:text-[#a5b4fc]'
+                              ? 'bg-[#e8eefc] text-[#2f5fee] hover:bg-[#e0dff5] dark:bg-[rgba(47, 95, 238,0.22)] dark:text-[#a5b4fc]'
                               : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                           }`}
                           aria-label={monitoredIds.has(Number(s.id)) ? `Stop monitoring ${s.name}` : `Monitor ${s.name}`}
@@ -6193,10 +6146,10 @@ function TeacherDashboardInner() {
             >
               {actionMenuShareStep ? (
                 <>
-                  <button type="button" onClick={() => { shareStudentWriting(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                  <button type="button" onClick={() => { shareStudentWriting(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                     All students
                   </button>
-                  <button type="button" onClick={() => { setShareTarget(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
+                  <button type="button" onClick={() => { setShareTarget(menuStudent); setStudentActionMenuId(null); }} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-700 hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:text-slate-200 dark:hover:bg-slate-800" role="menuitem">
                     Choose students
                   </button>
                 </>
@@ -6245,7 +6198,7 @@ function TeacherDashboardInner() {
                 </p>
               ) : (
                 pasteDetail.pastes.map((paste, index) => (
-                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-[#dfe2f3] px-2.5 py-2 dark:bg-[rgba(90,95,195,0.28)]">
+                  <div key={`${paste.at}-${index}`} className="rounded-lg bg-[#dfe2f3] px-2.5 py-2 dark:bg-[rgba(47, 95, 238,0.28)]">
                     <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                       {paste.at ? new Date(paste.at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''}
                       {' · '}
@@ -6261,7 +6214,7 @@ function TeacherDashboardInner() {
               type="button"
               role="menuitem"
               onClick={() => clearPasteAlert(pasteMenu.studentId)}
-              className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-400 dark:hover:bg-[rgba(90,95,195,0.22)] dark:hover:text-indigo-200"
+              className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:text-slate-400 dark:hover:bg-[rgba(47, 95, 238,0.22)] dark:hover:text-indigo-200"
             >
               Clear alert
             </button>
@@ -6289,7 +6242,7 @@ function TeacherDashboardInner() {
 
       {inboxOpen && createPortal(
         <div
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 w-[min(36rem,calc(100vw-4.75rem))] flex-col overflow-hidden"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-inspector iboard-library-dock z-[60] flex min-h-0 flex-col overflow-hidden"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
@@ -6334,9 +6287,9 @@ function TeacherDashboardInner() {
       {libraryPanel && createPortal(
         <div
           ref={libraryDockRef}
-          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-library-dock z-[60] flex min-h-0 flex-col overflow-hidden${
-            libraryView === 'feedback' ? ' w-[min(29rem,calc(100vw-4.75rem))]' : ''
-          }${helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''}${
+          className={`iboard-header-dock iboard-header-dock--start iboard-header-dock--rail iboard-header-dock--from-rail iboard-inspector iboard-library-dock z-[60] flex min-h-0 flex-col overflow-hidden${
+            helpFlash === 'records' && libraryView === 'home' ? ' is-help-flash' : ''
+          }${
             helpFlash === 'ai' && libraryView === 'feedback' ? ' is-help-flash' : ''
           }`}
           style={headerDockStyle}
@@ -6345,16 +6298,6 @@ function TeacherDashboardInner() {
           aria-labelledby="library-panel-title"
           data-help-target={libraryView === 'feedback' ? 'ai' : 'records'}
         >
-            {libraryView !== 'feedback' ? (
-              <div
-                className="iboard-library-dock__resize"
-                role="separator"
-                aria-orientation="vertical"
-                aria-label="Resize reports"
-                data-dock-resize=""
-                onPointerDown={startReportsDockResize}
-              />
-            ) : null}
             <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'snapshots' && libraryView !== 'insights' ? ' iboard-library-dock__chrome--back' : ''}`}>
                 {libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'snapshots' && libraryView !== 'insights' ? (
                   <button
@@ -6450,7 +6393,7 @@ function TeacherDashboardInner() {
                     setReportMergeCanonicalKey('');
                   }
                 }}
-                className="rounded-lg border border-[#d5d4e4] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                className="rounded-lg border border-[#d8dbe1] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
               >
                 {reportMergeMode ? 'Cancel combine' : 'Combine names'}
               </button>
@@ -6458,13 +6401,13 @@ function TeacherDashboardInner() {
                 type="button"
                 disabled={!!portfolioDownloadKind || !evidenceStudents.length}
                 onClick={downloadAllPortfolioPdfs}
-                className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                className="rounded-lg bg-[#2f5fee] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#2450d6] disabled:opacity-50"
               >
                 {portfolioDownloadKind === 'all' ? 'Preparing…' : 'Download all'}
               </button>
             </div>
             {reportMergeMode ? (
-              <p className="shrink-0 px-3 pb-0 text-[11px] font-semibold text-[#3c3f8f] dark:text-indigo-300">
+              <p className="shrink-0 px-3 pb-0 text-[11px] font-semibold text-[#1f3d99] dark:text-indigo-300">
                 Tick every name that is the same student. Capitals and spaces are already matched.
               </p>
             ) : null}
@@ -6481,7 +6424,7 @@ function TeacherDashboardInner() {
                             type="checkbox"
                             checked={reportMergeKeys.includes(profile.key)}
                             onChange={() => toggleReportMergeProfile(profile.key)}
-                            className="h-4 w-4 shrink-0 accent-[#5a5fc3]"
+                            className="h-4 w-4 shrink-0 accent-[#2f5fee]"
                           />
                           <span className="iboard-student-folders__name-label">{profile.name}</span>
                         </span>
@@ -6516,7 +6459,7 @@ function TeacherDashboardInner() {
                           id="report-canonical-name"
                           value={reportMergeCanonicalKey}
                           onChange={(event) => setReportMergeCanonicalKey(event.target.value)}
-                          className="mt-1 w-full rounded-lg border border-[#d5d4e4] bg-white px-2.5 py-2 text-xs font-bold text-slate-900 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+                          className="mt-1 w-full rounded-lg border border-[#d8dbe1] bg-white px-2.5 py-2 text-xs font-bold text-slate-900 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
                         >
                           {reportMergeProfiles.map((profile) => (
                             <option key={profile.key} value={profile.key}>{profile.name}</option>
@@ -6526,7 +6469,7 @@ function TeacherDashboardInner() {
                           type="button"
                           disabled={reportMergeBusy || !reportMergeCanonicalKey}
                           onClick={combineReportProfiles}
-                          className="mt-2 w-full rounded-lg bg-[#5a5fc3] px-3 py-2 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                          className="mt-2 w-full rounded-lg bg-[#2f5fee] px-3 py-2 text-xs font-bold text-white hover:bg-[#2450d6] disabled:opacity-50"
                         >
                           {reportMergeBusy ? 'Combining…' : 'Combine'}
                         </button>
@@ -6561,13 +6504,13 @@ function TeacherDashboardInner() {
                             type="button"
                             disabled={reportMergeBusy}
                             onClick={separateReportProfile}
-                            className="rounded-lg border border-[#d5d4e4] px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] disabled:opacity-50 dark:border-slate-600 dark:text-slate-200"
+                            className="rounded-lg border border-[#d8dbe1] px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] disabled:opacity-50 dark:border-slate-600 dark:text-slate-200"
                           >
                             Separate names
                           </button>
                         ) : null}
-                        <button type="button" onClick={copyStudentPortfolio} className="rounded-lg border border-[#d5d4e4] px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-slate-600 dark:text-slate-200">Copy</button>
-                        <button type="button" disabled={!!portfolioDownloadKind} onClick={downloadStudentPortfolio} className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50">{portfolioDownloadKind === 'one' ? 'Preparing…' : 'Download PDF'}</button>
+                        <button type="button" onClick={copyStudentPortfolio} className="rounded-lg border border-[#d8dbe1] px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:border-slate-600 dark:text-slate-200">Copy</button>
+                        <button type="button" disabled={!!portfolioDownloadKind} onClick={downloadStudentPortfolio} className="rounded-lg bg-[#2f5fee] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#2450d6] disabled:opacity-50">{portfolioDownloadKind === 'one' ? 'Preparing…' : 'Download PDF'}</button>
                       </div>
                     </div>
                     <div className="iboard-student-folders__pane-body">
@@ -6582,7 +6525,7 @@ function TeacherDashboardInner() {
                                 {entry.lessonObjective ? ` · ${entry.lessonObjective}` : ''}
                               </p>
                             </div>
-                            <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-[11px] font-bold text-[#5a5fc3] hover:text-[#3c3f8f] dark:text-indigo-300">
+                            <button type="button" onClick={() => loadSnapshotForView(entry.snapshotId)} className="text-[11px] font-bold text-[#2f5fee] hover:text-[#1f3d99] dark:text-indigo-300">
                               Whole class from this save
                             </button>
                           </div>
@@ -6607,7 +6550,7 @@ function TeacherDashboardInner() {
         )}
 
         {libraryView === 'snapshots' && (
-          <section className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white dark:border-slate-700 dark:bg-slate-900">
+          <section className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#d8dbe1] bg-white dark:border-slate-700 dark:bg-slate-900">
             <div className="border-b border-[#eceaf4] px-4 py-3 dark:border-slate-800">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Whole-class packs from the save icon. View the board as it was, or download the HTML again.
@@ -6624,10 +6567,10 @@ function TeacherDashboardInner() {
                       ) : null}
                     </span>
                     <span className="flex shrink-0 gap-2">
-                      <button type="button" onClick={() => loadSnapshotForView(sn.id)} className="text-xs font-bold text-[#5a5fc3] hover:text-[#3c3f8f] dark:text-indigo-300">
+                      <button type="button" onClick={() => loadSnapshotForView(sn.id)} className="text-xs font-bold text-[#2f5fee] hover:text-[#1f3d99] dark:text-indigo-300">
                         View
                       </button>
-                      <button type="button" onClick={() => redownloadEvidence(sn.id)} className="text-xs font-bold text-[#5a5fc3] hover:text-[#3c3f8f] dark:text-indigo-300">
+                      <button type="button" onClick={() => redownloadEvidence(sn.id)} className="text-xs font-bold text-[#2f5fee] hover:text-[#1f3d99] dark:text-indigo-300">
                         Download HTML
                       </button>
                     </span>
@@ -6752,13 +6695,13 @@ function TeacherDashboardInner() {
 
         {libraryView === 'drafting' && (
           <>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#ebeaf8] px-3 py-2 dark:bg-[rgba(90,95,195,0.22)]">
-              <p className="text-xs text-[#3c3f8f] dark:text-indigo-100">Today’s writing and every learning trail, as one PDF.</p>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#e8eefc] px-3 py-2 dark:bg-[rgba(47, 95, 238,0.22)]">
+              <p className="text-xs text-[#1f3d99] dark:text-indigo-100">Today’s writing and every learning trail, as one PDF.</p>
               <button
                 type="button"
                 disabled={sessionBusy}
                 onClick={() => setLibraryView('pdf')}
-                className="rounded-lg bg-[#5a5fc3] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                className="rounded-lg bg-[#2f5fee] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#2450d6] disabled:opacity-50"
               >
                 Evidence of learning PDF
               </button>
@@ -6834,7 +6777,7 @@ function TeacherDashboardInner() {
       {newClassConfirmOpen && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/60 p-4 backdrop-blur-[2px] sm:items-center">
           <div
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#d8dbe1] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-class-confirm-title"
@@ -6866,18 +6809,18 @@ function TeacherDashboardInner() {
                 type="button"
                 disabled={newClassBusy}
                 onClick={downloadLessonReportQuick}
-                className="w-full rounded-xl border border-[#e2e2e8] bg-white px-4 py-2.5 text-sm font-bold text-[#3c3c45] transition-colors hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3] focus-visible:ring-offset-2 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50"
+                className="w-full rounded-xl border border-[#e2e2e8] bg-white px-4 py-2.5 text-sm font-bold text-[#3c3c45] transition-colors hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f5fee] focus-visible:ring-offset-2 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50"
               >
                 Download participation report
               </button>
             </div>
-            <div className="flex flex-col-reverse gap-2 bg-[#f7f6fb] px-5 py-4 dark:bg-slate-950 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-2 bg-[#f6f7f9] px-5 py-4 dark:bg-slate-950 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 autoFocus
                 disabled={newClassBusy}
                 onClick={closeNewClassConfirmation}
-                className="rounded-xl border border-[#e2e2e8] bg-white px-4 py-2.5 text-sm font-bold text-[#3c3c45] transition-colors hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5a5fc3] focus-visible:ring-offset-2 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50"
+                className="rounded-xl border border-[#e2e2e8] bg-white px-4 py-2.5 text-sm font-bold text-[#3c3c45] transition-colors hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2f5fee] focus-visible:ring-offset-2 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50"
               >
                 Keep board
               </button>
@@ -6927,8 +6870,8 @@ function TeacherDashboardInner() {
                       title=""
                       className={`group flex min-w-[4.6rem] flex-col items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-bold leading-tight transition active:scale-[0.98] ${
                         active
-                          ? 'border-transparent bg-[#5a5fc3] text-white shadow-sm'
-                          : 'border-transparent text-slate-700 hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50 dark:hover:text-white'
+                          ? 'border-transparent bg-[#2f5fee] text-white shadow-sm'
+                          : 'border-transparent text-slate-700 hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50 dark:hover:text-white'
                       }`}
                     >
                       <CardViewIcon id={view.id} className={`h-4 w-4 shrink-0 transition-transform duration-[260ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none${active ? '' : ' group-hover:scale-[1.15]'}`} />
@@ -6962,8 +6905,8 @@ function TeacherDashboardInner() {
                       onFocus={() => setOverviewColsPeek(true)}
                       className={`min-w-[1.75rem] rounded-md border px-1.5 py-1 text-[11px] font-semibold tabular-nums transition ${
                         active
-                          ? 'border-transparent bg-[#5a5fc3] text-white shadow-sm'
-                          : 'border-transparent text-[#52525c] hover:border-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:text-slate-300 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50 dark:hover:text-white'
+                          ? 'border-transparent bg-[#2f5fee] text-white shadow-sm'
+                          : 'border-transparent text-[#52525c] hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:text-slate-300 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50 dark:hover:text-white'
                       }`}
                     >
                       {count}
@@ -6979,7 +6922,7 @@ function TeacherDashboardInner() {
       {settingsOpen && createPortal(
         <div
           ref={settingsPanelRef}
-          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail iboard-room-settings z-[60] w-[min(22rem,calc(100vw-4.75rem))]"
+          className="iboard-header-dock iboard-header-dock--start iboard-header-dock--from-rail iboard-inspector iboard-room-settings z-[60]"
           style={headerDockStyle}
           role="dialog"
           aria-modal="false"
@@ -7505,15 +7448,15 @@ function TeacherDashboardInner() {
           onClick={() => setFocusedPostId(null)}
         >
           <article
-            className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#d8dbe1] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
           role="dialog"
             aria-modal="true"
             aria-labelledby="focused-teacher-card-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d5d4e4] bg-[#ebeaf8] px-5 py-4 dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d8dbe1] bg-[#eceef2] px-5 py-4 dark:border-slate-700 dark:bg-slate-900">
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#5a5fc3]">Teacher card</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f5fee]">Teacher card</p>
                 <h2 id="focused-teacher-card-title" className="truncate font-display text-xl font-bold text-[#3c3c45] dark:text-slate-100">
                   {focusedPost.title || 'Card'}
             </h2>
@@ -7526,7 +7469,7 @@ function TeacherDashboardInner() {
                     setFocusedPostId(null);
                     window.dispatchEvent(new CustomEvent('iboard:edit-teacher-card', { detail: { post } }));
                   }}
-                  className="rounded-xl border border-[#d5d4e4] bg-white px-3 py-2 text-sm font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-slate-600 dark:bg-slate-800 dark:text-indigo-300"
+                  className="rounded-xl border border-[#d8dbe1] bg-white px-3 py-2 text-sm font-bold text-[#2f5fee] hover:bg-[#e8eefc] dark:border-slate-600 dark:bg-slate-800 dark:text-indigo-300"
                 >
                   Edit
               </button>
@@ -7553,7 +7496,7 @@ function TeacherDashboardInner() {
                   )}
                   <a
                     href={`${focusedPost.file_url}${focusedPost.file_url.includes('?') ? '&' : '?'}download=1&name=${encodeURIComponent(focusedPost.text || 'handout')}`}
-                    className="inline-flex text-sm font-bold text-[#5a5fc3] hover:underline"
+                    className="inline-flex text-sm font-bold text-[#2f5fee] hover:underline"
                     download={focusedPost.text || 'handout'}
                   >
                     {focusedPost.text || 'Download handout'}
@@ -7592,7 +7535,7 @@ function TeacherDashboardInner() {
       {snapshotPromptOpen && (
         <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
           <form
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#d8dbe1] bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             role="dialog"
             aria-modal="true"
             aria-labelledby="snapshot-name-title"
@@ -7617,7 +7560,7 @@ function TeacherDashboardInner() {
                 <input
                   value={snapshotName}
                   onChange={(event) => setSnapshotName(event.target.value.slice(0, 200))}
-                  className="mt-1.5 w-full rounded-xl border border-[#e2e2e8] bg-white px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-[#2c2c34] outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  className="mt-1.5 w-full rounded-xl border border-[#e2e2e8] bg-white px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-[#2c2c34] outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                   placeholder="e.g. write a strong opening sentence"
                   autoFocus
                   maxLength={200}
@@ -7636,7 +7579,7 @@ function TeacherDashboardInner() {
               <button
                 type="submit"
                 disabled={evidenceBusy}
-                className="rounded-xl bg-[#5a5fc3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#4b50b0] disabled:opacity-60"
+                className="rounded-xl bg-[#2f5fee] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2450d6] disabled:opacity-60"
               >
                 {evidenceBusy ? 'Saving…' : 'Save snapshot'}
               </button>

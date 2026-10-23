@@ -69,7 +69,7 @@ body,
 html:fullscreen,
 html:-webkit-full-screen {
   height: 100%;
-  background: #f1f0f8;
+  background: #eef2f9;
 }
 
 html.dark:fullscreen,
@@ -169,7 +169,7 @@ html:not(.dark) .iboard-app-header .iboard-header-tab:hover {
 }
 
 html:not(.dark) .iboard-app-header .iboard-header-tab[data-active='true'] {
-  background: #4f46e5;
+  background: #2f5fee;
   color: #ffffff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.28);
 }
@@ -188,7 +188,7 @@ html:not(.dark) .iboard-app-header .iboard-header-icon-button:hover {
 
 html:not(.dark) .iboard-app-header .iboard-header-icon-button[data-active='true'] {
   border-color: #818cf8;
-  background: #4f46e5;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -219,7 +219,7 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
 .iboard-student-canvas {
   width: 100%;
   min-width: 100%;
-  background: #f1f0f8;
+  background: #eef2f9;
 }
 
 .iboard-student-canvas {
@@ -229,33 +229,33 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
   max-height: 100dvh;
 }
 
-/* Teacher shell (light): cool ice-blue field — indigo accents stay brand */
-html:not(.dark) .iboard-teacher-canvas {
-  background: #e6e6ee;
+/* Teacher and student shells (light): the same blue-grey field and white header. */
+html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) {
+  background: #e6e8ec;
   background-image: none;
   color: #3c3c45;
 }
 
-html:not(.dark) .iboard-teacher-canvas .iboard-app-header {
+html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header {
   background: #ffffff;
   border-bottom-color: #b7b7c0;
   box-shadow: none;
   backdrop-filter: none;
 }
 
-html:not(.dark) .iboard-teacher-canvas .iboard-app-header h1 {
+html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header h1 {
   color: #52525c;
 }
 
-html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-code {
-  color: #433bbd;
+html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header .iboard-header-code {
+  color: #2f5fee;
 }
 
-html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta {
+html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header .iboard-header-meta {
   color: #6b6b78;
 }
 
-html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b {
+html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header .iboard-header-meta b {
   color: #3c3c45;
   font-weight: 650;
 }
@@ -291,7 +291,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-app-header .iboard-header-meta b 
   font-size: 0.55rem;
   line-height: 1;
   letter-spacing: 0.2em;
-  color: #433bbd;
+  color: #2f5fee;
 }
 
 .iboard-header-room--stacked .iboard-header-code {
@@ -315,11 +315,11 @@ html.dark .iboard-header-room--stacked .iboard-header-room__label {
 }
 
 .iboard-header-room:hover .iboard-header-code {
-  color: #3a009c;
+  color: #1d4ed8;
 }
 
 .iboard-header-room:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 2px;
 }
 
@@ -353,7 +353,7 @@ html.dark .iboard-header-room--stacked .iboard-header-room__label {
 }
 
 .iboard-header-pill:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 2px;
 }
 
@@ -380,13 +380,13 @@ html.dark .iboard-header-room--stacked .iboard-header-room__label {
 
 .iboard-header-pill--attention.is-on {
   background: #ffffff;
-  color: #3c3f8f;
-  box-shadow: inset 0 0 0 1px #5a5fc3;
+  color: #1f3d99;
+  box-shadow: inset 0 0 0 1px #2f5fee;
 }
 
 .iboard-header-pill--inbox {
-  background: #ebeaf8;
-  color: #5a5fc3;
+  background: #e8eefc;
+  color: #2f5fee;
 }
 
 .iboard-header-pill--inbox:hover {
@@ -394,7 +394,7 @@ html.dark .iboard-header-room--stacked .iboard-header-room__label {
 }
 
 .iboard-header-pill--inbox.is-on {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -411,10 +411,10 @@ html.dark .iboard-header-room--stacked .iboard-header-room__label {
   height: 1.85rem;
   padding: 0 0.85rem;
   overflow: hidden;
-  border: 1px solid #cfcce8;
+  border: 1px solid #c9d6f2;
   border-radius: 999px;
-  background: #ebeaf8;
-  color: #5a5fc3;
+  background: #e8eefc;
+  color: #2f5fee;
   font-size: 0.75rem;
   font-weight: 650;
   line-height: 1.2;
@@ -468,7 +468,7 @@ html.dark .iboard-header-pill--attention:hover {
 }
 
 html.dark .iboard-header-pill--attention.is-on {
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
   color: #c7d2fe;
   box-shadow: inset 0 0 0 1px #818cf8;
 }
@@ -566,8 +566,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-brand-logo {
   height: 1.05rem;
   flex-shrink: 0;
   border-radius: 999px;
-  background: linear-gradient(180deg, #6b70d4 0%, #5a5fc3 100%);
-  box-shadow: 0 0 0 3px rgba(90, 95, 195, 0.12);
+  background: linear-gradient(180deg, #6b70d4 0%, #2f5fee 100%);
+  box-shadow: 0 0 0 3px rgba(47, 95, 238, 0.12);
 }
 
 .iboard-inbox-head__title {
@@ -586,7 +586,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-brand-logo {
   place-items: center;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
   font-size: 0.625rem;
   font-weight: 800;
@@ -605,15 +605,15 @@ html.iboard-student-workspace.iboard-student-respond-alert .iboard-inbox-head__c
 }
 
 .iboard-inbox-answer-chip {
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   background: #ffffff;
-  color: #5a5fc3;
+  color: #2f5fee;
   box-shadow: 0 1px 2px rgba(60, 60, 69, 0.04);
 }
 
 .iboard-inbox-answer-chip:hover {
-  border-color: #cfcce8;
-  background: #ebeaf8;
+  border-color: #c9d6f2;
+  background: #e8eefc;
 }
 
 html.dark .iboard-inbox-head {
@@ -712,7 +712,7 @@ html.dark .iboard-inbox-empty p {
   list-style: none;
   overflow: auto;
   border-radius: 14px;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   background: #ffffff;
   box-shadow:
     0 10px 28px rgba(15, 23, 42, 0.12),
@@ -752,12 +752,12 @@ html.dark .iboard-inbox-empty p {
 }
 
 .iboard-grade-menu__option.is-active:not(.is-selected) {
-  background: rgba(90, 95, 195, 0.1);
+  background: rgba(47, 95, 238, 0.1);
   color: #3c3c45;
 }
 
 .iboard-grade-menu__option.is-selected {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -787,7 +787,7 @@ html.dark .iboard-grade-menu__option {
 }
 
 html.dark .iboard-grade-menu__option.is-active:not(.is-selected) {
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
 }
 
 .iboard-brand-logo--full:not(.iboard-brand-logo--hero):not(.iboard-brand-logo--lg):not(.iboard-brand-logo--login) {
@@ -797,7 +797,7 @@ html.dark .iboard-grade-menu__option.is-active:not(.is-selected) {
 
 /* Student shell (light): match teacher ice-blue field */
 html:not(.dark) .iboard-student-canvas {
-  background: #f1f0f8;
+  background: #eef2f9;
   background-image: none;
   color: #3c3c45;
 }
@@ -814,7 +814,7 @@ html:not(.dark) .iboard-student-canvas .iboard-app-header h1 {
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-code {
-  color: #4800c4;
+  color: #2f5fee;
   font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -845,9 +845,9 @@ html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-bu
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
   border-color: transparent;
-  background: #ebeaf8;
-  box-shadow: inset 0 0 0 1px #5a5fc3;
-  color: #5a5fc3;
+  background: #e8eefc;
+  box-shadow: inset 0 0 0 1px #2f5fee;
+  color: #2f5fee;
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button:active {
@@ -856,12 +856,12 @@ html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-bu
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-icon-button[data-active='true'] {
   border-color: transparent;
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
 }
 
 html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] {
-  border-bottom-color: #d5d4e4;
+  border-bottom-color: #d8dbe1;
 }
 
 html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button {
@@ -870,8 +870,8 @@ html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button 
 
 html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button.bg-indigo-600,
 html:not(.dark) .iboard-student-canvas nav[aria-label='Student tools'] > button[class*='bg-indigo-600'] {
-  background: #5a5fc3 !important;
-  border-color: #5a5fc3 !important;
+  background: #2f5fee !important;
+  border-color: #2f5fee !important;
   color: #ffffff !important;
 }
 
@@ -935,22 +935,22 @@ html:not(.dark) .iboard-student-canvas header details .font-black {
 
 html:not(.dark) .iboard-student-canvas header details .bg-indigo-50,
 html:not(.dark) .iboard-student-canvas header details .hover\:bg-indigo-100:hover {
-  background-color: #ebeaf8;
+  background-color: #e8eefc;
 }
 
 html:not(.dark) .iboard-student-canvas header details .text-indigo-800,
 html:not(.dark) .iboard-student-canvas header details .text-indigo-700,
 html:not(.dark) .iboard-student-canvas header details .hover\:text-indigo-700:hover {
-  color: #5a5fc3;
+  color: #2f5fee;
 }
 
 html:not(.dark) .iboard-student-canvas header details .border-indigo-200,
 html:not(.dark) .iboard-student-canvas header details .hover\:border-indigo-300:hover {
-  border-color: #cfcce8;
+  border-color: #c9d6f2;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-status-saved {
-  color: #5a5fc3;
+  color: #2f5fee;
   font-size: 12px;
   font-weight: 600;
   background: transparent;
@@ -974,9 +974,9 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button {
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
   border-color: transparent;
-  background: #ebeaf8;
-  box-shadow: inset 0 0 0 1px #5a5fc3;
-  color: #5a5fc3;
+  background: #e8eefc;
+  box-shadow: inset 0 0 0 1px #2f5fee;
+  color: #2f5fee;
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button:active {
@@ -985,7 +985,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button:active {
 
 html:not(.dark) .iboard-teacher-canvas .iboard-header-icon-button[data-active='true'] {
   border-color: transparent;
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -1052,7 +1052,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-more-button:not([data-active='true']) {
-  color: #3c3f8f;
+  color: #1f3d99;
 }
 
 .iboard-teacher-header-main--command .iboard-header-actions {
@@ -1109,6 +1109,7 @@ html.dark .iboard-brand-word {
 
 .iboard-command-bar {
   position: relative;
+  top: calc(var(--command-foot) * -1 - 1px);
   display: grid;
   grid-template-columns: var(--command-wing, 16rem) auto var(--command-wing, 16rem);
   align-items: end;
@@ -1118,7 +1119,18 @@ html.dark .iboard-brand-word {
   min-width: 0;
   justify-self: center;
   --command-collar-inset: 0px;
-  --command-end-radius: calc((2.34rem + 4px) / 3);
+  --command-rail: calc(2.34rem + 4px);
+  --command-band: 1.48rem;
+  --command-foot: 0.1rem;
+  --command-rise: 0.05rem;
+  --command-lip: calc(0.05rem + 1px);
+  --command-dial: 5.55rem;
+  --command-blue: #2f5fee;
+  --command-end-radius: calc((var(--command-rail) + var(--command-band) + var(--command-foot)) / 2);
+  isolation: isolate;
+  --command-frame-outset: 1.85rem;
+  --command-trim: 6px;
+  --command-row-outset: 0.4rem;
 }
 
 .iboard-command-bar[data-labels='off'] .iboard-alert-chip__name,
@@ -1168,28 +1180,28 @@ html.dark .iboard-brand-word {
 }
 
 .iboard-alert-chip.has-count {
-  background: #ebeaf8;
-  color: #3c3f8f;
+  background: #e8eefc;
+  color: #1f3d99;
   cursor: pointer;
 }
 
 .iboard-alert-chip.has-count:hover {
-  background: #dedcf6;
+  background: #d6e2fb;
 }
 
 .iboard-alert-chip.is-on,
 .iboard-alert-chip.is-on:hover {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
 }
 
 .iboard-alert-chip:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 2px;
 }
 
 .iboard-command-bar .iboard-alert-chip:focus-visible {
-  outline-color: #ffffff;
+  outline-color: var(--command-blue);
 }
 
 html.dark .iboard-alert-chip {
@@ -1197,7 +1209,7 @@ html.dark .iboard-alert-chip {
 }
 
 html.dark .iboard-alert-chip.has-count {
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
   color: #c7d2fe;
 }
 
@@ -1214,24 +1226,24 @@ html.dark .iboard-alert-chip.is-on {
   gap: 0.16rem;
   padding: 0 0.38rem;
   background: transparent;
-  color: #ffffff;
+  color: var(--command-blue);
 }
 
 .iboard-command-bar .iboard-alert-chip.has-count,
 .iboard-command-bar .iboard-alert-chip.has-count:hover {
-  color: #ffffff;
+  color: var(--command-blue);
 }
 
 .iboard-command-bar .iboard-alert-chip:hover:not(.is-on) {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
+  background: rgba(47, 95, 238, 0.1);
+  color: var(--command-blue);
 }
 
 .iboard-command-bar .iboard-alert-chip.is-on,
 .iboard-command-bar .iboard-alert-chip.is-on:hover {
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px #433bbd;
-  color: #433bbd;
+  background: var(--command-blue);
+  box-shadow: none;
+  color: #ffffff;
 }
 
 .iboard-alert-chip__mark {
@@ -1280,8 +1292,8 @@ html.dark .iboard-alert-chip.is-on {
   padding: 0 0.2rem;
   border-radius: 999px;
   background: #ffffff;
-  color: #433bbd;
-  box-shadow: 0 0 0 2px #433bbd;
+  color: #2450d6;
+  box-shadow: 0 0 0 2px #2450d6;
   font-size: 0.62rem;
   font-weight: 800;
   line-height: 0.9rem;
@@ -1296,28 +1308,35 @@ html.dark .iboard-alert-chip.is-on {
   color: inherit;
 }
 
+.iboard-command-bar .iboard-alert-chip__count {
+  right: -0.9rem;
+  background: var(--command-blue);
+  color: #ffffff;
+  box-shadow: 0 0 0 1.25px #ffffff;
+}
+
 .iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__count,
 .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__count {
-  background: #433bbd;
-  color: #ffffff;
-  box-shadow: 0 0 0 2px #ffffff;
+  background: #ffffff;
+  color: var(--command-blue);
+  box-shadow: 0 0 0 1.25px var(--command-blue);
 }
 
 html.dark .iboard-command-bar .iboard-alert-chip,
 html.dark .iboard-command-bar .iboard-alert-chip.has-count {
-  color: #ffffff;
+  color: var(--command-blue);
 }
 
 html.dark .iboard-command-bar .iboard-alert-chip:hover:not(.is-on) {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
+  background: rgba(47, 95, 238, 0.1);
+  color: var(--command-blue);
 }
 
 html.dark .iboard-command-bar .iboard-alert-chip.is-on,
 html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover {
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px #433bbd;
-  color: #433bbd;
+  background: var(--command-blue);
+  box-shadow: none;
+  color: #ffffff;
 }
 
 html.dark .iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark,
@@ -1333,6 +1352,11 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
   line-height: 1;
   letter-spacing: 0;
   white-space: nowrap;
+}
+
+.iboard-command-bar .iboard-alert-chip__name,
+.iboard-command-bar .iboard-wing-caption {
+  font-size: 0.52rem;
 }
 
 .iboard-command-bar,
@@ -1356,10 +1380,10 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
   gap: 0.35rem;
   width: 15.5rem;
   padding: 0.45rem 0.45rem 0.5rem;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 0.9rem;
   background: #ffffff;
-  box-shadow: 0 14px 34px rgba(60, 63, 143, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 34px rgba(31, 61, 153, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
 .iboard-nudge-strip:has(.iboard-nudge-strip__compose) {
@@ -1380,7 +1404,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
   display: block;
   margin: 0;
   padding: 0.12rem 0.25rem;
-  color: #5a5fc3;
+  color: #2f5fee;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -1399,7 +1423,7 @@ html .iboard-nudge-strip__chrome button.iboard-icon-action {
   border: 1px solid #d8d6ea;
   border-radius: 0.7rem;
   background: #ffffff;
-  color: #3c3f8f;
+  color: #1f3d99;
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.3;
@@ -1408,8 +1432,8 @@ html .iboard-nudge-strip__chrome button.iboard-icon-action {
 }
 
 .iboard-nudge-strip__chip:hover:not(:disabled) {
-  border-color: #5a5fc3;
-  background: #ebeaf8;
+  border-color: #2f5fee;
+  background: #e8eefc;
 }
 
 .iboard-nudge-strip__chip.is-write {
@@ -1426,7 +1450,7 @@ html .iboard-nudge-strip__chrome button.iboard-icon-action {
 .iboard-nudge-strip__chip.is-clear:hover:not(:disabled) {
   border-color: transparent;
   background: #f4f3fa;
-  color: #3c3f8f;
+  color: #1f3d99;
 }
 
 .iboard-nudge-strip__chip:disabled {
@@ -1446,7 +1470,7 @@ html .iboard-nudge-strip__chrome button.iboard-icon-action {
   min-width: 0;
   height: 1.7rem;
   padding: 0 0.65rem;
-  border: 1px solid #cfcce8;
+  border: 1px solid #c9d6f2;
   border-radius: 999px;
   background: #ffffff;
   color: #1f1f24;
@@ -1456,7 +1480,7 @@ html .iboard-nudge-strip__chrome button.iboard-icon-action {
 }
 
 .iboard-nudge-strip__compose input:focus {
-  border-color: #5a5fc3;
+  border-color: #2f5fee;
 }
 
 .iboard-nudge-strip__compose button {
@@ -1464,7 +1488,7 @@ html .iboard-nudge-strip__chrome button.iboard-icon-action {
   padding: 0 0.7rem;
   border: 0;
   border-radius: 999px;
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
   font-size: 0.7rem;
   font-weight: 800;
@@ -1493,7 +1517,7 @@ html.dark .iboard-nudge-strip__chip {
 
 html.dark .iboard-nudge-strip__chip:hover:not(:disabled) {
   border-color: #818cf8;
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
 }
 
 html.dark .iboard-nudge-strip__chip.is-clear {
@@ -1526,7 +1550,7 @@ html.dark .iboard-nudge-strip__compose input {
   display: grid;
   align-content: end;
   justify-items: stretch;
-  row-gap: 0.6rem;
+  row-gap: 0;
   width: 100%;
   min-width: 0;
   padding-bottom: calc(2.34rem + 4px);
@@ -1577,21 +1601,23 @@ html.dark .iboard-nudge-strip__compose input {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #ffffff;
+  color: var(--command-blue, #2f5fee);
   cursor: pointer;
 }
 
 .iboard-command-more--start {
-  border-radius: var(--command-end-radius) 0 0 var(--command-end-radius);
+  box-sizing: border-box;
+  border-radius: 0;
+  padding-left: calc(var(--command-end-radius) - 1.5px);
 }
 
 .iboard-command-more--end {
-  border-radius: 0 var(--command-end-radius) var(--command-end-radius) 0;
+  border-radius: 0;
 }
 
 .iboard-command-more:hover,
 .iboard-command-more[aria-expanded='true'] {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(47, 95, 238, 0.1);
 }
 
 .iboard-command-more svg {
@@ -1607,10 +1633,10 @@ html.dark .iboard-nudge-strip__compose input {
   min-width: 11.5rem;
   flex-direction: column;
   padding: 0.35rem;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 0.85rem;
   background: #ffffff;
-  box-shadow: 0 14px 34px rgba(60, 63, 143, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 34px rgba(31, 61, 153, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
 .iboard-command-more-slot {
@@ -1654,7 +1680,7 @@ html.dark .iboard-nudge-strip__compose input {
 }
 
 .iboard-command-more__menu button:hover {
-  background: #ebeaf8;
+  background: #e8eefc;
 }
 
 html.dark .iboard-command-more__menu {
@@ -1668,7 +1694,7 @@ html.dark .iboard-command-more__menu button {
 }
 
 html.dark .iboard-command-more__menu button:hover {
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
 }
 
 /* Both capsules share the same wing width so the gauge stays centred. Extra
@@ -1679,9 +1705,9 @@ html.dark .iboard-command-more__menu button:hover {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(-0.375rem - 1px);
+  bottom: calc(-0.375rem - 1px - var(--command-foot));
   width: auto;
-  height: calc(2.34rem + 4px);
+  height: calc(2.34rem + 4px + var(--command-foot));
   margin: 0;
   gap: 0;
   padding: 0;
@@ -1692,13 +1718,17 @@ html.dark .iboard-command-more__menu button:hover {
 }
 
 .iboard-command-bar__side--monitor .iboard-attention-home {
-  left: -0.4rem;
+  left: calc(var(--command-row-outset) * -1);
   right: var(--command-collar-inset);
+  box-sizing: border-box;
+  padding-right: 0.35rem;
 }
 
 .iboard-command-bar__side--manage .iboard-manage-tools {
   left: var(--command-collar-inset);
-  right: -0.4rem;
+  right: calc((var(--command-frame-outset) - 1.5px) * -1);
+  box-sizing: border-box;
+  padding-left: 0.45rem;
 }
 
 html.dark .iboard-command-bar__side .iboard-attention-home,
@@ -1731,13 +1761,14 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   display: grid;
   grid-template-columns: repeat(6, max-content);
   align-items: stretch;
-  justify-content: start;
+  justify-content: space-between;
   justify-items: stretch;
   column-gap: 0;
 }
 
 .iboard-command-bar__side .iboard-attention-home > *,
 .iboard-command-bar__side .iboard-manage-tools > * {
+  position: relative;
   display: flex;
   min-width: max-content;
   min-height: 0;
@@ -1764,8 +1795,15 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   justify-content: center;
 }
 
+.iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip,
+.iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-command-more {
+  margin-left: calc(1.5px + var(--command-row-outset) - var(--command-frame-outset));
+  box-sizing: border-box;
+}
+
 .iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip {
-  border-radius: var(--command-end-radius) 0 0 var(--command-end-radius);
+  border-radius: 0;
+  padding-left: calc(0.38rem + var(--command-frame-outset) - var(--command-row-outset) - 1.5px);
 }
 
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child {
@@ -1782,44 +1820,139 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-wing-tool,
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-command-more {
-  border-radius: 0 var(--command-end-radius) var(--command-end-radius) 0;
+  border-radius: 0;
+  box-sizing: border-box;
+  padding-right: calc(0.45rem + var(--command-frame-outset) - var(--command-row-outset) - 1.5px);
 }
 
-/* One flat purple rail. A hole in the mask cuts a curve on each side of the dial. */
+/* Inbox and Text hovers run up to the dial. The circle covers the overlap. */
+.iboard-command-bar [data-command-id='inbox'] {
+  position: relative;
+  box-sizing: border-box;
+  margin-right: -3.2rem;
+  padding-right: calc(0.38rem + 3.2rem);
+}
+
+.iboard-command-bar .iboard-manage-tools [data-command-id='text'] {
+  position: relative;
+  box-sizing: border-box;
+  margin-left: -3.2rem;
+  padding-left: calc(0.45rem + 3.2rem);
+}
+
+/* The hover also fills the white shoulder that rises into the dial, using
+   the same curve as the shoulder itself. */
+.iboard-command-bar [data-command-id='inbox']::after,
+.iboard-command-bar .iboard-manage-tools [data-command-id='text']::after {
+  content: "";
+  position: absolute;
+  top: calc((var(--command-rise) + 1rem) * -1);
+  left: 0;
+  right: 0;
+  height: calc(1.0625rem + var(--command-rise));
+  background: inherit;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.iboard-command-bar [data-command-id='inbox']::after {
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 17' preserveAspectRatio='none'><path fill='black' d='M128 17 L128 0 L98 0 C88 14 50 16 0 16 L0 17 Z'/></svg>") right top / 8rem 1.0625rem no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 17' preserveAspectRatio='none'><path fill='black' d='M128 17 L128 0 L98 0 C88 14 50 16 0 16 L0 17 Z'/></svg>") right top / 8rem 1.0625rem no-repeat;
+}
+
+.iboard-command-bar .iboard-manage-tools [data-command-id='text']::after {
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 17' preserveAspectRatio='none'><path fill='black' d='M0 17 L0 0 L30 0 C40 14 78 16 128 16 L128 17 Z'/></svg>") left top / 8rem 1.0625rem no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 17' preserveAspectRatio='none'><path fill='black' d='M0 17 L0 0 L30 0 C40 14 78 16 128 16 L128 17 Z'/></svg>") left top / 8rem 1.0625rem no-repeat;
+}
+
+.iboard-command-bar [data-command-id='inbox']:hover::after,
+.iboard-command-bar [data-command-id='inbox'].is-on::after,
+.iboard-command-bar .iboard-manage-tools [data-command-id='text']:hover::after,
+.iboard-command-bar .iboard-manage-tools [data-command-id='text'][data-active='true']::after {
+  opacity: 1;
+}
+
+/* The shadow is a solid pill behind the masked frame, so the hole
+   does not pick up a second ring of shade. */
+.iboard-command-bar::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--command-frame-outset) * -1);
+  right: calc(var(--command-frame-outset) * -1);
+  bottom: calc(-0.375rem - 1px - var(--command-foot));
+  z-index: -2;
+  height: calc(var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim));
+  border-radius: var(--command-end-radius) var(--command-end-radius) 0 0;
+  box-shadow: 0 8px 18px rgba(47, 95, 238, 0.08), 0 2px 5px rgba(30, 45, 90, 0.04);
+  pointer-events: none;
+}
+
+/* White body, blue title band, and a hole where the dial sits.
+   The foot hangs below the header so the rounded bottom reads on the board. */
 .iboard-command-frame {
   position: absolute;
-  left: -0.4rem;
-  right: -0.4rem;
-  bottom: calc(-0.375rem - 1px);
+  left: calc(var(--command-frame-outset) * -1);
+  right: calc(var(--command-frame-outset) * -1);
+  bottom: calc(-0.375rem - 1px - var(--command-foot));
   z-index: -1;
   box-sizing: border-box;
-  height: calc(2.34rem + 4px);
+  height: calc(var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim));
   overflow: hidden;
   border: 0;
-  border-radius: var(--command-end-radius);
-  background: #433bbd;
+  border-radius: var(--command-end-radius) var(--command-end-radius) 0 0;
+  background: var(--command-blue);
+  box-shadow: none;
   filter: none;
   pointer-events: none;
   --command-cut-x: 50%;
-  --command-cut-r: 2.575rem;
+  --command-cut-y: calc(var(--command-dial) / 2);
+  --command-cut-r: calc(var(--command-dial) / 2);
   -webkit-mask-image: radial-gradient(
-    circle at var(--command-cut-x) 50%,
+    circle at var(--command-cut-x) var(--command-cut-y),
     transparent calc(var(--command-cut-r) - 1px),
     #000 var(--command-cut-r)
   );
   mask-image: radial-gradient(
-    circle at var(--command-cut-x) 50%,
+    circle at var(--command-cut-x) var(--command-cut-y),
     transparent calc(var(--command-cut-r) - 1px),
     #000 var(--command-cut-r)
   );
 }
 
+/* White body nested inside the blue shell, so the end curve sits
+   inside the blue curve. The hump sweeps that edge up the dial. */
+.iboard-command-frame::before,
+.iboard-command-frame::after {
+  content: "";
+  position: absolute;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.iboard-command-frame::after {
+  left: var(--command-lip);
+  right: var(--command-lip);
+  bottom: 0;
+  top: calc(var(--command-band) - var(--command-rise) - var(--command-trim));
+  border-radius: 1.15rem 1.15rem 0 0;
+}
+
+/* Concave shoulders: flat for most of the run, then steeper until they
+   reach the dial halfway up the blue band. The middle sits under the hole. */
 .iboard-command-frame::before {
-  content: none;
+  z-index: 0;
+  left: var(--command-cut-x);
+  width: 16rem;
+  height: 1.0625rem;
+  top: calc(var(--command-band) - var(--command-rise) - var(--command-trim) - 1rem);
+  transform: translateX(-50%);
+  border-radius: 0;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 17' preserveAspectRatio='none'><path fill='black' d='M0 16 C50 16 88 14 98 0 L158 0 C168 14 206 16 256 16 L256 17 L0 17 Z'/></svg>") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 17' preserveAspectRatio='none'><path fill='black' d='M0 16 C50 16 88 14 98 0 L158 0 C168 14 206 16 256 16 L256 17 L0 17 Z'/></svg>") center / 100% 100% no-repeat;
 }
 
 html.dark .iboard-command-frame {
-  background: #433bbd;
+  background: var(--command-blue);
   filter: none;
 }
 
@@ -1831,14 +1964,21 @@ html.dark .iboard-command-frame {
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #4800c4;
+  color: #2f5fee;
 }
 
 .iboard-command-bar__side .iboard-command-bar__title {
+  display: grid;
+  place-items: center;
   width: 100%;
+  height: var(--command-band);
+  margin-bottom: calc(-0.375rem - 1px);
+  padding: var(--command-trim) 0.4rem 0;
+  font-size: 0.68rem;
   text-align: center;
-  letter-spacing: 0.42em;
-  color: #433bbd;
+  letter-spacing: 0.16em;
+  color: #ffffff;
+  z-index: 1;
 }
 
 .iboard-rail-title {
@@ -1847,7 +1987,7 @@ html.dark .iboard-command-frame {
   white-space: normal;
   text-align: center;
   line-height: 1.25;
-  color: #433bbd;
+  color: #2f5fee;
 }
 
 .iboard-manage-tools {
@@ -1891,21 +2031,21 @@ html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools .iboard-header-icon-
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button:not([data-active='true']) {
-  color: #ffffff;
+  color: var(--command-blue);
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(47, 95, 238, 0.1);
   box-shadow: none;
-  color: #ffffff;
+  color: var(--command-blue);
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button[data-active='true'] {
   border-color: transparent;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px #433bbd;
-  color: #433bbd;
+  background: var(--command-blue);
+  box-shadow: none;
+  color: #ffffff;
 }
 
 .iboard-manage-tools .iboard-header-icon-button > :is(svg, .iboard-gauge-icon),
@@ -1926,8 +2066,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
 }
 
 .iboard-command-bar .iboard-header-icon--view {
-  --iboard-header-icon: url('/brand/gauge/view.png');
-  width: 1.15rem;
+  --iboard-header-icon: url('/brand/gauge/view.png?v=9');
+  width: calc(1.15rem * 1.0352);
   height: 1.15rem;
 }
 
@@ -1971,20 +2111,20 @@ html:not(.dark) .iboard-teacher-canvas .iboard-manage-tools__freeze.is-frozen:ho
 }
 
 html.dark .iboard-command-bar .iboard-wing-tool {
-  color: #ffffff;
+  color: var(--command-blue);
 }
 
 html.dark .iboard-command-bar .iboard-wing-tool:hover:not([data-active='true']) {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(47, 95, 238, 0.1);
   box-shadow: none;
-  color: #ffffff;
+  color: var(--command-blue);
 }
 
 html.dark .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button[data-active='true'] {
   border-color: transparent;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px #433bbd;
-  color: #433bbd;
+  background: var(--command-blue);
+  box-shadow: none;
+  color: #ffffff;
 }
 
 html.dark .iboard-manage-tools {
@@ -2015,7 +2155,7 @@ html.dark .iboard-manage-tools__freeze.is-frozen:hover {
   border: 1px solid #c1c2e7;
   border-radius: 0.75rem;
   background: #ffffff;
-  box-shadow: 0 14px 34px rgba(60, 63, 143, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 34px rgba(31, 61, 153, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
 .iboard-more-menu button {
@@ -2034,15 +2174,15 @@ html.dark .iboard-manage-tools__freeze.is-frozen:hover {
 }
 
 .iboard-more-menu button:hover {
-  background: #ebeaf8;
-  color: #3c3f8f;
+  background: #e8eefc;
+  color: #1f3d99;
 }
 
 .iboard-more-menu .iboard-header-icon,
 .iboard-more-menu .iboard-header-glyph {
   width: 1.05rem;
   height: 1.05rem;
-  color: #5a5fc3;
+  color: #2f5fee;
 }
 
 html.dark .iboard-more-menu {
@@ -2055,7 +2195,7 @@ html.dark .iboard-more-menu button {
 }
 
 html.dark .iboard-more-menu button:hover {
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
   color: #ffffff;
 }
 
@@ -2087,7 +2227,7 @@ html.iboard-popout-dragging * {
   border: 1px solid #c1c2e7;
   border-radius: 0.85rem;
   background: #ffffff;
-  box-shadow: 0 14px 34px rgba(60, 63, 143, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 34px rgba(31, 61, 153, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
 .iboard-tool-popover:has(.iboard-breakout-assign--inline) {
@@ -2096,7 +2236,7 @@ html.iboard-popout-dragging * {
 
 .iboard-tool-popover__head {
   padding: 0.55rem 0.8rem 0.5rem;
-  background: #3c3f8f;
+  background: #1f3d99;
   color: #ffffff;
 }
 
@@ -2127,7 +2267,7 @@ html.iboard-popout-dragging * {
   margin: 0;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #3c3f8f;
+  color: #1f3d99;
 }
 
 .iboard-tool-popover__section span {
@@ -2167,7 +2307,7 @@ html.dark .iboard-tool-popover {
 }
 
 html.dark .iboard-tool-popover__head {
-  background: #5a5fc3;
+  background: #2f5fee;
 }
 
 html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
@@ -2179,12 +2319,13 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 .iboard-command-bar__gauge {
   position: relative;
   align-self: stretch;
-  width: 5.15rem;
+  width: var(--command-dial);
+  z-index: 2;
 }
 
 .iboard-command-bar .iboard-command-bar__gauge > * {
   position: absolute;
-  bottom: calc((2.34rem + 4px) / 2 - 0.375rem - 1px);
+  bottom: calc(var(--command-rail) + var(--command-band) - 0.375rem - 1px - var(--command-dial) / 2 + 0.42rem);
   left: 50%;
   z-index: 6;
   transform: translate(-50%, 50%);
@@ -2192,7 +2333,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 /* On :root because the gauge's hover card (a portal on body) uses the same swatches. */
 :root {
-  --class-gauge-done: #433bbd;
+  --class-gauge-done: #2450d6;
   --class-gauge-mid: #b496e7;
   --class-gauge-rest: #dedded;
   --class-gauge-track: #e6e5f6;
@@ -2207,25 +2348,41 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   cursor: default;
 }
 
-/* Thin ring around a white face, sitting on the rail. */
+/* White bezel. The arc sits inside it; the face covers the middle. */
 .iboard-class-gauge__ring {
+  position: relative;
   display: grid;
   place-items: center;
   width: 5.15rem;
   height: 5.15rem;
   border-radius: 999px;
+  background: #ffffff;
   outline: none;
-  transition: background 400ms ease, box-shadow 160ms ease;
+  transition: box-shadow 160ms ease;
+}
+
+.iboard-class-gauge__arc {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.iboard-class-gauge__track {
+  stroke: #e6edf8;
 }
 
 .iboard-class-gauge__face {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: calc(100% - 13px);
-  height: calc(100% - 13px);
+  width: calc(100% - 22px);
+  height: calc(100% - 22px);
   border-radius: 999px;
   background: #ffffff;
   line-height: 1;
@@ -2259,7 +2416,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #3c3f8f;
+  color: #1f3d99;
 }
 
 .iboard-class-gauge__caption {
@@ -2284,7 +2441,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 .iboard-class-gauge__online b {
   font-weight: 800;
-  color: #3c3f8f;
+  color: #1f3d99;
 }
 
 .iboard-class-gauge__live {
@@ -2314,7 +2471,7 @@ html.dark .iboard-class-gauge__live.is-idle {
   height: 0.55rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(60, 63, 143, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(31, 61, 153, 0.18);
 }
 
 html.dark {
@@ -2353,44 +2510,93 @@ button.iboard-class-gauge {
   cursor: pointer;
 }
 
-button.iboard-class-gauge:hover .iboard-class-gauge__ring,
-button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
-  box-shadow: 0 0 0 3px rgba(67, 59, 189, 0.16);
+.iboard-command-bar .iboard-class-gauge__ring {
+  width: var(--command-dial);
+  height: var(--command-dial);
+  box-shadow: 0 10px 20px rgba(47, 95, 238, 0.09), 0 2px 6px rgba(30, 45, 90, 0.05);
+}
+
+.iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__ring,
+.iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
+  box-shadow: 0 10px 22px rgba(47, 95, 238, 0.13), 0 2px 6px rgba(30, 45, 90, 0.06);
 }
 
 .iboard-command-bar .iboard-class-gauge {
-  --class-gauge-done: #433bbd;
-  --class-gauge-mid: #8a84d6;
-  --class-gauge-rest: #bbbfe6;
-  --class-gauge-track: #bbbfe6;
+  --class-gauge-done: #2f5fee;
+  --class-gauge-mid: #8aaff8;
+  --class-gauge-rest: #d5e2fc;
+  --class-gauge-track: #d5e2fc;
+}
+
+.iboard-command-bar .iboard-class-gauge__face {
+  width: 81%;
+  height: 81%;
+  box-shadow: 0 1px 2px rgba(30, 45, 90, 0.22), 0 4px 8px rgba(30, 45, 90, 0.1);
+}
+
+.iboard-command-bar .iboard-class-gauge__count {
+  color: #2a3158;
+}
+
+.iboard-command-bar .iboard-class-gauge__live,
+.iboard-command-bar .iboard-class-gauge__live.is-idle {
+  background: var(--command-blue);
+}
+
+/* Dark mode follows the Teach class rail: a dark body inside the blue shell,
+   with light blue icons. */
+html.dark .iboard-command-frame::before,
+html.dark .iboard-command-frame::after {
+  background: #252b32;
+}
+
+html.dark .iboard-command-bar .iboard-class-gauge__ring {
+  background: #252b32;
+}
+
+html.dark .iboard-command-bar .iboard-class-gauge__track {
+  stroke: #39424d;
 }
 
 html.dark .iboard-command-bar .iboard-class-gauge__face {
-  background: #ffffff;
+  background: #2b323a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
 html.dark .iboard-command-bar .iboard-class-gauge__count,
 html.dark .iboard-command-bar .iboard-class-gauge__online b {
-  color: #1c1c22;
+  color: #e8edf3;
 }
 
 html.dark .iboard-command-bar .iboard-class-gauge__caption,
 html.dark .iboard-command-bar .iboard-class-gauge__online {
-  color: #6b6b78;
+  color: #9aa4b2;
+}
+
+html.dark .iboard-command-bar .iboard-alert-chip:not(.is-on),
+html.dark .iboard-command-bar .iboard-alert-chip.has-count:not(.is-on),
+html.dark .iboard-command-bar .iboard-wing-tool:not([data-active='true']) {
+  color: #9eb6f5;
+}
+
+html.dark .iboard-command-bar .iboard-alert-chip:hover:not(.is-on),
+html.dark .iboard-command-bar .iboard-wing-tool:hover:not([data-active='true']) {
+  background: rgba(47, 95, 238, 0.22);
+  color: #c7d4fb;
 }
 
 button.iboard-class-gauge:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 4px;
 }
 
 .iboard-command-bar button.iboard-class-gauge:focus-visible {
-  outline-color: #ffffff;
+  outline-color: var(--command-blue);
 }
 
-html.dark button.iboard-class-gauge:hover .iboard-class-gauge__ring,
-html.dark button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
-  box-shadow: 0 0 0 3px rgba(187, 191, 230, 0.35);
+html.dark .iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__ring,
+html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
+  box-shadow: 0 16px 32px rgba(47, 95, 238, 0.28), 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Opens from the gauge: Responses while a question is live, Class writing otherwise. */
@@ -2400,10 +2606,10 @@ html.dark button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__rin
   flex-direction: column;
   width: min(36rem, calc(100vw - 6rem));
   overflow: hidden;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 1rem;
   background: #ffffff;
-  box-shadow: 0 18px 44px rgba(60, 63, 143, 0.2), 0 2px 6px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 44px rgba(31, 61, 153, 0.2), 0 2px 6px rgba(15, 23, 42, 0.08);
   transform: translateX(-50%);
   animation: iboard-dock-fade-in 160ms ease;
 }
@@ -2429,8 +2635,8 @@ html.dark .iboard-gauge-panel {
   align-items: center;
   gap: 0.75rem;
   padding: 0.7rem 0.8rem 0.7rem 1rem;
-  border-bottom: 1px solid #d5d4e4;
-  background: #ebeaf8;
+  border-bottom: 1px solid #d8dbe1;
+  background: #e8eefc;
 }
 
 .iboard-writing-pulse__head > .min-w-0 {
@@ -2456,7 +2662,7 @@ html.dark .iboard-gauge-panel {
   padding: 0.15rem;
   border-radius: 999px;
   background: #ffffff;
-  box-shadow: inset 0 0 0 1px #d5d4e4;
+  box-shadow: inset 0 0 0 1px #d8dbe1;
 }
 
 .iboard-writing-pulse__sort button {
@@ -2468,7 +2674,7 @@ html.dark .iboard-gauge-panel {
 }
 
 .iboard-writing-pulse__sort button[aria-pressed='true'] {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -2477,7 +2683,7 @@ html.dark .iboard-gauge-panel {
   flex: 1 1 auto;
   overflow-y: auto;
   padding: 0.75rem;
-  background: #f7f6fb;
+  background: #f6f7f9;
 }
 
 .iboard-writing-pulse__grid {
@@ -2509,11 +2715,11 @@ html.dark .iboard-gauge-panel {
 
 .iboard-writing-chit:hover {
   border-color: #b9bae6;
-  box-shadow: 0 4px 12px rgba(60, 63, 143, 0.12);
+  box-shadow: 0 4px 12px rgba(31, 61, 153, 0.12);
 }
 
 .iboard-writing-chit:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 2px;
 }
 
@@ -2572,7 +2778,7 @@ html.dark .iboard-gauge-panel {
   padding-top: 0.1rem;
   font-size: 0.65rem;
   font-weight: 700;
-  color: #5a5fc3;
+  color: #2f5fee;
 }
 
 .iboard-writing-chit__strip {
@@ -2616,7 +2822,7 @@ html.dark .iboard-gauge-panel {
   border-radius: 999px;
 }
 
-.iboard-writing-chit__mark.is-support > span { background: #5a5fc3; }
+.iboard-writing-chit__mark.is-support > span { background: #2f5fee; }
 .iboard-writing-chit__mark.is-paste > span { background: #ef4444; }
 
 .iboard-writing-chit__cells {
@@ -2673,7 +2879,7 @@ html.dark .iboard-gauge-panel {
   place-items: center;
   border-radius: 999px;
   color: #ffffff;
-  box-shadow: 0 0 0 2px #f7f6fb;
+  box-shadow: 0 0 0 2px #f6f7f9;
 }
 
 .iboard-writing-chit__badges :is(svg, .iboard-gauge-icon) {
@@ -2682,7 +2888,7 @@ html.dark .iboard-gauge-panel {
 }
 
 .iboard-writing-chit__badges .is-paste { background: #ef4444; }
-.iboard-writing-chit__badges .is-inbox { background: #5a5fc3; }
+.iboard-writing-chit__badges .is-inbox { background: #2f5fee; }
 
 .iboard-writing-pulse__foot {
   display: flex;
@@ -2722,12 +2928,12 @@ html.dark .iboard-gauge-panel {
   border-radius: 999px;
 }
 
-.iboard-writing-pulse__legend i.is-support { background: #5a5fc3; }
+.iboard-writing-pulse__legend i.is-support { background: #2f5fee; }
 .iboard-writing-pulse__legend i.is-paste { background: #ef4444; }
 
 html.dark .iboard-writing-pulse__head {
   border-bottom-color: #334155;
-  background: rgba(90, 95, 195, 0.18);
+  background: rgba(47, 95, 238, 0.18);
 }
 
 html.dark .iboard-writing-pulse__head h2,
@@ -2795,7 +3001,7 @@ html.dark .iboard-writing-pulse__foot {
   max-height: min(84vh, 44rem);
   margin-bottom: 0.85rem;
   overflow: hidden;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 1rem;
   background: #ffffff;
 }
@@ -2810,7 +3016,7 @@ html.dark .iboard-writing-pulse__foot {
 
 .iboard-model-composer__head h2 {
   margin: 0;
-  color: #433bbd;
+  color: #2450d6;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -2821,7 +3027,7 @@ html.dark .iboard-writing-pulse__foot {
 .iboard-model-composer__head button {
   border: 0;
   border-radius: 999px;
-  background: #433bbd;
+  background: #2450d6;
   color: #ffffff;
   cursor: pointer;
   font-size: 0.75rem;
@@ -2887,7 +3093,7 @@ html.dark .iboard-model-composer textarea {
   border: 0;
   background: transparent;
   cursor: pointer;
-  color: #5a5fc3;
+  color: #2f5fee;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 2.35rem;
   font-weight: 700;
@@ -2901,7 +3107,7 @@ html.dark .iboard-model-composer textarea {
 }
 
 .iboard-board-empty__code:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 3px;
   border-radius: 0.35rem;
 }
@@ -2935,8 +3141,8 @@ html.dark .iboard-board-empty__code {
   align-items: center;
   justify-content: stretch;
   gap: 0;
-  background: #f3f3fd;
-  border-right: 1px solid #e4e4f4;
+  background: #ffffff;
+  border-right: 1px solid #d8dbe1;
   padding: 0.45rem 0 0.45rem;
   min-height: 0;
 }
@@ -2965,6 +3171,112 @@ html.dark .iboard-board-empty__code {
 
 .iboard-arr-rail .iboard-arr-rail__tools {
   margin-bottom: auto;
+}
+
+/* Teach class is built like an end of the gauge: a solid blue shell, flush
+   against the rail border on the right, rounded only on the left, with the
+   white body nested inside a thin blue rim. */
+.iboard-arr-rail__teach {
+  --teach-body: #ffffff;
+  --teach-rim: 2px;
+  --teach-rim-bottom: 1px;
+  --teach-radius: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  align-self: flex-end;
+  width: calc(100% - 0.3rem);
+  margin-bottom: auto;
+  overflow: hidden;
+  padding: 0 0 var(--teach-rim-bottom) var(--teach-rim);
+  border: 0;
+  border-radius: var(--teach-radius) 0 0 var(--teach-radius);
+  background: #2f5fee;
+  box-shadow: 0 8px 18px rgba(47, 95, 238, 0.08), 0 2px 5px rgba(30, 45, 90, 0.04);
+}
+
+.iboard-arr-rail__teach .iboard-arr-rail__add > :not(.iboard-rail-title) {
+  background: var(--teach-body);
+  border-top-left-radius: 0.6rem;
+  overflow: hidden;
+}
+
+.iboard-arr-rail__teach .iboard-arr-rail__tools {
+  background: var(--teach-body);
+  border-bottom-left-radius: calc(var(--teach-radius) - var(--teach-rim));
+  overflow: hidden;
+}
+
+.iboard-arr-rail__teach .iboard-arr-rail__tools {
+  align-items: stretch;
+  margin-bottom: 0;
+  width: 100%;
+  gap: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.iboard-arr-rail__teach .iboard-arr-rail__tools > span,
+.iboard-arr-rail__teach .iboard-arr-rail__add > span {
+  display: flex;
+  width: 100%;
+}
+
+.iboard-arr-rail__teach .iboard-arr-rail__add {
+  align-items: stretch;
+  width: 100%;
+  padding: 0;
+  gap: 0;
+  box-sizing: border-box;
+}
+
+.iboard-arr-rail__teach .iboard-arr-rail__add > :not(.iboard-rail-title) {
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.iboard-arr-rail__teach .iboard-rail-title {
+  align-self: stretch;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0.4rem 0.32rem 0.34rem;
+  background: #2f5fee;
+  color: #ffffff;
+  text-align: center;
+  letter-spacing: 0.12em;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.iboard-arr-rail__teach .iboard-arr-btn,
+.iboard-arr-rail__teach .iboard-arr-btn__glyph,
+.iboard-arr-rail__teach .iboard-arr-btn__icon,
+.iboard-arr-rail__teach .iboard-arr-label {
+  color: #2f5fee;
+}
+
+.iboard-arr-rail__teach .iboard-arr-btn:hover:not([data-active='true']) {
+  background: rgba(47, 95, 238, 0.1);
+  border-color: transparent;
+  color: #2f5fee;
+}
+
+.iboard-arr-rail__teach .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph,
+.iboard-arr-rail__teach .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__icon,
+.iboard-arr-rail__teach .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-label {
+  color: #2f5fee;
+}
+
+.iboard-arr-rail__teach .iboard-arr-btn,
+.iboard-arr-rail__teach .iboard-arr-btn:hover,
+.iboard-arr-rail__teach .iboard-arr-btn:active {
+  width: 100%;
+  border-radius: 0;
+}
+
+.iboard-arr-rail__teach .iboard-arr-rail__tools > :last-child .iboard-arr-btn {
+  padding-bottom: 0.75rem;
 }
 
 .iboard-arr-rail__lower {
@@ -2998,7 +3310,7 @@ html[data-iboard-tour] [role="tooltip"] {
   pointer-events: none;
   border: 2px solid #7a7a8a;
   background: transparent;
-  box-shadow: 0 0 0 0 rgba(90, 95, 195, 0.28);
+  box-shadow: 0 0 0 0 rgba(47, 95, 238, 0.28);
   animation: iboard-tour-ring-pulse 1.25s ease-in-out infinite;
 }
 
@@ -3016,13 +3328,13 @@ html[data-iboard-tour] [role="tooltip"] {
   100% {
     border-color: #7a7a8a;
     opacity: 1;
-    box-shadow: 0 0 0 0 rgba(90, 95, 195, 0.3);
+    box-shadow: 0 0 0 0 rgba(47, 95, 238, 0.3);
     transform: scale(1);
   }
   50% {
-    border-color: #5a5fc3;
+    border-color: #2f5fee;
     opacity: 1;
-    box-shadow: 0 0 0 6px rgba(90, 95, 195, 0.18);
+    box-shadow: 0 0 0 6px rgba(47, 95, 238, 0.18);
     transform: scale(1.035);
   }
 }
@@ -3098,7 +3410,7 @@ html.dark .iboard-tour-ring {
   left: calc(-1 * (var(--iboard-tour-arrow) + var(--iboard-tour-border)));
   transform: translateY(-50%);
   border-width: var(--iboard-tour-arrow) var(--iboard-tour-arrow) var(--iboard-tour-arrow) 0;
-  border-color: transparent #5a5fc3 transparent transparent;
+  border-color: transparent #2f5fee transparent transparent;
 }
 
 .iboard-tour__arrow--right {
@@ -3106,7 +3418,7 @@ html.dark .iboard-tour-ring {
   right: calc(-1 * (var(--iboard-tour-arrow) + var(--iboard-tour-border)));
   transform: translateY(-50%);
   border-width: var(--iboard-tour-arrow) 0 var(--iboard-tour-arrow) var(--iboard-tour-arrow);
-  border-color: transparent transparent transparent #5a5fc3;
+  border-color: transparent transparent transparent #2f5fee;
 }
 
 .iboard-tour__arrow--bottom {
@@ -3114,7 +3426,7 @@ html.dark .iboard-tour-ring {
   bottom: calc(-1 * (var(--iboard-tour-arrow) + var(--iboard-tour-border)));
   transform: translateX(-50%);
   border-width: var(--iboard-tour-arrow) var(--iboard-tour-arrow) 0 var(--iboard-tour-arrow);
-  border-color: #5a5fc3 transparent transparent transparent;
+  border-color: #2f5fee transparent transparent transparent;
 }
 
 .iboard-tour__arrow--top {
@@ -3122,7 +3434,7 @@ html.dark .iboard-tour-ring {
   top: calc(-1 * (var(--iboard-tour-arrow) + var(--iboard-tour-border)));
   transform: translateX(-50%);
   border-width: 0 var(--iboard-tour-arrow) var(--iboard-tour-arrow) var(--iboard-tour-arrow);
-  border-color: transparent transparent #5a5fc3 transparent;
+  border-color: transparent transparent #2f5fee transparent;
 }
 
 .iboard-help-seen-toast {
@@ -3182,7 +3494,7 @@ html.dark .iboard-help-seen-toast__text {
   padding: 0.2rem 0.35rem;
   font-size: 0.75rem;
   font-weight: 800;
-  color: #5a5fc3;
+  color: #2f5fee;
   cursor: pointer;
 }
 
@@ -3206,7 +3518,7 @@ html.dark .iboard-help-seen-toast__text {
 }
 
 .iboard-tour__close:hover {
-  background: #f1f0f8;
+  background: #eef2f9;
   color: #3c3c45;
 }
 
@@ -3237,8 +3549,8 @@ html.dark .iboard-tour__close:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  color: #555b69;
+  gap: 0.16rem;
+  color: #5c6570;
   transition:
     background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -3248,8 +3560,8 @@ html.dark .iboard-tour__close:hover {
 
 .iboard-arr-btn img {
   display: block;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.4rem;
+  height: 1.4rem;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
@@ -3257,15 +3569,15 @@ html.dark .iboard-tour__close:hover {
 }
 
 .iboard-arr-btn--cog .iboard-arr-btn__glyph {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .iboard-arr-btn__glyph {
   display: block;
-  width: 1.75rem;
-  height: 1.75rem;
-  color: #555b69;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #5c6570;
   flex-shrink: 0;
   pointer-events: none;
   transition: color 160ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -3273,8 +3585,8 @@ html.dark .iboard-tour__close:hover {
 
 .iboard-arr-btn__icon {
   display: block;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.4rem;
+  height: 1.4rem;
   flex-shrink: 0;
   pointer-events: none;
   background-color: currentColor;
@@ -3302,26 +3614,26 @@ html.dark .iboard-tour__close:hover {
   display: block;
   width: 100%;
   text-align: center;
-  font-size: 0.64rem;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: 0.52rem;
+  font-weight: 700;
+  line-height: 1;
   letter-spacing: 0;
-  color: #555b69;
+  color: #5c6570;
   white-space: normal;
   overflow-wrap: break-word;
   transition: color 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .iboard-arr-btn[data-active='true'] {
-  background: #5a5fc3;
+  background: #2f5fee;
   border-color: transparent;
   color: #ffffff;
 }
 
 .iboard-arr-btn:hover:not([data-active='true']) {
-  background: #ebeaf8;
-  border-color: #5a5fc3;
-  color: #5a5fc3;
+  background: rgba(47, 95, 238, 0.1);
+  border-color: transparent;
+  color: #3f4652;
 }
 
 .iboard-arr-btn[data-active='true'] img {
@@ -3337,7 +3649,7 @@ html.dark .iboard-tour__close:hover {
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph,
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__icon,
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-label {
-  color: #5a5fc3;
+  color: #3f4652;
 }
 
 .iboard-arr-btn img,
@@ -3349,7 +3661,7 @@ html.dark .iboard-tour__close:hover {
 .iboard-arr-btn:hover:not([data-active='true']) img,
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph,
 .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__icon {
-  transform: scale(1.14);
+  transform: none;
 }
 
 .iboard-arr-btn:active:not(:disabled) {
@@ -3357,7 +3669,7 @@ html.dark .iboard-tour__close:hover {
 }
 
 .iboard-arr-btn:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 2px;
 }
 .iboard-teacher-panel {
@@ -3405,7 +3717,7 @@ html.dark .iboard-tour__close:hover {
   padding: 0.7rem 0.7rem 0.75rem;
   border: 1px solid #e4e4ea;
   border-radius: 0.85rem;
-  background: #f7f6fb;
+  background: #f6f7f9;
 }
 
 .iboard-teacher-panel-head h2 {
@@ -3761,14 +4073,14 @@ html.dark .iboard-app-header .iboard-header-tool-group {
 }
 
 html.dark .iboard-app-header .iboard-header-tab[data-active='true'] {
-  background: #4f46e5;
+  background: #2f5fee;
   color: #ffffff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 html.dark .iboard-app-header .iboard-header-icon-button[data-active='true'] {
-  border-color: #6366f1;
-  background: #4f46e5;
+  border-color: #4a78f2;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -3800,9 +4112,9 @@ html.dark .iboard-app-header .iboard-header-icon-button--quiet[data-active='true
 }
 
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) .iboard-header-dock--rail {
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-left: 0;
-  background: #f7f6fb;
+  background: #f6f7f9;
   box-shadow: 10px 8px 28px -16px rgba(60, 60, 90, 0.28);
 }
 
@@ -3881,7 +4193,7 @@ html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-head
 
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .bg-indigo-600,
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) [class*='from-indigo-'] {
-  background-color: #5a5fc3 !important;
+  background-color: #2f5fee !important;
   background-image: none !important;
 }
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .hover\:bg-indigo-700:hover {
@@ -3892,12 +4204,12 @@ html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-head
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .text-indigo-800,
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .text-indigo-900,
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .text-indigo-950 {
-  color: #5a5fc3 !important;
+  color: #2f5fee !important;
 }
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .border-indigo-100,
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .border-indigo-200,
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .border-indigo-300 {
-  border-color: #cfcce8 !important;
+  border-color: #c9d6f2 !important;
 }
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .bg-indigo-50,
 html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-header-dock, .iboard-teacher-composer) .bg-indigo-50\/80,
@@ -3918,7 +4230,7 @@ html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-head
   max-height: min(72vh, calc(100vh - 4.5rem));
   max-height: min(72vh, calc(100dvh - 4.5rem));
   overflow: hidden;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-top: 0;
   border-radius: 0 0 1rem 1rem;
   background: #ffffff;
@@ -3945,7 +4257,7 @@ html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-head
   gap: 0.75rem;
   padding: 0.7rem 0.75rem 0.65rem 1rem;
   border-bottom: 1px solid #e4e4ea;
-  background: #f7f6fb;
+  background: #f6f7f9;
 }
 
 .iboard-help-panel__chrome h2 {
@@ -3988,7 +4300,7 @@ html:not(.dark) :is(.iboard-teacher-canvas, #tuit-overlay-root) :is(.iboard-head
 }
 
 .iboard-help-panel__item.is-action:hover {
-  background: rgba(90, 95, 195, 0.08);
+  background: rgba(47, 95, 238, 0.08);
 }
 
 .iboard-help-panel__title {
@@ -4133,16 +4445,16 @@ html.dark .iboard-help-panel__item.is-action:hover {
     box-shadow: none;
   }
   40% {
-    outline: 2px solid #5a5fc3;
+    outline: 2px solid #2f5fee;
     outline-offset: 3px;
-    box-shadow: 0 0 0 4px rgba(90, 95, 195, 0.22);
+    box-shadow: 0 0 0 4px rgba(47, 95, 238, 0.22);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .is-help-flash {
     animation: none;
-    outline: 2px solid #5a5fc3;
+    outline: 2px solid #2f5fee;
     outline-offset: 3px;
   }
 }
@@ -4180,7 +4492,7 @@ html.dark .iboard-ai-feedback__meta {
   padding: 0;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #5a5fc3;
+  color: #2f5fee;
   cursor: pointer;
 }
 
@@ -4214,7 +4526,7 @@ html.dark .iboard-ai-feedback__warn {
   grid-template-columns: 1fr 1fr;
   gap: 0.25rem;
   border-radius: 0.75rem;
-  background: #f1f0f8;
+  background: #eef2f9;
   padding: 0.25rem;
 }
 
@@ -4235,12 +4547,12 @@ html.dark .iboard-ai-feedback__warn {
 }
 
 .iboard-ai-feedback__task:hover {
-  color: #3c3f8f;
+  color: #1f3d99;
 }
 
 .iboard-ai-feedback__task.is-active {
   background: #fff;
-  color: #3c3f8f;
+  color: #1f3d99;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
@@ -4253,7 +4565,7 @@ html.dark .iboard-ai-feedback__task {
 }
 
 html.dark .iboard-ai-feedback__task.is-active {
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
   color: #c7d2fe;
 }
 
@@ -4317,7 +4629,7 @@ html.dark .iboard-ai-feedback__step {
 }
 
 .iboard-ai-feedback__paste:focus {
-  border-color: #6366f1;
+  border-color: #4a78f2;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
 }
 
@@ -4340,7 +4652,7 @@ html.dark .iboard-ai-feedback__paste {
 }
 
 .iboard-ai-feedback__distribute.is-ready {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
   cursor: pointer;
 }
@@ -4355,7 +4667,7 @@ html.dark .iboard-ai-feedback__distribute {
 }
 
 html.dark .iboard-ai-feedback__distribute.is-ready {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
 }
 
@@ -4432,8 +4744,8 @@ html.dark .iboard-feedback-settings__chrome h2 {
 }
 
 .iboard-feedback-settings__modes button[data-active='true'] {
-  border-color: #4f46e5;
-  background: #4f46e5;
+  border-color: #2f5fee;
+  background: #2f5fee;
   color: #fff;
 }
 
@@ -4444,8 +4756,8 @@ html.dark .iboard-feedback-settings__modes button {
 }
 
 html.dark .iboard-feedback-settings__modes button[data-active='true'] {
-  border-color: #6366f1;
-  background: #6366f1;
+  border-color: #4a78f2;
+  background: #4a78f2;
   color: #fff;
 }
 
@@ -4482,7 +4794,7 @@ html.dark .iboard-feedback-settings__modes button[data-active='true'] {
 }
 
 .iboard-feedback-settings__selects select:focus {
-  border-color: #6366f1;
+  border-color: #4a78f2;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
@@ -4549,7 +4861,7 @@ html.dark .iboard-feedback-settings__toggle {
 }
 
 .iboard-feedback-settings__custom textarea:focus {
-  border-color: #6366f1;
+  border-color: #4a78f2;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
@@ -4577,7 +4889,7 @@ html.dark .iboard-feedback-settings__custom textarea {
 }
 
 .iboard-feedback-settings__add input:focus {
-  border-color: #6366f1;
+  border-color: #4a78f2;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
@@ -4596,7 +4908,7 @@ html.dark .iboard-feedback-settings__add input {
   justify-content: center;
   border: 0;
   border-radius: 0.625rem;
-  background: #4f46e5;
+  background: #2f5fee;
   font-size: 1.25rem;
   font-weight: 300;
   line-height: 1;
@@ -4605,7 +4917,7 @@ html.dark .iboard-feedback-settings__add input {
 }
 
 .iboard-feedback-settings__add button:hover {
-  background: #4338ca;
+  background: #2450d6;
 }
 
 .iboard-feedback-settings__footer {
@@ -4644,7 +4956,7 @@ html.dark .iboard-feedback-settings__cancel:hover {
 .iboard-feedback-settings__save {
   border: 0;
   border-radius: 0.625rem;
-  background: #4f46e5;
+  background: #2f5fee;
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
   font-weight: 700;
@@ -4653,7 +4965,7 @@ html.dark .iboard-feedback-settings__cancel:hover {
 }
 
 .iboard-feedback-settings__save:hover {
-  background: #4338ca;
+  background: #2450d6;
 }
 
 /* Room settings — JS sets the height to the content, capped to the screen. Only the body scrolls. */
@@ -4678,8 +4990,8 @@ html.dark .iboard-feedback-settings__cancel:hover {
   position: relative;
   min-height: 2.5rem;
   padding: 0.55rem 2.75rem;
-  border-bottom: 1px solid #d5d4e4;
-  background: #ebeaf8;
+  border-bottom: 1px solid #d8dbe1;
+  background: #e8eefc;
 }
 
 .iboard-room-settings__chrome h2 {
@@ -4713,7 +5025,7 @@ html.dark .iboard-feedback-settings__cancel:hover {
 .iboard-reports-tabs__tab {
   min-width: 0;
   flex: 1 1 auto;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 0.5rem;
   background: #ffffff;
   padding: 0.4rem 0.65rem;
@@ -4732,10 +5044,10 @@ html.dark .iboard-feedback-settings__cancel:hover {
 }
 
 .iboard-reports-tabs__tab:hover:not([aria-selected='true']) {
-  border-color: #5a5fc3;
-  background: #ebeaf8;
-  box-shadow: inset 0 0 0 1px #5a5fc3;
-  color: #5a5fc3;
+  border-color: #2f5fee;
+  background: #e8eefc;
+  box-shadow: inset 0 0 0 1px #2f5fee;
+  color: #2f5fee;
   transform: scale(1.06);
 }
 
@@ -4744,8 +5056,8 @@ html.dark .iboard-feedback-settings__cancel:hover {
 }
 
 .iboard-reports-tabs__tab[aria-selected='true'] {
-  border-color: #5a5fc3;
-  background: #5a5fc3;
+  border-color: #2f5fee;
+  background: #2f5fee;
   box-shadow: none;
   color: #ffffff;
 }
@@ -4758,14 +5070,14 @@ html.dark .iboard-reports-tabs__tab {
 
 html.dark .iboard-reports-tabs__tab:hover:not([aria-selected='true']) {
   border-color: #818cf8;
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
   box-shadow: inset 0 0 0 1px #818cf8;
   color: #c7d2fe;
 }
 
 html.dark .iboard-reports-tabs__tab[aria-selected='true'] {
-  border-color: #5a5fc3;
-  background: #5a5fc3;
+  border-color: #2f5fee;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -4786,7 +5098,7 @@ html.dark .iboard-reports-tabs__tab[aria-selected='true'] {
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 1rem;
   background: #ffffff;
 }
@@ -4804,7 +5116,7 @@ html.dark .iboard-reports-tabs__tab[aria-selected='true'] {
 .iboard-student-folders__search {
   min-width: 10rem;
   flex: 1 1 12rem;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 0.65rem;
   background: #ffffff;
   padding: 0.45rem 0.7rem;
@@ -4815,8 +5127,8 @@ html.dark .iboard-reports-tabs__tab[aria-selected='true'] {
 }
 
 .iboard-student-folders__search:focus {
-  border-color: #5a5fc3;
-  box-shadow: 0 0 0 2px rgba(90, 95, 195, 0.18);
+  border-color: #2f5fee;
+  box-shadow: 0 0 0 2px rgba(47, 95, 238, 0.18);
 }
 
 .iboard-student-folders__split {
@@ -4832,7 +5144,7 @@ html.dark .iboard-reports-tabs__tab[aria-selected='true'] {
   flex-direction: column;
   min-height: 0;
   border-right: 1px solid #eceaf4;
-  background: #f7f6fb;
+  background: #f6f7f9;
 }
 
 .iboard-student-folders__names-list {
@@ -4864,15 +5176,15 @@ html.dark .iboard-reports-tabs__tab[aria-selected='true'] {
 }
 
 .iboard-student-folders__name:hover:not([aria-pressed='true']) {
-  border-color: #5a5fc3;
-  background: #ebeaf8;
-  color: #3c3f8f;
+  border-color: #2f5fee;
+  background: #e8eefc;
+  color: #1f3d99;
   transform: scale(1.02);
 }
 
 .iboard-student-folders__name[aria-pressed='true'] {
-  border-color: #5a5fc3;
-  background: #5a5fc3;
+  border-color: #2f5fee;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -4888,9 +5200,9 @@ html.dark .iboard-reports-tabs__tab[aria-selected='true'] {
 .iboard-student-folders__name-count {
   flex-shrink: 0;
   border-radius: 999px;
-  background: #ebeaf8;
+  background: #e8eefc;
   padding: 0.05rem 0.4rem;
-  color: #3c3f8f;
+  color: #1f3d99;
   font-size: 0.625rem;
   font-weight: 800;
 }
@@ -4945,7 +5257,7 @@ html.dark .iboard-reports-tabs__tab[aria-selected='true'] {
 .iboard-student-folders__piece {
   border: 1px solid #e4e2ee;
   border-radius: 0.85rem;
-  background: #f7f6fb;
+  background: #f6f7f9;
   padding: 0.85rem 0.95rem;
 }
 
@@ -4977,7 +5289,7 @@ html.dark .iboard-student-folders__name {
 
 html.dark .iboard-student-folders__name:hover:not([aria-pressed='true']) {
   border-color: #818cf8;
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
   color: #c7d2fe;
 }
 
@@ -5060,7 +5372,7 @@ html.dark .iboard-library-dock__resize::after {
   padding: 0.15rem 0.3rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #5a5fc3;
+  color: #2f5fee;
   cursor: pointer;
 }
 
@@ -5361,7 +5673,7 @@ html.dark .iboard-settings-line__range span {
   min-height: 2.5rem;
   border: 0;
   border-radius: 0.7rem;
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
   font-size: 0.8125rem;
   font-weight: 700;
@@ -5371,7 +5683,7 @@ html.dark .iboard-settings-line__range span {
 }
 
 .iboard-room-settings__primary:hover:not(:disabled) {
-  background: #4b50b0;
+  background: #2450d6;
 }
 
 .iboard-room-settings__primary:disabled {
@@ -5407,7 +5719,7 @@ html.dark .iboard-settings-line__range span {
   padding: 0 0.35rem 0.15rem 0.75rem;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #5a5fc3;
+  color: #2f5fee;
 }
 
 .iboard-room-settings__alert-minutes span {
@@ -5442,9 +5754,9 @@ html.dark .iboard-room-settings__alert-minutes {
 }
 
 .iboard-room-settings__secondary:hover {
-  border-color: #5a5fc3;
-  background: #ebeaf8;
-  color: #3c3f8f;
+  border-color: #2f5fee;
+  background: #e8eefc;
+  color: #1f3d99;
 }
 
 .iboard-switch {
@@ -5471,7 +5783,7 @@ html.dark .iboard-room-settings__alert-minutes {
 }
 
 .iboard-switch[data-on='true'] {
-  background: #5a5fc3;
+  background: #2f5fee;
 }
 
 .iboard-switch[data-on='true']::after {
@@ -5567,7 +5879,7 @@ html.dark .iboard-room-settings__columns {
 .iboard-room-settings__seg-btn[aria-pressed='true'] {
   background: #ffffff;
   border-color: #d8d8e0;
-  color: #5a5fc3;
+  color: #2f5fee;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
@@ -5602,7 +5914,7 @@ html.dark .iboard-room-settings__columns {
 .iboard-breakout-mode__btn[aria-pressed='true'] {
   background: #ffffff;
   border-color: #d8d8e0;
-  color: #5a5fc3;
+  color: #2f5fee;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
@@ -5677,7 +5989,7 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   height: 1.9rem;
   border: 0;
   border-radius: 0.5rem;
-  background: #5a5fc3;
+  background: #2f5fee;
   padding: 0 0.65rem;
   color: #fff;
   font-size: 0.68rem;
@@ -5686,7 +5998,7 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
 }
 
 .iboard-room-settings__mini:hover:not(:disabled) {
-  background: #4b50b0;
+  background: #2450d6;
 }
 
 .iboard-room-settings__mini:disabled {
@@ -5738,7 +6050,7 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #5a5fc3;
+  color: #2f5fee;
   font-variant-numeric: tabular-nums;
 }
 
@@ -5856,12 +6168,12 @@ html.dark .iboard-breakout-mode__btn[aria-pressed='true'] {
 }
 
 .iboard-room-settings__cleanup:has(.iboard-room-settings__cleanup-btn:hover) {
-  border-color: #5a5fc3;
+  border-color: #2f5fee;
 }
 
 .iboard-room-settings__cleanup-btn:hover {
-  background: #ebeaf8;
-  color: #3c3f8f;
+  background: #e8eefc;
+  color: #1f3d99;
 }
 
 .iboard-room-settings__cleanup-badge {
@@ -6002,7 +6314,7 @@ html.dark .iboard-room-settings__badge {
 
 html.dark .iboard-room-settings__secondary:hover {
   border-color: #818cf8;
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
 }
 
 html.dark .iboard-room-settings__cleanup {
@@ -6016,7 +6328,7 @@ html.dark .iboard-room-settings__cleanup-confirm p {
 }
 
 html.dark .iboard-room-settings__cleanup-btn:hover {
-  background: rgba(90, 95, 195, 0.22);
+  background: rgba(47, 95, 238, 0.22);
 }
 
 html.dark .iboard-room-settings__cleanup:has(.iboard-room-settings__cleanup-btn:hover) {
@@ -6117,8 +6429,8 @@ html.dark .iboard-room-settings__danger:hover {
 }
 
 .iboard-breakout-assign__stepper button:hover:not(:disabled) {
-  background: #ebeaf8;
-  color: #5a5fc3;
+  background: #e8eefc;
+  color: #2f5fee;
 }
 
 .iboard-breakout-assign__stepper button:disabled {
@@ -6144,9 +6456,9 @@ html.dark .iboard-room-settings__danger:hover {
   min-height: 2rem;
   padding: 0 0.9rem;
   border-radius: 0.55rem;
-  border: 1.5px solid #5a5fc3;
+  border: 1.5px solid #2f5fee;
   background: transparent;
-  color: #5a5fc3;
+  color: #2f5fee;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -6155,17 +6467,17 @@ html.dark .iboard-room-settings__danger:hover {
 }
 
 .iboard-breakout-assign__start.is-ready {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #ffffff;
 }
 
 .iboard-breakout-assign__start.is-ready:hover:not(:disabled) {
-  background: #4b50b0;
-  border-color: #4b50b0;
+  background: #2450d6;
+  border-color: #2450d6;
 }
 
 .iboard-breakout-assign__start:hover:not(:disabled):not(.is-ready) {
-  background: #ebeaf8;
+  background: #e8eefc;
 }
 
 .iboard-breakout-assign__start:disabled {
@@ -6228,14 +6540,14 @@ html.dark .iboard-room-settings__danger:hover {
 }
 
 .iboard-breakout-assign__chip:hover:not(:disabled) {
-  border-color: #cfcce8;
-  background: #ebeaf8;
-  color: #5a5fc3;
+  border-color: #c9d6f2;
+  background: #e8eefc;
+  color: #2f5fee;
 }
 
 .iboard-breakout-assign__chip[aria-pressed='true'] {
-  border-color: #5a5fc3;
-  background: #5a5fc3;
+  border-color: #2f5fee;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -6292,14 +6604,14 @@ html.dark .iboard-breakout-assign__start:hover:not(:disabled):not(.is-ready) {
 }
 
 html.dark .iboard-breakout-assign__start.is-ready {
-  background: #6366f1;
-  border-color: #6366f1;
+  background: #4a78f2;
+  border-color: #4a78f2;
   color: #ffffff;
 }
 
 html.dark .iboard-breakout-assign__start.is-ready:hover:not(:disabled) {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: #2f5fee;
+  border-color: #2f5fee;
 }
 
 html.dark .iboard-breakout-assign__row {
@@ -6317,14 +6629,14 @@ html.dark .iboard-breakout-assign__chip {
 }
 
 html.dark .iboard-breakout-assign__chip:hover {
-  border-color: #6366f1;
+  border-color: #4a78f2;
   background: #1e1b4b;
   color: #c7d2fe;
 }
 
 html.dark .iboard-breakout-assign__chip[aria-pressed='true'] {
-  border-color: #6366f1;
-  background: #4f46e5;
+  border-color: #4a78f2;
+  background: #2f5fee;
   color: #ffffff;
 }
 
@@ -6344,6 +6656,27 @@ html.dark .iboard-header-dock--end {
 html.dark .iboard-arr-rail {
   background: #181d25;
   border-right-color: #343c46;
+}
+
+html.dark .iboard-arr-rail__teach {
+  --teach-body: #252b32;
+}
+
+html.dark .iboard-arr-rail__teach .iboard-arr-btn,
+html.dark .iboard-arr-rail__teach .iboard-arr-btn__glyph,
+html.dark .iboard-arr-rail__teach .iboard-arr-btn__icon,
+html.dark .iboard-arr-rail__teach .iboard-arr-label {
+  color: #9eb6f5;
+}
+
+html.dark .iboard-arr-rail__teach .iboard-arr-btn[data-active='true'] {
+  background: #2f5fee;
+  color: #ffffff;
+}
+
+html.dark .iboard-arr-rail__teach .iboard-arr-btn[data-active='true'] .iboard-arr-btn__icon,
+html.dark .iboard-arr-rail__teach .iboard-arr-btn[data-active='true'] .iboard-arr-label {
+  color: #ffffff;
 }
 html.dark .iboard-student-card,
 html.dark .iboard-student-card:hover {
@@ -6395,15 +6728,15 @@ html.dark .iboard-arr-label {
 }
 
 html.dark .iboard-arr-btn[data-active='true'] {
-  background: #5a5fc3;
+  background: #2f5fee;
   border-color: transparent;
   box-shadow: none;
   color: #ffffff;
 }
 
 html.dark .iboard-arr-btn:hover:not([data-active='true']) {
-  background: rgba(90, 95, 195, 0.22);
-  border-color: #818cf8;
+  background: rgba(47, 95, 238, 0.22);
+  border-color: transparent;
   color: #ffffff;
 }
 
@@ -6526,7 +6859,7 @@ html.dark .iboard-student-card-actions {
 }
 
 .iboard-rec-switch:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 2px;
 }
 
@@ -6655,7 +6988,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
 }
 
 .iboard-student-note {
-  --ann-pip: #5a5fc3;
+  --ann-pip: #2f5fee;
   position: relative;
   display: flex;
   align-items: center;
@@ -6683,7 +7016,7 @@ html.dark .iboard-rec-switch.is-on .iboard-rec-switch__track {
   width: max-content;
   max-width: min(16.5rem, 70vw);
   padding: 0.55rem 0.7rem;
-  border: 1px solid #d5d4e4;
+  border: 1px solid #d8dbe1;
   border-radius: 0.85rem;
   background-color: #ffffff;
   background-image: none;
@@ -6792,7 +7125,7 @@ html.dark .iboard-student-note--open.is-lit .iboard-student-note__check {
 
 .iboard-student-note--open { --ann-pip: #7c7c8a; }
 html.dark .iboard-student-note--open { --ann-pip: #94a3b8; }
-.iboard-student-note--fixed { --ann-pip: #5a5fc3; }
+.iboard-student-note--fixed { --ann-pip: #2f5fee; }
 .iboard-student-note--reopen { --ann-pip: #f43f5e; }
 .iboard-student-note--resolved { --ann-pip: #10b981; }
 
@@ -6812,7 +7145,7 @@ html.dark .iboard-student-note--open { --ann-pip: #94a3b8; }
 }
 
 .iboard-ann-mark {
-  --ann-pip: #5a5fc3;
+  --ann-pip: #2f5fee;
   display: flex;
   flex-direction: row;
   align-items: flex-end;
@@ -6839,7 +7172,7 @@ html.dark .iboard-student-note--open { --ann-pip: #94a3b8; }
 }
 
 .iboard-ann-mark:focus-visible .iboard-ann-mark__pip {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 2px;
 }
 
@@ -6894,7 +7227,7 @@ html.dark .iboard-ann-mark--open .iboard-ann-mark__pip {
 }
 
 .iboard-ann-mark--open { --ann-pip: #7c7c8a; }
-.iboard-ann-mark--fixed { --ann-pip: #5a5fc3; }
+.iboard-ann-mark--fixed { --ann-pip: #2f5fee; }
 .iboard-ann-mark--reopen { --ann-pip: #f43f5e; }
 .iboard-ann-mark--resolved { --ann-pip: #10b981; }
 
@@ -7537,8 +7870,8 @@ html:-webkit-full-screen .iboard-start-screen {
   align-items: baseline;
   gap: 0.6rem;
   padding: 0.55rem 1.5rem;
-  border-bottom: 1px solid #d5d4e4;
-  background: #ebeaf8;
+  border-bottom: 1px solid #d8dbe1;
+  background: #e8eefc;
   color: #3c3c45;
   font-size: 0.9rem;
 }
@@ -7549,7 +7882,7 @@ html:-webkit-full-screen .iboard-start-screen {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #5a5fc3;
+  color: #2f5fee;
 }
 
 .iboard-lesson-objective__text {
@@ -7640,7 +7973,7 @@ html.dark .iboard-learning-trail__away {
 }
 
 .iboard-student-card__fit-pane:focus-visible {
-  outline: 2px solid #5a5fc3;
+  outline: 2px solid #2f5fee;
   outline-offset: 1px;
 }
 
@@ -7675,7 +8008,7 @@ html.dark .iboard-room-settings__list > span:not(:last-child) > button {
   place-items: center;
   overflow-y: auto;
   padding: clamp(1rem, 3vh, 2rem) 1rem;
-  background: #f1f0f8;
+  background: #eef2f9;
 }
 
 .iboard-join-gate__panel {
@@ -7685,7 +8018,7 @@ html.dark .iboard-room-settings__list > span:not(:last-child) > button {
   width: min(48rem, 100%);
   padding: clamp(1.5rem, 4vh, 2.75rem) clamp(1.25rem, 4vw, 3rem);
   border-radius: 1.75rem;
-  background: #4f46e5;
+  background: #2f5fee;
   color: #ffffff;
   text-align: center;
   box-shadow: 0 30px 60px -30px rgba(49, 46, 129, 0.55);
@@ -7866,4 +8199,27 @@ html.dark .iboard-join-gate {
 
 html.dark .iboard-join-gate__panel {
   background: #3730a3;
+}
+
+
+/* Dark mode keeps the solid shell but in a much softer blue, so it does not glare. */
+html.dark .iboard-command-bar {
+  --command-blue-soft: #2c3a63;
+}
+
+html.dark .iboard-command-frame {
+  background: var(--command-blue-soft);
+}
+
+html.dark .iboard-command-bar__side .iboard-command-bar__title {
+  color: #c9d4f5;
+}
+
+html.dark .iboard-arr-rail__teach {
+  background: #2c3a63;
+}
+
+html.dark .iboard-arr-rail__teach .iboard-rail-title {
+  background: #2c3a63;
+  color: #c9d4f5;
 }

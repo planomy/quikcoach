@@ -199,7 +199,7 @@ export function ChatCompose({
         </HintWrap>
         <textarea
           ref={fieldRef}
-          rows={1}
+          rows={5}
           maxLength={role === 'teacher' ? 5000 : 2000}
           value={draft}
           placeholder={placeholder}

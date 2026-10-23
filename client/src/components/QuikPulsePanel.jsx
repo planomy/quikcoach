@@ -62,7 +62,7 @@ const pulseCards = [
   {
     id: 'one-word',
     label: 'One Word',
-    short: 'One word',
+    short: 'Word',
     hint: 'Ask the whole class for a one-word answer',
     icon: 'one-word',
     question: {
@@ -93,83 +93,29 @@ export function isQuikPulseActivity(activity) {
     || pulseCards.some((card) => card.question?.prompt === activity.prompt);
 }
 
+// Sizes give each icon about the same visual weight, since their shapes differ.
+const QUIK_ICON_SIZE = {
+  'yes-no': [22, 19],
+  rating: [26, 16],
+  agreement: [38, 8],
+  choice: [20, 20],
+  'one-word': [22, 17],
+  short: [21, 17],
+};
+
 function QuikPulseIcon({ name }) {
-  const shared = {
-    viewBox: '0 0 64 64',
-    className: 'h-full w-full',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: '2.5',
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-  };
-
-  if (name === 'yes-no') {
-    return (
-      <svg {...shared}>
-        <path d="M14 20h14v14H14z" />
-        <path d="m17.5 27 3 3 6-7" />
-        <path d="M36 20h14v14H36z" />
-        <path d="m40 24 6 6m0-6-6 6" />
-        <circle cx="32" cy="48" r="8" />
-        <path d="M32 44.5v5M32 52.5h.01" />
-      </svg>
-    );
-  }
-
-  if (name === 'rating') {
-    return (
-      <svg {...shared}>
-        <path d="M8 50h48" opacity=".35" />
-        <rect x="9" y="39" width="7" height="11" rx="3.5" />
-        <rect x="19" y="33" width="7" height="17" rx="3.5" />
-        <rect x="29" y="27" width="7" height="23" rx="3.5" />
-        <rect x="39" y="21" width="7" height="29" rx="3.5" />
-        <rect x="49" y="15" width="7" height="35" rx="3.5" />
-      </svg>
-    );
-  }
-
-  if (name === 'agreement') {
-    return (
-      <svg {...shared}>
-        <path d="M10 32h44" opacity=".45" />
-        <circle cx="10" cy="32" r="5" />
-        <circle cx="21" cy="32" r="5" />
-        <circle cx="32" cy="32" r="5" />
-        <circle cx="43" cy="32" r="5" />
-        <circle cx="54" cy="32" r="5" fill="currentColor" />
-        <path d="m7.8 32 1.5 1.6 3-3.2" strokeWidth="1.8" />
-      </svg>
-    );
-  }
-
-  if (name === 'choice') {
-    return (
-      <svg {...shared}>
-        <rect x="9" y="9" width="20" height="20" rx="6" />
-        <rect x="35" y="9" width="20" height="20" rx="6" />
-        <rect x="9" y="35" width="20" height="20" rx="6" />
-        <rect x="35" y="35" width="20" height="20" rx="6" />
-        <path d="m15 23 4-9 4 9m-6.3-3h4.6M41.5 14v10m0-10h4.1c2.4 0 3.8 1 3.8 2.7s-1.4 2.7-3.8 2.7h-4.1m4.7 0c2.5 0 4 1 4 2.8S48.7 24 46.2 24h-4.7M23 39.5a7 7 0 1 0 0 11M41 40h3.5a6.5 6.5 0 0 1 0 13H41V40Z" strokeWidth="2" />
-      </svg>
-    );
-  }
-
-  if (name === 'one-word') {
-    return (
-      <svg {...shared}>
-        <path d="M13 14h38a7 7 0 0 1 7 7v20a7 7 0 0 1-7 7H31L20 56v-8h-7a7 7 0 0 1-7-7V21a7 7 0 0 1 7-7Z" />
-        <path d="M19 31h26" strokeWidth="4" />
-      </svg>
-    );
-  }
-
+  const src = `/brand/ask/${name}.png?v=2`;
+  const [width, height] = QUIK_ICON_SIZE[name] || [20, 20];
   return (
-    <svg {...shared}>
-      <path d="M13 11h38a7 7 0 0 1 7 7v25a7 7 0 0 1-7 7H31L20 57v-7h-7a7 7 0 0 1-7-7V18a7 7 0 0 1 7-7Z" />
-      <path d="M18 25h28M18 32h24M18 39h18" />
-    </svg>
+    <span
+      className="block max-w-full bg-current"
+      style={{
+        width,
+        height,
+        WebkitMask: `url("${src}") center / contain no-repeat`,
+        mask: `url("${src}") center / contain no-repeat`,
+      }}
+    />
   );
 }
 
@@ -292,17 +238,17 @@ export default function QuikPulsePanel({ onLaunch }) {
             if (isChoice) setChoiceOpen((open) => !open);
             else onLaunch(card.question);
           }}
-          className={`flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg border px-1 py-1.5 text-center shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#cfcce8] dark:focus-visible:ring-indigo-500 ${
+          className={`flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg border px-1 py-1.5 text-center shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c9d6f2] dark:focus-visible:ring-indigo-500 ${
             pressed
-              ? 'border-[#5a5fc3] bg-[#ebeaf8] text-[#5a5fc3] dark:border-indigo-400 dark:bg-indigo-950/60 dark:text-indigo-200'
-              : 'border-[#cfcce8] bg-white text-[#5a5fc3] hover:border-[#5a5fc3] hover:bg-[#ebeaf8] dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
+              ? 'border-[#2f5fee] bg-[#e8eefc] text-[#2f5fee] dark:border-indigo-400 dark:bg-indigo-950/60 dark:text-indigo-200'
+              : 'border-[#c9d6f2] bg-white text-[#2f5fee] hover:border-[#2f5fee] hover:bg-[#e8eefc] dark:border-indigo-800 dark:bg-slate-950 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/50'
           }`}
           title=""
           aria-label={`${card.label}. ${card.hint}`}
           aria-expanded={isChoice ? choiceOpen : undefined}
           aria-haspopup={isChoice ? 'dialog' : undefined}
         >
-          <span className="grid h-5 w-5 shrink-0 place-items-center" aria-hidden>
+          <span className="grid h-5 w-full shrink-0 place-items-center" aria-hidden>
             <QuikPulseIcon name={card.icon} />
           </span>
           <span className="block w-full truncate text-[11px] font-bold leading-none text-slate-900 dark:text-white">

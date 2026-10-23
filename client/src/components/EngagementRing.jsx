@@ -5,7 +5,7 @@ const CONFIDENCE_COLOURS = {
   confident: '#10b981',
   unsure: UNSURE_COLOR,
   guessed: '#ef4444',
-  answered: '#6366f1',
+  answered: '#4a78f2',
 };
 
 function segmentColour(segment) {

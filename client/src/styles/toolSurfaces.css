@@ -1,8 +1,8 @@
-/* Light-theme tool surfaces — LZ soft lilac (match teacher shell). */
+/* Light-theme tool surfaces: neutral blue-grey, shared by teacher and student. */
 html:not(.dark) {
-  --iboard-tool-surface: #f6f5fb;
-  --iboard-tool-strip: #eeedf6;
-  --iboard-tool-border: #d5d4e4;
+  --iboard-tool-surface: #f5f6f8;
+  --iboard-tool-strip: #eceef2;
+  --iboard-tool-border: #d8dbe1;
 }
 html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, dialog, [role="dialog"], [data-teacher-annotation-ui].bg-white, details > div.bg-white):not(.bg-indigo-600):not(.bg-slate-950):not(.bg-red-950\/50):not(.fixed.inset-0) {
   background-color: var(--iboard-tool-surface);
@@ -33,12 +33,12 @@ html:not(.dark) :is(.iboard-header-dock, .sets-preview-flyout, [data-iboard-stud
 
 /* Quiet Slate / Graphite: shared neutral surfaces, with semantic colours intact. */
 html:not(.dark) {
-  --iboard-canvas: #f1f0f8;
+  --iboard-canvas: #eef2f9;
   --iboard-paper: #ffffff;
-  --iboard-tool-surface: #f6f5fb;
-  --iboard-tool-strip: #eeedf6;
-  --iboard-tool-border: #d5d4e4;
-  --iboard-accent: #5a5fc3;
+  --iboard-tool-surface: #f5f6f8;
+  --iboard-tool-strip: #eceef2;
+  --iboard-tool-border: #d8dbe1;
+  --iboard-accent: #2f5fee;
 }
 html.dark {
   color-scheme: dark;
@@ -54,8 +54,8 @@ html :is(.iboard-teacher-canvas, .iboard-student-canvas) {
   /* Beat Tailwind body utilities (bg-slate-50) so the canvas tint is edge-to-edge. */
   background-color: var(--iboard-canvas) !important;
 }
-html:not(.dark) .iboard-teacher-canvas {
-  background-color: #e6e6ee !important;
+html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) {
+  background-color: #e6e8ec !important;
 }
 /* Teacher and student headers are a flat white edge. */
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header {
@@ -103,15 +103,15 @@ html:not(.dark) :is(.iboard-writing-surface, [data-student-writing-pane], [conte
   background-color: var(--iboard-paper);
 }
 html.dark .iboard-app-header :is(.iboard-header-tab, .iboard-header-icon-button)[data-active="true"] {
-  background: #5a5fc3;
+  background: #2f5fee;
   color: #fff;
 }
 html.dark :is(button.bg-indigo-600, button.bg-indigo-700, button.bg-violet-600) {
-  background-color: #5a5fc3;
+  background-color: #2f5fee;
   color: #fff;
 }
 html.dark :is(button.bg-indigo-600, button.bg-indigo-700, button.bg-violet-600):hover {
-  background-color: #4b50b0;
+  background-color: #2450d6;
 }
 html.dark :is(.dark\:text-slate-400, .dark\:text-slate-500) {
   color: #aebac8;
@@ -175,18 +175,18 @@ html:not(.dark) .sets-recipient-panel > .recipient-names {
   background-color: #f8fafc;
 }
 html:not(.dark) .sets-recipient-panel .sets-recipient-row:has(input:checked) {
-  background-color: #ebeaf8;
+  background-color: #e8eefc;
 }
 html:not(.dark) .sets-recipient-panel .sets-recipient-row:hover {
   background-color: #e0dff2;
 }
 html:not(.dark) .sets-recipient-panel .recipient-inbox {
   background-color: #fff;
-  border-color: #cfcce8;
-  color: #5a5fc3;
+  border-color: #c9d6f2;
+  color: #2f5fee;
 }
 html:not(.dark) .sets-recipient-panel .recipient-inbox:hover:not(:disabled) {
-  background-color: #ebeaf8;
+  background-color: #e8eefc;
 }
 
 /* Preview shares the recipient shell, with a content-sized reading surface. */

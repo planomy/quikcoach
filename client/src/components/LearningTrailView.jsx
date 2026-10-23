@@ -240,13 +240,13 @@ const DOT = {
   writing: 'bg-emerald-400',
   revising: 'bg-sky-400',
   paste: 'bg-red-500',
-  support: 'bg-[#5a5fc3]',
-  response: 'bg-[#5a5fc3]/50',
+  support: 'bg-[#2f5fee]',
+  response: 'bg-[#2f5fee]/50',
   confirmed: 'bg-[#10b981]',
   away: 'bg-slate-300 dark:bg-slate-600',
   missing: 'bg-amber-400',
   start: 'bg-slate-400',
-  independent: 'bg-[#3c3f8f] dark:bg-[#818cf8]',
+  independent: 'bg-[#1f3d99] dark:bg-[#818cf8]',
 };
 
 export default function LearningTrailView({ socket, studentId, onClose, onOpenDrafts }) {
@@ -343,7 +343,7 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
     >
       <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#5a5fc3] dark:text-indigo-300">Learning trail</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2f5fee] dark:text-indigo-300">Learning trail</p>
           <h2 id="learning-trail-title" className="truncate font-display text-xl font-bold">{data?.student?.name || ' '}</h2>
           {summary ? <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{summary}</p> : null}
         </div>
@@ -367,7 +367,7 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                     >
                       <HintWrap hint={markHint(marker.kind, marker.at)} className="h-3 w-3 items-start justify-center">
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${marker.kind === 'paste' ? 'bg-red-500' : 'bg-[#5a5fc3]'}`}
+                          className={`h-1.5 w-1.5 rounded-full ${marker.kind === 'paste' ? 'bg-red-500' : 'bg-[#2f5fee]'}`}
                         />
                       </HintWrap>
                     </span>
@@ -403,7 +403,7 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                           }
                           className="h-full w-full"
                         >
-                          <span className="block h-1 rounded-full bg-[#3c3f8f] hover:brightness-90 dark:bg-[#818cf8]" />
+                          <span className="block h-1 rounded-full bg-[#1f3d99] hover:brightness-90 dark:bg-[#818cf8]" />
                         </HintWrap>
                       </span>
                     ))}
@@ -417,10 +417,10 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                   <span className="inline-flex items-center gap-1"><span className="h-2 w-3 rounded-sm bg-emerald-400" />Adding writing</span>
                   <span className="inline-flex items-center gap-1"><span className="h-2 w-3 rounded-sm bg-sky-400" />Revising earlier text</span>
                   <span className="inline-flex items-center gap-1"><span className="iboard-learning-trail__away h-2 w-3 rounded-sm" />Away</span>
-                  <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#5a5fc3]" />Support</span>
+                  <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#2f5fee]" />Support</span>
                   <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-500" />Paste</span>
                   {view.bands.length ? (
-                    <span className="inline-flex items-center gap-1"><span className="h-1 w-3 rounded-full bg-[#3c3f8f] dark:bg-[#818cf8]" />Independent writing</span>
+                    <span className="inline-flex items-center gap-1"><span className="h-1 w-3 rounded-full bg-[#1f3d99] dark:bg-[#818cf8]" />Independent writing</span>
                   ) : null}
                 </p>
               </section>
@@ -429,11 +429,11 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
             )}
 
             {view.independent.length ? (
-              <ul className="space-y-1 rounded-xl bg-[#ebeaf8] px-3 py-2 text-sm text-[#3c3f8f] dark:bg-[rgba(90,95,195,0.22)] dark:text-indigo-100">
+              <ul className="space-y-1 rounded-xl bg-[#e8eefc] px-3 py-2 text-sm text-[#1f3d99] dark:bg-[rgba(47, 95, 238,0.22)] dark:text-indigo-100">
                 {view.independent.map((w) => (
                   <li key={w.start}>
                     <span className="font-bold">Independent writing {w.range}</span>
-                    <span className="text-[#3c3f8f]/80 dark:text-indigo-200"> · {w.support}</span>
+                    <span className="text-[#1f3d99]/80 dark:text-indigo-200"> · {w.support}</span>
                   </li>
                 ))}
               </ul>
@@ -447,7 +447,7 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                     {view.support.items.map((item) => (
                       <li key={item.type} className="flex items-baseline justify-between gap-2">
                         <span>{item.label}</span>
-                        <span className="font-bold text-[#3c3f8f] dark:text-indigo-200">{item.count}{item.note ? <span className="ml-1 text-xs font-semibold text-[#047857] dark:text-[#6ee7b7]">({item.note})</span> : null}</span>
+                        <span className="font-bold text-[#1f3d99] dark:text-indigo-200">{item.count}{item.note ? <span className="ml-1 text-xs font-semibold text-[#047857] dark:text-[#6ee7b7]">({item.note})</span> : null}</span>
                       </li>
                     ))}
                   </ul>
@@ -457,7 +457,7 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                 {view.support.categories.length ? (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {view.support.categories.map((category) => (
-                      <span key={category.id} className="rounded-full bg-[#ebeaf8] px-2 py-0.5 text-[11px] font-bold text-[#3c3f8f] dark:bg-[rgba(90,95,195,0.22)] dark:text-indigo-200">
+                      <span key={category.id} className="rounded-full bg-[#e8eefc] px-2 py-0.5 text-[11px] font-bold text-[#1f3d99] dark:bg-[rgba(47, 95, 238,0.22)] dark:text-indigo-200">
                         {category.label}{category.count > 1 ? ` ×${category.count}` : ''}
                       </span>
                     ))}
@@ -484,7 +484,7 @@ export default function LearningTrailView({ socket, studentId, onClose, onOpenDr
                   <button
                     type="button"
                     onClick={() => onOpenDrafts?.(studentId)}
-                    className="rounded-lg border border-[#5a5fc3] px-2.5 py-1 text-xs font-bold text-[#5a5fc3] hover:bg-[#ebeaf8] hover:text-[#3c3f8f] dark:border-[#818cf8] dark:text-indigo-200 dark:hover:bg-[rgba(90,95,195,0.22)]"
+                    className="rounded-lg border border-[#2f5fee] px-2.5 py-1 text-xs font-bold text-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:border-[#818cf8] dark:text-indigo-200 dark:hover:bg-[rgba(47, 95, 238,0.22)]"
                   >
                     Step through drafts
                   </button>

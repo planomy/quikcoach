@@ -234,7 +234,7 @@ export function ThinkingPopover({
             <p className="flex items-baseline justify-between gap-1 px-1 pb-1 text-[10px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
               {category.label}
               {sentCounts ? (
-                <span className={`text-[10px] font-semibold normal-case tracking-normal ${sentCounts[category.id] ? 'text-[#5a5fc3] dark:text-indigo-300' : 'text-slate-400 dark:text-slate-500'}`}>
+                <span className={`text-[10px] font-semibold normal-case tracking-normal ${sentCounts[category.id] ? 'text-[#2f5fee] dark:text-indigo-300' : 'text-slate-400 dark:text-slate-500'}`}>
                   {sentCounts[category.id] || 0} sent
                 </span>
               ) : null}

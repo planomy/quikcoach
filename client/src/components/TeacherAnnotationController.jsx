@@ -1255,7 +1255,7 @@ export default function TeacherAnnotationController() {
             title=""
             aria-label="Edit comment"
             onClick={onEdit}
-            className="grid h-8 w-8 place-items-center rounded-lg text-[#5a5fc3] hover:bg-[#ebeaf8] dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+            className="grid h-8 w-8 place-items-center rounded-lg text-[#2f5fee] hover:bg-[#e8eefc] dark:text-indigo-300 dark:hover:bg-indigo-950/40"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 20h9" />
@@ -1281,8 +1281,8 @@ export default function TeacherAnnotationController() {
           onClick={(event) => handleQuickCommentClick(event, pill.text)}
           className={`flex min-h-8 w-full items-center justify-center rounded-lg border px-1.5 py-1 text-center text-[10px] font-bold leading-tight transition ${
             selected
-              ? 'border-[#5a5fc3] bg-[#5a5fc3] text-white'
-              : 'border-[#d5d4e4] bg-white text-[#52525c] hover:border-[#cfcce8] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/40'
+              ? 'border-[#2f5fee] bg-[#2f5fee] text-white'
+              : 'border-[#d8dbe1] bg-white text-[#52525c] hover:border-[#c9d6f2] hover:bg-[#e8eefc] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/40'
           }`}
         >
           {pill.label}
@@ -1303,8 +1303,8 @@ export default function TeacherAnnotationController() {
             onClick={(event) => handleQuickCommentClick(event, comment)}
             className={`flex min-h-8 w-full items-center justify-center rounded-lg border px-1.5 py-1 text-center text-[10px] font-bold leading-tight transition ${
               selected
-                ? 'border-[#5a5fc3] bg-[#5a5fc3] text-white'
-                : 'border-[#d5d4e4] bg-white text-[#52525c] hover:border-[#cfcce8] hover:bg-[#ebeaf8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                ? 'border-[#2f5fee] bg-[#2f5fee] text-white'
+                : 'border-[#d8dbe1] bg-white text-[#52525c] hover:border-[#c9d6f2] hover:bg-[#e8eefc] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
             }`}
           >
             <span className="max-w-full truncate">{comment}</span>
@@ -1360,7 +1360,7 @@ export default function TeacherAnnotationController() {
     <>
       <style>{`
         ::highlight(${HOVER_HIGHLIGHT_NAME}) { background: ${COMMENT_HOVER_WASH[hoveredTarget?.tone] || COMMENT_HOVER_WASH.open}; }
-        ::highlight(${PENDING_HIGHLIGHT_NAME}) { background: rgba(90, 95, 195, 0.4); }
+        ::highlight(${PENDING_HIGHLIGHT_NAME}) { background: rgba(47, 95, 238, 0.4); }
       `}</style>
       {(pendingWash?.boxes || []).map((box, index) => (
         <span
@@ -1371,7 +1371,7 @@ export default function TeacherAnnotationController() {
             left: box.left,
             width: box.width,
             height: box.height,
-            background: 'rgba(90, 95, 195, 0.4)',
+            background: 'rgba(47, 95, 238, 0.4)',
           }}
         />
       ))}
@@ -1382,7 +1382,7 @@ export default function TeacherAnnotationController() {
         <div
           ref={pendingPanelRef}
           data-teacher-annotation-ui
-          className="fixed z-[70] flex max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white p-2.5 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
+          className="fixed z-[70] flex max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-2xl border border-[#d8dbe1] bg-white p-2.5 shadow-2xl dark:border-slate-600 dark:bg-slate-900"
           style={{
             top: pending.top,
             left: pending.left,
@@ -1392,14 +1392,14 @@ export default function TeacherAnnotationController() {
         >
           <div className="flex shrink-0 items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3]">Selected passage</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.13em] text-[#2f5fee]">Selected passage</p>
               <p className="mt-0.5 line-clamp-2 text-[11px] italic leading-snug text-[#52525c] dark:text-slate-400">“{pending.quote}”</p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={copyPendingSelection}
-                className="rounded-md border border-[#d5d4e4] bg-[#ebeaf8] px-2 py-1 text-[10px] font-black text-[#5a5fc3] hover:bg-white dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                className="rounded-md border border-[#d8dbe1] bg-[#e8eefc] px-2 py-1 text-[10px] font-black text-[#2f5fee] hover:bg-white dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
               >
                 Copy
               </button>
@@ -1413,7 +1413,7 @@ export default function TeacherAnnotationController() {
                     setAddingCustomComment((open) => !open);
                     setCustomCommentDraft('');
                   }}
-                  className="grid h-7 w-7 place-items-center rounded-md border border-[#d5d4e4] bg-white text-[#5a5fc3] hover:bg-[#ebeaf8] disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-200"
+                  className="grid h-7 w-7 place-items-center rounded-md border border-[#d8dbe1] bg-white text-[#2f5fee] hover:bg-[#e8eefc] disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-200"
                 >
                   +
                 </button>
@@ -1441,13 +1441,13 @@ export default function TeacherAnnotationController() {
                   if (event.key === 'Escape') setAddingCustomComment(false);
                 }}
                 placeholder="New pill…"
-                className="min-w-0 flex-1 rounded-md border border-[#d5d4e4] bg-white px-2 py-1 text-[11px] text-slate-900 outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="min-w-0 flex-1 rounded-md border border-[#d8dbe1] bg-white px-2 py-1 text-[11px] text-slate-900 outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
               <button
                 type="button"
                 disabled={!customCommentDraft.trim()}
                 onClick={addExtraPill}
-                className="rounded-md bg-[#5a5fc3] px-2 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40"
+                className="rounded-md bg-[#2f5fee] px-2 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40"
               >
                 Add
               </button>
@@ -1473,7 +1473,7 @@ export default function TeacherAnnotationController() {
               if (event.key === 'Escape') closePending();
             }}
             placeholder="Type your comment…"
-            className="mt-2 min-h-[3.25rem] w-full shrink-0 resize-none rounded-lg border border-[#d5d4e4] px-2.5 py-1.5 text-xs text-[#3c3c45] outline-none focus:border-[#5a5fc3] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="mt-2 min-h-[3.25rem] w-full shrink-0 resize-none rounded-lg border border-[#d8dbe1] px-2.5 py-1.5 text-xs text-[#3c3c45] outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
 
           {commentError && (
@@ -1484,8 +1484,8 @@ export default function TeacherAnnotationController() {
           <div className="mt-1.5 flex shrink-0 items-center justify-between gap-2">
             <p className="min-w-0 text-[10px] font-semibold leading-none text-[#8b8b96] dark:text-slate-500">Use SHIFT to stack comments.</p>
             <div className="flex shrink-0 items-center gap-1.5">
-            <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-[#52525c] hover:bg-[#ebeaf8] dark:hover:bg-slate-800">Cancel</button>
-            <button type="button" disabled={!draftNote.trim()} onClick={() => addComment()} className="rounded-md bg-[#5a5fc3] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40">Add comment</button>
+            <button type="button" onClick={closePending} className="rounded-md px-2.5 py-1 text-[11px] font-bold text-[#52525c] hover:bg-[#e8eefc] dark:hover:bg-slate-800">Cancel</button>
+            <button type="button" disabled={!draftNote.trim()} onClick={() => addComment()} className="rounded-md bg-[#2f5fee] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#4f54b0] disabled:opacity-40">Add comment</button>
             </div>
           </div>
         </div>
@@ -1496,7 +1496,7 @@ export default function TeacherAnnotationController() {
           data-teacher-annotation-ui
           data-comment-popup
           onPointerDown={() => pinCommentPopup(openMarker)}
-          className="fixed z-[70] flex flex-col overflow-hidden rounded-2xl border border-[#d5d4e4] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
+          className="fixed z-[70] flex flex-col overflow-hidden rounded-2xl border border-[#d8dbe1] bg-white shadow-2xl dark:border-slate-600 dark:bg-slate-900"
           style={{
             top: openMarkerPos.top,
             left: openMarkerPos.left,
@@ -1518,7 +1518,7 @@ export default function TeacherAnnotationController() {
                 Asked to check again
               </p>
             ) : (
-              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#5a5fc3] dark:text-indigo-300">
+              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.13em] text-[#2f5fee] dark:text-indigo-300">
                 Your inline comment
               </p>
             )}
@@ -1526,7 +1526,7 @@ export default function TeacherAnnotationController() {
               {typeof openMarker.annotation.note === 'string' ? openMarker.annotation.note : ''}
             </p>
             {openMarkerChange ? (
-              <div className="mt-2.5 space-y-1.5 rounded-xl border border-[#cfcce8] bg-[#ebeaf8] p-2.5 dark:border-indigo-900 dark:bg-indigo-950/35">
+              <div className="mt-2.5 space-y-1.5 rounded-xl border border-[#c9d6f2] bg-[#e8eefc] p-2.5 dark:border-indigo-900 dark:bg-indigo-950/35">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#8a8a96]">Was</p>
                   <p className="mt-0.5 text-xs leading-snug text-[#52525c] line-through decoration-[#c4c4ce] dark:text-slate-400">
@@ -1534,7 +1534,7 @@ export default function TeacherAnnotationController() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#5a5fc3]">Now</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#2f5fee]">Now</p>
                   <p className="mt-0.5 text-xs font-semibold leading-snug text-[#3c3c45] dark:text-slate-100">
                     {openMarkerChange?.removed || !openMarkerChange?.after?.trim()
                       ? 'Removed'
@@ -1556,7 +1556,7 @@ export default function TeacherAnnotationController() {
                   type="button"
                   disabled={reviewBusyId === openMarker.annotation.id}
                   onClick={() => reviewFixedComment(openMarker, 'confirm')}
-                  className="min-w-0 flex-1 rounded-lg bg-[#5a5fc3] px-2 py-2 text-[11px] font-bold text-white hover:bg-[#4b50b0] disabled:opacity-50"
+                  className="min-w-0 flex-1 rounded-lg bg-[#2f5fee] px-2 py-2 text-[11px] font-bold text-white hover:bg-[#2450d6] disabled:opacity-50"
                 >
                   Confirm fixed
                 </button>
@@ -1565,7 +1565,7 @@ export default function TeacherAnnotationController() {
                     type="button"
                     disabled={reviewBusyId === openMarker.annotation.id}
                     onClick={() => reviewFixedComment(openMarker, 'reopen')}
-                    className="min-w-0 flex-1 whitespace-nowrap rounded-lg border border-[#d5d4e4] bg-white px-2 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#ebeaf8] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                    className="min-w-0 flex-1 whitespace-nowrap rounded-lg border border-[#d8dbe1] bg-white px-2 py-2 text-[11px] font-bold text-[#3c3c45] hover:bg-[#e8eefc] disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                   >
                     Check again
                   </button>
@@ -1607,7 +1607,7 @@ export default function TeacherAnnotationController() {
         >
           <div
             ref={saveNoticeRef}
-            className="inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg border border-[#cfcce8] bg-[#ebeaf8] px-3 text-[11px] font-black text-[#5a5fc3] shadow-sm dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200"
+            className="inline-flex h-8 max-w-[min(22rem,calc(100vw-1.5rem))] items-center truncate rounded-lg border border-[#c9d6f2] bg-[#e8eefc] px-3 text-[11px] font-black text-[#2f5fee] shadow-sm dark:border-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200"
           >
             {saveNotice}
           </div>

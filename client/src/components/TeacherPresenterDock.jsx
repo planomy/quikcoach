@@ -158,7 +158,7 @@ const DOCK_CSS = `
   .iboard-presenter-head-button:hover { background: rgba(255,255,255,.22); }
   .iboard-presenter-head-button.is-question {
     border-color: #c7d2fe;
-    background: #4f46e5;
+    background: #2f5fee;
   }
   .iboard-presenter-head-close {
     display: grid;
@@ -207,7 +207,7 @@ const DOCK_CSS = `
   .iboard-presenter-response-count {
     font-size: 11px;
     font-weight: 900;
-    color: #4338ca;
+    color: #2450d6;
   }
   .iboard-presenter-results {
     display: flex;
@@ -252,8 +252,8 @@ const DOCK_CSS = `
     font-weight: 900;
   }
   .iboard-presenter-action:hover { background: #e0e7ff; }
-  .iboard-presenter-action.primary { background: #4f46e5; color: #ffffff; }
-  .iboard-presenter-action.primary:hover { background: #4338ca; }
+  .iboard-presenter-action.primary { background: #2f5fee; color: #ffffff; }
+  .iboard-presenter-action.primary:hover { background: #2450d6; }
   .iboard-presenter-action.finish { background: #f1f5f9; color: #475569; }
   .iboard-presenter-action:disabled { cursor: default; opacity: .45; }
   .iboard-presenter-section-label {
@@ -300,7 +300,7 @@ const DOCK_CSS = `
     height: 24px;
     place-items: center;
     border-radius: 999px;
-    background: #4f46e5;
+    background: #2f5fee;
     color: #ffffff;
     font-size: 10px;
     font-weight: 950;
@@ -311,7 +311,7 @@ const DOCK_CSS = `
     font-weight: 950;
     text-transform: uppercase;
     letter-spacing: .08em;
-    color: #4338ca;
+    color: #2450d6;
   }
   .iboard-presenter-qtext {
     margin: 0;
