@@ -1563,12 +1563,14 @@ html.dark .iboard-nudge-strip__compose input {
 
 /* A control that no longer fits is parked on its More button so its menu
    still opens from there, and the gauge stays in the middle. */
-.iboard-command-bar [data-overflow='true'] {
+.iboard-command-bar [data-overflow='true'],
+.iboard-command-bar .iboard-command-bar__side :is(.iboard-attention-home, .iboard-manage-tools) > [data-overflow='true'] {
   position: fixed;
   left: var(--command-more-x, -9999px);
   top: var(--command-more-y, -9999px);
   z-index: 90;
   width: 0;
+  min-width: 0;
   height: 0;
   overflow: visible;
   pointer-events: none;
