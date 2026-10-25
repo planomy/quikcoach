@@ -749,3 +749,92 @@ html:not(.dark) .iboard-teacher-inbox__thread .iboard-chat-time,
 html:not(.dark) .iboard-teacher-inbox__empty {
   color: #86868b;
 }
+
+/* Message box under the Inbox conversation. */
+html:not(.dark) .iboard-teacher-inbox .iboard-chat-dock {
+  border-top-color: #e5e5ea;
+  background: #ffffff;
+}
+
+html:not(.dark) .iboard-teacher-inbox .iboard-chat-compose textarea {
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1d1d1f;
+}
+
+html:not(.dark) .iboard-teacher-inbox .iboard-chat-compose textarea:focus {
+  border-color: #2f5fee;
+}
+
+html:not(.dark) .iboard-teacher-inbox .iboard-chat-react {
+  background: #f2f2f7;
+}
+
+html:not(.dark) .iboard-teacher-inbox :is(.iboard-chat-urgent-toggle, .iboard-chat-react-toggle):not([aria-pressed='true']):not([aria-expanded='true']) {
+  background: #e8e8ed;
+  color: #6e6e73;
+}
+
+/* Dark mode uses the same greys as the dark panels instead of navy. */
+html.dark .iboard-teacher-inbox__list {
+  border-right-color: #444e5b;
+  background: #22282f;
+}
+
+html.dark .iboard-teacher-inbox__toolbar {
+  border-bottom-color: #444e5b;
+}
+
+html.dark .iboard-teacher-inbox__select-all,
+html.dark .iboard-teacher-inbox__select-all:hover {
+  color: #e8edf3;
+  font-weight: 500;
+}
+
+html.dark .iboard-teacher-inbox__row:hover,
+html.dark .iboard-teacher-inbox__row.is-checked {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark .iboard-teacher-inbox__row.is-on,
+html.dark .iboard-teacher-inbox__row.is-quiet.is-on {
+  background: #39424d;
+}
+
+html.dark .iboard-teacher-inbox__name {
+  color: #e8edf3;
+}
+
+html.dark .iboard-teacher-inbox__thread,
+html.dark .iboard-teacher-inbox .iboard-chat-pane__head,
+html.dark .iboard-teacher-inbox .iboard-chat-dock {
+  border-color: #444e5b;
+  background: #292f37;
+}
+
+html.dark .iboard-teacher-inbox__thread .iboard-chat-bubble--theirs {
+  background: #39424d;
+  color: #e8edf3;
+}
+
+html.dark .iboard-teacher-inbox .iboard-chat-compose textarea {
+  border: 1px solid #444e5b;
+  border-radius: 10px;
+  background: #22282f;
+  color: #e8edf3;
+}
+
+html.dark .iboard-teacher-inbox .iboard-chat-react {
+  background: #22282f;
+}
+
+html.dark .iboard-teacher-inbox :is(.iboard-chat-urgent-toggle, .iboard-chat-react-toggle):not([aria-pressed='true']):not([aria-expanded='true']) {
+  background: #39424d;
+  color: #b6c0cc;
+}
+
+html.dark .iboard-teacher-inbox__thread .iboard-chat-time,
+html.dark .iboard-teacher-inbox__empty {
+  color: #9aa4b2;
+}
