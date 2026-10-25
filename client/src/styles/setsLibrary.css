@@ -627,6 +627,11 @@ html #tuit-overlay-root .iboard-header-dock.iboard-inspector:has(.iboard-teacher
   max-width: min(42rem, calc(100vw - 4.75rem));
 }
 
+/* Ask sits on the same grey as Resources, with white fields on top. */
+html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ask-panel {
+  background: transparent;
+}
+
 /* Folders show a student list beside the work, so they need the wide column. */
 html #tuit-overlay-root .iboard-header-dock.iboard-library-dock[data-view='portfolios'] {
   width: min(46rem, calc(100vw - 4.75rem));

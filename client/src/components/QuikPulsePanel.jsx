@@ -261,9 +261,7 @@ export default function QuikPulsePanel({ onLaunch }) {
 
   return (
     <section aria-label="Quick questions">
-      <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#6e6e73] dark:text-slate-400">
-        Quick check <span className="font-semibold normal-case tracking-normal text-[#86868b] dark:text-slate-500">· one tap asks the whole class</span>
-      </p>
+      <h2 className="mb-1.5 text-[13px] font-semibold leading-6 text-[#3c3c45] dark:text-white">Quick check</h2>
       <div className="grid grid-cols-6 gap-1.5">
         {pulseCards.map(renderCard)}
       </div>

@@ -636,7 +636,7 @@ export default function LiveResponseTeacher({
   }
 
   const sectionClass = overlay
-    ? 'flex h-full min-h-0 w-full flex-col overflow-hidden bg-white dark:bg-slate-900'
+    ? 'iboard-ask-panel flex h-full min-h-0 w-full flex-col overflow-hidden bg-white dark:bg-slate-900'
     : embedded
       ? 'mb-3 overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900'
       : 'mb-4 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-card dark:border-indigo-800 dark:bg-slate-900';
@@ -1053,23 +1053,23 @@ export default function LiveResponseTeacher({
 
         {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'compose' && (
           <>
-            <div className="shrink-0 border-b border-[#e5e5ea] bg-[var(--iboard-tool-surface,#f5f6f8)] px-4 pb-3 pt-4 dark:border-slate-700 dark:bg-slate-900">
+            <div className="shrink-0 px-[0.9rem] pt-[0.85rem]">
               <QuikPulsePanel onLaunch={launchQuikPulse} />
             </div>
           <div
-            className="iboard-ask-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4 scrollbar-thin"
+            className="iboard-ask-scroll min-h-0 flex-1 overflow-y-auto px-[0.9rem] pb-[1.1rem] scrollbar-thin"
             onPaste={(event) => {
               const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith('image/'));
               if (file) { event.preventDefault(); loadImage(file); }
             }}
           >
-            <div className="my-3 flex items-center gap-2" role="separator" aria-label="or write your own">
-              <span className="h-px flex-1 bg-[#e5e5ea] dark:bg-slate-700" aria-hidden />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#86868b] dark:text-slate-500">or write your own</span>
-              <span className="h-px flex-1 bg-[#e5e5ea] dark:bg-slate-700" aria-hidden />
+            <div className="my-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400" role="separator" aria-label="or write your own">
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" aria-hidden />
+              or
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" aria-hidden />
             </div>
-            <label className="block text-[0.78rem] font-semibold tracking-tight text-[#1d1d1f] dark:text-slate-200">Question</label>
-            <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+            <h2 className="mb-1.5 text-[13px] font-semibold leading-6 text-[#3c3c45] dark:text-white">Write your own</h2>
+            <input aria-label="Question" value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="Question" className="w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
             <div className="mt-3 flex flex-wrap gap-1.5">
               {TYPES.map(([value, label, hint]) => (
                 <HintWrap key={value} hint={hint} suppressed={type === value}>
@@ -1179,7 +1179,7 @@ export default function LiveResponseTeacher({
                 </div>
               </div>
             </details>
-            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e5e5ea] pt-3 dark:border-slate-700">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <HintWrap hint="Line it up to ask later in the lesson">
                 <button type="button" onClick={addToQueue} className="rounded-lg border border-[#c9d6f2] bg-[#e8eefc] px-3 py-2 text-xs font-semibold text-[#2f5fee] hover:bg-[#dde6fb]">Add to queue</button>
               </HintWrap>
