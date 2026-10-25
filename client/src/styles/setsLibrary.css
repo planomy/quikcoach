@@ -627,8 +627,8 @@ html #tuit-overlay-root .iboard-header-dock.iboard-inspector:has(.iboard-teacher
   max-width: min(42rem, calc(100vw - 4.75rem));
 }
 
-/* Folders and snapshots show a student list beside the work, so they need the wide column. */
-html #tuit-overlay-root .iboard-header-dock.iboard-library-dock:is([data-view='portfolios'], [data-view='snapshots']) {
+/* Folders show a student list beside the work, so they need the wide column. */
+html #tuit-overlay-root .iboard-header-dock.iboard-library-dock[data-view='portfolios'] {
   width: min(46rem, calc(100vw - 4.75rem));
   max-width: min(46rem, calc(100vw - 4.75rem));
 }

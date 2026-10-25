@@ -6336,9 +6336,9 @@ function TeacherDashboardInner() {
           <div className="iboard-reports-tabs mb-4" role="tablist" aria-label="Reports">
             {[
               { id: 'home', label: 'Today', onClick: goLibraryHome },
-              { id: 'portfolios', label: 'Folders', onClick: () => setLibraryView('portfolios') },
               { id: 'snapshots', label: 'Snapshots', onClick: () => setLibraryView('snapshots') },
               { id: 'insights', label: 'Insights', onClick: () => setLibraryView('insights') },
+              { id: 'portfolios', label: 'Folders', onClick: () => setLibraryView('portfolios') },
             ].map((tab) => (
               <button
                 key={tab.id}
