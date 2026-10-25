@@ -1607,12 +1607,12 @@ html.dark .iboard-nudge-strip__compose input {
 
 .iboard-command-more--start {
   box-sizing: border-box;
-  border-radius: 0;
+  border-radius: 1.15rem 0 0 0;
   padding-left: calc(var(--command-end-radius) - 1.5px);
 }
 
 .iboard-command-more--end {
-  border-radius: 0;
+  border-radius: 0 1.15rem 0 0;
 }
 
 .iboard-command-more:hover,
@@ -1802,7 +1802,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 }
 
 .iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip {
-  border-radius: 0;
+  border-radius: 1.15rem 0 0 0;
   padding-left: calc(0.38rem + var(--command-frame-outset) - var(--command-row-outset) - 1.5px);
 }
 
@@ -1820,7 +1820,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-wing-tool,
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-command-more {
-  border-radius: 0;
+  border-radius: 0 1.15rem 0 0;
   box-sizing: border-box;
   padding-right: calc(0.45rem + var(--command-frame-outset) - var(--command-row-outset) - 1.5px);
 }
