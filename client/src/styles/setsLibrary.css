@@ -634,12 +634,12 @@ html:not(.dark) #tuit-overlay-root .iboard-inspector .iboard-ask-panel {
 
 /* Folders show a student list beside the work, so they need the wide column. */
 html #tuit-overlay-root .iboard-header-dock.iboard-library-dock[data-view='portfolios'] {
-  width: min(46rem, calc(100vw - 4.75rem));
-  max-width: min(46rem, calc(100vw - 4.75rem));
+  width: min(37.8rem, calc(100vw - 4.75rem));
+  max-width: min(37.8rem, calc(100vw - 4.75rem));
 }
 
 #tuit-overlay-root .iboard-inspector .iboard-student-folders__names {
-  width: 11.5rem;
+  width: 12.6rem;
 }
 
 /* Apple-style controls in the panels: short 26-28px controls, 13px text,
