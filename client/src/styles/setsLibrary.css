@@ -627,6 +627,16 @@ html #tuit-overlay-root .iboard-header-dock.iboard-inspector:has(.iboard-teacher
   max-width: min(42rem, calc(100vw - 4.75rem));
 }
 
+/* Folders and snapshots show a student list beside the work, so they need the wide column. */
+html #tuit-overlay-root .iboard-header-dock.iboard-library-dock:is([data-view='portfolios'], [data-view='snapshots']) {
+  width: min(46rem, calc(100vw - 4.75rem));
+  max-width: min(46rem, calc(100vw - 4.75rem));
+}
+
+#tuit-overlay-root .iboard-inspector .iboard-student-folders__names {
+  width: 11.5rem;
+}
+
 /* Apple-style controls in the panels: short 26-28px controls, 13px text,
    neutral secondary buttons, one blue primary, grey when disabled. */
 #tuit-overlay-root .iboard-inspector :is(button[class*='px-'][class*='rounded'], .iboard-ai-feedback__copy, .iboard-ai-feedback__distribute):not(:is(nav, .iboard-reports-tabs, .iboard-ai-feedback__tasks, [role='tablist']) *):not([class*='flex-col']):not(:has(> * + *)) {
@@ -693,10 +703,11 @@ html:not(.dark) #tuit-overlay-root .iboard-inspector label[class*='border-dashed
 }
 
 #tuit-overlay-root .iboard-inspector .iboard-reports-tabs__tab {
+  flex: 1 1 0;
   min-width: 0;
   padding: 3px 6px;
   white-space: nowrap;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 /* No focus rings after a mouse click; keyboard focus still shows. */

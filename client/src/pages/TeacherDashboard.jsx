@@ -6295,6 +6295,7 @@ function TeacherDashboardInner() {
           role="dialog"
           aria-modal="false"
           aria-labelledby="library-panel-title"
+          data-view={libraryView}
           data-help-target={libraryView === 'feedback' ? 'ai' : 'records'}
         >
             <div className={`iboard-room-settings__chrome${libraryView !== 'home' && libraryView !== 'feedback' && libraryView !== 'portfolios' && libraryView !== 'snapshots' && libraryView !== 'insights' ? ' iboard-library-dock__chrome--back' : ''}`}>
@@ -6335,9 +6336,9 @@ function TeacherDashboardInner() {
           <div className="iboard-reports-tabs mb-4" role="tablist" aria-label="Reports">
             {[
               { id: 'home', label: 'Today', onClick: goLibraryHome },
-              { id: 'portfolios', label: 'Student folders', onClick: () => setLibraryView('portfolios') },
-              { id: 'snapshots', label: 'Class snapshots', onClick: () => setLibraryView('snapshots') },
-              { id: 'insights', label: 'Class insights', onClick: () => setLibraryView('insights') },
+              { id: 'portfolios', label: 'Folders', onClick: () => setLibraryView('portfolios') },
+              { id: 'snapshots', label: 'Snapshots', onClick: () => setLibraryView('snapshots') },
+              { id: 'insights', label: 'Insights', onClick: () => setLibraryView('insights') },
             ].map((tab) => (
               <button
                 key={tab.id}
