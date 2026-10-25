@@ -1130,6 +1130,9 @@ html.dark .iboard-brand-word {
   isolation: isolate;
   --command-frame-outset: 1.85rem;
   --command-trim: 6px;
+  --command-base: 1.5px;
+  --command-shell-r: calc((var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim)) / 2);
+  --command-white-top: calc(var(--command-band) - var(--command-rise) - var(--command-trim));
   --command-row-outset: 0.4rem;
 }
 
@@ -1607,12 +1610,12 @@ html.dark .iboard-nudge-strip__compose input {
 
 .iboard-command-more--start {
   box-sizing: border-box;
-  border-radius: 1.15rem 0 0 0;
+  border-radius: calc(var(--command-shell-r) - var(--command-white-top)) 0 0 calc(var(--command-shell-r) - var(--command-lip));
   padding-left: calc(var(--command-end-radius) - 1.5px);
 }
 
 .iboard-command-more--end {
-  border-radius: 0 1.15rem 0 0;
+  border-radius: 0 calc(var(--command-shell-r) - var(--command-white-top)) calc(var(--command-shell-r) - var(--command-lip)) 0;
 }
 
 .iboard-command-more:hover,
@@ -1705,9 +1708,9 @@ html.dark .iboard-command-more__menu button:hover {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(-0.375rem - 1px - var(--command-foot));
+  bottom: calc(-0.375rem - 1px - var(--command-foot) + var(--command-base));
   width: auto;
-  height: calc(2.34rem + 4px + var(--command-foot));
+  height: calc(2.34rem + 4px + var(--command-foot) - var(--command-base));
   margin: 0;
   gap: 0;
   padding: 0;
@@ -1802,7 +1805,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 }
 
 .iboard-command-bar__side--monitor .iboard-attention-home > :first-child .iboard-alert-chip {
-  border-radius: 1.15rem 0 0 0;
+  border-radius: calc(var(--command-shell-r) - var(--command-white-top)) 0 0 calc(var(--command-shell-r) - var(--command-lip));
   padding-left: calc(0.38rem + var(--command-frame-outset) - var(--command-row-outset) - 1.5px);
 }
 
@@ -1820,7 +1823,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-wing-tool,
 .iboard-command-bar__side--manage .iboard-manage-tools > :last-child .iboard-command-more {
-  border-radius: 0 1.15rem 0 0;
+  border-radius: 0 calc(var(--command-shell-r) - var(--command-white-top)) calc(var(--command-shell-r) - var(--command-lip)) 0;
   box-sizing: border-box;
   padding-right: calc(0.45rem + var(--command-frame-outset) - var(--command-row-outset) - 1.5px);
 }
@@ -1882,7 +1885,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   bottom: calc(-0.375rem - 1px - var(--command-foot));
   z-index: -2;
   height: calc(var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim));
-  border-radius: var(--command-end-radius) var(--command-end-radius) 0 0;
+  border-radius: var(--command-shell-r);
   box-shadow: 0 8px 18px rgba(47, 95, 238, 0.08), 0 2px 5px rgba(30, 45, 90, 0.04);
   pointer-events: none;
 }
@@ -1899,7 +1902,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   height: calc(var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim));
   overflow: hidden;
   border: 0;
-  border-radius: var(--command-end-radius) var(--command-end-radius) 0 0;
+  border-radius: var(--command-shell-r);
   background: var(--command-blue);
   box-shadow: none;
   filter: none;
@@ -1932,9 +1935,18 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 .iboard-command-frame::after {
   left: var(--command-lip);
   right: var(--command-lip);
-  bottom: 0;
-  top: calc(var(--command-band) - var(--command-rise) - var(--command-trim));
-  border-radius: 1.15rem 1.15rem 0 0;
+  bottom: var(--command-base);
+  top: var(--command-white-top);
+  border-radius:
+    calc(var(--command-shell-r) - var(--command-white-top))
+    calc(var(--command-shell-r) - var(--command-white-top))
+    calc(var(--command-shell-r) - var(--command-lip))
+    calc(var(--command-shell-r) - var(--command-lip))
+    /
+    calc(var(--command-shell-r) - var(--command-white-top))
+    calc(var(--command-shell-r) - var(--command-white-top))
+    calc(var(--command-shell-r) - var(--command-base))
+    calc(var(--command-shell-r) - var(--command-base));
 }
 
 /* Concave shoulders: flat for most of the run, then steeper until they
@@ -8237,4 +8249,11 @@ html.dark .iboard-arr-rail__teach {
 html.dark .iboard-arr-rail__teach .iboard-rail-title {
   background: #2c3a63;
   color: #c9d4f5;
+}
+
+/* Straight blue band into the dial: no shoulders. */
+.iboard-command-frame::before,
+.iboard-command-bar [data-command-id='inbox']::after,
+.iboard-command-bar .iboard-manage-tools [data-command-id='text']::after {
+  display: none;
 }
