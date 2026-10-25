@@ -623,8 +623,8 @@ html.dark #tuit-overlay-root .iboard-inspector .iboard-ai-feedback__task:hover:n
 
 /* The Inbox has a list and a conversation side by side, so it needs a wider column. */
 html #tuit-overlay-root .iboard-header-dock.iboard-inspector:has(.iboard-teacher-inbox) {
-  width: min(42rem, calc(100vw - 4.75rem));
-  max-width: min(42rem, calc(100vw - 4.75rem));
+  width: min(37.8rem, calc(100vw - 4.75rem));
+  max-width: min(37.8rem, calc(100vw - 4.75rem));
 }
 
 /* Ask sits on the same grey as Resources, with white fields on top. */
