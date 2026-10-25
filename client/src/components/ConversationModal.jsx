@@ -86,31 +86,24 @@ export function ChatCompose({
 }) {
   const localInputRef = useRef(null);
   const fieldRef = inputRef || localInputRef;
-  const reactHoverRef = useRef(false);
-  const reactCloseTimerRef = useRef(null);
+  const dockRef = useRef(null);
   const [reactOpen, setReactOpen] = useState(false);
 
-  useEffect(() => () => {
-    if (reactCloseTimerRef.current != null) window.clearTimeout(reactCloseTimerRef.current);
-  }, []);
-
-  function keepReactOpen() {
-    reactHoverRef.current = true;
-    if (reactCloseTimerRef.current != null) {
-      window.clearTimeout(reactCloseTimerRef.current);
-      reactCloseTimerRef.current = null;
-    }
-    setReactOpen(true);
-  }
-
-  function scheduleReactClose() {
-    reactHoverRef.current = false;
-    if (reactCloseTimerRef.current != null) window.clearTimeout(reactCloseTimerRef.current);
-    reactCloseTimerRef.current = window.setTimeout(() => {
-      reactCloseTimerRef.current = null;
-      if (!reactHoverRef.current) setReactOpen(false);
-    }, 160);
-  }
+  useEffect(() => {
+    if (!reactOpen) return undefined;
+    const onPointerDown = (event) => {
+      if (!dockRef.current?.contains(event.target)) setReactOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setReactOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [reactOpen]);
 
   function insertQuick(text) {
     const chunk = String(text || '');
@@ -133,14 +126,12 @@ export function ChatCompose({
   }
 
   return (
-    <div className="iboard-chat-dock">
+    <div ref={dockRef} className="iboard-chat-dock">
       {reactOpen ? (
         <div
           className="iboard-chat-react"
           role="listbox"
           aria-label="Quick replies"
-          onMouseEnter={keepReactOpen}
-          onMouseLeave={scheduleReactClose}
         >
           {CHAT_QUICK.map((chip) => (
             <HintWrap key={chip.id} hint={chip.label} prefer="above" className="w-full">
@@ -186,8 +177,6 @@ export function ChatCompose({
             className="iboard-chat-react-toggle"
             aria-expanded={reactOpen}
             aria-label={reactOpen ? 'Hide quick replies' : 'Quick replies'}
-            onMouseEnter={keepReactOpen}
-            onMouseLeave={scheduleReactClose}
             onClick={() => setReactOpen((current) => !current)}
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
