@@ -801,10 +801,11 @@ function TeacherDashboardInner() {
         const side = Math.max(0, (available - gauge) / 2);
         // The frame extends --command-frame-outset past each wing. Keep that
         // edge inside the header, so More stays on the pill when the window narrows.
-        const overhang = 18;
+        const frameBox = bar.querySelector('.iboard-command-frame');
+        const overhang = frameBox ? Math.max(0, (frameBox.offsetWidth - bar.offsetWidth) / 2) + 4 : 34;
         const room = Math.max(0, side - overhang);
         const icon = 46;
-        const moreW = 52;
+        const moreW = 40;
         const labelWidths = (selector) => [...bar.querySelectorAll(selector)].map((item) => {
           const id = item.getAttribute('data-command-id') || item.dataset.commandId || '';
           const parked = item.closest('[data-overflow="true"]');
@@ -4744,10 +4745,9 @@ function TeacherDashboardInner() {
                         aria-label="More monitor tools"
                         onClick={() => setCommandMore((open) => (open === 'monitor' ? null : 'monitor'))}
                       >
-                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m6 9 6 6 6-6" />
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m12 6-6 6 6 6M18 6l-6 6 6 6" />
                         </svg>
-                        <span className="iboard-wing-caption">More</span>
                       </button>
                         {commandMore === 'monitor' ? (
                           <span className="iboard-command-more__menu" role="menu">
@@ -5092,10 +5092,9 @@ function TeacherDashboardInner() {
                       aria-label="More class tools"
                       onClick={() => setCommandMore((open) => (open === 'manage' ? null : 'manage'))}
                     >
-                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="m6 9 6 6 6-6" />
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 6 6 6-6 6M12 6l6 6-6 6" />
                       </svg>
-                      <span className="iboard-wing-caption">More</span>
                     </button>
                       {commandMore === 'manage' ? (
                         <span className="iboard-command-more__menu" role="menu">
