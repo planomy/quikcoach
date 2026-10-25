@@ -54,8 +54,8 @@ html.dark .iboard-chat-pane__head h2 {
 
 .iboard-teacher-inbox__list {
   display: flex;
-  width: 15.75rem;
-  min-width: 13rem;
+  width: 12.6rem;
+  min-width: 10.4rem;
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid #e2e4ec;
