@@ -46,7 +46,7 @@ function readSavedAskTab() {
 }
 
 const PANEL_TAB_LABELS = {
-  ask: { title: 'Ask the class', hint: 'Send a question to your class' },
+  ask: { title: 'Ask the class' },
   respond: { title: 'Reply', hint: 'Questions waiting from students' },
   responses: { title: 'Responses', hint: 'Answers coming back from your live question' },
   sets: { title: 'Question sets', hint: 'Send a set to student inboxes, then watch their boards' },
@@ -59,8 +59,8 @@ function PanelTabButton({ active, label, badge, onClick }) {
       onClick={onClick}
       className={`relative inline-flex items-center overflow-visible rounded-t-lg px-3 py-2 text-[11px] font-bold transition sm:px-3.5 sm:text-xs ${
         active
-          ? 'z-[1] -mb-px border border-b-[#f3f2f9] border-[#d8dbe1] bg-[#2f5fee] text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
-          : 'border border-transparent bg-[#e8eefc] text-[#52525c] hover:bg-white hover:text-[#3c3c45] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
+          ? 'z-[1] -mb-px border border-b-[#f5f5f7] border-[#d8dbe1] bg-[#2f5fee] text-white shadow-sm dark:border-b-slate-900 dark:border-slate-600'
+          : 'border border-transparent bg-[#e8eefc] text-[#3a3a3c] hover:bg-white hover:text-[#1d1d1f] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
       }`}
     >
       {label}
@@ -744,7 +744,7 @@ export default function LiveResponseTeacher({
   );
 
   const askSubNav = (
-    <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-[#e4e4ea] bg-[#ebebed] px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
+    <nav aria-label="Ask options" className="flex shrink-0 items-end gap-1 border-b border-[#e5e5ea] bg-[#e8e8ed] px-3 pt-2 dark:border-slate-700 dark:bg-slate-950/50">
       {[
         ['compose', 'Ask', 'Send a quick check or write your own question'],
         ['responses', activity ? `Responses · ${responses.length}` : 'Responses', 'See the class’s answers as they come in'],
@@ -762,8 +762,8 @@ export default function LiveResponseTeacher({
           }}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             (view === 'responses' ? effectivePanelTab === 'responses' : effectivePanelTab === 'ask' && activeView === view)
-              ? 'relative z-[1] -mb-px border border-b-[#f3f2f9] border-[#d8dbe1] bg-[#2f5fee] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
-              : 'border border-[#d8dbe1] bg-white text-[#52525c] shadow-sm hover:border-[#c9d6f2] hover:bg-[#e8eefc] hover:text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
+              ? 'relative z-[1] -mb-px border border-b-[#f5f5f7] border-[#d8dbe1] bg-[#2f5fee] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-[#d8dbe1] bg-white text-[#3a3a3c] shadow-sm hover:border-[#c9d6f2] hover:bg-[#e8eefc] hover:text-[#1d1d1f] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40 dark:hover:text-white'
           }`}
         >
           {label}
@@ -780,8 +780,8 @@ export default function LiveResponseTeacher({
           }}
           className={`rounded-t-lg px-3.5 py-2 text-[11px] font-bold transition sm:px-4 sm:text-xs ${
             effectivePanelTab === 'ask' && activeView === 'featured'
-              ? 'relative z-[1] -mb-px border border-b-[#f3f2f9] border-[#d8dbe1] bg-[#2f5fee] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
-              : 'border border-[#d8dbe1] bg-white text-[#52525c] shadow-sm hover:border-[#c9d6f2] hover:bg-[#e8eefc] hover:text-[#3c3c45] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40'
+              ? 'relative z-[1] -mb-px border border-b-[#f5f5f7] border-[#d8dbe1] bg-[#2f5fee] text-white shadow-sm dark:border-b-slate-900 dark:border-indigo-500'
+              : 'border border-[#d8dbe1] bg-white text-[#3a3a3c] shadow-sm hover:border-[#c9d6f2] hover:bg-[#e8eefc] hover:text-[#1d1d1f] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/40'
           }`}
         >
           Featured · {featuredWall.length}
@@ -812,20 +812,19 @@ export default function LiveResponseTeacher({
   return (
     <section className={sectionClass}>
       {overlay && (
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/[0.08] bg-transparent px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/35">
-          <div>
-            <p className="text-xs font-bold text-[#3c3c45] dark:text-indigo-100">{panelMeta?.title || 'Ask the room'}</p>
-            <p className="text-[11px] text-[#6b6b78]">
-              {effectivePanelTab === 'responses' && activity ? responseSummary : panelMeta?.hint || (activity ? responseSummary : 'Send questions and review student answers')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {message && <span aria-live="polite" className="max-w-[12rem] truncate rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#2f5fee] dark:bg-indigo-950 dark:text-indigo-200">{message}</span>}
+        <>
+          <div className="iboard-room-settings__chrome">
+            <h2>{panelMeta?.title || 'Ask the class'}</h2>
             {typeof onClose === 'function' && (
-              <CloseButton onClick={onClose} aria-label="Close" />
+              <div className="iboard-room-settings__chrome-close">
+                <CloseButton onClick={onClose} aria-label="Close" />
+              </div>
             )}
           </div>
-        </div>
+          {message && (
+            <p aria-live="polite" className="shrink-0 truncate border-b border-black/[0.06] px-4 py-1.5 text-center text-[11px] font-medium text-[#6e6e73] dark:border-slate-700 dark:text-slate-300">{message}</p>
+          )}
+        </>
       )}
 
       {!embedded && !overlay && (
@@ -1054,7 +1053,7 @@ export default function LiveResponseTeacher({
 
         {(!usingPanelTabs || effectivePanelTab === 'ask') && activeView === 'compose' && (
           <>
-            <div className="shrink-0 border-b border-[#e4e4ea] bg-[var(--iboard-tool-surface,#f5f6f8)] px-4 pb-3 pt-4 dark:border-slate-700 dark:bg-slate-900">
+            <div className="shrink-0 border-b border-[#e5e5ea] bg-[var(--iboard-tool-surface,#f5f6f8)] px-4 pb-3 pt-4 dark:border-slate-700 dark:bg-slate-900">
               <QuikPulsePanel onLaunch={launchQuikPulse} />
             </div>
           <div
@@ -1065,16 +1064,16 @@ export default function LiveResponseTeacher({
             }}
           >
             <div className="my-3 flex items-center gap-2" role="separator" aria-label="or write your own">
-              <span className="h-px flex-1 bg-[#e4e4ea] dark:bg-slate-700" aria-hidden />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a8a96] dark:text-slate-500">or write your own</span>
-              <span className="h-px flex-1 bg-[#e4e4ea] dark:bg-slate-700" aria-hidden />
+              <span className="h-px flex-1 bg-[#e5e5ea] dark:bg-slate-700" aria-hidden />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#86868b] dark:text-slate-500">or write your own</span>
+              <span className="h-px flex-1 bg-[#e5e5ea] dark:bg-slate-700" aria-hidden />
             </div>
-            <label className="block text-[0.78rem] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-200">Question</label>
-            <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border border-[#e2e2e8] bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+            <label className="block text-[0.78rem] font-semibold tracking-tight text-[#1d1d1f] dark:text-slate-200">Question</label>
+            <input value={prompt} onChange={(event) => setPrompt(event.target.value.slice(0, 500))} placeholder="What do you think?" className="mt-1 w-full rounded-xl border border-[#d2d2d7] bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
             <div className="mt-3 flex flex-wrap gap-1.5">
               {TYPES.map(([value, label, hint]) => (
                 <HintWrap key={value} hint={hint} suppressed={type === value}>
-                  <button type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${type === value ? 'border-transparent bg-[#2f5fee] text-white' : 'border-[#e2e2e8] bg-white text-[#3c3c45] hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50'}`}>{label}</button>
+                  <button type="button" onClick={() => { setType(value); setCorrectAnswer(''); }} className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${type === value ? 'border-transparent bg-[#2f5fee] text-white' : 'border-[#d2d2d7] bg-white text-[#1d1d1f] hover:border-[#2f5fee] hover:bg-[#e8eefc] hover:text-[#1f3d99] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-indigo-400 dark:hover:bg-indigo-950/50'}`}>{label}</button>
                 </HintWrap>
               ))}
             </div>
@@ -1090,28 +1089,28 @@ export default function LiveResponseTeacher({
                       setCorrectAnswer((current) => (current && current === option.trim() ? next.trim() : current));
                     }}
                     placeholder={`Choice ${String.fromCharCode(65 + index)}`}
-                    className="rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-2 text-sm outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    className="rounded-lg border border-[#d2d2d7] bg-white px-2.5 py-2 text-sm outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                   />
                 ))}
               </div>
             )}
             {type === 'short' ? (
-              <label className="mt-3 block text-[0.78rem] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-200">
-                Expected answer <span className="font-medium text-[#8a8a96]">optional</span>
+              <label className="mt-3 block text-[0.78rem] font-semibold tracking-tight text-[#1d1d1f] dark:text-slate-200">
+                Expected answer <span className="font-medium text-[#86868b]">optional</span>
                 <input
                   value={correctAnswer}
                   onChange={(event) => setCorrectAnswer(event.target.value.slice(0, 120))}
                   placeholder="Shown when you reveal the answer"
-                  className="mt-1 block w-full rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-2 text-sm font-normal outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="mt-1 block w-full rounded-lg border border-[#d2d2d7] bg-white px-2.5 py-2 text-sm font-normal outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
               </label>
             ) : type === 'rating' ? null : (
-              <label className="mt-3 block text-[0.78rem] font-semibold tracking-tight text-[#3c3c45] dark:text-slate-200">
-                Correct answer <span className="font-medium text-[#8a8a96]">optional</span>
+              <label className="mt-3 block text-[0.78rem] font-semibold tracking-tight text-[#1d1d1f] dark:text-slate-200">
+                Correct answer <span className="font-medium text-[#86868b]">optional</span>
                 <select
                   value={correctAnswer}
                   onChange={(event) => setCorrectAnswer(event.target.value)}
-                  className="mt-1 block w-full rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-2 text-sm font-normal outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="mt-1 block w-full rounded-lg border border-[#d2d2d7] bg-white px-2.5 py-2 text-sm font-normal outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 >
                   <option value="">No correct answer / opinion poll</option>
                   {type === 'choice'
@@ -1126,19 +1125,19 @@ export default function LiveResponseTeacher({
                       ))}
                 </select>
                 {type === 'choice' && !options.some((option) => option.trim()) && (
-                  <span className="mt-1 block text-[11px] font-medium text-[#8a8a96]">Fill in choices above to pick a correct answer.</span>
+                  <span className="mt-1 block text-[11px] font-medium text-[#86868b]">Fill in choices above to pick a correct answer.</span>
                 )}
               </label>
             )}
             <details className="group mt-3">
-              <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1 text-[11px] font-semibold text-[#6b6b78] hover:text-[#3c3c45] dark:text-slate-400 dark:hover:text-slate-200 [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center gap-1.5 py-1 text-[11px] font-semibold text-[#6e6e73] hover:text-[#1d1d1f] dark:text-slate-400 dark:hover:text-slate-200 [&::-webkit-details-marker]:hidden">
                 <span className="inline-block text-[10px] transition group-open:rotate-90" aria-hidden>▸</span>
                 Settings
               </summary>
-              <div className="mt-2 space-y-3 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
+              <div className="mt-2 space-y-3 border-t border-[#e5e5ea] pt-3 dark:border-slate-700">
                 <div className="flex flex-wrap items-center gap-2">
                   <HintWrap hint="Show a picture with the question (or paste one)">
-                    <label className="cursor-pointer rounded-lg border border-[#c9d6f2] bg-[#e8eefc] px-2.5 py-1.5 text-xs font-semibold text-[#2f5fee] hover:bg-[#e0dff2] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                    <label className="cursor-pointer rounded-lg border border-[#c9d6f2] bg-[#e8eefc] px-2.5 py-1.5 text-xs font-semibold text-[#2f5fee] hover:bg-[#dde6fb] dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
                       {imageBusy ? 'Preparing…' : imageUrl ? 'Replace image' : 'Add image'}
                       <input type="file" accept="image/*" className="hidden" onChange={(event) => loadImage(event.target.files?.[0])} />
                     </label>
@@ -1154,14 +1153,14 @@ export default function LiveResponseTeacher({
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <HintWrap hint="Students can skip this question">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-[#1d1d1f] dark:text-slate-200">
                       <input type="checkbox" checked={optional} onChange={(event) => setOptional(event.target.checked)} className="h-3.5 w-3.5 accent-[#2f5fee]" /> Optional
                     </label>
                   </HintWrap>
                   <HintWrap hint="Close answers automatically after this time">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-[#1d1d1f] dark:text-slate-200">
                     Timer
-                    <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="rounded-lg border border-[#e2e2e8] bg-white px-2 py-1 text-xs font-medium outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950">
+                    <select value={timerSeconds} onChange={(event) => setTimerSeconds(Number(event.target.value))} className="rounded-lg border border-[#d2d2d7] bg-white px-2 py-1 text-xs font-medium outline-none focus:border-[#2f5fee] dark:border-slate-700 dark:bg-slate-950">
                       <option value="0">None</option>
                       <option value="15">15 sec</option>
                       <option value="30">30 sec</option>
@@ -1172,7 +1171,7 @@ export default function LiveResponseTeacher({
                   </HintWrap>
                   {type === 'short' && (
                     <HintWrap hint="Hide names when you show answers to the class">
-                      <label className="flex items-center gap-2 text-xs font-semibold text-[#3c3c45] dark:text-slate-200">
+                      <label className="flex items-center gap-2 text-xs font-semibold text-[#1d1d1f] dark:text-slate-200">
                         <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} className="h-3.5 w-3.5 accent-[#2f5fee]" /> Anonymous when featured
                       </label>
                     </HintWrap>
@@ -1180,9 +1179,9 @@ export default function LiveResponseTeacher({
                 </div>
               </div>
             </details>
-            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e4e4ea] pt-3 dark:border-slate-700">
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e5e5ea] pt-3 dark:border-slate-700">
               <HintWrap hint="Line it up to ask later in the lesson">
-                <button type="button" onClick={addToQueue} className="rounded-lg border border-[#c9d6f2] bg-[#e8eefc] px-3 py-2 text-xs font-semibold text-[#2f5fee] hover:bg-[#e0dff2]">Add to queue</button>
+                <button type="button" onClick={addToQueue} className="rounded-lg border border-[#c9d6f2] bg-[#e8eefc] px-3 py-2 text-xs font-semibold text-[#2f5fee] hover:bg-[#dde6fb]">Add to queue</button>
               </HintWrap>
               <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                 <HintWrap hint="Ask the class and show the answers on the screen">
