@@ -8,23 +8,6 @@ function initialFor(name) {
   return text ? text.slice(0, 1).toUpperCase() : '?';
 }
 
-function formatInboxTime(at) {
-  const ms = Number(at) || 0;
-  if (!ms) return '';
-  const date = new Date(ms);
-  if (!Number.isFinite(date.getTime())) return '';
-  const now = new Date();
-  if (date.toDateString() === now.toDateString()) {
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  }
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-}
-
-function previewFor(row) {
-  if (row.previewText) return row.previewText;
-  return row.lastText || 'No messages yet';
-}
-
 function queueItemsFor(row) {
   const chat = Array.isArray(row.questions) ? row.questions : [];
   const hands = (row.hands || []).map((hand) => ({
@@ -350,19 +333,8 @@ export default function TeacherInboxPanel({
                   onClick={() => selectThread(row)}
                 >
                   <span className="iboard-chat-avatar" aria-hidden="true">{initialFor(row.studentName)}</span>
-                  <span>
-                    <span className="iboard-teacher-inbox__name">{row.studentName}</span>
-                    <span className="iboard-teacher-inbox__preview">
-                      {previewFor(row)}
-                      {row.extra > 0 ? <span className="iboard-teacher-inbox__more"> +{row.extra}</span> : null}
-                    </span>
-                    {row.waiting || formatInboxTime(row.lastAt) ? (
-                      <span className="iboard-teacher-inbox__meta">
-                        {row.waiting ? <span className="iboard-teacher-inbox__dot" aria-hidden="true" /> : null}
-                        <span className="iboard-teacher-inbox__time">{formatInboxTime(row.lastAt)}</span>
-                      </span>
-                    ) : null}
-                  </span>
+                  <span className="iboard-teacher-inbox__name">{row.studentName}</span>
+                  {row.waiting ? <span className="iboard-teacher-inbox__dot" aria-label="Unread" /> : null}
                 </button>
               </div>
             );

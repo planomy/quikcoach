@@ -665,3 +665,87 @@ html.dark .iboard-chat-urgent-toggle[aria-pressed='true'] {
   font-weight: 700;
   color: #dc2626;
 }
+
+/* Teacher Inbox: one line per student, like a Messages sidebar. */
+.iboard-teacher-inbox__row {
+  align-items: center;
+  padding: 0.32rem 0.7rem 0.32rem 0.55rem;
+  border-bottom: 0;
+}
+
+.iboard-teacher-inbox__check {
+  padding-top: 0;
+}
+
+.iboard-teacher-inbox__open {
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.iboard-teacher-inbox__open .iboard-chat-avatar {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.62rem;
+}
+
+.iboard-teacher-inbox__name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.iboard-teacher-inbox__row.is-unread .iboard-teacher-inbox__name {
+  font-weight: 650;
+}
+
+/* Light mode follows the panels: grey list, neutral selection, white conversation. */
+html:not(.dark) .iboard-teacher-inbox__list {
+  border-right-color: #e5e5ea;
+  background: #f5f5f7;
+}
+
+html:not(.dark) .iboard-teacher-inbox__toolbar {
+  border-bottom-color: #e5e5ea;
+}
+
+html:not(.dark) .iboard-teacher-inbox__select-all {
+  color: #1d1d1f;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+html:not(.dark) .iboard-teacher-inbox__select-all:hover {
+  color: #000000;
+}
+
+html:not(.dark) .iboard-teacher-inbox__row:hover,
+html:not(.dark) .iboard-teacher-inbox__row.is-checked {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+html:not(.dark) .iboard-teacher-inbox__row.is-on,
+html:not(.dark) .iboard-teacher-inbox__row.is-quiet.is-on {
+  background: #e3e3e8;
+}
+
+html:not(.dark) .iboard-teacher-inbox__name {
+  color: #1d1d1f;
+}
+
+html:not(.dark) .iboard-teacher-inbox__thread {
+  background: #ffffff;
+}
+
+html:not(.dark) .iboard-teacher-inbox__thread .iboard-chat-pane__head {
+  border-bottom-color: #e5e5ea;
+}
+
+html:not(.dark) .iboard-teacher-inbox__thread .iboard-chat-bubble--theirs {
+  background: #e9e9eb;
+  color: #1d1d1f;
+  box-shadow: none;
+}
+
+html:not(.dark) .iboard-teacher-inbox__thread .iboard-chat-time,
+html:not(.dark) .iboard-teacher-inbox__empty {
+  color: #86868b;
+}
