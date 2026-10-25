@@ -1007,6 +1007,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-header-actions {
   place-items: center;
   min-width: 0;
   height: 100%;
+  box-sizing: border-box;
+  padding-top: 0.725rem;
 }
 
 .iboard-teacher-header-rail .iboard-brand-logo {
@@ -1064,7 +1066,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-more-button:not([data-active='tru
 .iboard-teacher-header-main--command > .iboard-header-meta,
 .iboard-teacher-header-main--command > .iboard-header-actions {
   align-self: center;
-  margin-top: -0.725rem;
+  margin-top: 0;
 }
 
 .iboard-brand--stacked,
@@ -1359,7 +1361,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 
 .iboard-command-bar .iboard-alert-chip__name,
 .iboard-command-bar .iboard-wing-caption {
-  font-size: 0.52rem;
+  font-size: calc(0.52rem + 1pt);
 }
 
 .iboard-command-bar,
@@ -2237,7 +2239,7 @@ html.iboard-popout-dragging * {
   width: 17rem;
   overflow: hidden;
   border: 1px solid #c1c2e7;
-  border-radius: 0.85rem;
+  border-radius: 12px;
   background: #ffffff;
   box-shadow: 0 14px 34px rgba(31, 61, 153, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
 }
@@ -2433,7 +2435,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 .iboard-class-gauge__caption {
   margin-top: 0.14rem;
-  font-size: 0.5rem;
+  font-size: calc(0.5rem + 1pt);
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -2445,7 +2447,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   align-items: center;
   gap: 0.18rem;
   margin-top: 0.22rem;
-  font-size: 0.54rem;
+  font-size: calc(0.54rem + 1pt);
   font-weight: 600;
   color: #6b6b78;
   white-space: nowrap;
@@ -3178,7 +3180,7 @@ html.dark .iboard-board-empty__code {
 
 /* Share / Ask / AI centre in the space above Reports and Settings, which stay at the bottom. */
 .iboard-arr-rail > :first-child {
-  margin-top: auto;
+  margin-top: 0.75rem;
 }
 
 .iboard-arr-rail .iboard-arr-rail__tools {
@@ -3192,7 +3194,7 @@ html.dark .iboard-board-empty__code {
   --teach-body: #ffffff;
   --teach-rim: 2px;
   --teach-rim-bottom: 1px;
-  --teach-radius: 0.85rem;
+  --teach-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -3641,7 +3643,7 @@ html.dark .iboard-tour__close:hover {
   display: block;
   width: 100%;
   text-align: center;
-  font-size: 0.52rem;
+  font-size: calc(0.52rem + 1pt);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
@@ -3815,7 +3817,7 @@ html:not(.dark) .iboard-teacher-panel-list .iboard-teacher-card .iboard-teacher-
 .iboard-student-board {
   min-width: 0;
   overflow: auto;
-  padding: 0.75rem 0.9rem 0.9rem 1rem;
+  padding: 1rem;
 }
 
 .iboard-student-board-stack {

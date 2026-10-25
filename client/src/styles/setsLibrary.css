@@ -531,7 +531,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 
 :is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) :is(button, a)[class*='py-2'][class*='rounded-'],
 :is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) :is(button, a)[class*='py-3'][class*='rounded-'] {
-  border-radius: 7px;
+  border-radius: 6px;
 }
 
 :is(.iboard-tool-popover, .iboard-menu, #tuit-overlay-root .iboard-header-dock) :is(h2, h3) {
@@ -547,7 +547,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 .iboard-room-settings__primary,
 .iboard-room-settings__secondary {
   min-height: 1.65rem;
-  border-radius: 7px;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
 }
@@ -566,7 +566,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
 
 .iboard-breakout-assign__start {
   min-height: 1.6rem;
-  border-radius: 7px;
+  border-radius: 6px;
 }
 
 .iboard-menu {
@@ -577,7 +577,7 @@ div.p-4:has(#sets-subject-filter) .scrollbar-thin > .grid {
   min-height: 1.65rem;
   padding-top: 0.2rem;
   padding-bottom: 0.2rem;
-  border-radius: 7px;
+  border-radius: 6px;
   font-size: 13px;
 }
 
