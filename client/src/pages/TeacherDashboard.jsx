@@ -5747,6 +5747,7 @@ function TeacherDashboardInner() {
             const monitoring = monitoredIds.has(Number(s.id));
             const isAway = isAwayAlert(s);
             const noTyping = isNoTyping(s);
+            const stalled = isAway || noTyping || isNotStartedAlert(s);
             const inboxWaiting = studentHasInboxWait(s, pendingHandByStudentId, noteReceiptByStudentId);
             const cardEmpty = !displayText && !s.image_url;
             const noteStatus = noteReceiptByStudentId[s.id] || '';
@@ -5767,7 +5768,7 @@ function TeacherDashboardInner() {
                 } : undefined}
                 className={`iboard-student-card group/student-card relative flex min-h-0 flex-col overflow-hidden rounded-xl p-3 ${
                   cardView === 'overview' ? 'iboard-student-card--overview' : cardView === 'all' ? 'iboard-student-card--fit' : ''
-                } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${
+                } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${stalled && !handUp ? 'iboard-student-card--stalled' : ''} ${
                   handUp
                     ? 'cursor-pointer border border-[#2f5fee] bg-[#e8eefc] shadow-[inset_4px_0_0_0_#2f5fee] dark:border-indigo-400 dark:bg-indigo-950/70 dark:shadow-[inset_4px_0_0_0_#818cf8] dark:ring-1 dark:ring-indigo-500/40'
                     : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-[#14181e]'} ${
