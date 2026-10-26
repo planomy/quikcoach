@@ -485,7 +485,7 @@ export default function RichTextEditor({
             </span>
           )}
         </div>
-        <div className="relative">
+        <div className="iboard-student-writing-body relative">
           {empty && !focused && (
             <div className="iboard-student-writing-placeholder pointer-events-none absolute">
               {disabled ? disabledMessage : placeholder}

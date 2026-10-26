@@ -583,6 +583,16 @@ html.iboard-student-splitting iframe {
     flex-direction: column;
   }
 
+  /* The editor sits inside a portal mount, so the card and its body need the
+     flex chain too, or the page grows past the card and wheel/touch cannot scroll it. */
+  .iboard-student-workspace .iboard-student-writing-pane .iboard-student-writing-card:not(.hidden),
+  .iboard-student-workspace .iboard-student-writing-pane .iboard-student-writing-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   .iboard-student-workspace main [role='textbox'][contenteditable='true'],
   .iboard-student-workspace main [role='textbox'][contenteditable='false'] {
     min-height: 0;
