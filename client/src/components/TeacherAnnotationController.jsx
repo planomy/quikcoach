@@ -1032,6 +1032,7 @@ export default function TeacherAnnotationController() {
     setPending(null);
     setPendingWash(null);
     setNamedHighlight(PENDING_HIGHLIGHT_NAME, []);
+    window.getSelection?.()?.removeAllRanges?.();
     setDraftNote('');
     setQuickStack([]);
     draftNoteLatestRef.current = '';
