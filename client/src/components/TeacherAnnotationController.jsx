@@ -805,6 +805,12 @@ export default function TeacherAnnotationController() {
       const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
       if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
       const pane = target?.closest?.('[data-student-writing-pane]');
+      // iPad Safari keeps a selection after a tap elsewhere, so a tap outside
+      // the writing cancels the comment and drops the highlight itself.
+      if (!pane && pendingRef.current) {
+        clearPendingComposer();
+        window.getSelection?.()?.removeAllRanges?.();
+      }
       selectingInPaneRef.current = !!pane;
       selectIntentRef.current = pane
         ? beginMouseSelectIntent(event, contentRootForPane(pane) || pane)
