@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { ThemeProvider } from './lib/theme.jsx';
 import './lib/wordTargetControl.js';
+import '@fontsource-variable/dm-sans/opsz.css';
+import '@fontsource-variable/dm-sans/opsz-italic.css';
+import '@fontsource-variable/outfit';
 import './index.css';
 import './styles/setsLibrary.css';
 

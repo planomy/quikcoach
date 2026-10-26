@@ -5,8 +5,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Outfit', 'system-ui', 'sans-serif'],
-        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Outfit Variable"', 'Outfit', 'system-ui', 'sans-serif'],
+        sans: ['"DM Sans Variable"', '"DM Sans"', 'system-ui', 'sans-serif'],
       },
       colors: {
         ink: { 900: '#0f172a' },
