@@ -340,6 +340,7 @@ export default function TeacherAnnotationController() {
   const popupPinnedRef = useRef(false);
   const markersRef = useRef([]);
   const pendingRef = useRef(null);
+  const dismissedKeyRef = useRef('');
   const hoverCloseTimerRef = useRef(null);
   const openPlaceSideRef = useRef(null);
   const openPlaceKeyRef = useRef('');
@@ -735,6 +736,7 @@ export default function TeacherAnnotationController() {
     function capturePendingFromSelection({ allowCollapsedClear = true } = {}) {
       const selection = window.getSelection?.();
       if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) {
+        dismissedKeyRef.current = '';
         if (allowCollapsedClear) clearPendingComposer();
         return;
       }
@@ -746,6 +748,11 @@ export default function TeacherAnnotationController() {
       const fullText = plainTextFromElement(writingRoot);
       const offsets = selectionOffsetsWithin(writingRoot, fullText);
       if (!offsets || offsets.quote.length > 1200) return;
+      if (dismissedKeyRef.current === `${card.studentId}:${offsets.start}:${offsets.end}`) {
+        selection.removeAllRanges();
+        return;
+      }
+      dismissedKeyRef.current = '';
       const existing = pendingRef.current;
       if (
         existing
@@ -801,16 +808,28 @@ export default function TeacherAnnotationController() {
       dismissCommentPopup();
     }
 
+    // iPad Safari keeps a selection after a tap elsewhere and hands it back on
+    // pointerup, so a tap outside the writing cancels the comment and that
+    // exact passage is ignored until the selection changes.
+    function cancelOnTapAway(target) {
+      if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog], [data-student-writing-pane]')) return;
+      const current = pendingRef.current;
+      if (!current) return;
+      dismissedKeyRef.current = pendingRangeKey(current);
+      clearPendingComposer();
+      window.getSelection?.()?.removeAllRanges?.();
+    }
+
+    function onTouchStart(event) {
+      const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
+      cancelOnTapAway(target);
+    }
+
     function onPointerDown(event) {
       const target = event.target?.nodeType === 1 ? event.target : event.target?.parentElement;
       if (target?.closest?.('[data-teacher-annotation-ui], [data-iboard-dialog]')) return;
       const pane = target?.closest?.('[data-student-writing-pane]');
-      // iPad Safari keeps a selection after a tap elsewhere, so a tap outside
-      // the writing cancels the comment and drops the highlight itself.
-      if (!pane && pendingRef.current) {
-        clearPendingComposer();
-        window.getSelection?.()?.removeAllRanges?.();
-      }
+      cancelOnTapAway(target);
       selectingInPaneRef.current = !!pane;
       selectIntentRef.current = pane
         ? beginMouseSelectIntent(event, contentRootForPane(pane) || pane)
@@ -851,10 +870,12 @@ export default function TeacherAnnotationController() {
       }, 90);
     }
     document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
     document.addEventListener('pointerup', onPointerUp);
     document.addEventListener('touchend', onPointerUp, { passive: true });
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('touchstart', onTouchStart);
       document.removeEventListener('pointerup', onPointerUp);
       document.removeEventListener('touchend', onPointerUp);
       if (selectionSettleRef.current != null) window.clearTimeout(selectionSettleRef.current);
