@@ -1,7 +1,17 @@
-/** Student writing follows the teacher screen. A refresh keeps the room open briefly. */
+/**
+ * Student writing opens when a teacher joins the room and stays open until the
+ * teacher moves their board to another room. Freeze and modelling lock it separately.
+ * A dropped or sleeping teacher tab never locks the class out.
+ * The open flag is stored on the room so a server restart keeps it.
+ */
 
-const GRACE_MS = 20_000;
-const leaveTimers = new Map();
+let readOpen = null;
+let writeOpen = null;
+
+export function configureWritingGate(db) {
+  readOpen = db.prepare('SELECT writing_open FROM rooms WHERE code = ?');
+  writeOpen = db.prepare('UPDATE rooms SET writing_open = ? WHERE code = ?');
+}
 
 function roomCode(code) {
   return String(code ?? '')
@@ -22,45 +32,29 @@ export function roomHasTeacher(io, code) {
   return false;
 }
 
-/** True while a teacher is in the room, and for a few seconds after the last one drops. */
+/** True once a teacher has opened the room, until they move their board to another room. */
 export function writingOpen(io, code) {
   const c = roomCode(code);
   if (c.length !== 4) return false;
-  if (leaveTimers.has(c)) return true;
-  return roomHasTeacher(io, c);
+  if (roomHasTeacher(io, c)) return true;
+  return Number(readOpen?.get(c)?.writing_open) === 1;
 }
 
 export function noteTeacherArrived(code) {
   const c = roomCode(code);
-  const timer = leaveTimers.get(c);
-  if (!timer) return;
-  clearTimeout(timer);
-  leaveTimers.delete(c);
+  if (c.length !== 4) return;
+  writeOpen?.run(1, c);
 }
 
 /**
- * Last teacher left this room.
- * Switching to another room locks immediately. A dropped connection waits out the grace.
+ * The last teacher left this room. Moving the board to another room locks it.
+ * A dropped connection leaves writing open.
  */
 export function noteTeacherLeft(io, code, { immediate = false, onLock }) {
   const c = roomCode(code);
   if (c.length !== 4) return;
-  if (roomHasTeacher(io, c)) {
-    noteTeacherArrived(c);
-    return;
-  }
-  const existing = leaveTimers.get(c);
-  if (existing) {
-    clearTimeout(existing);
-    leaveTimers.delete(c);
-  }
-  if (immediate) {
-    onLock?.(c);
-    return;
-  }
-  const timer = setTimeout(() => {
-    leaveTimers.delete(c);
-    if (!roomHasTeacher(io, c)) onLock?.(c);
-  }, GRACE_MS);
-  leaveTimers.set(c, timer);
+  if (roomHasTeacher(io, c)) return;
+  if (!immediate) return;
+  writeOpen?.run(0, c);
+  onLock?.(c);
 }

@@ -24,7 +24,7 @@ import {
 } from './breakouts.js';
 import { normalizeRecipientIds, isTargetedMaterial, materialVisibleTo, materialHistoryForStudent } from './materialRecipients.js';
 import { insightPresence, setAwayCheck } from './insights.js';
-import { noteTeacherArrived, noteTeacherLeft, writingOpen } from './writingGate.js';
+import { configureWritingGate, noteTeacherArrived, noteTeacherLeft, writingOpen } from './writingGate.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3001;
@@ -43,6 +43,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '48mb' }));
 
 const db = openDatabase();
+configureWritingGate(db);
 try {
   db.prepare(`UPDATE rooms SET modelling_active = 0 WHERE modelling_active != 0`).run();
 } catch (error) {
@@ -3219,15 +3220,6 @@ io.on('connection', (socket) => {
     if (sid) removeStudentPresence(sid, socket.id);
     if (sid && code && wasAway && !isStudentConnected(sid)) insightPresence(code, sid, false);
     if (sid && code) disconnectTrail(code, sid);
-    if (socket.data.role === 'teacher' && code) {
-      noteTeacherLeft(io, code, {
-        immediate: false,
-        onLock: (leftCode) => {
-          endModelling(leftCode);
-          broadcastRoom(leftCode);
-        },
-      });
-    }
     if (code) {
       if (sid && (wasAway || !isStudentConnected(sid))) emitStudentPresence(code, sid);
       io.to(teacherSocketName(code)).emit('live:teacher', buildTeacherLivePayload(code));

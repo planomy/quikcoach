@@ -87,6 +87,11 @@ export function migrate(db) {
     /* column already exists */
   }
   try {
+    db.exec(`ALTER TABLE rooms ADD COLUMN writing_open INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    /* column already exists */
+  }
+  try {
     db.exec(`ALTER TABLE rooms ADD COLUMN class_wall_active INTEGER NOT NULL DEFAULT 0`);
   } catch {
     /* column already exists */
