@@ -54,8 +54,11 @@ html :is(.iboard-teacher-canvas, .iboard-student-canvas) {
   /* Beat Tailwind body utilities (bg-slate-50) so the canvas tint is edge-to-edge. */
   background-color: var(--iboard-canvas) !important;
 }
-html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) {
+html:not(.dark) .iboard-student-canvas {
   background-color: #e6e8ec !important;
+}
+html:not(.dark) .iboard-teacher-canvas {
+  background-color: #ffffff !important;
 }
 /* Teacher and student headers are a flat white edge. */
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header {

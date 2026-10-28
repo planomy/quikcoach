@@ -4046,7 +4046,7 @@ function TeacherDashboardInner() {
                 placeholder="0000"
                 inputMode="numeric"
                 aria-label="Room code"
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none ring-[#423bb6] focus:border-[#423bb6] focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
                 maxLength={4}
               />
               <button
@@ -4066,7 +4066,7 @@ function TeacherDashboardInner() {
               type="button"
               onClick={() => createOrJoin(undefined, { showJoinScreen: true })}
               disabled={codeInput.length !== 4}
-              className="mt-4 w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-4 w-full rounded-xl bg-[#423bb6] py-3 text-sm font-semibold text-white hover:bg-[#352fa0] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Open room
             </button>
@@ -4083,7 +4083,7 @@ function TeacherDashboardInner() {
                   }
                   setTimeout(() => setCopyToast(''), 2500);
                 }}
-                className="font-medium text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline dark:text-slate-300"
+                className="font-medium text-slate-600 underline-offset-2 hover:text-[#423bb6] hover:underline dark:text-slate-300"
               >
                 Copy student link
               </button>
@@ -4092,13 +4092,13 @@ function TeacherDashboardInner() {
                 type="button"
                 onClick={() => createOrJoin(undefined, { skipJoinScreen: true })}
                 disabled={codeInput.length !== 4}
-                className="font-medium text-slate-600 underline-offset-2 hover:text-indigo-600 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:no-underline dark:text-slate-300"
+                className="font-medium text-slate-600 underline-offset-2 hover:text-[#423bb6] hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:no-underline dark:text-slate-300"
               >
                 Go straight to room
               </button>
             </div>
             {copyToast && (
-              <p className="mt-3 text-sm font-medium text-[#2f5fee] dark:text-indigo-300">{copyToast}</p>
+              <p className="mt-3 text-sm font-medium text-[#423bb6] dark:text-indigo-300">{copyToast}</p>
             )}
           </div>
         </div>
@@ -4355,11 +4355,11 @@ function TeacherDashboardInner() {
     : [];
   const attentionHint = (names, on, title = '') => (
     <span className="block min-w-[9rem]">
-      <span className="block bg-[#1f3d99] px-2.5 py-1 text-[9px] font-semibold leading-snug text-white dark:bg-[#2f5fee]">
+      <span className="block bg-[#12109a] px-2.5 py-1 text-[9px] font-semibold leading-snug text-white dark:bg-[#1a18d4]">
         {title ? <span className="block font-extrabold">{title}</span> : null}
         <span className="block">{on ? 'Click to show all cards' : 'Click to bring to the top'}</span>
       </span>
-      <span className="block px-2.5 py-1.5 text-[#2f5fee] dark:text-indigo-200">
+      <span className="block px-2.5 py-1.5 text-[#1a18d4] dark:text-indigo-200">
         {names.slice(0, 8).map((name, n) => (
           <span key={`${name}-${n}`} className="block truncate">{name}</span>
         ))}
@@ -4681,7 +4681,7 @@ function TeacherDashboardInner() {
         <div className="iboard-teacher-header-bar relative">
           <div className="iboard-teacher-header-rail">
             <div className="iboard-brand iboard-brand--stacked shrink-0" aria-label="TUIT">
-              <img src="/brand/tuit-corner.png?v=8" alt="" className="iboard-brand-corner" />
+              <img src="/brand/tuit-corner.png?v=9" alt="" className="iboard-brand-corner" />
             </div>
           </div>
           <div className="iboard-teacher-header-gutter" aria-hidden="true" />
@@ -5303,6 +5303,7 @@ function TeacherDashboardInner() {
       <div className="iboard-teacher-shell relative z-[1] min-h-0 flex-1">
         <nav ref={teacherToolsNavRef} className="iboard-arr-rail" aria-label="Teacher tools">
           <div className="iboard-arr-rail__teach">
+            <span className="iboard-arr-rail__curve" aria-hidden="true" />
           <div ref={tourShareRef} className="iboard-arr-rail__add" aria-label="Share with class">
             <span className="iboard-command-bar__title iboard-rail-title">Teach class</span>
             <HintWrap hint="Send resources to students" prefer="right" suppressed={addCardOpen || (toolsPanelOpen && toolsTab === 'sets')}>
@@ -5774,7 +5775,7 @@ function TeacherDashboardInner() {
                     : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-[#14181e]'} ${
                         monitoring
                           ? 'border border-[#2f5fee] ring-2 ring-[#c9d6f2] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : 'border border-[#e5e5ea] dark:border-slate-600'
+                          : 'border border-[#b4b5b8] dark:border-slate-600'
                       }`
                 }`}
               >

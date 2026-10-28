@@ -229,11 +229,15 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
   max-height: 100dvh;
 }
 
-/* Teacher and student shells (light): the same blue-grey field and white header. */
+/* Teacher and student shells (light): white header; the student field stays blue-grey, the teacher board is white. */
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) {
   background: #e6e8ec;
   background-image: none;
   color: #3c3c45;
+}
+
+html:not(.dark) .iboard-teacher-canvas {
+  background: #ffffff;
 }
 
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header {
@@ -248,7 +252,7 @@ html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-
 }
 
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header .iboard-header-code {
-  color: #2f5fee;
+  color: #423bb6;
 }
 
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header .iboard-header-meta {
@@ -291,7 +295,7 @@ html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-
   font-size: 0.55rem;
   line-height: 1;
   letter-spacing: 0.2em;
-  color: #2f5fee;
+  color: #423bb6;
 }
 
 .iboard-header-room--stacked .iboard-header-code {
@@ -315,11 +319,11 @@ html.dark .iboard-header-room--stacked .iboard-header-room__label {
 }
 
 .iboard-header-room:hover .iboard-header-code {
-  color: #1d4ed8;
+  color: #352fa0;
 }
 
 .iboard-header-room:focus-visible {
-  outline: 2px solid #2f5fee;
+  outline: 2px solid #423bb6;
   outline-offset: 2px;
 }
 
@@ -814,7 +818,7 @@ html:not(.dark) .iboard-student-canvas .iboard-app-header h1 {
 }
 
 html:not(.dark) .iboard-student-canvas .iboard-app-header .iboard-header-code {
-  color: #2f5fee;
+  color: #423bb6;
   font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1125,14 +1129,14 @@ html.dark .iboard-brand-word {
   --command-band: 1.48rem;
   --command-foot: 0.1rem;
   --command-rise: 0.05rem;
-  --command-lip: calc(0.05rem + 1px);
+  --command-lip: 0px;
   --command-dial: 5.55rem;
-  --command-blue: #2f5fee;
+  --command-blue: #1a18d4;
   --command-end-radius: calc((var(--command-rail) + var(--command-band) + var(--command-foot)) / 2);
   isolation: isolate;
   --command-frame-outset: 1.85rem;
   --command-trim: 6px;
-  --command-base: 1.5px;
+  --command-base: 0px;
   --command-shell-r: calc((var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim)) / 2);
   --command-white-top: calc(var(--command-band) - var(--command-rise) - var(--command-trim));
   --command-row-outset: 0.4rem;
@@ -1240,7 +1244,7 @@ html.dark .iboard-alert-chip.is-on {
 }
 
 .iboard-command-bar .iboard-alert-chip:hover:not(.is-on) {
-  background: rgba(47, 95, 238, 0.1);
+  background: rgba(26, 24, 212, 0.1);
   color: var(--command-blue);
 }
 
@@ -1264,8 +1268,8 @@ html.dark .iboard-alert-chip.is-on {
 }
 
 .iboard-command-bar .iboard-alert-chip :is(svg, .iboard-gauge-icon) {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.035rem;
+  height: 1.035rem;
 }
 
 .iboard-command-bar .iboard-alert-chip:hover :is(svg, .iboard-gauge-icon) {
@@ -1299,7 +1303,7 @@ html.dark .iboard-alert-chip.is-on {
   background: #ffffff;
   color: #2450d6;
   box-shadow: 0 0 0 2px #2450d6;
-  font-size: 0.62rem;
+  font-size: 0.558rem;
   font-weight: 800;
   line-height: 0.9rem;
   text-align: center;
@@ -1333,7 +1337,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.has-count {
 }
 
 html.dark .iboard-command-bar .iboard-alert-chip:hover:not(.is-on) {
-  background: rgba(47, 95, 238, 0.1);
+  background: rgba(26, 24, 212, 0.1);
   color: var(--command-blue);
 }
 
@@ -1352,7 +1356,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 }
 
 .iboard-alert-chip__name {
-  font-size: calc(0.58rem + 1px);
+  font-size: calc((0.58rem + 1px) * 0.9);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
@@ -1361,7 +1365,7 @@ html.dark .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip_
 
 .iboard-command-bar .iboard-alert-chip__name,
 .iboard-command-bar .iboard-wing-caption {
-  font-size: calc(0.52rem + 1pt);
+  font-size: calc((0.52rem + 1pt) * 0.9);
 }
 
 .iboard-command-bar,
@@ -1608,7 +1612,7 @@ html.dark .iboard-nudge-strip__compose input {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--command-blue, #2f5fee);
+  color: var(--command-blue, #1a18d4);
   cursor: pointer;
 }
 
@@ -1624,12 +1628,12 @@ html.dark .iboard-nudge-strip__compose input {
 
 .iboard-command-more:hover,
 .iboard-command-more[aria-expanded='true'] {
-  background: rgba(47, 95, 238, 0.1);
+  background: rgba(26, 24, 212, 0.1);
 }
 
 .iboard-command-more svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 0.945rem;
+  height: 0.945rem;
 }
 
 .iboard-command-more__menu {
@@ -1643,7 +1647,7 @@ html.dark .iboard-nudge-strip__compose input {
   border: 1px solid #d8dbe1;
   border-radius: 0.85rem;
   background: #ffffff;
-  box-shadow: 0 14px 34px rgba(31, 61, 153, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 34px rgba(18, 16, 154, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
 }
 
 .iboard-command-more-slot {
@@ -1687,7 +1691,7 @@ html.dark .iboard-nudge-strip__compose input {
 }
 
 .iboard-command-more__menu button:hover {
-  background: #e8eefc;
+  background: #ebebfd;
 }
 
 html.dark .iboard-command-more__menu {
@@ -1701,7 +1705,7 @@ html.dark .iboard-command-more__menu button {
 }
 
 html.dark .iboard-command-more__menu button:hover {
-  background: rgba(47, 95, 238, 0.22);
+  background: rgba(26, 24, 212, 0.22);
 }
 
 /* Both capsules share the same wing width so the gauge stays centred. Extra
@@ -1890,7 +1894,7 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   z-index: -2;
   height: calc(var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim));
   border-radius: var(--command-shell-r);
-  box-shadow: 0 8px 18px rgba(47, 95, 238, 0.08), 0 2px 5px rgba(30, 45, 90, 0.04);
+  box-shadow: 0 8px 18px rgba(26, 24, 212, 0.08), 0 2px 5px rgba(30, 45, 90, 0.04);
   pointer-events: none;
 }
 
@@ -1926,8 +1930,8 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
   );
 }
 
-/* White body nested inside the blue shell, so the end curve sits
-   inside the blue curve. The hump sweeps that edge up the dial. */
+/* White body fills the shell below the blue title band, out to the wing
+   ends and the bottom edge. The hump sweeps that edge up the dial. */
 .iboard-command-frame::before,
 .iboard-command-frame::after {
   content: "";
@@ -1974,13 +1978,13 @@ html.dark .iboard-command-frame {
 
 .iboard-command-bar__title {
   padding: 0 0.3rem;
-  font-size: calc(0.65rem - 1pt);
+  font-size: calc((0.65rem - 1pt) * 0.9);
   font-weight: 800;
   letter-spacing: 0.18em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #2f5fee;
+  color: #1a18d4;
 }
 
 .iboard-command-bar__side .iboard-command-bar__title {
@@ -1990,7 +1994,7 @@ html.dark .iboard-command-frame {
   height: var(--command-band);
   margin-bottom: calc(-0.375rem - 1px);
   padding: var(--command-trim) 0.4rem 0;
-  font-size: 0.68rem;
+  font-size: 0.612rem;
   text-align: center;
   letter-spacing: 0.16em;
   color: #ffffff;
@@ -2052,7 +2056,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
 
 html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools .iboard-header-icon-button:hover:not([data-active='true']):not(:disabled) {
   border-color: transparent;
-  background: rgba(47, 95, 238, 0.1);
+  background: rgba(26, 24, 212, 0.1);
   box-shadow: none;
   color: var(--command-blue);
 }
@@ -2066,8 +2070,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
 
 .iboard-manage-tools .iboard-header-icon-button > :is(svg, .iboard-gauge-icon),
 .iboard-manage-tools .iboard-header-icon {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.035rem;
+  height: 1.035rem;
   flex: 0 0 auto;
   transform-origin: center;
 }
@@ -2075,16 +2079,16 @@ html:not(.dark) .iboard-teacher-canvas .iboard-command-bar .iboard-manage-tools 
 /* Wide marks keep the shared height instead of shrinking inside the square. */
 .iboard-command-bar .iboard-alert-chip .iboard-gauge-icon,
 .iboard-command-bar .iboard-manage-tools .iboard-gauge-icon {
-  width: calc(1.15rem * var(--gauge-aspect, 1));
-  height: 1.15rem;
+  width: calc(1.035rem * var(--gauge-aspect, 1));
+  height: 1.035rem;
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
 }
 
 .iboard-command-bar .iboard-header-icon--view {
   --iboard-header-icon: url('/brand/gauge/view.png?v=9');
-  width: calc(1.15rem * 1.0352);
-  height: 1.15rem;
+  width: calc(1.035rem * 1.0352);
+  height: 1.035rem;
 }
 
 .iboard-board-font-mark {
@@ -2131,7 +2135,7 @@ html.dark .iboard-command-bar .iboard-wing-tool {
 }
 
 html.dark .iboard-command-bar .iboard-wing-tool:hover:not([data-active='true']) {
-  background: rgba(47, 95, 238, 0.1);
+  background: rgba(26, 24, 212, 0.1);
   box-shadow: none;
   color: var(--command-blue);
 }
@@ -2349,7 +2353,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 /* On :root because the gauge's hover card (a portal on body) uses the same swatches. */
 :root {
-  --class-gauge-done: #2450d6;
+  --class-gauge-done: #1513b8;
   --class-gauge-mid: #b496e7;
   --class-gauge-rest: #dedded;
   --class-gauge-track: #e6e5f6;
@@ -2387,7 +2391,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 }
 
 .iboard-class-gauge__track {
-  stroke: #e6edf8;
+  stroke: #e8e8fa;
 }
 
 .iboard-class-gauge__face {
@@ -2421,7 +2425,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   border-radius: 999px;
   background: #2c2c34;
   color: #ffffff;
-  font-size: 0.58rem;
+  font-size: 0.522rem;
   font-weight: 650;
   line-height: 1.15;
   white-space: nowrap;
@@ -2429,15 +2433,15 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 }
 
 .iboard-class-gauge__count {
-  font-size: 1.15rem;
+  font-size: 1.035rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #1f3d99;
+  color: #12109a;
 }
 
 .iboard-class-gauge__caption {
   margin-top: 0.14rem;
-  font-size: calc(0.5rem + 1pt);
+  font-size: calc((0.5rem + 1pt) * 0.9);
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -2449,7 +2453,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
   align-items: center;
   gap: 0.18rem;
   margin-top: 0.22rem;
-  font-size: calc(0.54rem + 1pt);
+  font-size: calc((0.54rem + 1pt) * 0.9);
   font-weight: 600;
   color: #6b6b78;
   white-space: nowrap;
@@ -2457,7 +2461,7 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 .iboard-class-gauge__online b {
   font-weight: 800;
-  color: #1f3d99;
+  color: #12109a;
 }
 
 .iboard-class-gauge__live {
@@ -2487,7 +2491,7 @@ html.dark .iboard-class-gauge__live.is-idle {
   height: 0.55rem;
   flex: 0 0 auto;
   border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(31, 61, 153, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(18, 16, 154, 0.18);
 }
 
 html.dark {
@@ -2529,19 +2533,19 @@ button.iboard-class-gauge {
 .iboard-command-bar .iboard-class-gauge__ring {
   width: var(--command-dial);
   height: var(--command-dial);
-  box-shadow: 0 10px 20px rgba(47, 95, 238, 0.09), 0 2px 6px rgba(30, 45, 90, 0.05);
+  box-shadow: 0 10px 20px rgba(26, 24, 212, 0.09), 0 2px 6px rgba(30, 45, 90, 0.05);
 }
 
 .iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__ring,
 .iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
-  box-shadow: 0 10px 22px rgba(47, 95, 238, 0.13), 0 2px 6px rgba(30, 45, 90, 0.06);
+  box-shadow: 0 10px 22px rgba(26, 24, 212, 0.13), 0 2px 6px rgba(30, 45, 90, 0.06);
 }
 
 .iboard-command-bar .iboard-class-gauge {
-  --class-gauge-done: #2f5fee;
-  --class-gauge-mid: #8aaff8;
-  --class-gauge-rest: #d5e2fc;
-  --class-gauge-track: #d5e2fc;
+  --class-gauge-done: #1a18d4;
+  --class-gauge-mid: #8e8cf0;
+  --class-gauge-rest: #dcdbfb;
+  --class-gauge-track: #dcdbfb;
 }
 
 .iboard-command-bar .iboard-class-gauge__face {
@@ -2592,17 +2596,17 @@ html.dark .iboard-command-bar .iboard-class-gauge__online {
 html.dark .iboard-command-bar .iboard-alert-chip:not(.is-on),
 html.dark .iboard-command-bar .iboard-alert-chip.has-count:not(.is-on),
 html.dark .iboard-command-bar .iboard-wing-tool:not([data-active='true']) {
-  color: #9eb6f5;
+  color: #a9a8f5;
 }
 
 html.dark .iboard-command-bar .iboard-alert-chip:hover:not(.is-on),
 html.dark .iboard-command-bar .iboard-wing-tool:hover:not([data-active='true']) {
-  background: rgba(47, 95, 238, 0.22);
-  color: #c7d4fb;
+  background: rgba(26, 24, 212, 0.22);
+  color: #cfcefb;
 }
 
 button.iboard-class-gauge:focus-visible {
-  outline: 2px solid #2f5fee;
+  outline: 2px solid #1a18d4;
   outline-offset: 4px;
 }
 
@@ -2612,7 +2616,7 @@ button.iboard-class-gauge:focus-visible {
 
 html.dark .iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__ring,
 html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
-  box-shadow: 0 16px 32px rgba(47, 95, 238, 0.28), 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 16px 32px rgba(26, 24, 212, 0.28), 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Opens from the gauge: Responses while a question is live, Class writing otherwise. */
@@ -2625,7 +2629,7 @@ html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .ibo
   border: 1px solid #d8dbe1;
   border-radius: 1rem;
   background: #ffffff;
-  box-shadow: 0 18px 44px rgba(31, 61, 153, 0.2), 0 2px 6px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 44px rgba(18, 16, 154, 0.2), 0 2px 6px rgba(15, 23, 42, 0.08);
   transform: translateX(-50%);
   animation: iboard-dock-fade-in 160ms ease;
 }
@@ -3189,47 +3193,49 @@ html.dark .iboard-board-empty__code {
   margin-bottom: auto;
 }
 
-/* Teach class is built like an end of the gauge: a solid blue shell, flush
-   against the rail border on the right, rounded only on the left, with the
-   white body nested inside a thin blue rim. */
+/* Teach class sits on the plain rail behind a deep blue bracket: a straight
+   bar whose top and bottom ends curve inward. Its tools keep the neutral rail
+   greys; only the bracket and the title carry the brand blue. */
 .iboard-arr-rail__teach {
-  --teach-body: #ffffff;
-  --teach-rim: 2px;
-  --teach-rim-bottom: 1px;
-  --teach-radius: 12px;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  align-self: flex-end;
-  width: calc(100% - 0.3rem);
+  width: 100%;
   margin-bottom: auto;
-  overflow: hidden;
-  padding: 0 0 var(--teach-rim-bottom) var(--teach-rim);
-  border: 0;
-  border-radius: var(--teach-radius) 0 0 var(--teach-radius);
-  background: #2f5fee;
-  box-shadow: 0 8px 18px rgba(47, 95, 238, 0.08), 0 2px 5px rgba(30, 45, 90, 0.04);
+  padding: 0.21rem 0 0.21rem 0.5rem;
+  box-sizing: border-box;
 }
 
-.iboard-arr-rail__teach .iboard-arr-rail__add > :not(.iboard-rail-title) {
-  background: var(--teach-body);
-  border-top-left-radius: 0.6rem;
-  overflow: hidden;
+.iboard-arr-rail > .iboard-arr-rail__teach {
+  margin-top: auto;
 }
 
-.iboard-arr-rail__teach .iboard-arr-rail__tools {
-  background: var(--teach-body);
-  border-bottom-left-radius: calc(var(--teach-radius) - var(--teach-rim));
-  overflow: hidden;
+.iboard-arr-rail__curve {
+  position: absolute;
+  left: 0.16rem;
+  top: 0;
+  bottom: 0;
+  width: 1.1rem;
+  box-sizing: border-box;
+  border-left: 3px solid currentColor;
+  border-radius: 1.1rem 0 0 1.1rem;
+  color: #1a18d4;
+  pointer-events: none;
 }
 
+.iboard-arr-rail__teach .iboard-arr-rail__add,
 .iboard-arr-rail__teach .iboard-arr-rail__tools {
   align-items: stretch;
-  margin-bottom: 0;
   width: 100%;
-  gap: 0;
-  padding: 0;
+  margin-bottom: 0;
+  gap: 0.21rem;
+  padding-bottom: 0.21rem;
   box-sizing: border-box;
+}
+
+.iboard-arr-rail__teach .iboard-arr-rail__tools {
+  padding-bottom: 0;
 }
 
 .iboard-arr-rail__teach .iboard-arr-rail__tools > span,
@@ -3238,61 +3244,16 @@ html.dark .iboard-board-empty__code {
   width: 100%;
 }
 
-.iboard-arr-rail__teach .iboard-arr-rail__add {
-  align-items: stretch;
+.iboard-arr-rail__teach .iboard-arr-btn {
   width: 100%;
-  padding: 0;
-  gap: 0;
-  box-sizing: border-box;
-}
-
-.iboard-arr-rail__teach .iboard-arr-rail__add > :not(.iboard-rail-title) {
-  padding: 0;
-  box-sizing: border-box;
+  padding-top: 0.21rem;
+  padding-bottom: 0.24rem;
 }
 
 .iboard-arr-rail__teach .iboard-rail-title {
-  align-self: stretch;
-  width: auto;
-  max-width: none;
-  margin: 0;
-  padding: 0.4rem 0.32rem 0.34rem;
-  background: #2f5fee;
-  color: #ffffff;
-  text-align: center;
-  letter-spacing: 0.12em;
-  line-height: 1.15;
-  white-space: normal;
-}
-
-.iboard-arr-rail__teach .iboard-arr-btn,
-.iboard-arr-rail__teach .iboard-arr-btn__glyph,
-.iboard-arr-rail__teach .iboard-arr-btn__icon,
-.iboard-arr-rail__teach .iboard-arr-label {
-  color: #2f5fee;
-}
-
-.iboard-arr-rail__teach .iboard-arr-btn:hover:not([data-active='true']) {
-  background: rgba(47, 95, 238, 0.1);
-  border-color: transparent;
-  color: #2f5fee;
-}
-
-.iboard-arr-rail__teach .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__glyph,
-.iboard-arr-rail__teach .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-btn__icon,
-.iboard-arr-rail__teach .iboard-arr-btn:hover:not([data-active='true']) .iboard-arr-label {
-  color: #2f5fee;
-}
-
-.iboard-arr-rail__teach .iboard-arr-btn,
-.iboard-arr-rail__teach .iboard-arr-btn:hover,
-.iboard-arr-rail__teach .iboard-arr-btn:active {
-  width: 100%;
-  border-radius: 0;
-}
-
-.iboard-arr-rail__teach .iboard-arr-rail__tools > :last-child .iboard-arr-btn {
-  padding-bottom: 0.75rem;
+  align-self: center;
+  margin: 0.06rem 0 0.12rem;
+  color: #3b31b9;
 }
 
 .iboard-arr-rail__lower {
@@ -3591,8 +3552,8 @@ html.dark .iboard-tour__close:hover {
 
 .iboard-arr-btn img {
   display: block;
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.26rem;
+  height: 1.26rem;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
@@ -3600,14 +3561,14 @@ html.dark .iboard-tour__close:hover {
 }
 
 .iboard-arr-btn--cog .iboard-arr-btn__glyph {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .iboard-arr-btn__glyph {
   display: block;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.125rem;
+  height: 1.125rem;
   color: #5c6570;
   flex-shrink: 0;
   pointer-events: none;
@@ -3616,8 +3577,8 @@ html.dark .iboard-tour__close:hover {
 
 .iboard-arr-btn__icon {
   display: block;
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.26rem;
+  height: 1.26rem;
   flex-shrink: 0;
   pointer-events: none;
   background-color: currentColor;
@@ -3645,7 +3606,7 @@ html.dark .iboard-tour__close:hover {
   display: block;
   width: 100%;
   text-align: center;
-  font-size: calc(0.52rem + 1pt);
+  font-size: calc((0.52rem + 1pt) * 0.9);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
@@ -3884,7 +3845,7 @@ html.dark .iboard-room-section__head h3 {
 
 /* Away, not started, or stopped typing past the Settings minutes. Still fully readable. */
 article.iboard-student-card.iboard-student-card--stalled {
-  background: #f2f3f5;
+  background: #e9eaee;
 }
 
 html.dark article.iboard-student-card.iboard-student-card--stalled {
@@ -3895,11 +3856,34 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
   background-color: transparent;
 }
 
+/* The header is a lavender band that runs to the card edges, so it needs no rule under it. */
 .iboard-student-card__head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: start;
+  align-items: center;
   column-gap: 0.4rem;
+  margin: -0.75rem -0.75rem 0;
+  padding: 0.55rem 0.75rem;
+  background: #d2d4f8;
+  border-bottom: 1px solid #b4b5b8;
+}
+
+.iboard-student-card__head .iboard-student-card__wordcount {
+  color: #1c1c22;
+}
+
+html.dark .iboard-student-card__head .iboard-student-card__wordcount {
+  color: #cbd5e1;
+}
+
+.iboard-student-card--fit .iboard-student-card__head {
+  margin: -0.5rem -0.6rem 0;
+  padding: 0.4rem 0.6rem;
+}
+
+html.dark .iboard-student-card__head {
+  background: #262b48;
+  border-bottom-color: #3a4150;
 }
 
 .iboard-student-card__head-start {
@@ -3917,11 +3901,7 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
 }
 
 .iboard-student-card__rule {
-  grid-column: 1 / -1;
-  margin-right: 0.625rem;
-  height: 1px;
-  margin-top: 0.45rem;
-  background: #e5e5ea;
+  display: none;
 }
 
 .iboard-student-card__wordcount {
@@ -6703,25 +6683,8 @@ html.dark .iboard-arr-rail {
   border-right-color: #343c46;
 }
 
-html.dark .iboard-arr-rail__teach {
-  --teach-body: #252b32;
-}
-
-html.dark .iboard-arr-rail__teach .iboard-arr-btn,
-html.dark .iboard-arr-rail__teach .iboard-arr-btn__glyph,
-html.dark .iboard-arr-rail__teach .iboard-arr-btn__icon,
-html.dark .iboard-arr-rail__teach .iboard-arr-label {
-  color: #9eb6f5;
-}
-
-html.dark .iboard-arr-rail__teach .iboard-arr-btn[data-active='true'] {
-  background: #2f5fee;
-  color: #ffffff;
-}
-
-html.dark .iboard-arr-rail__teach .iboard-arr-btn[data-active='true'] .iboard-arr-btn__icon,
-html.dark .iboard-arr-rail__teach .iboard-arr-btn[data-active='true'] .iboard-arr-label {
-  color: #ffffff;
+html.dark .iboard-arr-rail__curve {
+  color: #8b8af5;
 }
 html.dark .iboard-student-card,
 html.dark .iboard-student-card:hover {
@@ -8249,7 +8212,7 @@ html.dark .iboard-join-gate__panel {
 
 /* Dark mode keeps the solid shell but in a much softer blue, so it does not glare. */
 html.dark .iboard-command-bar {
-  --command-blue-soft: #2c3a63;
+  --command-blue-soft: #2c2b66;
 }
 
 html.dark .iboard-command-frame {
@@ -8257,16 +8220,11 @@ html.dark .iboard-command-frame {
 }
 
 html.dark .iboard-command-bar__side .iboard-command-bar__title {
-  color: #c9d4f5;
-}
-
-html.dark .iboard-arr-rail__teach {
-  background: #2c3a63;
+  color: #cfcef5;
 }
 
 html.dark .iboard-arr-rail__teach .iboard-rail-title {
-  background: #2c3a63;
-  color: #c9d4f5;
+  color: #b7b4f5;
 }
 
 /* Straight blue band into the dial: no shoulders. */

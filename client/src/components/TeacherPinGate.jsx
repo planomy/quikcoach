@@ -28,7 +28,7 @@ export default function TeacherPinGate({ children, title = 'Teacher access' }) {
               else setError('Wrong PIN');
             }
           }}
-          className="mt-5 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono text-lg tracking-widest outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
+          className="mt-5 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono text-lg tracking-widest outline-none ring-[#423bb6] focus:border-[#423bb6] focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100"
           placeholder="····"
           autoFocus
         />
@@ -39,7 +39,7 @@ export default function TeacherPinGate({ children, title = 'Teacher access' }) {
             if (unlockTeacher(pin)) setOk(true);
             else setError('Wrong PIN');
           }}
-          className="mt-4 w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
+          className="mt-4 w-full rounded-xl bg-[#423bb6] py-3 text-sm font-semibold text-white hover:bg-[#352fa0]"
         >
           Unlock
         </button>

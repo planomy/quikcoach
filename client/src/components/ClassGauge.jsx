@@ -22,10 +22,10 @@ function gaugeArcs(segments, total) {
 export default function ClassGauge({ title, caption, done, total, online, segments, onClick, expanded = false, opens = '', notice = '' }) {
   const hint = (
     <span className="block min-w-[11rem]">
-      <span className="block whitespace-nowrap bg-[#1f3d99] px-2.5 py-1 text-[9px] font-semibold text-white dark:bg-[#2f5fee]">
+      <span className="block whitespace-nowrap bg-[#12109a] px-2.5 py-1 text-[9px] font-semibold text-white dark:bg-[#1a18d4]">
         {title}
       </span>
-      <span className="block px-2.5 py-1.5 text-[#2f5fee] dark:text-indigo-200">
+      <span className="block px-2.5 py-1.5 text-[#1a18d4] dark:text-indigo-200">
         {segments.map((segment) => (
           <span key={segment.key} className="iboard-class-gauge__row">
             <span className="iboard-class-gauge__dot" style={{ background: segment.color }} />

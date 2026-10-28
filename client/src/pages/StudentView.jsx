@@ -1448,7 +1448,7 @@ export default function StudentView() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && codeInput.length === 4 && nameInput.trim()) join();
                 }}
-                className="box-border w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+                className="box-border w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none ring-[#423bb6] focus:border-[#423bb6] focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
                 placeholder="0000"
                 inputMode="numeric"
                 maxLength={4}
@@ -1458,8 +1458,8 @@ export default function StudentView() {
               {error && <p className="text-sm font-medium text-red-600">{error}</p>}
 
               {recentRoomSession ? (
-                <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/50">
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">
+                <div className="rounded-2xl border-2 border-[#cfcdf0] bg-[#efeefb] p-4 dark:border-indigo-800 dark:bg-indigo-950/50">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#423bb6] dark:text-indigo-300">
                     Returning student
                   </p>
                   <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
@@ -1472,7 +1472,7 @@ export default function StudentView() {
                   <button
                     type="button"
                     onClick={continueRecentRoom}
-                    className="mt-3 box-border w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
+                    className="mt-3 box-border w-full rounded-xl bg-[#423bb6] px-4 py-3 text-sm font-semibold text-white hover:bg-[#352fa0]"
                   >
                     Continue and restore my work
                   </button>
@@ -1497,7 +1497,7 @@ export default function StudentView() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && codeInput.length === 4 && nameInput.trim()) join();
                     }}
-                    className="box-border w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-base font-semibold text-slate-900 outline-none ring-indigo-500 focus:border-indigo-500 focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
+                    className="box-border w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-base font-semibold text-slate-900 outline-none ring-[#423bb6] focus:border-[#423bb6] focus:ring-2 dark:border-slate-600 dark:bg-slate-950 dark:text-white"
                     placeholder="Your name"
                     aria-label="Your name"
                   />
@@ -1510,7 +1510,7 @@ export default function StudentView() {
                     type="button"
                     onClick={join}
                     disabled={codeInput.length !== 4 || !nameInput.trim()}
-                    className="mt-4 box-border w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="mt-4 box-border w-full rounded-xl bg-[#423bb6] py-3 text-sm font-semibold text-white hover:bg-[#352fa0] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Join and start writing
                   </button>
@@ -1685,7 +1685,7 @@ export default function StudentView() {
       <header className="iboard-app-header border-b backdrop-blur">
         <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
-            <img src="/brand/tuit-corner.png?v=8" alt="TUIT" className="iboard-brand-corner" />
+            <img src="/brand/tuit-corner.png?v=9" alt="TUIT" className="iboard-brand-corner" />
             <div className="iboard-header-meta flex min-w-0 flex-wrap items-center gap-2.5">
               {activeRoomCode ? (
                 <span className="iboard-header-room">
