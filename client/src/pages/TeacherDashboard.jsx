@@ -168,6 +168,7 @@ const BOARD_FONT_HINTS = [
   'Biggest text. Click to return to normal',
 ];
 const FIT_CARD_FONT_BASE = 0.72; /* Fit all cards are small; A−/A+ scale from this */
+const COLUMN_CARD_FONT_BASE = (16 - 8 / 3) / 16; /* Columns: 2pt under the 16px default */
 const CARD_VIEWS = [
   { id: 'all', label: 'Fit all', hint: 'Every student on one screen' },
   { id: 'overview', label: 'Columns' },
@@ -1391,9 +1392,10 @@ function TeacherDashboardInner() {
     setBoardFontStep((step) => (step + 1) % BOARD_FONT_SCALES.length);
   }
 
-  function writingFontSize(studentId, fit = false) {
+  function writingFontSize(studentId, view = '') {
     const scale = BOARD_FONT_SCALES[boardFontStep] || 1;
-    const size = (fit ? FIT_CARD_FONT_BASE : 1) * cardFontRem(cardFontById, studentId) * scale;
+    const base = view === 'all' ? FIT_CARD_FONT_BASE : view === 'overview' ? COLUMN_CARD_FONT_BASE : 1;
+    const size = base * cardFontRem(cardFontById, studentId) * scale;
     return `${size}rem`;
   }
 
@@ -6118,7 +6120,7 @@ function TeacherDashboardInner() {
                 <div
                   data-student-writing-pane
                   data-card-font="true"
-                  style={{ fontSize: writingFontSize(s.id, cardView === 'all') }}
+                  style={{ fontSize: writingFontSize(s.id, cardView) }}
                   className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
                 >
                   {s.image_url && (
