@@ -8427,3 +8427,22 @@ html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .ibo
 html.dark .iboard-command-bar .iboard-class-gauge__count {
   color: #e8edf3;
 }
+
+/* Light board: white header and rail with no dividing lines, and the cards
+   sit on a soft lavender panel tucked under the header. */
+html:not(.dark) .iboard-teacher-canvas {
+  background: #ffffff;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-app-header {
+  border-bottom-color: transparent;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-arr-rail {
+  border-right-color: transparent;
+}
+
+html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
+  background: #f3f2fb;
+  border-top-left-radius: 1.25rem;
+}
