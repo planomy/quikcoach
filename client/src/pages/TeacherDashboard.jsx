@@ -823,6 +823,10 @@ function TeacherDashboardInner() {
             const content = [...chip.children].reduce((max, el) => Math.max(max, el.getBoundingClientRect().width), 0);
             live = Math.ceil(Math.max(content + pad, min));
           }
+          // Inbox and Text stretch under the dial by the gap; measure them without it.
+          if (live && (id === 'inbox' || id === 'text')) {
+            live = Math.max(0, live - (parseFloat(bar.style.getPropertyValue('--command-dial-gap')) || 0));
+          }
           if (id && live > 20) commandWidthRef.current.set(id, live);
           return Math.max(36, (id && commandWidthRef.current.get(id)) || live || 48);
         });
@@ -872,8 +876,11 @@ function TeacherDashboardInner() {
           : (next.manageKeep + (next.manageKeep < manageWidths.length ? 1 : 0)) * icon;
         const collar = 8;
         const wanted = Math.max(monitorContent, manageContent) + collar;
-        const wing = Math.max(0, Math.min(wanted, room));
+        // Wings run 15% wider than their icons; the extra opens a gap beside the dial.
+        const wing = Math.max(0, Math.min(wanted * 1.15, room));
+        const dialGap = Math.max(0, wing - wanted);
         bar.style.setProperty('--command-wing', `${Math.round(wing)}px`);
+        bar.style.setProperty('--command-dial-gap', `${Math.round(dialGap)}px`);
         const frameEl = bar.querySelector('.iboard-command-frame');
         const ringEl = ring || gaugeSlotRef.current?.querySelector('.iboard-class-gauge__ring');
         if (frameEl && ringEl) {

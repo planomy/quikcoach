@@ -1732,14 +1732,14 @@ html.dark .iboard-command-more__menu button:hover {
   left: calc(var(--command-row-outset) * -1);
   right: var(--command-collar-inset);
   box-sizing: border-box;
-  padding-right: 0.35rem;
+  padding-right: calc(0.35rem + var(--command-dial-gap, 0px));
 }
 
 .iboard-command-bar__side--manage .iboard-manage-tools {
   left: var(--command-collar-inset);
   right: calc((var(--command-frame-outset) - 1.5px) * -1);
   box-sizing: border-box;
-  padding-left: 0.45rem;
+  padding-left: calc(0.45rem + var(--command-dial-gap, 0px));
 }
 
 html.dark .iboard-command-bar__side .iboard-attention-home,
@@ -1840,15 +1840,15 @@ html.dark .iboard-command-bar__side .iboard-manage-tools {
 .iboard-command-bar [data-command-id='inbox'] {
   position: relative;
   box-sizing: border-box;
-  margin-right: -3.2rem;
-  padding-right: calc(0.38rem + 3.2rem);
+  margin-right: calc(-3.2rem - var(--command-dial-gap, 0px));
+  padding-right: calc(0.38rem + 3.2rem + var(--command-dial-gap, 0px));
 }
 
 .iboard-command-bar .iboard-manage-tools [data-command-id='text'] {
   position: relative;
   box-sizing: border-box;
-  margin-left: -3.2rem;
-  padding-left: calc(0.45rem + 3.2rem);
+  margin-left: calc(-3.2rem - var(--command-dial-gap, 0px));
+  padding-left: calc(0.45rem + 3.2rem + var(--command-dial-gap, 0px));
 }
 
 /* The hover also fills the white shoulder that rises into the dial, using
