@@ -1121,7 +1121,7 @@ html.dark .iboard-brand-word {
   min-width: 0;
   justify-self: center;
   --command-collar-inset: 0px;
-  --command-rail: calc((2.34rem + 4px) * 0.85);
+  --command-rail: calc((2.34rem + 4px) * 1.1);
   --command-band: calc(1.48rem * 0.85);
   --command-foot: 0.1rem;
   --command-rise: 0.05rem;
@@ -8255,9 +8255,18 @@ html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .ibo
   background: #2b323a;
 }
 
-/* Fillets where the bar's edges sweep into the dial. Paths are set by the
-   command bar measure, in the frame's own coordinates. */
-.iboard-command-fillets {
+/* The bar is one SVG shape: a pill that swells over and under the dial,
+   with the blue band along the top. The old masked frame only keeps its box
+   so the measure can read the frame's size. */
+.iboard-command-frame {
+  visibility: hidden;
+}
+
+.iboard-command-bar::before {
+  display: none;
+}
+
+.iboard-command-shape {
   position: absolute;
   left: calc(var(--command-frame-outset) * -1);
   right: calc(var(--command-frame-outset) * -1);
@@ -8267,30 +8276,154 @@ html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .ibo
   height: calc(var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim));
   overflow: visible;
   pointer-events: none;
+  filter: drop-shadow(0 10px 22px rgba(70, 60, 220, 0.16)) drop-shadow(0 2px 5px rgba(70, 60, 220, 0.08));
 }
 
-.iboard-command-fillets__top {
-  fill: var(--command-blue);
+.iboard-command-shape__probe {
+  position: absolute;
+  width: 0;
+  height: var(--command-white-top);
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.iboard-command-fillets__bottom {
+.iboard-command-shape__body {
   fill: #ffffff;
 }
 
-.iboard-command-fillets__base {
-  fill: none;
-  stroke: var(--command-blue);
-  stroke-width: var(--command-base);
+.iboard-command-shape__band {
+  fill: var(--command-blue);
 }
 
-html.dark .iboard-command-fillets__top {
-  fill: var(--command-blue-soft);
+html.dark .iboard-command-shape {
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.35));
 }
 
-html.dark .iboard-command-fillets__bottom {
+html.dark .iboard-command-shape__body {
   fill: #252b32;
 }
 
-html.dark .iboard-command-fillets__base {
-  stroke: var(--command-blue-soft);
+html.dark .iboard-command-shape__band {
+  fill: var(--command-blue-soft);
+}
+
+/* Wing titles sit at the outer ends of the band. */
+.iboard-command-bar__side--monitor .iboard-command-bar__title {
+  justify-items: start;
+  margin-left: calc(var(--command-frame-outset) * -0.45);
+}
+
+.iboard-command-bar__side--manage .iboard-command-bar__title {
+  justify-items: end;
+  margin-right: calc(var(--command-frame-outset) * -0.45);
+}
+
+/* Each icon sits in a small lavender tile; the caption sits under it.
+   Hover and the on state change the tile, not the whole column. */
+.iboard-command-bar :is(.iboard-alert-chip, .iboard-wing-tool),
+.iboard-command-bar :is(.iboard-alert-chip, .iboard-wing-tool):hover,
+.iboard-command-bar .iboard-alert-chip.is-on,
+.iboard-command-bar .iboard-wing-tool[data-active='true'],
+.iboard-command-bar .iboard-wing-tool[aria-pressed='true'] {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--command-blue) !important;
+  gap: 0.22rem;
+}
+
+.iboard-command-bar .iboard-alert-chip__mark,
+.iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark,
+.iboard-command-bar .iboard-wing-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0.45rem;
+  background: #ecebfc;
+  color: var(--command-blue);
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.iboard-command-bar :is(.iboard-alert-chip, .iboard-wing-tool):hover .iboard-alert-chip__mark,
+.iboard-command-bar .iboard-alert-chip.has-count:hover .iboard-alert-chip__mark,
+.iboard-command-bar .iboard-wing-tool:hover .iboard-wing-tile {
+  background: #dddbfa;
+}
+
+.iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__mark,
+.iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__mark,
+.iboard-command-bar .iboard-wing-tool:is([data-active='true'], [aria-pressed='true']) .iboard-wing-tile {
+  background: var(--command-blue);
+  color: #ffffff;
+}
+
+.iboard-command-bar .iboard-wing-tool:disabled .iboard-wing-tile {
+  background: #f1f1f5;
+  color: #a7a7b8;
+}
+
+.iboard-command-bar :is(.iboard-alert-chip__name, .iboard-wing-caption) {
+  color: #23264a;
+  font-weight: 600;
+}
+
+.iboard-command-bar .iboard-alert-chip__count,
+.iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__count,
+.iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__count {
+  top: -0.42rem;
+  right: -0.48rem;
+  background: var(--command-blue);
+  color: #ffffff;
+  box-shadow: 0 0 0 1.5px #ffffff;
+}
+
+html.dark .iboard-command-bar .iboard-alert-chip__mark,
+html.dark .iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark,
+html.dark .iboard-command-bar .iboard-wing-tile {
+  background: #323a5c;
+  color: #c9c8fb;
+}
+
+html.dark .iboard-command-bar :is(.iboard-alert-chip, .iboard-wing-tool):hover .iboard-alert-chip__mark,
+html.dark .iboard-command-bar .iboard-wing-tool:hover .iboard-wing-tile {
+  background: #3d4670;
+}
+
+html.dark .iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__mark,
+html.dark .iboard-command-bar .iboard-wing-tool:is([data-active='true'], [aria-pressed='true']) .iboard-wing-tile {
+  background: var(--command-blue);
+  color: #ffffff;
+}
+
+html.dark .iboard-command-bar :is(.iboard-alert-chip__name, .iboard-wing-caption) {
+  color: #d6dbe6;
+}
+
+html.dark .iboard-command-bar .iboard-alert-chip__count {
+  box-shadow: 0 0 0 1.5px #252b32;
+}
+
+/* Dial: a white bezel around the blue progress ring, sitting in the swell. */
+.iboard-command-bar .iboard-class-gauge__ring,
+.iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__ring,
+.iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.iboard-command-bar .iboard-class-gauge__count {
+  color: var(--command-blue);
+}
+
+html.dark .iboard-command-bar .iboard-class-gauge__ring,
+html.dark .iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__ring,
+html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
+  background: #252b32;
+}
+
+html.dark .iboard-command-bar .iboard-class-gauge__count {
+  color: #e8edf3;
 }

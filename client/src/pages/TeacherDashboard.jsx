@@ -892,18 +892,18 @@ function TeacherDashboardInner() {
           frameEl.style.setProperty('--command-cut-x', `${cutX}px`);
           frameEl.style.setProperty('--command-cut-y', `${cutY}px`);
           frameEl.style.setProperty('--command-cut-r', `${ringRect.width / 2}px`);
-          const fillets = bar.querySelector('.iboard-command-fillets');
-          if (fillets) {
-            const paths = commandFilletPaths({
+          const shape = bar.querySelector('.iboard-command-shape');
+          if (shape) {
+            const paths = commandShapePaths({
+              width: frameRect.width,
+              height: frameRect.height,
+              band: bar.querySelector('.iboard-command-shape__probe')?.offsetHeight || 14,
               cx: cutX,
               cy: cutY,
               r: ringRect.width / 2,
-              height: frameRect.height,
-              base: parseFloat(getComputedStyle(bar).getPropertyValue('--command-base')) || 1.5,
             });
-            fillets.querySelector('.iboard-command-fillets__top')?.setAttribute('d', paths.top);
-            fillets.querySelector('.iboard-command-fillets__bottom')?.setAttribute('d', paths.bottom);
-            fillets.querySelector('.iboard-command-fillets__base')?.setAttribute('d', paths.base);
+            shape.querySelector('.iboard-command-shape__body')?.setAttribute('d', paths.body);
+            shape.querySelector('.iboard-command-shape__band')?.setAttribute('d', paths.band);
           }
         }
         const pin = (button, edge) => {
@@ -4748,11 +4748,11 @@ function TeacherDashboardInner() {
               data-labels={commandFit.labels ? 'on' : 'off'}
             >
               <div className="iboard-command-frame" aria-hidden="true" />
-              <svg className="iboard-command-fillets" aria-hidden="true">
-                <path className="iboard-command-fillets__top" />
-                <path className="iboard-command-fillets__bottom" />
-                <path className="iboard-command-fillets__base" />
+              <svg className="iboard-command-shape" aria-hidden="true">
+                <path className="iboard-command-shape__body" />
+                <path className="iboard-command-shape__band" />
               </svg>
+              <span className="iboard-command-shape__probe" aria-hidden="true" />
               <div className="iboard-command-bar__side iboard-command-bar__side--monitor">
                 <span className="iboard-command-bar__title">Monitor class</span>
                 <div
@@ -4948,9 +4948,11 @@ function TeacherDashboardInner() {
                       aria-label={boardFontStep === 0 ? 'Text size, normal. Larger text on every card' : boardFontStep === BOARD_FONT_SCALES.length - 1 ? 'Text size, largest. Click to return to normal' : `Text size, step ${boardFontStep} of ${BOARD_FONT_SCALES.length - 1}`}
                       data-active={boardFontStep > 0 ? 'true' : 'false'}
                     >
+                      <span className="iboard-wing-tile">
                       <span className="iboard-board-font-mark" data-step={boardFontStep} aria-hidden="true">
                         <GaugeIcon id="text" />
                         {boardFontStep > 0 ? <span className="iboard-board-font-plus">{'+'.repeat(boardFontStep)}</span> : null}
+                      </span>
                       </span>
                       <span className="iboard-wing-caption">Text</span>
                     </button>
@@ -4968,7 +4970,7 @@ function TeacherDashboardInner() {
                       className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:opacity-40"
                       aria-label={room?.modelling_active ? 'Stop teacher modelling' : 'Start teacher modelling'}
                     >
-                      <GaugeIcon id="modelling" />
+                      <span className="iboard-wing-tile"><GaugeIcon id="modelling" /></span>
                       <span className="iboard-wing-caption">Modelling</span>
                     </button>
                   </HintWrap>
@@ -4986,7 +4988,7 @@ function TeacherDashboardInner() {
                       className={`iboard-header-icon-button iboard-wing-tool iboard-manage-tools__freeze flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition disabled:opacity-40${frozen ? " is-frozen" : ""}${helpFlash === 'freeze' ? ' is-help-flash' : ''}`}
                       aria-label={frozen ? "Unfreeze board" : "Freeze board"}
                     >
-                      <GaugeIcon id="freeze" />
+                      <span className="iboard-wing-tile"><GaugeIcon id="freeze" /></span>
                       <span className="iboard-wing-caption">Freeze</span>
                     </button>
                   </HintWrap>
@@ -5002,7 +5004,7 @@ function TeacherDashboardInner() {
                       className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'breakouts' ? ' is-help-flash' : ''}`}
                       aria-label="Collaboration"
                     >
-                      <GaugeIcon id="collaboration" />
+                      <span className="iboard-wing-tile"><GaugeIcon id="collaboration" /></span>
                       <span className="iboard-wing-caption">Collaboration</span>
                     </button>
                   </HintWrap>
@@ -5042,7 +5044,7 @@ function TeacherDashboardInner() {
                       className="iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition"
                       aria-label="View"
                     >
-                      <span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" />
+                      <span className="iboard-wing-tile"><span className="iboard-header-icon iboard-header-icon--view" aria-hidden="true" /></span>
                       <span className="iboard-wing-caption">View</span>
                     </button>
                   </HintWrap>
@@ -5059,7 +5061,7 @@ function TeacherDashboardInner() {
                         className={`iboard-header-icon-button iboard-wing-tool flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl transition${helpFlash === 'session' ? ' is-help-flash' : ''}`}
                         aria-label="Save or open a lesson"
                       >
-                        <SaveIcon saved={joined && saveStatus === 'saved'} />
+                        <span className="iboard-wing-tile"><SaveIcon saved={joined && saveStatus === 'saved'} /></span>
                         <span className="iboard-wing-caption">{joined && saveStatus === 'saved' ? 'Saved' : 'Save'}</span>
                     </button>
                   </HintWrap>
@@ -7870,46 +7872,49 @@ function TeacherDashboardInner() {
   );
 }
 
-const COMMAND_FILLET = 60;
-
 /**
- * Concave fillets where the bar's straight top and bottom edges meet the dial.
- * Each arc is tangent to the edge and to the dial, so the join has no kink.
- * Paths close through the dial's centre; the dial paints over that part.
+ * The command bar as one shape: a pill whose top edge swells up over the dial
+ * and whose bottom edge dips under it, with the blue band along the top.
+ * Each swell is an S-curve with flat ends, so it leaves the straight edge and
+ * crests over the dial without a kink.
  */
-function commandFilletPaths({ cx, cy, r, height, base }) {
-  const f = COMMAND_FILLET;
+function commandShapePaths({ width, height, band, cx, cy, r }) {
   const fmt = (n) => Math.round(n * 100) / 100;
-  const pair = (lineY, below) => {
-    const fy = below ? lineY + f : lineY - f;
-    const reach = Math.abs(fy - cy);
-    if (!(r + f > reach)) return null;
-    const d = Math.sqrt((r + f) ** 2 - reach ** 2);
-    const side = (dir) => {
-      const fx = cx + dir * d;
-      const px = cx + ((fx - cx) * r) / (r + f);
-      const py = cy + ((fy - cy) * r) / (r + f);
-      const sweep = (dir < 0) === below ? 1 : 0;
-      return { lx: fx, px, py, sweep };
-    };
-    return [side(-1), side(1)];
-  };
-  const area = (lineY, sides) => sides
-    .map((s) => `M${fmt(s.lx)} ${fmt(lineY)}A${f} ${f} 0 0 ${s.sweep} ${fmt(s.px)} ${fmt(s.py)}L${fmt(cx)} ${fmt(cy)}L${fmt(cx)} ${fmt(lineY)}Z`)
-    .join('');
-  const top = pair(0, false);
-  const bottom = pair(height, true);
-  const baseLine = height - base / 2;
-  const baseSides = pair(baseLine, true);
-  return {
-    top: top ? area(0, top) : '',
-    bottom: bottom
-      ? `${area(height, bottom)}M${fmt(bottom[0].lx)} ${fmt(height - base)}H${fmt(bottom[1].lx)}V${fmt(height)}H${fmt(bottom[0].lx)}Z`
-      : '',
-    base: baseSides
-      ? baseSides.map((s) => `M${fmt(s.lx)} ${fmt(baseLine)}A${f} ${f} 0 0 ${s.sweep} ${fmt(s.px)} ${fmt(s.py)}`).join('')
-      : '',
-  };
+  const end = height / 2;
+  const bezel = 4;
+  const peak = cy - r - bezel;
+  const dip = cy + r + bezel;
+  const room = Math.max(r, Math.min(cx - end, width - end - cx) - 4);
+  const rise = Math.min(r * 3.6, room);
+  const fall = Math.min(r * 2.4, room);
+  const k = rise * 0.55;
+  const k2 = fall * 0.55;
+  const top = [
+    `L${fmt(cx - rise)} 0`,
+    `C${fmt(cx - rise + k)} 0 ${fmt(cx - k)} ${fmt(peak)} ${fmt(cx)} ${fmt(peak)}`,
+    `C${fmt(cx + k)} ${fmt(peak)} ${fmt(cx + rise - k)} 0 ${fmt(cx + rise)} 0`,
+    `L${fmt(width - end)} 0`,
+  ].join('');
+  const body = [
+    `M${fmt(end)} 0`,
+    top,
+    `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(width - end)} ${fmt(height)}`,
+    `L${fmt(cx + fall)} ${fmt(height)}`,
+    `C${fmt(cx + fall - k2)} ${fmt(height)} ${fmt(cx + k2)} ${fmt(dip)} ${fmt(cx)} ${fmt(dip)}`,
+    `C${fmt(cx - k2)} ${fmt(dip)} ${fmt(cx - fall + k2)} ${fmt(height)} ${fmt(cx - fall)} ${fmt(height)}`,
+    `L${fmt(end)} ${fmt(height)}`,
+    `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(end)} 0Z`,
+  ].join('');
+  const b = Math.min(band, end);
+  const edgeX = end - Math.sqrt(Math.max(0, end * end - (end - b) * (end - b)));
+  const bandPath = [
+    `M${fmt(edgeX)} ${fmt(b)}`,
+    `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(end)} 0`,
+    top,
+    `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(width - edgeX)} ${fmt(b)}`,
+    'Z',
+  ].join('');
+  return { body, band: bandPath };
 }
 
 export default function TeacherDashboard() {
