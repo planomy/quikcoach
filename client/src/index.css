@@ -1992,7 +1992,8 @@ html.dark .iboard-command-frame {
   padding: var(--command-trim) 0.4rem 0;
   font-size: 0.585rem;
   text-align: center;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.26em;
+  text-indent: 0.26em;
   color: #ffffff;
   z-index: 1;
 }
