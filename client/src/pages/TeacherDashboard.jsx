@@ -7885,7 +7885,7 @@ function commandShapePaths({ width, height, band, cx, cy, r }) {
   const peak = cy - r - bezel;
   const dip = cy + r + bezel;
   const room = Math.max(r, Math.min(cx - end, width - end - cx) - 4);
-  const rise = Math.min(r * 3.6, room);
+  const rise = Math.min(r * 2.3, room);
   const fall = Math.min(r * 2.4, room);
   const k = rise * 0.55;
   const k2 = fall * 0.55;
