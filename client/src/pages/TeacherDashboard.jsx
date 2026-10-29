@@ -5840,7 +5840,7 @@ function TeacherDashboardInner() {
                   </h2>
                       </HintWrap>
                       {gradeShortLabel(s.year_level) && (
-                        <span className="shrink-0 rounded-md bg-[#ecebfc] px-1.5 py-0.5 text-[10px] font-bold text-[#1a18d4] dark:bg-slate-800 dark:text-slate-300">
+                        <span className="shrink-0 rounded-md bg-[#eef0f3] px-1.5 py-0.5 text-[10px] font-bold text-[#5b6170] dark:bg-slate-800 dark:text-slate-300">
                           {gradeShortLabel(s.year_level)}
                         </span>
                       )}
@@ -5874,7 +5874,7 @@ function TeacherDashboardInner() {
                         <HintWrap hint="Tab or app in background" prefer="above">
                         <span
                           title=""
-                          className="shrink-0 rounded-md bg-[#e8eefc] px-1.5 py-0.5 text-[10px] font-bold text-[#2f5fee] dark:bg-indigo-950/60 dark:text-indigo-200"
+                          className="shrink-0 rounded-md bg-[#dde1e8] px-1.5 py-0.5 text-[10px] font-bold text-[#3f4757] dark:bg-slate-700 dark:text-slate-200"
                         >
                           Away
                         </span>
@@ -5884,7 +5884,7 @@ function TeacherDashboardInner() {
                         <HintWrap hint={`No changes to their writing for ${alertPrefs.noTypingMin} minutes or more`} prefer="above">
                         <span
                           title=""
-                          className="shrink-0 rounded-md bg-[#e8eefc] px-1.5 py-0.5 text-[10px] font-bold text-[#2f5fee] dark:bg-indigo-950/60 dark:text-indigo-200"
+                          className="shrink-0 rounded-md bg-[#dde1e8] px-1.5 py-0.5 text-[10px] font-bold text-[#3f4757] dark:bg-slate-700 dark:text-slate-200"
                         >
                           No typing
                         </span>
@@ -5892,7 +5892,7 @@ function TeacherDashboardInner() {
                       ) : null}
                       {engagementLabel ? (
                         <span
-                          className="shrink-0 rounded-md bg-[#e8eefc] px-1.5 py-0.5 text-[10px] font-bold text-[#2f5fee] dark:bg-indigo-950/60 dark:text-indigo-200"
+                          className="shrink-0 rounded-md bg-[#dde1e8] px-1.5 py-0.5 text-[10px] font-bold text-[#3f4757] dark:bg-slate-700 dark:text-slate-200"
                         >
                           {engagementLabel}
                         </span>
@@ -5957,7 +5957,7 @@ function TeacherDashboardInner() {
                             }
                             openPasteDetail(s.id, { studentId: s.id, left: rect.left, top: rect.bottom + 6 });
                           }}
-                          className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50"
+                          className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:bg-amber-900/50"
                         >
                           Pasted{pasteSnippetCount(s.id) > 1 ? ` ×${pasteSnippetCount(s.id)}` : ''}
                       </button>
