@@ -3993,7 +3993,7 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
 
 .iboard-student-card--overview .iboard-writing-surface {
   margin-top: 0.25rem;
-  padding: 0.4rem 0.65rem 0.45rem 0.55rem;
+  padding: 0.25rem 0.65rem 0.45rem 0.55rem;
   font-size: 0.78em;
   line-height: 1.45;
 }
@@ -4017,7 +4017,7 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
 
 .iboard-student-card .iboard-writing-surface {
   box-shadow: none;
-  padding-top: 0.4rem;
+  padding-top: 0.25rem;
   padding-right: 0.65rem;
 }
 
