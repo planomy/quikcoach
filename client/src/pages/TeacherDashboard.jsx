@@ -7905,13 +7905,21 @@ function commandShapePaths({ width, height, band, cx, cy, r }) {
     `L${fmt(end)} ${fmt(height)}`,
     `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(end)} 0Z`,
   ].join('');
+  // At each end the band runs down the rounded edge to half height, tapering
+  // to a point there and curving back into the band's lower edge.
   const b = Math.min(band, end);
-  const edgeX = end - Math.sqrt(Math.max(0, end * end - (end - b) * (end - b)));
+  const mid = height / 2;
+  const lift = mid - (mid - b) * 0.55;
+  const joinX = end * 1.4;
+  const easeX = joinX * 0.55;
   const bandPath = [
-    `M${fmt(edgeX)} ${fmt(b)}`,
+    `M0 ${fmt(mid)}`,
     `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(end)} 0`,
     top,
-    `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(width - edgeX)} ${fmt(b)}`,
+    `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(width)} ${fmt(mid)}`,
+    `C${fmt(width)} ${fmt(lift)} ${fmt(width - easeX)} ${fmt(b)} ${fmt(width - joinX)} ${fmt(b)}`,
+    `L${fmt(joinX)} ${fmt(b)}`,
+    `C${fmt(easeX)} ${fmt(b)} 0 ${fmt(lift)} 0 ${fmt(mid)}`,
     'Z',
   ].join('');
   return { body, band: bandPath };
