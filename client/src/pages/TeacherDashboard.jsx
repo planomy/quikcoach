@@ -5782,7 +5782,7 @@ function TeacherDashboardInner() {
                     : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-[#14181e]'} ${
                         monitoring
                           ? 'border border-[#2f5fee] ring-2 ring-[#c9d6f2] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : 'border border-[#b4b5b8] dark:border-slate-600'
+                          : 'border border-[#e5e5ea] dark:border-slate-600'
                       }`
                 }`}
               >
@@ -5818,7 +5818,7 @@ function TeacherDashboardInner() {
                   </h2>
                       </HintWrap>
                       {gradeShortLabel(s.year_level) && (
-                        <span className="shrink-0 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                        <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           {gradeShortLabel(s.year_level)}
                         </span>
                       )}

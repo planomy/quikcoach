@@ -229,15 +229,11 @@ html:not(.dark) .iboard-app-header .iboard-header-divider {
   max-height: 100dvh;
 }
 
-/* Teacher and student shells (light): white header; the student field stays blue-grey, the teacher board is white. */
+/* Teacher and student shells (light): the same blue-grey field and white header. */
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) {
   background: #e6e8ec;
   background-image: none;
   color: #3c3c45;
-}
-
-html:not(.dark) .iboard-teacher-canvas {
-  background: #ffffff;
 }
 
 html:not(.dark) :is(.iboard-teacher-canvas, .iboard-student-canvas) .iboard-app-header {
@@ -3846,7 +3842,7 @@ html.dark .iboard-room-section__head h3 {
 
 /* Away, not started, or stopped typing past the Settings minutes. Still fully readable. */
 article.iboard-student-card.iboard-student-card--stalled {
-  background: #e9eaee;
+  background: #f2f3f5;
 }
 
 html.dark article.iboard-student-card.iboard-student-card--stalled {
@@ -3857,34 +3853,11 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
   background-color: transparent;
 }
 
-/* The header is a lavender band that runs to the card edges, so it needs no rule under it. */
 .iboard-student-card__head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
+  align-items: start;
   column-gap: 0.4rem;
-  margin: -0.75rem -0.75rem 0;
-  padding: 0.32rem 0.75rem;
-  background: #d2d4f8;
-  border-bottom: 1px solid #b4b5b8;
-}
-
-.iboard-student-card__head .iboard-student-card__wordcount {
-  color: #1c1c22;
-}
-
-html.dark .iboard-student-card__head .iboard-student-card__wordcount {
-  color: #cbd5e1;
-}
-
-.iboard-student-card--fit .iboard-student-card__head {
-  margin: -0.5rem -0.6rem 0;
-  padding: 0.195rem 0.6rem;
-}
-
-html.dark .iboard-student-card__head {
-  background: #262b48;
-  border-bottom-color: #3a4150;
 }
 
 .iboard-student-card__head-start {
@@ -3902,7 +3875,11 @@ html.dark .iboard-student-card__head {
 }
 
 .iboard-student-card__rule {
-  display: none;
+  grid-column: 1 / -1;
+  margin-right: 0.625rem;
+  height: 1px;
+  margin-top: 0.45rem;
+  background: #e5e5ea;
 }
 
 .iboard-student-card__wordcount {
@@ -8233,4 +8210,40 @@ html.dark .iboard-arr-rail__teach .iboard-rail-title {
 .iboard-command-bar [data-command-id='inbox']::after,
 .iboard-command-bar .iboard-manage-tools [data-command-id='text']::after {
   display: none;
+}
+
+/* The dial belongs to the bar: the band colour runs into its rim, the white strip
+   runs into its face, and nothing lifts it off the bar. */
+.iboard-command-bar .iboard-class-gauge__ring,
+.iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__ring,
+.iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
+  background: var(--command-blue);
+  box-shadow: none;
+}
+
+.iboard-command-bar .iboard-class-gauge__face {
+  box-shadow: none;
+  transition: background-color 160ms ease;
+}
+
+.iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__face,
+.iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__face {
+  background: #f4f4fd;
+}
+
+html.dark .iboard-command-bar .iboard-class-gauge__ring,
+html.dark .iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__ring,
+html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__ring {
+  background: var(--command-blue-soft);
+  box-shadow: none;
+}
+
+html.dark .iboard-command-bar .iboard-class-gauge__face {
+  background: #252b32;
+  box-shadow: none;
+}
+
+html.dark .iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gauge__face,
+html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__face {
+  background: #2b323a;
 }
