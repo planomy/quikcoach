@@ -8443,6 +8443,5 @@ html:not(.dark) .iboard-teacher-canvas .iboard-arr-rail {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
-  background: #f3f2fb;
-  border-top-left-radius: 1.25rem;
+  background: #f7f6fd;
 }
