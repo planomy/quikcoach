@@ -8362,8 +8362,8 @@ html.dark .iboard-command-shape__band {
 .iboard-command-bar .iboard-alert-chip__count,
 .iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__count,
 .iboard-command-bar .iboard-alert-chip.is-on:hover .iboard-alert-chip__count {
-  top: -0.42rem;
-  right: -0.48rem;
+  top: -0.12rem;
+  right: -0.5rem;
   background: var(--command-blue);
   color: #ffffff;
   box-shadow: 0 0 0 1.5px #ffffff;

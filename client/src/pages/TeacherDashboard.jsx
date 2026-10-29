@@ -5840,7 +5840,7 @@ function TeacherDashboardInner() {
                   </h2>
                       </HintWrap>
                       {gradeShortLabel(s.year_level) && (
-                        <span className="shrink-0 rounded-md bg-[#eef0f3] px-1.5 py-0.5 text-[10px] font-bold text-[#5b6170] dark:bg-slate-800 dark:text-slate-300">
+                        <span className="shrink-0 text-[10px] font-bold text-[#7a8090] dark:text-slate-400">
                           {gradeShortLabel(s.year_level)}
                         </span>
                       )}
