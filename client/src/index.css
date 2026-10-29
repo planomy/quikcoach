@@ -8248,3 +8248,43 @@ html.dark .iboard-command-bar button.iboard-class-gauge:hover .iboard-class-gaug
 html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .iboard-class-gauge__face {
   background: #2b323a;
 }
+
+/* Fillets where the bar's edges sweep into the dial. Paths are set by the
+   command bar measure, in the frame's own coordinates. */
+.iboard-command-fillets {
+  position: absolute;
+  left: calc(var(--command-frame-outset) * -1);
+  right: calc(var(--command-frame-outset) * -1);
+  bottom: calc(-0.375rem - 1px - var(--command-foot));
+  z-index: -1;
+  width: calc(100% + var(--command-frame-outset) * 2);
+  height: calc(var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim));
+  overflow: visible;
+  pointer-events: none;
+}
+
+.iboard-command-fillets__top {
+  fill: var(--command-blue);
+}
+
+.iboard-command-fillets__bottom {
+  fill: #ffffff;
+}
+
+.iboard-command-fillets__base {
+  fill: none;
+  stroke: var(--command-blue);
+  stroke-width: var(--command-base);
+}
+
+html.dark .iboard-command-fillets__top {
+  fill: var(--command-blue-soft);
+}
+
+html.dark .iboard-command-fillets__bottom {
+  fill: #252b32;
+}
+
+html.dark .iboard-command-fillets__base {
+  stroke: var(--command-blue-soft);
+}

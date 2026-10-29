@@ -891,6 +891,19 @@ function TeacherDashboardInner() {
           frameEl.style.setProperty('--command-cut-x', `${cutX}px`);
           frameEl.style.setProperty('--command-cut-y', `${cutY}px`);
           frameEl.style.setProperty('--command-cut-r', `${ringRect.width / 2}px`);
+          const fillets = bar.querySelector('.iboard-command-fillets');
+          if (fillets) {
+            const paths = commandFilletPaths({
+              cx: cutX,
+              cy: cutY,
+              r: ringRect.width / 2,
+              height: frameRect.height,
+              base: parseFloat(getComputedStyle(bar).getPropertyValue('--command-base')) || 1.5,
+            });
+            fillets.querySelector('.iboard-command-fillets__top')?.setAttribute('d', paths.top);
+            fillets.querySelector('.iboard-command-fillets__bottom')?.setAttribute('d', paths.bottom);
+            fillets.querySelector('.iboard-command-fillets__base')?.setAttribute('d', paths.base);
+          }
         }
         const pin = (button, edge) => {
           if (!button) return;
@@ -4733,6 +4746,11 @@ function TeacherDashboardInner() {
               data-labels={commandFit.labels ? 'on' : 'off'}
             >
               <div className="iboard-command-frame" aria-hidden="true" />
+              <svg className="iboard-command-fillets" aria-hidden="true">
+                <path className="iboard-command-fillets__top" />
+                <path className="iboard-command-fillets__bottom" />
+                <path className="iboard-command-fillets__base" />
+              </svg>
               <div className="iboard-command-bar__side iboard-command-bar__side--monitor">
                 <span className="iboard-command-bar__title">Monitor class</span>
                 <div
@@ -7848,6 +7866,48 @@ function TeacherDashboardInner() {
       )}
     </div>
   );
+}
+
+const COMMAND_FILLET = 10;
+
+/**
+ * Concave fillets where the bar's straight top and bottom edges meet the dial.
+ * Each arc is tangent to the edge and to the dial, so the join has no kink.
+ * Paths close through the dial's centre; the dial paints over that part.
+ */
+function commandFilletPaths({ cx, cy, r, height, base }) {
+  const f = COMMAND_FILLET;
+  const fmt = (n) => Math.round(n * 100) / 100;
+  const pair = (lineY, below) => {
+    const fy = below ? lineY + f : lineY - f;
+    const reach = Math.abs(fy - cy);
+    if (!(r + f > reach)) return null;
+    const d = Math.sqrt((r + f) ** 2 - reach ** 2);
+    const side = (dir) => {
+      const fx = cx + dir * d;
+      const px = cx + ((fx - cx) * r) / (r + f);
+      const py = cy + ((fy - cy) * r) / (r + f);
+      const sweep = (dir < 0) === below ? 1 : 0;
+      return { lx: fx, px, py, sweep };
+    };
+    return [side(-1), side(1)];
+  };
+  const area = (lineY, sides) => sides
+    .map((s) => `M${fmt(s.lx)} ${fmt(lineY)}A${f} ${f} 0 0 ${s.sweep} ${fmt(s.px)} ${fmt(s.py)}L${fmt(cx)} ${fmt(cy)}L${fmt(cx)} ${fmt(lineY)}Z`)
+    .join('');
+  const top = pair(0, false);
+  const bottom = pair(height, true);
+  const baseLine = height - base / 2;
+  const baseSides = pair(baseLine, true);
+  return {
+    top: top ? area(0, top) : '',
+    bottom: bottom
+      ? `${area(height, bottom)}M${fmt(bottom[0].lx)} ${fmt(height - base)}H${fmt(bottom[1].lx)}V${fmt(height)}H${fmt(bottom[0].lx)}Z`
+      : '',
+    base: baseSides
+      ? baseSides.map((s) => `M${fmt(s.lx)} ${fmt(baseLine)}A${f} ${f} 0 0 ${s.sweep} ${fmt(s.px)} ${fmt(s.py)}`).join('')
+      : '',
+  };
 }
 
 export default function TeacherDashboard() {
