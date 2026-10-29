@@ -7870,7 +7870,7 @@ function TeacherDashboardInner() {
   );
 }
 
-const COMMAND_FILLET = 10;
+const COMMAND_FILLET = 60;
 
 /**
  * Concave fillets where the bar's straight top and bottom edges meet the dial.
