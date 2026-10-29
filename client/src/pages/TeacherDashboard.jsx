@@ -5987,7 +5987,7 @@ function TeacherDashboardInner() {
                           data-note-student-name={s.name}
                       data-note-status={noteStatus || undefined}
                           onClick={(event) => openNoteForStudent(s, event)}
-                      className={`iboard-student-card__chat relative mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
+                      className={`iboard-student-card__chat relative grid h-7 w-7 shrink-0 place-items-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ${
                         noteStatus === 'replied'
                               ? 'text-amber-500 hover:text-amber-600 dark:text-amber-400'
                           : noteStatus === 'seen'
@@ -6121,7 +6121,7 @@ function TeacherDashboardInner() {
                   data-student-writing-pane
                   data-card-font="true"
                   style={{ fontSize: writingFontSize(s.id, cardView) }}
-                  className={`iboard-writing-surface relative mt-2 rounded-xl px-2.5 py-2.5 scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
+                  className={`iboard-writing-surface relative mt-1 rounded-xl px-2.5 pb-2.5 pt-1.5 scrollbar-thin ${cardEmpty && cardView !== 'all' ? 'iboard-student-card__empty-pane' : studentWritingPaneClass}`}
                 >
                   {s.image_url && (
                     <div className="relative mb-2 overflow-hidden rounded-lg bg-white dark:bg-slate-900">

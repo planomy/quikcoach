@@ -3857,8 +3857,14 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
 .iboard-student-card__head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: start;
+  align-items: center;
   column-gap: 0.4rem;
+}
+
+/* The chat button keeps its 28px target but does not push the line down. */
+.iboard-student-card__head-end .iboard-student-card__chat {
+  margin-top: -0.25rem;
+  margin-bottom: -0.25rem;
 }
 
 .iboard-student-card__head-start {
@@ -3879,7 +3885,7 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
   grid-column: 1 / -1;
   margin-right: 0.625rem;
   height: 1px;
-  margin-top: 0.45rem;
+  margin-top: 0.3rem;
   background: #e5e5ea;
 }
 
@@ -3986,8 +3992,8 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
 }
 
 .iboard-student-card--overview .iboard-writing-surface {
-  margin-top: 0.4rem;
-  padding: 1.15rem 0.65rem 0.45rem 0.55rem;
+  margin-top: 0.25rem;
+  padding: 0.4rem 0.65rem 0.45rem 0.55rem;
   font-size: 0.78em;
   line-height: 1.45;
 }
@@ -4011,7 +4017,7 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
 
 .iboard-student-card .iboard-writing-surface {
   box-shadow: none;
-  padding-top: 1.15rem;
+  padding-top: 0.4rem;
   padding-right: 0.65rem;
 }
 
