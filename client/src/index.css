@@ -1229,7 +1229,7 @@ html.dark .iboard-alert-chip.is-on {
   justify-content: center;
   height: auto;
   gap: 0.16rem;
-  padding: 0 0.38rem;
+  padding: 0 0.28rem;
   background: transparent;
   color: var(--command-blue);
 }
@@ -2034,7 +2034,7 @@ html.dark .iboard-command-frame {
   height: 100%;
   flex-direction: column;
   gap: 0.16rem;
-  padding: 0 0.45rem;
+  padding: 0 0.32rem;
   border-radius: 0;
 }
 
