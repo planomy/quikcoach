@@ -7910,7 +7910,7 @@ function commandShapePaths({ width, height, band, cx, cy, r }) {
   const b = Math.min(band, end);
   const mid = height / 2;
   const lift = mid - (mid - b) * 0.55;
-  const joinX = end * 1.4;
+  const joinX = end * 0.95;
   const easeX = joinX * 0.55;
   const bandPath = [
     `M0 ${fmt(mid)}`,
