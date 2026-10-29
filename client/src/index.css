@@ -3843,7 +3843,7 @@ html.dark .iboard-room-section__head h3 {
 
 /* Away, not started, or stopped typing past the Settings minutes. Still fully readable. */
 article.iboard-student-card.iboard-student-card--stalled {
-  background: #e9ebef;
+  background: #f2f3f5;
 }
 
 html.dark article.iboard-student-card.iboard-student-card--stalled {
@@ -8432,7 +8432,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-arr-rail {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
-  background: #f5f6f8;
+  background: #e6e8ec;
 }
 
 /* The white header runs down past the dial, so the dial sits inside it
