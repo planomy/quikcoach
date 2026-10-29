@@ -1992,8 +1992,8 @@ html.dark .iboard-command-frame {
   padding: var(--command-trim) 0.4rem 0;
   font-size: 0.585rem;
   text-align: center;
-  letter-spacing: 0.26em;
-  text-indent: 0.26em;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
   color: #ffffff;
   z-index: 1;
 }
@@ -8307,17 +8307,6 @@ html.dark .iboard-command-shape__band {
   fill: var(--command-blue-soft);
 }
 
-/* Wing titles sit at the outer ends of the band. */
-.iboard-command-bar__side--monitor .iboard-command-bar__title {
-  justify-items: start;
-  margin-left: calc(var(--command-frame-outset) * -0.45);
-}
-
-.iboard-command-bar__side--manage .iboard-command-bar__title {
-  justify-items: end;
-  margin-right: calc(var(--command-frame-outset) * -0.45);
-}
-
 /* Each icon sits in a small lavender tile; the caption sits under it.
    Hover and the on state change the tile, not the whole column. */
 .iboard-command-bar :is(.iboard-alert-chip, .iboard-wing-tool),
@@ -8444,4 +8433,10 @@ html:not(.dark) .iboard-teacher-canvas .iboard-arr-rail {
 
 html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
   background: #f7f6fd;
+}
+
+/* The white header runs down past the dial, so the dial sits inside it
+   and the board starts underneath. */
+.iboard-teacher-canvas .iboard-app-header {
+  padding-bottom: 1.85rem;
 }
