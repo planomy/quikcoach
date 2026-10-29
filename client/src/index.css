@@ -8331,7 +8331,7 @@ html.dark .iboard-command-shape__band {
   min-height: 0;
   padding: 0;
   border-radius: 0.45rem;
-  background: #ecebfc;
+  background: transparent;
   color: var(--command-blue);
   transition: background-color 140ms ease, color 140ms ease;
 }
@@ -8339,7 +8339,7 @@ html.dark .iboard-command-shape__band {
 .iboard-command-bar :is(.iboard-alert-chip, .iboard-wing-tool):hover .iboard-alert-chip__mark,
 .iboard-command-bar .iboard-alert-chip.has-count:hover .iboard-alert-chip__mark,
 .iboard-command-bar .iboard-wing-tool:hover .iboard-wing-tile {
-  background: #dddbfa;
+  background: #ecebfc;
 }
 
 .iboard-command-bar .iboard-alert-chip.is-on .iboard-alert-chip__mark,
@@ -8350,7 +8350,7 @@ html.dark .iboard-command-shape__band {
 }
 
 .iboard-command-bar .iboard-wing-tool:disabled .iboard-wing-tile {
-  background: #f1f1f5;
+  background: transparent;
   color: #a7a7b8;
 }
 
@@ -8372,7 +8372,7 @@ html.dark .iboard-command-shape__band {
 html.dark .iboard-command-bar .iboard-alert-chip__mark,
 html.dark .iboard-command-bar .iboard-alert-chip.has-count .iboard-alert-chip__mark,
 html.dark .iboard-command-bar .iboard-wing-tile {
-  background: #323a5c;
+  background: transparent;
   color: #c9c8fb;
 }
 
