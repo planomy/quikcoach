@@ -2342,7 +2342,8 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 .iboard-command-bar .iboard-command-bar__gauge > * {
   position: absolute;
-  bottom: calc(var(--command-rail) + var(--command-band) - 0.375rem - 1px - var(--command-dial) / 2 + 0.42rem);
+  /* Centre the dial on the white strip under the band, not on the whole bar. */
+  bottom: calc((var(--command-rail) + var(--command-foot) + var(--command-rise)) / 2 - 0.375rem - 1px - var(--command-foot));
   left: 50%;
   z-index: 6;
   transform: translate(-50%, 50%);
