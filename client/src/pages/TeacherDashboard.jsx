@@ -5810,7 +5810,7 @@ function TeacherDashboardInner() {
               >
                 <div className="iboard-student-card__head group/card-head">
                   <div className="iboard-student-card__head-start">
-                    <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-1">
                       <HintWrap hint={s.name} prefer="above" className="min-w-0">
                       <h2
                         className={`iboard-student-card__name min-w-0 truncate ${
