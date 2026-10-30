@@ -8451,3 +8451,16 @@ html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
   padding-top: 1rem;
   padding-left: 1rem;
 }
+
+/* Panels that float over the board share the student cards' 12px corners. */
+.iboard-nudge-strip,
+.iboard-command-more__menu,
+.iboard-gauge-panel,
+.iboard-tool-popover,
+.iboard-wing-pop {
+  border-radius: 0.75rem;
+}
+
+.iboard-header-dock--view {
+  border-radius: 0 0 0.75rem 0.75rem;
+}
