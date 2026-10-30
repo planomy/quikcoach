@@ -1284,7 +1284,7 @@ html.dark .iboard-alert-chip.is-on {
 }
 
 .iboard-command-bar .iboard-alert-chip:hover .iboard-alert-chip__mark {
-  transform: scale(1.14);
+  transform: none;
 }
 
 .iboard-alert-chip__count {
