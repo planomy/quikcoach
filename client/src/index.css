@@ -3862,7 +3862,13 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
    and the writing sits in a white panel inside it, so the header needs no rule. */
 html:not(.dark) article.iboard-student-card.iboard-student-card--framed {
   background: #f3f6fa;
-  padding: 0.6rem 0.625rem 0.625rem;
+  /* 1px of shade plus the 1px card outline reads as a 2px edge. */
+  padding: 0.6rem 1px 1px;
+}
+
+html:not(.dark) .iboard-student-card--framed .iboard-student-card__head {
+  padding-left: calc(0.625rem - 1px);
+  padding-right: calc(0.625rem - 1px);
 }
 
 html:not(.dark) .iboard-student-card--framed .iboard-student-card__rule {
@@ -3873,7 +3879,7 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--framed :is(.ibo
   margin-top: 0.5rem;
   padding-top: 0.55rem;
   border: 1px solid #e9eef5;
-  border-radius: 0.6rem;
+  border-radius: 12px;
   background-color: #ffffff;
 }
 
