@@ -7324,11 +7324,14 @@ function TeacherDashboardInner() {
       )}
 
       {focusedStudent && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center">
+        <div
+          className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center bg-slate-900/55 p-4 sm:items-center"
+          style={{ top: teacherToolsTop || 0 }}
+        >
           <article
             data-student-id={focusedStudent.id}
             data-full-draft="true"
-            className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             role="dialog"
             aria-modal="true"
             aria-labelledby="focused-student-title"
