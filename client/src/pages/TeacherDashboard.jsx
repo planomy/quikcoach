@@ -7891,9 +7891,8 @@ function commandShapePaths({ width, height, band, cx, cy, r }) {
   const fmt = (n) => Math.round(n * 100) / 100;
   const end = height / 2;
   const ring = r + 6;
-  const f = 14;
   // One fillet pair where the edge at lineY meets the ring; the ring crosses the line.
-  const join = (lineY, below) => {
+  const join = (lineY, below, f) => {
     const fy = below ? lineY + f : lineY - f;
     const reach = Math.abs(fy - cy);
     if (!(ring + f > reach)) return null;
@@ -7906,25 +7905,26 @@ function commandShapePaths({ width, height, band, cx, cy, r }) {
         py: cy + ((fy - cy) * ring) / (ring + f),
       };
     };
-    return { left: tangent(-1), right: tangent(1) };
+    return { f, left: tangent(-1), right: tangent(1) };
   };
-  const t = join(0, false);
-  const u = join(height, true);
+  // The blue band sweeps into the dial more softly than the white edge below.
+  const t = join(0, false, 24);
+  const u = join(height, true, 14);
   const top = t
     ? [
         `L${fmt(t.left.lx)} 0`,
-        `A${f} ${f} 0 0 0 ${fmt(t.left.px)} ${fmt(t.left.py)}`,
+        `A${t.f} ${t.f} 0 0 0 ${fmt(t.left.px)} ${fmt(t.left.py)}`,
         `A${fmt(ring)} ${fmt(ring)} 0 0 1 ${fmt(t.right.px)} ${fmt(t.right.py)}`,
-        `A${f} ${f} 0 0 0 ${fmt(t.right.lx)} 0`,
+        `A${t.f} ${t.f} 0 0 0 ${fmt(t.right.lx)} 0`,
         `L${fmt(width - end)} 0`,
       ].join('')
     : `L${fmt(width - end)} 0`;
   const bottom = u
     ? [
         `L${fmt(u.right.lx)} ${fmt(height)}`,
-        `A${f} ${f} 0 0 0 ${fmt(u.right.px)} ${fmt(u.right.py)}`,
+        `A${u.f} ${u.f} 0 0 0 ${fmt(u.right.px)} ${fmt(u.right.py)}`,
         `A${fmt(ring)} ${fmt(ring)} 0 0 1 ${fmt(u.left.px)} ${fmt(u.left.py)}`,
-        `A${f} ${f} 0 0 0 ${fmt(u.left.lx)} ${fmt(height)}`,
+        `A${u.f} ${u.f} 0 0 0 ${fmt(u.left.lx)} ${fmt(height)}`,
         `L${fmt(end)} ${fmt(height)}`,
       ].join('')
     : `L${fmt(end)} ${fmt(height)}`;
