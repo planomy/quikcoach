@@ -1121,8 +1121,11 @@ html.dark .iboard-brand-word {
   min-width: 0;
   justify-self: center;
   --command-collar-inset: 0px;
-  --command-rail: calc((2.34rem + 4px) * 1.1);
-  --command-band: calc(1.48rem * 0.85);
+  /* The bar keeps its total height; the blue band takes the top half so its
+     lower edge runs through the centre of the dial, and the icon row the rest. */
+  --command-total: calc((2.34rem + 4px) * 1.1 + 1.48rem * 0.85);
+  --command-band: calc((var(--command-total) + var(--command-foot) + var(--command-trim)) / 2 + var(--command-rise));
+  --command-rail: calc(var(--command-total) - var(--command-band));
   --command-foot: 0.1rem;
   --command-rise: 0.05rem;
   --command-lip: 0px;
@@ -3881,7 +3884,7 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--framed :is(.ibo
   margin-top: 0.5rem;
   padding-top: 0.55rem;
   border: 1px solid #e9eef5;
-  border-radius: 24px;
+  border-radius: 25px 25px 24px 24px;
   background-color: #ffffff;
 }
 
@@ -8363,6 +8366,16 @@ html.dark .iboard-command-shape__band {
   box-shadow: none !important;
   color: var(--command-blue) !important;
   gap: 0.22rem;
+}
+
+/* The band runs down to the dial's centre line, so each icon starts just under it
+   and its caption is free to hang below the bar. */
+.iboard-command-bar__side :is(.iboard-alert-chip, .iboard-wing-tool) {
+  padding-top: 0.8rem;
+}
+
+.iboard-command-bar__side :is(.iboard-alert-chip, .iboard-wing-tool) > * {
+  flex-shrink: 0;
 }
 
 .iboard-command-bar .iboard-alert-chip__mark,
