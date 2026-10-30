@@ -7938,25 +7938,27 @@ function commandShapePaths({ width, height, band, cx, cy, r }) {
     bottom,
     `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(end)} 0Z`,
   ].join('');
-  // At each end the band runs down the rounded edge past half height, then its
-  // inner edge curves back up into the band in a full quarter-curve, so the
-  // white end reads round.
+  // At each end the band runs down the rounded edge past half height and thins
+  // to nothing there. Its inner edge is a circle tangent to the band's lower
+  // edge and to the outer edge at the tip, so the blue tapers evenly and the
+  // white end is truly round.
   const b = Math.min(band, end);
   const mid = height / 2;
   const tipAngle = (35 * Math.PI) / 180;
-  const tipX = end - end * Math.cos(tipAngle);
-  const tipY = mid + end * Math.sin(tipAngle);
-  const joinX = end * 1.0;
-  const riseY = tipY - (tipY - b) * 0.55;
-  const easeX = joinX - (joinX - tipX) * 0.55;
+  const sin = Math.sin(tipAngle);
+  const cos = Math.cos(tipAngle);
+  const tipX = end - end * cos;
+  const tipY = mid + end * sin;
+  const inner = Math.max(1, (mid + end * sin - b) / (1 + sin));
+  const innerX = end - (end - inner) * cos;
   const bandPath = [
     `M${fmt(tipX)} ${fmt(tipY)}`,
     `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(end)} 0`,
     top,
     `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(width - tipX)} ${fmt(tipY)}`,
-    `C${fmt(width - tipX)} ${fmt(riseY)} ${fmt(width - easeX)} ${fmt(b)} ${fmt(width - joinX)} ${fmt(b)}`,
-    `L${fmt(joinX)} ${fmt(b)}`,
-    `C${fmt(easeX)} ${fmt(b)} ${fmt(tipX)} ${fmt(riseY)} ${fmt(tipX)} ${fmt(tipY)}`,
+    `A${fmt(inner)} ${fmt(inner)} 0 0 0 ${fmt(width - innerX)} ${fmt(b)}`,
+    `L${fmt(innerX)} ${fmt(b)}`,
+    `A${fmt(inner)} ${fmt(inner)} 0 0 0 ${fmt(tipX)} ${fmt(tipY)}`,
     'Z',
   ].join('');
   return { body, band: bandPath };
