@@ -8445,3 +8445,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
 .iboard-teacher-canvas .iboard-app-header {
   padding-bottom: 1.8rem;
 }
+
+/* Cards start closer under the header. */
+.iboard-teacher-canvas .iboard-student-board {
+  padding-top: 0.5rem;
+}
