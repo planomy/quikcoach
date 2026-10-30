@@ -3863,8 +3863,8 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
 html:not(.dark) article.iboard-student-card.iboard-student-card--framed {
   background: #f3f6fa;
   /* Sides: 1px of shade plus the 1px card outline reads as a 2px edge.
-     Bottom: about a third of the shaded header band. */
-  padding: 0.6rem 1px 11px;
+     Bottom: about a quarter of the shaded header band. */
+  padding: 0.6rem 1px 8px;
   border-radius: 32px;
 }
 
