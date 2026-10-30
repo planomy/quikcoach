@@ -8441,5 +8441,5 @@ html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
 /* The white header runs down past the dial, so the dial sits inside it
    and the board starts underneath. */
 .iboard-teacher-canvas .iboard-app-header {
-  padding-bottom: 1.85rem;
+  padding-bottom: 2.2rem;
 }
