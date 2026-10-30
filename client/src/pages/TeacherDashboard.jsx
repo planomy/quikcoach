@@ -6881,7 +6881,7 @@ function TeacherDashboardInner() {
       {viewOpen && (
         <div
           ref={viewPanelRef}
-          className="iboard-header-dock iboard-header-dock--view fixed z-[60] w-auto max-w-[min(22rem,calc(100vw-1.5rem))]"
+          className="iboard-header-dock iboard-header-dock--view fixed z-[80] w-auto max-w-[min(22rem,calc(100vw-1.5rem))]"
           style={{ top: teacherToolsTop, left: viewDockRight }}
           role="dialog"
           aria-modal="false"
