@@ -892,6 +892,16 @@ function TeacherDashboardInner() {
           frameEl.style.setProperty('--command-cut-x', `${cutX}px`);
           frameEl.style.setProperty('--command-cut-y', `${cutY}px`);
           frameEl.style.setProperty('--command-cut-r', `${ringRect.width / 2}px`);
+          // The logo and room number sit on the dial's centre line, wherever the gauge lands.
+          const dialMid = ringRect.top + ringRect.height / 2;
+          const header = bar.closest('.iboard-app-header');
+          for (const el of [header?.querySelector('.iboard-brand'), meta]) {
+            if (!el) continue;
+            el.style.transform = '';
+            const box = el.getBoundingClientRect();
+            const shift = Math.round(dialMid - (box.top + box.height / 2));
+            el.style.transform = shift ? `translateY(${shift}px)` : '';
+          }
           const shape = bar.querySelector('.iboard-command-shape');
           if (shape) {
             const paths = commandShapePaths({
