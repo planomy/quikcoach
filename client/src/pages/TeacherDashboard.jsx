@@ -5811,10 +5811,10 @@ function TeacherDashboardInner() {
                 } ${cardEmpty ? 'iboard-student-card--empty' : ''} ${stalled && !handUp ? 'iboard-student-card--stalled' : ''} ${
                   handUp
                     ? 'cursor-pointer border border-[#2f5fee] bg-[#e8eefc] shadow-[inset_4px_0_0_0_#2f5fee] dark:border-indigo-400 dark:bg-indigo-950/70 dark:shadow-[inset_4px_0_0_0_#818cf8] dark:ring-1 dark:ring-indigo-500/40'
-                    : `${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-[#14181e]'} ${
+                    : `iboard-student-card--framed ${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-[#14181e]'} ${
                         monitoring
                           ? 'border border-[#2f5fee] ring-2 ring-[#c9d6f2] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : 'border border-[#cdd0d7] dark:border-slate-600'
+                          : 'border border-[#c9d4e3] dark:border-slate-600'
                       }`
                 }`}
               >
@@ -7888,7 +7888,7 @@ function TeacherDashboardInner() {
 /**
  * The command bar as one shape: a pill whose edges wrap the dial at an even
  * distance (a ring of radius r + bezel), joined to the straight top and bottom
- * edges by small concave fillets tangent to both, so nothing kinks.
+ * edges by concave fillets tangent to both, so nothing kinks.
  */
 function commandShapePaths({ width, height, band, cx, cy, r }) {
   const fmt = (n) => Math.round(n * 100) / 100;

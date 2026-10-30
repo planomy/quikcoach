@@ -3846,7 +3846,7 @@ html.dark .iboard-room-section__head h3 {
 
 /* Away, not started, or stopped typing past the Settings minutes. Still fully readable. */
 article.iboard-student-card.iboard-student-card--stalled {
-  border-color: #d5d7de;
+  border-color: #c9d4e3;
   background: #eff0f4;
 }
 
@@ -3856,6 +3856,29 @@ html.dark article.iboard-student-card.iboard-student-card--stalled {
 
 html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.iboard-writing-surface, [data-student-writing-pane]) {
   background-color: transparent;
+}
+
+/* Framed card (light): the header and a narrow frame share one blue-grey shade,
+   and the writing sits in a white panel inside it, so the header needs no rule. */
+html:not(.dark) article.iboard-student-card.iboard-student-card--framed {
+  background: #e6ecf4;
+  padding: 0.6rem 0.625rem 0.625rem;
+}
+
+html:not(.dark) .iboard-student-card--framed .iboard-student-card__rule {
+  display: none;
+}
+
+html:not(.dark) article.iboard-student-card.iboard-student-card--framed :is(.iboard-writing-surface[data-student-writing-pane]) {
+  margin-top: 0.5rem;
+  padding-top: 0.55rem;
+  border: 1px solid #d3dcea;
+  border-radius: 0.6rem;
+  background-color: #ffffff;
+}
+
+html:not(.dark) article.iboard-student-card.iboard-student-card--framed.iboard-student-card--stalled :is(.iboard-writing-surface[data-student-writing-pane]) {
+  background-color: #eff0f4;
 }
 
 .iboard-student-card__head {
@@ -3890,7 +3913,7 @@ html:not(.dark) article.iboard-student-card.iboard-student-card--stalled :is(.ib
   margin-right: 0.625rem;
   height: 1px;
   margin-top: 0.3rem;
-  background: #e5e5ea;
+  background: #dce4ef;
 }
 
 .iboard-student-card__wordcount {
@@ -8283,6 +8306,16 @@ html.dark .iboard-command-bar button.iboard-class-gauge[data-active='true'] .ibo
   filter: drop-shadow(0 0 1px rgba(15, 23, 42, 0.2)) drop-shadow(0 1px 2px rgba(15, 23, 42, 0.18)) drop-shadow(0 6px 14px rgba(15, 23, 42, 0.05));
 }
 
+/* On the white light-mode header the white wings and dial run straight into it:
+   no outline or shadow under them. */
+html:not(.dark) .iboard-command-shape {
+  filter: none;
+}
+
+html:not(.dark) .iboard-command-bar::before {
+  box-shadow: none;
+}
+
 .iboard-command-shape__probe {
   position: absolute;
   width: 0;
@@ -8437,7 +8470,7 @@ html:not(.dark) .iboard-teacher-canvas .iboard-arr-rail {
 }
 
 html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
-  background: #e9eaef;
+  background: #ffffff;
 }
 
 /* The white header runs down past the dial, so the dial sits inside it
