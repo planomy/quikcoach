@@ -7908,7 +7908,7 @@ function commandShapePaths({ width, height, band, cx, cy, r }) {
     return { f, left: tangent(-1), right: tangent(1) };
   };
   // The blue band sweeps into the dial more softly than the white edge below.
-  const t = join(0, false, 24);
+  const t = join(0, false, 32);
   const u = join(height, true, 14);
   const top = t
     ? [
