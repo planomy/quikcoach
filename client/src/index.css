@@ -3843,7 +3843,7 @@ html.dark .iboard-room-section__head h3 {
 
 /* Away, not started, or stopped typing past the Settings minutes. Still fully readable. */
 article.iboard-student-card.iboard-student-card--stalled {
-  border-color: #e3e4ea;
+  border-color: #d5d7de;
   background: #eff0f4;
 }
 
