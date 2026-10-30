@@ -8448,6 +8448,6 @@ html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
 
 /* Cards sit the same distance from the header and from the rail. */
 .iboard-teacher-canvas .iboard-student-board {
-  padding-top: 0.75rem;
-  padding-left: 0.75rem;
+  padding-top: 1rem;
+  padding-left: 1rem;
 }
