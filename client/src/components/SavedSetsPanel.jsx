@@ -609,7 +609,7 @@ export default function SavedSetsPanel({
               id="sets-subject-filter"
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#3c3c45] outline-none transition focus:border-[#c9d6f2] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              className="min-w-[8.5rem] flex-1 rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#3c3c45] outline-none transition focus:border-[#c9d6f2] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
               <option value="All">All subjects</option>
               {SUBJECTS.map((item) => (
@@ -622,7 +622,7 @@ export default function SavedSetsPanel({
               id="sets-year-filter"
               value={yearBand}
               onChange={(event) => setYearBand(event.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#3c3c45] outline-none transition focus:border-[#c9d6f2] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              className="min-w-[8.5rem] flex-1 rounded-lg border border-[#e2e2e8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#3c3c45] outline-none transition focus:border-[#c9d6f2] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
               <option value="All">All years</option>
               {YEAR_BANDS.map((item) => (
