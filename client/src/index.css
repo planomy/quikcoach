@@ -2343,8 +2343,9 @@ html.dark .iboard-breakout-assign.iboard-breakout-assign--inline {
 
 .iboard-command-bar .iboard-command-bar__gauge > * {
   position: absolute;
-  /* Centre the dial on the white strip under the band, not on the whole bar. */
-  bottom: calc((var(--command-rail) + var(--command-foot) + var(--command-rise)) / 2 - 0.375rem - 1px - var(--command-foot));
+  /* Centre the dial on the whole bar, top of the band to the bottom of the white,
+     so it stands out by the same amount above and below. */
+  bottom: calc((var(--command-rail) + var(--command-band) + var(--command-foot) - var(--command-trim)) / 2 - 0.375rem - 1px - var(--command-foot));
   left: 50%;
   z-index: 6;
   transform: translate(-50%, 50%);
@@ -8442,5 +8443,5 @@ html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
 /* The white header runs down past the dial, so the dial sits inside it
    and the board starts underneath. */
 .iboard-teacher-canvas .iboard-app-header {
-  padding-bottom: 2.2rem;
+  padding-bottom: 1.8rem;
 }
