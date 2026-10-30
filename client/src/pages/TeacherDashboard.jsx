@@ -7873,36 +7873,56 @@ function TeacherDashboardInner() {
 }
 
 /**
- * The command bar as one shape: a pill whose top edge swells up over the dial
- * and whose bottom edge dips under it, with the blue band along the top.
- * Each swell is an S-curve with flat ends, so it leaves the straight edge and
- * crests over the dial without a kink.
+ * The command bar as one shape: a pill whose edges wrap the dial at an even
+ * distance (a ring of radius r + bezel), joined to the straight top and bottom
+ * edges by small concave fillets tangent to both, so nothing kinks.
  */
 function commandShapePaths({ width, height, band, cx, cy, r }) {
   const fmt = (n) => Math.round(n * 100) / 100;
   const end = height / 2;
-  const bezel = 4;
-  const peak = cy - r - bezel;
-  const dip = cy + r + bezel;
-  const room = Math.max(r, Math.min(cx - end, width - end - cx) - 4);
-  const rise = Math.min(r * 1.7, room);
-  const fall = Math.min(r * 1.7, room);
-  const k = rise * 0.55;
-  const k2 = fall * 0.55;
-  const top = [
-    `L${fmt(cx - rise)} 0`,
-    `C${fmt(cx - rise + k)} 0 ${fmt(cx - k)} ${fmt(peak)} ${fmt(cx)} ${fmt(peak)}`,
-    `C${fmt(cx + k)} ${fmt(peak)} ${fmt(cx + rise - k)} 0 ${fmt(cx + rise)} 0`,
-    `L${fmt(width - end)} 0`,
-  ].join('');
+  const ring = r + 6;
+  const f = 14;
+  // One fillet pair where the edge at lineY meets the ring; the ring crosses the line.
+  const join = (lineY, below) => {
+    const fy = below ? lineY + f : lineY - f;
+    const reach = Math.abs(fy - cy);
+    if (!(ring + f > reach)) return null;
+    const d = Math.sqrt((ring + f) ** 2 - reach ** 2);
+    const tangent = (dir) => {
+      const fx = cx + dir * d;
+      return {
+        lx: fx,
+        px: cx + ((fx - cx) * ring) / (ring + f),
+        py: cy + ((fy - cy) * ring) / (ring + f),
+      };
+    };
+    return { left: tangent(-1), right: tangent(1) };
+  };
+  const t = join(0, false);
+  const u = join(height, true);
+  const top = t
+    ? [
+        `L${fmt(t.left.lx)} 0`,
+        `A${f} ${f} 0 0 0 ${fmt(t.left.px)} ${fmt(t.left.py)}`,
+        `A${fmt(ring)} ${fmt(ring)} 0 0 1 ${fmt(t.right.px)} ${fmt(t.right.py)}`,
+        `A${f} ${f} 0 0 0 ${fmt(t.right.lx)} 0`,
+        `L${fmt(width - end)} 0`,
+      ].join('')
+    : `L${fmt(width - end)} 0`;
+  const bottom = u
+    ? [
+        `L${fmt(u.right.lx)} ${fmt(height)}`,
+        `A${f} ${f} 0 0 0 ${fmt(u.right.px)} ${fmt(u.right.py)}`,
+        `A${fmt(ring)} ${fmt(ring)} 0 0 1 ${fmt(u.left.px)} ${fmt(u.left.py)}`,
+        `A${f} ${f} 0 0 0 ${fmt(u.left.lx)} ${fmt(height)}`,
+        `L${fmt(end)} ${fmt(height)}`,
+      ].join('')
+    : `L${fmt(end)} ${fmt(height)}`;
   const body = [
     `M${fmt(end)} 0`,
     top,
     `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(width - end)} ${fmt(height)}`,
-    `L${fmt(cx + fall)} ${fmt(height)}`,
-    `C${fmt(cx + fall - k2)} ${fmt(height)} ${fmt(cx + k2)} ${fmt(dip)} ${fmt(cx)} ${fmt(dip)}`,
-    `C${fmt(cx - k2)} ${fmt(dip)} ${fmt(cx - fall + k2)} ${fmt(height)} ${fmt(cx - fall)} ${fmt(height)}`,
-    `L${fmt(end)} ${fmt(height)}`,
+    bottom,
     `A${fmt(end)} ${fmt(end)} 0 0 1 ${fmt(end)} 0Z`,
   ].join('');
   // At each end the band runs down the rounded edge to half height, tapering
