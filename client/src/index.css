@@ -1111,7 +1111,7 @@ html.dark .iboard-brand-word {
 
 .iboard-command-bar {
   position: relative;
-  top: calc(var(--command-foot) * -1 - 1px);
+  top: calc(var(--command-foot) * -1 + 1px);
   display: grid;
   grid-template-columns: var(--command-wing, 16rem) auto var(--command-wing, 16rem);
   align-items: end;
