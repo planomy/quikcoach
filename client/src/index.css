@@ -3846,7 +3846,7 @@ html.dark .iboard-room-section__head h3 {
 
 /* Away, not started, or stopped typing past the Settings minutes. Still fully readable. */
 article.iboard-student-card.iboard-student-card--stalled {
-  border-color: #c9d4e3;
+  border-color: #e4eaf1;
   background: #eff0f4;
 }
 
@@ -3872,7 +3872,7 @@ html:not(.dark) .iboard-student-card--framed .iboard-student-card__rule {
 html:not(.dark) article.iboard-student-card.iboard-student-card--framed :is(.iboard-writing-surface[data-student-writing-pane]) {
   margin-top: 0.5rem;
   padding-top: 0.55rem;
-  border: 1px solid #d3dcea;
+  border: 1px solid #e9eef5;
   border-radius: 0.6rem;
   background-color: #ffffff;
 }

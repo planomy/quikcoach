@@ -5814,7 +5814,7 @@ function TeacherDashboardInner() {
                     : `iboard-student-card--framed ${cardEmpty && cardView !== 'all' ? '' : 'bg-white dark:bg-[#14181e]'} ${
                         monitoring
                           ? 'border border-[#2f5fee] ring-2 ring-[#c9d6f2] dark:border-indigo-400 dark:ring-indigo-900/50'
-                          : 'border border-[#c9d4e3] dark:border-slate-600'
+                          : 'border border-[#e4eaf1] dark:border-slate-600'
                       }`
                 }`}
               >
