@@ -8446,7 +8446,8 @@ html:not(.dark) .iboard-teacher-canvas .iboard-student-board {
   padding-bottom: 1.8rem;
 }
 
-/* Cards start closer under the header. */
+/* Cards sit the same distance from the header and from the rail. */
 .iboard-teacher-canvas .iboard-student-board {
-  padding-top: 0.5rem;
+  padding-top: 0.75rem;
+  padding-left: 0.75rem;
 }
