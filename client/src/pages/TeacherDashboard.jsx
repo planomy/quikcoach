@@ -939,6 +939,9 @@ function TeacherDashboardInner() {
     observer.observe(document.documentElement);
     const frameNode = bar.querySelector('.iboard-command-frame');
     if (frameNode) observer.observe(frameNode);
+    // The band can change height while the bar keeps its size; redraw the blue then too.
+    const bandProbe = bar.querySelector('.iboard-command-shape__probe');
+    if (bandProbe) observer.observe(bandProbe);
     window.addEventListener('resize', schedule);
     window.visualViewport?.addEventListener('resize', schedule);
     document.fonts?.ready?.then(() => {
